@@ -1,63 +1,89 @@
 # Local Development
 
+This guide explains how to run the entire FitGlue stack locally without deploying to Google Cloud.
+
 ## Prerequisites
-- [Google Cloud SDK](https://cloud.google.com/sdk/docs/install) installed.
-- [Functions Framework](https://github.com/GoogleCloudPlatform/functions-framework-go) (installed via go.mod / npm).
-- Environment Variables setup.
+- **Node.js**: v18+
+- **Go**: v1.21+
+- **Make**: For running orchestration commands.
+- **Functions Framework**: Installed via `npm` (TS) and `go.mod` (Go).
 
-## Running Services
+## 1. Configuration (`.env`)
 
-Each service can be run locally on a specific port.
+Create a `.env` file to configure local secrets (bypassing Google Secret Manager).
 
-### 1. Hevy Handler (Port 8080)
 ```bash
-cd functions/hevy-handler
-npm run dev
-# Listens on 8080 by default
+cp .env.example .env
 ```
 
-### 2. Keiser Poller (Port 8084)
+Edit `.env` to set your mock secrets:
 ```bash
-cd functions/keiser-poller
-PORT=8084 npm run dev
+GOOGLE_CLOUD_PROJECT=fitglue-local
+HEVY_SIGNING_SECRET=local-secret
 ```
 
-### 3. Enricher (Port 8081)
+## 2. Starting Services
+
+You can start all 5 services simultaneously using the orchestration script.
+
 ```bash
-cd functions/enricher
-go run cmd/main.go
-# Listens on 8081
+make local
 ```
 
-### 4. Router (Port 8082)
+This will spin up:
+- **Hevy Handler** (:8080)
+- **Enricher** (:8081)
+- **Router** (:8082)
+- **Strava Uploader** (:8083)
+- **Keiser Poller** (:8084)
+
+Logs are written to individual log files in the root directory (`hevy.log`, `enricher.log`, etc.).
+Press **Ctrl+C** to stop all services.
+
+### Manual Start (Debugging)
+If you need to debug a single service, you can run it in isolation:
+
+| Service | Port | Command |
+|---------|------|---------|
+| Hevy Handler | 8080 | `cd functions/hevy-handler && npm run dev` |
+| Enricher | 8081 | `cd functions/enricher && go run cmd/main.go` |
+| Router | 8082 | `cd functions/router && go run cmd/main.go` |
+| Strava Uploader | 8083 | `cd functions/strava-uploader && go run cmd/main.go` |
+| Keiser Poller | 8084 | `cd functions/keiser-poller && PORT=8084 npm run dev` |
+
+## 3. Triggering Events (Simulations)
+
+We provide Node.js scripts to simulate various events in the pipeline. These scripts construct the correct CloudEvent or HTTP payloads expected by the functions.
+
+### A. Ingestion Layer
+**Simulate Hevy Webhook**
+Sends a signed JSON payload to the Hevy Handler.
 ```bash
-cd functions/router
-go run cmd/main.go
-# Listens on 8082
+node scripts/trigger_hevy.js
 ```
 
-### 5. Strava Uploader (Port 8083)
+**Simulate Keiser Poll**
+Trigger the Keiser Poller schedule.
 ```bash
-cd functions/strava-uploader
-go run cmd/main.go
-# Listens on 8083
+node scripts/trigger_keiser.js
 ```
 
-## Testing Triggers via HTTP
-
-Since all functions are wrapped in HTTP by the framework, you can trigger them via `curl`:
-
-**Trigger Enricher (Cloud Event)**
+### B. Transformation Layer
+**Simulate Raw Activity Event**
+Injects a Pub/Sub message (RawActivity protobuffer) into the Enricher.
 ```bash
-curl -X POST localhost:8081 \
-  -H "Content-Type: application/json" \
-  -H "Ce-Id: 1234" \
-  -H "Ce-Specversion: 1.0" \
-  -H "Ce-Type: google.cloud.pubsub.topic.v1.messagePublished" \
-  -H "Ce-Source: //pubsub.googleapis.com/projects/YOUR_PROJECT/topics/topic-raw-activity" \
-  -d '{
-        "message": {
-          "data": "BASE64_ENCODED_JSON_PAYLOAD"
-        }
-      }'
+node scripts/trigger_enricher.js
+```
+
+### C. Routing & Egress
+**Simulate Enrichment Complete**
+Injects an EnrichedActivity event into the Router.
+```bash
+node scripts/trigger_router.js
+```
+
+**Simulate Strava Upload Job**
+Injects an upload job directly to the Strava Uploader.
+```bash
+node scripts/trigger_uploader.js
 ```
