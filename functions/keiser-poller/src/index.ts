@@ -63,7 +63,7 @@ export const keiserPoller: HttpFunction = async (req, res) => {
         const payload = {
             source: 'keiser',
             originalPayload: session,
-            userId: session.userId,
+            userId: userId, // Correctly using the loop variable
             timestamp: session.startTime
         };
         const msgId = await pubsub.topic(TOPIC_NAME).publishMessage({ json: payload });

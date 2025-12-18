@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package fitglue;
+
+option go_package = "fitglue/pkg/shared/pb";
+
+// ActivitySource enum defines where the data originated.
+enum ActivitySource {
+  SOURCE_UNKNOWN = 0;
+  SOURCE_HEVY = 1;
+  SOURCE_KEISER = 2;
+  SOURCE_TEST = 3;
+}
+
+// ActivityPayload is the unified message format published to Pub/Sub.
+message ActivityPayload {
+  ActivitySource source = 1;
+  string user_id = 2;      // Internal FitGlue User ID
+  string timestamp = 3;    // ISO 8601 Timestamp of activity start
+  string original_payload_json = 4; // Raw JSON payload stringified (flexible but preserved)
+  map<string, string> metadata = 5; // Extra tracing context
+}

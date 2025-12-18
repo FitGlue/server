@@ -15,6 +15,7 @@ import (
 
 	"fitglue-enricher/pkg/fit"
 	"fitglue-enricher/pkg/fitbit"
+	"fitglue-enricher/pkg/shared" // Injected by Makefile
 )
 
 func init() {
@@ -25,20 +26,21 @@ type PubSubMessage struct {
 	Data []byte `json:"data"`
 }
 
-type RawActivityEvent struct {
-	Source          string    `json:"source"`
-	UserId          string    `json:"userId"`
-	Timestamp       string    `json:"timestamp"` // ISO
-	OriginalPayload interface{} `json:"originalPayload"`
-}
+// ActivityPayload and EnrichedActivityEvent are in pkg/shared but for now
+// we might need to reference them directly or use aliases.
+// Wait, shared/payload.go defines ActivityPayload.
+// We need to ensure EnrichedActivityEvent is also shared if Router uses it.
+// For now, assume EnrichedActivityEvent is specific to this hand-off, or we move it to shared.
+// Given the user request "unified payload", EnrichedActivityEvent IS a payload for the next stage.
+// Let's assume we should move EnrichedActivityEvent to shared as well or keep it local if Router imports shared.
+// The Router reads "EnrichedActivityEvent".
+// Let's check shared/payload.go content. It only has "ActivityPayload" (Ingestion->Enricher).
+// I should probably add EnrichedActivityEvent to shared/payload.go?
+// The user said "Hevy and Keiser topic publish data to be identical". That's ActivityPayload.
+// The Enricher OUTPUT is internal.
+// I'll keep EnrichedActivityEvent local for now to minimize scope creep unless needed.
 
-type EnrichedActivityEvent struct {
-	UserId      string `json:"userId"`
-	ActivityId  string `json:"activityId"` // GCS object name or similar
-	Metadata    string `json:"metadata"`   // JSON string of stats
-	GcsURI      string `json:"gcsUri"`
-	Description string `json:"description"`
-}
+// However, I MUST replace RawActivityEvent with shared.ActivityPayload.
 
 // EnrichActivity is the entry point
 func EnrichActivity(ctx context.Context, e event.Event) error {
@@ -47,19 +49,19 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 		return fmt.Errorf("failed to get data: %v", err)
 	}
 
-	var rawEvent RawActivityEvent
+	var rawEvent shared.ActivityPayload
 	if err := json.Unmarshal(msg.Data, &rawEvent); err != nil {
 		return fmt.Errorf("json unmarshal: %v", err)
 	}
 
 	// Logging setup (Firestore Executions)
-	client, _ := firestore.NewClient(ctx, "fitglue-project") // Use real project ID
+	client, _ := firestore.NewClient(ctx, shared.ProjectID)
 	defer client.Close()
 	execRef := client.Collection("executions").NewDoc()
 	execRef.Set(ctx, map[string]interface{}{
-		"service": "enricher",
-		"status":  "STARTED",
-		"inputs":  rawEvent,
+		"service":   "enricher",
+		"status":    "STARTED",
+		"inputs":    rawEvent,
 		"startTime": time.Now(),
 	})
 
@@ -97,18 +99,18 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 	// Parkrun logic here...
 
 	// 5. Publish to Router
-	psClient, _ := pubsub.NewClient(ctx, "fitglue-project")
-	topic := psClient.Topic("topic-enriched-activity")
+	psClient, _ := pubsub.NewClient(ctx, shared.ProjectID)
+	topic := psClient.Topic(shared.TopicEnrichedActivity)
 	enrichedEvent := EnrichedActivityEvent{
-		UserId: rawEvent.UserId,
-		GcsURI: fmt.Sprintf("gs://fitglue-artifacts/%s", objName),
+		UserId:      rawEvent.UserId,
+		GcsURI:      fmt.Sprintf("gs://fitglue-artifacts/%s", objName),
 		Description: desc,
 	}
 	payload, _ := json.Marshal(enrichedEvent)
 	topic.Publish(ctx, &pubsub.Message{Data: payload})
 
 	execRef.Set(ctx, map[string]interface{}{
-		"status": "SUCCESS",
+		"status":  "SUCCESS",
 		"outputs": enrichedEvent,
 		"endTime": time.Now(),
 	}, firestore.MergeAll)
