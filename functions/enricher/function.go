@@ -14,8 +14,8 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	"fitglue-enricher/pkg/fit"
-	"fitglue-enricher/pkg/fitbit"
-	"fitglue-enricher/pkg/shared" // Injected by Makefile
+	"fitglue-enricher/pkg/shared"
+	pb "fitglue-enricher/pkg/shared/types/pb"
 )
 
 func init() {
@@ -49,7 +49,7 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 		return fmt.Errorf("failed to get data: %v", err)
 	}
 
-	var rawEvent shared.ActivityPayload
+	var rawEvent pb.ActivityPayload
 	if err := json.Unmarshal(msg.Data, &rawEvent); err != nil {
 		return fmt.Errorf("json unmarshal: %v", err)
 	}
@@ -67,11 +67,10 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 
 	// 1. Logic: Merge Data
 	// For Hevy/Keiser, we extract start/end time, fetch Fitbit HR.
-	// Assume we extracted start/end from OriginalPayload.
 	startTime, _ := time.Parse(time.RFC3339, rawEvent.Timestamp)
 	duration := 3600 // Mock 1 hour
 
-	fbClient := fitbit.NewClient(rawEvent.UserId)
+	// fbClient := fitbit.NewClient(rawEvent.UserId)
 	// hrData, _ := fbClient.GetHeartRateSeries(...)
 	hrStream := make([]int, duration) // Populated from FB
 
@@ -101,9 +100,9 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 	// 5. Publish to Router
 	psClient, _ := pubsub.NewClient(ctx, shared.ProjectID)
 	topic := psClient.Topic(shared.TopicEnrichedActivity)
-	enrichedEvent := EnrichedActivityEvent{
+	enrichedEvent := pb.EnrichedActivityEvent{
 		UserId:      rawEvent.UserId,
-		GcsURI:      fmt.Sprintf("gs://fitglue-artifacts/%s", objName),
+		GcsUri:      fmt.Sprintf("gs://fitglue-artifacts/%s", objName),
 		Description: desc,
 	}
 	payload, _ := json.Marshal(enrichedEvent)

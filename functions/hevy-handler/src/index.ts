@@ -3,7 +3,7 @@ import { PubSub } from "@google-cloud/pubsub";
 import * as admin from "firebase-admin";
 import * as crypto from "crypto";
 // Using build-injected shared modules (Protobuf Generated)
-import { ActivityPayload, ActivitySource } from './shared/types/pb/activity';
+import { ActivityPayload, ActivitySource } from './shared/types/pb/proto/activity';
 import { TOPICS } from './shared/config';
 
 admin.initializeApp();

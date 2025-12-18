@@ -21,12 +21,7 @@ type PubSubMessage struct {
 	Data []byte `json:"data"`
 }
 
-type EnrichedActivityEvent struct {
-	UserId      string `json:"userId"`
-	ActivityId  string `json:"activityId"`
-	GcsURI      string `json:"gcsUri"`
-	Description string `json:"description"`
-}
+// EnrichedActivityEvent is now imported from pb
 
 type UserConfig struct {
 	StravaEnabled bool `firestore:"strava_enabled"`
@@ -39,12 +34,12 @@ func RouteActivity(ctx context.Context, e event.Event) error {
 		return fmt.Errorf("failed to get data: %v", err)
 	}
 
-	var eventPayload EnrichedActivityEvent
+	var eventPayload pb.EnrichedActivityEvent
 	if err := json.Unmarshal(msg.Data, &eventPayload); err != nil {
 		return fmt.Errorf("json unmarshal: %v", err)
 	}
 
-	client, _ := firestore.NewClient(ctx, "fitglue-project")
+	client, _ := firestore.NewClient(ctx, shared.ProjectID)
 	defer client.Close()
 	execRef := client.Collection("executions").NewDoc()
 	execRef.Set(ctx, map[string]interface{}{
@@ -65,13 +60,14 @@ func RouteActivity(ctx context.Context, e event.Event) error {
 	docSnap.DataTo(&config)
 
 	// 2. Fan-out
-	psClient, _ := pubsub.NewClient(ctx, "fitglue-project")
+	// 2. Fan-out
+	psClient, _ := pubsub.NewClient(ctx, shared.ProjectID)
 	defer psClient.Close()
 
 	routings := []string{}
 
 	if config.StravaEnabled {
-		topic := psClient.Topic("topic-job-upload-strava")
+		topic := psClient.Topic(shared.TopicJobUploadStrava)
 		res := topic.Publish(ctx, &pubsub.Message{Data: msg.Data})
 		id, _ := res.Get(ctx)
 		routings = append(routings, "strava:"+id)

@@ -2,6 +2,10 @@ import { HttpFunction } from '@google-cloud/functions-framework';
 import { PubSub } from '@google-cloud/pubsub';
 import * as admin from 'firebase-admin';
 
+// Using build-injected shared modules (Protobuf Generated)
+import { ActivityPayload, ActivitySource } from './shared/types/pb/proto/activity';
+import { TOPICS } from './shared/config';
+
 // NOTE: Since we cannot strictly install the SDK in this environment,
 // we interface the expected behavior based on the research doc.
 interface KeiserSession {
@@ -14,7 +18,7 @@ interface KeiserSession {
 admin.initializeApp();
 const db = admin.firestore();
 const pubsub = new PubSub();
-const TOPIC_NAME = 'topic-raw-activity';
+const TOPIC_NAME = TOPICS.RAW_ACTIVITY;
 
 export const keiserPoller: HttpFunction = async (req, res) => {
   const executionRef = db.collection('executions').doc();
@@ -29,67 +33,90 @@ export const keiserPoller: HttpFunction = async (req, res) => {
   });
 
   try {
-    // 2. Get User Cursor & Creds
-    // Real implementation: iterate over users in 'users' collection who have Keiser enabled.
-    // Agent Simplification: assume single user 'user-123' for now or loop one.
-    const userId = 'user-123';
-    const cursorRef = db.collection('cursors').doc(`${userId}_keiser`);
-    const cursorSnap = await cursorRef.get();
+    // 2. Fetch Users with Keiser Enabled (Multi-Tenancy)
+    // For now, we simulate this query or use a simplified check
+    // Real query: db.collection('users').where('integrations.keiser.enabled', '==', true).get()
+    // For this environment/demo, we'll just check for any user with a keiser_creds doc or similar marker,
+    // or iterate known users.
+    // Let's assume we iterate all users for simplicity of the "loop" demonstration requested by the user.
+    const snapshot = await db.collection('users').limit(50).get();
 
-    let lastSync = new Date(0).toISOString();
-    if (cursorSnap.exists) {
-        lastSync = cursorSnap.data()!.lastSync;
+    if (snapshot.empty) {
+        console.log('No users found.');
+        res.status(200).send('No users');
+        return;
     }
 
-    // 3. Mock Keiser SDK Call
-    // const sdk = new KeiserSDK({ secret: process.env.KEISER_CREDENTIALS });
-    // const sessions = await sdk.getSessions({ since: lastSync });
+    let totalSessions = 0;
+    const errors: string[] = [];
 
-    // Simulating "No new sessions" for default state,
-    // or if dev/test flag is present, inject a mock session.
-    const sessions: KeiserSession[] = [];
+    // 3. Process Each User
+    const userPromises = snapshot.docs.map(async (doc) => {
+        const userId = doc.id;
+        // const userData = doc.data();
 
-    if (process.env.MOCK_DATA === 'true') {
-        sessions.push({
-            id: `keiser-${Date.now()}`,
-            userId: userId,
-            startTime: new Date().toISOString(),
-            data: { power: [200, 210, 205], cadence: [90, 92, 91] }
-        });
-    }
+        // Check if Keiser is enabled (mock check)
+        // if (!userData.integrations?.keiser?.enabled) return;
 
-    // 4. Publish New Sessions
-    const publishPromises = sessions.map(async (session) => {
-        const payload = {
-            source: 'keiser',
-            originalPayload: session,
-            userId: userId, // Correctly using the loop variable
-            timestamp: session.startTime
-        };
-        const msgId = await pubsub.topic(TOPIC_NAME).publishMessage({ json: payload });
-        return msgId;
+        try {
+            // A. Get Cursor
+            const cursorRef = db.collection('cursors').doc(`${userId}_keiser`);
+            // const cursorSnap = await cursorRef.get();
+            // let lastSync = new Date(0).toISOString();
+            // if (cursorSnap.exists) {
+            //     lastSync = cursorSnap.data()!.lastSync;
+            // }
+
+            // B. Initialize SDK (Mock)
+            // const secret = await getSecret(`keiser-${userId}`);
+            // const sdk = new KeiserSDK(secret);
+
+            // C. Fetch Sessions (Mock)
+            // const sessions = await sdk.getSessions({ since: lastSync });
+            const sessions: KeiserSession[] = [];
+
+            // D. Push to Pub/Sub
+            const publishPromises = sessions.map(async (session) => {
+                const payload: ActivityPayload = {
+                    source: ActivitySource.SOURCE_KEISER,
+                    userId: userId,
+                    timestamp: session.startTime,
+                    originalPayloadJson: JSON.stringify(session),
+                    metadata: {}
+                };
+
+                return pubsub.topic(TOPIC_NAME).publishMessage({ json: payload });
+            });
+
+            await Promise.all(publishPromises);
+            totalSessions += sessions.length;
+
+            // E. Update Cursor
+            if (sessions.length > 0) {
+                 const newLastSync = sessions[sessions.length - 1].startTime;
+                 await cursorRef.set({ lastSync: newLastSync }, { merge: true });
+            }
+
+        } catch (err: any) {
+            console.error(`Failed to sync user ${userId}`, err);
+            errors.push(`${userId}: ${err.message}`);
+        }
     });
 
-    const msgIds = await Promise.all(publishPromises);
+    await Promise.all(userPromises);
 
-    // 5. Update Cursor
-    if (sessions.length > 0) {
-        // Assume sorted, pick last
-        const newLastSync = sessions[sessions.length - 1].startTime;
-        await cursorRef.set({ lastSync: newLastSync }, { merge: true });
-    }
-
-    // 6. Audit Log Success
+    // 4. Audit Log Success
     await executionRef.update({
-        status: 'SUCCESS',
+        status: errors.length > 0 ? 'PARTIAL_SUCCESS' : 'SUCCESS',
         outputs: {
-            sessionsFound: sessions.length,
-            messageIds: msgIds
+            usersProcessed: snapshot.size,
+            sessionsFound: totalSessions,
+            errors: errors
         },
         endTime: new Date().toISOString()
     });
 
-    res.status(200).send(`Processed ${sessions.length} sessions`);
+    res.status(200).send(`Processed ${totalSessions} sessions`);
 
   } catch (err: any) {
       console.error(err);

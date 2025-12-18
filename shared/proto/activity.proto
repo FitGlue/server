@@ -20,3 +20,12 @@ message ActivityPayload {
   string original_payload_json = 4; // Raw JSON payload stringified (flexible but preserved)
   map<string, string> metadata = 5; // Extra tracing context
 }
+
+// EnrichedActivityEvent is the message format for topic-enriched-activity.
+message EnrichedActivityEvent {
+  string user_id = 1;
+  string activity_id = 2;  // Unique ID for the processed activity
+  string gcs_uri = 3;      // Path to the generated FIT file
+  string description = 4;  // Generated description/hashtags
+  string metadata_json = 5; // Extra stats
+}

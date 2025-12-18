@@ -25,11 +25,7 @@ type PubSubMessage struct {
 	Data []byte `json:"data"`
 }
 
-type EnrichedActivityEvent struct {
-	UserId      string `json:"userId"`
-	GcsURI      string `json:"gcsUri"`
-	Description string `json:"description"`
-}
+// EnrichedActivityEvent imported from pb
 
 type UserTokens struct {
 	AccessToken  string    `firestore:"strava_access_token"`
@@ -43,12 +39,12 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 		return fmt.Errorf("failed to get data: %v", err)
 	}
 
-	var eventPayload EnrichedActivityEvent
+	var eventPayload pb.EnrichedActivityEvent
 	if err := json.Unmarshal(msg.Data, &eventPayload); err != nil {
 		return fmt.Errorf("json unmarshal: %v", err)
 	}
 
-	client, _ := firestore.NewClient(ctx, "fitglue-project")
+	client, _ := firestore.NewClient(ctx, shared.ProjectID)
 	defer client.Close()
 	execRef := client.Collection("executions").NewDoc()
 	execRef.Set(ctx, map[string]interface{}{
@@ -79,7 +75,7 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 	// 2. Download FIT from GCS
 	// Parse GCS URI gs://bucket/path
 	bucketName := "fitglue-artifacts" // simplified
-	objectName := eventPayload.GcsURI[len("gs://fitglue-artifacts/"):]
+	objectName := eventPayload.GcsUri[len("gs://fitglue-artifacts/"):]
 
 	gcsClient, _ := storage.NewClient(ctx)
 	defer gcsClient.Close()

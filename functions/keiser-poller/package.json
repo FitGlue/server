@@ -11,8 +11,8 @@
   "dependencies": {
     "@google-cloud/functions-framework": "^3.0.0",
     "@google-cloud/pubsub": "^4.0.0",
-    "firebase-admin": "^11.0.0",
-    "keiser-metrics-sdk": "^1.0.0"
+    "firebase-admin": "^11.8.0",
+    "google-auth-library": "^8.9.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",

@@ -73,6 +73,19 @@ export interface ActivityPayload_MetadataEntry {
   value: string;
 }
 
+/** EnrichedActivityEvent is the message format for topic-enriched-activity. */
+export interface EnrichedActivityEvent {
+  userId: string;
+  /** Unique ID for the processed activity */
+  activityId: string;
+  /** Path to the generated FIT file */
+  gcsUri: string;
+  /** Generated description/hashtags */
+  description: string;
+  /** Extra stats */
+  metadataJson: string;
+}
+
 function createBaseActivityPayload(): ActivityPayload {
   return { source: 0, userId: "", timestamp: "", originalPayloadJson: "", metadata: {} };
 }
@@ -290,6 +303,130 @@ export const ActivityPayload_MetadataEntry: MessageFns<ActivityPayload_MetadataE
     const message = createBaseActivityPayload_MetadataEntry();
     message.key = object.key ?? "";
     message.value = object.value ?? "";
+    return message;
+  },
+};
+
+function createBaseEnrichedActivityEvent(): EnrichedActivityEvent {
+  return { userId: "", activityId: "", gcsUri: "", description: "", metadataJson: "" };
+}
+
+export const EnrichedActivityEvent: MessageFns<EnrichedActivityEvent> = {
+  encode(message: EnrichedActivityEvent, writer: BinaryWriter = new BinaryWriter()): BinaryWriter {
+    if (message.userId !== "") {
+      writer.uint32(10).string(message.userId);
+    }
+    if (message.activityId !== "") {
+      writer.uint32(18).string(message.activityId);
+    }
+    if (message.gcsUri !== "") {
+      writer.uint32(26).string(message.gcsUri);
+    }
+    if (message.description !== "") {
+      writer.uint32(34).string(message.description);
+    }
+    if (message.metadataJson !== "") {
+      writer.uint32(42).string(message.metadataJson);
+    }
+    return writer;
+  },
+
+  decode(input: BinaryReader | Uint8Array, length?: number): EnrichedActivityEvent {
+    const reader = input instanceof BinaryReader ? input : new BinaryReader(input);
+    const end = length === undefined ? reader.len : reader.pos + length;
+    const message = createBaseEnrichedActivityEvent();
+    while (reader.pos < end) {
+      const tag = reader.uint32();
+      switch (tag >>> 3) {
+        case 1: {
+          if (tag !== 10) {
+            break;
+          }
+
+          message.userId = reader.string();
+          continue;
+        }
+        case 2: {
+          if (tag !== 18) {
+            break;
+          }
+
+          message.activityId = reader.string();
+          continue;
+        }
+        case 3: {
+          if (tag !== 26) {
+            break;
+          }
+
+          message.gcsUri = reader.string();
+          continue;
+        }
+        case 4: {
+          if (tag !== 34) {
+            break;
+          }
+
+          message.description = reader.string();
+          continue;
+        }
+        case 5: {
+          if (tag !== 42) {
+            break;
+          }
+
+          message.metadataJson = reader.string();
+          continue;
+        }
+      }
+      if ((tag & 7) === 4 || tag === 0) {
+        break;
+      }
+      reader.skip(tag & 7);
+    }
+    return message;
+  },
+
+  fromJSON(object: any): EnrichedActivityEvent {
+    return {
+      userId: isSet(object.userId) ? globalThis.String(object.userId) : "",
+      activityId: isSet(object.activityId) ? globalThis.String(object.activityId) : "",
+      gcsUri: isSet(object.gcsUri) ? globalThis.String(object.gcsUri) : "",
+      description: isSet(object.description) ? globalThis.String(object.description) : "",
+      metadataJson: isSet(object.metadataJson) ? globalThis.String(object.metadataJson) : "",
+    };
+  },
+
+  toJSON(message: EnrichedActivityEvent): unknown {
+    const obj: any = {};
+    if (message.userId !== "") {
+      obj.userId = message.userId;
+    }
+    if (message.activityId !== "") {
+      obj.activityId = message.activityId;
+    }
+    if (message.gcsUri !== "") {
+      obj.gcsUri = message.gcsUri;
+    }
+    if (message.description !== "") {
+      obj.description = message.description;
+    }
+    if (message.metadataJson !== "") {
+      obj.metadataJson = message.metadataJson;
+    }
+    return obj;
+  },
+
+  create<I extends Exact<DeepPartial<EnrichedActivityEvent>, I>>(base?: I): EnrichedActivityEvent {
+    return EnrichedActivityEvent.fromPartial(base ?? ({} as any));
+  },
+  fromPartial<I extends Exact<DeepPartial<EnrichedActivityEvent>, I>>(object: I): EnrichedActivityEvent {
+    const message = createBaseEnrichedActivityEvent();
+    message.userId = object.userId ?? "";
+    message.activityId = object.activityId ?? "";
+    message.gcsUri = object.gcsUri ?? "";
+    message.description = object.description ?? "";
+    message.metadataJson = object.metadataJson ?? "";
     return message;
   },
 };

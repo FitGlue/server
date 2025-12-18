@@ -36,13 +36,13 @@ inject-shared:
 	# TypeScript Injection (Only .ts files)
 	@for func in $(TS_FUNCTIONS); do \
 		mkdir -p $(FUNCTIONS_DIR)/$$func/src/shared; \
-		cd $(SHARED_DIR) && find . -name "*.ts" -exec cp --parents {} ../$(FUNCTIONS_DIR)/$$func/src/shared/ \; ; \
+		(cd $(SHARED_DIR) && find . -name "*.ts" -exec cp --parents {} ../$(FUNCTIONS_DIR)/$$func/src/shared/ \;) ; \
 		echo "Injected TS into $$func"; \
 	done
 	# Go Injection (Only .go and .proto files)
 	@for func in $(GO_FUNCTIONS); do \
 		mkdir -p $(FUNCTIONS_DIR)/$$func/pkg/shared; \
-		cd $(SHARED_DIR) && find . \( -name "*.go" -o -name "*.proto" \) -exec cp --parents {} ../$(FUNCTIONS_DIR)/$$func/pkg/shared/ \; ; \
+		(cd $(SHARED_DIR) && find . \( -name "*.go" -o -name "*.proto" \) -exec cp --parents {} ../$(FUNCTIONS_DIR)/$$func/pkg/shared/ \;) ; \
 		echo "Injected Go into $$func"; \
 	done
 
@@ -58,11 +58,11 @@ clean:
 build-ts:
 	@echo "Building TypeScript functions..."
 	@for func in $(TS_FUNCTIONS); do \
-		cd $(FUNCTIONS_DIR)/$$func && npm install && npm run build; \
+		(cd $(FUNCTIONS_DIR)/$$func && npm install && npm run build); \
 	done
 
 build-go:
 	@echo "Building Go functions..."
 	@for func in $(GO_FUNCTIONS); do \
-		cd $(FUNCTIONS_DIR)/$$func && go mod tidy && go build -v ./...; \
+		(cd $(FUNCTIONS_DIR)/$$func && go mod tidy && go build -v ./...); \
 	done

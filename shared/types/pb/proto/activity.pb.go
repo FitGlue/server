@@ -151,6 +151,83 @@ func (x *ActivityPayload) GetMetadata() map[string]string {
 	return nil
 }
 
+// EnrichedActivityEvent is the message format for topic-enriched-activity.
+type EnrichedActivityEvent struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ActivityId    string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`       // Unique ID for the processed activity
+	GcsUri        string                 `protobuf:"bytes,3,opt,name=gcs_uri,json=gcsUri,proto3" json:"gcs_uri,omitempty"`                   // Path to the generated FIT file
+	Description   string                 `protobuf:"bytes,4,opt,name=description,proto3" json:"description,omitempty"`                       // Generated description/hashtags
+	MetadataJson  string                 `protobuf:"bytes,5,opt,name=metadata_json,json=metadataJson,proto3" json:"metadata_json,omitempty"` // Extra stats
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnrichedActivityEvent) Reset() {
+	*x = EnrichedActivityEvent{}
+	mi := &file_proto_activity_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnrichedActivityEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnrichedActivityEvent) ProtoMessage() {}
+
+func (x *EnrichedActivityEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_activity_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnrichedActivityEvent.ProtoReflect.Descriptor instead.
+func (*EnrichedActivityEvent) Descriptor() ([]byte, []int) {
+	return file_proto_activity_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *EnrichedActivityEvent) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetActivityId() string {
+	if x != nil {
+		return x.ActivityId
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetGcsUri() string {
+	if x != nil {
+		return x.GcsUri
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetMetadataJson() string {
+	if x != nil {
+		return x.MetadataJson
+	}
+	return ""
+}
+
 var File_proto_activity_proto protoreflect.FileDescriptor
 
 const file_proto_activity_proto_rawDesc = "" +
@@ -164,7 +241,14 @@ const file_proto_activity_proto_rawDesc = "" +
 	"\bmetadata\x18\x05 \x03(\v2&.fitglue.ActivityPayload.MetadataEntryR\bmetadata\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*Y\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x01\n" +
+	"\x15EnrichedActivityEvent\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vactivity_id\x18\x02 \x01(\tR\n" +
+	"activityId\x12\x17\n" +
+	"\agcs_uri\x18\x03 \x01(\tR\x06gcsUri\x12 \n" +
+	"\vdescription\x18\x04 \x01(\tR\vdescription\x12#\n" +
+	"\rmetadata_json\x18\x05 \x01(\tR\fmetadataJson*Y\n" +
 	"\x0eActivitySource\x12\x12\n" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +
@@ -184,15 +268,16 @@ func file_proto_activity_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_activity_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_proto_activity_proto_goTypes = []any{
-	(ActivitySource)(0),     // 0: fitglue.ActivitySource
-	(*ActivityPayload)(nil), // 1: fitglue.ActivityPayload
-	nil,                     // 2: fitglue.ActivityPayload.MetadataEntry
+	(ActivitySource)(0),           // 0: fitglue.ActivitySource
+	(*ActivityPayload)(nil),       // 1: fitglue.ActivityPayload
+	(*EnrichedActivityEvent)(nil), // 2: fitglue.EnrichedActivityEvent
+	nil,                           // 3: fitglue.ActivityPayload.MetadataEntry
 }
 var file_proto_activity_proto_depIdxs = []int32{
 	0, // 0: fitglue.ActivityPayload.source:type_name -> fitglue.ActivitySource
-	2, // 1: fitglue.ActivityPayload.metadata:type_name -> fitglue.ActivityPayload.MetadataEntry
+	3, // 1: fitglue.ActivityPayload.metadata:type_name -> fitglue.ActivityPayload.MetadataEntry
 	2, // [2:2] is the sub-list for method output_type
 	2, // [2:2] is the sub-list for method input_type
 	2, // [2:2] is the sub-list for extension type_name
@@ -211,7 +296,7 @@ func file_proto_activity_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_activity_proto_rawDesc), len(file_proto_activity_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
