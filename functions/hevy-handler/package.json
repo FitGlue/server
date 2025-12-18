@@ -1,0 +1,21 @@
+{
+  "name": "hevy-webhook-handler",
+  "version": "1.0.0",
+  "description": "Ingests Hevy workout webhooks",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "functions-framework --target=hevyWebhookHandler",
+    "dev": "concurrently \"tsc -w\" \"functions-framework --target=hevyWebhookHandler\""
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0",
+    "@google-cloud/pubsub": "^4.0.0",
+    "firebase-admin": "^11.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "concurrently": "^8.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

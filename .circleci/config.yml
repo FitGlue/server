@@ -1,0 +1,77 @@
+version: 2.1
+
+orbs:
+  terraform: circleci/terraform@3.2.0
+
+executors:
+  node-executor:
+    docker:
+      - image: cimg/node:20.0
+  go-executor:
+    docker:
+      - image: cimg/go:1.21
+
+jobs:
+  build-ts:
+    executor: node-executor
+    steps:
+      - checkout
+      - run:
+          name: Install Dependencies
+          command: |
+             cd functions/hevy-handler && npm install
+             cd ../keiser-poller && npm install
+      - run:
+          name: Compile TypeScript
+          command: |
+             cd functions/hevy-handler && npm run build
+             cd ../keiser-poller && npm run build
+
+  build-go:
+    executor: go-executor
+    steps:
+      - checkout
+      - run:
+          name: Test Go Enrichment Service
+          command: cd functions/enricher && go test ./...
+      - run:
+          name: Build Go Enrichment Service
+          command: cd functions/enricher && go build -v .
+      - run:
+          name: Test Go Router Service
+          command: cd functions/router && go test ./...
+      - run:
+          name: Build Go Router Service
+          command: cd functions/router && go build -v .
+      - run:
+          name: Test Go Strava Uploader
+          command: cd functions/strava-uploader && go test ./...
+      - run:
+          name: Build Go Strava Uploader
+          command: cd functions/strava-uploader && go build -v .
+
+  deploy:
+    executor: terraform/default
+    steps:
+      - checkout
+      - terraform/init:
+          path: ./terraform
+      - terraform/plan:
+          path: ./terraform
+      - terraform/apply:
+          path: ./terraform
+          attach-workspace: true
+
+workflows:
+  version: 2
+  build_and_deploy:
+    jobs:
+      - build-ts
+      - build-go
+      - deploy:
+          requires:
+            - build-ts
+            - build-go
+          filters:
+            branches:
+              only: main

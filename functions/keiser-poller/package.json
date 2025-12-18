@@ -1,0 +1,22 @@
+{
+  "name": "keiser-poller",
+  "version": "1.0.0",
+  "description": "Polls Keiser Cloud for new sessions",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "functions-framework --target=keiserPoller",
+    "dev": "concurrently \"tsc -w\" \"functions-framework --target=keiserPoller\""
+  },
+  "dependencies": {
+    "@google-cloud/functions-framework": "^3.0.0",
+    "@google-cloud/pubsub": "^4.0.0",
+    "firebase-admin": "^11.0.0",
+    "keiser-metrics-sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "concurrently": "^8.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
