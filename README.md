@@ -86,3 +86,8 @@ make verify-dev
 
 ## Local Development
 For running the stack locally using the Functions Framework and emulators, refer to [Local Development Guide](README_LOCAL.md).
+
+## CI/CD Pipeline
+We use CircleCI with OIDC authentication for secure, keyless deployments to GCP. The pipeline automatically deploys to Dev on `main` branch commits, with manual approval gates for Test and Prod.
+
+For detailed setup instructions (including configuring OIDC for new environments), see [CI/CD Deployment Guide](docs/CICD.md).
