@@ -1,0 +1,70 @@
+#!/bin/bash
+set -e
+
+# GCP OIDC Setup for CircleCI
+# This script configures Workload Identity Federation for keyless authentication
+
+PROJECT_ID="fitglue-server-dev"
+PROJECT_NUMBER="911679924866"
+CIRCLECI_ORG_ID="b2fc92f7-4f8d-4676-95b1-94d7f15c0a8e"
+POOL_NAME="circleci-pool"
+PROVIDER_NAME="circleci-provider"
+SA_NAME="circleci-deployer"
+
+echo "🔧 Setting up OIDC for CircleCI -> GCP authentication"
+echo "Project: $PROJECT_ID"
+echo ""
+
+# 1. Create Workload Identity Pool
+echo "📦 Creating Workload Identity Pool..."
+gcloud iam workload-identity-pools create "$POOL_NAME" \
+  --project="$PROJECT_ID" \
+  --location="global" \
+  --display-name="CircleCI OIDC Pool" \
+  --description="Workload Identity Pool for CircleCI deployments" || echo "Pool already exists, continuing..."
+
+# 2. Create OIDC Provider
+echo "🔑 Creating OIDC Provider..."
+gcloud iam workload-identity-pools providers create-oidc "$PROVIDER_NAME" \
+  --project="$PROJECT_ID" \
+  --location="global" \
+  --workload-identity-pool="$POOL_NAME" \
+  --display-name="CircleCI OIDC Provider" \
+  --issuer-uri="https://oidc.circleci.com/org/$CIRCLECI_ORG_ID" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.project_id=assertion.aud" \
+  --attribute-condition="assertion.aud=='$CIRCLECI_ORG_ID'" || echo "Provider already exists, continuing..."
+
+# 3. Create Service Account
+echo "👤 Creating Service Account..."
+gcloud iam service-accounts create "$SA_NAME" \
+  --project="$PROJECT_ID" \
+  --display-name="CircleCI Deployer" \
+  --description="Service account for CircleCI OIDC deployments" || echo "Service account already exists, continuing..."
+
+# 4. Grant permissions to Service Account
+echo "🔐 Granting permissions to Service Account..."
+gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+  --member="serviceAccount:$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role="roles/editor" \
+  --condition=None
+
+# 5. Allow CircleCI to impersonate the Service Account
+echo "🎭 Configuring Workload Identity binding..."
+gcloud iam service-accounts add-iam-policy-binding \
+  "$SA_NAME@$PROJECT_ID.iam.gserviceaccount.com" \
+  --project="$PROJECT_ID" \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_NAME/attribute.project_id/$CIRCLECI_ORG_ID"
+
+echo ""
+echo "✅ OIDC Setup Complete!"
+echo ""
+echo "📋 Configuration Summary:"
+echo "  Workload Identity Pool: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_NAME"
+echo "  Provider: projects/$PROJECT_NUMBER/locations/global/workloadIdentityPools/$POOL_NAME/providers/$PROVIDER_NAME"
+echo "  Service Account: $SA_NAME@$PROJECT_ID.iam.gserviceaccount.com"
+echo ""
+echo "🔄 Next steps:"
+echo "  1. The CircleCI config has been updated to use OIDC"
+echo "  2. Commit and push the changes"
+echo "  3. CircleCI will automatically authenticate using OIDC tokens"

@@ -66,6 +66,29 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - run:
+          name: Authenticate with GCP via OIDC
+          command: |
+            # Create OIDC token file
+            echo $CIRCLE_OIDC_TOKEN > /tmp/oidc_token.txt
+
+            # Install gcloud if not present
+            if ! command -v gcloud &> /dev/null; then
+              curl https://sdk.cloud.google.com | bash
+              exec -l $SHELL
+            fi
+
+            # Configure credential config for Workload Identity
+            gcloud iam workload-identity-pools create-cred-config \
+              projects/911679924866/locations/global/workloadIdentityPools/circleci-pool/providers/circleci-provider \
+              --service-account=circleci-deployer@fitglue-server-dev.iam.gserviceaccount.com \
+              --output-file=/tmp/gcp_cred_config.json \
+              --credential-source-file=/tmp/oidc_token.txt \
+              --credential-source-type=text
+
+            # Set credentials for terraform
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            echo "export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json" >> $BASH_ENV
       - terraform/init:
           path: ./terraform
       - run:
