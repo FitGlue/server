@@ -94,6 +94,20 @@ local: inject-shared
 
 # --- Unified Operations ---
 
+lint:
+	@echo "Linting Go..."
+	@for func in $(GO_FUNCTIONS); do \
+		echo "Linting $$func..."; \
+		(cd $(FUNCTIONS_DIR)/$$func && go vet ./...); \
+	done
+	@(cd shared/go && go vet ./...)
+	@echo "Linting TypeScript (Type Check)..."
+	@for func in $(TS_FUNCTIONS); do \
+		echo "Linting $$func..."; \
+		(cd $(FUNCTIONS_DIR)/$$func && npm run build); \
+	done
+	@(cd shared/typescript && npm run build)
+
 test:
 	@echo "Running all tests..."
 	@echo ">> Go Tests"
@@ -116,4 +130,24 @@ deploy-dev:
 
 verify-dev:
 	@echo "Verifying Dev Environment..."
+	@TARGET_URL="https://hevy-webhook-handler-56cqxmt5jq-uc.a.run.app" npx ts-node scripts/verify_cloud.ts
+
+deploy-test:
+	@echo "Deploying to Test (fitglue-server-test)..."
+	@terraform -chdir=terraform apply -auto-approve -var="project_id=fitglue-server-test"
+
+verify-test:
+	@echo "Verifying Test Environment..."
+	@echo "NOTE: Set TARGET_URL env var to the Test function URL"
+	@if [ -z "$$TARGET_URL" ]; then echo "Error: TARGET_URL not set"; exit 1; fi
+	@npx ts-node scripts/verify_cloud.ts
+
+deploy-prod:
+	@echo "Deploying to Prod (fitglue-server-prod)..."
+	@terraform -chdir=terraform apply -auto-approve -var="project_id=fitglue-server-prod"
+
+verify-prod:
+	@echo "Verifying Prod Environment..."
+	@echo "NOTE: Set TARGET_URL env var to the Prod function URL"
+	@if [ -z "$$TARGET_URL" ]; then echo "Error: TARGET_URL not set"; exit 1; fi
 	@npx ts-node scripts/verify_cloud.ts

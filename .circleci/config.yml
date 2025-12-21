@@ -4,96 +4,102 @@ orbs:
   terraform: circleci/terraform@3.2.0
 
 executors:
-  node-executor:
+  # unified-executor has Go, Node, and utilities to run 'make setup' and tests
+  unified-executor:
     docker:
-      - image: cimg/node:20.0
-  go-executor:
-    docker:
-      - image: cimg/go:1.21
+      - image: cimg/go:1.25.5-node
 
 jobs:
-  build-ts:
-    executor: node-executor
+  build-and-test:
+    executor: unified-executor
     steps:
       - checkout
       - run:
-          name: Install System Dependencies
-          command: sudo apt-get update && sudo apt-get install -y protobuf-compiler rsync
-      - run:
-          name: Install Root Dependencies (Proto Plugins)
-          command: npm install
-      - run:
-          name: Generate Proto and Inject Code
+          name: Install Core Dependencies
           command: |
-             make generate-proto
-             make inject-shared
-      - run:
-          name: Install Dependencies
-          command: |
-             cd functions/hevy-handler && npm install
-             cd ../keiser-poller && npm install
-      - run:
-          name: Compile TypeScript
-          command: |
-             cd functions/hevy-handler && npm run build
-             cd ../keiser-poller && npm run build
-
-  build-go:
-    executor: go-executor
-    steps:
-      - checkout
-      - run:
-          name: Install System Dependencies
-          command: sudo apt-get update && sudo apt-get install -y protobuf-compiler rsync
+            sudo apt-get update
+            sudo apt-get install -y protobuf-compiler rsync
       - run:
           name: Install Protoc Gen Go
           command: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+      - restore_cache:
+          keys:
+            - go-mod-v1-{{ checksum "go.work.sum" }}
+            - go-mod-v1-
+      - restore_cache:
+          keys:
+            - npm-v1-{{ checksum "package-lock.json" }}-{{ checksum "functions/hevy-handler/package-lock.json" }}-{{ checksum "functions/keiser-poller/package-lock.json" }}-{{ checksum "shared/typescript/package-lock.json" }}
+            - npm-v1-
       - run:
-          name: Generate Proto and Inject Code
-          command: |
-             make generate-proto
-             make inject-shared
+          name: Setup Environment (Fresh Clone Simulation)
+          command: make setup
+      - save_cache:
+          key: go-mod-v1-{{ checksum "go.work.sum" }}
+          paths:
+            - ~/go/pkg/mod
+      - save_cache:
+          key: npm-v1-{{ checksum "package-lock.json" }}-{{ checksum "functions/hevy-handler/package-lock.json" }}-{{ checksum "functions/keiser-poller/package-lock.json" }}-{{ checksum "shared/typescript/package-lock.json" }}
+          paths:
+            - ~/.npm
+            - node_modules
+            - functions/hevy-handler/node_modules
+            - functions/keiser-poller/node_modules
+            - shared/typescript/node_modules
       - run:
-          name: Test Go Enrichment Service
-          command: cd functions/enricher && go test ./...
+          name: Linting
+          command: make lint
       - run:
-          name: Build Go Enrichment Service
-          command: cd functions/enricher && go build -v .
-      - run:
-          name: Test Go Router Service
-          command: cd functions/router && go test ./...
-      - run:
-          name: Build Go Router Service
-          command: cd functions/router && go build -v .
-      - run:
-          name: Test Go Strava Uploader
-          command: cd functions/strava-uploader && go test ./...
-      - run:
-          name: Build Go Strava Uploader
-          command: cd functions/strava-uploader && go build -v .
+          name: Run Tests
+          command: make test
+      - persist_to_workspace:
+          root: ..
+          paths:
+            - fitglue
 
   deploy:
-    executor: terraform/default
+    parameters:
+      target:
+        type: string
+    executor:
+      name: terraform/default
+      tag: "1.5.7"
     steps:
-      - checkout
+      - attach_workspace:
+          at: ..
       - terraform/init:
           path: ./terraform
-      - terraform/plan:
-          path: ./terraform
-      - terraform/apply:
-          path: ./terraform
-          attach-workspace: true
+      - run:
+          name: Deploy to << parameters.target >>
+          command: terraform -chdir=terraform apply -auto-approve -var="project_id=fitglue-server-<< parameters.target >>"
 
 workflows:
   version: 2
-  build_and_deploy:
+  pipeline:
     jobs:
-      - build-ts
-      - build-go
+      - build-and-test
       - deploy:
+          name: deploy-dev
+          target: dev
           requires:
-            - build-ts
-            - build-go
+            - build-and-test
           filters:
             branches:
               only: main
+      - approve-test:
+          type: approval
+          requires:
+            - deploy-dev
+      - deploy:
+          name: deploy-test
+          target: test
+          requires:
+            - approve-test
+      - approve-prod:
+          type: approval
+          requires:
+            - deploy-test
+      - deploy:
+          name: deploy-prod
+          target: prod
+          requires:
+            - approve-prod
