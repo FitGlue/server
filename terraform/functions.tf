@@ -115,6 +115,9 @@ resource "google_cloudfunctions2_function" "enricher" {
         object = google_storage_bucket_object.enricher_zip.name
       }
     }
+    environment_variables = {
+      GOOGLE_BUILDABLE = "github.com/ripixel/fitglue-server/src/go/functions/enricher"
+    }
   }
 
   service_config {
@@ -159,6 +162,9 @@ resource "google_cloudfunctions2_function" "router" {
         object = google_storage_bucket_object.router_zip.name
       }
     }
+    environment_variables = {
+      GOOGLE_BUILDABLE = "github.com/ripixel/fitglue-server/src/go/functions/router"
+    }
   }
 
   event_trigger {
@@ -194,6 +200,9 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
         bucket = google_storage_bucket.source_bucket.name
         object = google_storage_bucket_object.strava_uploader_zip.name
       }
+    }
+    environment_variables = {
+      GOOGLE_BUILDABLE = "github.com/ripixel/fitglue-server/src/go/functions/strava-uploader"
     }
   }
 

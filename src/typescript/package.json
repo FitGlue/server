@@ -5,6 +5,10 @@
     "keiser-poller",
     "shared"
   ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "gcp-build": "npm run build"
+  },
   "devDependencies": {
     "ts-proto": "^2.10.0"
   }
