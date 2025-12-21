@@ -77,7 +77,7 @@ jobs:
 
             # Configure credential config for Workload Identity
             gcloud iam workload-identity-pools create-cred-config \
-              "projects/911679924866/locations/global/workloadIdentityPools/circleci-pool/providers/circleci-provider" \
+              "//iam.googleapis.com/projects/911679924866/locations/global/workloadIdentityPools/circleci-pool/providers/circleci-provider" \
               --service-account=circleci-deployer@fitglue-server-dev.iam.gserviceaccount.com \
               --output-file=/tmp/gcp_cred_config.json \
               --credential-source-file=/tmp/oidc_token.txt \
