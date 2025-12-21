@@ -89,8 +89,11 @@ jobs:
             # Set credentials for terraform
             echo "export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json" >> $BASH_ENV
             echo "export PATH=\$PATH:$(pwd)/google-cloud-sdk/bin" >> $BASH_ENV
-      - terraform/init:
-          path: ./terraform
+      - run:
+          name: Terraform Init
+          command: |
+             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+             terraform -chdir=terraform init
       - run:
           name: Deploy to << parameters.target >>
           command: |
