@@ -61,6 +61,9 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - run:
+          name: Install Dependencies (Alpine)
+          command: apk add --no-cache curl bash python3 py3-pip
       - gcp-cli/setup:
           version: latest
       - run:
