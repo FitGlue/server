@@ -17,6 +17,17 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Install System Dependencies
+          command: sudo apt-get update && sudo apt-get install -y protobuf-compiler rsync
+      - run:
+          name: Install Root Dependencies (Proto Plugins)
+          command: npm install
+      - run:
+          name: Generate Proto and Inject Code
+          command: |
+             make generate-proto
+             make inject-shared
+      - run:
           name: Install Dependencies
           command: |
              cd functions/hevy-handler && npm install
@@ -31,6 +42,17 @@ jobs:
     executor: go-executor
     steps:
       - checkout
+      - run:
+          name: Install System Dependencies
+          command: sudo apt-get update && sudo apt-get install -y protobuf-compiler rsync
+      - run:
+          name: Install Protoc Gen Go
+          command: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+      - run:
+          name: Generate Proto and Inject Code
+          command: |
+             make generate-proto
+             make inject-shared
       - run:
           name: Test Go Enrichment Service
           command: cd functions/enricher && go test ./...

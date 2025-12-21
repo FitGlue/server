@@ -32,15 +32,15 @@ echo "[Keiser Poller] Starting on :8084..."
 
 # Enricher (Go) - Port 8081
 echo "[Enricher] Starting on :8081..."
-(cd functions/enricher && go run cmd/main.go > ../../enricher.log 2>&1) &
+(cd functions/enricher && FUNCTION_TARGET=EnrichActivity go run cmd/main.go > ../../enricher.log 2>&1) &
 
 # Router (Go) - Port 8082
 echo "[Router] Starting on :8082..."
-(cd functions/router && go run cmd/main.go > ../../router.log 2>&1) &
+(cd functions/router && FUNCTION_TARGET=RouteActivity go run cmd/main.go > ../../router.log 2>&1) &
 
 # Strava Uploader (Go) - Port 8083
 echo "[Strava Uploader] Starting on :8083..."
-(cd functions/strava-uploader && go run cmd/main.go > ../../uploader.log 2>&1) &
+(cd functions/strava-uploader && FUNCTION_TARGET=UploadToStrava go run cmd/main.go > ../../uploader.log 2>&1) &
 
 echo "All services started. Logs are being written to *.log files in root."
 echo "Press Ctrl+C to stop."

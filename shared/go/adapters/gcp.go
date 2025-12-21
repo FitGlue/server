@@ -55,6 +55,14 @@ func (a *PubSubAdapter) Publish(ctx context.Context, topicID string, data []byte
 	return res.Get(ctx)
 }
 
+// --- LogPublisher Adapter ---
+type LogPublisher struct{}
+
+func (p *LogPublisher) Publish(ctx context.Context, topicID string, data []byte) (string, error) {
+	log.Printf("[LogPublisher] MOCK PUBLISH to %s: %s", topicID, string(data))
+	return "mock-msg-id", nil
+}
+
 // --- Storage Adapter ---
 type StorageAdapter struct {
 	Client *storage.Client

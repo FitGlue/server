@@ -5,9 +5,9 @@ console.log('Triggering Enricher (activity.proto Payload)...');
 // Mock ActivityPayload (pb.ActivityPayload)
 const activityPayload = {
   source: 2, // HEVY
-  userId: "user_123",
+  user_id: "user_123",
   timestamp: new Date().toISOString(),
-  originalPayloadJson: "{}",
+  original_payload_json: "{}",
   metadata: {}
 };
 

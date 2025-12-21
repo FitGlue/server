@@ -10,7 +10,8 @@ TS_FUNCTIONS := hevy-handler keiser-poller
 GO_FUNCTIONS := enricher router strava-uploader
 
 # Protoc
-PROTOC := ./bin/protoc
+# Protoc
+PROTOC := $(shell if [ -x "./bin/protoc" ]; then echo "./bin/protoc"; else which protoc; fi)
 PROTOC_GEN_GO := $(shell go env GOPATH)/bin/protoc-gen-go
 TS_PROTO_PLUGIN := ./node_modules/.bin/protoc-gen-ts_proto
 

@@ -18,6 +18,7 @@ import (
 	"fitglue-enricher/pkg/fitbit"
 	"fitglue-enricher/pkg/shared"
 	"fitglue-enricher/pkg/shared/adapters"
+	"fitglue-enricher/pkg/shared/types"
 	pb "fitglue-enricher/pkg/shared/types/pb/proto"
 )
 
@@ -36,10 +37,20 @@ func init() {
 	if err != nil {
 		log.Printf("Warning: Firestore init failed: %v", err)
 	}
-	psClient, err := pubsub.NewClient(ctx, projectID)
-	if err != nil {
-		log.Printf("Warning: PubSub init failed: %v", err)
+	// Pub/Sub Client
+	var pubAdapter shared.Publisher
+	if os.Getenv("ENABLE_PUBLISH") == "true" {
+		psClient, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			log.Printf("Warning: PubSub init failed: %v", err)
+		}
+		pubAdapter = &adapters.PubSubAdapter{Client: psClient}
+		log.Println("Pub/Sub: REAL (ENABLE_PUBLISH=true)")
+	} else {
+		pubAdapter = &adapters.LogPublisher{}
+		log.Println("Pub/Sub: MOCK (LogPublisher)")
 	}
+
 	gcsClient, err := storage.NewClient(ctx)
 	if err != nil {
 		log.Printf("Warning: Storage init failed: %v", err)
@@ -47,7 +58,7 @@ func init() {
 
 	svc = &Service{
 		DB:      &adapters.FirestoreAdapter{Client: fsClient},
-		Pub:     &adapters.PubSubAdapter{Client: psClient},
+		Pub:     pubAdapter,
 		Store:   &adapters.StorageAdapter{Client: gcsClient},
 		Secrets: &adapters.SecretsAdapter{},
 	}
@@ -63,19 +74,17 @@ type Service struct {
 	Secrets shared.SecretStore
 }
 
-type PubSubMessage struct {
-	Data []byte `json:"data"`
-}
+// PubSubMessage is imported from shared types
 
 // EnrichActivity is the entry point
 func (s *Service) EnrichActivity(ctx context.Context, e event.Event) error {
-	var msg PubSubMessage
+	var msg types.PubSubMessage
 	if err := e.DataAs(&msg); err != nil {
 		return fmt.Errorf("failed to get data: %v", err)
 	}
 
 	var rawEvent pb.ActivityPayload
-	if err := json.Unmarshal(msg.Data, &rawEvent); err != nil {
+	if err := json.Unmarshal(msg.Message.Data, &rawEvent); err != nil {
 		return fmt.Errorf("json unmarshal: %v", err)
 	}
 
@@ -115,7 +124,10 @@ func (s *Service) EnrichActivity(ctx context.Context, e event.Event) error {
 	}
 
 	// 3. Save to GCS
-	bucketName := "fitglue-artifacts"
+	bucketName := os.Getenv("GCS_ARTIFACT_BUCKET")
+	if bucketName == "" {
+		bucketName = "fitglue-artifacts" // Default fallback
+	}
 	objName := fmt.Sprintf("activities/%s/%d.fit", rawEvent.UserId, startTime.Unix())
 	if err := s.Store.Write(ctx, bucketName, objName, fitBytes); err != nil {
 		s.DB.UpdateExecution(ctx, execID, map[string]interface{}{"status": "FAILED", "error": err.Error()})

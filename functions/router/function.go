@@ -15,6 +15,7 @@ import (
 
 	"fitglue-router/pkg/shared"
 	"fitglue-router/pkg/shared/adapters"
+	"fitglue-router/pkg/shared/types"
 	pb "fitglue-router/pkg/shared/types/pb/proto"
 )
 
@@ -31,14 +32,23 @@ func init() {
 	if err != nil {
 		log.Printf("Warning: Firestore init failed: %v", err)
 	}
-	psClient, err := pubsub.NewClient(ctx, projectID)
-	if err != nil {
-		log.Printf("Warning: PubSub init failed: %v", err)
+	// Pub/Sub Client
+	var pubAdapter shared.Publisher
+	if os.Getenv("ENABLE_PUBLISH") == "true" {
+		psClient, err := pubsub.NewClient(ctx, projectID)
+		if err != nil {
+			log.Printf("Warning: PubSub init failed: %v", err)
+		}
+		pubAdapter = &adapters.PubSubAdapter{Client: psClient}
+		log.Println("Pub/Sub: REAL (ENABLE_PUBLISH=true)")
+	} else {
+		pubAdapter = &adapters.LogPublisher{}
+		log.Println("Pub/Sub: MOCK (LogPublisher)")
 	}
 
 	svc = &Service{
 		DB:  &adapters.FirestoreAdapter{Client: fsClient},
-		Pub: &adapters.PubSubAdapter{Client: psClient},
+		Pub: pubAdapter,
 	}
 
 	functions.CloudEvent("RouteActivity", svc.RouteActivity)
@@ -49,23 +59,19 @@ type Service struct {
 	Pub shared.Publisher
 }
 
-type PubSubMessage struct {
-	Data []byte `json:"data"`
-}
-
 type UserConfig struct {
 	StravaEnabled bool `firestore:"strava_enabled"`
 	OtherEnabled  bool `firestore:"other_enabled"`
 }
 
 func (s *Service) RouteActivity(ctx context.Context, e event.Event) error {
-	var msg PubSubMessage
+	var msg types.PubSubMessage
 	if err := e.DataAs(&msg); err != nil {
 		return fmt.Errorf("failed to get data: %v", err)
 	}
 
 	var eventPayload pb.EnrichedActivityEvent
-	if err := json.Unmarshal(msg.Data, &eventPayload); err != nil {
+	if err := json.Unmarshal(msg.Message.Data, &eventPayload); err != nil {
 		return fmt.Errorf("json unmarshal: %v", err)
 	}
 
@@ -96,7 +102,7 @@ func (s *Service) RouteActivity(ctx context.Context, e event.Event) error {
 	routings := []string{}
 
 	if stravaEnabled {
-		resID, err := s.Pub.Publish(ctx, shared.TopicJobUploadStrava, msg.Data)
+		resID, err := s.Pub.Publish(ctx, shared.TopicJobUploadStrava, msg.Message.Data)
 		if err != nil {
 			log.Printf("Failed to publish to Strava queue: %v", err)
 		} else {

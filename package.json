@@ -1,5 +1,19 @@
 {
   "dependencies": {
     "ts-proto": "^2.8.3"
+  },
+  "scripts": {
+    "test:integration": "jest",
+    "build": "echo 'No build script yet'"
+  },
+  "devDependencies": {
+    "@google-cloud/storage": "^7.18.0",
+    "@types/jest": "^30.0.0",
+    "axios": "^1.13.2",
+    "firebase-admin": "^13.6.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3",
+    "uuid": "^13.0.0"
   }
 }

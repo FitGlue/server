@@ -189,6 +189,6 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.job_upload_strava.id
-    retry_policy   = "RETRY_POLICY_EXTENDED" # longer retries for upload failures
+    retry_policy   = "RETRY_POLICY_RETRY" # longer retries for upload failures
   }
 }

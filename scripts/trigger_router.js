@@ -4,8 +4,9 @@ console.log('Triggering Router (EnrichedActivityEvent)...');
 
 // Mock EnrichedActivityEvent (pb.EnrichedActivityEvent)
 const enrichedEvent = {
-  userId: "user_123",
-  gcsUri: "gs://fitglue-artifacts/activities/user_123/123.fit",
+  user_id: "user_router_123",
+  activity_id: "act_456",
+  gcs_uri: "gs://fitglue-artifacts/activities/user_router_123/123.fit",
   description: "Enriched Activity #Power"
 };
 

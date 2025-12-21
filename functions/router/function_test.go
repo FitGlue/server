@@ -8,6 +8,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	"fitglue-router/pkg/shared/mocks"
+	"fitglue-router/pkg/shared/types"
 	pb "fitglue-router/pkg/shared/types/pb/proto"
 )
 
@@ -44,8 +45,12 @@ func TestRouteActivity(t *testing.T) {
 	}
 	payloadBytes, _ := json.Marshal(&eventPayload)
 
-	psMsg := PubSubMessage{
-		Data: payloadBytes,
+	psMsg := types.PubSubMessage{
+		Message: struct {
+			Data []byte `json:"data"`
+		}{
+			Data: payloadBytes,
+		},
 	}
 
 	e := event.New()

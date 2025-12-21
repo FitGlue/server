@@ -20,6 +20,7 @@ import (
 
 	"fitglue-strava-uploader/pkg/shared"
 	"fitglue-strava-uploader/pkg/shared/adapters"
+	"fitglue-strava-uploader/pkg/shared/types"
 	pb "fitglue-strava-uploader/pkg/shared/types/pb/proto"
 )
 
@@ -62,10 +63,6 @@ type Service struct {
 	HTTPClient HTTPClient
 }
 
-type PubSubMessage struct {
-	Data []byte `json:"data"`
-}
-
 type UserTokens struct {
 	AccessToken  string    `firestore:"strava_access_token"`
 	RefreshToken string    `firestore:"strava_refresh_token"`
@@ -73,13 +70,13 @@ type UserTokens struct {
 }
 
 func (s *Service) UploadToStrava(ctx context.Context, e event.Event) error {
-	var msg PubSubMessage
+	var msg types.PubSubMessage
 	if err := e.DataAs(&msg); err != nil {
 		return fmt.Errorf("failed to get data: %v", err)
 	}
 
 	var eventPayload pb.EnrichedActivityEvent
-	if err := json.Unmarshal(msg.Data, &eventPayload); err != nil {
+	if err := json.Unmarshal(msg.Message.Data, &eventPayload); err != nil {
 		return fmt.Errorf("json unmarshal: %v", err)
 	}
 
@@ -113,7 +110,10 @@ func (s *Service) UploadToStrava(ctx context.Context, e event.Event) error {
 	}
 
 	// 2. Download FIT from GCS
-	bucketName := "fitglue-artifacts"
+	bucketName := os.Getenv("GCS_ARTIFACT_BUCKET")
+	if bucketName == "" {
+		bucketName = "fitglue-artifacts"
+	}
 	// Parse GCS URI: assume "gs://bucket/path" format
 	objectName := strings.TrimPrefix(eventPayload.GcsUri, "gs://"+bucketName+"/")
 

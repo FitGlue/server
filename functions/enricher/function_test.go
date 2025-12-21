@@ -9,6 +9,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	"fitglue-enricher/pkg/shared/mocks"
+	"fitglue-enricher/pkg/shared/types"
 	pb "fitglue-enricher/pkg/shared/types/pb/proto"
 )
 
@@ -50,8 +51,12 @@ func TestEnrichActivity(t *testing.T) {
 	e.SetSource("//pubsub")
 
 	// Create the PubSubMessage struct expected by the handler
-	psMsg := PubSubMessage{
-		Data: activityBytes,
+	psMsg := types.PubSubMessage{
+		Message: struct {
+			Data []byte `json:"data"`
+		}{
+			Data: activityBytes,
+		},
 	}
 
 	// Set it as event data

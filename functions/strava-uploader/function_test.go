@@ -12,6 +12,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	"fitglue-strava-uploader/pkg/shared/mocks"
+	"fitglue-strava-uploader/pkg/shared/types"
 	pb "fitglue-strava-uploader/pkg/shared/types/pb/proto"
 )
 
@@ -78,8 +79,12 @@ func TestUploadToStrava(t *testing.T) {
 	}
 	payloadBytes, _ := json.Marshal(&eventPayload)
 
-	psMsg := PubSubMessage{
-		Data: payloadBytes,
+	psMsg := types.PubSubMessage{
+		Message: struct {
+			Data []byte `json:"data"`
+		}{
+			Data: payloadBytes,
+		},
 	}
 
 	e := event.New()

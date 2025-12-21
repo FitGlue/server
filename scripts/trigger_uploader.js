@@ -4,9 +4,10 @@ console.log('Triggering Strava Uploader (EnrichedActivityEvent)...');
 
 // Mock EnrichedActivityEvent (Same as Router output)
 const enrichedEvent = {
-  userId: "user_123",
-  gcsUri: "gs://fitglue-artifacts/activities/user_123/123.fit",
-  description: "Enriched Activity #Power"
+  user_id: "user_upload_123",
+  activity_id: "act_789",
+  gcs_uri: "gs://fitglue-artifacts/activities/user_upload_123/456.fit",
+  description: "Test upload"
 };
 
 const dataBuffer = Buffer.from(JSON.stringify(enrichedEvent));
