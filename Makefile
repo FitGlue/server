@@ -63,7 +63,7 @@ inject-shared:
 	@for func in $(GO_FUNCTIONS); do \
 		echo "Injected Go into $$func"; \
 		mkdir -p $(FUNCTIONS_DIR)/$$func/pkg/shared; \
-		rsync -av --exclude='node_modules' --exclude='*_test.go' --exclude='go.mod' --exclude='go.sum' shared/go/ $(FUNCTIONS_DIR)/$$func/pkg/shared/; \
+		rsync -av --exclude='node_modules' --exclude='*_test.go' shared/go/ $(FUNCTIONS_DIR)/$$func/pkg/shared/; \
 		mkdir -p $(FUNCTIONS_DIR)/$$func/pkg/shared/proto; \
 		cp -r shared/proto/* $(FUNCTIONS_DIR)/$$func/pkg/shared/proto/; \
 	done
@@ -82,7 +82,7 @@ build-ts:
 build-go:
 	@echo "Building Go functions..."
 	@for func in $(GO_FUNCTIONS); do \
-		(cd $(FUNCTIONS_DIR)/$$func && go mod tidy && go build -v ./...); \
+		(cd $(FUNCTIONS_DIR)/$$func && go mod tidy && GOWORK=off go build -v ./...); \
 	done
 
 prepare-shared-ts:
