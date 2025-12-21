@@ -25,11 +25,38 @@ FitGlue is a serverless activity integration platform that ingests workout data 
 - **gcloud CLI**: Authenticated with your GCP project.
 - **Make**: For running unified commands.
 
+## Quick Start (Fresh Setup)
+
+One command to rule them all. If you've just cloned the repo:
+
+1. **Configure Environment**:
+    ```bash
+    cp .env.example .env
+    # Edit .env to add your secrets (for local dev)
+    ```
+
+2. **Setup**:
+    ```bash
+    make setup
+    ```
+    This single command installs dependencies (npm/go), generates protobuf code, injects shared libraries, and builds all functions.
+
+3. **Verify**:
+    ```bash
+    make test
+    ```
+
 ## Unified Operations (Makefile)
 
 We provide a `Makefile` to simplify common development tasks.
 
-### 1. Build
+### 1. Setup (One-Time)
+Installs dependencies, generates code, and builds everything.
+```bash
+make setup
+```
+
+### 2. Build
 Builds all TypeScript and Go functions to verify compilation.
 ```bash
 make build-ts

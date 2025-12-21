@@ -6,6 +6,8 @@ This guide explains how to run the entire FitGlue stack locally without deployin
 See [README.md](README.md) for core prerequisites.
 - **Functions Framework**: Installed via `npm` (TS) and `go.mod` (Go).
 
+**Tip:** Run `make setup` first to install all dependencies and generate necessary code.
+
 ## 1. Configuration (`.env`)
 
 Create a `.env` file to configure local secrets (bypassing Google Secret Manager).

@@ -15,7 +15,15 @@ PROTOC := $(shell if [ -x "./bin/protoc" ]; then echo "./bin/protoc"; else which
 PROTOC_GEN_GO := $(shell go env GOPATH)/bin/protoc-gen-go
 TS_PROTO_PLUGIN := ./node_modules/.bin/protoc-gen-ts_proto
 
-all: generate-proto clean inject-shared build-ts build-go
+all: generate-proto clean inject-shared build-ts build-go prepare-shared-ts
+
+setup:
+	@echo "Setting up fresh environment..."
+	npm install
+	$(MAKE) all
+	@echo "Setup complete! Run 'make test' to verify or 'make local' to start."
+
+build: all
 
 generate-proto:
 	@echo "Generating Protobuf code..."
@@ -76,6 +84,10 @@ build-go:
 	@for func in $(GO_FUNCTIONS); do \
 		(cd $(FUNCTIONS_DIR)/$$func && go mod tidy && go build -v ./...); \
 	done
+
+prepare-shared-ts:
+	@echo "Preparing Shared TypeScript..."
+	@(cd shared/typescript && npm install)
 
 local: inject-shared
 	@./scripts/local_run.sh
