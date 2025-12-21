@@ -1,93 +1,89 @@
-# FitGlue Server
+# Local Development
 
-FitGlue is a serverless activity integration platform that ingests workout data from various sources (Hevy, Keiser), normalizes it, and routes it to destinations (Strava).
-
-## Project Structure
-
-- **functions/**: Cloud Functions (Go & TypeScript).
-  - `enricher` (Go): Enriches raw activity data.
-  - `router` (Go): Routes enriched data to destinations.
-  - `strava-uploader` (Go): Uploads FIT files to Strava.
-  - `hevy-handler` (TS): Webhook handler for Hevy workouts.
-  - `keiser-poller` (TS): Scheduled job for Keiser machine data.
-- **shared/**: Shared libraries and Protocol Buffers.
-  - `go/`: Go shared code (Bootstrap, types).
-  - `typescript/`: TypeScript shared code (Framework, types).
-  - `proto/`: Protobuf definitions.
-- **terraform/**: Infrastructure as Code (GCP).
-- **scripts/**: Verification and simulation scripts.
+This guide explains how to run the entire FitGlue stack locally without deploying to Google Cloud.
 
 ## Prerequisites
+See [README.md](README.md) for core prerequisites.
+- **Functions Framework**: Installed via `npm` (TS) and `go.mod` (Go).
 
-- **Go**: v1.21+
-- **Node.js**: v18+
-- **Terraform**: v1.0+
-- **gcloud CLI**: Authenticated with your GCP project.
-- **Make**: For running unified commands.
+**Tip:** Run `make setup` first to install all dependencies and generate necessary code.
 
-## Quick Start (Fresh Setup)
+## 1. Configuration (`.env`)
 
-One command to rule them all. If you've just cloned the repo:
+Create a `.env` file to configure local secrets (bypassing Google Secret Manager).
 
-1. **Configure Environment**:
-    ```bash
-    cp .env.example .env
-    # Edit .env to add your secrets (for local dev)
-    ```
-
-2. **Setup**:
-    ```bash
-    make setup
-    ```
-    This single command installs dependencies (npm/go), generates protobuf code, injects shared libraries, and builds all functions.
-
-3. **Verify**:
-    ```bash
-    make test
-    ```
-
-## Unified Operations (Makefile)
-
-We provide a `Makefile` to simplify common development tasks.
-
-### 1. Setup (One-Time)
-Installs dependencies, generates code, and builds everything.
 ```bash
-make setup
+cp .env.example .env
 ```
 
-### 2. Build
-Builds all TypeScript and Go functions to verify compilation.
+Edit `.env` to set your mock secrets:
 ```bash
-make build-ts
-make build-go
-# or
-make all
+GOOGLE_CLOUD_PROJECT=fitglue-local
+HEVY_SIGNING_SECRET=local-secret
 ```
 
-### 2. Test
-Runs all unit tests across the codebase.
+## 2. Starting Services
+
+You can start all 5 services simultaneously using the orchestration script.
+
 ```bash
-make test
+make local
 ```
 
-### 3. Deploy (Dev)
-Deploys the entire stack to the `fitglue-server-dev` environment using Terraform.
-> **Note:** Requires active GCP credentials (`gcloud auth application-default login`).
+This will spin up:
+- **Hevy Handler** (:8080)
+- **Enricher** (:8081)
+- **Router** (:8082)
+- **Strava Uploader** (:8083)
+- **Keiser Poller** (:8084)
+
+Logs are written to individual log files in the root directory (`hevy.log`, `enricher.log`, etc.).
+Press **Ctrl+C** to stop all services.
+
+### Manual Start (Debugging)
+If you need to debug a single service, you can run it in isolation:
+
+| Service | Port | Command |
+|---------|------|---------|
+| Hevy Handler | 8080 | `cd src/typescript/hevy-handler && npm run dev` |
+| Enricher | 8081 | `cd src/go/functions/enricher && go run cmd/main.go` |
+| Router | 8082 | `cd src/go/functions/router && go run cmd/main.go` |
+| Strava Uploader | 8083 | `cd src/go/functions/strava-uploader && go run cmd/main.go` |
+| Keiser Poller | 8084 | `cd src/typescript/keiser-poller && PORT=8084 npm run dev` |
+
+## 3. Triggering Events (Simulations)
+
+We provide Node.js scripts to simulate various events in the pipeline. These scripts construct the correct CloudEvent or HTTP payloads expected by the functions.
+
+### A. Ingestion Layer
+**Simulate Hevy Webhook**
+Sends a signed JSON payload to the Hevy Handler.
 ```bash
-make deploy-dev
+node scripts/trigger_hevy.js
 ```
 
-### 4. Verify (Dev)
-Runs end-to-end verification scripts against the deployed dev environment.
+**Simulate Keiser Poll**
+Trigger the Keiser Poller schedule.
 ```bash
-make verify-dev
+node scripts/trigger_keiser.js
 ```
 
-## Local Development
-For running the stack locally using the Functions Framework and emulators, refer to [Local Development Guide](README_LOCAL.md).
+### B. Transformation Layer
+**Simulate Raw Activity Event**
+Injects a Pub/Sub message (RawActivity protobuffer) into the Enricher.
+```bash
+node scripts/trigger_enricher.js
+```
 
-## CI/CD Pipeline
-We use CircleCI with OIDC authentication for secure, keyless deployments to GCP. The pipeline automatically deploys to Dev on `main` branch commits, with manual approval gates for Test and Prod.
+### C. Routing & Egress
+**Simulate Enrichment Complete**
+Injects an EnrichedActivity event into the Router.
+```bash
+node scripts/trigger_router.js
+```
 
-For detailed setup instructions (including configuring OIDC for new environments), see [CI/CD Deployment Guide](docs/CICD.md).
+**Simulate Strava Upload Job**
+Injects an upload job directly to the Strava Uploader.
+```bash
+node scripts/trigger_uploader.js
+```

@@ -1,7 +1,8 @@
 {
-  "name": "typescript",
+  "name": "@fitglue/shared",
   "version": "1.0.0",
-  "main": "dist/src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
     "test": "jest",
     "build": "tsc"

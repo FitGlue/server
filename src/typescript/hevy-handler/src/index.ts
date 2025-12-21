@@ -1,12 +1,10 @@
 import { PubSub } from "@google-cloud/pubsub";
 import * as crypto from "crypto";
 // Using build-injected shared modules (Protobuf Generated)
-import { ActivityPayload, ActivitySource } from './shared/types/pb/proto/activity';
-import { TOPICS } from './shared/config';
-import { createCloudFunction, FrameworkContext } from './shared/framework/index';
+
 
 // Retrieve secret from environment (secret manager injection)
-import { getSecret } from './shared/secrets/secrets';
+import { TOPICS, createCloudFunction, getSecret, ActivityPayload, FrameworkContext, ActivitySource } from '@fitglue/shared';
 
 const pubsub = new PubSub();
 const TOPIC_NAME = TOPICS.RAW_ACTIVITY;

@@ -55,3 +55,20 @@ We will create **3 Fresh GCP Projects** (leaving `fitglue-server` dormant).
 ### Rationale
 Allows grouping by project (`fitglue`), purpose (`server`/`app`), and environment (`dev`/`prod`) systematically.
 
+## 004 - Monorepo Structure (2025-12-21)
+
+### Context
+We initially used a polyrepo-style structure with multiple `go.mod` files and specialized `make` targets to inject shared code into each function's directory. This caused:
+-   Persistent `go.sum` checksum mismatches in CI.
+-   Complexity in local development (workspace vs replacement directives).
+-   "Missing module" errors because of tangled dependency graphs.
+
+### Decision
+We refactored the repository into a **Monorepo** structure:
+-   `src/go`: Single Go module (`github.com/ripixel/fitglue-server/src/go`) containing all backend functions and shared packages.
+-   `src/typescript`: TypeScript functions using npm workspaces.
+-   `src/proto`: Unified Protocol Buffers.
+
+### Consequences
+-   **Pros:** Simplified build (standard Go tooling works). No code injection/sed hacking. Single source of truth for dependencies.
+-   **Cons:** Deployments upload the entire module context (negligible size impact).

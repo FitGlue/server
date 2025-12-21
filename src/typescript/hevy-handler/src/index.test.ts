@@ -1,12 +1,11 @@
 // Mocks must be defined before imports
-jest.mock('./shared/secrets/secrets', () => ({
-  getSecret: jest.fn()
-}));
-
-// Mock the shared framework
-jest.mock('./shared/framework/index', () => ({
+// Mock the shared package
+jest.mock('@fitglue/shared', () => ({
+  getSecret: jest.fn(),
   createCloudFunction: (handler: any) => handler,
-  FrameworkContext: jest.fn()
+  FrameworkContext: jest.fn(),
+  TOPICS: { RAW_ACTIVITY: 'test-topic' },
+  ActivitySource: { SOURCE_HEVY: 'HEVY' } // Mock enum
 }));
 
 jest.mock('@google-cloud/pubsub', () => {
@@ -29,9 +28,12 @@ jest.mock('firebase-admin', () => {
 });
 
 import { hevyWebhookHandler } from './index';
-import { getSecret } from './shared/secrets/secrets';
+// Import mocked function to set return values
+import { getSecret } from '@fitglue/shared';
 import * as crypto from 'crypto';
 const admin = require('firebase-admin');
+
+
 
 const mockGetSecret = getSecret as jest.MockedFunction<typeof getSecret>;
 

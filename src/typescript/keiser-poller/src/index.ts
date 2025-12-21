@@ -1,8 +1,5 @@
 import { PubSub } from '@google-cloud/pubsub';
-import { getSecret } from './shared/secrets/secrets';
-import { ActivityPayload, ActivitySource } from './shared/types/pb/proto/activity';
-import { TOPICS } from './shared/config';
-import { createCloudFunction, FrameworkContext } from './shared/framework/index';
+import { getSecret, ActivityPayload, ActivitySource, TOPICS, createCloudFunction, FrameworkContext } from '@fitglue/shared';
 
 // NOTE: Since we cannot strictly install the SDK in this environment,
 // we interface the expected behavior based on the research doc.

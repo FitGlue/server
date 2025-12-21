@@ -1,14 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES2022",
     "module": "commonjs",
+    "declaration": true,
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "dist",
+    "sourceMap": true,
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "types": ["jest", "node"],
-    "outDir": "./dist",
-    "rootDir": "."
+    "target": "es2017"
   },
-  "include": ["src/**/*", "tests/**/*"]
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
 }

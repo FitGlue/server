@@ -6,7 +6,7 @@ resource "google_storage_bucket" "source_bucket" {
 # ----------------- Hevy Webhook Handler -----------------
 data "archive_file" "hevy_handler_zip" {
   type        = "zip"
-  source_dir  = "../functions/hevy-handler"
+  source_dir  = "../src/typescript"
   output_path = "/tmp/hevy-handler.zip"
   excludes    = ["node_modules", "build"]
 }
@@ -57,7 +57,7 @@ resource "google_cloud_run_service_iam_member" "hevy_handler_invoker" {
 # ----------------- Keiser Poller -----------------
 data "archive_file" "keiser_poller_zip" {
   type        = "zip"
-  source_dir  = "../functions/keiser-poller"
+  source_dir  = "../src/typescript"
   output_path = "/tmp/keiser-poller.zip"
   excludes    = ["node_modules", "build"]
 }
@@ -92,7 +92,7 @@ resource "google_cloudfunctions2_function" "keiser_poller" {
 # ----------------- Enricher Service -----------------
 data "archive_file" "enricher_zip" {
   type        = "zip"
-  source_dir  = "../functions/enricher"
+  source_dir  = "../src/go"
   output_path = "/tmp/enricher.zip"
 }
 
@@ -136,7 +136,7 @@ resource "google_cloudfunctions2_function" "enricher" {
 # ----------------- Router Service -----------------
 data "archive_file" "router_zip" {
   type        = "zip"
-  source_dir  = "../functions/router"
+  source_dir  = "../src/go"
   output_path = "/tmp/router.zip"
 }
 
@@ -172,7 +172,7 @@ resource "google_cloudfunctions2_function" "router" {
 # ----------------- Strava Uploader -----------------
 data "archive_file" "strava_uploader_zip" {
   type        = "zip"
-  source_dir  = "../functions/strava-uploader"
+  source_dir  = "../src/go"
   output_path = "/tmp/strava-uploader.zip"
 }
 
