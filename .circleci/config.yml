@@ -81,7 +81,8 @@ jobs:
               --service-account=circleci-deployer@fitglue-server-dev.iam.gserviceaccount.com \
               --output-file=/tmp/gcp_cred_config.json \
               --credential-source-file=/tmp/oidc_token.txt \
-              --credential-source-type=text
+              --credential-source-type=text \
+              --audience="//iam.googleapis.com/projects/911679924866/locations/global/workloadIdentityPools/circleci-pool/providers/circleci-provider"
 
             # Set credentials for terraform
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
