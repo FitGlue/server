@@ -61,7 +61,7 @@ build-ts:
 	@for dir in $(TS_DIRS); do \
 		if [ -f "$$dir/package.json" ]; then \
 			echo "Building $$dir..."; \
-			(cd $$dir && npm install && npm run build); \
+			(cd $$dir && npm run build) || exit 1; \
 		fi \
 	done
 
@@ -70,7 +70,7 @@ test-ts:
 	@for dir in $(TS_DIRS); do \
 		if [ -f "$$dir/package.json" ]; then \
 			echo "Testing $$dir..."; \
-			(cd $$dir && npm test); \
+			(cd $$dir && npm test) || exit 1; \
 		fi \
 	done
 
@@ -79,7 +79,7 @@ lint-ts:
 	@for dir in $(TS_DIRS); do \
 		if [ -f "$$dir/package.json" ]; then \
 			echo "Linting $$dir..."; \
-			(cd $$dir && npm run lint); \
+			(cd $$dir && npm run lint) || exit 1; \
 		fi \
 	done
 
