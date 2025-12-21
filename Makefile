@@ -100,7 +100,7 @@ lint:
 		echo "Linting $$func..."; \
 		(cd $(FUNCTIONS_DIR)/$$func && GOWORK=off go vet ./...); \
 	done
-	@(cd shared/go && go vet ./...)
+	@(cd shared/go && GOWORK=off go vet ./...)
 	@echo "Linting TypeScript (Type Check)..."
 	@for func in $(TS_FUNCTIONS); do \
 		echo "Linting $$func..."; \
