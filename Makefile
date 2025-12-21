@@ -58,8 +58,11 @@ TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d)
 
 build-ts:
 	@echo "Building TypeScript services..."
+	@echo "Building shared library first..."
+	@(cd $(TS_SRC_DIR)/shared && npm run build) || exit 1
+	@echo "Building function packages..."
 	@for dir in $(TS_DIRS); do \
-		if [ -f "$$dir/package.json" ]; then \
+		if [ -f "$$dir/package.json" ] && [ "$$(basename $$dir)" != "shared" ]; then \
 			echo "Building $$dir..."; \
 			(cd $$dir && npm run build) || exit 1; \
 		fi \
