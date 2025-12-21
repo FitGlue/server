@@ -15,6 +15,24 @@ TS_SRC_DIR=src/typescript
 
 all: build test
 
+setup:
+	@echo "Setting up dependencies..."
+	@echo "Installing Go dependencies..."
+	cd $(GO_SRC_DIR) && $(GOCMD) mod download
+	@echo "Installing TypeScript dependencies..."
+	cd $(TS_SRC_DIR) && npm install
+	@echo "Setup complete."
+
+generate:
+	@echo "Generating Protocol Buffers..."
+	# Generate Go
+	protoc --go_out=$(GO_SRC_DIR)/pkg/types/pb --go_opt=paths=source_relative \
+		--proto_path=src/proto src/proto/*.proto
+	# Generate TypeScript (requires ts-proto installed)
+	cd $(TS_SRC_DIR) && npx protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto \
+		--ts_proto_out=shared/src/types/pb --ts_proto_opt=outputEncodeMethods=false,outputJsonMethods=false,outputClientImpl=false \
+		--proto_path=../proto ../proto/*.proto
+
 # --- Go Targets ---
 build-go:
 	@echo "Building Go services..."

@@ -24,23 +24,20 @@ jobs:
           command: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
       - restore_cache:
           keys:
-            - go-mod-v1-{{ checksum "go.work.sum" }}
-            - npm-v1-{{ checksum "package-lock.json" }}-{{ checksum "functions/hevy-handler/package-lock.json" }}-{{ checksum "functions/keiser-poller/package-lock.json" }}-{{ checksum "shared/typescript/package-lock.json" }}
+            - go-mod-v2-{{ checksum "src/go/go.sum" }}
+            - npm-v2-{{ checksum "src/typescript/package-lock.json" }}
       - run:
-          name: Setup Environment (Fresh Clone Simulation)
+          name: Setup Environment
           command: make setup
       - save_cache:
-          key: go-mod-v1-{{ checksum "go.work.sum" }}
+          key: go-mod-v2-{{ checksum "src/go/go.sum" }}
           paths:
             - ~/go/pkg/mod
       - save_cache:
-          key: npm-v1-{{ checksum "package-lock.json" }}-{{ checksum "functions/hevy-handler/package-lock.json" }}-{{ checksum "functions/keiser-poller/package-lock.json" }}-{{ checksum "shared/typescript/package-lock.json" }}
+          key: npm-v2-{{ checksum "src/typescript/package-lock.json" }}
           paths:
             - ~/.npm
-            - node_modules
-            - functions/hevy-handler/node_modules
-            - functions/keiser-poller/node_modules
-            - shared/typescript/node_modules
+            - src/typescript/node_modules
       - run:
           name: Linting
           command: make lint
