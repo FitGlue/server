@@ -67,8 +67,10 @@ inject-shared:
 		mkdir -p $(FUNCTIONS_DIR)/$$func/pkg/shared/proto; \
 		cp -r shared/proto/* $(FUNCTIONS_DIR)/$$func/pkg/shared/proto/; \
 		# Rewrite imports in injected code to point to local package \
-		find $(FUNCTIONS_DIR)/$$func/pkg/shared -name "*.go" -type f -exec sed -i "s|github.com/ripixel/fitglue/shared/go|github.com/ripixel/fitglue/functions/$$func/pkg/shared|g" {} +; \
+		find $(FUNCTIONS_DIR)/$$func/pkg/shared -name "*.go" -type f -exec sed -i "s|github.com/ripixel/fitglue/shared/go|github.com/ripixel/fitglue/functions/$$func/pkg/shared|g" {} \; ; \
 	done
+	@echo "Verifying rewrite in enricher:"
+	@grep "github.com" functions/enricher/pkg/shared/pkg/bootstrap/bootstrap.go | head -n 5 || true
 
 clean:
 	@echo "Cleaning shared injections..."
