@@ -36,7 +36,7 @@ generate:
 # --- Go Targets ---
 build-go:
 	@echo "Building Go services..."
-	cd $(GO_SRC_DIR) && $(GOBUILD) -v ./...
+	cd $(GO_SRC_DIR) && $(GOCMD) mod vendor && $(GOBUILD) -v ./...
 
 test-go:
 	@echo "Testing Go services..."

@@ -1,0 +1,79 @@
+#!/usr/bin/env python3
+import os
+import shutil
+import zipfile
+from pathlib import Path
+
+def create_function_zip(function_name, src_dir, output_dir):
+    """Create a deployment zip for a Go Cloud Function"""
+    print(f"Creating zip for {function_name}...")
+
+    function_dir = src_dir / "functions" / function_name
+    temp_dir = output_dir / f"{function_name}_temp"
+    zip_path = output_dir / f"{function_name}.zip"
+
+    # Clean temp directory
+    if temp_dir.exists():
+        shutil.rmtree(temp_dir)
+    temp_dir.mkdir(parents=True)
+
+    # Copy function .go files to root (excluding test files and cmd)
+    for go_file in function_dir.glob("*.go"):
+        # Skip test files, main.go, and anything in cmd
+        if go_file.name.endswith("_test.go") or go_file.name == "main.go" or "cmd" in str(go_file):
+            continue
+        shutil.copy2(go_file, temp_dir / go_file.name)
+
+    # Copy function's pkg directory if it exists (shouldn't after refactor)
+    func_pkg = function_dir / "pkg"
+    if func_pkg.exists():
+        func_pkg_dest = temp_dir / "functions" / function_name / "pkg"
+        func_pkg_dest.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(func_pkg, func_pkg_dest)
+
+    # Copy shared pkg directory
+    shared_pkg = src_dir / "pkg"
+    if shared_pkg.exists():
+        shutil.copytree(shared_pkg, temp_dir / "pkg")
+
+    # Copy go.mod and go.sum
+    shutil.copy2(src_dir / "go.mod", temp_dir / "go.mod")
+    shutil.copy2(src_dir / "go.sum", temp_dir / "go.sum")
+
+    # DON'T copy vendor directory - let Cloud Build download dependencies
+
+    # Create zip
+    with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        for root, dirs, files in os.walk(temp_dir):
+            # Skip cmd directories
+            dirs[:] = [d for d in dirs if d != 'cmd']
+
+            for file in files:
+                file_path = Path(root) / file
+                arcname = file_path.relative_to(temp_dir)
+                zipf.write(file_path, arcname)
+
+    # Clean up temp directory
+    shutil.rmtree(temp_dir)
+
+    print(f"Created {zip_path}")
+    return str(zip_path)
+
+def main():
+    script_dir = Path(__file__).parent
+    src_dir = script_dir.parent / "src" / "go"
+    output_dir = Path("/tmp/fitglue-function-zips")
+
+    # Clean and create output directory
+    if output_dir.exists():
+        shutil.rmtree(output_dir)
+    output_dir.mkdir(parents=True)
+
+    # Create zips for each function
+    for function_name in ["router", "enricher", "strava-uploader"]:
+        create_function_zip(function_name, src_dir, output_dir)
+
+    print(f"All function zips created in {output_dir}")
+
+if __name__ == "__main__":
+    main()

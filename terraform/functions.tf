@@ -3,19 +3,45 @@ resource "google_storage_bucket" "source_bucket" {
   location = var.region
 }
 
-# ----------------- Hevy Webhook Handler -----------------
-data "archive_file" "hevy_handler_zip" {
+# Enricher uses pre-built zip with correct structure
+resource "google_storage_bucket_object" "enricher_zip" {
+  name   = "enricher-${filemd5("/tmp/fitglue-function-zips/enricher.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/enricher.zip"
+}
+
+
+# Router uses pre-built zip with correct structure
+resource "google_storage_bucket_object" "router_zip" {
+  name   = "router-${filemd5("/tmp/fitglue-function-zips/router.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/router.zip"
+}
+
+
+# Strava Uploader uses pre-built zip with correct structure
+resource "google_storage_bucket_object" "strava_uploader_zip" {
+  name   = "strava-uploader-${filemd5("/tmp/fitglue-function-zips/strava-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/strava-uploader.zip"
+}
+
+
+# -------------- TypeScript Source Archive --------------
+data "archive_file" "typescript_source_zip" {
   type        = "zip"
   source_dir  = "../src/typescript"
-  output_path = "/tmp/hevy-handler.zip"
+  output_path = "/tmp/typescript-source.zip"
   excludes    = ["node_modules", "build"]
 }
 
-resource "google_storage_bucket_object" "hevy_handler_zip" {
-  name   = "hevy-handler-${data.archive_file.hevy_handler_zip.output_md5}.zip"
+resource "google_storage_bucket_object" "typescript_source_zip" {
+  name   = "typescript-source-${data.archive_file.typescript_source_zip.output_md5}.zip"
   bucket = google_storage_bucket.source_bucket.name
-  source = data.archive_file.hevy_handler_zip.output_path
+  source = data.archive_file.typescript_source_zip.output_path
 }
+
+# ----------------- Hevy Webhook Handler -----------------
 
 resource "google_cloudfunctions2_function" "hevy_handler" {
   name        = "hevy-webhook-handler"
@@ -28,7 +54,7 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.hevy_handler_zip.name
+        object = google_storage_bucket_object.typescript_source_zip.name
       }
     }
   }
@@ -55,18 +81,6 @@ resource "google_cloud_run_service_iam_member" "hevy_handler_invoker" {
 }
 
 # ----------------- Keiser Poller -----------------
-data "archive_file" "keiser_poller_zip" {
-  type        = "zip"
-  source_dir  = "../src/typescript"
-  output_path = "/tmp/keiser-poller.zip"
-  excludes    = ["node_modules", "build"]
-}
-
-resource "google_storage_bucket_object" "keiser_poller_zip" {
-  name   = "keiser-poller-${data.archive_file.keiser_poller_zip.output_md5}.zip"
-  bucket = google_storage_bucket.source_bucket.name
-  source = data.archive_file.keiser_poller_zip.output_path
-}
 
 resource "google_cloudfunctions2_function" "keiser_poller" {
   name        = "keiser-poller"
@@ -78,7 +92,7 @@ resource "google_cloudfunctions2_function" "keiser_poller" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.keiser_poller_zip.name
+        object = google_storage_bucket_object.typescript_source_zip.name
       }
     }
   }
@@ -90,18 +104,6 @@ resource "google_cloudfunctions2_function" "keiser_poller" {
 }
 
 # ----------------- Enricher Service -----------------
-data "archive_file" "enricher_zip" {
-  type        = "zip"
-  source_dir  = "../src/go"
-  output_path = "/tmp/enricher.zip"
-}
-
-resource "google_storage_bucket_object" "enricher_zip" {
-  name   = "enricher-${data.archive_file.enricher_zip.output_md5}.zip"
-  bucket = google_storage_bucket.source_bucket.name
-  source = data.archive_file.enricher_zip.output_path
-}
-
 resource "google_cloudfunctions2_function" "enricher" {
   name        = "enricher"
   location    = var.region
@@ -115,9 +117,7 @@ resource "google_cloudfunctions2_function" "enricher" {
         object = google_storage_bucket_object.enricher_zip.name
       }
     }
-    environment_variables = {
-      GOOGLE_BUILDABLE = "github.com/ripixel/fitglue-server/src/go/functions/enricher"
-    }
+
   }
 
   service_config {
@@ -136,19 +136,10 @@ resource "google_cloudfunctions2_function" "enricher" {
   }
 }
 
+
+
+
 # ----------------- Router Service -----------------
-data "archive_file" "router_zip" {
-  type        = "zip"
-  source_dir  = "../src/go"
-  output_path = "/tmp/router.zip"
-}
-
-resource "google_storage_bucket_object" "router_zip" {
-  name   = "router-${data.archive_file.router_zip.output_md5}.zip"
-  bucket = google_storage_bucket.source_bucket.name
-  source = data.archive_file.router_zip.output_path
-}
-
 resource "google_cloudfunctions2_function" "router" {
   name        = "router"
   location    = var.region
@@ -162,9 +153,7 @@ resource "google_cloudfunctions2_function" "router" {
         object = google_storage_bucket_object.router_zip.name
       }
     }
-    environment_variables = {
-      GOOGLE_BUILDABLE = "github.com/ripixel/fitglue-server/src/go/functions/router"
-    }
+
   }
 
   event_trigger {
@@ -176,18 +165,6 @@ resource "google_cloudfunctions2_function" "router" {
 }
 
 # ----------------- Strava Uploader -----------------
-data "archive_file" "strava_uploader_zip" {
-  type        = "zip"
-  source_dir  = "../src/go"
-  output_path = "/tmp/strava-uploader.zip"
-}
-
-resource "google_storage_bucket_object" "strava_uploader_zip" {
-  name   = "strava-uploader-${data.archive_file.strava_uploader_zip.output_md5}.zip"
-  bucket = google_storage_bucket.source_bucket.name
-  source = data.archive_file.strava_uploader_zip.output_path
-}
-
 resource "google_cloudfunctions2_function" "strava_uploader" {
   name        = "strava-uploader"
   location    = var.region
@@ -201,9 +178,7 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
         object = google_storage_bucket_object.strava_uploader_zip.name
       }
     }
-    environment_variables = {
-      GOOGLE_BUILDABLE = "github.com/ripixel/fitglue-server/src/go/functions/strava-uploader"
-    }
+
   }
 
   event_trigger {

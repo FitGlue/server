@@ -4,8 +4,6 @@ import (
 	"log"
 	"os"
 
-	_ "github.com/ripixel/fitglue-server/src/go/functions/enricher" // Import function/init
-
 	"github.com/GoogleCloudPlatform/functions-framework-go/funcframework"
 )
 

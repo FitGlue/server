@@ -5,39 +5,45 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
 
-	"github.com/ripixel/fitglue-server/src/go/functions/enricher/pkg/fit"
-	"github.com/ripixel/fitglue-server/src/go/functions/enricher/pkg/fitbit"
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
+	"github.com/ripixel/fitglue-server/src/go/pkg/fit"
+	"github.com/ripixel/fitglue-server/src/go/pkg/fitbit"
 	"github.com/ripixel/fitglue-server/src/go/pkg/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
-var svc *bootstrap.Service
+var (
+	svc     *bootstrap.Service
+	svcOnce sync.Once
+	svcErr  error
+)
 
 func init() {
-	var err error
-	ctx := context.Background()
-
-	// Unified Bootstrap
-	svc, err = bootstrap.NewService(ctx)
-	if err != nil {
-		slog.Error("Failed to initialize service", "error", err)
-		// We can't really recover here, but Functions runtime will restart us
-	}
-
 	functions.CloudEvent("EnrichActivity", EnrichActivity)
+}
+
+func initService(ctx context.Context) (*bootstrap.Service, error) {
+	svcOnce.Do(func() {
+		svc, svcErr = bootstrap.NewService(ctx)
+		if svcErr != nil {
+			slog.Error("Failed to initialize service", "error", svcErr)
+		}
+	})
+	return svc, svcErr
 }
 
 // EnrichActivity is the entry point
 func EnrichActivity(ctx context.Context, e event.Event) error {
-	if svc == nil {
-		return fmt.Errorf("service not initialized")
+	_, err := initService(ctx)
+	if err != nil {
+		return fmt.Errorf("service init failed: %v", err)
 	}
 
 	var msg types.PubSubMessage

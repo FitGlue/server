@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
@@ -31,28 +32,39 @@ type UploaderService struct {
 	HTTPClient HTTPClient
 }
 
-var svc *UploaderService
+var (
+	svc     *UploaderService
+	svcOnce sync.Once
+	svcErr  error
+)
 
 func init() {
-	var err error
-	ctx := context.Background()
-
-	baseSvc, err := bootstrap.NewService(ctx)
-	if err != nil {
-		slog.Error("Failed to initialize base service", "error", err)
-	}
-
-	svc = &UploaderService{
-		Service:    baseSvc,
-		HTTPClient: http.DefaultClient,
-	}
-
 	functions.CloudEvent("UploadToStrava", UploadToStrava)
 }
 
+func initService(ctx context.Context) (*UploaderService, error) {
+	svcOnce.Do(func() {
+		baseSvc, err := bootstrap.NewService(ctx)
+		if err != nil {
+			slog.Error("Failed to initialize base service", "error", err)
+			svcErr = err
+			return
+		}
+		svc = &UploaderService{
+			Service:    baseSvc,
+			HTTPClient: http.DefaultClient,
+		}
+	})
+	return svc, svcErr
+}
+
 func UploadToStrava(ctx context.Context, e event.Event) error {
+	_, err := initService(ctx)
+	if err != nil {
+		return fmt.Errorf("service init failed: %v", err)
+	}
 	if svc == nil || svc.Service == nil {
-		return fmt.Errorf("service not initialized")
+		return fmt.Errorf("service not initialized properly")
 	}
 
 	var msg types.PubSubMessage

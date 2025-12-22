@@ -28,6 +28,7 @@ fitglue-enricher
 fitglue-router
 fitglue-strava-uploader
 functions/*/vendor/*
+src/go/vendor
 
 # Zip Archives (Terraform Artifacts)
 *.zip
