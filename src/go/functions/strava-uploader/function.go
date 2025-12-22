@@ -16,6 +16,7 @@ import (
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
 
+	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
 	"github.com/ripixel/fitglue-server/src/go/pkg/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
@@ -86,16 +87,15 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 
 	logger.Info("Starting upload")
 
-	execData := map[string]interface{}{
-		"service":   "strava-uploader",
-		"user_id":   eventPayload.UserId,
-		"status":    "STARTED",
-		"inputs":    eventPayload.UserId,
-		"timestamp": time.Now(),
-		"startTime": time.Now(),
-	}
-	if err := svc.DB.SetExecution(ctx, execID, execData); err != nil {
-		logger.Error("Failed to log start", "error", err)
+	// Log execution start
+	execID, err := execution.LogStart(ctx, svc.DB, "strava-uploader", execution.ExecutionOptions{
+		UserID:      eventPayload.UserId,
+		TriggerType: "pubsub",
+		Inputs:      eventPayload.UserId,
+	})
+	if err != nil {
+		logger.Error("Failed to log execution start", "error", err)
+		return err
 	}
 
 	// 1. Get Tokens & Rotate if needed

@@ -12,6 +12,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
+	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
 	"github.com/ripixel/fitglue-server/src/go/pkg/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
@@ -62,16 +63,15 @@ func RouteActivity(ctx context.Context, e event.Event) error {
 
 	logger.Info("Starting routing")
 
-	execRefData := map[string]interface{}{
-		"service":   "router",
-		"user_id":   eventPayload.UserId,
-		"status":    "STARTED",
-		"inputs":    eventPayload.UserId,
-		"timestamp": time.Now(),
-		"startTime": time.Now(),
-	}
-	if err := svc.DB.SetExecution(ctx, execID, execRefData); err != nil {
-		logger.Error("Failed to log start", "error", err)
+	// Log execution start
+	execID, err := execution.LogStart(ctx, svc.DB, "router", execution.ExecutionOptions{
+		UserID:      eventPayload.UserId,
+		TriggerType: "pubsub",
+		Inputs:      eventPayload.UserId,
+	})
+	if err != nil {
+		logger.Error("Failed to log execution start", "error", err)
+		return err
 	}
 
 	// 1. Fetch User Config

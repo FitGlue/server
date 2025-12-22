@@ -12,6 +12,7 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
+	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
 	"github.com/ripixel/fitglue-server/src/go/pkg/fit"
 	"github.com/ripixel/fitglue-server/src/go/pkg/fitbit"
 	"github.com/ripixel/fitglue-server/src/go/pkg/pkg/bootstrap"
@@ -60,22 +61,19 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 	}
 
 	// Structured Logging
-	execID := fmt.Sprintf("%s-%d", rawEvent.UserId, time.Now().UnixNano())
-	logger := slog.With("execution_id", execID, "user_id", rawEvent.UserId, "service", "enricher")
+	logger := slog.With("user_id", rawEvent.UserId, "service", "enricher")
 
 	logger.Info("Starting enrichment", "timestamp", rawEvent.Timestamp)
 
-	// Create Execution Doc
-	execData := map[string]interface{}{
-		"service":   "enricher",
-		"user_id":   rawEvent.UserId,
-		"status":    "STARTED",
-		"inputs":    &rawEvent,
-		"timestamp": time.Now(),
-		"startTime": time.Now(),
-	}
-	if err := svc.DB.SetExecution(ctx, execID, execData); err != nil {
-		logger.Error("Failed to log start", "error", err)
+	// Log execution start
+	execID, err := execution.LogStart(ctx, svc.DB, "enricher", execution.ExecutionOptions{
+		UserID:      rawEvent.UserId,
+		TriggerType: "pubsub",
+		Inputs:      &rawEvent,
+	})
+	if err != nil {
+		logger.Error("Failed to log execution start", "error", err)
+		return err
 	}
 
 	// 1. Logic: Merge Data
@@ -125,12 +123,10 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 		return err
 	}
 
-	svc.DB.UpdateExecution(ctx, execID, map[string]interface{}{
-		"status":    "SUCCESS",
-		"outputs":   enrichedEvent,
-		"timestamp": time.Now(),
-		"endTime":   time.Now(),
-	})
+	// Log execution success
+	if err := execution.LogSuccess(ctx, svc.DB, execID, enrichedEvent); err != nil {
+		logger.Warn("Failed to log execution success", "error", err)
+	}
 
 	logger.Info("Enrichment complete")
 	return nil
