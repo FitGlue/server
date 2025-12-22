@@ -36,7 +36,7 @@ generate:
 # --- Go Targets ---
 build-go:
 	@echo "Building Go services..."
-	cd $(GO_SRC_DIR) && $(GOCMD) mod vendor && $(GOBUILD) -v ./...
+	cd $(GO_SRC_DIR) && $(GOBUILD) -v ./...
 
 test-go:
 	@echo "Testing Go services..."
@@ -45,6 +45,10 @@ test-go:
 lint-go:
 	@echo "Linting Go..."
 	cd $(GO_SRC_DIR) && go vet ./...
+
+prepare-go:
+	@echo "Preparing Go services..."
+	python3 scripts/build_function_zips.py 2>&1
 
 clean-go:
 	@echo "Cleaning Go..."
@@ -99,5 +103,6 @@ typecheck-ts:
 build: build-go build-ts
 test: test-go test-ts
 lint: lint-go lint-ts
+prepare: prepare-go
 clean: clean-go
 	rm -rf bin/

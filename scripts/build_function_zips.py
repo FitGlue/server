@@ -17,30 +17,21 @@ def create_function_zip(function_name, src_dir, output_dir):
         shutil.rmtree(temp_dir)
     temp_dir.mkdir(parents=True)
 
-    # Copy function .go files to root (excluding test files and cmd)
+    # Copy function .go files to ROOT (excluding test files and cmd)
     for go_file in function_dir.glob("*.go"):
         # Skip test files, main.go, and anything in cmd
         if go_file.name.endswith("_test.go") or go_file.name == "main.go" or "cmd" in str(go_file):
             continue
         shutil.copy2(go_file, temp_dir / go_file.name)
 
-    # Copy function's pkg directory if it exists (shouldn't after refactor)
-    func_pkg = function_dir / "pkg"
-    if func_pkg.exists():
-        func_pkg_dest = temp_dir / "functions" / function_name / "pkg"
-        func_pkg_dest.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(func_pkg, func_pkg_dest)
-
-    # Copy shared pkg directory
+    # Copy shared pkg directory (excluding test files)
     shared_pkg = src_dir / "pkg"
     if shared_pkg.exists():
-        shutil.copytree(shared_pkg, temp_dir / "pkg")
+        shutil.copytree(shared_pkg, temp_dir / "pkg", ignore=shutil.ignore_patterns('*_test.go'))
 
-    # Copy go.mod and go.sum
+    # Copy go.mod and go.sum to root
     shutil.copy2(src_dir / "go.mod", temp_dir / "go.mod")
     shutil.copy2(src_dir / "go.sum", temp_dir / "go.sum")
-
-    # DON'T copy vendor directory - let Cloud Build download dependencies
 
     # Create zip
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
