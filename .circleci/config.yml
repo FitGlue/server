@@ -47,9 +47,6 @@ jobs:
       - run:
           name: Run Tests
           command: make test
-      - run:
-          name: Prepare for deployment
-          command: make prepare
       - persist_to_workspace:
           root: .
           paths:
@@ -92,6 +89,9 @@ jobs:
             # Set credentials for terraform
             echo "export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json" >> $BASH_ENV
             echo "export PATH=\$PATH:$(pwd)/google-cloud-sdk/bin" >> $BASH_ENV
+      - run:
+          name: Prepare src for deployment
+          command: make prepare
       - run:
           name: Terraform Init
           command: |

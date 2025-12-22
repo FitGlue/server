@@ -43,6 +43,9 @@ func init() {
 }
 
 func initService(ctx context.Context) (*UploaderService, error) {
+	if svc != nil {
+		return svc, nil
+	}
 	svcOnce.Do(func() {
 		baseSvc, err := bootstrap.NewService(ctx)
 		if err != nil {

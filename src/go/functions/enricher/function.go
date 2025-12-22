@@ -30,6 +30,9 @@ func init() {
 }
 
 func initService(ctx context.Context) (*bootstrap.Service, error) {
+	if svc != nil {
+		return svc, nil
+	}
 	svcOnce.Do(func() {
 		svc, svcErr = bootstrap.NewService(ctx)
 		if svcErr != nil {
