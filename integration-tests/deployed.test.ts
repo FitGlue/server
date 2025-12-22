@@ -67,7 +67,7 @@ describe('Deployed Environment Integration Tests', () => {
   });
 
   describe('Pub/Sub-triggered functions', () => {
-    // Increase timeout for these tests as Cloud Functions can take time to cold start
+    // Increase timeout for these tests as Cloud Functions can ta time to cold start
     jest.setTimeout(60000); // 60 seconds
 
     it('should trigger Enricher via Pub/Sub', async () => {
@@ -76,7 +76,7 @@ describe('Deployed Environment Integration Tests', () => {
         user_id: userId,
         timestamp: new Date().toISOString(),
         original_payload_json: JSON.stringify({ test: 'data' }),
-        metadata: { test: true },
+        metadata: { test: 'true' }, // map<string, string> per protobuf
       };
 
       console.log('[Enricher] Publishing to raw-activity topic...');
@@ -160,7 +160,7 @@ describe('Deployed Environment Integration Tests', () => {
             exercises: [],
           },
         }),
-        metadata: { e2e_test: true },
+        metadata: { e2e_test: 'true' }, // map<string, string> per protobuf
       };
 
       console.log('[E2E] Publishing to raw-activity topic...');
