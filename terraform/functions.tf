@@ -60,15 +60,8 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
   }
 
   service_config {
-    max_instance_count = 10
     available_memory   = "256Mi"
     timeout_seconds    = 60
-    secret_environment_variables {
-      key        = "HEVY_SIGNING_SECRET"
-      project_id = var.project_id
-      secret     = "hevy-api-key"
-      version    = "latest"
-    }
   }
 }
 
@@ -123,9 +116,6 @@ resource "google_cloudfunctions2_function" "enricher" {
   service_config {
     available_memory   = "512Mi"
     timeout_seconds    = 300
-    environment_variables = {
-        FITBIT_SECRET_ID = "projects/${var.project_id}/secrets/fitbit-client-secret/versions/latest"
-    }
   }
 
   event_trigger {
@@ -156,6 +146,11 @@ resource "google_cloudfunctions2_function" "router" {
     environment_variables = {}
   }
 
+  service_config {
+    available_memory   = "512Mi"
+    timeout_seconds    = 300
+  }
+
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
@@ -179,6 +174,11 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
       }
     }
     environment_variables = {}
+  }
+
+  service_config {
+    available_memory   = "512Mi"
+    timeout_seconds    = 300
   }
 
   event_trigger {
