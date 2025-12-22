@@ -2,8 +2,13 @@
 // Main entrypoint for Monorepo deployment.
 // Function Framework will look for exports here if this is the main package.
 
-const hevy = require('./hevy-handler/build/index');
-const keiser = require('./keiser-poller/build/index');
+// Lazy load handlers to prevent one build failure from crashing the entire entrypoint
+exports.hevyWebhookHandler = (req, res) => {
+  const hevy = require('./hevy-handler/build/index');
+  return hevy.hevyWebhookHandler(req, res);
+};
 
-exports.hevyWebhookHandler = hevy.hevyWebhookHandler;
-exports.keiserPoller = keiser.keiserPoller;
+exports.keiserPoller = (req, res) => {
+  const keiser = require('./keiser-poller/build/index');
+  return keiser.keiserPoller(req, res);
+};

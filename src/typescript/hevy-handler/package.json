@@ -18,10 +18,10 @@
     "@google-cloud/secret-manager": "^5.0.0",
     "firebase-admin": "^11.8.0",
     "typescript": "^5.0.0",
-    "winston": "^3.19.0"
+    "winston": "^3.19.0",
+    "@fitglue/shared": "^1.0.0"
   },
   "devDependencies": {
-    "@fitglue/shared": "^1.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^20.0.0",
     "concurrently": "^8.0.0",

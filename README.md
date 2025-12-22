@@ -19,10 +19,10 @@ FitGlue uses an event-driven, microservices architecture deployed as Google Clou
 └─────────────────┘      └──────┬───────┘
                                 │
                                 ▼
-                         ┌──────────────┐
-                         │  Enricher    │
-                         │ (FIT Gen)    │
-                         └──────┬───────┘
+                         ┌──────────────┐      ┌─────────────────┐
+                         │  Enricher    │◀────▶│ External Data   │
+                         │ (FIT Gen)    │      │ (e.g. FitBit)   │
+                         └──────┬───────┘      └─────────────────┘
                                 │
                                 ▼
                          ┌──────────────┐
@@ -31,8 +31,9 @@ FitGlue uses an event-driven, microservices architecture deployed as Google Clou
                                 │
                                 ▼
                          ┌──────────────┐
-                         │   Strava     │
-                         │  Uploader    │
+                         │    Egress    │
+                         │ Destinations │
+                         │ (e.g. Strava)│
                          └──────────────┘
 ```
 
