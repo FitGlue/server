@@ -117,15 +117,11 @@ workflows:
           filters:
             branches:
               only: main
-      - approve-test:
-          type: approval
-          requires:
-            - deploy-dev
       - deploy:
           name: deploy-test
           target: test
           requires:
-            - approve-test
+            - deploy-dev
       - approve-prod:
           type: approval
           requires:
