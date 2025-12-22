@@ -88,7 +88,7 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 	logger.Info("Starting upload")
 
 	// Log execution start
-	execID, err := execution.LogStart(ctx, svc.DB, "strava-uploader", execution.ExecutionOptions{
+	execID, err = execution.LogStart(ctx, svc.DB, "strava-uploader", execution.ExecutionOptions{
 		UserID:      eventPayload.UserId,
 		TriggerType: "pubsub",
 		Inputs:      eventPayload.UserId,

@@ -64,7 +64,7 @@ func RouteActivity(ctx context.Context, e event.Event) error {
 	logger.Info("Starting routing")
 
 	// Log execution start
-	execID, err := execution.LogStart(ctx, svc.DB, "router", execution.ExecutionOptions{
+	execID, err = execution.LogStart(ctx, svc.DB, "router", execution.ExecutionOptions{
 		UserID:      eventPayload.UserId,
 		TriggerType: "pubsub",
 		Inputs:      eventPayload.UserId,
