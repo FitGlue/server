@@ -39,9 +39,20 @@ echo ""
 
 # Enable required APIs
 echo "🔌 Enabling required APIs..."
-gcloud services enable iamcredentials.googleapis.com --project="$PROJECT_ID"
-gcloud services enable cloudresourcemanager.googleapis.com --project="$PROJECT_ID"
-gcloud services enable iam.googleapis.com --project="$PROJECT_ID"
+gcloud services enable \
+  iamcredentials.googleapis.com \
+  cloudresourcemanager.googleapis.com \
+  iam.googleapis.com \
+  cloudfunctions.googleapis.com \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  eventarc.googleapis.com \
+  pubsub.googleapis.com \
+  firestore.googleapis.com \
+  cloudscheduler.googleapis.com \
+  storage.googleapis.com \
+  --project="$PROJECT_ID"
 echo "APIs enabled"
 echo ""
 

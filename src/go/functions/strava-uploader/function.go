@@ -90,6 +90,7 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 		"service":   "strava-uploader",
 		"status":    "STARTED",
 		"inputs":    eventPayload.UserId,
+		"timestamp": time.Now(),
 		"startTime": time.Now(),
 	}
 	if err := svc.DB.SetExecution(ctx, execID, execData); err != nil {
@@ -151,8 +152,9 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 	}
 
 	svc.DB.UpdateExecution(ctx, execID, map[string]interface{}{
-		"status":  "SUCCESS",
-		"endTime": time.Now(),
+		"status":    "SUCCESS",
+		"timestamp": time.Now(),
+		"endTime":   time.Now(),
 	})
 
 	logger.Info("Upload success")

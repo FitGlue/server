@@ -70,6 +70,7 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 		"service":   "enricher",
 		"status":    "STARTED",
 		"inputs":    &rawEvent,
+		"timestamp": time.Now(),
 		"startTime": time.Now(),
 	}
 	if err := svc.DB.SetExecution(ctx, execID, execData); err != nil {
@@ -124,9 +125,10 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 	}
 
 	svc.DB.UpdateExecution(ctx, execID, map[string]interface{}{
-		"status":  "SUCCESS",
-		"outputs": enrichedEvent,
-		"endTime": time.Now(),
+		"status":    "SUCCESS",
+		"outputs":   enrichedEvent,
+		"timestamp": time.Now(),
+		"endTime":   time.Now(),
 	})
 
 	logger.Info("Enrichment complete")

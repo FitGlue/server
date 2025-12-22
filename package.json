@@ -4,9 +4,14 @@
   },
   "scripts": {
     "test:integration": "jest",
+    "test:local": "TEST_ENVIRONMENT=local jest --testPathPatterns=local.test.ts",
+    "test:deployed": "jest --testPathPatterns=deployed.test.ts",
+    "test:dev": "TEST_ENVIRONMENT=dev npm run test:deployed",
+    "test:test": "TEST_ENVIRONMENT=test npm run test:deployed",
     "build": "echo 'No build script yet'"
   },
   "devDependencies": {
+    "@google-cloud/pubsub": "^4.10.0",
     "@google-cloud/storage": "^7.18.0",
     "@types/jest": "^30.0.0",
     "axios": "^1.13.2",

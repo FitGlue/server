@@ -1,8 +1,9 @@
 import * as admin from 'firebase-admin';
 import { Storage } from '@google-cloud/storage';
+import { config } from './config';
 
-const PROJECT_ID = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server';
-const GCS_BUCKET = process.env.GCS_ARTIFACT_BUCKET || 'fitglue-server-artifacts';
+const PROJECT_ID = config.projectId;
+const GCS_BUCKET = config.gcsBucket;
 
 if (!admin.apps.length) {
   admin.initializeApp({

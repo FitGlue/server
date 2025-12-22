@@ -1,0 +1,46 @@
+{
+  "local": {
+    "projectId": "fitglue-server",
+    "region": "us-central1",
+    "gcsBucket": "fitglue-server-artifacts",
+    "endpoints": {
+      "hevyWebhook": "http://localhost:8080",
+      "enricher": "http://localhost:8081",
+      "router": "http://localhost:8082",
+      "stravaUploader": "http://localhost:8083"
+    }
+  },
+  "dev": {
+    "projectId": "fitglue-server-dev",
+    "region": "us-central1",
+    "gcsBucket": "fitglue-server-dev-artifacts",
+    "endpoints": {
+      "hevyWebhook": "https://hevy-webhook-handler-56cqxmt5jq-uc.a.run.app"
+    },
+    "topics": {
+      "rawActivity": "topic-raw-activity",
+      "enrichedActivity": "topic-enriched-activity",
+      "uploadStrava": "topic-job-upload-strava"
+    }
+  },
+  "test": {
+    "projectId": "fitglue-server-test",
+    "region": "us-central1",
+    "gcsBucket": "fitglue-server-test-artifacts",
+    "topics": {
+      "rawActivity": "topic-raw-activity",
+      "enrichedActivity": "topic-enriched-activity",
+      "uploadStrava": "topic-job-upload-strava"
+    }
+  },
+  "prod": {
+    "projectId": "fitglue-server-prod",
+    "region": "us-central1",
+    "gcsBucket": "fitglue-server-prod-artifacts",
+    "topics": {
+      "rawActivity": "topic-raw-activity",
+      "enrichedActivity": "topic-enriched-activity",
+      "uploadStrava": "topic-job-upload-strava"
+    }
+  }
+}

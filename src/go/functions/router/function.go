@@ -66,6 +66,7 @@ func RouteActivity(ctx context.Context, e event.Event) error {
 		"service":   "router",
 		"status":    "STARTED",
 		"inputs":    eventPayload.UserId,
+		"timestamp": time.Now(),
 		"startTime": time.Now(),
 	}
 	if err := svc.DB.SetExecution(ctx, execID, execRefData); err != nil {
@@ -95,9 +96,10 @@ func RouteActivity(ctx context.Context, e event.Event) error {
 	}
 
 	svc.DB.UpdateExecution(ctx, execID, map[string]interface{}{
-		"status":  "SUCCESS",
-		"outputs": routings,
-		"endTime": time.Now(),
+		"status":    "SUCCESS",
+		"outputs":   routings,
+		"timestamp": time.Now(),
+		"endTime":   time.Now(),
 	})
 
 	logger.Info("Routed activity", "routes", routings)

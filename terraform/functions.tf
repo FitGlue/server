@@ -116,6 +116,11 @@ resource "google_cloudfunctions2_function" "enricher" {
   service_config {
     available_memory   = "512Mi"
     timeout_seconds    = 300
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      ENABLE_PUBLISH       = "true"
+    }
   }
 
   event_trigger {
@@ -149,6 +154,11 @@ resource "google_cloudfunctions2_function" "router" {
   service_config {
     available_memory   = "512Mi"
     timeout_seconds    = 300
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      ENABLE_PUBLISH       = "true"
+    }
   }
 
   event_trigger {
@@ -179,6 +189,10 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
   service_config {
     available_memory   = "512Mi"
     timeout_seconds    = 300
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+    }
   }
 
   event_trigger {
