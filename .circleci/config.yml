@@ -62,11 +62,12 @@ jobs:
       - attach_workspace:
           at: .
       - run:
+          name: Install dependencies
+          command: |
+            apk add --no-cache python3 py3-pip curl bash make
+      - run:
           name: Authenticate with GCP via OIDC
           command: |
-            # Install dependencies for gcloud CLI (Alpine Linux)
-            apk add --no-cache python3 py3-pip curl bash
-
             # Download and install gcloud SDK
             curl -O https://dl.google.com/dl/cloudsdk/channels/rapid/downloads/google-cloud-cli-linux-x86_64.tar.gz
             tar -xf google-cloud-cli-linux-x86_64.tar.gz
