@@ -1,0 +1,15 @@
+syntax = "proto3";
+package fitglue;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "fitglue/pkg/shared/pb";
+
+// Stored in Firestore collection `ingress_api_keys/{hash}`
+message ApiKeyRecord {
+  string user_id = 1;
+  string label = 2;
+  repeated string scopes = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_used_at = 5;
+}

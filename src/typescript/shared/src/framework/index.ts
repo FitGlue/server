@@ -2,6 +2,7 @@ import { HttpFunction } from '@google-cloud/functions-framework';
 import * as admin from 'firebase-admin';
 import * as winston from 'winston';
 import { logExecutionStart, logExecutionSuccess, logExecutionFailure } from '../execution/logger';
+import { AuthStrategy, ApiKeyStrategy } from './auth';
 
 // Initialize Firebase (Idempotent)
 if (admin.apps.length === 0) {
@@ -39,6 +40,8 @@ export interface FrameworkContext {
   db: admin.firestore.Firestore;
   logger: winston.Logger;
   executionId: string;
+  userId?: string;
+  authScopes?: string[];
 }
 
 export type FrameworkHandler = (
@@ -46,6 +49,13 @@ export type FrameworkHandler = (
   res: any,
   ctx: FrameworkContext
 ) => Promise<any>;
+
+export interface CloudFunctionOptions {
+    auth?: {
+        strategies: ('api_key')[]; // Extensible list of strategy names
+        requiredScopes?: string[];
+    };
+}
 
 /**
  * Extract metadata from HTTP request
@@ -89,12 +99,62 @@ function extractMetadata(req: any): { userId?: string; testRunId?: string; trigg
   return { userId, testRunId, triggerType };
 }
 
-export function createCloudFunction(handler: FrameworkHandler): HttpFunction {
+const AUTHORIZED_STRATEGIES: Record<string, AuthStrategy> = {
+    'api_key': new ApiKeyStrategy()
+};
+
+export function createCloudFunction(handler: FrameworkHandler, options?: CloudFunctionOptions): HttpFunction {
   return async (req, res) => {
     const serviceName = process.env.K_SERVICE || 'unknown-function';
 
     // Extract metadata from request (handles both HTTP and Pub/Sub)
-    const { userId, testRunId, triggerType } = extractMetadata(req);
+    let { userId, testRunId, triggerType } = extractMetadata(req);
+
+    // Initial Logger (Pre-Auth)
+    const preambleLogger = logger.child({});
+
+    // --- AUTHENTICATION MIDDLEWARE ---
+    let authScopes: string[] = [];
+    if (options?.auth?.strategies && options.auth.strategies.length > 0) {
+        let authenticated = false;
+
+        // Prepare context for Auth Strategy
+        const tempCtx: FrameworkContext = { db, logger: preambleLogger, executionId: 'pre-auth' };
+
+        for (const strategyName of options.auth.strategies) {
+            const strategy = AUTHORIZED_STRATEGIES[strategyName];
+            if (strategy) {
+                try {
+                    const result = await strategy.authenticate(req, tempCtx);
+                    if (result) {
+                        userId = result.userId; // Auth overrides extracted user ID
+                        authScopes = result.scopes;
+                        authenticated = true;
+                        break;
+                    }
+                } catch (e) {
+                    preambleLogger.warn(`Auth strategy ${strategyName} failed`, { error: e });
+                }
+            }
+        }
+
+        if (!authenticated) {
+            preambleLogger.warn('Request failed authentication filters');
+            res.status(401).send('Unauthorized');
+            return;
+        }
+
+        // Scope Validation (Optional)
+        if (options.auth.requiredScopes) {
+             const hasScopes = options.auth.requiredScopes.every(scope => authScopes.includes(scope));
+             if (!hasScopes) {
+                 preambleLogger.warn(`Authenticated user ${userId} missing required scopes`);
+                 res.status(403).send('Forbidden: Insufficient Scopes');
+                 return;
+             }
+        }
+    }
+    // --- END AUTH ---
 
     // Log execution start
     let executionId: string;
@@ -118,7 +178,9 @@ export function createCloudFunction(handler: FrameworkHandler): HttpFunction {
     const ctx: FrameworkContext = {
       db,
       logger: contextLogger,
-      executionId
+      executionId,
+      userId,
+      authScopes
     };
 
     contextLogger.info('Function started');

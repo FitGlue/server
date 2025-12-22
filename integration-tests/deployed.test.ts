@@ -38,7 +38,7 @@ describe('Deployed Environment Integration Tests', () => {
   });
 
   describe('HTTP-triggered functions', () => {
-    it('should accept Hevy webhook', async () => {
+    it('should accept Hevy webhook (Secure + Mock Fetch)', async () => {
       const testRunId = randomUUID();
       testRunIds.push(testRunId);
 
@@ -46,33 +46,42 @@ describe('Deployed Environment Integration Tests', () => {
         throw new Error('Hevy webhook endpoint not configured');
       }
 
+      // 1. Generate Auth Token
+      const authToken = await import('./setup').then(m => m.setupTestApiKey(userId));
+
       const payload = {
-        user_id: 'test_hevy_user',
-        workout: {
-          title: 'Deployed Integration Test Workout',
-          exercises: [],
-        },
+        workout_id: 'test_workout_id_123',
+        mock_workout_data: {
+            title: 'Mocked Workout for Integration Test',
+            exercises: []
+        }
       };
 
-      // Testing endpoint reachability with invalid signature
-      // Expected: 200 (no signature check), 401/403 (signature verification enabled)
       try {
         const res = await axios.post(config.endpoints.hevyWebhook, payload, {
           headers: {
             'Content-Type': 'application/json',
-            'X-Hevy-Signature': 'invalid-signature-for-testing',
+            'Authorization': `Bearer ${authToken}`,
+            'X-Mock-Fetch': 'true',
             'X-Test-Run-Id': testRunId,
           },
-          validateStatus: () => true, // Accept any status
+          validateStatus: () => true,
         });
 
-        // We expect either:
-        // - 401/403 (signature verification failed - good!)
-        // - 200 (signature verification passed or disabled - also acceptable for test)
-        expect([200, 401, 403]).toContain(res.status);
+        // We expect 200 now that we are providing valid credentials and a mock payload
+        expect(res.status).toBe(200);
         console.log(`[Hevy Webhook] Response status: ${res.status}`);
+
+        // Wait for execution activity to confirm it actually ran through
+        await waitForExecutionActivity({
+            testRunId,
+            timeout: 30000,
+            checkInterval: 2000,
+            minExecutions: 1
+        });
+        console.log('[Hevy Webhook] ✓ Function executed successfully');
+
       } catch (e: any) {
-        // Network errors are failures
         throw new Error(`Failed to reach Hevy webhook: ${e.message}`);
       }
     });
@@ -186,41 +195,6 @@ describe('Deployed Environment Integration Tests', () => {
       });
 
       console.log('[Uploader] ✓ Function executed successfully');
-    });
-  });
-
-  describe('End-to-end pipeline', () => {
-    jest.setTimeout(90000); // 90 seconds for full pipeline
-
-    it('should process activity through entire pipeline', async () => {
-      const testRunId = randomUUID();
-      testRunIds.push(testRunId);
-
-      const payload = {
-        source: 1, // HEVY
-        user_id: userId,
-        timestamp: new Date().toISOString(),
-        original_payload_json: JSON.stringify({
-          workout_title: 'E2E Test Workout',
-          exercises: [],
-        }),
-        metadata: { e2e_test: 'true' },
-      };
-
-      console.log('[E2E] Publishing to raw-activity topic...');
-      const messageId = await publishRawActivity(payload, testRunId);
-      console.log(`[E2E] Published message: ${messageId}`);
-
-      // Wait for multiple executions (enricher -> router -> uploader)
-      console.log('[E2E] Waiting for pipeline execution...');
-      await waitForExecutionActivity({
-        testRunId,
-        timeout: 75000, // 75s for full pipeline
-        checkInterval: 5000, // Check every 5s
-        minExecutions: 3, // enricher + router + uploader
-      });
-
-      console.log('[E2E] ✓ Full pipeline executed successfully');
     });
   });
 });

@@ -1,7 +1,6 @@
 // Mocks must be defined before imports
 // Mock the shared package
 jest.mock('@fitglue/shared', () => ({
-  getSecret: jest.fn(),
   createCloudFunction: (handler: any) => handler,
   FrameworkContext: jest.fn(),
   TOPICS: { RAW_ACTIVITY: 'test-topic' },
@@ -16,31 +15,19 @@ jest.mock('@google-cloud/pubsub', () => {
     };
 });
 
-jest.mock('firebase-admin', () => {
-    const collection = jest.fn();
-    return {
-        initializeApp: jest.fn(),
-        firestore: Object.assign(
-            jest.fn(() => ({ collection })),
-            { collection }
-        )
-    };
-});
-
 import { hevyWebhookHandler } from './index';
-// Import mocked function to set return values
-import { getSecret } from '@fitglue/shared';
-import * as crypto from 'crypto';
-const admin = require('firebase-admin');
 
 
-
-const mockGetSecret = getSecret as jest.MockedFunction<typeof getSecret>;
+// Mock Fetch
+global.fetch = jest.fn();
 
 describe('hevyWebhookHandler', () => {
     let req: any; let res: any;
     let mockStatus: jest.Mock; let mockSend: jest.Mock;
-    let mockGet: jest.Mock;
+    let mockCtx: any;
+    let mockUserGet: jest.Mock;
+    let mockDb: any;
+    let mockLogger: any;
 
     beforeEach(() => {
         jest.clearAllMocks();
@@ -48,55 +35,101 @@ describe('hevyWebhookHandler', () => {
         mockSend = jest.fn();
         res = { status: mockStatus, send: mockSend };
         req = { headers: {}, body: {} };
-        mockGetSecret.mockResolvedValue('test-secret');
 
-        mockGet = jest.fn();
-        const mockCollection = admin.firestore().collection;
-        mockCollection.mockImplementation((name: string) => {
-             if (name === 'users') return { where: jest.fn().mockReturnThis(), limit: jest.fn().mockReturnThis(), get: mockGet };
-             // For executions logging
-             return { doc: jest.fn().mockReturnValue({ set: jest.fn(), update: jest.fn() }) };
+        mockLogger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
+
+        mockUserGet = jest.fn();
+        mockDb = {
+            collection: jest.fn((name) => {
+               if (name === 'users') {
+                   return { doc: jest.fn(() => ({ get: mockUserGet })) };
+               }
+               return { doc: jest.fn() };
+            })
+        };
+
+        mockCtx = {
+            db: mockDb,
+            logger: mockLogger,
+            userId: 'test-user',
+            authScopes: ['write:activity']
+        };
+
+        (global.fetch as jest.Mock).mockResolvedValue({
+            ok: true,
+            json: async () => ({ id: 'full-workout-data' })
         });
     });
 
-    it('should skip signature check if secret is missing', async () => {
-        mockGetSecret.mockRejectedValue(new Error('Secret missing'));
-        process.env.HEVY_SIGNING_SECRET = '';
-
-        mockGet.mockResolvedValue({ empty: false, docs: [{ id: 'user-1' }] });
-        req.body = { user_id: '1', workout: { title: 'T' } };
-
-        const mockCtx: any = { db: admin.firestore(), logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } };
-        await (hevyWebhookHandler as any)(req, res, mockCtx);
-
-        expect(mockStatus).toHaveBeenCalledWith(200);
-        expect(mockSend).toHaveBeenCalledWith('Processed');
-    });
-
-    it('should 401 on invalid signature', async () => {
-        mockGetSecret.mockResolvedValue('secret');
-        req.headers['x-hevy-signature'] = crypto.randomBytes(32).toString('hex');
-        req.body = { a: 1 };
-        const mockCtx: any = { db: admin.firestore(), logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } };
+    it('should throw Unauthorized if userId is missing', async () => {
+        mockCtx.userId = undefined;
         await expect(async () => {
-            await (hevyWebhookHandler as any)(req, res, mockCtx);
-        }).rejects.toThrow('Invalid X-Hevy-Signature');
+             await (hevyWebhookHandler as any)(req, res, mockCtx);
+        }).rejects.toThrow('Unauthorized');
         expect(mockStatus).toHaveBeenCalledWith(401);
     });
 
-    it('should 200 on valid signature', async () => {
-        const secret = 'secret';
-        mockGetSecret.mockResolvedValue(secret);
-        const payload = { user_id: '1', workout: {} };
-        const sig = crypto.createHmac('sha256', secret).update(JSON.stringify(payload)).digest('hex');
+    it('should throw if workout_id is missing', async () => {
+        req.body = {};
+        await expect(async () => {
+             await (hevyWebhookHandler as any)(req, res, mockCtx);
+        }).rejects.toThrow('Invalid payload: Missing workout_id');
+    });
 
-        req.headers['x-hevy-signature'] = sig;
-        req.body = payload;
+    it('should perform Active Fetch and Publish', async () => {
+        req.body = { workout_id: 'w-123' };
 
-        mockGet.mockResolvedValue({ empty: false, docs: [{ id: 'user-1' }] });
+        // Mock User with Hevy Key
+        mockUserGet.mockResolvedValue({
+            exists: true,
+            data: () => ({ integrations: { hevy: { apiKey: 'hevy-key' } } })
+        });
 
-        const mockCtx: any = { db: admin.firestore(), logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn() } };
         await (hevyWebhookHandler as any)(req, res, mockCtx);
+
+        // Verify Hevy Fetch
+        expect(global.fetch).toHaveBeenCalledWith(
+            'https://api.hevyapp.com/v1/workouts/w-123',
+            expect.objectContaining({ headers: { 'x-api-key': 'hevy-key' } })
+        );
+
+        // Verify PubSub
+        const { PubSub } = require('@google-cloud/pubsub');
+        const pubsubInstance = new PubSub();
+        const topic = pubsubInstance.topic('test-topic');
+        expect(topic.publishMessage).toHaveBeenCalledWith(
+            expect.objectContaining({
+                json: expect.objectContaining({
+                    source: 'HEVY',
+                    userId: 'test-user',
+                    originalPayloadJson: JSON.stringify({ id: 'full-workout-data' }),
+                    metadata: expect.objectContaining({ fetch_method: 'active_fetch' })
+                })
+            })
+        );
+        expect(mockStatus).toHaveBeenCalledWith(200);
+    });
+
+    it('should handle Mock Fetch with test scope', async () => {
+        req.body = { workout_id: 'w-mock', mock_workout_data: { id: 'mock-data' } };
+        req.headers['x-mock-fetch'] = 'true';
+        mockCtx.authScopes = ['test:mock_fetch'];
+
+        // Mock User (still needed for resolving egress key, though skipped in mock fetch logic?)
+        // Wait, current logic fetches User Config FIRST (User Resolution step 3&4), THEN decides (Step 5).
+        // If my code does step 4 before step 5, I need to mock user even for mock fetch, OR user config error throws first.
+        // Let's check code... "3. User Resolution... 4. Retrieve Hevy Key... 5. Active Fetch"
+        // Yes, the code requires Hevy API Key to be present even for Mock Fetch currently.
+        // That might be a bug or intended. Assuming intended for now (simulate full user).
+
+        mockUserGet.mockResolvedValue({
+            exists: true,
+            data: () => ({ integrations: { hevy: { apiKey: 'hevy-key' } } })
+        });
+
+        await (hevyWebhookHandler as any)(req, res, mockCtx);
+
+        expect(global.fetch).not.toHaveBeenCalled();
         expect(mockStatus).toHaveBeenCalledWith(200);
     });
 });

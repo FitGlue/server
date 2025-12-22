@@ -1,101 +1,112 @@
 import { PubSub } from "@google-cloud/pubsub";
-import * as crypto from "crypto";
-// Using build-injected shared modules (Protobuf Generated)
 
-
-// Retrieve secret from environment (secret manager injection)
-import { TOPICS, createCloudFunction, getSecret, ActivityPayload, FrameworkContext, ActivitySource } from '@fitglue/shared';
+import { TOPICS, createCloudFunction, ActivityPayload, FrameworkContext, ActivitySource } from '@fitglue/shared';
 
 const pubsub = new PubSub();
 const TOPIC_NAME = TOPICS.RAW_ACTIVITY;
 
 const handler = async (req: any, res: any, ctx: FrameworkContext) => {
-  const { db, logger } = ctx;
+  const { db, logger, userId, authScopes } = ctx;
   const timestamp = new Date().toISOString();
 
-  // Cache check or fetch
-  let signingSecret = process.env.HEVY_SIGNING_SECRET;
-  if (!signingSecret) {
-      try {
-          // Fallback to project ID or default
-          const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-project';
-          signingSecret = await getSecret(projectId, 'hevy-signing-secret');
-      } catch (e) {
-          logger.warn('Could not fetch secret from GSM', { error: e });
-      }
+  // 1. Verify Authentication (Already handled by Middleware, but safe guard)
+  if (!userId) {
+      logger.error('Handler called without authenticated userId');
+      res.status(401).send('Unauthorized');
+      throw new Error('Unauthorized');
   }
 
-  // 1. Signature Validation
-  const signature = req.headers['x-hevy-signature'] as string;
+  logger.info(`Authenticated user: ${userId}`);
 
-  // In production, we MUST return 401 if secret is configured but signature missing/invalid.
-  if (signingSecret) {
-       // Cast req to any to access rawBody (provided by Google Cloud Functions framework)
-       const rawBody = (req as any).rawBody || req.body;
-       if (!verifySignature(rawBody, signature, signingSecret)) {
-          logger.warn(`Invalid signature attempt. Sig: ${signature}`);
-          res.status(401).send('Unauthorized');
-          throw new Error('Invalid X-Hevy-Signature');
+  // 2. Extract Webhook Data
+  const payload = req.body;
+  const workoutId = payload.workout_id;
+
+  if (!workoutId) {
+      throw new Error('Invalid payload: Missing workout_id');
+  }
+
+  // 3. User Resolution (Egress Config Lookup)
+  const userDoc = await db.collection('users').doc(userId).get();
+  if (!userDoc.exists) {
+      logger.error(`Authenticated user ${userId} not found in users collection`);
+      res.status(500).send('User configuration error');
+      throw new Error('User not found');
+  }
+
+  const userData = userDoc.data();
+  // 4. Retrieve Hevy API Key for Active Fetch
+  const hevyApiKey = userData?.integrations?.hevy?.apiKey;
+
+  if (!hevyApiKey) {
+      logger.error(`User ${userId} missing integrations.hevy.apiKey`);
+      res.status(200).send('Configuration Error');
+      return { status: 'FAILED', reason: 'Missing Hevy API Key' };
+  }
+
+  // 5. Active Fetch Decision
+  let fullWorkout: any;
+  const requestMock = req.headers['x-mock-fetch'] === 'true' || payload.mock_workout_data;
+
+  if (requestMock) {
+      // Secure Mock Fetch: ONLY allow if key has test scope
+      if (!authScopes || !authScopes.includes('test:mock_fetch')) {
+          logger.warn(`User ${userId} attempted mock fetch without scope`);
+          res.status(403).send('Forbidden: Missing test scope');
+          throw new Error('Missing test:mock_fetch scope');
       }
+
+      if (!payload.mock_workout_data) {
+          throw new Error('Mock fetch requested but missing mock_workout_data');
+      }
+      logger.info('Using mock workout data (authorized test scope)');
+      fullWorkout = payload.mock_workout_data;
+
   } else {
-      logger.warn('HEVY_SIGNING_SECRET not set. Skipping signature verification (unsafe).');
+      // Real Fetch
+      logger.info(`Fetching workout ${workoutId} from Hevy API`);
+      try {
+          const response = await fetch(`https://api.hevyapp.com/v1/workouts/${workoutId}`, {
+              headers: {
+                  'x-api-key': hevyApiKey
+              }
+          });
+
+          if (!response.ok) {
+              throw new Error(`Hevy API error: ${response.status} ${response.statusText}`);
+          }
+
+          fullWorkout = await response.json();
+      } catch (err: any) {
+          logger.error('Failed to fetch workout from Hevy', { error: err.message, workoutId });
+          throw err;
+      }
   }
 
-  // 2. Extract Payload
-  const workoutData = req.body;
-  if (!workoutData || !workoutData.workout) {
-      throw new Error('Invalid payload: Missing workout data');
-  }
-
-  // 3. User Resolution (Multi-Tenancy)
-  const hevyUserId = workoutData.user_id;
-  if (!hevyUserId) {
-      throw new Error('Invalid payload: Missing user_id');
-  }
-
-  // Lookup user by Hevy ID
-  const userSnapshot = await db.collection('users')
-      .where('integrations.hevy.userId', '==', hevyUserId)
-      .limit(1)
-      .get();
-
-  if (userSnapshot.empty) {
-      logger.warn(`Webhook received for unknown Hevy user: ${hevyUserId}`);
-      res.status(200).send('User not configured');
-      return { status: 'SKIPPED', reason: 'User not found' };
-  }
-
-  const userId = userSnapshot.docs[0].id;
-
-  // 4. Publish to Pub/Sub with Protobuf Typing
+  // 6. Publish Fetched Data
   const messagePayload: ActivityPayload = {
       source: ActivitySource.SOURCE_HEVY,
       userId: userId,
       timestamp: timestamp,
-      originalPayloadJson: JSON.stringify(workoutData),
-      metadata: {}
+      originalPayloadJson: JSON.stringify(fullWorkout),
+      metadata: {
+          'fetch_method': requestMock ? 'mock_fetch' : 'active_fetch',
+          'webhook_id': workoutId
+      }
   };
 
   const messageId = await pubsub.topic(TOPIC_NAME).publishMessage({
       json: messagePayload,
   });
 
-  logger.info("Processed workout", { messageId, userId });
+  logger.info("Processed and fetched workout", { messageId, userId, workoutId });
   res.status(200).send('Processed');
 
   return { pubsubMessageId: messageId };
 };
 
-export const hevyWebhookHandler = createCloudFunction(handler);
-
-function verifySignature(body: Buffer | any, signature: string | undefined, secret: string): boolean {
-    if (!signature) return false;
-
-    // Use rawBody (Buffer) if available, otherwise fallback to JSON (for local/testing)
-    const hmac = crypto.createHmac('sha256', secret);
-    const content = Buffer.isBuffer(body) ? body : JSON.stringify(body);
-    const digest = hmac.update(content).digest('hex');
-
-    // Constant time comparison to prevent timing attacks
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(digest));
-}
+export const hevyWebhookHandler = createCloudFunction(handler, {
+    auth: {
+        strategies: ['api_key']
+    }
+});
