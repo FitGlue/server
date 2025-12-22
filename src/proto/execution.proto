@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package fitglue;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "fitglue/pkg/shared/pb";
+
+// ExecutionRecord represents a function execution in Firestore
+message ExecutionRecord {
+  string execution_id = 1;
+  string service = 2;
+  ExecutionStatus status = 3;
+  google.protobuf.Timestamp timestamp = 4;
+
+  // Optional context fields
+  string user_id = 5;
+  string test_run_id = 6;  // For test cleanup
+
+  // Trigger information
+  string trigger_type = 7;  // "http", "pubsub", "scheduler"
+
+  // Timing
+  google.protobuf.Timestamp start_time = 8;
+  google.protobuf.Timestamp end_time = 9;
+
+  // Results
+  string error_message = 10;
+  string inputs_json = 11;   // JSON-encoded inputs
+  string outputs_json = 12;  // JSON-encoded outputs
+}
+
+enum ExecutionStatus {
+  STATUS_UNKNOWN = 0;
+  STATUS_STARTED = 1;
+  STATUS_SUCCESS = 2;
+  STATUS_FAILED = 3;
+}
