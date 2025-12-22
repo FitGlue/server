@@ -146,7 +146,8 @@ describe('Local E2E Integration Tests', () => {
                     'Ce-Source': '//pubsub.googleapis.com/projects/test/topics/topic-job-upload-strava',
                 }
             });
-             // Expected: function returns error on failure
+        } catch (e: any) {
+            // Expected: function returns error on failure
             expect(e.response).toBeDefined();
             console.log("Uploader Safe Failure:", e.response.data);
         }
