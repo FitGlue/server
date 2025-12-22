@@ -96,6 +96,15 @@ resource "google_cloudfunctions2_function" "keiser_poller" {
   }
 }
 
+# Allow public access for integration testing
+resource "google_cloud_run_service_iam_member" "keiser_poller_invoker" {
+  project  = google_cloudfunctions2_function.keiser_poller.project
+  location = google_cloudfunctions2_function.keiser_poller.location
+  service  = google_cloudfunctions2_function.keiser_poller.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 # ----------------- Enricher Service -----------------
 resource "google_cloudfunctions2_function" "enricher" {
   name        = "enricher"

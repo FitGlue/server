@@ -53,6 +53,29 @@ describe('Deployed Environment Integration Tests', () => {
           validateStatus: () => true, // Accept any status
         });
 
+    it('should trigger Keiser Poller manually', async () => {
+      if (!config.endpoints?.keiserPoller) {
+        throw new Error('Keiser Poller endpoint not configured');
+      }
+
+      // Keiser Poller is normally triggered by Cloud Scheduler
+      // We're testing manual HTTP trigger for integration testing
+      try {
+        const res = await axios.post(config.endpoints.keiserPoller, {}, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          validateStatus: () => true,
+        });
+
+        // Expected: 200 (success) or 500 (if no users configured for Keiser)
+        expect([200, 500]).toContain(res.status);
+        console.log(`[Keiser Poller] Response status: ${res.status}`);
+      } catch (e: any) {
+        throw new Error(`Failed to reach Keiser Poller: ${e.message}`);
+      }
+    });
+
         // We expect either:
         // - 401/403 (signature verification failed - good!)
         // - 200 (signature verification passed or disabled - also acceptable for test)

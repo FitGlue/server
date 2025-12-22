@@ -15,7 +15,8 @@
     "region": "us-central1",
     "gcsBucket": "fitglue-server-dev-artifacts",
     "endpoints": {
-      "hevyWebhook": "https://hevy-webhook-handler-56cqxmt5jq-uc.a.run.app"
+      "hevyWebhook": "https://hevy-webhook-handler-56cqxmt5jq-uc.a.run.app",
+      "keiserPoller": "https://keiser-poller-56cqxmt5jq-uc.a.run.app"
     },
     "topics": {
       "rawActivity": "topic-raw-activity",
