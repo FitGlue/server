@@ -107,7 +107,7 @@ jobs:
           name: Deploy to << parameters.target >>
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
-            terraform -chdir=terraform apply -auto-approve -var="project_id=fitglue-server-<< parameters.target >>"
+            terraform -chdir=terraform apply -auto-approve -var-file="envs/<< parameters.target >>.tfvars"
 
 workflows:
   version: 2
