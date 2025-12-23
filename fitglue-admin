@@ -1,0 +1,12 @@
+#!/bin/bash
+# Wrapper script to run the FitGlue Admin CLI easily
+# Usage: ./fitglue-admin <command> [options]
+
+# Ensure the CLI is built
+if [ ! -f "src/typescript/admin-cli/dist/index.js" ]; then
+    echo "Building Admin CLI..."
+    npm run build --workspace=admin-cli --silent
+fi
+
+# Run the CLI, passing all arguments
+npm start --silent --prefix src/typescript/admin-cli -- "$@"
