@@ -57,14 +57,15 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
         object = google_storage_bucket_object.typescript_source_zip.name
       }
     }
-    environment_variables = {
-      LOG_LEVEL = var.log_level
-    }
+    environment_variables = {}
   }
 
   service_config {
     available_memory   = "256Mi"
     timeout_seconds    = 60
+    environment_variables = {
+      LOG_LEVEL = var.log_level
+    }
   }
 }
 
@@ -91,14 +92,15 @@ resource "google_cloudfunctions2_function" "keiser_poller" {
         object = google_storage_bucket_object.typescript_source_zip.name
       }
     }
-    environment_variables = {
-      LOG_LEVEL = var.log_level
-    }
+    environment_variables = {}
   }
 
   service_config {
     available_memory   = "256Mi"
     timeout_seconds    = 60
+    environment_variables = {
+      LOG_LEVEL = var.log_level
+    }
   }
 }
 
