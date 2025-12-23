@@ -144,7 +144,7 @@ resource "google_cloudfunctions2_function" "enricher" {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.raw_activity.id
-    retry_policy   = "RETRY_POLICY_RETRY"
+    retry_policy   = var.retry_policy
   }
 }
 
@@ -184,7 +184,7 @@ resource "google_cloudfunctions2_function" "router" {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.enriched_activity.id
-    retry_policy   = "RETRY_POLICY_RETRY"
+    retry_policy   = var.retry_policy
   }
 }
 
@@ -210,8 +210,6 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
     timeout_seconds    = 300
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
-    environment_variables = {
-      GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       LOG_LEVEL            = var.log_level
     }
@@ -221,6 +219,6 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.job_upload_strava.id
-    retry_policy   = "RETRY_POLICY_RETRY" # longer retries for upload failures
+    retry_policy   = var.retry_policy # longer retries for upload failures
   }
 }
