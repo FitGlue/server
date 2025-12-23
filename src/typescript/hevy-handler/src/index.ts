@@ -78,9 +78,18 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   });
 
   logger.info("Processed and fetched workout", { messageId, userId, workoutId });
-  res.status(200).send('Processed');
 
-  return { pubsubMessageId: messageId };
+  // Return richer execution result for logging
+  const executionResult = {
+      status: 'Processed',
+      pubsubMessageId: messageId,
+      workoutId,
+      fullWorkout // This will be captured by logExecutionSuccess
+  };
+
+  res.status(200).json({ executionId: ctx.executionId, status: 'Processed' });
+
+  return executionResult;
 };
 
 export const hevyWebhookHandler = createCloudFunction(handler, {

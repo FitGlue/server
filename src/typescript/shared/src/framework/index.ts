@@ -204,6 +204,9 @@ export function createCloudFunction(handler: FrameworkHandler, options?: CloudFu
       // Log execution success
       await logExecutionSuccess(db, executionId, result || {});
 
+      // Attach execution ID to response header
+      res.set('x-execution-id', executionId);
+
       contextLogger.info('Function completed successfully');
 
     } catch (err: any) {
@@ -211,6 +214,9 @@ export function createCloudFunction(handler: FrameworkHandler, options?: CloudFu
       ctx.logger.error('Function failed', { error: err.message, stack: err.stack });
 
       await logExecutionFailure(db, executionId, err);
+
+      // Attach execution ID to response header
+      res.set('x-execution-id', executionId);
 
       if (!res.headersSent) {
         res.status(500).send('Internal Server Error');

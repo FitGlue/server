@@ -15,8 +15,8 @@
     "region": "us-central1",
     "gcsBucket": "fitglue-server-dev-artifacts",
     "endpoints": {
-      "hevyWebhook": "https://hevy-webhook-handler-56cqxmt5jq-uc.a.run.app",
-      "keiserPoller": "https://keiser-poller-56cqxmt5jq-uc.a.run.app"
+      "hevyWebhook": "https://us-central1-fitglue-server-dev.cloudfunctions.net/hevy-webhook-handler",
+      "keiserPoller": "https://us-central1-fitglue-server-dev.cloudfunctions.net/keiser-poller"
     },
     "topics": {
       "rawActivity": "topic-raw-activity",
@@ -28,6 +28,10 @@
     "projectId": "fitglue-server-test",
     "region": "us-central1",
     "gcsBucket": "fitglue-server-test-artifacts",
+    "endpoints": {
+      "hevyWebhook": "https://us-central1-fitglue-server-test.cloudfunctions.net/hevy-webhook-handler",
+      "keiserPoller": "https://us-central1-fitglue-server-test.cloudfunctions.net/keiser-poller"
+    },
     "topics": {
       "rawActivity": "topic-raw-activity",
       "enrichedActivity": "topic-enriched-activity",
@@ -38,6 +42,10 @@
     "projectId": "fitglue-server-prod",
     "region": "us-central1",
     "gcsBucket": "fitglue-server-prod-artifacts",
+    "endpoints": {
+      "hevyWebhook": "https://us-central1-fitglue-server-prod.cloudfunctions.net/hevy-webhook-handler",
+      "keiserPoller": "https://us-central1-fitglue-server-prod.cloudfunctions.net/keiser-poller"
+    },
     "topics": {
       "rawActivity": "topic-raw-activity",
       "enrichedActivity": "topic-enriched-activity",

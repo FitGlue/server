@@ -1,0 +1,25 @@
+{
+  "name": "admin-cli",
+  "version": "1.0.0",
+  "description": "CLI for FitGlue administration",
+  "main": "dist/index.js",
+  "bin": {
+    "fitglue-admin": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "echo 'No tests yet' && exit 0",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@fitglue/shared": "^1.0.0",
+    "commander": "^11.1.0",
+    "firebase-admin": "^11.8.0",
+    "inquirer": "^8.2.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0",
+    "@types/inquirer": "^8.2.10"
+  }
+}

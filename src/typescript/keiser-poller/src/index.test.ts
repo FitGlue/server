@@ -29,7 +29,7 @@ import { keiserPoller } from './index';
 
 describe('Keiser Poller', () => {
     let req: any; let res: any;
-    let mockStatus: jest.Mock; let mockSend: jest.Mock;
+    let mockStatus: jest.Mock; let mockSend: jest.Mock; let mockJson: jest.Mock;
     let mockDb: any;
     let mockLogger: any;
 
@@ -37,7 +37,8 @@ describe('Keiser Poller', () => {
         jest.clearAllMocks();
         mockStatus = jest.fn().mockReturnThis();
         mockSend = jest.fn();
-        res = { status: mockStatus, send: mockSend };
+        mockJson = jest.fn();
+        res = { status: mockStatus, send: mockSend, json: mockJson };
         req = {};
 
         // Mock Firestore Chain
@@ -65,23 +66,23 @@ describe('Keiser Poller', () => {
         const result = await (keiserPoller as any)(req, res, { db: mockDb, logger: mockLogger });
 
         expect(mockStatus).toHaveBeenCalledWith(200);
-        expect(mockSend).toHaveBeenCalledWith('No users');
+        expect(mockJson).toHaveBeenCalledWith({ status: 'NO_USERS' });
         expect(result).toEqual({ status: 'NO_USERS' });
     });
 
     it('should skip user if keiser disabled', async () => {
-         const mockGetUsers = mockDb.collection().limit().get;
-         mockGetUsers.mockResolvedValue({
-             empty: false,
-             size: 1,
-             docs: [{
-                 id: 'user-1',
-                 data: () => ({ integrations: { keiser: { enabled: false } } })
-             }]
-         });
+        const mockGetUsers = mockDb.collection().limit().get;
+        mockGetUsers.mockResolvedValue({
+            empty: false,
+            size: 1,
+            docs: [{
+                id: 'user-1',
+                data: () => ({ integrations: { keiser: { enabled: false } } })
+            }]
+        });
 
-         await (keiserPoller as any)(req, res, { db: mockDb, logger: mockLogger });
-         expect(mockStatus).toHaveBeenCalledWith(200);
-         // Expect 0 sessions
+        await (keiserPoller as any)(req, res, { db: mockDb, logger: mockLogger });
+        expect(mockStatus).toHaveBeenCalledWith(200);
+        // Expect 0 sessions
     });
 });

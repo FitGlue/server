@@ -17,7 +17,7 @@ const mockWorkout = JSON.parse(fs.readFileSync(path.join(__dirname, '../test-dat
 
 describe('hevyWebhookHandler', () => {
     let req: any; let res: any;
-    let mockStatus: jest.Mock; let mockSend: jest.Mock;
+    let mockStatus: jest.Mock; let mockSend: jest.Mock; let mockJson: jest.Mock;
     let mockCtx: any;
     let mockUserGet: jest.Mock;
     let mockDb: any;
@@ -33,7 +33,8 @@ describe('hevyWebhookHandler', () => {
 
         mockStatus = jest.fn().mockReturnThis();
         mockSend = jest.fn();
-        res = { status: mockStatus, send: mockSend };
+        mockJson = jest.fn();
+        res = { status: mockStatus, send: mockSend, json: mockJson, set: jest.fn() };
         req = { headers: {}, body: {} };
 
         mockLogger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
@@ -119,6 +120,8 @@ describe('hevyWebhookHandler', () => {
             })
         );
         expect(mockStatus).toHaveBeenCalledWith(200);
+        expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ status: 'Processed' }));
+        expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ status: 'Processed' }));
     });
 
 
