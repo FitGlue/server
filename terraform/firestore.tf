@@ -6,3 +6,51 @@ resource "google_firestore_database" "database" {
 
   depends_on = [google_project_service.apis]
 }
+
+resource "google_firestore_index" "executions_service_timestamp" {
+  project    = var.project_id
+  database   = google_firestore_database.database.name
+  collection = "executions"
+
+  fields {
+    field_path = "service"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "timestamp"
+    order      = "DESCENDING"
+  }
+}
+
+resource "google_firestore_index" "executions_status_timestamp" {
+  project    = var.project_id
+  database   = google_firestore_database.database.name
+  collection = "executions"
+
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "timestamp"
+    order      = "DESCENDING"
+  }
+}
+
+resource "google_firestore_index" "executions_user_timestamp" {
+  project    = var.project_id
+  database   = google_firestore_database.database.name
+  collection = "executions"
+
+  fields {
+    field_path = "user_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "timestamp"
+    order      = "DESCENDING"
+  }
+}

@@ -44,8 +44,59 @@ Lists all users currently in the Firestore database, along with their creation d
 **DANGER:** Permanently deletes **ALL** users from the system. Requires double confirmation.
 
 **Usage:**
+### `users:clean`
+
+<span style="color:red">**DANGER ZONE**</span>
+
+Deletes **ALL** users from the Firestore database.
+- Requires explicit `yes` confirmation.
+- Requires typing `DELETE ALL` to proceed.
+
 ```bash
 ./fitglue-admin users:clean
+```
+
+## Execution Inspection Commands
+
+### `executions:list`
+
+List recent function executions for debugging and auditing.
+
+**Options:**
+- `-l, --limit <number>`: Limit results (default: 20).
+- `-s, --service <name>`: Filter by service name (e.g., `hevy-webhook-handler`, `enricher`).
+- `-st, --status <status>`: Filter by status (`STATUS_STARTED`, `STATUS_SUCCESS`, `STATUS_FAILED`).
+- `-u, --user <userId>`: Filter by user ID.
+
+```bash
+# List last 20 executions
+./fitglue-admin executions:list
+
+# Filter by service
+./fitglue-admin executions:list --service hevy-webhook-handler
+
+# Find failed executions
+./fitglue-admin executions:list --status STATUS_FAILED
+```
+
+### `executions:get`
+
+Get full details for a specific execution, including input/output payloads (if logged).
+
+```bash
+./fitglue-admin executions:get <executionId>
+```
+
+### `executions:clean`
+
+<span style="color:red">**DANGER ZONE**</span>
+
+Deletes **ALL** execution logs from the Firestore database.
+- Requires explicit `yes` confirmation.
+- Requires typing `DELETE ALL` to proceed.
+
+```bash
+./fitglue-admin executions:clean
 ```
 
 ### `users:delete <userId>`
