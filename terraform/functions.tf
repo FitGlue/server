@@ -57,6 +57,9 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
         object = google_storage_bucket_object.typescript_source_zip.name
       }
     }
+    environment_variables = {
+      LOG_LEVEL = var.log_level
+    }
   }
 
   service_config {
@@ -87,6 +90,9 @@ resource "google_cloudfunctions2_function" "keiser_poller" {
         bucket = google_storage_bucket.source_bucket.name
         object = google_storage_bucket_object.typescript_source_zip.name
       }
+    }
+    environment_variables = {
+      LOG_LEVEL = var.log_level
     }
   }
 
@@ -128,7 +134,9 @@ resource "google_cloudfunctions2_function" "enricher" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       ENABLE_PUBLISH       = "true"
+      LOG_LEVEL            = var.log_level
     }
   }
 
@@ -166,7 +174,9 @@ resource "google_cloudfunctions2_function" "router" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       ENABLE_PUBLISH       = "true"
+      LOG_LEVEL            = var.log_level
     }
   }
 
@@ -200,7 +210,10 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
     timeout_seconds    = 300
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      LOG_LEVEL            = var.log_level
     }
   }
 

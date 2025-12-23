@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"os"
+	"strings"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
@@ -37,8 +39,27 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 			triggerType = "http"
 		}
 
-		// Create base logger
-		logger := slog.With("service", serviceName)
+		// Determine log level from env
+		logLevelStr := strings.ToLower(os.Getenv("LOG_LEVEL"))
+		var logLevel slog.Level
+		switch logLevelStr {
+		case "debug":
+			logLevel = slog.LevelDebug
+		case "info":
+			logLevel = slog.LevelInfo
+		case "warn":
+			logLevel = slog.LevelWarn
+		case "error":
+			logLevel = slog.LevelError
+		default:
+			logLevel = slog.LevelInfo
+		}
+
+		// Create base logger with configured level
+		opts := &slog.HandlerOptions{
+			Level: logLevel,
+		}
+		logger := slog.New(slog.NewJSONHandler(os.Stderr, opts)).With("service", serviceName)
 		if userID != "" {
 			logger = logger.With("user_id", userID)
 		}

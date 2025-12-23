@@ -17,12 +17,29 @@ export class ApiKeyStrategy implements AuthStrategy {
     name = 'api_key';
 
     async authenticate(req: any, ctx: FrameworkContext): Promise<AuthResult | null> {
+        let token: string | undefined;
+
+        // 1. Check Authorization Header (Bearer)
         const authHeader = req.headers['authorization'];
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
-            return null; // Not this strategy or missing
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            token = authHeader.split(' ')[1];
         }
 
-        const token = authHeader.split(' ')[1];
+        // 1b. Check X-Api-Key Header
+        if (!token && req.headers['x-api-key']) {
+            token = req.headers['x-api-key'] as string;
+        }
+
+        // 2. Check Query Parameter (key or api_key)
+        // Note: Functions Framework / Express populates req.query
+        if (!token && req.query) {
+            token = (req.query.key as string) || (req.query.api_key as string);
+        }
+
+        if (!token) {
+            return null; // Not found in support locations
+        }
+
         // High-entropy token (32 bytes), SHA-256 for fast O(1) lookup
         const hash = crypto.createHash('sha256').update(token).digest('hex');
 
@@ -39,7 +56,7 @@ export class ApiKeyStrategy implements AuthStrategy {
         // using set/merge because protobuf types might not map 1:1 to firestore update paths easily
         ctx.db.collection('ingress_api_keys').doc(hash).set({
             lastUsedAt: admin.firestore.Timestamp.now()
-        }, { merge: true }).catch(err => ctx.logger.error('Failed to update lastUsed', { error: err}));
+        }, { merge: true }).catch(err => ctx.logger.error('Failed to update lastUsed', { error: err }));
 
         return {
             userId: record.userId,

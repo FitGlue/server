@@ -16,8 +16,9 @@ const db = admin.firestore();
 const pubsub = new PubSub();
 
 // Configure Structured Logging
+const logLevel = (process.env.LOG_LEVEL || 'info').toLowerCase();
 const logger = winston.createLogger({
-  level: 'info',
+  level: logLevel, // Use configured level
   format: winston.format.json(),
   defaultMeta: { service: process.env.K_SERVICE || 'unknown-service' },
   transports: [
@@ -57,10 +58,10 @@ export type FrameworkHandler = (
 ) => Promise<any>;
 
 export interface CloudFunctionOptions {
-    auth?: {
-        strategies: ('api_key')[]; // Extensible list of strategy names
-        requiredScopes?: string[];
-    };
+  auth?: {
+    strategies: ('api_key')[]; // Extensible list of strategy names
+    requiredScopes?: string[];
+  };
 }
 
 /**
@@ -106,7 +107,7 @@ function extractMetadata(req: any): { userId?: string; testRunId?: string; trigg
 }
 
 const AUTHORIZED_STRATEGIES: Record<string, AuthStrategy> = {
-    'api_key': new ApiKeyStrategy()
+  'api_key': new ApiKeyStrategy()
 };
 
 export function createCloudFunction(handler: FrameworkHandler, options?: CloudFunctionOptions): HttpFunction {
@@ -119,51 +120,60 @@ export function createCloudFunction(handler: FrameworkHandler, options?: CloudFu
     // Initial Logger (Pre-Auth)
     const preambleLogger = logger.child({});
 
+    // DEBUG: Log incoming request details
+    preambleLogger.debug('Incoming Request', {
+      method: req.method,
+      path: req.path,
+      query: req.query,
+      headers: req.headers,
+      bodyKeys: req.body ? Object.keys(req.body) : []
+    });
+
     // --- AUTHENTICATION MIDDLEWARE ---
     let authScopes: string[] = [];
     if (options?.auth?.strategies && options.auth.strategies.length > 0) {
-        let authenticated = false;
+      let authenticated = false;
 
-        // Prepare context for Auth Strategy
-        const tempCtx: FrameworkContext = {
-            db,
-            pubsub,
-            logger: preambleLogger,
-            executionId: 'pre-auth'
-        };
+      // Prepare context for Auth Strategy
+      const tempCtx: FrameworkContext = {
+        db,
+        pubsub,
+        logger: preambleLogger,
+        executionId: 'pre-auth'
+      };
 
-        for (const strategyName of options.auth.strategies) {
-            const strategy = AUTHORIZED_STRATEGIES[strategyName];
-            if (strategy) {
-                try {
-                    const result = await strategy.authenticate(req, tempCtx);
-                    if (result) {
-                        userId = result.userId; // Auth overrides extracted user ID
-                        authScopes = result.scopes;
-                        authenticated = true;
-                        break;
-                    }
-                } catch (e) {
-                    preambleLogger.warn(`Auth strategy ${strategyName} failed`, { error: e });
-                }
+      for (const strategyName of options.auth.strategies) {
+        const strategy = AUTHORIZED_STRATEGIES[strategyName];
+        if (strategy) {
+          try {
+            const result = await strategy.authenticate(req, tempCtx);
+            if (result) {
+              userId = result.userId; // Auth overrides extracted user ID
+              authScopes = result.scopes;
+              authenticated = true;
+              break;
             }
+          } catch (e) {
+            preambleLogger.warn(`Auth strategy ${strategyName} failed`, { error: e });
+          }
         }
+      }
 
-        if (!authenticated) {
-            preambleLogger.warn('Request failed authentication filters');
-            res.status(401).send('Unauthorized');
-            return;
-        }
+      if (!authenticated) {
+        preambleLogger.warn('Request failed authentication filters');
+        res.status(401).send('Unauthorized');
+        return;
+      }
 
-        // Scope Validation (Optional)
-        if (options.auth.requiredScopes) {
-             const hasScopes = options.auth.requiredScopes.every(scope => authScopes.includes(scope));
-             if (!hasScopes) {
-                 preambleLogger.warn(`Authenticated user ${userId} missing required scopes`);
-                 res.status(403).send('Forbidden: Insufficient Scopes');
-                 return;
-             }
+      // Scope Validation (Optional)
+      if (options.auth.requiredScopes) {
+        const hasScopes = options.auth.requiredScopes.every(scope => authScopes.includes(scope));
+        if (!hasScopes) {
+          preambleLogger.warn(`Authenticated user ${userId} missing required scopes`);
+          res.status(403).send('Forbidden: Insufficient Scopes');
+          return;
         }
+      }
     }
     // --- END AUTH ---
 
