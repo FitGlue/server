@@ -106,7 +106,7 @@ func uploadHandler(svc *UploaderService) framework.HandlerFunc {
 		if bucketName == "" {
 			bucketName = "fitglue-artifacts"
 		}
-		objectName := strings.TrimPrefix(eventPayload.GcsUri, "gs://"+bucketName+"/")
+		objectName := strings.TrimPrefix(eventPayload.FitFileUri, "gs://"+bucketName+"/")
 
 		fileData, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
 		if err != nil {

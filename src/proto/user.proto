@@ -9,14 +9,34 @@ message UserRecord {
   string user_id = 1;
   google.protobuf.Timestamp created_at = 2;
   UserIntegrations integrations = 3;
+  // Map of ActivitySource name (e.g. "SOURCE_HEVY") to enrichment rules
+  map<string, SourceEnrichmentConfig> enrichments = 4;
 }
 
 message UserIntegrations {
   HevyIntegration hevy = 1;
+  FitbitIntegration fitbit = 2;
 }
 
 message HevyIntegration {
   bool enabled = 1;
   string api_key = 2;
   string user_id = 3;
+}
+
+message FitbitIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string fitbit_user_id = 5;
+}
+
+message SourceEnrichmentConfig {
+  repeated EnricherConfig enrichers = 1;
+}
+
+message EnricherConfig {
+  string name = 1; // e.g. "ai-description", "fitbit-hr"
+  map<string, string> inputs = 2; // e.g. {"prompt_style": "funny", "priority": "high"}
 }

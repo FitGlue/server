@@ -11,15 +11,49 @@ export const protobufPackage = "fitglue";
 export interface UserRecord {
   userId: string;
   createdAt: Date | undefined;
-  integrations: UserIntegrations | undefined;
+  integrations:
+    | UserIntegrations
+    | undefined;
+  /** Map of ActivitySource name (e.g. "SOURCE_HEVY") to enrichment rules */
+  enrichments: { [key: string]: SourceEnrichmentConfig };
+}
+
+export interface UserRecord_EnrichmentsEntry {
+  key: string;
+  value: SourceEnrichmentConfig | undefined;
 }
 
 export interface UserIntegrations {
   hevy: HevyIntegration | undefined;
+  fitbit: FitbitIntegration | undefined;
 }
 
 export interface HevyIntegration {
   enabled: boolean;
   apiKey: string;
   userId: string;
+}
+
+export interface FitbitIntegration {
+  enabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date | undefined;
+  fitbitUserId: string;
+}
+
+export interface SourceEnrichmentConfig {
+  enrichers: EnricherConfig[];
+}
+
+export interface EnricherConfig {
+  /** e.g. "ai-description", "fitbit-hr" */
+  name: string;
+  /** e.g. {"prompt_style": "funny", "priority": "high"} */
+  inputs: { [key: string]: string };
+}
+
+export interface EnricherConfig_InputsEntry {
+  key: string;
+  value: string;
 }

@@ -37,15 +37,35 @@ export interface ActivityPayload_MetadataEntry {
   value: string;
 }
 
-/** EnrichedActivityEvent is the message format for topic-enriched-activity. */
+/**
+ * EnrichedActivityEvent is the message format for topic-enriched-activity.
+ * EnrichedActivityEvent is the message format for topic-enriched-activity.
+ */
 export interface EnrichedActivityEvent {
+  /** Identity */
   userId: string;
   /** Unique ID for the processed activity */
   activityId: string;
-  /** Path to the generated FIT file */
-  gcsUri: string;
-  /** Generated description/hashtags */
+  source: ActivitySource;
+  /** Core Metadata (Extracted for easy downstream access) */
+  activityType: string;
+  /** The final description (original or generated) */
   description: string;
+  /** Activity Title */
+  name: string;
+  /** Full Data */
+  activityData:
+    | StandardizedActivity
+    | undefined;
+  /** Generated Artifacts */
+  fitFileUri: string;
+  /** Enrichment Metadata */
+  appliedEnrichments: string[];
   /** Extra stats */
-  metadataJson: string;
+  enrichmentMetadata: { [key: string]: string };
+}
+
+export interface EnrichedActivityEvent_EnrichmentMetadataEntry {
+  key: string;
+  value: string;
 }

@@ -25,10 +25,25 @@ message ActivityPayload {
 }
 
 // EnrichedActivityEvent is the message format for topic-enriched-activity.
+// EnrichedActivityEvent is the message format for topic-enriched-activity.
 message EnrichedActivityEvent {
+  // Identity
   string user_id = 1;
   string activity_id = 2;  // Unique ID for the processed activity
-  string gcs_uri = 3;      // Path to the generated FIT file
-  string description = 4;  // Generated description/hashtags
-  string metadata_json = 5; // Extra stats
+  ActivitySource source = 3;
+
+  // Core Metadata (Extracted for easy downstream access)
+  string activity_type = 4; // e.g. WEIGHT_TRAINING
+  string description = 5;   // The final description (original or generated)
+  string name = 6;          // Activity Title
+
+  // Full Data
+  StandardizedActivity activity_data = 7;
+
+  // Generated Artifacts
+  string fit_file_uri = 8;      // Path to the generated FIT file (gs://...)
+
+  // Enrichment Metadata
+  repeated string applied_enrichments = 9; // List of enrichers that ran
+  map<string, string> enrichment_metadata = 10; // Extra stats
 }
