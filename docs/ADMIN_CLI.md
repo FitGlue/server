@@ -28,7 +28,16 @@ Creates a new user in the system. If `userId` is omitted, a random UUID will be 
     *   **Label**: A descriptive name for the key (e.g., "Mobile App").
     *   **Scopes**: Select `read:activity` (required for ingesting data).
 2.  **Hevy Integration**: Do you want to configure Hevy? (Default: Yes)
-    *   **API Key**: The user's Hevy API Key (for fetching their data).
+3.  **Strava Integration**: Do you want to configure Strava? (Default: No)
+    *   **Access Token**: The user's OAuth Access Token.
+    *   **Refresh Token**: The user's OAuth Refresh Token.
+    *   **Expires At**: Token expiration (Unix timestamp in seconds).
+    *   **Athlete ID**: The Strava Athlete ID.
+4.  **Fitbit Integration**: Do you want to configure Fitbit? (Default: No)
+    *   **Access Token**: The user's OAuth Access Token.
+    *   **Refresh Token**: The user's OAuth Refresh Token.
+    *   **Expires At**: Token expiration (Unix timestamp in seconds).
+    *   **User ID**: The Fitbit User ID.
 
 ### `users:list`
 
@@ -119,8 +128,9 @@ Updates the configuration for an existing user. Currently supports updating inte
 ```
 
 **Prompts:**
-1.  **Hevy Integration**: Do you want to update the Hevy API Key?
-    *   If yes, enter the new key.
+1.  **Hevy Integration**: Update Hevy API Key?
+2.  **Strava Integration**: Update Strava credentials? (Access Token, Refresh Token, Expires At, Athlete ID)
+3.  **Fitbit Integration**: Update Fitbit credentials? (Access Token, Refresh Token, Expires At, User ID)
 
 ## Development
 

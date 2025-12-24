@@ -1,69 +1,66 @@
 # OpenAPI Client Generation
 
-FitGlue uses `openapi-typescript` and `openapi-fetch` to generate strongly-typed API clients from OpenAPI (Swagger) specifications. This ensures end-to-end type safety when interacting with external services like Hevy.
+FitGlue uses `openapi-typescript` and `openapi-fetch` (TypeScript) and `oapi-codegen` (Go) to generate strongly-typed API clients from OpenAPI (Swagger) specifications.
+
+## Directory Structure
+
+Specs are located in `src/openapi/<service_name>/swagger.json`.
+Generated clients are output to:
+- **TypeScript**: `src/typescript/shared/src/api/<service_name>/schema.ts`
+- **Go**: `src/go/pkg/api/<service_name>/client.gen.go`
 
 ## Workflow
 
-1.  **Place Spec**: Save the `swagger.json` or `openapi.yaml` file in `src/typescript/shared/openapi/<service_name>/`.
-    *   Example: `src/typescript/shared/openapi/hevy/swagger.json`
+1.  **Place Spec**: Save the `swagger.json` file in `src/openapi/<service_name>/`.
+    *   Example: `src/openapi/hevy/swagger.json`
 
 2.  **Generate Types**: Run the generation command via Makefile.
     ```bash
     make generate
     ```
-    This command invokes `openapi-typescript` to convert the spec into a TypeScript definition file (e.g., `src/typescript/shared/src/hevy-api/schema.ts`).
+    This command:
+    - Generates TypeScript schemas using `openapi-typescript`.
+    - Generates Go client code using `oapi-codegen`.
 
-    *Makefile Target Example:*
-    ```makefile
-    # Generate OpenAPI Types (Hevy)
-    cd $(TS_SRC_DIR)/shared && npx openapi-typescript openapi/hevy/swagger.json -o src/hevy-api/schema.ts
-    ```
+3.  **TypeScript Usage**:
+    *   Import basic schema types from `@fitglue/shared/dist/api/<service>/schema`.
+    *   Use a factory function (e.g., `createHevyClient`) to wrap `openapi-fetch` with authentication.
 
-3.  **Create Client Factory**: Implement a factory function in `@fitglue/shared` to wrap the `openapi-fetch` client. This allows for centralized configuration (headers, base URL) and middleware (auth).
-
-    *Example (`src/typescript/shared/src/hevy-api/client.ts`):*
+    *Example (`src/typescript/shared/src/api/hevy/client.ts`):*
     ```typescript
-    import createClient, { Middleware } from "openapi-fetch";
-    import type { paths } from "./schema"; // Generated types
+    import createClient from "openapi-fetch";
+    import type { paths } from "./schema";
 
     export function createHevyClient(config: { apiKey: string }) {
         const client = createClient<paths>({
-            baseUrl: "https://api.hevyapp.com"
+            baseUrl: "https://api.hevyapp.com",
+            headers: { "api-key": config.apiKey }
         });
-
-        // Add Auth Middleware
-        const authMiddleware: Middleware = {
-            async onRequest({ request }) {
-                request.headers.set("api-key", config.apiKey);
-                return request;
-            },
-        };
-
-        client.use(authMiddleware);
         return client;
     }
     ```
 
-4.  **Use in Handler**: Import the factory and use the client with full type support.
-
-    *Example Usage:*
+    *Consumer Usage:*
     ```typescript
     const client = createHevyClient({ apiKey: '...' });
-
-    // strongly typed params and response
-    const { data, error } = await client.GET("/v1/workouts/{workoutId}", {
-        params: {
-            path: { workoutId: "123" }
-        }
+    const { data } = await client.GET("/v1/workouts/{workoutId}", {
+        params: { path: { workoutId: "123" } }
     });
-
-    if (data) {
-        console.log(data.title); // Auto-completed!
-    }
     ```
 
-## Benefits
+4.  **Go Usage**:
+    *   Import the generated package `github.com/ripixel/fitglue-server/src/go/pkg/api/<service>`.
+    *   Use `NewClientWithResponses` to create a client.
 
-*   **Type Safety**: Request parameters and response bodies are strictly typed against the API spec.
-*   **Zero Boilerplate**: No need to manually define interfaces for API responses.
-*   **Sync**: Re-running `make generate` updates types if the API spec changes.
+    *Example:*
+    ```go
+    import "github.com/ripixel/fitglue-server/src/go/pkg/api/strava"
+
+    client, _ := strava.NewClientWithResponses("https://www.strava.com/api/v3", strava.WithRequestEditorFn(authMiddleware))
+    resp, _ := client.GetActivityByIdWithResponse(ctx, 12345)
+    ```
+
+## Spec Maintenance
+- Maintain a single source of truth in `src/openapi`.
+- Use `components/schemas` for reusable types to ensure clean code generation.
+- Validated specs are critical—fix `swagger.json` errors (e.g., path parameters) to ensure generation succeeds.

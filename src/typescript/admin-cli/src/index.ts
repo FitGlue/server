@@ -87,6 +87,97 @@ program.command('users:create')
                 console.log('Hevy integration configured.');
             }
 
+            const stravaAnswers = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'configureStrava',
+                    message: 'Configure Strava Integration?',
+                    default: false
+                },
+                {
+                    type: 'input',
+                    name: 'accessToken',
+                    message: 'Access Token:',
+                    when: (answers) => answers.configureStrava
+                },
+                {
+                    type: 'input',
+                    name: 'refreshToken',
+                    message: 'Refresh Token:',
+                    when: (answers) => answers.configureStrava
+                },
+                {
+                    type: 'input',
+                    name: 'expiresAt',
+                    message: 'Expires At (Unix Timestamp Seconds):',
+                    when: (answers) => answers.configureStrava,
+                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
+                },
+                {
+                    type: 'input',
+                    name: 'athleteId',
+                    message: 'Athlete ID:',
+                    when: (answers) => answers.configureStrava,
+                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
+                }
+            ]);
+
+            if (stravaAnswers.configureStrava) {
+                await userService.setStravaIntegration(
+                    userId,
+                    stravaAnswers.accessToken,
+                    stravaAnswers.refreshToken,
+                    parseInt(stravaAnswers.expiresAt, 10),
+                    parseInt(stravaAnswers.athleteId, 10)
+                );
+                console.log('Strava integration configured.');
+            }
+
+            const fitbitAnswers = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'configureFitbit',
+                    message: 'Configure Fitbit Integration?',
+                    default: false
+                },
+                {
+                    type: 'input',
+                    name: 'accessToken',
+                    message: 'Access Token:',
+                    when: (answers) => answers.configureFitbit
+                },
+                {
+                    type: 'input',
+                    name: 'refreshToken',
+                    message: 'Refresh Token:',
+                    when: (answers) => answers.configureFitbit
+                },
+                {
+                    type: 'input',
+                    name: 'expiresAt',
+                    message: 'Expires At (Unix Timestamp Seconds):',
+                    when: (answers) => answers.configureFitbit,
+                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
+                },
+                {
+                    type: 'input',
+                    name: 'fitbitUserId',
+                    message: 'Fitbit User ID:',
+                    when: (answers) => answers.configureFitbit
+                }
+            ]);
+
+            if (fitbitAnswers.configureFitbit) {
+                await userService.setFitbitIntegration(
+                    userId,
+                    fitbitAnswers.accessToken,
+                    fitbitAnswers.refreshToken,
+                    parseInt(fitbitAnswers.expiresAt, 10),
+                    fitbitAnswers.fitbitUserId
+                );
+                console.log('Fitbit integration configured.');
+            }
+
         } catch (error) {
             console.error('Error creating user:', error);
             process.exit(1);
@@ -116,6 +207,97 @@ program.command('users:update')
             if (hevyAnswers.updateHevy) {
                 await userService.setHevyIntegration(userId, hevyAnswers.apiKey);
                 console.log('Hevy integration updated.');
+            }
+
+            const stravaAnswers = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'updateStrava',
+                    message: 'Update Strava Integration?',
+                    default: false
+                },
+                {
+                    type: 'input',
+                    name: 'accessToken',
+                    message: 'Access Token:',
+                    when: (answers) => answers.updateStrava
+                },
+                {
+                    type: 'input',
+                    name: 'refreshToken',
+                    message: 'Refresh Token:',
+                    when: (answers) => answers.updateStrava
+                },
+                {
+                    type: 'input',
+                    name: 'expiresAt',
+                    message: 'Expires At (Unix Timestamp Seconds):',
+                    when: (answers) => answers.updateStrava,
+                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
+                },
+                {
+                    type: 'input',
+                    name: 'athleteId',
+                    message: 'Athlete ID:',
+                    when: (answers) => answers.updateStrava,
+                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
+                }
+            ]);
+
+            if (stravaAnswers.updateStrava) {
+                await userService.setStravaIntegration(
+                    userId,
+                    stravaAnswers.accessToken,
+                    stravaAnswers.refreshToken,
+                    parseInt(stravaAnswers.expiresAt, 10),
+                    parseInt(stravaAnswers.athleteId, 10)
+                );
+                console.log('Strava integration updated.');
+            }
+
+            const fitbitAnswers = await inquirer.prompt([
+                {
+                    type: 'confirm',
+                    name: 'updateFitbit',
+                    message: 'Update Fitbit Integration?',
+                    default: false
+                },
+                {
+                    type: 'input',
+                    name: 'accessToken',
+                    message: 'Access Token:',
+                    when: (answers) => answers.updateFitbit
+                },
+                {
+                    type: 'input',
+                    name: 'refreshToken',
+                    message: 'Refresh Token:',
+                    when: (answers) => answers.updateFitbit
+                },
+                {
+                    type: 'input',
+                    name: 'expiresAt',
+                    message: 'Expires At (Unix Timestamp Seconds):',
+                    when: (answers) => answers.updateFitbit,
+                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
+                },
+                {
+                    type: 'input',
+                    name: 'fitbitUserId',
+                    message: 'Fitbit User ID:',
+                    when: (answers) => answers.updateFitbit
+                }
+            ]);
+
+            if (fitbitAnswers.updateFitbit) {
+                await userService.setFitbitIntegration(
+                    userId,
+                    fitbitAnswers.accessToken,
+                    fitbitAnswers.refreshToken,
+                    parseInt(fitbitAnswers.expiresAt, 10),
+                    fitbitAnswers.fitbitUserId
+                );
+                console.log('Fitbit integration updated.');
             }
         } catch (error) {
             console.error('Error updating user:', error);

@@ -16,7 +16,9 @@ message UserRecord {
 message UserIntegrations {
   HevyIntegration hevy = 1;
   FitbitIntegration fitbit = 2;
+  StravaIntegration strava = 3;
 }
+
 
 message HevyIntegration {
   bool enabled = 1;
@@ -39,4 +41,12 @@ message SourceEnrichmentConfig {
 message EnricherConfig {
   string name = 1; // e.g. "ai-description", "fitbit-hr"
   map<string, string> inputs = 2; // e.g. {"prompt_style": "funny", "priority": "high"}
+}
+
+message StravaIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    int64 athlete_id = 5;
 }

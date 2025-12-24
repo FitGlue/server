@@ -5,7 +5,7 @@ import { UserRecord } from '../types/pb/user';
 import { Timestamp } from 'firebase-admin/firestore';
 
 export class UserService {
-    constructor(private db: admin.firestore.Firestore) {}
+    constructor(private db: admin.firestore.Firestore) { }
 
     async createUser(userId: string): Promise<UserRecord> {
         const userRef = this.db.collection('users').doc(userId);
@@ -66,6 +66,37 @@ export class UserService {
         if (hevyUserId) {
             updateStub['integrations.hevy.userId'] = hevyUserId;
         }
+
+        await this.db.collection('users').doc(userId).update(updateStub);
+    }
+
+    async setStravaIntegration(userId: string, accessToken: string, refreshToken: string, expiresAtSeconds: number, athleteId: number): Promise<void> {
+        // Convert seconds to Firestore Timestamp (which is what we store, usually)
+        // Or if we store raw seconds? Proto uses google.protobuf.Timestamp { seconds, nanos }
+        // Firestore client accepts Date objects or Timestamp objects.
+        const expiresAt = Timestamp.fromMillis(expiresAtSeconds * 1000);
+
+        const updateStub: any = {
+            'integrations.strava.enabled': true,
+            'integrations.strava.accessToken': accessToken,
+            'integrations.strava.refreshToken': refreshToken,
+            'integrations.strava.expiresAt': expiresAt,
+            'integrations.strava.athleteId': athleteId
+        };
+
+        await this.db.collection('users').doc(userId).update(updateStub);
+    }
+
+    async setFitbitIntegration(userId: string, accessToken: string, refreshToken: string, expiresAtSeconds: number, fitbitUserId: string): Promise<void> {
+        const expiresAt = Timestamp.fromMillis(expiresAtSeconds * 1000);
+
+        const updateStub: any = {
+            'integrations.fitbit.enabled': true,
+            'integrations.fitbit.accessToken': accessToken,
+            'integrations.fitbit.refreshToken': refreshToken,
+            'integrations.fitbit.expiresAt': expiresAt,
+            'integrations.fitbit.fitbitUserId': fitbitUserId
+        };
 
         await this.db.collection('users').doc(userId).update(updateStub);
     }
