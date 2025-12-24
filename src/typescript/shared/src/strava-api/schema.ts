@@ -659,7 +659,758 @@ export interface paths {
 }
 export type webhooks = Record<string, never>;
 export interface components {
-    schemas: never;
+    schemas: {
+        /** @description A pair of latitude/longitude coordinates, represented as an array of 2 floating point numbers. */
+        LatLng: number[];
+        BaseStream: {
+            /** @description The number of data points in this stream */
+            original_size?: number;
+            /**
+             * @description The level of detail (sampling) in which this stream was returned
+             * @enum {string}
+             */
+            resolution?: "low" | "medium" | "high";
+            /**
+             * @description The base series used in the case the stream was downsampled
+             * @enum {string}
+             */
+            series_type?: "distance" | "time";
+        };
+        MetaAthlete: {
+            /**
+             * Format: int64
+             * @description The unique identifier of the athlete
+             */
+            id?: number;
+        };
+        SummaryAthlete: components["schemas"]["MetaAthlete"] & {
+            /** @description Resource state, indicates level of detail. Possible values: 1 -> "meta", 2 -> "summary", 3 -> "detail" */
+            resource_state?: number;
+            /** @description The athlete's first name. */
+            firstname?: string;
+            /** @description The athlete's last name. */
+            lastname?: string;
+            /** @description URL to a 62x62 pixel profile picture. */
+            profile_medium?: string;
+            /** @description URL to a 124x124 pixel profile picture. */
+            profile?: string;
+            /** @description The athlete's city. */
+            city?: string;
+            /** @description The athlete's state or geographical region. */
+            state?: string;
+            /** @description The athlete's country. */
+            country?: string;
+            /**
+             * @description The athlete's sex.
+             * @enum {string}
+             */
+            sex?: "M" | "F";
+            /** @description Deprecated.  Use summit field instead. Whether the athlete has any Summit subscription. */
+            premium?: boolean;
+            /** @description Whether the athlete has any Summit subscription. */
+            summit?: boolean;
+            /**
+             * Format: date-time
+             * @description The time at which the athlete was created.
+             */
+            created_at?: string;
+            /**
+             * Format: date-time
+             * @description The time at which the athlete was last updated.
+             */
+            updated_at?: string;
+        };
+        MetaClub: {
+            /**
+             * Format: int64
+             * @description The club's unique identifier.
+             */
+            id?: number;
+            /** @description Resource state, indicates level of detail. Possible values: 1 -> "meta", 2 -> "summary", 3 -> "detail" */
+            resource_state?: number;
+            /** @description The club's name. */
+            name?: string;
+        };
+        SummaryClub: components["schemas"]["MetaClub"] & {
+            /** @description URL to a 60x60 pixel profile picture. */
+            profile_medium?: string;
+            /** @description URL to a ~1185x580 pixel cover photo. */
+            cover_photo?: string;
+            /** @description URL to a ~360x176 pixel cover photo. */
+            cover_photo_small?: string;
+            /**
+             * @description Deprecated. Prefer to use activity_types.
+             * @enum {string}
+             */
+            sport_type?: "cycling" | "running" | "triathlon" | "other";
+            /** @description The activity types that count for a club. This takes precedence over sport_type. */
+            activity_types?: components["schemas"]["ActivityType"][];
+            /** @description The club's city. */
+            city?: string;
+            /** @description The club's state or geographical region. */
+            state?: string;
+            /** @description The club's country. */
+            country?: string;
+            /** @description Whether the club is private. */
+            private?: boolean;
+            /** @description The club's member count. */
+            member_count?: number;
+            /** @description Whether the club is featured or not. */
+            featured?: boolean;
+            /** @description Whether the club is verified or not. */
+            verified?: boolean;
+            /** @description The club's vanity URL. */
+            url?: string;
+        };
+        DetailedClub: components["schemas"]["SummaryClub"] & {
+            /**
+             * @description The membership status of the logged-in athlete.
+             * @enum {string}
+             */
+            membership?: "member" | "pending";
+            /** @description Whether the currently logged-in athlete is an administrator of this club. */
+            admin?: boolean;
+            /** @description Whether the currently logged-in athlete is the owner of this club. */
+            owner?: boolean;
+            /** @description The number of athletes in the club that the logged-in athlete follows. */
+            following_count?: number;
+        };
+        PolylineMap: {
+            /** @description The identifier of the map */
+            id?: string;
+            /** @description The polyline of the map, only returned in certain requests */
+            polyline?: string;
+            /** @description The summary polyline of the map */
+            summary_polyline?: string;
+        };
+        Waypoint: {
+            latlng?: components["schemas"]["LatLng"];
+            target_latlng?: components["schemas"]["LatLng"];
+            /** @description Categories for the waypoint */
+            categories?: string[];
+            /** @description The title of the waypoint */
+            title?: string;
+            /** @description The description of the waypoint */
+            description?: string;
+            /** @description The distance into the route the waypoint is at */
+            distance_into_route?: number;
+        };
+        Route: {
+            athlete?: components["schemas"]["SummaryAthlete"];
+            /** @description The description of the route */
+            description?: string;
+            /**
+             * Format: float
+             * @description The route's distance, in meters
+             */
+            distance?: number;
+            /**
+             * Format: float
+             * @description The route's elevation gain.
+             */
+            elevation_gain?: number;
+            /**
+             * Format: int64
+             * @description The unique identifier of this route
+             */
+            id?: number;
+            /** @description The unique identifier of the route in string format */
+            id_str?: string;
+            map?: components["schemas"]["PolylineMap"];
+            /** @description The name of the route */
+            name?: string;
+            /** @description Whether this route is private */
+            private?: boolean;
+            /** @description Whether this route is starred by the logged-in athlete */
+            starred?: boolean;
+            /** @description An epoch timestamp of when the route was created */
+            timestamp?: number;
+            /** @description This route's type (1 for ride, 2 for runs) */
+            type?: number;
+            /** @description This route's sub-type (1 for road, 2 for mountain bike, 3 for cross, 4 for trail, 5 for mixed) */
+            sub_type?: number;
+            segments?: components["schemas"]["SummarySegment"][];
+            waypoints?: components["schemas"]["Waypoint"][];
+        };
+        Upload: {
+            /**
+             * Format: int64
+             * @description The unique identifier of the upload
+             */
+            id?: number;
+            /** @description The unique identifier of the upload in string format */
+            id_str?: string;
+            /** @description The external identifier of the upload */
+            external_id?: string;
+            /** @description The error associated with this upload */
+            error?: string;
+            /** @description The status of this upload */
+            status?: string;
+            /**
+             * Format: int64
+             * @description The identifier of the activity this upload resulted into
+             */
+            activity_id?: number;
+        };
+        StreamSet: {
+            time?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            distance?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            latlng?: components["schemas"]["BaseStream"] & {
+                data?: components["schemas"]["LatLng"][];
+            };
+            altitude?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            velocity_smooth?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            heartrate?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            cadence?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            watts?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            temp?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+            moving?: components["schemas"]["BaseStream"] & {
+                data?: boolean[];
+            };
+            grade_smooth?: components["schemas"]["BaseStream"] & {
+                data?: number[];
+            };
+        };
+        SummaryGear: {
+            /** @description The gear's unique identifier. */
+            id?: string;
+            /** @description Resource state, indicates level of detail. Possible values: 2 -> "summary", 3 -> "detail" */
+            resource_state?: number;
+            /** @description Whether this gear's is the owner's default one. */
+            primary?: boolean;
+            /** @description The gear's name. */
+            name?: string;
+            /**
+             * Format: float
+             * @description The distance logged with this gear.
+             */
+            distance?: number;
+        };
+        DetailedGear: components["schemas"]["SummaryGear"] & {
+            /** @description The gear's brand name. */
+            brand_name?: string;
+            /** @description The gear's model name. */
+            model_name?: string;
+            /** @description The gear's frame type (bike only). */
+            frame_type?: number;
+            /** @description The gear's description. */
+            description?: string;
+        };
+        DetailedAthlete: components["schemas"]["SummaryAthlete"] & {
+            /** @description The athlete's follower count. */
+            follower_count?: number;
+            /** @description The athlete's friend count. */
+            friend_count?: number;
+            /**
+             * @description The athlete's preferred unit system.
+             * @enum {string}
+             */
+            measurement_preference?: "feet" | "meters";
+            /** @description The athlete's FTP (Functional Threshold Power). */
+            ftp?: number;
+            /**
+             * Format: float
+             * @description The athlete's weight.
+             */
+            weight?: number;
+            /** @description The athlete's clubs. */
+            clubs?: components["schemas"]["SummaryClub"][];
+            /** @description The athlete's bikes. */
+            bikes?: components["schemas"]["SummaryGear"][];
+            /** @description The athlete's shoes. */
+            shoes?: components["schemas"]["SummaryGear"][];
+        };
+        /**
+         * @description An enumeration of the types an activity may have.
+         * @enum {string}
+         */
+        ActivityType: "AlpineSki" | "BackcountrySki" | "Canoeing" | "Crossfit" | "EBikeRide" | "Elliptical" | "Golf" | "Handcycle" | "Hike" | "IceSkate" | "InlineSkate" | "Kayaking" | "Kitesurf" | "NordicSki" | "Ride" | "RockClimbing" | "RollerSki" | "Rowing" | "Run" | "Sail" | "Skateboard" | "Snowboard" | "Snowshoe" | "Soccer" | "StairStepper" | "StandUpPaddling" | "Surfing" | "Swim" | "Velomobile" | "VirtualRide" | "VirtualRun" | "Walk" | "WeightTraining" | "Wheelchair" | "Windsurf" | "Workout" | "Yoga";
+        MetaActivity: {
+            /**
+             * Format: int64
+             * @description The unique identifier of the activity
+             */
+            id?: number;
+        };
+        SummaryActivity: components["schemas"]["MetaActivity"] & {
+            /** @description The identifier provided at upload time */
+            external_id?: string;
+            /**
+             * Format: int64
+             * @description The identifier of the upload that resulted in this activity
+             */
+            upload_id?: number;
+            athlete?: components["schemas"]["MetaAthlete"];
+            /** @description The name of the activity */
+            name?: string;
+            /**
+             * Format: float
+             * @description The activity's distance, in meters
+             */
+            distance?: number;
+            /** @description The activity's moving time, in seconds */
+            moving_time?: number;
+            /** @description The activity's elapsed time, in seconds */
+            elapsed_time?: number;
+            /**
+             * Format: float
+             * @description The activity's total elevation gain.
+             */
+            total_elevation_gain?: number;
+            /**
+             * Format: float
+             * @description The activity's highest elevation, in meters
+             */
+            elev_high?: number;
+            /**
+             * Format: float
+             * @description The activity's lowest elevation, in meters
+             */
+            elev_low?: number;
+            /** @description Deprecated. Prefer to use sport_type */
+            type?: components["schemas"]["ActivityType"];
+            /** @description The activity's sport type */
+            sport_type?: components["schemas"]["ActivityType"];
+            /**
+             * Format: date-time
+             * @description The time at which the activity was started.
+             */
+            start_date?: string;
+            /**
+             * Format: date-time
+             * @description The time at which the activity was started in the local timezone.
+             */
+            start_date_local?: string;
+            /** @description The timezone of the activity */
+            timezone?: string;
+            start_latlng?: components["schemas"]["LatLng"];
+            end_latlng?: components["schemas"]["LatLng"];
+            /** @description The number of achievements gained during this activity */
+            achievement_count?: number;
+            /** @description The number of kudos given for this activity */
+            kudos_count?: number;
+            /** @description The number of comments for this activity */
+            comment_count?: number;
+            /** @description The number of athletes for taking part in a group activity */
+            athlete_count?: number;
+            /** @description The number of Instagram photos for this activity */
+            photo_count?: number;
+            map?: components["schemas"]["PolylineMap"];
+            /** @description Whether this activity was recorded on a training machine */
+            trainer?: boolean;
+            /** @description Whether this activity is a commute */
+            commute?: boolean;
+            /** @description Whether this activity was created manually */
+            manual?: boolean;
+            /** @description Whether this activity is private */
+            private?: boolean;
+            /** @description Whether this activity is flagged */
+            flagged?: boolean;
+            /** @description The activity's workout type */
+            workout_type?: number;
+            /** @description The unique identifier of the upload in string format */
+            upload_id_str?: string;
+            /**
+             * Format: float
+             * @description The activity's average speed, in meters per second
+             */
+            average_speed?: number;
+            /**
+             * Format: float
+             * @description The activity's max speed, in meters per second
+             */
+            max_speed?: number;
+        };
+        SummarySegment: {
+            /**
+             * Format: int64
+             * @description The unique identifier of this segment
+             */
+            id?: number;
+            /** @description The name of this segment */
+            name?: string;
+            /** @enum {string} */
+            activity_type?: "Ride" | "Run";
+            /**
+             * Format: float
+             * @description The segment's distance, in meters
+             */
+            distance?: number;
+            /**
+             * Format: float
+             * @description The segment's average grade, in percents
+             */
+            average_grade?: number;
+            /**
+             * Format: float
+             * @description The segments's maximum grade, in percents
+             */
+            maximum_grade?: number;
+            /**
+             * Format: float
+             * @description The segments's highest elevation, in meters
+             */
+            elevation_high?: number;
+            /**
+             * Format: float
+             * @description The segments's lowest elevation, in meters
+             */
+            elevation_low?: number;
+            start_latlng?: components["schemas"]["LatLng"];
+            end_latlng?: components["schemas"]["LatLng"];
+            /** @description The category of the climb [0, 5]. Higher is harder ie. 5 is Hors catégorie, 0 is uncategorized in climb_category. */
+            climb_category?: number;
+            /** @description The segments's city. */
+            city?: string;
+            /** @description The segments's state or geographical region. */
+            state?: string;
+            /** @description The segment's country. */
+            country?: string;
+            /** @description Whether this segment is private. */
+            private?: boolean;
+            athlete_pr_effort?: {
+                /**
+                 * Format: int64
+                 * @description The unique identifier of the activity related to the PR effort.
+                 */
+                pr_activity_id?: number;
+                /** @description The elapsed time ot the PR effort. */
+                pr_elapsed_time?: number;
+                /**
+                 * Format: date-time
+                 * @description The time at which the PR effort was started.
+                 */
+                pr_date?: string;
+                /** @description Number of efforts by the authenticated athlete on this segment. */
+                effort_count?: number;
+            };
+            athlete_segment_stats?: components["schemas"]["SummarySegmentEffort"];
+        };
+        DetailedSegment: components["schemas"]["SummarySegment"] & {
+            /**
+             * Format: date-time
+             * @description The time at which the segment was created.
+             */
+            created_at?: string;
+            /**
+             * Format: date-time
+             * @description The time at which the segment was last updated.
+             */
+            updated_at?: string;
+            /**
+             * Format: float
+             * @description The segment's total elevation gain.
+             */
+            total_elevation_gain?: number;
+            map?: components["schemas"]["PolylineMap"];
+            /** @description The total number of efforts for this segment */
+            effort_count?: number;
+            /** @description The number of unique athletes who have an effort for this segment */
+            athlete_count?: number;
+            /** @description Whether this segment is considered hazardous */
+            hazardous?: boolean;
+            /** @description The number of stars for this segment */
+            star_count?: number;
+        };
+        SummarySegmentEffort: {
+            /**
+             * Format: int64
+             * @description The unique identifier of this effort
+             */
+            id?: number;
+            /**
+             * Format: int64
+             * @description The unique identifier of the activity related to this effort
+             */
+            activity_id?: number;
+            /** @description The effort's elapsed time */
+            elapsed_time?: number;
+            /**
+             * Format: date-time
+             * @description The time at which the effort was started.
+             */
+            start_date?: string;
+            /**
+             * Format: date-time
+             * @description The time at which the effort was started in the local timezone.
+             */
+            start_date_local?: string;
+            /**
+             * Format: float
+             * @description The effort's distance in meters
+             */
+            distance?: number;
+            /** @description Whether this effort is the current best on the leaderboard */
+            is_kom?: boolean;
+        };
+        DetailedSegmentEffort: components["schemas"]["SummarySegmentEffort"] & {
+            /** @description The name of the segment on which this effort was performed */
+            name?: string;
+            activity?: components["schemas"]["MetaActivity"];
+            athlete?: components["schemas"]["MetaAthlete"];
+            /** @description The effort's moving time */
+            moving_time?: number;
+            /** @description The start index of this effort in its activity's stream */
+            start_index?: number;
+            /** @description The end index of this effort in its activity's stream */
+            end_index?: number;
+            /**
+             * Format: float
+             * @description The effort's average cadence
+             */
+            average_cadence?: number;
+            /**
+             * Format: float
+             * @description The average wattage of this effort
+             */
+            average_watts?: number;
+            /** @description For riding efforts, whether the wattage was reported by a dedicated recording device */
+            device_watts?: boolean;
+            /**
+             * Format: float
+             * @description The heart heart rate of the athlete during this effort
+             */
+            average_heartrate?: number;
+            /**
+             * Format: float
+             * @description The maximum heart rate of the athlete during this effort
+             */
+            max_heartrate?: number;
+            segment?: components["schemas"]["SummarySegment"];
+            /** @description The rank of the effort on the global leaderboard if it belongs in the top 10 at the time of upload */
+            kom_rank?: number;
+            /** @description The rank of the effort on the athlete's leaderboard if it belongs in the top 3 at the time of upload */
+            pr_rank?: number;
+            /** @description Whether this effort should be hidden when viewed within an activity */
+            hidden?: boolean;
+        };
+        /** @description Encapsulates the errors that may be returned from the API. */
+        Error: {
+            /** @description The set of specific errors associated with this fault, if any. */
+            errors?: {
+                /** @description The code associated with this error. */
+                code?: string;
+                /** @description The specific field or aspect of the resource associated with this error. */
+                field?: string;
+                /** @description The type of resource associated with this error. */
+                resource?: string;
+            }[];
+            /** @description The message of the fault. */
+            message?: string;
+        };
+        ZoneRange: {
+            /** @description The minimum value in the range. */
+            min?: number;
+            /** @description The maximum value in the range. */
+            max?: number;
+        };
+        Zones: {
+            heart_rate?: {
+                /** @description Whether the athlete has set their own custom heart rate zones */
+                custom_zones?: boolean;
+                zones?: components["schemas"]["ZoneRange"][];
+            };
+            power?: {
+                zones?: components["schemas"]["ZoneRange"][];
+            };
+        };
+        ActivityTotal: {
+            /** @description The number of activities considered in this total. */
+            count?: number;
+            /**
+             * Format: float
+             * @description The total distance covered by the considered activities.
+             */
+            distance?: number;
+            /** @description The total moving time of the considered activities. */
+            moving_time?: number;
+            /** @description The total elapsed time of the considered activities. */
+            elapsed_time?: number;
+            /**
+             * Format: float
+             * @description The total elevation gain of the considered activities.
+             */
+            elevation_gain?: number;
+            /** @description The total number of achievements of the considered activities. */
+            achievement_count?: number;
+        };
+        ActivityStats: {
+            /**
+             * Format: double
+             * @description The longest distance ridden by the athlete.
+             */
+            biggest_ride_distance?: number;
+            /**
+             * Format: double
+             * @description The highest climb ridden by the athlete.
+             */
+            biggest_climb_elevation_gain?: number;
+            /** @description The recent (last 4 weeks) ride stats for the athlete. */
+            recent_ride_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The recent (last 4 weeks) run stats for the athlete. */
+            recent_run_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The recent (last 4 weeks) swim stats for the athlete. */
+            recent_swim_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The year to date ride stats for the athlete. */
+            ytd_ride_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The year to date run stats for the athlete. */
+            ytd_run_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The year to date swim stats for the athlete. */
+            ytd_swim_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The all time ride stats for the athlete. */
+            all_ride_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The all time run stats for the athlete. */
+            all_run_totals?: components["schemas"]["ActivityTotal"];
+            /** @description The all time swim stats for the athlete. */
+            all_swim_totals?: components["schemas"]["ActivityTotal"];
+        };
+        AthleteSegmentStats: {
+            /** @description The elapsed time of the PR effort. */
+            pr_elapsed_time?: number;
+            /**
+             * Format: date
+             * @description The time at which the PR effort was started.
+             */
+            pr_date?: string;
+            /** @description The number of efforts for this segment. */
+            effort_count?: number;
+        };
+        Split: {
+            /**
+             * Format: float
+             * @description The average speed of this split, in meters per second
+             */
+            average_speed?: number;
+            /**
+             * Format: float
+             * @description The distance of this split, in meters
+             */
+            distance?: number;
+            /** @description The elapsed time of this split, in seconds */
+            elapsed_time?: number;
+            /**
+             * Format: float
+             * @description The elevation difference of this split, in meters
+             */
+            elevation_difference?: number;
+            /** @description The pacing zone of this split */
+            pace_zone?: number;
+            /** @description The moving time of this split, in seconds */
+            moving_time?: number;
+            /** @description N/A */
+            split?: number;
+        };
+        Lap: {
+            /**
+             * Format: int64
+             * @description The unique identifier of this lap
+             */
+            id?: number;
+            activity?: components["schemas"]["MetaActivity"];
+            athlete?: components["schemas"]["MetaAthlete"];
+            /**
+             * Format: float
+             * @description The lap's average cadence
+             */
+            average_cadence?: number;
+            /**
+             * Format: float
+             * @description The lap's average speed
+             */
+            average_speed?: number;
+            /**
+             * Format: float
+             * @description The lap's distance, in meters
+             */
+            distance?: number;
+            /** @description The lap's elapsed time, in seconds */
+            elapsed_time?: number;
+            /** @description The start index of this effort in its activity's stream */
+            start_index?: number;
+            /** @description The end index of this effort in its activity's stream */
+            end_index?: number;
+            /** @description The index of this lap in the activity it belongs to */
+            lap_index?: number;
+            /**
+             * Format: float
+             * @description The maximum speed of this lat, in meters per second
+             */
+            max_speed?: number;
+            /** @description The lap's moving time, in seconds */
+            moving_time?: number;
+            /** @description The name of the lap */
+            name?: string;
+            /** @description The pacing zone of this lap */
+            pace_zone?: number;
+            /** @description The split index of this lap */
+            split?: number;
+            /**
+             * Format: date-time
+             * @description The time at which the lap was started.
+             */
+            start_date?: string;
+            /**
+             * Format: date-time
+             * @description The time at which the lap was started in the local timezone.
+             */
+            start_date_local?: string;
+            /**
+             * Format: float
+             * @description The elevation gain of this lap, in meters
+             */
+            total_elevation_gain?: number;
+        };
+        DetailedActivity: components["schemas"]["SummaryActivity"] & {
+            /** @description The description of the activity */
+            description?: string;
+            photos?: {
+                /** @description The number of photos */
+                count?: number;
+                primary?: {
+                    /** Format: int64 */
+                    id?: number;
+                    source?: number;
+                    unique_id?: string;
+                    urls?: {
+                        [key: string]: string;
+                    };
+                };
+            };
+            gear?: components["schemas"]["SummaryGear"];
+            /**
+             * Format: float
+             * @description The number of kilocalories consumed during this activity
+             */
+            calories?: number;
+            segment_efforts?: components["schemas"]["DetailedSegmentEffort"][];
+            /** @description The name of the device used to record the activity */
+            device_name?: string;
+            /** @description The token used to embed a Strava activity */
+            embed_token?: string;
+            /** @description The splits of this activity in metric units (for runs) */
+            splits_metric?: components["schemas"]["Split"][];
+            /** @description The splits of this activity in imperial units (for runs) */
+            splits_standard?: components["schemas"]["Split"][];
+            laps?: components["schemas"]["Lap"][];
+            best_efforts?: components["schemas"]["DetailedSegmentEffort"][];
+        };
+    };
     responses: never;
     parameters: {
         /** @description Page number. Defaults to 1. */
@@ -703,13 +1454,13 @@ export interface operations {
                          */
                         biggest_climb_elevation_gain?: number;
                         /** @description The recent (last 4 weeks) ride stats for the athlete. */
-                        recent_ride_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        recent_ride_totals?: components["schemas"]["ActivityTotal"];
                         /** @description The recent (last 4 weeks) run stats for the athlete. */
-                        recent_run_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        recent_run_totals?: components["schemas"]["ActivityTotal"];
                         /** @description The recent (last 4 weeks) swim stats for the athlete. */
-                        recent_swim_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        recent_swim_totals?: components["schemas"]["ActivityTotal"];
                         /** @description The year to date ride stats for the athlete. */
-                        ytd_ride_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        ytd_ride_totals?: components["schemas"]["ActivityTotal"];
                         /** @description The year to date run stats for the athlete. */
                         ytd_run_totals?: {
                             /** @description The number of activities considered in this total. */
@@ -732,13 +1483,13 @@ export interface operations {
                             achievement_count?: number;
                         };
                         /** @description The year to date swim stats for the athlete. */
-                        ytd_swim_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        ytd_swim_totals?: components["schemas"]["ActivityTotal"];
                         /** @description The all time ride stats for the athlete. */
-                        all_ride_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        all_ride_totals?: components["schemas"]["ActivityTotal"];
                         /** @description The all time run stats for the athlete. */
-                        all_run_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        all_run_totals?: components["schemas"]["ActivityTotal"];
                         /** @description The all time swim stats for the athlete. */
-                        all_swim_totals?: paths["/athletes/{id}/stats"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["ytd_run_totals"];
+                        all_swim_totals?: components["schemas"]["ActivityTotal"];
                     };
                 };
             };
@@ -748,7 +1499,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -768,30 +1519,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"] & {
-                        /** @description The athlete's follower count. */
-                        follower_count?: number;
-                        /** @description The athlete's friend count. */
-                        friend_count?: number;
-                        /**
-                         * @description The athlete's preferred unit system.
-                         * @enum {string}
-                         */
-                        measurement_preference?: "feet" | "meters";
-                        /** @description The athlete's FTP (Functional Threshold Power). */
-                        ftp?: number;
-                        /**
-                         * Format: float
-                         * @description The athlete's weight.
-                         */
-                        weight?: number;
-                        /** @description The athlete's clubs. */
-                        clubs?: paths["/athlete/clubs"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"][];
-                        /** @description The athlete's bikes. */
-                        bikes?: paths["/gear/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["allOf"]["0"][];
-                        /** @description The athlete's shoes. */
-                        shoes?: paths["/gear/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["allOf"]["0"][];
-                    };
+                    "application/json": components["schemas"]["DetailedAthlete"];
                 };
             };
             /** @description Unexpected error. */
@@ -800,19 +1528,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description The set of specific errors associated with this fault, if any. */
-                        errors?: {
-                            /** @description The code associated with this error. */
-                            code?: string;
-                            /** @description The specific field or aspect of the resource associated with this error. */
-                            field?: string;
-                            /** @description The type of resource associated with this error. */
-                            resource?: string;
-                        }[];
-                        /** @description The message of the fault. */
-                        message?: string;
-                    };
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -835,7 +1551,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["200"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["DetailedAthlete"];
                 };
             };
             /** @description Unexpected error. */
@@ -844,7 +1560,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -864,21 +1580,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        heart_rate?: {
-                            /** @description Whether the athlete has set their own custom heart rate zones */
-                            custom_zones?: boolean;
-                            zones?: paths["/athlete/zones"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["power"]["zones"];
-                        };
-                        power?: {
-                            zones?: {
-                                /** @description The minimum value in the range. */
-                                min?: number;
-                                /** @description The maximum value in the range. */
-                                max?: number;
-                            }[];
-                        };
-                    };
+                    "application/json": components["schemas"]["Zones"];
                 };
             };
             /** @description Unexpected error. */
@@ -887,7 +1589,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -910,32 +1612,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"] & {
-                        /**
-                         * Format: date-time
-                         * @description The time at which the segment was created.
-                         */
-                        created_at?: string;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the segment was last updated.
-                         */
-                        updated_at?: string;
-                        /**
-                         * Format: float
-                         * @description The segment's total elevation gain.
-                         */
-                        total_elevation_gain?: number;
-                        map?: paths["/routes/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["map"];
-                        /** @description The total number of efforts for this segment */
-                        effort_count?: number;
-                        /** @description The number of unique athletes who have an effort for this segment */
-                        athlete_count?: number;
-                        /** @description Whether this segment is considered hazardous */
-                        hazardous?: boolean;
-                        /** @description The number of stars for this segment */
-                        star_count?: number;
-                    };
+                    "application/json": components["schemas"]["DetailedSegment"];
                 };
             };
             /** @description Unexpected error. */
@@ -944,7 +1621,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -969,72 +1646,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of this segment
-                         */
-                        id?: number;
-                        /** @description The name of this segment */
-                        name?: string;
-                        /** @enum {string} */
-                        activity_type?: "Ride" | "Run";
-                        /**
-                         * Format: float
-                         * @description The segment's distance, in meters
-                         */
-                        distance?: number;
-                        /**
-                         * Format: float
-                         * @description The segment's average grade, in percents
-                         */
-                        average_grade?: number;
-                        /**
-                         * Format: float
-                         * @description The segments's maximum grade, in percents
-                         */
-                        maximum_grade?: number;
-                        /**
-                         * Format: float
-                         * @description The segments's highest elevation, in meters
-                         */
-                        elevation_high?: number;
-                        /**
-                         * Format: float
-                         * @description The segments's lowest elevation, in meters
-                         */
-                        elevation_low?: number;
-                        start_latlng?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"];
-                        /** @description A pair of latitude/longitude coordinates, represented as an array of 2 floating point numbers. */
-                        end_latlng?: number[];
-                        /** @description The category of the climb [0, 5]. Higher is harder ie. 5 is Hors catégorie, 0 is uncategorized in climb_category. */
-                        climb_category?: number;
-                        /** @description The segments's city. */
-                        city?: string;
-                        /** @description The segments's state or geographical region. */
-                        state?: string;
-                        /** @description The segment's country. */
-                        country?: string;
-                        /** @description Whether this segment is private. */
-                        private?: boolean;
-                        athlete_pr_effort?: {
-                            /**
-                             * Format: int64
-                             * @description The unique identifier of the activity related to the PR effort.
-                             */
-                            pr_activity_id?: number;
-                            /** @description The elapsed time ot the PR effort. */
-                            pr_elapsed_time?: number;
-                            /**
-                             * Format: date-time
-                             * @description The time at which the PR effort was started.
-                             */
-                            pr_date?: string;
-                            /** @description Number of efforts by the authenticated athlete on this segment. */
-                            effort_count?: number;
-                        };
-                        athlete_segment_stats?: paths["/segment_efforts/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["allOf"]["0"];
-                    }[];
+                    "application/json": components["schemas"]["SummarySegment"][];
                 };
             };
             /** @description Unexpected error. */
@@ -1043,7 +1655,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1076,7 +1688,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/segments/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["DetailedSegment"];
                 };
             };
             /** @description Unexpected error. */
@@ -1085,7 +1697,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1114,7 +1726,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/segment_efforts/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"][];
+                    "application/json": components["schemas"]["DetailedSegmentEffort"][];
                 };
             };
             /** @description Unexpected error. */
@@ -1123,7 +1735,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1174,8 +1786,8 @@ export interface operations {
                              * @description The segment's average grade, in percents
                              */
                             avg_grade?: number;
-                            start_latlng?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"];
-                            end_latlng?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"];
+                            start_latlng?: components["schemas"]["LatLng"];
+                            end_latlng?: components["schemas"]["LatLng"];
                             /**
                              * Format: float
                              * @description The segments's evelation difference, in meters
@@ -1198,7 +1810,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1221,77 +1833,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of this effort
-                         */
-                        id?: number;
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of the activity related to this effort
-                         */
-                        activity_id?: number;
-                        /** @description The effort's elapsed time */
-                        elapsed_time?: number;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the effort was started.
-                         */
-                        start_date?: string;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the effort was started in the local timezone.
-                         */
-                        start_date_local?: string;
-                        /**
-                         * Format: float
-                         * @description The effort's distance in meters
-                         */
-                        distance?: number;
-                        /** @description Whether this effort is the current best on the leaderboard */
-                        is_kom?: boolean;
-                    } & {
-                        /** @description The name of the segment on which this effort was performed */
-                        name?: string;
-                        activity?: paths["/athlete/activities"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["0"];
-                        athlete?: paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["0"];
-                        /** @description The effort's moving time */
-                        moving_time?: number;
-                        /** @description The start index of this effort in its activity's stream */
-                        start_index?: number;
-                        /** @description The end index of this effort in its activity's stream */
-                        end_index?: number;
-                        /**
-                         * Format: float
-                         * @description The effort's average cadence
-                         */
-                        average_cadence?: number;
-                        /**
-                         * Format: float
-                         * @description The average wattage of this effort
-                         */
-                        average_watts?: number;
-                        /** @description For riding efforts, whether the wattage was reported by a dedicated recording device */
-                        device_watts?: boolean;
-                        /**
-                         * Format: float
-                         * @description The heart heart rate of the athlete during this effort
-                         */
-                        average_heartrate?: number;
-                        /**
-                         * Format: float
-                         * @description The maximum heart rate of the athlete during this effort
-                         */
-                        max_heartrate?: number;
-                        segment?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"];
-                        /** @description The rank of the effort on the global leaderboard if it belongs in the top 10 at the time of upload */
-                        kom_rank?: number;
-                        /** @description The rank of the effort on the athlete's leaderboard if it belongs in the top 3 at the time of upload */
-                        pr_rank?: number;
-                        /** @description Whether this effort should be hidden when viewed within an activity */
-                        hidden?: boolean;
-                    };
+                    "application/json": components["schemas"]["DetailedSegmentEffort"];
                 };
             };
             /** @description Unexpected error. */
@@ -1300,7 +1842,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1349,64 +1891,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete/activities"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"] & {
-                        /** @description The description of the activity */
-                        description?: string;
-                        photos?: {
-                            /** @description The number of photos */
-                            count?: number;
-                            primary?: {
-                                /** Format: int64 */
-                                id?: number;
-                                source?: number;
-                                unique_id?: string;
-                                urls?: {
-                                    [key: string]: string;
-                                };
-                            };
-                        };
-                        gear?: paths["/gear/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["allOf"]["0"];
-                        /**
-                         * Format: float
-                         * @description The number of kilocalories consumed during this activity
-                         */
-                        calories?: number;
-                        segment_efforts?: paths["/segment_efforts/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"][];
-                        /** @description The name of the device used to record the activity */
-                        device_name?: string;
-                        /** @description The token used to embed a Strava activity */
-                        embed_token?: string;
-                        /** @description The splits of this activity in metric units (for runs) */
-                        splits_metric?: {
-                            /**
-                             * Format: float
-                             * @description The average speed of this split, in meters per second
-                             */
-                            average_speed?: number;
-                            /**
-                             * Format: float
-                             * @description The distance of this split, in meters
-                             */
-                            distance?: number;
-                            /** @description The elapsed time of this split, in seconds */
-                            elapsed_time?: number;
-                            /**
-                             * Format: float
-                             * @description The elevation difference of this split, in meters
-                             */
-                            elevation_difference?: number;
-                            /** @description The pacing zone of this split */
-                            pace_zone?: number;
-                            /** @description The moving time of this split, in seconds */
-                            moving_time?: number;
-                            /** @description N/A */
-                            split?: number;
-                        }[];
-                        /** @description The splits of this activity in imperial units (for runs) */
-                        splits_standard?: paths["/activities"]["post"]["responses"]["201"]["content"]["application/json"]["schema"]["allOf"]["1"]["splits_metric"]["items"][];
-                        laps?: paths["/activities/{id}/laps"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"][];
-                        best_efforts?: paths["/segment_efforts/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"][];
-                    };
+                    "application/json": components["schemas"]["DetailedActivity"];
                 };
             };
             /** @description Unexpected error. */
@@ -1415,7 +1900,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1441,7 +1926,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/activities"]["post"]["responses"]["201"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["DetailedActivity"];
                 };
             };
             /** @description Unexpected error. */
@@ -1450,7 +1935,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1479,7 +1964,7 @@ export interface operations {
                     /** @description The name of the activity */
                     name?: string;
                     /** @description Deprecated. Prefer to use sport_type. In a request where both type and sport_type are present, this field will be ignored */
-                    type?: paths["/athlete/clubs"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["1"]["activity_types"]["items"];
+                    type?: components["schemas"]["ActivityType"];
                     /**
                      * @description An enumeration of the sport types an activity may have. Distinct from ActivityType in that it has new types (e.g. MountainBikeRide)
                      * @enum {string}
@@ -1497,7 +1982,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/activities"]["post"]["responses"]["201"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["DetailedActivity"];
                 };
             };
             /** @description Unexpected error. */
@@ -1506,7 +1991,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1535,126 +2020,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": ({
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of the activity
-                         */
-                        id?: number;
-                    } & {
-                        /** @description The identifier provided at upload time */
-                        external_id?: string;
-                        /**
-                         * Format: int64
-                         * @description The identifier of the upload that resulted in this activity
-                         */
-                        upload_id?: number;
-                        athlete?: paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["0"];
-                        /** @description The name of the activity */
-                        name?: string;
-                        /**
-                         * Format: float
-                         * @description The activity's distance, in meters
-                         */
-                        distance?: number;
-                        /** @description The activity's moving time, in seconds */
-                        moving_time?: number;
-                        /** @description The activity's elapsed time, in seconds */
-                        elapsed_time?: number;
-                        /**
-                         * Format: float
-                         * @description The activity's total elevation gain.
-                         */
-                        total_elevation_gain?: number;
-                        /**
-                         * Format: float
-                         * @description The activity's highest elevation, in meters
-                         */
-                        elev_high?: number;
-                        /**
-                         * Format: float
-                         * @description The activity's lowest elevation, in meters
-                         */
-                        elev_low?: number;
-                        /** @description Deprecated. Prefer to use sport_type */
-                        type?: paths["/athlete/clubs"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["1"]["activity_types"]["items"];
-                        sport_type?: paths["/activities/{id}"]["put"]["requestBody"]["content"]["application/json"]["schema"]["sport_type"];
-                        /**
-                         * Format: date-time
-                         * @description The time at which the activity was started.
-                         */
-                        start_date?: string;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the activity was started in the local timezone.
-                         */
-                        start_date_local?: string;
-                        /** @description The timezone of the activity */
-                        timezone?: string;
-                        start_latlng?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"];
-                        end_latlng?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"];
-                        /** @description The number of achievements gained during this activity */
-                        achievement_count?: number;
-                        /** @description The number of kudos given for this activity */
-                        kudos_count?: number;
-                        /** @description The number of comments for this activity */
-                        comment_count?: number;
-                        /** @description The number of athletes for taking part in a group activity */
-                        athlete_count?: number;
-                        /** @description The number of Instagram photos for this activity */
-                        photo_count?: number;
-                        /** @description The number of Instagram and Strava photos for this activity */
-                        total_photo_count?: number;
-                        map?: paths["/routes/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["map"];
-                        /** @description The name of the device used to record the activity */
-                        device_name?: string;
-                        /** @description Whether this activity was recorded on a training machine */
-                        trainer?: boolean;
-                        /** @description Whether this activity is a commute */
-                        commute?: boolean;
-                        /** @description Whether this activity was created manually */
-                        manual?: boolean;
-                        /** @description Whether this activity is private */
-                        private?: boolean;
-                        /** @description Whether this activity is flagged */
-                        flagged?: boolean;
-                        /** @description The activity's workout type */
-                        workout_type?: number;
-                        /** @description The unique identifier of the upload in string format */
-                        upload_id_str?: string;
-                        /**
-                         * Format: float
-                         * @description The activity's average speed, in meters per second
-                         */
-                        average_speed?: number;
-                        /**
-                         * Format: float
-                         * @description The activity's max speed, in meters per second
-                         */
-                        max_speed?: number;
-                        /** @description Whether the logged-in athlete has kudoed this activity */
-                        has_kudoed?: boolean;
-                        /** @description Whether the activity is muted */
-                        hide_from_home?: boolean;
-                        /** @description The id of the gear for the activity */
-                        gear_id?: string;
-                        /**
-                         * Format: float
-                         * @description The total work done in kilojoules during this activity. Rides only
-                         */
-                        kilojoules?: number;
-                        /**
-                         * Format: float
-                         * @description Average power output in watts during this activity. Rides only
-                         */
-                        average_watts?: number;
-                        /** @description Whether the watts are from a power meter, false if estimated */
-                        device_watts?: boolean;
-                        /** @description Rides with power meter data only */
-                        max_watts?: number;
-                        /** @description Similar to Normalized Power. Rides with power meter data only */
-                        weighted_average_watts?: number;
-                    })[];
+                    "application/json": components["schemas"]["SummaryActivity"][];
                 };
             };
             /** @description Unexpected error. */
@@ -1663,7 +2029,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1686,65 +2052,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of this lap
-                         */
-                        id?: number;
-                        activity?: paths["/athlete/activities"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["0"];
-                        athlete?: paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["0"];
-                        /**
-                         * Format: float
-                         * @description The lap's average cadence
-                         */
-                        average_cadence?: number;
-                        /**
-                         * Format: float
-                         * @description The lap's average speed
-                         */
-                        average_speed?: number;
-                        /**
-                         * Format: float
-                         * @description The lap's distance, in meters
-                         */
-                        distance?: number;
-                        /** @description The lap's elapsed time, in seconds */
-                        elapsed_time?: number;
-                        /** @description The start index of this effort in its activity's stream */
-                        start_index?: number;
-                        /** @description The end index of this effort in its activity's stream */
-                        end_index?: number;
-                        /** @description The index of this lap in the activity it belongs to */
-                        lap_index?: number;
-                        /**
-                         * Format: float
-                         * @description The maximum speed of this lat, in meters per second
-                         */
-                        max_speed?: number;
-                        /** @description The lap's moving time, in seconds */
-                        moving_time?: number;
-                        /** @description The name of the lap */
-                        name?: string;
-                        /** @description The athlete's pace zone during this lap */
-                        pace_zone?: number;
-                        split?: number;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the lap was started.
-                         */
-                        start_date?: string;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the lap was started in the local timezone.
-                         */
-                        start_date_local?: string;
-                        /**
-                         * Format: float
-                         * @description The elevation gain of this lap, in meters
-                         */
-                        total_elevation_gain?: number;
-                    }[];
+                    "application/json": components["schemas"]["Lap"][];
                 };
             };
             /** @description Unexpected error. */
@@ -1753,7 +2061,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1779,7 +2087,7 @@ export interface operations {
                     "application/json": {
                         score?: number;
                         /** @description Stores the exclusive ranges representing zones and the time spent in each. */
-                        distribution_buckets?: (paths["/athlete/zones"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["power"]["zones"]["items"] & {
+                        distribution_buckets?: (components["schemas"]["ZoneRange"] & {
                             /** @description The number of seconds spent in this zone */
                             time?: number;
                         })[];
@@ -1798,7 +2106,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1843,7 +2151,7 @@ export interface operations {
                         activity_id?: number;
                         /** @description The content of the comment */
                         text?: string;
-                        athlete?: paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"];
+                        athlete?: components["schemas"]["SummaryAthlete"];
                         /**
                          * Format: date-time
                          * @description The time at which this comment was created.
@@ -1858,7 +2166,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1886,7 +2194,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"][];
+                    "application/json": components["schemas"]["SummaryAthlete"][];
                 };
             };
             /** @description Unexpected error. */
@@ -1895,7 +2203,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1918,19 +2226,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete/clubs"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"] & {
-                        /**
-                         * @description The membership status of the logged-in athlete.
-                         * @enum {string}
-                         */
-                        membership?: "member" | "pending";
-                        /** @description Whether the currently logged-in athlete is an administrator of this club. */
-                        admin?: boolean;
-                        /** @description Whether the currently logged-in athlete is the owner of this club. */
-                        owner?: boolean;
-                        /** @description The number of athletes in the club that the logged-in athlete follows. */
-                        following_count?: number;
-                    };
+                    "application/json": components["schemas"]["DetailedClub"];
                 };
             };
             /** @description Unexpected error. */
@@ -1939,7 +2235,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -1989,7 +2285,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2017,49 +2313,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": ({
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of the athlete
-                         */
-                        id?: number;
-                    } & {
-                        /** @description Resource state, indicates level of detail. Possible values: 1 -> "meta", 2 -> "summary", 3 -> "detail" */
-                        resource_state?: number;
-                        /** @description The athlete's first name. */
-                        firstname?: string;
-                        /** @description The athlete's last name. */
-                        lastname?: string;
-                        /** @description URL to a 62x62 pixel profile picture. */
-                        profile_medium?: string;
-                        /** @description URL to a 124x124 pixel profile picture. */
-                        profile?: string;
-                        /** @description The athlete's city. */
-                        city?: string;
-                        /** @description The athlete's state or geographical region. */
-                        state?: string;
-                        /** @description The athlete's country. */
-                        country?: string;
-                        /**
-                         * @description The athlete's sex.
-                         * @enum {string}
-                         */
-                        sex?: "M" | "F";
-                        /** @description Deprecated.  Use summit field instead. Whether the athlete has any Summit subscription. */
-                        premium?: boolean;
-                        /** @description Whether the athlete has any Summit subscription. */
-                        summit?: boolean;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the athlete was created.
-                         */
-                        created_at?: string;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the athlete was last updated.
-                         */
-                        updated_at?: string;
-                    })[];
+                    "application/json": components["schemas"]["SummaryAthlete"][];
                 };
             };
             /** @description Unexpected error. */
@@ -2068,7 +2322,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2097,7 +2351,7 @@ export interface operations {
                 };
                 content: {
                     "application/json": {
-                        athlete?: paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["0"];
+                        athlete?: components["schemas"]["MetaAthlete"];
                         /** @description The name of the activity */
                         name?: string;
                         /**
@@ -2115,8 +2369,8 @@ export interface operations {
                          */
                         total_elevation_gain?: number;
                         /** @description Deprecated. Prefer to use sport_type */
-                        type?: paths["/athlete/clubs"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["allOf"]["1"]["activity_types"]["items"];
-                        sport_type?: paths["/activities/{id}"]["put"]["requestBody"]["content"]["application/json"]["schema"]["sport_type"];
+                        type?: components["schemas"]["ActivityType"];
+                        sport_type?: components["schemas"]["ActivityType"];
                         /** @description The activity's workout type */
                         workout_type?: number;
                     }[];
@@ -2128,7 +2382,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2153,47 +2407,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": ({
-                        /**
-                         * Format: int64
-                         * @description The club's unique identifier.
-                         */
-                        id?: number;
-                        /** @description Resource state, indicates level of detail. Possible values: 1 -> "meta", 2 -> "summary", 3 -> "detail" */
-                        resource_state?: number;
-                        /** @description The club's name. */
-                        name?: string;
-                    } & {
-                        /** @description URL to a 60x60 pixel profile picture. */
-                        profile_medium?: string;
-                        /** @description URL to a ~1185x580 pixel cover photo. */
-                        cover_photo?: string;
-                        /** @description URL to a ~360x176  pixel cover photo. */
-                        cover_photo_small?: string;
-                        /**
-                         * @description Deprecated. Prefer to use activity_types.
-                         * @enum {string}
-                         */
-                        sport_type?: "cycling" | "running" | "triathlon" | "other";
-                        /** @description The activity types that count for a club. This takes precedence over sport_type. */
-                        activity_types?: ("AlpineSki" | "BackcountrySki" | "Canoeing" | "Crossfit" | "EBikeRide" | "Elliptical" | "Golf" | "Handcycle" | "Hike" | "IceSkate" | "InlineSkate" | "Kayaking" | "Kitesurf" | "NordicSki" | "Ride" | "RockClimbing" | "RollerSki" | "Rowing" | "Run" | "Sail" | "Skateboard" | "Snowboard" | "Snowshoe" | "Soccer" | "StairStepper" | "StandUpPaddling" | "Surfing" | "Swim" | "Velomobile" | "VirtualRide" | "VirtualRun" | "Walk" | "WeightTraining" | "Wheelchair" | "Windsurf" | "Workout" | "Yoga")[];
-                        /** @description The club's city. */
-                        city?: string;
-                        /** @description The club's state or geographical region. */
-                        state?: string;
-                        /** @description The club's country. */
-                        country?: string;
-                        /** @description Whether the club is private. */
-                        private?: boolean;
-                        /** @description The club's member count. */
-                        member_count?: number;
-                        /** @description Whether the club is featured or not. */
-                        featured?: boolean;
-                        /** @description Whether the club is verified or not. */
-                        verified?: boolean;
-                        /** @description The club's vanity URL. */
-                        url?: string;
-                    })[];
+                    "application/json": components["schemas"]["SummaryClub"][];
                 };
             };
             /** @description Unexpected error. */
@@ -2202,7 +2416,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2225,30 +2439,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /** @description The gear's unique identifier. */
-                        id?: string;
-                        /** @description Resource state, indicates level of detail. Possible values: 2 -> "summary", 3 -> "detail" */
-                        resource_state?: number;
-                        /** @description Whether this gear's is the owner's default one. */
-                        primary?: boolean;
-                        /** @description The gear's name. */
-                        name?: string;
-                        /**
-                         * Format: float
-                         * @description The distance logged with this gear.
-                         */
-                        distance?: number;
-                    } & {
-                        /** @description The gear's brand name. */
-                        brand_name?: string;
-                        /** @description The gear's model name. */
-                        model_name?: string;
-                        /** @description The gear's frame type (bike only). */
-                        frame_type?: number;
-                        /** @description The gear's description. */
-                        description?: string;
-                    };
+                    "application/json": components["schemas"]["DetailedGear"];
                 };
             };
             /** @description Unexpected error. */
@@ -2257,7 +2448,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2280,80 +2471,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        athlete?: paths["/clubs/{id}/admins"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"];
-                        /** @description The description of the route */
-                        description?: string;
-                        /**
-                         * Format: float
-                         * @description The route's distance, in meters
-                         */
-                        distance?: number;
-                        /**
-                         * Format: float
-                         * @description The route's elevation gain.
-                         */
-                        elevation_gain?: number;
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of this route
-                         */
-                        id?: number;
-                        /** @description The unique identifier of the route in string format */
-                        id_str?: string;
-                        map?: {
-                            /** @description The identifier of the map */
-                            id?: string;
-                            /** @description The polyline of the map, only returned on detailed representation of an object */
-                            polyline?: string;
-                            /** @description The summary polyline of the map */
-                            summary_polyline?: string;
-                        };
-                        /** @description The name of this route */
-                        name?: string;
-                        /** @description Whether this route is private */
-                        private?: boolean;
-                        /** @description Whether this route is starred by the logged-in athlete */
-                        starred?: boolean;
-                        /** @description An epoch timestamp of when the route was created */
-                        timestamp?: number;
-                        /** @description This route's type (1 for ride, 2 for runs) */
-                        type?: number;
-                        /** @description This route's sub-type (1 for road, 2 for mountain bike, 3 for cross, 4 for trail, 5 for mixed) */
-                        sub_type?: number;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the route was created
-                         */
-                        created_at?: string;
-                        /**
-                         * Format: date-time
-                         * @description The time at which the route was last updated
-                         */
-                        updated_at?: string;
-                        /** @description Estimated time in seconds for the authenticated athlete to complete route */
-                        estimated_moving_time?: number;
-                        /** @description The segments traversed by this route */
-                        segments?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"][];
-                        /** @description The custom waypoints along this route */
-                        waypoints?: {
-                            /** @description The location along the route that the waypoint is closest to */
-                            latlng?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"];
-                            /** @description A location off of the route that the waypoint is (optional) */
-                            target_latlng?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"];
-                            /** @description Categories that the waypoint belongs to */
-                            categories?: string[];
-                            /** @description A title for the waypoint */
-                            title?: string;
-                            /** @description A description of the waypoint (optional) */
-                            description?: string;
-                            /**
-                             * Format: float
-                             * @description The number meters along the route that the waypoint is located
-                             */
-                            distance_into_route?: number;
-                        }[];
-                    };
+                    "application/json": components["schemas"]["Route"];
                 };
             };
             /** @description Unexpected error. */
@@ -2362,7 +2480,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2387,7 +2505,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/routes/{id}"]["get"]["responses"]["200"]["content"]["application/json"]["schema"][];
+                    "application/json": components["schemas"]["Route"][];
                 };
             };
             /** @description Unexpected error. */
@@ -2396,7 +2514,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2428,7 +2546,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2460,7 +2578,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2505,26 +2623,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        /**
-                         * Format: int64
-                         * @description The unique identifier of the upload
-                         */
-                        id?: number;
-                        /** @description The unique identifier of the upload in string format */
-                        id_str?: string;
-                        /** @description The external identifier of the upload */
-                        external_id?: string;
-                        /** @description The error associated with this upload */
-                        error?: string;
-                        /** @description The status of this upload */
-                        status?: string;
-                        /**
-                         * Format: int64
-                         * @description The identifier of the activity this upload resulted into
-                         */
-                        activity_id?: number;
-                    };
+                    "application/json": components["schemas"]["Upload"];
                 };
             };
             /** @description Unexpected error. */
@@ -2533,7 +2632,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2556,7 +2655,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/uploads"]["post"]["responses"]["201"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Upload"];
                 };
             };
             /** @description Unexpected error. */
@@ -2565,7 +2664,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2593,7 +2692,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["StreamSet"];
                 };
             };
             /** @description Unexpected error. */
@@ -2602,7 +2701,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2630,7 +2729,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["StreamSet"];
                 };
             };
             /** @description Unexpected error. */
@@ -2639,7 +2738,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2667,7 +2766,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["StreamSet"];
                 };
             };
             /** @description Unexpected error. */
@@ -2676,7 +2775,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };
@@ -2699,65 +2798,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        time?: {
-                            /** @description The number of data points in this stream */
-                            original_size?: number;
-                            /**
-                             * @description The level of detail (sampling) in which this stream was returned
-                             * @enum {string}
-                             */
-                            resolution?: "low" | "medium" | "high";
-                            /**
-                             * @description The base series used in the case the stream was downsampled
-                             * @enum {string}
-                             */
-                            series_type?: "distance" | "time";
-                        } & {
-                            /** @description The sequence of time values for this stream, in seconds */
-                            data?: number[];
-                        };
-                        distance?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of distance values for this stream, in meters */
-                            data?: number[];
-                        };
-                        latlng?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of lat/long values for this stream */
-                            data?: paths["/segments/starred"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["items"]["end_latlng"][];
-                        };
-                        altitude?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of altitude values for this stream, in meters */
-                            data?: number[];
-                        };
-                        velocity_smooth?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of velocity values for this stream, in meters per second */
-                            data?: number[];
-                        };
-                        heartrate?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of heart rate values for this stream, in beats per minute */
-                            data?: number[];
-                        };
-                        cadence?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of cadence values for this stream, in rotations per minute */
-                            data?: number[];
-                        };
-                        watts?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of power values for this stream, in watts */
-                            data?: number[];
-                        };
-                        temp?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of temperature values for this stream, in celsius degrees */
-                            data?: number[];
-                        };
-                        moving?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of moving values for this stream, as boolean values */
-                            data?: boolean[];
-                        };
-                        grade_smooth?: paths["/routes/{id}/streams"]["get"]["responses"]["200"]["content"]["application/json"]["schema"]["time"]["allOf"]["0"] & {
-                            /** @description The sequence of grade values for this stream, as percents of a grade */
-                            data?: number[];
-                        };
-                    };
+                    "application/json": components["schemas"]["StreamSet"];
                 };
             };
             /** @description Unexpected error. */
@@ -2766,7 +2807,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": paths["/athlete"]["get"]["responses"]["default"]["content"]["application/json"]["schema"];
+                    "application/json": components["schemas"]["Error"];
                 };
             };
         };

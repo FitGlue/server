@@ -48,9 +48,9 @@ generate:
 			# Go Generation \
 			if [ "$$SERVICE" != "strava" ]; then \
 				echo "  [GO] Generating client for $$SERVICE..."; \
-				mkdir -p $(GO_SRC_DIR)/pkg/types/api/$$SERVICE; \
+				mkdir -p $(GO_SRC_DIR)/pkg/api/$$SERVICE; \
 				oapi-codegen -package $$SERVICE -generate types,client \
-					-o $(GO_SRC_DIR)/pkg/types/api/$$SERVICE/client.gen.go \
+					-o $(GO_SRC_DIR)/pkg/api/$$SERVICE/client.gen.go \
 					$$dir/swagger.json; \
 			else \
 				echo "  [GO] Skipping Strava generation (complex spec)"; \

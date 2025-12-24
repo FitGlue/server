@@ -11,10 +11,10 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
+	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/enricher"
 	"github.com/ripixel/fitglue-server/src/go/pkg/enricher/providers"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	"github.com/ripixel/fitglue-server/src/go/pkg/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )

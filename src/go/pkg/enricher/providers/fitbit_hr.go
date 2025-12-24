@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime/types"
+	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/api/fitbit"
 	"github.com/ripixel/fitglue-server/src/go/pkg/enricher"
-	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/types/api/fitbit"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
