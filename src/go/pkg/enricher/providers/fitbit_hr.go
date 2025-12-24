@@ -10,7 +10,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/oapi-codegen/runtime/types"
 	"github.com/ripixel/fitglue-server/src/go/pkg/enricher"
+	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/types/api/fitbit"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -26,6 +28,16 @@ func NewFitBitHeartRate() *FitBitHeartRate {
 
 func (p *FitBitHeartRate) Name() string {
 	return "fitbit-hr"
+}
+
+// SecurityProvider implements the security provider interface for the generated client
+type SecurityProvider struct {
+	Token string
+}
+
+func (s *SecurityProvider) Intercept(ctx context.Context, req *http.Request) error {
+	req.Header.Set("Authorization", "Bearer "+s.Token)
+	return nil
 }
 
 func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string) (*enricher.EnrichmentResult, error) {
@@ -51,19 +63,23 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 	}
 	endTime := startTime.Add(time.Duration(durationSec) * time.Second)
 
-	// Format for Fitbit API: HH:MM
+	// Format for Fitbit API
 	startTimeStr := startTime.Format("15:04")
 	endTimeStr := endTime.Format("15:04")
-	dateStr := startTime.Format("2006-01-02")
 
-	// 3. Request Data (Intraday HR)
-	// endpoint: https://api.fitbit.com/1/user/-/activities/heart/date/[date]/1d/1sec/time/[startTime]/[endTime].json
-	url := fmt.Sprintf("https://api.fitbit.com/1/user/-/activities/heart/date/%s/1d/1sec/time/%s/%s.json", dateStr, startTimeStr, endTimeStr)
+	// 3. Initialize Client
+	authProvider := &SecurityProvider{Token: token}
+	// Use standard Client, not WithResponses, to handle body manually
+	client, err := fitbit.NewClient("https://api.fitbit.com", fitbit.WithRequestEditorFn(authProvider.Intercept))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create fitbit client: %w", err)
+	}
 
-	req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-	req.Header.Set("Authorization", "Bearer "+token)
-
-	resp, err := p.Client.Do(req)
+	// 4. Request Data (Intraday HR)
+	// endpoint: ranges from start to end time on the specific date
+	// Method: GetHeartByDateTimestampIntraday(ctx, date, detailLevel, startTime, endTime)
+	date := types.Date{Time: startTime}
+	resp, err := client.GetHeartByDateTimestampIntraday(ctx, date, "1sec", startTimeStr, endTimeStr)
 	if err != nil {
 		return nil, fmt.Errorf("fitbit api request failed: %w", err)
 	}
@@ -74,7 +90,8 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 		return nil, fmt.Errorf("fitbit api error %d: %s", resp.StatusCode, string(body))
 	}
 
-	// 4. Parse Response
+	// 5. Parse Response
+	// Note: We keep the response struct definition local as it matches the exact JSON shape we expect
 	var hrResponse struct {
 		ActivitiesHeartIntraday struct {
 			Dataset []struct {
@@ -88,25 +105,11 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// 5. Build Stream
+	// 6. Build Stream
 	// We need to map the dataset (time HH:MM:SS) to the activity stream (index 0 to duration).
-	// This simple implementation assumes synchronized clocks and maps relatively.
-	// For production, we'd sync strict timestamps.
-
 	stream := make([]int, durationSec)
 
 	for _, dataPoint := range hrResponse.ActivitiesHeartIntraday.Dataset {
-		// dataPoint.Time is "HH:MM:SS"
-		// We need to find the offset from startTime
-		// This is tricky if it crosses midnight or if timezones differ (Fitbit returns user local time usually)
-
-		// MVP: Ignore exact time mapping, just fill stream sequentially? NO, that's bad.
-		// MVP: Parse HH:MM:SS relative to expected start.
-
-		// Let's assume the response is ordered and within the window we requested.
-		// We'll simplisticly map based on duration if possible, or just append?
-		// "1sec" resolution.
-
 		ptTime, _ := time.Parse("15:04:05", dataPoint.Time) // Parses as year 0000
 		startDayTime, _ := time.Parse("15:04:05", startTimeStr)
 
@@ -117,9 +120,7 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 		}
 	}
 
-	// Fill gaps? (Zero-Order Hold or Linear Interp?)
-	// For MVP: Leave 0s (Fit file generator handles 0s usually or we interp later)
-	// Let's do simple forward fill
+	// Fill gaps (Forward Fill)
 	lastVal := 0
 	for i := 0; i < len(stream); i++ {
 		if stream[i] != 0 {

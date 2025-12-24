@@ -32,8 +32,31 @@ generate:
 	cd $(TS_SRC_DIR) && npx protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto \
 		--ts_proto_out=shared/src/types/pb --ts_proto_opt=outputEncodeMethods=false,outputJsonMethods=false,outputClientImpl=false \
 		--proto_path=../proto ../proto/*.proto
-	# Generate OpenAPI Types (Hevy)
-	cd $(TS_SRC_DIR)/shared && npx openapi-typescript openapi/hevy/swagger.json -o src/hevy-api/schema.ts
+	# Generate OpenAPI Clients
+	@echo "Generating OpenAPI Clients..."
+	@for dir in src/openapi/*; do \
+		if [ -d "$$dir" ]; then \
+			SERVICE=$$(basename $$dir); \
+			echo "Processing $$SERVICE..."; \
+			\
+			# TypeScript Generation \
+			echo "  [TS] Generating schema.ts for $$SERVICE..."; \
+			mkdir -p $(TS_SRC_DIR)/shared/src/$${SERVICE}-api; \
+			cd $(TS_SRC_DIR)/shared && npx openapi-typescript ../../../$$dir/swagger.json -o src/$${SERVICE}-api/schema.ts; \
+			cd ../../..; \
+			\
+			# Go Generation \
+			if [ "$$SERVICE" != "strava" ]; then \
+				echo "  [GO] Generating client for $$SERVICE..."; \
+				mkdir -p $(GO_SRC_DIR)/pkg/types/api/$$SERVICE; \
+				oapi-codegen -package $$SERVICE -generate types,client \
+					-o $(GO_SRC_DIR)/pkg/types/api/$$SERVICE/client.gen.go \
+					$$dir/swagger.json; \
+			else \
+				echo "  [GO] Skipping Strava generation (complex spec)"; \
+			fi \
+		fi \
+	done
 
 # --- Go Targets ---
 build-go:

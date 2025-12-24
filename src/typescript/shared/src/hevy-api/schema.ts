@@ -419,7 +419,7 @@ export interface paths {
                 };
                 path: {
                     /** @description The id of the routine */
-                    routineId: string;
+                    routineId: number;
                 };
                 cookie?: never;
             };
@@ -459,7 +459,7 @@ export interface paths {
                 };
                 path: {
                     /** @description The id of the routine */
-                    routineId: string;
+                    routineId: number;
                 };
                 cookie?: never;
             };
@@ -652,7 +652,7 @@ export interface paths {
                 };
                 path: {
                     /** @description The id of the exercise template */
-                    exerciseTemplateId: string;
+                    exerciseTemplateId: number;
                 };
                 cookie?: never;
             };
@@ -800,7 +800,7 @@ export interface paths {
                 };
                 path: {
                     /** @description The id of the routine folder */
-                    folderId: string;
+                    folderId: number;
                 };
                 cookie?: never;
             };
@@ -859,7 +859,7 @@ export interface paths {
                 };
                 path: {
                     /** @description The id of the exercise template */
-                    exerciseTemplateId: string;
+                    exerciseTemplateId: number;
                 };
                 cookie?: never;
             };
@@ -1300,17 +1300,17 @@ export interface components {
         };
         /**
          * @example weight_reps
-         * @enum {enum}
+         * @enum {string}
          */
         CustomExerciseType: "weight_reps" | "reps_only" | "bodyweight_reps" | "bodyweight_assisted_reps" | "duration" | "weight_duration" | "distance_duration" | "short_distance_weight";
         /**
          * @example chest
-         * @enum {enum}
+         * @enum {string}
          */
         MuscleGroup: "abdominals" | "shoulders" | "biceps" | "triceps" | "forearms" | "quadriceps" | "hamstrings" | "calves" | "glutes" | "abductors" | "adductors" | "lats" | "upper_back" | "traps" | "lower_back" | "chest" | "cardio" | "neck" | "full_body" | "other";
         /**
          * @example barbell
-         * @enum {enum}
+         * @enum {string}
          */
         EquipmentCategory: "none" | "barbell" | "dumbbell" | "kettlebell" | "machine" | "plate" | "resistance_band" | "suspension" | "other";
         ExerciseTemplate: {

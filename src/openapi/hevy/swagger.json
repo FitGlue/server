@@ -250,7 +250,11 @@
             "name": "workoutId",
             "in": "path",
             "description": "The id of the workout",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "responses": {
@@ -288,7 +292,11 @@
             "in": "path",
             "name": "workoutId",
             "description": "The id of the workout",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         ],
         "requestBody": {
@@ -492,7 +500,10 @@
             "in": "path",
             "name": "routineId",
             "description": "The id of the routine",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -548,7 +559,10 @@
             "in": "path",
             "name": "routineId",
             "description": "The id of the routine",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "requestBody": {
@@ -778,7 +792,10 @@
             "name": "exerciseTemplateId",
             "in": "path",
             "description": "The id of the exercise template",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -943,7 +960,10 @@
             "name": "folderId",
             "in": "path",
             "description": "The id of the routine folder",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -983,7 +1003,10 @@
             "in": "path",
             "name": "exerciseTemplateId",
             "description": "The id of the exercise template",
-            "required": true
+            "required": true,
+            "schema": {
+              "type": "integer"
+            }
           },
           {
             "in": "query",
@@ -1600,7 +1623,7 @@
         }
       },
       "CustomExerciseType": {
-        "type": "enum",
+        "type": "string",
         "enum": [
           "weight_reps",
           "reps_only",
@@ -1614,7 +1637,7 @@
         "example": "weight_reps"
       },
       "MuscleGroup": {
-        "type": "enum",
+        "type": "string",
         "enum": [
           "abdominals",
           "shoulders",
@@ -1640,7 +1663,7 @@
         "example": "chest"
       },
       "EquipmentCategory": {
-        "type": "enum",
+        "type": "string",
         "enum": [
           "none",
           "barbell",
