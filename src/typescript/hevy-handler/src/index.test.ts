@@ -90,7 +90,12 @@ describe('hevyWebhookHandler', () => {
     });
 
     it('should perform Active Fetch and Publish', async () => {
-        req.body = { workout_id: mockWorkout.id };
+        req.body = {
+            id: 'webhook-event-id',
+            payload: {
+                workoutId: mockWorkout.id
+            }
+        };
 
         // Mock User with Hevy Key
         mockUserGet.mockResolvedValue({

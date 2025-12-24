@@ -17,10 +17,18 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     logger.info(`Authenticated user: ${userId}`);
 
     // 2. Extract Webhook Data
-    const payload = req.body;
-    const workoutId = payload.workout_id;
+    const body = req.body || {};
+
+    // Support nested payload structure (Hevy standard) or flat (legacy/dev)
+    const workoutId = body.payload?.workoutId || body.workout_id || body.workoutId || body.id;
 
     if (!workoutId) {
+        // Log full payload structure on error to aid debugging
+        logger.error('Invalid payload: Missing workout_id', {
+            receivedKeys: Object.keys(body),
+            payloadKeys: body.payload ? Object.keys(body.payload) : undefined,
+            payloadPreview: JSON.stringify(body).substring(0, 500)
+        });
         throw new Error('Invalid payload: Missing workout_id');
     }
 

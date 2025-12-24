@@ -126,7 +126,7 @@ export function createCloudFunction(handler: FrameworkHandler, options?: CloudFu
       path: req.path,
       query: req.query,
       headers: req.headers,
-      bodyKeys: req.body ? Object.keys(req.body) : []
+      body: req.body // Log full body for debugging (only happens at debug log level)
     });
 
     // --- AUTHENTICATION MIDDLEWARE ---
