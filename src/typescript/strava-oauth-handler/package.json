@@ -1,0 +1,22 @@
+{
+  "name": "strava-oauth-handler",
+  "version": "1.0.0",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc",
+    "gcp-build": "tsc",
+    "lint": "eslint src --ext .ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@fitglue/shared": "file:../shared",
+    "@functions-framework/functions-framework": "^3.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "engines": {
+    "node": "20"
+  }
+}

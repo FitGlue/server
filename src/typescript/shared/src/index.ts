@@ -8,3 +8,4 @@ export { ApiKeyRecord } from './types/pb/auth';
 export { UserRecord, UserIntegrations, HevyIntegration } from './types/pb/user';
 export * from './services/user_service';
 export * from './api/hevy/client';
+export * from './oauth';

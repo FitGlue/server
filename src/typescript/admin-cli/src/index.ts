@@ -362,6 +362,68 @@ program.command('users:list')
         }
     });
 
+import { generateOAuthState } from '@fitglue/shared';
+
+program.command('users:connect')
+    .argument('<userId>', 'User ID to connect')
+    .argument('<provider>', 'Provider to connect (strava or fitbit)')
+    .description('Generate OAuth authorization URL for a user')
+    .action(async (userId, provider) => {
+        try {
+            if (!['strava', 'fitbit'].includes(provider)) {
+                console.error('Provider must be "strava" or "fitbit"');
+                process.exit(1);
+            }
+
+            // Verify user exists
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                console.error(`User ${userId} not found`);
+                process.exit(1);
+            }
+
+            // Generate state token
+            const state = await generateOAuthState(userId);
+
+            // Get environment from GOOGLE_CLOUD_PROJECT or default to dev
+            const project = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
+            const env = project.includes('-prod') ? 'prod' : project.includes('-test') ? 'test' : 'dev';
+            const baseUrl = env === 'prod' ? 'https://fitglue.tech' : `https://${env}.fitglue.tech`;
+
+            let authUrl: string;
+            if (provider === 'strava') {
+                // Note: Client ID should be fetched from Secret Manager in production
+                // For now, we'll show a placeholder
+                authUrl = `https://www.strava.com/oauth/authorize?` +
+                    `client_id=YOUR_STRAVA_CLIENT_ID&` +
+                    `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/strava/callback`)}&` +
+                    `response_type=code&` +
+                    `scope=read,activity:read_all&` +
+                    `state=${state}`;
+            } else {
+                authUrl = `https://www.fitbit.com/oauth2/authorize?` +
+                    `client_id=YOUR_FITBIT_CLIENT_ID&` +
+                    `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/fitbit/callback`)}&` +
+                    `response_type=code&` +
+                    `scope=activity heartrate profile&` +
+                    `state=${state}`;
+            }
+
+            console.log('\n==========================================');
+            console.log(`OAuth Authorization URL for ${provider}:`);
+            console.log('==========================================');
+            console.log(authUrl);
+            console.log('==========================================\n');
+            console.log('NOTE: Replace YOUR_*_CLIENT_ID with actual client ID from Secret Manager');
+            console.log(`User should visit this URL to authorize ${provider} access.`);
+            console.log('After authorization, tokens will be automatically stored in Firestore.\n');
+
+        } catch (error) {
+            console.error('Error generating OAuth URL:', error);
+            process.exit(1);
+        }
+    });
+
 program.command('users:clean')
     .description('Delete ALL users from the system')
     .action(async () => {

@@ -2,6 +2,9 @@ locals {
   # Prod gets the root domain, others get subdomains
   dns_zone_name = var.environment == "prod" ? "fitglue-tech" : "${var.environment}-fitglue-tech"
   dns_name      = var.environment == "prod" ? "fitglue.tech." : "${var.environment}.fitglue.tech."
+
+  # Base URL for OAuth redirects
+  base_url = var.environment == "prod" ? "https://fitglue.tech" : "https://${var.environment}.fitglue.tech"
 }
 
 resource "google_dns_managed_zone" "main" {
