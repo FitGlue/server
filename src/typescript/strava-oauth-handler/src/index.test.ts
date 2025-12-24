@@ -1,4 +1,11 @@
-import { stravaOAuthHandler } from './index';
+// Mock firebase-admin to prevent initialization
+jest.mock('firebase-admin', () => ({
+  apps: [],
+  initializeApp: jest.fn(),
+  firestore: jest.fn(() => ({
+    collection: jest.fn(),
+  })),
+}));
 
 // Mock the shared package
 jest.mock('@fitglue/shared', () => ({
@@ -7,6 +14,8 @@ jest.mock('@fitglue/shared', () => ({
   storeOAuthTokens: jest.fn(),
   getSecret: jest.fn(),
 }));
+
+import { stravaOAuthHandler } from './index';
 
 describe('stravaOAuthHandler', () => {
   let req: any;
@@ -32,6 +41,7 @@ describe('stravaOAuthHandler', () => {
       redirect: jest.fn(),
       status: jest.fn().mockReturnThis(),
       send: jest.fn(),
+      set: jest.fn(),
     };
 
     ctx = {

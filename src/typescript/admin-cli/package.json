@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "echo 'No tests yet' && exit 0",
+    "test": "jest --passWithNoTests",
     "start": "node dist/index.js",
     "lint": "eslint src --ext .ts"
   },
