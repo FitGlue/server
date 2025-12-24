@@ -20,3 +20,8 @@ variable "retry_policy" {
   type        = string
   default     = "RETRY_POLICY_RETRY"
 }
+
+variable "environment" {
+  description = "The deployment environment (dev, test, prod)"
+  type        = string
+}
