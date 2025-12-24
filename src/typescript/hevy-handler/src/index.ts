@@ -1,4 +1,5 @@
 import { TOPICS, createCloudFunction, ActivityPayload, FrameworkContext, ActivitySource, createHevyClient } from '@fitglue/shared';
+import { mapHevyWorkoutToStandardized } from './mapper';
 
 // Removed local PubSub instantiation
 const TOPIC_NAME = TOPICS.RAW_ACTIVITY;
@@ -66,8 +67,38 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     }
 
     // 6. Runtime Validation & Publishing
-    // Relying on static types from openapi-fetch as requested
     const fullWorkout = data;
+
+    // --- TEMPLATE FETCHING LOGIC ---
+    // Identify unique exercise template IDs
+    const templateIds = new Set<string>();
+    (fullWorkout.exercises || []).forEach((ex: any) => {
+        if (ex.exercise_template_id) {
+            templateIds.add(ex.exercise_template_id);
+        }
+    });
+
+    // Fetch all templates concurrently
+    // Note: If scale increases significantly, we might need batching or caching.
+    // Hevy doesn't document a batch get endpoint for templates.
+    const templatePromises = Array.from(templateIds).map(async (tmplId) => {
+        const { data: tmplData } = await client.GET("/v1/exercise_templates/{exerciseTemplateId}", {
+            params: { path: { exerciseTemplateId: tmplId } }
+        });
+        return { id: tmplId, data: tmplData };
+    });
+
+    const templates = await Promise.all(templatePromises);
+    const templateMap: Record<string, any> = {};
+    templates.forEach((res) => {
+        if (res.data) {
+            templateMap[res.id] = res.data;
+        }
+    });
+
+    // --- MAPPING LOGIC (Hevy -> StandardizedActivity) ---
+    const standardizedActivity = mapHevyWorkoutToStandardized(userId, fullWorkout, templateMap);
+    // ----------------------------------------------------
 
     const messagePayload: ActivityPayload = {
         source: ActivitySource.SOURCE_HEVY,
@@ -77,7 +108,8 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
         metadata: {
             'fetch_method': 'active_fetch',
             'webhook_id': workoutId
-        }
+        },
+        standardizedActivity: standardizedActivity // Include new standardized format
     };
 
     // Uses injected PubSub client

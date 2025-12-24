@@ -60,7 +60,8 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
                         userId: userId,
                         timestamp: session.startTime,
                         originalPayloadJson: JSON.stringify(session),
-                        metadata: {}
+                        metadata: {},
+                        standardizedActivity: undefined // Todo: Map Keiser to StandardizedActivity
                     };
                     return ctx.pubsub.topic(TOPIC_NAME).publishMessage({ json: payload });
                 });

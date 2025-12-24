@@ -120,7 +120,11 @@ describe('hevyWebhookHandler', () => {
                     source: 'HEVY',
                     userId: 'test-user',
                     originalPayloadJson: JSON.stringify(mockWorkout),
-                    metadata: expect.objectContaining({ fetch_method: 'active_fetch' })
+                    metadata: expect.objectContaining({ fetch_method: 'active_fetch' }),
+                    standardizedActivity: expect.objectContaining({
+                        source: 'HEVY',
+                        externalId: mockWorkout.id
+                    })
                 })
             })
         );

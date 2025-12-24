@@ -4,6 +4,8 @@ package fitglue;
 
 option go_package = "fitglue/pkg/shared/pb";
 
+import "standardized_activity.proto";
+
 // ActivitySource enum defines where the data originated.
 enum ActivitySource {
   SOURCE_UNKNOWN = 0;
@@ -19,6 +21,7 @@ message ActivityPayload {
   string timestamp = 3;    // ISO 8601 Timestamp of activity start
   string original_payload_json = 4; // Raw JSON payload stringified (flexible but preserved)
   map<string, string> metadata = 5; // Extra tracing context
+  StandardizedActivity standardized_activity = 6;
 }
 
 // EnrichedActivityEvent is the message format for topic-enriched-activity.

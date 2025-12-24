@@ -76,14 +76,15 @@ func (ActivitySource) EnumDescriptor() ([]byte, []int) {
 
 // ActivityPayload is the unified message format published to Pub/Sub.
 type ActivityPayload struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	Source              ActivitySource         `protobuf:"varint,1,opt,name=source,proto3,enum=fitglue.ActivitySource" json:"source,omitempty"`
-	UserId              string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`                                                                 // Internal FitGlue User ID
-	Timestamp           string                 `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                                                                         // ISO 8601 Timestamp of activity start
-	OriginalPayloadJson string                 `protobuf:"bytes,4,opt,name=original_payload_json,json=originalPayloadJson,proto3" json:"original_payload_json,omitempty"`                        // Raw JSON payload stringified (flexible but preserved)
-	Metadata            map[string]string      `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Extra tracing context
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                protoimpl.MessageState `protogen:"open.v1"`
+	Source               ActivitySource         `protobuf:"varint,1,opt,name=source,proto3,enum=fitglue.ActivitySource" json:"source,omitempty"`
+	UserId               string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`                                                                 // Internal FitGlue User ID
+	Timestamp            string                 `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                                                                         // ISO 8601 Timestamp of activity start
+	OriginalPayloadJson  string                 `protobuf:"bytes,4,opt,name=original_payload_json,json=originalPayloadJson,proto3" json:"original_payload_json,omitempty"`                        // Raw JSON payload stringified (flexible but preserved)
+	Metadata             map[string]string      `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Extra tracing context
+	StandardizedActivity *StandardizedActivity  `protobuf:"bytes,6,opt,name=standardized_activity,json=standardizedActivity,proto3" json:"standardized_activity,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ActivityPayload) Reset() {
@@ -147,6 +148,13 @@ func (x *ActivityPayload) GetOriginalPayloadJson() string {
 func (x *ActivityPayload) GetMetadata() map[string]string {
 	if x != nil {
 		return x.Metadata
+	}
+	return nil
+}
+
+func (x *ActivityPayload) GetStandardizedActivity() *StandardizedActivity {
+	if x != nil {
+		return x.StandardizedActivity
 	}
 	return nil
 }
@@ -232,13 +240,14 @@ var File_activity_proto protoreflect.FileDescriptor
 
 const file_activity_proto_rawDesc = "" +
 	"\n" +
-	"\x0eactivity.proto\x12\afitglue\"\xae\x02\n" +
+	"\x0eactivity.proto\x12\afitglue\x1a\x1bstandardized_activity.proto\"\x82\x03\n" +
 	"\x0fActivityPayload\x12/\n" +
 	"\x06source\x18\x01 \x01(\x0e2\x17.fitglue.ActivitySourceR\x06source\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1c\n" +
 	"\ttimestamp\x18\x03 \x01(\tR\ttimestamp\x122\n" +
 	"\x15original_payload_json\x18\x04 \x01(\tR\x13originalPayloadJson\x12B\n" +
-	"\bmetadata\x18\x05 \x03(\v2&.fitglue.ActivityPayload.MetadataEntryR\bmetadata\x1a;\n" +
+	"\bmetadata\x18\x05 \x03(\v2&.fitglue.ActivityPayload.MetadataEntryR\bmetadata\x12R\n" +
+	"\x15standardized_activity\x18\x06 \x01(\v2\x1d.fitglue.StandardizedActivityR\x14standardizedActivity\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xb1\x01\n" +
@@ -274,15 +283,17 @@ var file_activity_proto_goTypes = []any{
 	(*ActivityPayload)(nil),       // 1: fitglue.ActivityPayload
 	(*EnrichedActivityEvent)(nil), // 2: fitglue.EnrichedActivityEvent
 	nil,                           // 3: fitglue.ActivityPayload.MetadataEntry
+	(*StandardizedActivity)(nil),  // 4: fitglue.StandardizedActivity
 }
 var file_activity_proto_depIdxs = []int32{
 	0, // 0: fitglue.ActivityPayload.source:type_name -> fitglue.ActivitySource
 	3, // 1: fitglue.ActivityPayload.metadata:type_name -> fitglue.ActivityPayload.MetadataEntry
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	4, // 2: fitglue.ActivityPayload.standardized_activity:type_name -> fitglue.StandardizedActivity
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_activity_proto_init() }
@@ -290,6 +301,7 @@ func file_activity_proto_init() {
 	if File_activity_proto != nil {
 		return
 	}
+	file_standardized_activity_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

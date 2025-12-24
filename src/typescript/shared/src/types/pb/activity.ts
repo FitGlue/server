@@ -5,6 +5,7 @@
 // source: activity.proto
 
 /* eslint-disable */
+import type { StandardizedActivity } from "./standardized_activity";
 
 export const protobufPackage = "fitglue";
 
@@ -28,6 +29,7 @@ export interface ActivityPayload {
   originalPayloadJson: string;
   /** Extra tracing context */
   metadata: { [key: string]: string };
+  standardizedActivity: StandardizedActivity | undefined;
 }
 
 export interface ActivityPayload_MetadataEntry {
