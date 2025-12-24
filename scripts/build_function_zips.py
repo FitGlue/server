@@ -33,16 +33,29 @@ def create_function_zip(function_name, src_dir, output_dir):
     shutil.copy2(src_dir / "go.mod", temp_dir / "go.mod")
     shutil.copy2(src_dir / "go.sum", temp_dir / "go.sum")
 
-    # Create zip
+    # Create zip deterministically
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Walk and collect all files first to sort them
+        all_files = []
         for root, dirs, files in os.walk(temp_dir):
-            # Skip cmd directories
-            dirs[:] = [d for d in dirs if d != 'cmd']
+            dirs[:] = [d for d in dirs if d != 'cmd'] # Skip cmd dirs in walk
+            dirs.sort() # Sort directories in place for deterministic walk
 
-            for file in files:
-                file_path = Path(root) / file
-                arcname = file_path.relative_to(temp_dir)
-                zipf.write(file_path, arcname)
+            for file in sorted(files): # Sort files
+                all_files.append(Path(root) / file)
+
+        for file_path in all_files:
+            arcname = file_path.relative_to(temp_dir)
+
+            # Create a ZipInfo object to override timestamp
+            zinfo = zipfile.ZipInfo.from_file(file_path, arcname)
+            # Reset timestamp to a fixed date (1980-01-01 00:00:00) for deterministic hashing
+            zinfo.date_time = (1980, 1, 1, 0, 0, 0)
+
+            # Read file data to write via writestr (writestr + ZipInfo needed for timestamp override)
+            with open(file_path, 'rb') as f:
+                data = f.read()
+            zipf.writestr(zinfo, data)
 
     # Clean up temp directory
     shutil.rmtree(temp_dir)
