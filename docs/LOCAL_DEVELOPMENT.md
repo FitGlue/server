@@ -209,4 +209,5 @@ lsof -ti:8080 | xargs kill -9  # Replace 8080 with the conflicting port
 ## Next Steps
 
 - See [CI/CD Guide](CICD.md) for deployment instructions
+- See [OpenAPI Clients](OPENAPI_CLIENTS.md) for external API integration patterns
 - See [Architecture Decisions](DECISIONS.md) for design rationale
