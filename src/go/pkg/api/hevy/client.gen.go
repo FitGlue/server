@@ -860,7 +860,7 @@ type ClientInterface interface {
 	PostV1ExerciseTemplates(ctx context.Context, params *PostV1ExerciseTemplatesParams, body PostV1ExerciseTemplatesJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetV1ExerciseTemplatesExerciseTemplateId request
-	GetV1ExerciseTemplatesExerciseTemplateId(ctx context.Context, exerciseTemplateId int, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetV1ExerciseTemplatesExerciseTemplateId(ctx context.Context, exerciseTemplateId string, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetV1RoutineFolders request
 	GetV1RoutineFolders(ctx context.Context, params *GetV1RoutineFoldersParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -960,7 +960,7 @@ func (c *Client) PostV1ExerciseTemplates(ctx context.Context, params *PostV1Exer
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetV1ExerciseTemplatesExerciseTemplateId(ctx context.Context, exerciseTemplateId int, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetV1ExerciseTemplatesExerciseTemplateId(ctx context.Context, exerciseTemplateId string, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetV1ExerciseTemplatesExerciseTemplateIdRequest(c.Server, exerciseTemplateId, params)
 	if err != nil {
 		return nil, err
@@ -1405,7 +1405,7 @@ func NewPostV1ExerciseTemplatesRequestWithBody(server string, params *PostV1Exer
 }
 
 // NewGetV1ExerciseTemplatesExerciseTemplateIdRequest generates requests for GetV1ExerciseTemplatesExerciseTemplateId
-func NewGetV1ExerciseTemplatesExerciseTemplateIdRequest(server string, exerciseTemplateId int, params *GetV1ExerciseTemplatesExerciseTemplateIdParams) (*http.Request, error) {
+func NewGetV1ExerciseTemplatesExerciseTemplateIdRequest(server string, exerciseTemplateId string, params *GetV1ExerciseTemplatesExerciseTemplateIdParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -2294,7 +2294,7 @@ type ClientWithResponsesInterface interface {
 	PostV1ExerciseTemplatesWithResponse(ctx context.Context, params *PostV1ExerciseTemplatesParams, body PostV1ExerciseTemplatesJSONRequestBody, reqEditors ...RequestEditorFn) (*PostV1ExerciseTemplatesResponse, error)
 
 	// GetV1ExerciseTemplatesExerciseTemplateIdWithResponse request
-	GetV1ExerciseTemplatesExerciseTemplateIdWithResponse(ctx context.Context, exerciseTemplateId int, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*GetV1ExerciseTemplatesExerciseTemplateIdResponse, error)
+	GetV1ExerciseTemplatesExerciseTemplateIdWithResponse(ctx context.Context, exerciseTemplateId string, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*GetV1ExerciseTemplatesExerciseTemplateIdResponse, error)
 
 	// GetV1RoutineFoldersWithResponse request
 	GetV1RoutineFoldersWithResponse(ctx context.Context, params *GetV1RoutineFoldersParams, reqEditors ...RequestEditorFn) (*GetV1RoutineFoldersResponse, error)
@@ -2835,7 +2835,7 @@ func (c *ClientWithResponses) PostV1ExerciseTemplatesWithResponse(ctx context.Co
 }
 
 // GetV1ExerciseTemplatesExerciseTemplateIdWithResponse request returning *GetV1ExerciseTemplatesExerciseTemplateIdResponse
-func (c *ClientWithResponses) GetV1ExerciseTemplatesExerciseTemplateIdWithResponse(ctx context.Context, exerciseTemplateId int, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*GetV1ExerciseTemplatesExerciseTemplateIdResponse, error) {
+func (c *ClientWithResponses) GetV1ExerciseTemplatesExerciseTemplateIdWithResponse(ctx context.Context, exerciseTemplateId string, params *GetV1ExerciseTemplatesExerciseTemplateIdParams, reqEditors ...RequestEditorFn) (*GetV1ExerciseTemplatesExerciseTemplateIdResponse, error) {
 	rsp, err := c.GetV1ExerciseTemplatesExerciseTemplateId(ctx, exerciseTemplateId, params, reqEditors...)
 	if err != nil {
 		return nil, err

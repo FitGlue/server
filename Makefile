@@ -41,8 +41,8 @@ generate:
 			\
 			# TypeScript Generation \
 			echo "  [TS] Generating schema.ts for $$SERVICE..."; \
-			mkdir -p $(TS_SRC_DIR)/shared/src/$${SERVICE}-api; \
-			cd $(TS_SRC_DIR)/shared && npx openapi-typescript ../../../$$dir/swagger.json -o src/$${SERVICE}-api/schema.ts; \
+			mkdir -p $(TS_SRC_DIR)/shared/src/api/$${SERVICE}; \
+			cd $(TS_SRC_DIR)/shared && npx openapi-typescript ../../../$$dir/swagger.json -o src/api/$${SERVICE}/schema.ts; \
 			cd ../../..; \
 			\
 			# Go Generation \

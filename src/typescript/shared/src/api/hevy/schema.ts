@@ -652,7 +652,7 @@ export interface paths {
                 };
                 path: {
                     /** @description The id of the exercise template */
-                    exerciseTemplateId: number;
+                    exerciseTemplateId: string;
                 };
                 cookie?: never;
             };

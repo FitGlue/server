@@ -1,4 +1,4 @@
-import { components } from '@fitglue/shared/dist/hevy-api/schema'; // Import from dist to access generated types
+import { components } from '@fitglue/shared/dist/api/hevy/schema'; // Import from dist to access generated types
 import { StandardizedActivity, Session, StrengthSet } from '@fitglue/shared/dist/types/pb/standardized_activity';
 
 type HevyWorkout = components["schemas"]["Workout"];
