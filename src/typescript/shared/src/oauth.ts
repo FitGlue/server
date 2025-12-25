@@ -7,8 +7,10 @@ import { getSecret } from './secrets';
  * @returns Base64-encoded signed state token
  */
 export async function generateOAuthState(userId: string): Promise<string> {
-  const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-  const secret = await getSecret(projectId, 'oauth-state-secret');
+  if (!process.env.OAUTH_STATE_SECRET && !process.env.GOOGLE_CLOUD_PROJECT) {
+    throw new Error('Missing configuration: OAUTH_STATE_SECRET or GOOGLE_CLOUD_PROJECT environment variable is required');
+  }
+  const secret = process.env.OAUTH_STATE_SECRET || await getSecret(process.env.GOOGLE_CLOUD_PROJECT!, 'oauth-state-secret');
   const timestamp = Date.now();
   const expiresAt = timestamp + 10 * 60 * 1000; // 10 minutes
 
@@ -27,9 +29,13 @@ export async function generateOAuthState(userId: string): Promise<string> {
  * @returns User ID if valid, null otherwise
  */
 export async function validateOAuthState(state: string): Promise<string | null> {
+  // Fetch secret first - let this throw if configuration is missing (infrastructure error)
+  if (!process.env.OAUTH_STATE_SECRET && !process.env.GOOGLE_CLOUD_PROJECT) {
+    throw new Error('Missing configuration: OAUTH_STATE_SECRET or GOOGLE_CLOUD_PROJECT environment variable is required');
+  }
+  const secret = process.env.OAUTH_STATE_SECRET || await getSecret(process.env.GOOGLE_CLOUD_PROJECT!, 'oauth-state-secret');
+
   try {
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const secret = await getSecret(projectId, 'oauth-state-secret');
     const decoded = JSON.parse(Buffer.from(state, 'base64url').toString());
     const { payload, signature } = decoded;
 
@@ -39,17 +45,20 @@ export async function validateOAuthState(state: string): Promise<string | null> 
     const expectedSignature = hmac.digest('hex');
 
     if (signature !== expectedSignature) {
+      console.warn('OAuth state signature mismatch');
       return null;
     }
 
     // Check expiration
     const { userId, expiresAt } = JSON.parse(payload);
     if (Date.now() > expiresAt) {
+      console.warn('OAuth state expired');
       return null;
     }
 
     return userId;
   } catch (error) {
+    console.warn('Error validating OAuth state:', error);
     return null;
   }
 }

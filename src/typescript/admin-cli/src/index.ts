@@ -321,13 +321,17 @@ program.command('users:connect')
                 }
             ]);
 
-            // Generate state token
-            const state = await generateOAuthState(userId);
-
             // Get environment from GOOGLE_CLOUD_PROJECT or default to dev
-            const project = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
+            // Ensure env var is set for shared library calls (secrets) so it fetches from the correct GSM project
+            if (!process.env.GOOGLE_CLOUD_PROJECT) {
+                process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-server-dev';
+            }
+            const project = process.env.GOOGLE_CLOUD_PROJECT;
             const env = project.includes('-prod') ? 'prod' : project.includes('-test') ? 'test' : 'dev';
             const baseUrl = env === 'prod' ? 'https://fitglue.tech' : `https://${env}.fitglue.tech`;
+
+            // Generate state token
+            const state = await generateOAuthState(userId);
 
             let authUrl: string;
             if (provider === 'strava') {
@@ -335,7 +339,7 @@ program.command('users:connect')
                     `client_id=${clientId}&` +
                     `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/strava/callback`)}&` +
                     `response_type=code&` +
-                    `scope=read,activity:read_all&` +
+                    `scope=read,activity:read_all,activity:write&` +
                     `state=${state}`;
             } else {
                 authUrl = `https://www.fitbit.com/oauth2/authorize?` +

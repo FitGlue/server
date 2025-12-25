@@ -21,8 +21,15 @@ resource "google_cloudfunctions2_function" "strava_oauth_handler" {
     available_memory = "256Mi"
     timeout_seconds  = 60
     environment_variables = {
-      LOG_LEVEL = var.log_level
-      BASE_URL  = local.base_url
+      LOG_LEVEL            = var.log_level
+      BASE_URL             = local.base_url
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    secret_environment_variables {
+      key        = "OAUTH_STATE_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.oauth_state_secret.secret_id
+      version    = "latest"
     }
     secret_environment_variables {
       key        = "STRAVA_CLIENT_ID"
@@ -70,8 +77,15 @@ resource "google_cloudfunctions2_function" "fitbit_oauth_handler" {
     available_memory = "256Mi"
     timeout_seconds  = 60
     environment_variables = {
-      LOG_LEVEL = var.log_level
-      BASE_URL  = local.base_url
+      LOG_LEVEL            = var.log_level
+      BASE_URL             = local.base_url
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    secret_environment_variables {
+      key        = "OAUTH_STATE_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.oauth_state_secret.secret_id
+      version    = "latest"
     }
     secret_environment_variables {
       key        = "FITBIT_CLIENT_ID"
