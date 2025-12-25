@@ -77,3 +77,12 @@ func cloneRequest(r *http.Request) *http.Request {
 	}
 	return r2
 }
+
+// NewHTTPClient creates an HTTP client with OAuth transport
+func NewHTTPClient(source TokenSource) *http.Client {
+	return &http.Client{
+		Transport: &Transport{
+			Source: source,
+		},
+	}
+}

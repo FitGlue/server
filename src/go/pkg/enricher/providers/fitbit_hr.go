@@ -11,46 +11,42 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime/types"
+
 	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/api/fitbit"
+	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/enricher"
+	"github.com/ripixel/fitglue-server/src/go/pkg/oauth"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 type FitBitHeartRate struct {
-	Client *http.Client
+	Service *bootstrap.Service
 }
 
 func NewFitBitHeartRate() *FitBitHeartRate {
-	return &FitBitHeartRate{
-		Client: &http.Client{Timeout: 10 * time.Second},
-	}
+	return &FitBitHeartRate{}
+}
+
+func (p *FitBitHeartRate) SetService(svc *bootstrap.Service) {
+	p.Service = svc
 }
 
 func (p *FitBitHeartRate) Name() string {
 	return "fitbit-hr"
 }
 
-// SecurityProvider implements the security provider interface for the generated client
-type SecurityProvider struct {
-	Token string
-}
-
-func (s *SecurityProvider) Intercept(ctx context.Context, req *http.Request) error {
-	req.Header.Set("Authorization", "Bearer "+s.Token)
-	return nil
-}
-
 func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string) (*enricher.EnrichmentResult, error) {
+	return p.EnrichWithClient(ctx, activity, user, inputs, nil)
+}
+
+// EnrichWithClient allows HTTP client injection for testing
+func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client) (*enricher.EnrichmentResult, error) {
 	// 1. Check Credentials
 	if user.Integrations == nil || user.Integrations.Fitbit == nil || !user.Integrations.Fitbit.Enabled {
 		return nil, fmt.Errorf("fitbit integration not enabled")
 	}
-	token := user.Integrations.Fitbit.AccessToken
-	if token == "" {
-		return nil, fmt.Errorf("missing fitbit access token")
-	}
 
-	// 2. Parse Actvity Times
+	// 2. Parse Activity Times
 	startTime, err := time.Parse(time.RFC3339, activity.StartTime)
 	if err != nil {
 		return nil, fmt.Errorf("invalid start time: %w", err)
@@ -67,17 +63,19 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 	startTimeStr := startTime.Format("15:04")
 	endTimeStr := endTime.Format("15:04")
 
-	// 3. Initialize Client
-	authProvider := &SecurityProvider{Token: token}
-	// Use standard Client, not WithResponses, to handle body manually
-	client, err := fitbit.NewClient("https://api.fitbit.com", fitbit.WithRequestEditorFn(authProvider.Intercept))
+	// 3. Initialize OAuth HTTP Client if not provided (for testing)
+	if httpClient == nil {
+		tokenSource := oauth.NewFirestoreTokenSource(p.Service, user.UserId, "fitbit")
+		httpClient = oauth.NewHTTPClient(tokenSource)
+	}
+
+	// 4. Create Fitbit Client with OAuth transport
+	client, err := fitbit.NewClient("https://api.fitbit.com", fitbit.WithHTTPClient(httpClient))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create fitbit client: %w", err)
 	}
 
-	// 4. Request Data (Intraday HR)
-	// endpoint: ranges from start to end time on the specific date
-	// Method: GetHeartByDateTimestampIntraday(ctx, date, detailLevel, startTime, endTime)
+	// 5. Request Data (Intraday HR)
 	date := types.Date{Time: startTime}
 	resp, err := client.GetHeartByDateTimestampIntraday(ctx, date, "1sec", startTimeStr, endTimeStr)
 	if err != nil {
@@ -90,8 +88,7 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 		return nil, fmt.Errorf("fitbit api error %d: %s", resp.StatusCode, string(body))
 	}
 
-	// 5. Parse Response
-	// Note: We keep the response struct definition local as it matches the exact JSON shape we expect
+	// 6. Parse Response
 	var hrResponse struct {
 		ActivitiesHeartIntraday struct {
 			Dataset []struct {
@@ -105,12 +102,11 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	// 6. Build Stream
-	// We need to map the dataset (time HH:MM:SS) to the activity stream (index 0 to duration).
+	// 7. Build Stream
 	stream := make([]int, durationSec)
 
 	for _, dataPoint := range hrResponse.ActivitiesHeartIntraday.Dataset {
-		ptTime, _ := time.Parse("15:04:05", dataPoint.Time) // Parses as year 0000
+		ptTime, _ := time.Parse("15:04:05", dataPoint.Time)
 		startDayTime, _ := time.Parse("15:04:05", startTimeStr)
 
 		offset := int(ptTime.Sub(startDayTime).Seconds())

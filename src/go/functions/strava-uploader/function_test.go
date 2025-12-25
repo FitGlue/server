@@ -7,12 +7,12 @@ import (
 	"io"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
+	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
 	"github.com/ripixel/fitglue-server/src/go/pkg/mocks"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
@@ -34,19 +34,21 @@ func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 }
 
 func TestUploadToStrava(t *testing.T) {
-	// Setup Mocks
-	mockDB := &mocks.MockDatabase{
-		GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-			return map[string]interface{}{
-				"integrations": map[string]interface{}{
-					"strava": map[string]interface{}{
-						"access_token":  "token-123",
-						"refresh_token": "refresh-123",
-						"expires_at":    time.Now().Add(1 * time.Hour),
-					},
-				},
+	// Setup Mock HTTP Client
+	mockHTTPClient := &MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Verify request has content
+			if req.Header.Get("Content-Type") == "" {
+				t.Error("Expected Content-Type header")
+			}
+			return &http.Response{
+				StatusCode: 201,
+				Body:       io.NopCloser(bytes.NewBufferString(`{"id": 999, "status": "Your activity is ready."}`)),
 			}, nil
 		},
+	}
+
+	mockDB := &mocks.MockDatabase{
 		SetExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
 			return nil
 		},
@@ -79,36 +81,19 @@ func TestUploadToStrava(t *testing.T) {
 
 	mockStore := &mocks.MockBlobStore{
 		ReadFunc: func(ctx context.Context, bucket, object string) ([]byte, error) {
-			// Mock FIT file
 			return []byte("MOCK_FIT_DATA"), nil
 		},
 	}
 
-	mockHTTP := &MockHTTPClient{
-		DoFunc: func(req *http.Request) (*http.Response, error) {
-			// Verify Headers
-			if req.Header.Get("Authorization") != "Bearer token-123" {
-				t.Errorf("Wrong Token")
-			}
-			return &http.Response{
-				StatusCode: 201,
-				Body:       io.NopCloser(bytes.NewBufferString(`{"id": 999}`)),
-			}, nil
-		},
-	}
-
 	// Inject Mocks into Global Service
-	svc = &UploaderService{
-		Service: &bootstrap.Service{
-			DB:      mockDB,
-			Store:   mockStore,
-			Secrets: &mocks.MockSecretStore{},
-			Config: &bootstrap.Config{
-				ProjectID:         "test-project",
-				GCSArtifactBucket: "test-bucket",
-			},
+	svc = &bootstrap.Service{
+		DB:      mockDB,
+		Store:   mockStore,
+		Secrets: &mocks.MockSecretStore{},
+		Config: &bootstrap.Config{
+			ProjectID:         "test-project",
+			GCSArtifactBucket: "test-bucket",
 		},
-		HTTPClient: mockHTTP,
 	}
 
 	// Prepare Input
@@ -138,9 +123,20 @@ func TestUploadToStrava(t *testing.T) {
 	e.SetSource("//pubsub")
 	e.SetData(event.ApplicationJSON, psMsg)
 
-	// Execute
-	err := UploadToStrava(context.Background(), e)
+	// Execute with injected mock HTTP client
+	mockClient := &http.Client{Transport: &mockTransport{mockHTTPClient}}
+	handler := uploadHandler(svc, mockClient)
+	err := framework.WrapCloudEvent("strava-uploader", svc, handler)(context.Background(), e)
 	if err != nil {
 		t.Fatalf("UploadToStrava failed: %v", err)
 	}
+}
+
+// mockTransport wraps MockHTTPClient to implement http.RoundTripper
+type mockTransport struct {
+	client *MockHTTPClient
+}
+
+func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	return m.client.Do(req)
 }

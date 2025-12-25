@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -24,19 +23,8 @@ import (
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
-// HTTPClient interface for mocking
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
-// UploaderService wraps bootstrap.Service with HTTP client
-type UploaderService struct {
-	*bootstrap.Service
-	HTTPClient HTTPClient
-}
-
 var (
-	svc     *UploaderService
+	svc     *bootstrap.Service
 	svcOnce sync.Once
 	svcErr  error
 )
@@ -45,7 +33,7 @@ func init() {
 	functions.CloudEvent("UploadToStrava", UploadToStrava)
 }
 
-func initService(ctx context.Context) (*UploaderService, error) {
+func initService(ctx context.Context) (*bootstrap.Service, error) {
 	if svc != nil {
 		return svc, nil
 	}
@@ -56,10 +44,7 @@ func initService(ctx context.Context) (*UploaderService, error) {
 			svcErr = err
 			return
 		}
-		svc = &UploaderService{
-			Service:    baseSvc,
-			HTTPClient: &http.Client{Timeout: 30 * time.Second},
-		}
+		svc = baseSvc
 	})
 	return svc, svcErr
 }
@@ -70,11 +55,12 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 	if err != nil {
 		return fmt.Errorf("service init failed: %v", err)
 	}
-	return framework.WrapCloudEvent("strava-uploader", svc.Service, uploadHandler(svc))(ctx, e)
+	return framework.WrapCloudEvent("strava-uploader", svc, uploadHandler(svc, nil))(ctx, e)
 }
 
 // uploadHandler contains the business logic
-func uploadHandler(svc *UploaderService) framework.HandlerFunc {
+// httpClient can be injected for testing; if nil, creates OAuth client
+func uploadHandler(svc *bootstrap.Service, httpClient *http.Client) framework.HandlerFunc {
 	return func(ctx context.Context, e event.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
 		// Parse Pub/Sub message
 		var msg types.PubSubMessage
@@ -83,7 +69,6 @@ func uploadHandler(svc *UploaderService) framework.HandlerFunc {
 		}
 
 		var eventPayload pb.EnrichedActivityEvent
-		// Use protojson to unmarshal (supports standard Proto JSON format)
 		unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
 		if err := unmarshalOpts.Unmarshal(msg.Message.Data, &eventPayload); err != nil {
 			return nil, fmt.Errorf("protojson unmarshal: %v", err)
@@ -91,11 +76,10 @@ func uploadHandler(svc *UploaderService) framework.HandlerFunc {
 
 		fwCtx.Logger.Info("Starting upload", "activity_id", eventPayload.ActivityId, "pipeline_id", eventPayload.PipelineId)
 
-		// Initialize Token Source
-		tokenSource := oauth.NewFirestoreTokenSource(fwCtx.Service, eventPayload.UserId, "strava")
-		token, err := tokenSource.Token(ctx)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get token: %w", err)
+		// Initialize OAuth HTTP Client if not provided (for testing)
+		if httpClient == nil {
+			tokenSource := oauth.NewFirestoreTokenSource(fwCtx.Service, eventPayload.UserId, "strava")
+			httpClient = oauth.NewHTTPClient(tokenSource)
 		}
 
 		// Download FIT from GCS
@@ -111,43 +95,26 @@ func uploadHandler(svc *UploaderService) framework.HandlerFunc {
 			return nil, fmt.Errorf("GCS Read Error: %w", err)
 		}
 
-		// Helper to invoke request
-		doUpload := func(accessToken string) (*http.Response, error) {
-			body := &bytes.Buffer{}
-			writer := multipart.NewWriter(body)
-			part, _ := writer.CreateFormFile("file", "activity.fit")
-			part.Write(fileData)
-			writer.WriteField("data_type", "fit")
-			writer.Close()
+		// Build multipart form data
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, _ := writer.CreateFormFile("file", "activity.fit")
+		part.Write(fileData)
+		writer.WriteField("data_type", "fit")
+		writer.Close()
 
-			req, _ := http.NewRequest("POST", "https://www.strava.com/api/v3/uploads", body)
-			req.Header.Set("Authorization", "Bearer "+accessToken)
-			req.Header.Set("Content-Type", writer.FormDataContentType())
-
-			return svc.HTTPClient.Do(req)
+		// Create request
+		req, err := http.NewRequestWithContext(ctx, "POST", "https://www.strava.com/api/v3/uploads", body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create request: %w", err)
 		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
 
-		// 1. Attempt Upload
-		httpResp, err := doUpload(token.AccessToken)
+		// Execute with OAuth transport (handles auth + token refresh)
+		httpResp, err := httpClient.Do(req)
 		if err != nil {
 			fwCtx.Logger.Error("Strava API Error", "error", err)
 			return nil, fmt.Errorf("Strava API Error: %w", err)
-		}
-
-		// 2. Retry on 401
-		if httpResp.StatusCode == http.StatusUnauthorized {
-			httpResp.Body.Close()
-			fwCtx.Logger.Info("Got 401, refreshing token...")
-
-			token, err = tokenSource.ForceRefresh(ctx)
-			if err != nil {
-				return nil, fmt.Errorf("token refresh failed: %w", err)
-			}
-
-			httpResp, err = doUpload(token.AccessToken)
-			if err != nil {
-				return nil, fmt.Errorf("retry failed: %w", err)
-			}
 		}
 		defer httpResp.Body.Close()
 
