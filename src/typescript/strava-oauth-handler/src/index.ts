@@ -16,7 +16,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   // Validate required parameters
   if (!code || !state) {
     logger.error('Missing required OAuth parameters');
-    res.status(400).send('Missing code or state parameter');
+    res.redirect(`${process.env.BASE_URL}/auth/error?reason=missing_params`);
     return;
   }
 
@@ -24,7 +24,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   const userId = await validateOAuthState(state);
   if (!userId) {
     logger.error('Invalid or expired state token');
-    res.status(400).send('Invalid or expired state token');
+    res.redirect(`${process.env.BASE_URL}/auth/error?reason=invalid_state`);
     return;
   }
 

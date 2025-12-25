@@ -278,6 +278,8 @@ program.command('users:list')
                 const integrations = [];
                 if (data.integrations?.hevy?.apiKey) integrations.push('Hevy');
                 if (data.integrations?.keiser?.enabled) integrations.push('Keiser');
+                if (data.integrations?.strava?.enabled) integrations.push('Strava');
+                if (data.integrations?.fitbit?.enabled) integrations.push('Fitbit');
 
                 console.log(`ID: ${doc.id}`);
                 console.log(`   Created: ${data.createdAt?.toDate?.()?.toISOString() || 'Unknown'}`);
