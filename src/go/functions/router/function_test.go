@@ -2,10 +2,10 @@ package router
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/mocks"
@@ -53,7 +53,8 @@ func TestRouteActivity(t *testing.T) {
 		Destinations: []string{"strava"},
 		PipelineId:   "pipe-test-1",
 	}
-	payloadBytes, _ := json.Marshal(&eventPayload)
+	marshalOpts := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
+	payloadBytes, _ := marshalOpts.Marshal(&eventPayload)
 
 	psMsg := types.PubSubMessage{
 		Message: struct {

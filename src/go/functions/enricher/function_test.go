@@ -2,11 +2,11 @@ package enricher
 
 import (
 	"context"
-	"encoding/json"
 	"testing"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/mocks"
@@ -85,7 +85,8 @@ func TestEnrichActivity(t *testing.T) {
 			},
 		},
 	}
-	activityBytes, _ := json.Marshal(&activity)
+	marshalOpts := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
+	activityBytes, _ := marshalOpts.Marshal(&activity)
 
 	// Create CloudEvent
 	e := event.New()

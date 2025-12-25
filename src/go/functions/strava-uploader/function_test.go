@@ -3,13 +3,13 @@ package stravauploader
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
 	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/mocks"
@@ -89,7 +89,8 @@ func TestUploadToStrava(t *testing.T) {
 		Name:         "Test Workout",
 		Source:       pb.ActivitySource_SOURCE_HEVY,
 	}
-	payloadBytes, _ := json.Marshal(&eventPayload)
+	marshalOpts := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
+	payloadBytes, _ := marshalOpts.Marshal(&eventPayload)
 
 	psMsg := types.PubSubMessage{
 		Message: struct {
