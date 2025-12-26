@@ -17,20 +17,25 @@ def create_function_zip(function_name, src_dir, output_dir):
         shutil.rmtree(temp_dir)
     temp_dir.mkdir(parents=True)
 
-    # Copy function directory contents to ROOT (preserving subdirectories like providers/)
+    # Create proper module structure: functions/{function_name}/
+    # This ensures imports like github.com/ripixel/fitglue-server/src/go/functions/enricher/providers work
+    function_module_dir = temp_dir / "functions" / function_name
+    function_module_dir.mkdir(parents=True)
+
+    # Copy function directory contents to functions/{function_name}/ (preserving subdirectories like providers/)
     # Exclude test files, cmd directory, and main.go
     for item in function_dir.iterdir():
         if item.is_file():
             # Skip test files and main.go
             if item.name.endswith('_test.go') or item.name == 'main.go':
                 continue
-            shutil.copy2(item, temp_dir / item.name)
+            shutil.copy2(item, function_module_dir / item.name)
         elif item.is_dir():
             # Skip cmd directory
             if item.name == 'cmd':
                 continue
             # Copy subdirectories (like providers/), excluding test files
-            shutil.copytree(item, temp_dir / item.name, ignore=shutil.ignore_patterns('*_test.go'))
+            shutil.copytree(item, function_module_dir / item.name, ignore=shutil.ignore_patterns('*_test.go'))
 
     # Copy shared pkg directory (excluding test files)
     shared_pkg = src_dir / "pkg"
