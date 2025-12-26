@@ -10,10 +10,9 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"github.com/ripixel/fitglue-server/src/go/functions/enricher/providers"
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher"
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher/providers"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
@@ -80,11 +79,13 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 		bucketName = "fitglue-artifacts"
 	}
 
-	orchestrator := enricher.NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName)
+	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName)
 
 	// Register Providers
 	// Use FitBit HR Provider
-	orchestrator.Register(providers.NewFitBitHeartRate())
+	fitbitProvider := providers.NewFitBitHeartRate()
+	fitbitProvider.SetService(fwCtx.Service)
+	orchestrator.Register(fitbitProvider)
 
 	// Process
 	processResult, err := orchestrator.Process(ctx, &rawEvent, fwCtx.ExecutionID)

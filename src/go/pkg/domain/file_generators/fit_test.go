@@ -1,4 +1,4 @@
-package fit
+package file_generators
 
 import (
 	"testing"

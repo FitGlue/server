@@ -13,7 +13,7 @@ import (
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	"github.com/ripixel/fitglue-server/src/go/pkg/mocks"
+	"github.com/ripixel/fitglue-server/src/go/pkg/testing/mocks"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
@@ -125,7 +125,7 @@ func TestUploadToStrava(t *testing.T) {
 
 	// Execute with injected mock HTTP client
 	mockClient := &http.Client{Transport: &mockTransport{mockHTTPClient}}
-	handler := uploadHandler(svc, mockClient)
+	handler := uploadHandler(mockClient)
 	err := framework.WrapCloudEvent("strava-uploader", svc, handler)(context.Background(), e)
 	if err != nil {
 		t.Fatalf("UploadToStrava failed: %v", err)

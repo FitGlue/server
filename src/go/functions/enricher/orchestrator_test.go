@@ -1,10 +1,10 @@
-package enricher_test
+package enricher
 
 import (
 	"context"
 	"testing"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher"
+	"github.com/ripixel/fitglue-server/src/go/functions/enricher/providers"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -44,10 +44,10 @@ func (m *MockBlobStore) Read(ctx context.Context, bucket, object string) ([]byte
 	return nil, nil
 }
 
-// MockProvider implements enricher.Provider
+// MockProvider implements providers.Provider
 type MockProvider struct {
 	NameFunc   func() string
-	EnrichFunc func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*enricher.EnrichmentResult, error)
+	EnrichFunc func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error)
 }
 
 func (m *MockProvider) Name() string {
@@ -57,11 +57,11 @@ func (m *MockProvider) Name() string {
 	return "mock-provider"
 }
 
-func (m *MockProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*enricher.EnrichmentResult, error) {
+func (m *MockProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
 	if m.EnrichFunc != nil {
 		return m.EnrichFunc(ctx, activity, user, inputConfig)
 	}
-	return &enricher.EnrichmentResult{}, nil
+	return &providers.EnrichmentResult{}, nil
 }
 
 func TestOrchestrator_Process(t *testing.T) {
@@ -99,12 +99,12 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		orchestrator := enricher.NewOrchestrator(mockDB, mockStorage, "test-bucket")
+		orchestrator := NewOrchestrator(mockDB, mockStorage, "test-bucket")
 
 		mockProvider := &MockProvider{
 			NameFunc: func() string { return "mock-enricher" },
-			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*enricher.EnrichmentResult, error) {
-				return &enricher.EnrichmentResult{
+			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
+				return &providers.EnrichmentResult{
 					Name:        "Enriched Activity",
 					Description: "Added by mock",
 					Metadata: map[string]string{
@@ -162,7 +162,7 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		orchestrator := enricher.NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
 
 		payload := &pb.ActivityPayload{
 			UserId: "user-123",

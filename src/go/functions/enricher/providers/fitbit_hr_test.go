@@ -157,3 +157,11 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 		Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
 	}, nil
 }
+
+func TestFitBitHeartRate_Name(t *testing.T) {
+	provider := NewFitBitHeartRate()
+	expected := "fitbit-heart-rate"
+	if provider.Name() != expected {
+		t.Errorf("Expected provider name %q, got %q", expected, provider.Name())
+	}
+}

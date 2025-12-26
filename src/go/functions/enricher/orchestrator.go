@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/ripixel/fitglue-server/src/go/functions/enricher/providers"
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
-	"github.com/ripixel/fitglue-server/src/go/pkg/fit"
+	fit "github.com/ripixel/fitglue-server/src/go/pkg/domain/file_generators"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -17,7 +18,7 @@ type Orchestrator struct {
 	database   shared.Database
 	storage    shared.BlobStore
 	bucketName string
-	providers  map[string]Provider
+	providers  map[string]providers.Provider
 }
 
 func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName string) *Orchestrator {
@@ -25,11 +26,11 @@ func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName st
 		database:   db,
 		storage:    storage,
 		bucketName: bucketName,
-		providers:  make(map[string]Provider),
+		providers:  make(map[string]providers.Provider),
 	}
 }
 
-func (o *Orchestrator) Register(p Provider) {
+func (o *Orchestrator) Register(p providers.Provider) {
 	o.providers[p.Name()] = p
 }
 
@@ -74,7 +75,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 		// 3a. Fan-Out Enrichers for this Pipeline
 		configs := pipeline.Enrichers
-		results := make([]*EnrichmentResult, len(configs))
+		results := make([]*providers.EnrichmentResult, len(configs))
 		providerExecs := make([]ProviderExecution, len(configs))
 		var wg sync.WaitGroup
 		errs := make([]error, len(configs))
@@ -92,7 +93,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			}
 
 			wg.Add(1)
-			go func(idx int, p Provider, inputs map[string]string) {
+			go func(idx int, p providers.Provider, inputs map[string]string) {
 				defer wg.Done()
 
 				startTime := time.Now()

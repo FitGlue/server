@@ -9,8 +9,12 @@ import (
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
+
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
-	"github.com/ripixel/fitglue-server/src/go/pkg/adapters"
+	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/database"
+	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
+	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/secrets"
+	infrastorage "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/storage"
 )
 
 // Config holds standard configuration for all services
@@ -23,8 +27,8 @@ type Config struct {
 // Service holds initialized dependencies
 type Service struct {
 	DB      shared.Database
-	Pub     shared.Publisher
 	Store   shared.BlobStore
+	Pub     shared.Publisher
 	Secrets shared.SecretStore
 	Config  *Config
 }
@@ -84,10 +88,10 @@ func NewService(ctx context.Context) (*Service, error) {
 			slog.Error("PubSub init failed", "error", err)
 			return nil, fmt.Errorf("pubsub init: %w", err)
 		}
-		pubAdapter = &adapters.PubSubAdapter{Client: psClient}
+		pubAdapter = &infrapubsub.PubSubAdapter{Client: psClient}
 		slog.Info("Pub/Sub: REAL (ENABLE_PUBLISH=true)")
 	} else {
-		pubAdapter = &adapters.LogPublisher{}
+		pubAdapter = &infrapubsub.LogPublisher{}
 		slog.Info("Pub/Sub: MOCK (LogPublisher)")
 	}
 
@@ -99,10 +103,10 @@ func NewService(ctx context.Context) (*Service, error) {
 	}
 
 	return &Service{
-		DB:      &adapters.FirestoreAdapter{Client: fsClient},
+		DB:      &database.FirestoreAdapter{Client: fsClient},
 		Pub:     pubAdapter,
-		Store:   &adapters.StorageAdapter{Client: gcsClient},
-		Secrets: &adapters.SecretsAdapter{},
+		Store:   &infrastorage.StorageAdapter{Client: gcsClient},
+		Secrets: &secrets.SecretsAdapter{},
 		Config:  cfg,
 	}, nil
 }

@@ -112,11 +112,11 @@ We want Hevy workouts to be enriched with Fitbit heart rate data and then sent t
         *   `activity_id` - The activity identifier.
         *   `pipeline_id` - The pipeline that was executed.
         *   `destinations` - Should include `["strava"]`.
-        *   `applied_enrichments` - Should include `["fitbit-hr"]`.
+        *   `applied_enrichments` - Should include `["fitbit-heart-rate"]`.
         *   `fit_file_uri` - GCS URI where the enriched FIT file is stored.
         *   `pubsub_message_id` - Message ID for the next stage.
     *   `"provider_executions"` - Details about each enricher that ran:
-        *   `provider_name`: `"fitbit-hr"`
+        *   `provider_name`: `"fitbit-heart-rate"`
         *   `status`: `"SUCCESS"`
         *   `metadata`: Should include `"hr_source": "fitbit"` and `"hr_points"` count.
 
@@ -135,7 +135,7 @@ We want Hevy workouts to be enriched with Fitbit heart rate data and then sent t
     *   `"activity_id"` - The activity identifier.
     *   `"pipeline_id"` - The pipeline being executed.
     *   `"source"` - Should be `"SOURCE_HEVY"`.
-    *   `"applied_enrichments"` - Should include `["fitbit-hr"]`.
+    *   `"applied_enrichments"` - Should include `["fitbit-heart-rate"]`.
     *   `"routed_destinations"` - Array containing:
         *   `destination`: `"strava"`
         *   `topic`: The Pub/Sub topic used.

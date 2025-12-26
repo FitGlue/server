@@ -12,10 +12,10 @@ import (
 
 	"github.com/oapi-codegen/runtime/types"
 
-	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/api/fitbit"
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher"
-	"github.com/ripixel/fitglue-server/src/go/pkg/oauth"
+	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/integrations/fitbit"
+
+	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/oauth"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -32,15 +32,15 @@ func (p *FitBitHeartRate) SetService(svc *bootstrap.Service) {
 }
 
 func (p *FitBitHeartRate) Name() string {
-	return "fitbit-hr"
+	return "fitbit-heart-rate"
 }
 
-func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string) (*enricher.EnrichmentResult, error) {
+func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string) (*EnrichmentResult, error) {
 	return p.EnrichWithClient(ctx, activity, user, inputs, nil)
 }
 
 // EnrichWithClient allows HTTP client injection for testing
-func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client) (*enricher.EnrichmentResult, error) {
+func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client) (*EnrichmentResult, error) {
 	// 1. Check Credentials
 	if user.Integrations == nil || user.Integrations.Fitbit == nil || !user.Integrations.Fitbit.Enabled {
 		return nil, fmt.Errorf("fitbit integration not enabled")
@@ -128,7 +128,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 
 	slog.Info("Retrieved Fitbit HR", "points", len(hrResponse.ActivitiesHeartIntraday.Dataset), "duration", durationSec)
 
-	return &enricher.EnrichmentResult{
+	return &EnrichmentResult{
 		Metadata: map[string]string{
 			"hr_source": "fitbit",
 			"hr_points": strconv.Itoa(len(hrResponse.ActivitiesHeartIntraday.Dataset)),

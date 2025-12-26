@@ -18,7 +18,7 @@ import (
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	"github.com/ripixel/fitglue-server/src/go/pkg/oauth"
+	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/oauth"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
@@ -55,12 +55,12 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 	if err != nil {
 		return fmt.Errorf("service init failed: %v", err)
 	}
-	return framework.WrapCloudEvent("strava-uploader", svc, uploadHandler(svc, nil))(ctx, e)
+	return framework.WrapCloudEvent("strava-uploader", svc, uploadHandler(nil))(ctx, e)
 }
 
 // uploadHandler contains the business logic
 // httpClient can be injected for testing; if nil, creates OAuth client
-func uploadHandler(svc *bootstrap.Service, httpClient *http.Client) framework.HandlerFunc {
+func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 	return func(ctx context.Context, e event.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
 		// Parse Pub/Sub message
 		var msg types.PubSubMessage

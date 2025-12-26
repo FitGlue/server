@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/mocks"
+	"github.com/ripixel/fitglue-server/src/go/pkg/testing/mocks"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
