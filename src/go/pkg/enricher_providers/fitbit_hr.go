@@ -126,7 +126,16 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 		}
 	}
 
-	slog.Info("Retrieved Fitbit HR", "points", len(hrResponse.ActivitiesHeartIntraday.Dataset), "duration", durationSec)
+	pointsFound := len(hrResponse.ActivitiesHeartIntraday.Dataset)
+	if pointsFound > 0 {
+		slog.Info("Retrieved Fitbit HR", "points", pointsFound, "duration", durationSec, "start_time", startTimeStr)
+	} else {
+		slog.Warn("No heart rate data points found in Fitbit response", "start_time", startTimeStr, "end_time", endTimeStr)
+	}
+
+	if len(stream) == 0 {
+		slog.Warn("Heart rate stream is empty after processing")
+	}
 
 	return &EnrichmentResult{
 		Metadata: map[string]string{

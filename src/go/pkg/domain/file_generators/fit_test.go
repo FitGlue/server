@@ -1,9 +1,12 @@
 package file_generators
 
 import (
+	"bytes"
 	"testing"
 	"time"
 
+	"github.com/muktihari/fit/decoder"
+	"github.com/muktihari/fit/profile/typedef"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -41,14 +44,39 @@ func TestGenerateFitFile(t *testing.T) {
 		t.Error("Expected non-empty FIT file result")
 	}
 
-	// Basic check for FIT header (first 4 bytes are size, usually 12 or 14, then protocol version)
-	// Byte 8-11 is ".FIT"
-	if len(result) < 14 {
-		t.Errorf("Result too short to be a FIT file: %d bytes", len(result))
-	} else {
-		fileType := string(result[8:12])
-		if fileType != ".FIT" {
-			t.Errorf("Expected .FIT file type in header, got %q", fileType)
+	// Verify FIT file content by decoding it
+	fitDecoder := decoder.New(bytes.NewReader(result))
+	fitData, err := fitDecoder.Decode()
+	if err != nil {
+		t.Fatalf("Failed to decode generated FIT file: %v", err)
+	}
+
+	// Count messages
+	var recordCount, setCount, sessionCount, activityCount int
+	for _, msg := range fitData.Messages {
+		switch msg.Num {
+		case typedef.MesgNumRecord:
+			recordCount++
+		case typedef.MesgNumSet:
+			setCount++
+		case typedef.MesgNumSession:
+			sessionCount++
+		case typedef.MesgNumActivity:
+			activityCount++
 		}
+	}
+
+	// Expectations
+	if recordCount != len(hrStream) {
+		t.Errorf("Expected %d Record messages, got %d", len(hrStream), recordCount)
+	}
+	if setCount != 1 {
+		t.Errorf("Expected 1 Set message, got %d", setCount)
+	}
+	if sessionCount != 1 {
+		t.Errorf("Expected 1 Session message, got %d", sessionCount)
+	}
+	if activityCount != 1 {
+		t.Errorf("Expected 1 Activity message, got %d", activityCount)
 	}
 }

@@ -46,14 +46,13 @@ func GenerateFitFile(activity *pb.StandardizedActivity, hrStream []int) ([]byte,
 		SetTimeCreated(startTime)
 	fit.Messages = append(fit.Messages, fileId.ToMesg(nil))
 
-	// 2. Activity message
+	// 2. Activity message (Created but appended last)
 	activityMsg := mesgdef.NewActivity(nil).
 		SetTimestamp(startTime).
 		SetType(typedef.ActivityManual).
 		SetNumSessions(1)
-	fit.Messages = append(fit.Messages, activityMsg.ToMesg(nil))
 
-	// 3. Session message
+	// 3. Session message (Created but appended last)
 	sessionMsg := mesgdef.NewSession(nil).
 		SetTimestamp(startTime).
 		SetSport(typedef.SportTraining).
@@ -65,9 +64,19 @@ func GenerateFitFile(activity *pb.StandardizedActivity, hrStream []int) ([]byte,
 		sessionMsg.SetTotalTimerTime(uint32(session.TotalElapsedTime * 1000))
 	}
 
-	fit.Messages = append(fit.Messages, sessionMsg.ToMesg(nil))
+	// 4. Record messages (Heart Rate)
+	// We generate one record per second if HR data is present
+	for i, hr := range hrStream {
+		if hr > 0 {
+			timestamp := startTime.Add(time.Duration(i) * time.Second)
+			recordMsg := mesgdef.NewRecord(nil).
+				SetTimestamp(timestamp).
+				SetHeartRate(uint8(hr))
+			fit.Messages = append(fit.Messages, recordMsg.ToMesg(nil))
+		}
+	}
 
-	// 4. Set messages for each strength set
+	// 5. Set messages for each strength set
 	for i, set := range session.StrengthSets {
 		setStartTime := startTime
 		if set.StartTime != "" {
@@ -107,6 +116,10 @@ func GenerateFitFile(activity *pb.StandardizedActivity, hrStream []int) ([]byte,
 
 		fit.Messages = append(fit.Messages, setMsg.ToMesg(nil))
 	}
+
+	// 6. Append Summary Messages (Session, Activity) at the end
+	fit.Messages = append(fit.Messages, sessionMsg.ToMesg(nil))
+	fit.Messages = append(fit.Messages, activityMsg.ToMesg(nil))
 
 	// Encode to FIT file
 	var buf bytes.Buffer
