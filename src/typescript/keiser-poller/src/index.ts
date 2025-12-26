@@ -1,80 +1,155 @@
-import { getSecret, ActivityPayload, ActivitySource, TOPICS, createCloudFunction, FrameworkContext } from '@fitglue/shared';
-
-// NOTE: Since we cannot strictly install the SDK in this environment,
-// we interface the expected behavior based on the research doc.
-interface KeiserSession {
-    id: string;
-    userId: string;
-    startTime: string; // ISO
-    data: any;
-}
+import {
+    ActivityPayload,
+    ActivitySource,
+    TOPICS,
+    createCloudFunction,
+    FrameworkContext,
+    decryptCredentials,
+} from '@fitglue/shared';
+import Metrics from '@keiser/metrics-sdk';
 
 const TOPIC_NAME = TOPICS.RAW_ACTIVITY;
+const TOKEN_VALIDITY_DAYS = 90;
 
 const handler = async (req: any, res: any, ctx: FrameworkContext) => {
-    const { db, logger } = ctx;
+    const { db, logger, pubsub } = ctx;
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT!;
 
-    // 1. Fetch Users with Keiser Enabled (Multi-Tenancy)
-    const snapshot = await db.collection('users').limit(50).get();
+    // Query users with Keiser enabled
+    const snapshot = await db
+        .collection('users')
+        .where('integrations.keiser.enabled', '==', true)
+        .limit(50)
+        .get();
 
     if (snapshot.empty) {
-        logger.info('No users found.');
+        logger.info('No users with Keiser integration found.');
         res.status(200).json({ status: 'NO_USERS' });
         return { status: 'NO_USERS' };
     }
 
     let totalSessions = 0;
     const errors: string[] = [];
+    const skippedUsers: string[] = [];
 
-    // 2. Process Each User
+    // Process each user
     const userPromises = snapshot.docs.map(async (doc) => {
         const userId = doc.id;
+        const userData = doc.data();
+        const keiserIntegration = userData.integrations?.keiser;
 
-        // Check if Keiser is enabled
-        if (!doc.data().integrations?.keiser?.enabled) return;
+        if (!keiserIntegration?.enabled) return;
+
+        // Skip users requiring re-authentication
+        if (keiserIntegration.requiresReauth) {
+            logger.warn(`User ${userId} requires re-authentication, skipping`);
+            skippedUsers.push(userId);
+            return;
+        }
 
         try {
-            // A. Get Cursor
+            // Get cursor
             const cursorRef = db.collection('cursors').doc(`${userId}_keiser`);
             const cursorSnap = await cursorRef.get();
-            let lastSync = new Date(0).toISOString();
+            let lastSync = new Date(0);
             if (cursorSnap.exists) {
-                lastSync = cursorSnap.data()!.lastSync;
+                lastSync = new Date(cursorSnap.data()!.lastSync);
             }
 
-            // B. Initialize SDK (Secret fetched from Secret Manager)
-            const secretName = `keiser-${userId}`;
-            const token = await getSecret(process.env.GOOGLE_CLOUD_PROJECT || 'dev-project', secretName);
-            logger.info(`Initialized SDK with token for ${secretName}: ${token ? 'FOUND' : 'MISSING'}`);
+            // Initialize Keiser SDK
+            const metrics = new Metrics();
+            let userSession;
 
-            // C. Fetch Sessions from Real API
-            // Placeholder for real logic to avoid build error on missing SDK
-            logger.info(`Polling Keiser for user ${userId} since ${lastSync}`);
-            const sessions: KeiserSession[] = []; // Real implementation would populate this
+            try {
+                // Try refresh token first
+                userSession = await metrics.authenticateWithToken({
+                    token: keiserIntegration.refreshToken,
+                });
+                logger.info(`Authenticated user ${userId} with refresh token`);
+            } catch (err: any) {
+                // Token expired - handle based on auth provider
+                logger.warn(`Refresh token expired for user ${userId}, provider: ${keiserIntegration.authProvider}`);
 
-            // D. Push to Pub/Sub
-            if (sessions.length > 0) {
-                const publishPromises = sessions.map(async (session) => {
+                if (keiserIntegration.authProvider === 'email') {
+                    // Auto-refresh using decrypted credentials
+                    logger.info(`Re-authenticating user ${userId} with email/password`);
+
+                    const credentials = await decryptCredentials(
+                        keiserIntegration.encryptedCredentials,
+                        projectId
+                    );
+
+                    userSession = await metrics.authenticateWithCredentials({
+                        email: credentials.email,
+                        password: credentials.password,
+                    });
+
+                    // Update refresh token in Firestore
+                    const expiresAt = new Date(Date.now() + TOKEN_VALIDITY_DAYS * 24 * 60 * 60 * 1000);
+                    await db.collection('users').doc(userId).update({
+                        'integrations.keiser.refreshToken': userSession.refreshToken,
+                        'integrations.keiser.refreshTokenExpiresAt': expiresAt,
+                    });
+
+                    logger.info(`Updated refresh token for user ${userId}`);
+                } else {
+                    // OAuth - cannot auto-refresh, mark as requiring re-auth
+                    logger.warn(`OAuth token expired for user ${userId}, marking requiresReauth`);
+                    await db.collection('users').doc(userId).update({
+                        'integrations.keiser.requiresReauth': true,
+                    });
+                    skippedUsers.push(userId);
+                    return;
+                }
+            }
+
+            // Fetch M Series bike sessions since last sync
+            logger.info(`Fetching Keiser M Series sessions for user ${userId} since ${lastSync.toISOString()}`);
+
+            const mSeriesSessions = await userSession.getMSeriesDataSets({
+                from: lastSync,
+                sort: 'startedAt',
+                ascending: true,
+                limit: 100,
+            });
+
+            // Publish sessions to Pub/Sub
+            if (mSeriesSessions.length > 0) {
+                const publishPromises = mSeriesSessions.map(async (session) => {
                     const payload: ActivityPayload = {
                         source: ActivitySource.SOURCE_KEISER,
                         userId: userId,
-                        timestamp: session.startTime,
-                        originalPayloadJson: JSON.stringify(session),
-                        metadata: {},
-                        standardizedActivity: undefined // Todo: Map Keiser to StandardizedActivity
+                        timestamp: session.startedAt?.toISOString() || new Date().toISOString(),
+                        originalPayloadJson: JSON.stringify({
+                            id: session.id,
+                            startedAt: session.startedAt,
+                            endedAt: session.endedAt,
+                            ordinalId: session.ordinalId,
+                            // Include relevant session data
+                            data: session,
+                        }),
+                        metadata: {
+                            sessionId: session.id?.toString() || '',
+                            ordinalId: session.ordinalId?.toString() || '',
+                        },
+                        standardizedActivity: undefined, // TODO: Map Keiser M Series to StandardizedActivity
                     };
-                    return ctx.pubsub.topic(TOPIC_NAME).publishMessage({ json: payload });
+                    return pubsub.topic(TOPIC_NAME).publishMessage({ json: payload });
                 });
+
                 await Promise.all(publishPromises);
-                totalSessions += sessions.length;
+                totalSessions += mSeriesSessions.length;
 
-                // E. Update Cursor
-                const newLastSync = sessions[sessions.length - 1].startTime;
-                await cursorRef.set({ lastSync: newLastSync }, { merge: true });
+                // Update cursor
+                const lastSession = mSeriesSessions[mSeriesSessions.length - 1];
+                const newLastSync = lastSession.startedAt || new Date();
+                await cursorRef.set({ lastSync: newLastSync.toISOString() }, { merge: true });
+                logger.info(`Published ${mSeriesSessions.length} M Series sessions for user ${userId}`);
+            } else {
+                logger.info(`No new M Series sessions for user ${userId}`);
             }
-
         } catch (err: any) {
-            logger.error(`Failed to sync user ${userId}`, { error: err.message });
+            logger.error(`Failed to sync user ${userId}`, { error: err.message, stack: err.stack });
             errors.push(`${userId}: ${err.message}`);
         }
     });
@@ -82,14 +157,16 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     await Promise.all(userPromises);
 
     const result = {
-        status: 'Processed',
+        status: 'COMPLETED',
         usersProcessed: snapshot.size,
         sessionsFound: totalSessions,
-        errors: errors
-    }
+        skippedUsers: skippedUsers.length,
+        errors: errors.length,
+        errorDetails: errors,
+    };
 
-    res.status(200).json(result); // Framework adds x-execution-id
-
+    logger.info('Keiser M Series polling completed', result);
+    res.status(200).json(result);
     return result;
 };
 

@@ -17,7 +17,7 @@
     "@google-cloud/functions-framework": "^3.0.0",
     "@google-cloud/pubsub": "^4.0.0",
     "@google-cloud/secret-manager": "^5.0.0",
-    "@keiser/metrics-sdk-typescript": "^5.1.4",
+    "@keiser/metrics-sdk": "^5.0.0",
     "firebase-admin": "^13.6.0",
     "google-auth-library": "^8.9.0",
     "typescript": "^5.0.0",
