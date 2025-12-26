@@ -171,7 +171,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 		// Merge Streams & Metadata
 		duration := 3600
-		startTime, _ := time.Parse(time.RFC3339, payload.Timestamp)
+
 		if payload.StandardizedActivity != nil && len(payload.StandardizedActivity.Sessions) > 0 {
 			duration = int(payload.StandardizedActivity.Sessions[0].TotalElapsedTime)
 			if duration == 0 {
@@ -219,7 +219,8 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		}
 
 		// 3c. Generate Artifacts (FIT File)
-		fitBytes, err := fit.GenerateFitFile(startTime, duration, aggregatedPower, aggregatedHR)
+		// 3c. Generate Artifacts (FIT File)
+		fitBytes, err := fit.GenerateFitFile(payload.StandardizedActivity, aggregatedHR)
 		if err == nil && len(fitBytes) > 0 {
 			objName := fmt.Sprintf("activities/%s/%s.fit", payload.UserId, finalEvent.ActivityId)
 			if err := o.storage.Write(ctx, o.bucketName, objName, fitBytes); err != nil {
