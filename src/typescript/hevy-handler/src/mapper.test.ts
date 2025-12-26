@@ -1,5 +1,5 @@
 import { mapHevyWorkoutToStandardized } from './mapper';
-import { components } from '@fitglue/shared/dist/api/hevy/schema';
+import { components } from '@fitglue/shared/dist/integrations/hevy/schema';
 
 type HevyWorkout = components["schemas"]["Workout"];
 

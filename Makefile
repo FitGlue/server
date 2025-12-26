@@ -11,7 +11,7 @@ GO_SRC_DIR=src/go
 TS_SRC_DIR=src/typescript
 
 # --- Phony Targets ---
-.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts
+.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts
 
 all: build test
 
@@ -55,7 +55,7 @@ generate:
 	done
 
 # --- Go Targets ---
-build-go:
+build-go: clean-go
 	@echo "Building Go services..."
 	cd $(GO_SRC_DIR) && $(GOBUILD) -v ./...
 
@@ -80,13 +80,22 @@ clean-go:
 	@echo "Cleaning Go..."
 	cd $(GO_SRC_DIR) && $(GOCLEAN)
 
+clean-ts:
+	@echo "Cleaning TypeScript..."
+	@for dir in $(TS_DIRS); do \
+		if [ -d "$$dir/dist" ]; then \
+			echo "Cleaning $$dir/dist..."; \
+			rm -rf $$dir/dist; \
+		fi \
+	done
+
 # --- TypeScript Targets ---
 # Assuming one package.json per function for now, or a root workspace.
 # Let's assume we iterate over directories in src/typescript
 
 TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d)
 
-build-ts:
+build-ts: clean-ts
 	@echo "Building TypeScript services..."
 	@echo "Building shared library first..."
 	@(cd $(TS_SRC_DIR)/shared && npm run build) || exit 1
@@ -130,5 +139,5 @@ build: build-go build-ts
 test: test-go test-ts
 lint: lint-go lint-ts
 prepare: prepare-go
-clean: clean-go
+clean: clean-go clean-ts
 	rm -rf bin/

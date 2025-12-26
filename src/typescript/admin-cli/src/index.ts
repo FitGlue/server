@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { Command } from 'commander';
 import inquirer from 'inquirer';
-import { UserService } from '@fitglue/shared/dist/services/user_service';
+import { UserService } from '@fitglue/shared/dist/domain/services/user';
 
 // Initialize Firebase
 if (admin.apps.length === 0) {
