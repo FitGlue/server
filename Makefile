@@ -41,15 +41,15 @@ generate:
 			\
 			# TypeScript Generation \
 			echo "  [TS] Generating schema.ts for $$SERVICE..."; \
-			mkdir -p $(TS_SRC_DIR)/shared/src/api/$${SERVICE}; \
-			cd $(TS_SRC_DIR)/shared && npx openapi-typescript ../../../$$dir/swagger.json -o src/api/$${SERVICE}/schema.ts; \
+			mkdir -p $(TS_SRC_DIR)/shared/src/integrations/$${SERVICE}; \
+			cd $(TS_SRC_DIR)/shared && npx openapi-typescript ../../../$$dir/swagger.json -o src/integrations/$${SERVICE}/schema.ts; \
 			cd ../../..; \
 			\
 			# Go Generation \
 			echo "  [GO] Generating client for $$SERVICE..."; \
-			mkdir -p $(GO_SRC_DIR)/pkg/api/$$SERVICE; \
+			mkdir -p $(GO_SRC_DIR)/pkg/integrations/$$SERVICE; \
 			oapi-codegen -package $$SERVICE -generate types,client \
-				-o $(GO_SRC_DIR)/pkg/api/$$SERVICE/client.gen.go \
+				-o $(GO_SRC_DIR)/pkg/integrations/$$SERVICE/client.gen.go \
 				$$dir/swagger.json; \
 		fi \
 	done
