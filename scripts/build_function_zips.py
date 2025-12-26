@@ -17,23 +17,12 @@ def create_function_zip(function_name, src_dir, output_dir):
         shutil.rmtree(temp_dir)
     temp_dir.mkdir(parents=True)
 
-    # Copy function directory contents to ROOT (Cloud Functions requires entry point at root)
-    # Prefix subdirectories with function name to avoid conflicts (e.g., providers -> enricher_providers)
-    # Exclude test files, cmd directory, and main.go
-    for item in function_dir.iterdir():
-        if item.is_file():
-            # Skip test files and main.go
-            if item.name.endswith('_test.go') or item.name == 'main.go':
-                continue
-            shutil.copy2(item, temp_dir / item.name)
-        elif item.is_dir():
-            # Skip cmd directory
-            if item.name == 'cmd':
-                continue
-            # Copy subdirectories with function name prefix to avoid conflicts
-            # e.g., enricher/providers -> enricher_providers
-            prefixed_name = f"{function_name}_{item.name}"
-            shutil.copytree(item, temp_dir / prefixed_name, ignore=shutil.ignore_patterns('*_test.go'))
+    # Copy function .go files to ROOT (excluding test files and cmd)
+    for go_file in function_dir.glob("*.go"):
+        # Skip test files, main.go, and anything in cmd
+        if go_file.name.endswith("_test.go") or go_file.name == "main.go" or "cmd" in str(go_file):
+            continue
+        shutil.copy2(go_file, temp_dir / go_file.name)
 
     # Copy shared pkg directory (excluding test files)
     shared_pkg = src_dir / "pkg"
