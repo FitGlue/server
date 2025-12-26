@@ -2,6 +2,7 @@ package enricher
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	fit "github.com/ripixel/fitglue-server/src/go/pkg/domain/file_generators"
 	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type Orchestrator struct {
@@ -57,7 +59,10 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user config: %w", err)
 	}
-	userRec := o.mapUser(userDoc)
+	userRec, err := o.mapUser(payload.UserId, userDoc)
+	if err != nil {
+		return nil, fmt.Errorf("failed to map user record: %w", err)
+	}
 
 	// 2. Resolve Pipelines
 	pipelines := o.resolvePipelines(payload.Source, userRec)
@@ -292,74 +297,22 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	return pipelines
 }
 
-func (o *Orchestrator) mapUser(data map[string]interface{}) *pb.UserRecord {
-	// Re-using the JSON round-trip hack because manual mapping of deeply nested structures like Pipelines
-	// is error-prone and verbose in Go without a dedicated library.
-	// Since performance is not critical here (per-activity), this is acceptable.
-
-	// Create a temporary struct to handle Firestore -> JSON -> Proto
-	// Ideally we'd map manually, but "pipelines" is a list of complex objects.
-	// We'll rely on the existing manual map for Integrations to keep code stable,
-	// but add Pipelines parsing.
-
-	rec := &pb.UserRecord{
-		UserId:       fmt.Sprintf("%v", data["user_id"]),
-		Integrations: &pb.UserIntegrations{},
-		Pipelines:    []*pb.PipelineConfig{},
+func (o *Orchestrator) mapUser(userId string, data map[string]interface{}) (*pb.UserRecord, error) {
+	// Convert Firestore map to JSON, then unmarshal using protojson
+	// This is type-safe and automatically handles all nested structures
+	jsonBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal user data: %w", err)
 	}
 
-	if integrations, ok := data["integrations"].(map[string]interface{}); ok {
-		if fitbit, ok := integrations["fitbit"].(map[string]interface{}); ok {
-			rec.Integrations.Fitbit = &pb.FitbitIntegration{
-				Enabled:      fitbit["enabled"] == true,
-				AccessToken:  fmt.Sprintf("%v", fitbit["access_token"]),
-				RefreshToken: fmt.Sprintf("%v", fitbit["refresh_token"]),
-				FitbitUserId: fmt.Sprintf("%v", fitbit["fitbit_user_id"]),
-			}
-		}
-		if strava, ok := integrations["strava"].(map[string]interface{}); ok {
-			rec.Integrations.Strava = &pb.StravaIntegration{
-				Enabled: strava["enabled"] == true,
-			}
-		}
+	var rec pb.UserRecord
+	unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
+	if err := unmarshalOpts.Unmarshal(jsonBytes, &rec); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal user record: %w", err)
 	}
 
-	if pipelines, ok := data["pipelines"].([]interface{}); ok {
-		for _, p := range pipelines {
-			if pMap, ok := p.(map[string]interface{}); ok {
-				pc := &pb.PipelineConfig{
-					Id:     fmt.Sprintf("%v", pMap["id"]),
-					Source: fmt.Sprintf("%v", pMap["source"]),
-				}
+	// Set the user ID (not stored in Firestore document, only as document ID)
+	rec.UserId = userId
 
-				// Dests
-				if dests, ok := pMap["destinations"].([]interface{}); ok {
-					for _, d := range dests {
-						pc.Destinations = append(pc.Destinations, fmt.Sprintf("%v", d))
-					}
-				}
-
-				// Enrichers
-				if enrichers, ok := pMap["enrichers"].([]interface{}); ok {
-					for _, e := range enrichers {
-						if eMap, ok := e.(map[string]interface{}); ok {
-							ec := &pb.EnricherConfig{
-								Name:   fmt.Sprintf("%v", eMap["name"]),
-								Inputs: make(map[string]string),
-							}
-							if inputs, ok := eMap["inputs"].(map[string]interface{}); ok {
-								for k, v := range inputs {
-									ec.Inputs[k] = fmt.Sprintf("%v", v)
-								}
-							}
-							pc.Enrichers = append(pc.Enrichers, ec)
-						}
-					}
-				}
-				rec.Pipelines = append(rec.Pipelines, pc)
-			}
-		}
-	}
-
-	return rec
+	return &rec, nil
 }
