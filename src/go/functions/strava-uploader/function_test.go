@@ -35,16 +35,32 @@ func (m *MockHTTPClient) Do(req *http.Request) (*http.Response, error) {
 
 func TestUploadToStrava(t *testing.T) {
 	// Setup Mock HTTP Client
+	// Setup Mock HTTP Client
 	mockHTTPClient := &MockHTTPClient{
 		DoFunc: func(req *http.Request) (*http.Response, error) {
-			// Verify request has content
-			if req.Header.Get("Content-Type") == "" {
-				t.Error("Expected Content-Type header")
+			// 1. Handle POST Upload
+			if req.Method == "POST" && req.URL.Path == "/api/v3/uploads" {
+				if req.Header.Get("Content-Type") == "" {
+					t.Error("Expected Content-Type header")
+				}
+				// Return response indicating processing (no activity_id)
+				return &http.Response{
+					StatusCode: 201,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"id": 999, "status": "Your activity is still being processed."}`)),
+				}, nil
 			}
-			return &http.Response{
-				StatusCode: 201,
-				Body:       io.NopCloser(bytes.NewBufferString(`{"id": 999, "status": "Your activity is ready."}`)),
-			}, nil
+
+			// 2. Handle GET Poll (Soft Polling)
+			if req.Method == "GET" && req.URL.Path == "/api/v3/uploads/999" {
+				// Simulate successful completion with activity ID
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"id": 999, "activity_id": 888, "status": "Your activity is ready."}`)),
+				}, nil
+			}
+
+			t.Errorf("Unexpected request: %s %s", req.Method, req.URL.Path)
+			return nil, nil
 		},
 	}
 

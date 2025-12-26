@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -124,25 +125,95 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			return nil, fmt.Errorf("strava upload failed: status %d", httpResp.StatusCode)
 		}
 
-		var uploadResp struct {
-			ID         int64  `json:"id"`
-			ExternalID string `json:"external_id"`
-			ActivityID int64  `json:"activity_id"`
-			Status     string `json:"status"`
-		}
+		var uploadResp stravaUploadResponse
 		json.NewDecoder(httpResp.Body).Decode(&uploadResp)
 
-		fwCtx.Logger.Info("Upload success", "upload_id", uploadResp.ID, "status", uploadResp.Status)
+		fwCtx.Logger.Info("Upload initiated", "upload_id", uploadResp.ID, "status", uploadResp.Status)
+
+		// Soft Poll: Wait up to 15 seconds for completion
+		// This covers 95% of use cases without needing complex async infrastructure
+		if uploadResp.ActivityID == 0 {
+			finalResp, err := waitForUploadCompletion(ctx, httpClient, uploadResp.ID, fwCtx.Logger)
+			if err != nil {
+				// Log warning but return SUCCESS with partial data so pipeline continues
+				fwCtx.Logger.Warn("Soft polling finished without final ID (async processing continues)", "error", err)
+			} else {
+				uploadResp = *finalResp
+			}
+		}
+
+		fwCtx.Logger.Info("Upload complete", "upload_id", uploadResp.ID, "activity_id", uploadResp.ActivityID, "status", uploadResp.Status)
+
+		status := "SUCCESS"
+		if uploadResp.Error != "" {
+			status = "FAILED_STRAVA_PROCESSING"
+		}
+
 		return map[string]interface{}{
-			"status":             "SUCCESS",
+			"status":             status,
 			"strava_upload_id":   uploadResp.ID,
 			"strava_activity_id": uploadResp.ActivityID,
 			"upload_status":      uploadResp.Status,
+			"upload_error":       uploadResp.Error,
 			"activity_id":        eventPayload.ActivityId,
 			"pipeline_id":        eventPayload.PipelineId,
 			"fit_file_uri":       eventPayload.FitFileUri,
 			"activity_name":      eventPayload.Name,
 			"activity_type":      eventPayload.ActivityType,
 		}, nil
+	}
+}
+
+type stravaUploadResponse struct {
+	ID         int64  `json:"id"`
+	ExternalID string `json:"external_id"`
+	ActivityID int64  `json:"activity_id"`
+	Status     string `json:"status"`
+	Error      string `json:"error"`
+}
+
+func waitForUploadCompletion(ctx context.Context, client *http.Client, uploadID int64, logger *slog.Logger) (*stravaUploadResponse, error) {
+	// Check every 2 seconds, give up after 15 seconds
+	ticker := time.NewTicker(2 * time.Second)
+	defer ticker.Stop()
+
+	timeout := time.After(15 * time.Second)
+
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-timeout:
+			return nil, fmt.Errorf("timeout waiting for upload processing")
+		case <-ticker.C:
+			req, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("https://www.strava.com/api/v3/uploads/%d", uploadID), nil)
+			if err != nil {
+				return nil, err
+			}
+
+			resp, err := client.Do(req)
+			if err != nil {
+				logger.Warn("Failed to poll upload status", "error", err)
+				continue
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode != http.StatusOK {
+				logger.Warn("Poll returned non-200 status", "status", resp.StatusCode)
+				continue
+			}
+
+			var status stravaUploadResponse
+			if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
+				return nil, fmt.Errorf("failed to decode poll response: %w", err)
+			}
+
+			logger.Info("Polled upload status", "status", status.Status, "activity_id", status.ActivityID, "error", status.Error)
+
+			if status.ActivityID != 0 || status.Error != "" {
+				return &status, nil
+			}
+			// Continue polling if still processing (activity_id == 0 and no error)
+		}
 	}
 }
