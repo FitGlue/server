@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
-import { UserRecord } from '../types/pb/user';
+import { UserRecord } from '../../types/pb/user';
 
 import { Timestamp } from 'firebase-admin/firestore';
 
@@ -131,7 +131,7 @@ export class UserService {
         // We import refreshOAuthToken dynamically to avoid circular dependencies if any,
         // essentially just keeping it clean. But `oauth.ts` is in same package.
         // Actually UserService -> oauth.ts is fine.
-        const { refreshOAuthToken } = await import('../oauth');
+        const { refreshOAuthToken } = await import('../../infrastructure/oauth');
 
         const userDoc = await this.db.collection('users').doc(userId).get();
         if (!userDoc.exists) {

@@ -1,10 +1,10 @@
 
 import { createAuthenticatedClient } from './factory';
-import { UserService } from '../services/user_service';
+import { UserService } from '../domain/services/user';
 
 // Mock dependencies
 jest.mock('openapi-fetch', () => jest.fn(() => ({ use: jest.fn() })));
-jest.mock('../services/user_service');
+jest.mock('../domain/services/user');
 
 describe('createAuthenticatedClient', () => {
   let mockUserService: jest.Mocked<UserService>;

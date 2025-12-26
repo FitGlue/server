@@ -1,5 +1,5 @@
 import { createAuthenticatedClient } from '../factory';
-import { UserService } from '../../services/user_service';
+import { UserService } from '../../domain/services/user';
 import type { paths } from "./schema";
 
 export function createFitbitClient(userService: UserService, userId: string) {

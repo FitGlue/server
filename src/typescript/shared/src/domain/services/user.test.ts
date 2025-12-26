@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { UserService } from './user_service';
+import { UserService } from './user';
 
 // Mock specific firestore methods
 const mockUpdate = jest.fn();

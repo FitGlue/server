@@ -1,5 +1,5 @@
 import createClient from 'openapi-fetch';
-import { UserService } from '../services/user_service';
+import { UserService } from '../domain/services/user';
 
 // Define a generic type for the client since we might not have the generated schema types imported here universally
 // But actually createAuthenticatedClient needs to be generic or strict.

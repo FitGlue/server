@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { getSecret } from './secrets';
+import { getSecret } from '../../infrastructure/secrets';
 
 /**
  * Generate a signed OAuth state token containing the user ID
