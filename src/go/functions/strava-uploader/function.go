@@ -149,7 +149,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			status = "FAILED_STRAVA_PROCESSING"
 		}
 
-		return map[string]interface{}{
+		result := map[string]interface{}{
 			"status":             status,
 			"strava_upload_id":   uploadResp.ID,
 			"strava_activity_id": uploadResp.ActivityID,
@@ -160,7 +160,13 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			"fit_file_uri":       eventPayload.FitFileUri,
 			"activity_name":      eventPayload.Name,
 			"activity_type":      eventPayload.ActivityType,
-		}, nil
+		}
+
+		if status != "SUCCESS" {
+			return result, fmt.Errorf("strava upload failed: %s", uploadResp.Error)
+		}
+
+		return result, nil
 	}
 }
 

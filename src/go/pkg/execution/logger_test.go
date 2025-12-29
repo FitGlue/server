@@ -84,7 +84,30 @@ func TestLogFailure(t *testing.T) {
 		},
 	}
 
-	err := execution.LogFailure(context.Background(), mockDB, "exec-1", &simpleError{})
+	err := execution.LogFailure(context.Background(), mockDB, "exec-1", &simpleError{}, nil)
+	if err != nil {
+		t.Fatalf("LogFailure failed: %v", err)
+	}
+}
+
+func TestLogFailureWithOutputs(t *testing.T) {
+	mockDB := &MockDB{
+		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+			if data["status"] != "STATUS_FAILED" {
+				t.Errorf("Expected STATUS_FAILED, got %v", data["status"])
+			}
+			if data["errorMessage"] != "oops" {
+				t.Errorf("Expected oops, got %v", data["errorMessage"])
+			}
+			if data["outputsJson"] != `{"foo":"bar"}` {
+				t.Errorf("Expected outputsJson to be '{\"foo\":\"bar\"}', got %v", data["outputsJson"])
+			}
+			return nil
+		},
+	}
+
+	outputs := map[string]string{"foo": "bar"}
+	err := execution.LogFailure(context.Background(), mockDB, "exec-1", &simpleError{}, outputs)
 	if err != nil {
 		t.Fatalf("LogFailure failed: %v", err)
 	}

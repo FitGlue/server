@@ -92,7 +92,7 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 		// Log execution result
 		if handlerErr != nil {
 			logger.Error("Function failed", "error", handlerErr)
-			if logErr := execution.LogFailure(ctx, svc.DB, execID, handlerErr); logErr != nil {
+			if logErr := execution.LogFailure(ctx, svc.DB, execID, handlerErr, outputs); logErr != nil {
 				logger.Warn("Failed to log execution failure", "error", logErr)
 			}
 			return handlerErr

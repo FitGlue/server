@@ -121,7 +121,7 @@ func LogSuccess(ctx context.Context, db Database, execID string, outputs interfa
 }
 
 // LogFailure updates an execution record with FAILED status
-func LogFailure(ctx context.Context, db Database, execID string, err error) error {
+func LogFailure(ctx context.Context, db Database, execID string, err error, outputs interface{}) error {
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
@@ -129,6 +129,14 @@ func LogFailure(ctx context.Context, db Database, execID string, err error) erro
 		"timestamp":    now.AsTime(),
 		"endTime":      now.AsTime(),
 		"errorMessage": err.Error(),
+	}
+
+	// Encode outputs as JSON if provided
+	if outputs != nil {
+		outputsJSON, err := json.Marshal(outputs)
+		if err == nil {
+			updates["outputsJson"] = string(outputsJSON)
+		}
 	}
 
 	if updateErr := db.UpdateExecution(ctx, execID, updates); updateErr != nil {
