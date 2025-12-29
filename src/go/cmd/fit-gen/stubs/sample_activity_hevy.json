@@ -1,0 +1,160 @@
+{
+  "source": "HEVY",
+  "externalId": "b08cd357-1166-41fa-94bc-bda76fa26d61",
+  "userId": "832bc50d-4814-4fce-89ff-f94ef4bba9b1",
+  "startTime": "2025-12-29T18:12:58+00:00",
+  "name": "Bedtime Core",
+  "type": "WEIGHT_TRAINING",
+  "description": "Testinggg 💪",
+  "sessions": [
+    {
+      "startTime": "2025-12-29T18:12:58+00:00",
+      "totalElapsedTime": 255,
+      "totalDistance": 0,
+      "laps": [],
+      "strengthSets": [
+        {
+          "exerciseName": "Warm Up",
+          "reps": 0,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "full_body",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Plank",
+          "reps": 0,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Dead Bug",
+          "reps": 30,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Sit Up",
+          "reps": 20,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Side Plank",
+          "reps": 0,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Side Plank",
+          "reps": 0,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Single Leg Glute Bridge",
+          "reps": 20,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "glutes",
+          "secondaryMuscleGroups": [
+            "hamstrings",
+            "quadriceps"
+          ]
+        },
+        {
+          "exerciseName": "Single Leg Glute Bridge",
+          "reps": 20,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "glutes",
+          "secondaryMuscleGroups": [
+            "hamstrings",
+            "quadriceps"
+          ]
+        },
+        {
+          "exerciseName": "Superman",
+          "reps": 20,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "lower_back",
+          "secondaryMuscleGroups": [
+            "glutes",
+            "hamstrings"
+          ]
+        },
+        {
+          "exerciseName": "Crunch",
+          "reps": 30,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Russian Twist (Bodyweight)",
+          "reps": 70,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Lying Leg Raise",
+          "reps": 20,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        },
+        {
+          "exerciseName": "Heel Taps",
+          "reps": 70,
+          "weightKg": 0,
+          "startTime": "2025-12-29T18:12:58+00:00",
+          "durationSeconds": 0,
+          "notes": "",
+          "primaryMuscleGroup": "abdominals",
+          "secondaryMuscleGroups": []
+        }
+      ]
+    }
+  ],
+  "tags": [],
+  "notes": ""
+}

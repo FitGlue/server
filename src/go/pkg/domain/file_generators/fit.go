@@ -64,16 +64,22 @@ func GenerateFitFile(activity *pb.StandardizedActivity, hrStream []int) ([]byte,
 		sessionMsg.SetTotalTimerTime(uint32(session.TotalElapsedTime * 1000))
 	}
 
-	// 4. Record messages (Heart Rate)
-	// We generate one record per second if HR data is present
-	for i, hr := range hrStream {
-		if hr > 0 {
-			timestamp := startTime.Add(time.Duration(i) * time.Second)
-			recordMsg := mesgdef.NewRecord(nil).
-				SetTimestamp(timestamp).
-				SetHeartRate(uint8(hr))
-			fit.Messages = append(fit.Messages, recordMsg.ToMesg(nil))
+	// 4. Record messages (Heart Rate / Timestamp)
+	// Determine duration from session or HR stream
+	durationSeconds := int(session.TotalElapsedTime)
+	if len(hrStream) > durationSeconds {
+		durationSeconds = len(hrStream)
+	}
+
+	for i := 0; i < durationSeconds; i++ {
+		timestamp := startTime.Add(time.Duration(i) * time.Second)
+		recordMsg := mesgdef.NewRecord(nil).SetTimestamp(timestamp)
+
+		if i < len(hrStream) && hrStream[i] > 0 {
+			recordMsg.SetHeartRate(uint8(hrStream[i]))
 		}
+
+		fit.Messages = append(fit.Messages, recordMsg.ToMesg(nil))
 	}
 
 	// 5. Set messages for each strength set

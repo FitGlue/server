@@ -58,6 +58,8 @@ generate:
 build-go: clean-go
 	@echo "Building Go services..."
 	cd $(GO_SRC_DIR) && $(GOBUILD) -v ./...
+	@echo "Building fit-gen tool..."
+	cd $(GO_SRC_DIR) && $(GOBUILD) -o ../../bin/fit-gen ./cmd/fit-gen
 
 test-go:
 	@echo "Testing Go services..."

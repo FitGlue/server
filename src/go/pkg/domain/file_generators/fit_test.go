@@ -18,7 +18,7 @@ func TestGenerateFitFile(t *testing.T) {
 		Sessions: []*pb.Session{
 			{
 				StartTime:        startTime,
-				TotalElapsedTime: 3600,
+				TotalElapsedTime: 3,
 				StrengthSets: []*pb.StrengthSet{
 					{
 						ExerciseName:    "Bench Press",
@@ -83,5 +83,50 @@ func TestGenerateFitFile(t *testing.T) {
 	}
 	if lapCount != 1 {
 		t.Errorf("Expected 1 Lap message, got %d", lapCount)
+	}
+}
+
+func TestGenerateFitFile_NoHR(t *testing.T) {
+	startTime := time.Now().Format(time.RFC3339)
+	activity := &pb.StandardizedActivity{
+		StartTime: startTime,
+		Sessions: []*pb.Session{
+			{
+				StartTime:        startTime,
+				TotalElapsedTime: 10,
+				StrengthSets: []*pb.StrengthSet{
+					{
+						ExerciseName:    "Bench Press",
+						Reps:            10,
+						WeightKg:        100,
+						DurationSeconds: 10,
+					},
+				},
+			},
+		},
+	}
+	// Empty HR stream
+	var hrStream []int
+
+	result, err := GenerateFitFile(activity, hrStream)
+	if err != nil {
+		t.Fatalf("Expected no error, got %v", err)
+	}
+
+	fitDecoder := decoder.New(bytes.NewReader(result))
+	fitData, err := fitDecoder.Decode()
+	if err != nil {
+		t.Fatalf("Failed to decode generated FIT file: %v", err)
+	}
+
+	var recordCount int
+	for _, msg := range fitData.Messages {
+		if msg.Num == typedef.MesgNumRecord {
+			recordCount++
+		}
+	}
+
+	if recordCount != 10 {
+		t.Errorf("Expected 10 Record messages (synthesized), got %d", recordCount)
 	}
 }

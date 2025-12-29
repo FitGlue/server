@@ -1,0 +1,71 @@
+{
+  "start_time": "2024-01-01T10:00:00Z",
+  "name": "Test Workout with HR",
+  "type": "WEIGHT_TRAINING",
+  "sessions": [
+    {
+      "start_time": "2024-01-01T10:00:00Z",
+      "total_elapsed_time": 11,
+      "laps": [
+        {
+          "start_time": "2024-01-01T10:00:00Z",
+          "total_elapsed_time": 11,
+          "records": [
+            {
+              "timestamp": "2024-01-01T10:00:00Z",
+              "heart_rate": 100
+            },
+            {
+              "timestamp": "2024-01-01T10:00:01Z",
+              "heart_rate": 105
+            },
+            {
+              "timestamp": "2024-01-01T10:00:02Z",
+              "heart_rate": 110
+            },
+            {
+              "timestamp": "2024-01-01T10:00:03Z",
+              "heart_rate": 115
+            },
+            {
+              "timestamp": "2024-01-01T10:00:04Z",
+              "heart_rate": 120
+            },
+            {
+              "timestamp": "2024-01-01T10:00:05Z",
+              "heart_rate": 125
+            },
+            {
+              "timestamp": "2024-01-01T10:00:10Z",
+              "heart_rate": 130
+            },
+            {
+              "timestamp": "2024-01-01T10:00:20Z",
+              "heart_rate": 120
+            },
+            {
+              "timestamp": "2024-01-01T10:00:30Z",
+              "heart_rate": 110
+            },
+            {
+              "timestamp": "2024-01-01T10:00:40Z",
+              "heart_rate": 100
+            },
+            {
+              "timestamp": "2024-01-01T10:00:50Z",
+              "heart_rate": 90
+            }
+          ]
+        }
+      ],
+      "strength_sets": [
+        {
+          "exercise_name": "Squat",
+          "reps": 5,
+          "weight_kg": 100,
+          "duration_seconds": 30
+        }
+      ]
+    }
+  ]
+}
