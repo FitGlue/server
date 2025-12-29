@@ -35,6 +35,32 @@ var RoutesLibrary = map[string]RouteDefinition{
 			{51.5028, -0.1513}, // Back to start
 		},
 	},
+	"nyc": {
+		Name: "NYC Central Park Loop",
+		// Full Central Park loop, clockwise from 72nd St entrance
+		Points: []LatLong{
+			{40.7764, -73.9731}, // 72nd St entrance (East)
+			{40.7812, -73.9734}, // Conservatory Water
+			{40.7851, -73.9745}, // Reservoir south
+			{40.7897, -73.9580}, // East 90s
+			{40.7968, -73.9549}, // Harlem Meer
+			{40.7985, -73.9563}, // North Woods
+			{40.7992, -73.9583}, // Great Hill
+			{40.7995, -73.9652}, // North Meadow
+			{40.7982, -73.9721}, // Pool
+			{40.7950, -73.9760}, // West 97th
+			{40.7897, -73.9770}, // West 90s
+			{40.7851, -73.9780}, // Reservoir west
+			{40.7812, -73.9790}, // West 79th
+			{40.7764, -73.9795}, // Strawberry Fields
+			{40.7735, -73.9760}, // Sheep Meadow
+			{40.7688, -73.9735}, // Tavern on the Green
+			{40.7678, -73.9720}, // West 65th
+			{40.7688, -73.9685}, // Columbus Circle area
+			{40.7735, -73.9650}, // Heckscher Playground
+			{40.7764, -73.9731}, // Back to 72nd St
+		},
+	},
 }
 
 // calculateTotalDistance computes the total distance of the route in meters

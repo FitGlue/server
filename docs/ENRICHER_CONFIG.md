@@ -45,19 +45,27 @@ Source (Hevy) → [Enricher 1] → [Enricher 2] → [Enricher N] → Destination
 
 **Trigger**: Activity contains `StrengthSets`
 
-**Configuration**: None required
+**Configuration**:
 ```json
 {
   "providerType": 2,
-  "inputs": {}
+  "inputs": {
+    "format": "detailed"  // Options: "compact", "detailed", "verbose"
+  }
 }
 ```
 
-**Output Example**:
+**Format Styles**:
+- **Compact**: `4×8@100kg` - Minimal spacing, no decimals
+- **Detailed** (default): `4 sets × 8 reps @ 100.0kg` - Readable with units
+- **Verbose**: `4 sets of 8 reps at 100.0 kilograms` - Full words
+
+**Output Example** (Detailed):
 ```
-Bench Press: 4 × 8 @ 100.0kg
-Squats: 3 × 10 @ 120.0kg
-Deadlifts: 5 × 5 @ 140.0kg
+Workout Summary:
+- Bench Press: 4 x 8 × 100.0kg
+- Squats: 3 x 10 × 120.0kg
+- Deadlifts: 5 x 5 × 140.0kg
 ```
 
 **Appends to**: `description` field

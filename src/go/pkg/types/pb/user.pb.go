@@ -86,6 +86,215 @@ func (EnricherProviderType) EnumDescriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{0}
 }
 
+// Workout Summary format styles
+type WorkoutSummaryFormat int32
+
+const (
+	WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED WorkoutSummaryFormat = 0
+	WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT     WorkoutSummaryFormat = 1 // "4×8@100kg"
+	WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED    WorkoutSummaryFormat = 2 // "4 sets × 8 reps @ 100.0kg"
+	WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE     WorkoutSummaryFormat = 3 // "4 sets of 8 reps at 100.0 kilograms"
+)
+
+// Enum value maps for WorkoutSummaryFormat.
+var (
+	WorkoutSummaryFormat_name = map[int32]string{
+		0: "WORKOUT_SUMMARY_FORMAT_UNSPECIFIED",
+		1: "WORKOUT_SUMMARY_FORMAT_COMPACT",
+		2: "WORKOUT_SUMMARY_FORMAT_DETAILED",
+		3: "WORKOUT_SUMMARY_FORMAT_VERBOSE",
+	}
+	WorkoutSummaryFormat_value = map[string]int32{
+		"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED": 0,
+		"WORKOUT_SUMMARY_FORMAT_COMPACT":     1,
+		"WORKOUT_SUMMARY_FORMAT_DETAILED":    2,
+		"WORKOUT_SUMMARY_FORMAT_VERBOSE":     3,
+	}
+)
+
+func (x WorkoutSummaryFormat) Enum() *WorkoutSummaryFormat {
+	p := new(WorkoutSummaryFormat)
+	*p = x
+	return p
+}
+
+func (x WorkoutSummaryFormat) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (WorkoutSummaryFormat) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_proto_enumTypes[1].Descriptor()
+}
+
+func (WorkoutSummaryFormat) Type() protoreflect.EnumType {
+	return &file_user_proto_enumTypes[1]
+}
+
+func (x WorkoutSummaryFormat) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use WorkoutSummaryFormat.Descriptor instead.
+func (WorkoutSummaryFormat) EnumDescriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{1}
+}
+
+// Muscle Heatmap visualization styles
+type MuscleHeatmapStyle int32
+
+const (
+	MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED MuscleHeatmapStyle = 0
+	MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS  MuscleHeatmapStyle = 1 // "🟪🟪🟪⬜⬜"
+	MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE  MuscleHeatmapStyle = 2 // "Chest: 80%"
+	MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY   MuscleHeatmapStyle = 3 // "High: Chest, Medium: Legs"
+)
+
+// Enum value maps for MuscleHeatmapStyle.
+var (
+	MuscleHeatmapStyle_name = map[int32]string{
+		0: "MUSCLE_HEATMAP_STYLE_UNSPECIFIED",
+		1: "MUSCLE_HEATMAP_STYLE_EMOJI_BARS",
+		2: "MUSCLE_HEATMAP_STYLE_PERCENTAGE",
+		3: "MUSCLE_HEATMAP_STYLE_TEXT_ONLY",
+	}
+	MuscleHeatmapStyle_value = map[string]int32{
+		"MUSCLE_HEATMAP_STYLE_UNSPECIFIED": 0,
+		"MUSCLE_HEATMAP_STYLE_EMOJI_BARS":  1,
+		"MUSCLE_HEATMAP_STYLE_PERCENTAGE":  2,
+		"MUSCLE_HEATMAP_STYLE_TEXT_ONLY":   3,
+	}
+)
+
+func (x MuscleHeatmapStyle) Enum() *MuscleHeatmapStyle {
+	p := new(MuscleHeatmapStyle)
+	*p = x
+	return p
+}
+
+func (x MuscleHeatmapStyle) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MuscleHeatmapStyle) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_proto_enumTypes[2].Descriptor()
+}
+
+func (MuscleHeatmapStyle) Type() protoreflect.EnumType {
+	return &file_user_proto_enumTypes[2]
+}
+
+func (x MuscleHeatmapStyle) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MuscleHeatmapStyle.Descriptor instead.
+func (MuscleHeatmapStyle) EnumDescriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{2}
+}
+
+// Muscle Heatmap coefficient presets
+type MuscleHeatmapPreset int32
+
+const (
+	MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED  MuscleHeatmapPreset = 0
+	MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD     MuscleHeatmapPreset = 1 // Balanced coefficients
+	MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING MuscleHeatmapPreset = 2 // Emphasize compounds
+	MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING MuscleHeatmapPreset = 3 // Emphasize isolation
+)
+
+// Enum value maps for MuscleHeatmapPreset.
+var (
+	MuscleHeatmapPreset_name = map[int32]string{
+		0: "MUSCLE_HEATMAP_PRESET_UNSPECIFIED",
+		1: "MUSCLE_HEATMAP_PRESET_STANDARD",
+		2: "MUSCLE_HEATMAP_PRESET_POWERLIFTING",
+		3: "MUSCLE_HEATMAP_PRESET_BODYBUILDING",
+	}
+	MuscleHeatmapPreset_value = map[string]int32{
+		"MUSCLE_HEATMAP_PRESET_UNSPECIFIED":  0,
+		"MUSCLE_HEATMAP_PRESET_STANDARD":     1,
+		"MUSCLE_HEATMAP_PRESET_POWERLIFTING": 2,
+		"MUSCLE_HEATMAP_PRESET_BODYBUILDING": 3,
+	}
+)
+
+func (x MuscleHeatmapPreset) Enum() *MuscleHeatmapPreset {
+	p := new(MuscleHeatmapPreset)
+	*p = x
+	return p
+}
+
+func (x MuscleHeatmapPreset) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MuscleHeatmapPreset) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_proto_enumTypes[3].Descriptor()
+}
+
+func (MuscleHeatmapPreset) Type() protoreflect.EnumType {
+	return &file_user_proto_enumTypes[3]
+}
+
+func (x MuscleHeatmapPreset) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MuscleHeatmapPreset.Descriptor instead.
+func (MuscleHeatmapPreset) EnumDescriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{3}
+}
+
+// Virtual GPS route options
+type VirtualGPSRoute int32
+
+const (
+	VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED VirtualGPSRoute = 0
+	VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON      VirtualGPSRoute = 1 // London Hyde Park (~4km)
+	VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC         VirtualGPSRoute = 2 // NYC Central Park (~10km)
+)
+
+// Enum value maps for VirtualGPSRoute.
+var (
+	VirtualGPSRoute_name = map[int32]string{
+		0: "VIRTUAL_GPS_ROUTE_UNSPECIFIED",
+		1: "VIRTUAL_GPS_ROUTE_LONDON",
+		2: "VIRTUAL_GPS_ROUTE_NYC",
+	}
+	VirtualGPSRoute_value = map[string]int32{
+		"VIRTUAL_GPS_ROUTE_UNSPECIFIED": 0,
+		"VIRTUAL_GPS_ROUTE_LONDON":      1,
+		"VIRTUAL_GPS_ROUTE_NYC":         2,
+	}
+)
+
+func (x VirtualGPSRoute) Enum() *VirtualGPSRoute {
+	p := new(VirtualGPSRoute)
+	*p = x
+	return p
+}
+
+func (x VirtualGPSRoute) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (VirtualGPSRoute) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_proto_enumTypes[4].Descriptor()
+}
+
+func (VirtualGPSRoute) Type() protoreflect.EnumType {
+	return &file_user_proto_enumTypes[4]
+}
+
+func (x VirtualGPSRoute) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use VirtualGPSRoute.Descriptor instead.
+func (VirtualGPSRoute) EnumDescriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{4}
+}
+
 type UserRecord struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	UserId       string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -649,7 +858,26 @@ const file_user_proto_rawDesc = "" +
 	"\x1dENRICHER_PROVIDER_SOURCE_LINK\x10\x04\x12*\n" +
 	"&ENRICHER_PROVIDER_METADATA_PASSTHROUGH\x10\x05\x12!\n" +
 	"\x1dENRICHER_PROVIDER_VIRTUAL_GPS\x10\x06\x12\x1a\n" +
-	"\x16ENRICHER_PROVIDER_MOCK\x10cB\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
+	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
+	"\x14WorkoutSummaryFormat\x12&\n" +
+	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eWORKOUT_SUMMARY_FORMAT_COMPACT\x10\x01\x12#\n" +
+	"\x1fWORKOUT_SUMMARY_FORMAT_DETAILED\x10\x02\x12\"\n" +
+	"\x1eWORKOUT_SUMMARY_FORMAT_VERBOSE\x10\x03*\xa8\x01\n" +
+	"\x12MuscleHeatmapStyle\x12$\n" +
+	" MUSCLE_HEATMAP_STYLE_UNSPECIFIED\x10\x00\x12#\n" +
+	"\x1fMUSCLE_HEATMAP_STYLE_EMOJI_BARS\x10\x01\x12#\n" +
+	"\x1fMUSCLE_HEATMAP_STYLE_PERCENTAGE\x10\x02\x12\"\n" +
+	"\x1eMUSCLE_HEATMAP_STYLE_TEXT_ONLY\x10\x03*\xb0\x01\n" +
+	"\x13MuscleHeatmapPreset\x12%\n" +
+	"!MUSCLE_HEATMAP_PRESET_UNSPECIFIED\x10\x00\x12\"\n" +
+	"\x1eMUSCLE_HEATMAP_PRESET_STANDARD\x10\x01\x12&\n" +
+	"\"MUSCLE_HEATMAP_PRESET_POWERLIFTING\x10\x02\x12&\n" +
+	"\"MUSCLE_HEATMAP_PRESET_BODYBUILDING\x10\x03*m\n" +
+	"\x0fVirtualGPSRoute\x12!\n" +
+	"\x1dVIRTUAL_GPS_ROUTE_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18VIRTUAL_GPS_ROUTE_LONDON\x10\x01\x12\x19\n" +
+	"\x15VIRTUAL_GPS_ROUTE_NYC\x10\x02B\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once
@@ -663,34 +891,38 @@ func file_user_proto_rawDescGZIP() []byte {
 	return file_user_proto_rawDescData
 }
 
-var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_user_proto_goTypes = []any{
 	(EnricherProviderType)(0),      // 0: fitglue.EnricherProviderType
-	(*UserRecord)(nil),             // 1: fitglue.UserRecord
-	(*PipelineConfig)(nil),         // 2: fitglue.PipelineConfig
-	(*UserIntegrations)(nil),       // 3: fitglue.UserIntegrations
-	(*HevyIntegration)(nil),        // 4: fitglue.HevyIntegration
-	(*FitbitIntegration)(nil),      // 5: fitglue.FitbitIntegration
-	(*SourceEnrichmentConfig)(nil), // 6: fitglue.SourceEnrichmentConfig
-	(*EnricherConfig)(nil),         // 7: fitglue.EnricherConfig
-	(*StravaIntegration)(nil),      // 8: fitglue.StravaIntegration
-	nil,                            // 9: fitglue.EnricherConfig.InputsEntry
-	(*timestamp.Timestamp)(nil),    // 10: google.protobuf.Timestamp
+	(WorkoutSummaryFormat)(0),      // 1: fitglue.WorkoutSummaryFormat
+	(MuscleHeatmapStyle)(0),        // 2: fitglue.MuscleHeatmapStyle
+	(MuscleHeatmapPreset)(0),       // 3: fitglue.MuscleHeatmapPreset
+	(VirtualGPSRoute)(0),           // 4: fitglue.VirtualGPSRoute
+	(*UserRecord)(nil),             // 5: fitglue.UserRecord
+	(*PipelineConfig)(nil),         // 6: fitglue.PipelineConfig
+	(*UserIntegrations)(nil),       // 7: fitglue.UserIntegrations
+	(*HevyIntegration)(nil),        // 8: fitglue.HevyIntegration
+	(*FitbitIntegration)(nil),      // 9: fitglue.FitbitIntegration
+	(*SourceEnrichmentConfig)(nil), // 10: fitglue.SourceEnrichmentConfig
+	(*EnricherConfig)(nil),         // 11: fitglue.EnricherConfig
+	(*StravaIntegration)(nil),      // 12: fitglue.StravaIntegration
+	nil,                            // 13: fitglue.EnricherConfig.InputsEntry
+	(*timestamp.Timestamp)(nil),    // 14: google.protobuf.Timestamp
 }
 var file_user_proto_depIdxs = []int32{
-	10, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
-	3,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
-	2,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
-	7,  // 3: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
-	4,  // 4: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
-	5,  // 5: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
-	8,  // 6: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
-	10, // 7: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	7,  // 8: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
+	14, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
+	7,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
+	6,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
+	11, // 3: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
+	8,  // 4: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
+	9,  // 5: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
+	12, // 6: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
+	14, // 7: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	11, // 8: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
 	0,  // 9: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
-	9,  // 10: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
-	10, // 11: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	13, // 10: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
+	14, // 11: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
 	12, // [12:12] is the sub-list for method output_type
 	12, // [12:12] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
@@ -708,7 +940,7 @@ func file_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      5,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,

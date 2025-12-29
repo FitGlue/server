@@ -545,9 +545,87 @@ program.command('users:add-pipeline')
                         name: 'providerType',
                         message: 'Enricher Provider:',
                         choices: availableChoices
-                    },
-                    // We could ask for inputs here dynamically, but for now simple inputs
-                    {
+                    }
+                ]);
+
+                // Provider-specific configuration prompts
+                let inputs = {};
+                if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS) {
+                    const gpsConfig = await inquirer.prompt([
+                        {
+                            type: 'list',
+                            name: 'route',
+                            message: 'Select Route:',
+                            choices: [
+                                { name: 'London Hyde Park (~4km)', value: 'london' },
+                                { name: 'NYC Central Park (~10km)', value: 'nyc' }
+                            ],
+                            default: 'london'
+                        },
+                        {
+                            type: 'confirm',
+                            name: 'force',
+                            message: 'Force overwrite existing GPS data?',
+                            default: false
+                        }
+                    ]);
+                    inputs = {
+                        route: gpsConfig.route,
+                        ...(gpsConfig.force && { force: 'true' })
+                    };
+                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY) {
+                    const summaryConfig = await inquirer.prompt([{
+                        type: 'list',
+                        name: 'format',
+                        message: 'Format Style:',
+                        choices: [
+                            { name: 'Compact (4×8@100kg)', value: 'compact' },
+                            { name: 'Detailed (4 sets × 8 reps @ 100.0kg)', value: 'detailed' },
+                            { name: 'Verbose (4 sets of 8 reps at 100.0 kilograms)', value: 'verbose' }
+                        ],
+                        default: 'detailed'
+                    }]);
+                    inputs = { format: summaryConfig.format };
+                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP) {
+                    const heatmapConfig = await inquirer.prompt([
+                        {
+                            type: 'list',
+                            name: 'style',
+                            message: 'Visualization Style:',
+                            choices: [
+                                { name: 'Emoji Bars (🟪🟪🟪⬜⬜)', value: 'emoji' },
+                                { name: 'Percentage (Chest: 80%)', value: 'percentage' },
+                                { name: 'Text Only (High: Chest)', value: 'text' }
+                            ],
+                            default: 'emoji'
+                        },
+                        {
+                            type: 'number',
+                            name: 'barLength',
+                            message: 'Bar Length (3-10):',
+                            default: 5,
+                            validate: (input) => (input >= 3 && input <= 10) || 'Must be between 3 and 10'
+                        },
+                        {
+                            type: 'list',
+                            name: 'preset',
+                            message: 'Coefficient Preset:',
+                            choices: [
+                                { name: 'Standard (Balanced)', value: 'standard' },
+                                { name: 'Powerlifting (Emphasize compounds)', value: 'powerlifting' },
+                                { name: 'Bodybuilding (Emphasize isolation)', value: 'bodybuilding' }
+                            ],
+                            default: 'standard'
+                        }
+                    ]);
+                    inputs = {
+                        style: heatmapConfig.style,
+                        bar_length: heatmapConfig.barLength.toString(),
+                        preset: heatmapConfig.preset
+                    };
+                } else {
+                    // Fallback to JSON input for other providers
+                    const jsonInput = await inquirer.prompt([{
                         type: 'input',
                         name: 'inputsJson',
                         message: 'Inputs (JSON string, optional):',
@@ -555,12 +633,13 @@ program.command('users:add-pipeline')
                             if (!input) return true;
                             try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
                         }
-                    }
-                ]);
+                    }]);
+                    inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
+                }
 
                 enrichers.push({
                     providerType: config.providerType,
-                    inputs: config.inputsJson ? JSON.parse(config.inputsJson) : {}
+                    inputs
                 });
             }
 
@@ -706,8 +785,87 @@ program.command('users:replace-pipeline')
                         name: 'providerType',
                         message: 'Enricher Provider:',
                         choices: availableChoices
-                    },
-                    {
+                    }
+                ]);
+
+                // Provider-specific configuration prompts
+                let inputs = {};
+                if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS) {
+                    const gpsConfig = await inquirer.prompt([
+                        {
+                            type: 'list',
+                            name: 'route',
+                            message: 'Select Route:',
+                            choices: [
+                                { name: 'London Hyde Park (~4km)', value: 'london' },
+                                { name: 'NYC Central Park (~10km)', value: 'nyc' }
+                            ],
+                            default: 'london'
+                        },
+                        {
+                            type: 'confirm',
+                            name: 'force',
+                            message: 'Force overwrite existing GPS data?',
+                            default: false
+                        }
+                    ]);
+                    inputs = {
+                        route: gpsConfig.route,
+                        ...(gpsConfig.force && { force: 'true' })
+                    };
+                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY) {
+                    const summaryConfig = await inquirer.prompt([{
+                        type: 'list',
+                        name: 'format',
+                        message: 'Format Style:',
+                        choices: [
+                            { name: 'Compact (4×8@100kg)', value: 'compact' },
+                            { name: 'Detailed (4 sets × 8 reps @ 100.0kg)', value: 'detailed' },
+                            { name: 'Verbose (4 sets of 8 reps at 100.0 kilograms)', value: 'verbose' }
+                        ],
+                        default: 'detailed'
+                    }]);
+                    inputs = { format: summaryConfig.format };
+                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP) {
+                    const heatmapConfig = await inquirer.prompt([
+                        {
+                            type: 'list',
+                            name: 'style',
+                            message: 'Visualization Style:',
+                            choices: [
+                                { name: 'Emoji Bars (🟪🟪🟪⬜⬜)', value: 'emoji' },
+                                { name: 'Percentage (Chest: 80%)', value: 'percentage' },
+                                { name: 'Text Only (High: Chest)', value: 'text' }
+                            ],
+                            default: 'emoji'
+                        },
+                        {
+                            type: 'number',
+                            name: 'barLength',
+                            message: 'Bar Length (3-10):',
+                            default: 5,
+                            validate: (input) => (input >= 3 && input <= 10) || 'Must be between 3 and 10'
+                        },
+                        {
+                            type: 'list',
+                            name: 'preset',
+                            message: 'Coefficient Preset:',
+                            choices: [
+                                { name: 'Standard (Balanced)', value: 'standard' },
+                                { name: 'Powerlifting (Emphasize compounds)', value: 'powerlifting' },
+                                { name: 'Bodybuilding (Emphasize isolation)', value: 'bodybuilding' }
+                            ],
+                            default: 'standard'
+                        }
+                    ]);
+                    inputs = {
+                        style: heatmapConfig.style,
+                        bar_length: heatmapConfig.barLength.toString(),
+                        preset: heatmapConfig.preset
+                    };
+                } else {
+                    // Fallback to JSON input for other providers
+                    const jsonInput = await inquirer.prompt([{
                         type: 'input',
                         name: 'inputsJson',
                         message: 'Inputs (JSON string, optional):',
@@ -715,12 +873,13 @@ program.command('users:replace-pipeline')
                             if (!input) return true;
                             try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
                         }
-                    }
-                ]);
+                    }]);
+                    inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
+                }
 
                 enrichers.push({
                     providerType: config.providerType,
-                    inputs: config.inputsJson ? JSON.parse(config.inputsJson) : {}
+                    inputs
                 });
             }
 

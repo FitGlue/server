@@ -30,8 +30,18 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 		return &EnrichmentResult{}, nil
 	}
 
+	// Parse format style from config (default: detailed)
+	formatStyle := pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED
+	if formatStr, ok := inputConfig["format"]; ok {
+		switch formatStr {
+		case "compact":
+			formatStyle = pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT
+		case "verbose":
+			formatStyle = pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE
+		}
+	}
+
 	// Group by Exercise Name
-	// We want to preserve order of exercises as they appear, so we'll maintain a list of keys
 	type ExerciseBlock struct {
 		Name         string
 		Sets         []*pb.StrengthSet
@@ -51,7 +61,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 			blo := &ExerciseBlock{
 				Name:         key,
 				Sets:         []*pb.StrengthSet{},
-				MuscleGroups: []pb.MuscleGroup{set.PrimaryMuscleGroup}, // simplified
+				MuscleGroups: []pb.MuscleGroup{set.PrimaryMuscleGroup},
 			}
 			blocks = append(blocks, blo)
 			exerciseMap[key] = blo
@@ -65,24 +75,13 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 	for _, b := range blocks {
 		sb.WriteString(fmt.Sprintf("- %s: ", b.Name))
 
-		// Summarize sets: "3 Sets" or detail?
-		// Let's try to group: "3x10 @ 100kg"
-		// If weight changes, maybe list them out?
-		// Simple v1 approach: List sets: "10@100, 10@100, 10@100"
-
+		// Format sets based on style
 		var setStrs []string
 		for _, s := range b.Sets {
-			if s.WeightKg > 0 {
-				// Format: 10 x 100kg
-				setStrs = append(setStrs, fmt.Sprintf("%d × %.1fkg", s.Reps, s.WeightKg))
-			} else {
-				setStrs = append(setStrs, fmt.Sprintf("%d reps", s.Reps))
-			}
+			setStrs = append(setStrs, p.formatSet(s, formatStyle))
 		}
 
-		// Optimization: Collapse identical sets? "3x 10@100kg"
-		// Let's implement simple collapsing since we are touching this.
-		// If all text representations are identical, condense.
+		// Collapse identical sets
 		allSame := true
 		if len(setStrs) > 1 {
 			first := setStrs[0]
@@ -93,8 +92,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 				}
 			}
 			if allSame {
-				// Format: 3 Sets of 10 x 100kg -> "3 x 10 × 100kg"
-				sb.WriteString(fmt.Sprintf("%d x %s", len(setStrs), setStrs[0]))
+				sb.WriteString(p.formatCollapsedSets(len(setStrs), setStrs[0], formatStyle))
 			} else {
 				sb.WriteString(strings.Join(setStrs, ", "))
 			}
@@ -107,4 +105,47 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 	return &EnrichmentResult{
 		Description: sb.String(),
 	}, nil
+}
+
+// formatSet formats a single set based on the style
+func (p *WorkoutSummaryProvider) formatSet(set *pb.StrengthSet, style pb.WorkoutSummaryFormat) string {
+	switch style {
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
+		// "10×100kg" or "10 reps"
+		if set.WeightKg > 0 {
+			return fmt.Sprintf("%d×%.0fkg", set.Reps, set.WeightKg)
+		}
+		return fmt.Sprintf("%d reps", set.Reps)
+
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE:
+		// "10 reps at 100.0 kilograms" or "10 reps"
+		if set.WeightKg > 0 {
+			return fmt.Sprintf("%d reps at %.1f kilograms", set.Reps, set.WeightKg)
+		}
+		return fmt.Sprintf("%d reps", set.Reps)
+
+	default: // DETAILED
+		// "10 × 100.0kg" or "10 reps"
+		if set.WeightKg > 0 {
+			return fmt.Sprintf("%d × %.1fkg", set.Reps, set.WeightKg)
+		}
+		return fmt.Sprintf("%d reps", set.Reps)
+	}
+}
+
+// formatCollapsedSets formats multiple identical sets
+func (p *WorkoutSummaryProvider) formatCollapsedSets(count int, singleSet string, style pb.WorkoutSummaryFormat) string {
+	switch style {
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
+		// "3×(10×100kg)" -> "3×10×100kg"
+		return fmt.Sprintf("%d×%s", count, singleSet)
+
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE:
+		// "3 sets of 10 reps at 100.0 kilograms"
+		return fmt.Sprintf("%d sets of %s", count, singleSet)
+
+	default: // DETAILED
+		// "3 x 10 × 100.0kg"
+		return fmt.Sprintf("%d x %s", count, singleSet)
+	}
 }

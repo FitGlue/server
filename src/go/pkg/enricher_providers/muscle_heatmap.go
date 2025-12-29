@@ -77,6 +77,34 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		return &EnrichmentResult{}, nil
 	}
 
+	// Parse config options
+	style := pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS
+	if styleStr, ok := inputConfig["style"]; ok {
+		switch styleStr {
+		case "percentage":
+			style = pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE
+		case "text":
+			style = pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY
+		}
+	}
+
+	barLength := 5
+	if barLenStr, ok := inputConfig["bar_length"]; ok {
+		if len, err := fmt.Sscanf(barLenStr, "%d", &barLength); err == nil && len == 1 {
+			if barLength < 3 {
+				barLength = 3
+			} else if barLength > 10 {
+				barLength = 10
+			}
+		}
+	}
+
+	// Apply coefficient preset
+	coeffs := p.coefficients
+	if preset, ok := inputConfig["preset"]; ok {
+		coeffs = p.getPresetCoefficients(preset)
+	}
+
 	// Calculate Weighted Volume per Muscle Group
 	volumeScores := make(map[string]float64)
 	maxScore := 0.0
@@ -87,10 +115,9 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		load := calculateLoad(set)
 
 		if primary != pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED && primary != pb.MuscleGroup_MUSCLE_GROUP_OTHER {
-			coeff := getMuscleCoefficient(p.coefficients, primary)
+			coeff := getMuscleCoefficient(coeffs, primary)
 			score := load * coeff
 
-			// Convert to string for display name
 			name := formatMuscleName(primary)
 			volumeScores[name] += score
 			if volumeScores[name] > maxScore {
@@ -101,7 +128,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		// Process Secondary Muscles (0.5x impact)
 		for _, sec := range set.SecondaryMuscleGroups {
 			if sec != pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED && sec != pb.MuscleGroup_MUSCLE_GROUP_OTHER {
-				coeff := getMuscleCoefficient(p.coefficients, sec)
+				coeff := getMuscleCoefficient(coeffs, sec)
 				score := load * coeff * 0.5
 
 				name := formatMuscleName(sec)
@@ -113,7 +140,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		}
 	}
 
-	// Generate Chart
+	// Generate output based on style
 	keys := make([]string, 0, len(volumeScores))
 	for k := range volumeScores {
 		keys = append(keys, k)
@@ -121,34 +148,102 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 	sort.Strings(keys)
 
 	var sb strings.Builder
-
-	// Rewrite loop cleaner
-	sb.Reset()
 	sb.WriteString("Muscle Heatmap:\n")
+
 	for _, k := range keys {
 		score := volumeScores[k]
 		rating := 0
 		if maxScore > 0 {
-			rating = int((score / maxScore) * 5.0)
+			rating = int((score / maxScore) * float64(barLength))
 		}
 		if rating == 0 && score > 0 {
 			rating = 1
 		}
 
+		sb.WriteString(p.formatMuscleRow(k, score, rating, maxScore, barLength, style))
+	}
+
+	return &EnrichmentResult{
+		Description: sb.String(),
+	}, nil
+}
+
+// getPresetCoefficients returns coefficient map for a given preset
+func (p *MuscleHeatmapProvider) getPresetCoefficients(preset string) map[pb.MuscleGroup]float64 {
+	switch preset {
+	case "powerlifting":
+		// Emphasize compounds (squat, deadlift, bench)
+		return map[pb.MuscleGroup]float64{
+			pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS: 1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS: 1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_GLUTES:     1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK: 1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_CHEST:      1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_LATS:       1.2,
+			pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK: 1.2,
+			pb.MuscleGroup_MUSCLE_GROUP_TRAPS:      1.2,
+			pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS:  2.0,
+			pb.MuscleGroup_MUSCLE_GROUP_TRICEPS:    3.0,
+			pb.MuscleGroup_MUSCLE_GROUP_BICEPS:     3.5,
+			pb.MuscleGroup_MUSCLE_GROUP_FOREARMS:   3.5,
+			pb.MuscleGroup_MUSCLE_GROUP_CALVES:     2.0,
+			pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS: 2.5,
+		}
+	case "bodybuilding":
+		// Emphasize isolation and hypertrophy
+		return map[pb.MuscleGroup]float64{
+			pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS: 1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS: 1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_GLUTES:     1.0,
+			pb.MuscleGroup_MUSCLE_GROUP_CALVES:     0.8,
+			pb.MuscleGroup_MUSCLE_GROUP_CHEST:      1.2,
+			pb.MuscleGroup_MUSCLE_GROUP_LATS:       1.2,
+			pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK: 1.2,
+			pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK: 1.5,
+			pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS:  2.0,
+			pb.MuscleGroup_MUSCLE_GROUP_TRAPS:      2.0,
+			pb.MuscleGroup_MUSCLE_GROUP_BICEPS:     3.5,
+			pb.MuscleGroup_MUSCLE_GROUP_TRICEPS:    3.5,
+			pb.MuscleGroup_MUSCLE_GROUP_FOREARMS:   4.0,
+			pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS: 2.5,
+		}
+	default: // standard
+		return p.coefficients
+	}
+}
+
+// formatMuscleRow formats a single muscle row based on style
+func (p *MuscleHeatmapProvider) formatMuscleRow(name string, score float64, rating int, maxScore float64, barLength int, style pb.MuscleHeatmapStyle) string {
+	switch style {
+	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE:
+		percentage := 0
+		if maxScore > 0 {
+			percentage = int((score / maxScore) * 100)
+		}
+		return fmt.Sprintf("- %s: %d%%\n", name, percentage)
+
+	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY:
+		level := "Low"
+		if rating >= barLength*3/4 {
+			level = "Very High"
+		} else if rating >= barLength/2 {
+			level = "High"
+		} else if rating >= barLength/4 {
+			level = "Medium"
+		}
+		return fmt.Sprintf("- %s: %s\n", name, level)
+
+	default: // EMOJI_BARS
 		bar := ""
-		for i := 0; i < 5; i++ {
+		for i := 0; i < barLength; i++ {
 			if i < rating {
 				bar += "🟪"
 			} else {
 				bar += "⬜"
 			}
 		}
-		sb.WriteString(fmt.Sprintf("- %s: %s\n", k, bar))
+		return fmt.Sprintf("- %s: %s\n", name, bar)
 	}
-
-	return &EnrichmentResult{
-		Description: sb.String(),
-	}, nil
 }
 
 func formatMuscleName(m pb.MuscleGroup) string {

@@ -20,6 +20,52 @@ export enum EnricherProviderType {
   UNRECOGNIZED = -1,
 }
 
+/** Workout Summary format styles */
+export enum WorkoutSummaryFormat {
+  WORKOUT_SUMMARY_FORMAT_UNSPECIFIED = 0,
+  /** WORKOUT_SUMMARY_FORMAT_COMPACT - "4×8@100kg" */
+  WORKOUT_SUMMARY_FORMAT_COMPACT = 1,
+  /** WORKOUT_SUMMARY_FORMAT_DETAILED - "4 sets × 8 reps @ 100.0kg" */
+  WORKOUT_SUMMARY_FORMAT_DETAILED = 2,
+  /** WORKOUT_SUMMARY_FORMAT_VERBOSE - "4 sets of 8 reps at 100.0 kilograms" */
+  WORKOUT_SUMMARY_FORMAT_VERBOSE = 3,
+  UNRECOGNIZED = -1,
+}
+
+/** Muscle Heatmap visualization styles */
+export enum MuscleHeatmapStyle {
+  MUSCLE_HEATMAP_STYLE_UNSPECIFIED = 0,
+  /** MUSCLE_HEATMAP_STYLE_EMOJI_BARS - "🟪🟪🟪⬜⬜" */
+  MUSCLE_HEATMAP_STYLE_EMOJI_BARS = 1,
+  /** MUSCLE_HEATMAP_STYLE_PERCENTAGE - "Chest: 80%" */
+  MUSCLE_HEATMAP_STYLE_PERCENTAGE = 2,
+  /** MUSCLE_HEATMAP_STYLE_TEXT_ONLY - "High: Chest, Medium: Legs" */
+  MUSCLE_HEATMAP_STYLE_TEXT_ONLY = 3,
+  UNRECOGNIZED = -1,
+}
+
+/** Muscle Heatmap coefficient presets */
+export enum MuscleHeatmapPreset {
+  MUSCLE_HEATMAP_PRESET_UNSPECIFIED = 0,
+  /** MUSCLE_HEATMAP_PRESET_STANDARD - Balanced coefficients */
+  MUSCLE_HEATMAP_PRESET_STANDARD = 1,
+  /** MUSCLE_HEATMAP_PRESET_POWERLIFTING - Emphasize compounds */
+  MUSCLE_HEATMAP_PRESET_POWERLIFTING = 2,
+  /** MUSCLE_HEATMAP_PRESET_BODYBUILDING - Emphasize isolation */
+  MUSCLE_HEATMAP_PRESET_BODYBUILDING = 3,
+  UNRECOGNIZED = -1,
+}
+
+/** Virtual GPS route options */
+export enum VirtualGPSRoute {
+  VIRTUAL_GPS_ROUTE_UNSPECIFIED = 0,
+  /** VIRTUAL_GPS_ROUTE_LONDON - London Hyde Park (~4km) */
+  VIRTUAL_GPS_ROUTE_LONDON = 1,
+  /** VIRTUAL_GPS_ROUTE_NYC - NYC Central Park (~10km) */
+  VIRTUAL_GPS_ROUTE_NYC = 2,
+  UNRECOGNIZED = -1,
+}
+
 export interface UserRecord {
   userId: string;
   createdAt: Date | undefined;

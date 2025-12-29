@@ -13,7 +13,7 @@ TS_SRC_DIR=src/typescript
 # --- Phony Targets ---
 .PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts
 
-all: build test
+all: generate build test lint
 
 setup:
 	@echo "Setting up dependencies..."
