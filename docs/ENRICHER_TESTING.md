@@ -1,0 +1,385 @@
+# Enricher Testing Guide
+
+This guide provides comprehensive testing procedures for all enricher providers in the FitGlue pipeline.
+
+## Overview
+
+Enrichers transform and enhance standardized activities before they are sent to destinations like Strava. Each enricher can:
+- Add metadata (name, description, activity type)
+- Inject data streams (heart rate, GPS coordinates)
+- Generate artifacts (FIT files)
+
+## Available Enrichers
+
+| Provider | Purpose | Trigger Condition | Output |
+|----------|---------|-------------------|--------|
+| **Metadata Passthrough** | Preserves source metadata | Always | Name, Description |
+| **Workout Summary** | Exercise breakdown | `StrengthSets` present | Description text |
+| **Muscle Heatmap** | Muscle activation visualization | `StrengthSets` present | Description (emoji chart) |
+| **Virtual GPS** | Synthetic GPS routes | `TotalDistance > 0` AND no GPS | Lat/Long streams |
+| **Source Link** | Links back to source | `ExternalId` present | Description (URL) |
+| **Fitbit Heart Rate** | HR data from Fitbit | Fitbit integration enabled | Heart rate stream |
+
+---
+
+## Test Scenario 1: Strength Training (Full Enrichment)
+
+### Objective
+Validate all description-based enrichers on a typical strength workout.
+
+### Setup
+```bash
+# Create test user
+./fitglue-admin users:create
+
+# Configure Hevy
+./fitglue-admin users:configure-hevy <user-id>
+
+# Add pipeline with all enrichers
+./fitglue-admin users:add-pipeline <user-id>
+# Source: SOURCE_HEVY
+# Enrichers: Metadata Passthrough → Workout Summary → Muscle Heatmap → Source Link
+# Destinations: strava
+```
+
+### Test Data
+- **Workout Type**: Strength training
+- **Exercises**:
+  - Bench Press: 4 sets × 8 reps @ 100kg (Chest)
+  - Squats: 3 sets × 10 reps @ 120kg (Quadriceps)
+  - Deadlifts: 5 sets × 5 reps @ 140kg (Lower Back)
+- **Duration**: 45 minutes
+- **Distance**: 0 meters
+
+### Expected Output
+
+**Activity Description** (concatenated):
+```
+Morning Strength Session
+
+Bench Press: 4 × 8 @ 100.0kg
+Squats: 3 × 10 @ 120.0kg
+Deadlifts: 5 × 5 @ 140.0kg
+
+💪 Muscle Activation:
+Chest: 🟪🟪🟪🟪⬜
+Quadriceps: 🟪🟪🟪⬜⬜
+Lower Back: 🟪🟪🟪🟪🟪
+
+View on Hevy: https://hevy.com/workout/abc123
+```
+
+### Validation Steps
+```bash
+# 1. Trigger workout (via Hevy webhook or manual)
+# 2. Check enricher execution
+./fitglue-admin executions:list -s enricher -u <user-id> --limit 1
+
+# 3. Get execution details
+./fitglue-admin executions:get <execution-id>
+
+# 4. Verify output JSON
+# - applied_enrichments: ["metadata-passthrough", "workout-summary", "muscle-heatmap", "source-link"]
+# - Check description field contains all sections
+
+# 5. Download FIT file
+./fitglue-admin gcs:download <fit-file-uri>
+
+# 6. Inspect FIT file
+fit-inspect <file.fit>
+# - Should contain NO GPS data (strength training)
+# - Should contain session summary
+```
+
+### Success Criteria
+- ✅ Description contains workout summary
+- ✅ Description contains muscle heatmap
+- ✅ Description contains source link
+- ✅ FIT file generated successfully
+- ✅ No GPS coordinates in FIT file
+- ✅ Activity uploads to Strava with correct description
+
+---
+
+## Test Scenario 2: Virtual GPS (Cardio Activity)
+
+### Objective
+Validate Virtual GPS provider generates realistic GPS tracks for activities without location data.
+
+### Setup
+```bash
+# Add pipeline with Virtual GPS
+./fitglue-admin users:add-pipeline <user-id>
+# Source: SOURCE_HEVY (or SOURCE_TEST)
+# Enrichers: Virtual GPS
+# Destinations: strava
+```
+
+### Test Data
+Create a test activity with:
+- **Type**: Running
+- **Duration**: 1800 seconds (30 minutes)
+- **Distance**: 5000 meters (5km)
+- **GPS Data**: None (empty records)
+
+### Expected Behavior
+1. **Route Selection**: London Hyde Park (default)
+2. **Distance Projection**: 5km mapped onto route
+3. **Looping**: If route < 5km, loops around
+4. **Timestamps**: 1800 records (1Hz) with interpolated coordinates
+
+### Validation Steps
+```bash
+# 1. Publish test activity
+# (Use test script or manual Pub/Sub publish)
+
+# 2. Check enricher logs
+./fitglue-admin executions:get <execution-id>
+# Look for: "virtual_gps_route": "London Hyde Park (Approx)"
+
+# 3. Download FIT file
+./fitglue-admin gcs:download <fit-file-uri>
+
+# 4. Inspect GPS data
+fit-inspect <file.fit> | grep -i "position"
+# Should show continuous lat/long values
+
+# 5. Verify route
+# - Plot coordinates on map (use online tool)
+# - Should follow Hyde Park perimeter
+# - Should loop if distance > route length
+```
+
+### Success Criteria
+- ✅ FIT file contains `position_lat` and `position_long` fields
+- ✅ GPS coordinates follow London Hyde Park route
+- ✅ Total distance matches input (5000m)
+- ✅ Timestamps are continuous (1Hz, 1800 records)
+- ✅ Coordinates are realistic (within London bounds)
+- ✅ Activity appears on Strava map
+
+### Edge Cases
+- **Distance = 0**: Virtual GPS should NOT apply
+- **Existing GPS**: Virtual GPS should skip (unless `force: true`)
+- **Very long distance**: Should loop route multiple times
+
+---
+
+## Test Scenario 3: Fitbit Heart Rate Integration
+
+### Objective
+Validate Fitbit HR provider fetches and merges heart rate data.
+
+### Setup
+```bash
+# Connect Fitbit
+./fitglue-admin users:connect <user-id> fitbit
+# Visit OAuth URL to authorize
+
+# Add pipeline with Fitbit HR
+./fitglue-admin users:add-pipeline <user-id>
+# Source: SOURCE_HEVY
+# Enrichers: Fitbit Heart Rate
+# Destinations: strava
+```
+
+### Test Data
+- **Workout**: Any activity with valid timestamp
+- **Fitbit Account**: Must have HR data for workout time period
+
+### Expected Behavior
+1. **API Call**: Fetches HR data from Fitbit for workout time range
+2. **Interpolation**: Maps HR values to 1Hz records
+3. **Merge**: HR values inserted into FIT file records
+
+### Validation Steps
+```bash
+# 1. Trigger workout
+# 2. Check enricher logs
+./fitglue-admin executions:get <execution-id>
+# Look for: "Retrieved Fitbit HR points=<N> duration=<seconds>"
+
+# 3. Verify provider execution
+# - provider_name: "fitbit-heart-rate"
+# - status: "SUCCESS"
+# - metadata.hr_source: "fitbit"
+# - metadata.hr_points: <count>
+
+# 4. Download FIT file
+./fitglue-admin gcs:download <fit-file-uri>
+
+# 5. Inspect HR data
+fit-inspect <file.fit> | grep -i "heart"
+# Should show heart_rate values (60-200 bpm range)
+```
+
+### Success Criteria
+- ✅ Fitbit API called successfully
+- ✅ HR data fetched for correct time range
+- ✅ FIT file contains `heart_rate` field
+- ✅ HR values are realistic (60-200 bpm)
+- ✅ HR data visible on Strava activity
+
+### Troubleshooting
+- **"Fitbit integration disabled"**: User hasn't authorized Fitbit
+- **"No HR data found"**: Fitbit account has no data for that time
+- **Token expired**: Re-run `users:connect` to refresh OAuth tokens
+
+---
+
+## Test Scenario 4: Multiple Pipelines
+
+### Objective
+Validate that multiple pipelines can be configured for the same source.
+
+### Setup
+```bash
+# Pipeline 1: Full enrichment for Strava
+./fitglue-admin users:add-pipeline <user-id>
+# Source: SOURCE_HEVY
+# Enrichers: Metadata → Summary → Heatmap → Fitbit HR → Virtual GPS → Link
+# Destinations: strava
+
+# Pipeline 2: Minimal enrichment (test/backup)
+./fitglue-admin users:add-pipeline <user-id>
+# Source: SOURCE_HEVY
+# Enrichers: Metadata Passthrough
+# Destinations: strava
+```
+
+### Expected Behavior
+- **Enricher**: Processes BOTH pipelines
+- **Router**: Routes to Strava TWICE
+- **Strava**: Two separate activities uploaded
+
+### Validation Steps
+```bash
+# 1. Trigger one workout
+# 2. Check enricher output
+./fitglue-admin executions:get <execution-id>
+# - published_count: 2
+# - published_events: [pipeline1, pipeline2]
+
+# 3. Check router executions
+./fitglue-admin executions:list -s router -u <user-id> --limit 5
+# Should see TWO router executions
+
+# 4. Check Strava
+# Should see TWO activities (one with full description, one minimal)
+```
+
+### Success Criteria
+- ✅ Both pipelines execute successfully
+- ✅ Two separate FIT files generated
+- ✅ Two activities appear on Strava
+- ✅ Descriptions differ based on enrichers
+
+---
+
+## Provider-Specific Configuration
+
+### Virtual GPS
+**Input Config Options**:
+```json
+{
+  "route": "london",  // Route name (default: "london")
+  "force": "true"     // Overwrite existing GPS (default: false)
+}
+```
+
+**Available Routes**:
+- `london`: London Hyde Park (~4km loop)
+- *(Future: `nyc`, `paris`, etc.)*
+
+### Fitbit Heart Rate
+**Input Config Options**:
+```json
+{
+  "priority": "high"  // (Optional, for future use)
+}
+```
+
+**Requirements**:
+- User must have Fitbit integration enabled
+- OAuth tokens must be valid
+- Fitbit account must have HR data for workout time
+
+### Muscle Heatmap
+**Input Config Options**:
+```json
+{}  // No config required
+```
+
+**Coefficients** (hardcoded):
+- Quadriceps, Chest, Lats: 1.0
+- Shoulders, Biceps, Triceps: 0.7
+- Calves, Forearms: 0.5
+
+---
+
+## Automated Testing
+
+### Unit Tests
+```bash
+# Go provider tests
+cd src/go
+go test ./pkg/enricher_providers/... -v
+
+# TypeScript shared library tests
+cd src/typescript/shared
+npm test
+```
+
+### Integration Tests
+```bash
+# Local environment
+npm run test:local
+
+# Deployed environment
+npm run test:dev
+```
+
+See [INTEGRATION_TESTS.md](INTEGRATION_TESTS.md) for detailed integration testing procedures.
+
+---
+
+## Common Issues
+
+### "Provider not found, skipping"
+**Cause**: Provider not registered in `enricher/function.go`
+**Solution**: Verify provider is in `providerRegistry` array
+
+### "No GPS data generated"
+**Cause**: Activity has `TotalDistance = 0` or existing GPS
+**Solution**: Check activity data, use `force: true` config
+
+### "Muscle heatmap empty"
+**Cause**: No `StrengthSets` in activity
+**Solution**: Ensure activity contains strength training data
+
+### "Fitbit HR failed"
+**Cause**: OAuth tokens expired or invalid
+**Solution**: Re-authorize via `users:connect <user-id> fitbit`
+
+### "Description not concatenated"
+**Cause**: Orchestrator merge logic issue
+**Solution**: Check enricher order, verify description append logic
+
+---
+
+## Best Practices
+
+1. **Test in Order**: Start with simple enrichers (Metadata) before complex ones (Virtual GPS)
+2. **Verify Logs**: Always check execution logs for provider-specific messages
+3. **Inspect FIT Files**: Use `fit-inspect` to validate binary output
+4. **Check Strava**: Final validation should be visual inspection on Strava
+5. **Clean Up**: Remove test pipelines and users after testing
+
+---
+
+## Next Steps
+
+- Add more routes to Virtual GPS library
+- Implement PR Tracker enricher
+- Create automated E2E tests for all enrichers
+- Add enricher configuration UI to admin CLI

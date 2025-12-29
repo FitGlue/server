@@ -44,6 +44,21 @@ FitGlue uses an event-driven, microservices architecture deployed as Google Clou
 - **Router** (Go): Routes enriched activities to configured destinations
 - **Strava Uploader** (Go): Uploads FIT files to Strava via OAuth
 
+### Enrichment Pipeline
+
+The Enricher supports a flexible, configurable pipeline of providers that transform and enhance activities:
+
+| Provider | Purpose | Output |
+|----------|---------|--------|
+| **Metadata Passthrough** | Preserves source metadata | Name, Description |
+| **Workout Summary** | Exercise breakdown with sets/reps/weight | Description text |
+| **Muscle Heatmap** | Visual muscle activation chart | Description (emoji bars) |
+| **Virtual GPS** | Synthetic GPS routes for indoor activities | Lat/Long streams |
+| **Source Link** | Links back to original workout | Description (URL) |
+| **Fitbit Heart Rate** | Fetches HR data from Fitbit API | Heart rate stream |
+
+Pipelines are configured per-user via the Admin CLI. See [Enricher Testing Guide](docs/ENRICHER_TESTING.md) for details.
+
 ## Features
 
 - 🔄 **Multi-source ingestion**: Hevy webhooks, extensible for Fitbit/Garmin/other sources
@@ -64,15 +79,27 @@ FitGlue uses an event-driven, microservices architecture deployed as Google Clou
 
 ## Documentation
 
-- **[Execution Logging](docs/EXECUTION_LOGGING.md)** - Framework architecture and patterns
+### Getting Started
 - **[Local Development](docs/LOCAL_DEVELOPMENT.md)** - Running the stack locally
-- **[CI/CD Guide](docs/CICD.md)** - Deployment pipeline and infrastructure
-- **[Architecture Decisions](docs/DECISIONS.md)** - Key design choices and rationale
-- **[Integration Tests](docs/INTEGRATION_TESTS.md)** - Integration tests and verification
-- **[Admin CLI](docs/ADMIN_CLI.md)** - Usage guide for user management and keys
-- **[FIT Generation](docs/FIT_GENERATION.md)** - Guide to generating FIT files and test data
+- **[Admin CLI](docs/ADMIN_CLI.md)** - User management and pipeline configuration
 
-## Research
+### Enrichment & Testing
+- **[Enricher Configuration](docs/ENRICHER_CONFIG.md)** - Configuring enrichment pipelines
+- **[Enricher Testing](docs/ENRICHER_TESTING.md)** - Testing guide for enrichment providers
+- **[Manual QA Guide](docs/MANUAL_QA_GUIDE.md)** - End-to-end manual testing procedures
+- **[Integration Tests](docs/INTEGRATION_TESTS.md)** - Automated integration tests
+
+### Infrastructure & Architecture
+- **[CI/CD Guide](docs/CICD.md)** - Deployment pipeline and infrastructure
+- **[Execution Logging](docs/EXECUTION_LOGGING.md)** - Framework architecture and patterns
+- **[Architecture Decisions](docs/DECISIONS.md)** - Key design choices and rationale
+
+### Specialized Guides
+- **[FIT Generation](docs/FIT_GENERATION.md)** - Guide to generating FIT files and test data
+- **[OAuth Integration](docs/OAUTH.md)** - OAuth flow for Strava and Fitbit
+- **[OpenAPI Clients](docs/OPENAPI_CLIENTS.md)** - API client generation
+
+### Research
 
 - **[Initial Research](docs/research/INITIAL_RESEARCH.md)** - Background and feasibility analysis
 - **[API Integration Research](docs/research/API_INTEGRATION_RESEARCH.md)** - Specific API integrations

@@ -1,0 +1,326 @@
+# Enricher Configuration Guide
+
+This guide explains how to configure enrichment pipelines for users in FitGlue.
+
+## Overview
+
+Enrichers are modular providers that transform and enhance standardized activities before they are sent to destinations. Each user can have multiple pipelines, and each pipeline can have multiple enrichers that execute in sequence.
+
+## Pipeline Architecture
+
+```
+Source (Hevy) → [Enricher 1] → [Enricher 2] → [Enricher N] → Destination (Strava)
+```
+
+**Key Concepts**:
+- **Source**: Where the activity originates (e.g., `SOURCE_HEVY`)
+- **Enrichers**: Ordered list of providers that process the activity
+- **Destinations**: Where the enriched activity is sent (e.g., `strava`)
+
+## Available Enrichers
+
+### 1. Metadata Passthrough
+**Provider Type**: `ENRICHER_PROVIDER_METADATA_PASSTHROUGH`
+
+**Purpose**: Preserves the original activity name and description from the source.
+
+**When to Use**: First in pipeline to seed metadata before other enrichers append to it.
+
+**Configuration**: None required
+```json
+{
+  "providerType": 5,
+  "inputs": {}
+}
+```
+
+**Output**: Sets `name` and `description` fields on the enriched activity.
+
+---
+
+### 2. Workout Summary
+**Provider Type**: `ENRICHER_PROVIDER_WORKOUT_SUMMARY`
+
+**Purpose**: Generates a formatted summary of strength training exercises.
+
+**Trigger**: Activity contains `StrengthSets`
+
+**Configuration**: None required
+```json
+{
+  "providerType": 2,
+  "inputs": {}
+}
+```
+
+**Output Example**:
+```
+Bench Press: 4 × 8 @ 100.0kg
+Squats: 3 × 10 @ 120.0kg
+Deadlifts: 5 × 5 @ 140.0kg
+```
+
+**Appends to**: `description` field
+
+---
+
+### 3. Muscle Heatmap
+**Provider Type**: `ENRICHER_PROVIDER_MUSCLE_HEATMAP`
+
+**Purpose**: Visualizes muscle activation using emoji bar charts.
+
+**Trigger**: Activity contains `StrengthSets` with muscle group data
+
+**Configuration**: None required
+```json
+{
+  "providerType": 3,
+  "inputs": {}
+}
+```
+
+**Output Example**:
+```
+💪 Muscle Activation:
+Chest: 🟪🟪🟪🟪⬜
+Quadriceps: 🟪🟪🟪⬜⬜
+Lower Back: 🟪🟪🟪🟪🟪
+```
+
+**Appends to**: `description` field
+
+**Coefficients** (hardcoded):
+- Large muscles (Quadriceps, Chest, Lats): 1.0
+- Medium muscles (Shoulders, Biceps, Triceps): 0.7
+- Small muscles (Calves, Forearms): 0.5
+
+---
+
+### 4. Virtual GPS
+**Provider Type**: `ENRICHER_PROVIDER_VIRTUAL_GPS`
+
+**Purpose**: Generates synthetic GPS tracks for indoor/non-GPS activities.
+
+**Trigger**: `TotalDistance > 0` AND no existing GPS data
+
+**Configuration**:
+```json
+{
+  "providerType": 6,
+  "inputs": {
+    "route": "london",  // Optional: route name (default: "london")
+    "force": "true"     // Optional: overwrite existing GPS (default: false)
+  }
+}
+```
+
+**Available Routes**:
+- `london`: London Hyde Park loop (~4km)
+- *(Future: `nyc`, `paris`, etc.)*
+
+**Output**: Injects `PositionLatStream` and `PositionLongStream` into activity records.
+
+**How it Works**:
+1. Calculates average speed: `distance / duration`
+2. Projects distance onto route coordinates
+3. Loops route if distance > route length
+4. Interpolates timestamps at 1Hz
+
+---
+
+### 5. Source Link
+**Provider Type**: `ENRICHER_PROVIDER_SOURCE_LINK`
+
+**Purpose**: Adds a link back to the original workout in the source app.
+
+**Trigger**: Activity has `ExternalId`
+
+**Configuration**: None required
+```json
+{
+  "providerType": 4,
+  "inputs": {}
+}
+```
+
+**Output Example**:
+```
+View on Hevy: https://hevy.com/workout/abc123
+```
+
+**Appends to**: `description` field
+
+---
+
+### 6. Fitbit Heart Rate
+**Provider Type**: `ENRICHER_PROVIDER_FITBIT_HEART_RATE`
+
+**Purpose**: Fetches heart rate data from Fitbit API and merges into activity.
+
+**Trigger**: User has Fitbit integration enabled
+
+**Configuration**:
+```json
+{
+  "providerType": 1,
+  "inputs": {}
+}
+```
+
+**Requirements**:
+- User must have authorized Fitbit via OAuth
+- Fitbit account must have HR data for workout time range
+
+**Output**: Injects `HeartRateStream` into activity records.
+
+**API Call**: Fetches intraday HR data for workout start time + duration.
+
+---
+
+## Configuring Pipelines via Admin CLI
+
+### Add a Pipeline
+
+```bash
+./fitglue-admin users:add-pipeline <user-id>
+```
+
+**Interactive Prompts**:
+1. **Source**: Select activity source (e.g., `SOURCE_HEVY`)
+2. **Enrichers**: Add enrichers in desired order
+   - Select provider type from list
+   - Enter configuration JSON (optional)
+   - Repeat to add more enrichers
+3. **Destinations**: Select where to send enriched activity (e.g., `strava`)
+
+**Example Session**:
+```
+? Select Source: SOURCE_HEVY
+? Add an enricher? Yes
+? Enricher Provider: Metadata Passthrough
+? Inputs (JSON string, optional): <Enter>
+? Add an enricher? Yes
+? Enricher Provider: Workout Summary
+? Inputs (JSON string, optional): <Enter>
+? Add an enricher? Yes
+? Enricher Provider: Virtual GPS
+? Inputs (JSON string, optional): {"route": "london"}
+? Add an enricher? No
+? Select Destinations: strava
+Pipeline added successfully! ID: pipe-abc123
+```
+
+### Remove a Pipeline
+
+```bash
+./fitglue-admin users:remove-pipeline <user-id>
+```
+
+Interactively select pipeline to delete.
+
+### Replace a Pipeline
+
+```bash
+./fitglue-admin users:replace-pipeline <user-id>
+```
+
+Interactively select pipeline and reconfigure (keeps same ID).
+
+---
+
+## Best Practices
+
+### Enricher Order
+
+**Recommended Order**:
+1. **Metadata Passthrough** - Seeds name/description
+2. **Workout Summary** - Adds exercise details
+3. **Muscle Heatmap** - Adds muscle visualization
+4. **Fitbit Heart Rate** - Adds HR data
+5. **Virtual GPS** - Adds location data (if needed)
+6. **Source Link** - Adds source URL at end
+
+**Why?** Description-based enrichers append text sequentially. Placing Source Link last ensures the URL appears at the bottom of the description.
+
+### Multiple Pipelines
+
+You can create multiple pipelines for the same source:
+
+**Use Cases**:
+- **Production + Test**: One with full enrichment, one minimal for testing
+- **Different Destinations**: One for Strava, one for future integrations
+- **A/B Testing**: Compare enrichment strategies
+
+**Example**:
+```bash
+# Pipeline 1: Full enrichment for Strava
+./fitglue-admin users:add-pipeline user-123
+# Enrichers: Metadata → Summary → Heatmap → Fitbit HR → Virtual GPS → Link
+# Destinations: strava
+
+# Pipeline 2: Minimal for backup
+./fitglue-admin users:add-pipeline user-123
+# Enrichers: Metadata Passthrough
+# Destinations: strava
+```
+
+**Result**: Each Hevy workout creates TWO Strava activities.
+
+### Configuration Tips
+
+1. **Start Simple**: Begin with Metadata Passthrough only, then add enrichers incrementally
+2. **Test Locally**: Use test activities to verify enricher output before production
+3. **Monitor Logs**: Check execution logs to verify enrichers are running
+4. **Validate FIT Files**: Use `fit-inspect` to verify binary output
+
+---
+
+## Troubleshooting
+
+### "Provider not found, skipping"
+**Cause**: Enricher not registered in `enricher/function.go`
+**Solution**: Verify provider is in `providerRegistry` array
+
+### Virtual GPS Not Generating Coordinates
+**Cause**: Activity has `TotalDistance = 0` or existing GPS data
+**Solution**: Check activity data, use `"force": "true"` config to override
+
+### Muscle Heatmap Empty
+**Cause**: No `StrengthSets` in activity or missing muscle group data
+**Solution**: Ensure source (Hevy) provides muscle group information
+
+### Fitbit HR Failed
+**Cause**: OAuth tokens expired or Fitbit integration not enabled
+**Solution**: Re-authorize via `./fitglue-admin users:connect <user-id> fitbit`
+
+### Description Not Concatenated
+**Cause**: Enrichers running in wrong order or merge logic issue
+**Solution**: Check enricher order in pipeline configuration
+
+---
+
+## Advanced: Provider Inputs
+
+Some enrichers support configuration via the `inputs` field:
+
+### Virtual GPS Inputs
+```json
+{
+  "route": "london",    // Route selection
+  "force": "true"       // Overwrite existing GPS
+}
+```
+
+### Future: Configurable Providers
+Planned enhancements:
+- **Workout Summary**: Custom formatting templates
+- **Muscle Heatmap**: Adjustable coefficients
+- **Fitbit HR**: Priority levels for data fetching
+
+---
+
+## See Also
+
+- [Enricher Testing Guide](ENRICHER_TESTING.md) - Comprehensive testing procedures
+- [Admin CLI Guide](ADMIN_CLI.md) - Full CLI command reference
+- [Manual QA Guide](MANUAL_QA_GUIDE.md) - End-to-end testing workflows
