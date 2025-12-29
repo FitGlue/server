@@ -624,17 +624,27 @@ program.command('users:add-pipeline')
                         preset: heatmapConfig.preset
                     };
                 } else {
-                    // Fallback to JSON input for other providers
-                    const jsonInput = await inquirer.prompt([{
-                        type: 'input',
-                        name: 'inputsJson',
-                        message: 'Inputs (JSON string, optional):',
-                        validate: (input) => {
-                            if (!input) return true;
-                            try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
-                        }
-                    }]);
-                    inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
+                    // Only prompt for JSON if the provider might need config
+                    // Skip for providers with no config options
+                    const noConfigProviders = [
+                        EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH,
+                        EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
+                        EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE
+                    ];
+
+                    if (!noConfigProviders.includes(config.providerType)) {
+                        const jsonInput = await inquirer.prompt([{
+                            type: 'input',
+                            name: 'inputsJson',
+                            message: 'Inputs (JSON string, optional):',
+                            validate: (input) => {
+                                if (!input) return true;
+                                try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
+                            }
+                        }]);
+                        inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
+                    }
+                    // else: inputs remains {} for no-config providers
                 }
 
                 enrichers.push({
@@ -864,17 +874,27 @@ program.command('users:replace-pipeline')
                         preset: heatmapConfig.preset
                     };
                 } else {
-                    // Fallback to JSON input for other providers
-                    const jsonInput = await inquirer.prompt([{
-                        type: 'input',
-                        name: 'inputsJson',
-                        message: 'Inputs (JSON string, optional):',
-                        validate: (input) => {
-                            if (!input) return true;
-                            try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
-                        }
-                    }]);
-                    inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
+                    // Only prompt for JSON if the provider might need config
+                    // Skip for providers with no config options
+                    const noConfigProviders = [
+                        EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH,
+                        EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
+                        EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE
+                    ];
+
+                    if (!noConfigProviders.includes(config.providerType)) {
+                        const jsonInput = await inquirer.prompt([{
+                            type: 'input',
+                            name: 'inputsJson',
+                            message: 'Inputs (JSON string, optional):',
+                            validate: (input) => {
+                                if (!input) return true;
+                                try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
+                            }
+                        }]);
+                        inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
+                    }
+                    // else: inputs remains {} for no-config providers
                 }
 
                 enrichers.push({
