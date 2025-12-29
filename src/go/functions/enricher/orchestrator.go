@@ -100,11 +100,12 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		errs := make([]error, len(configs))
 
 		for i, cfg := range configs {
-			provider, ok := o.providers[cfg.Name]
+            providerName := o.getProviderNameFromType(cfg.ProviderType)
+			provider, ok := o.providers[providerName]
 			if !ok {
-				slog.Warn("Provider not found, skipping", "name", cfg.Name)
+				slog.Warn("Provider not found, skipping", "name", providerName, "type", cfg.ProviderType)
 				providerExecs[i] = ProviderExecution{
-					ProviderName: cfg.Name,
+					ProviderName: providerName,
 					Status:       "SKIPPED",
 					Error:        "provider not registered",
 				}
@@ -157,7 +158,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		var failedEnrichers []string
 		for i, cfg := range configs {
 			if errs[i] != nil {
-				failedEnrichers = append(failedEnrichers, fmt.Sprintf("%s: %v", cfg.Name, errs[i]))
+				failedEnrichers = append(failedEnrichers, fmt.Sprintf("%s: %v", cfg.ProviderType, errs[i]))
 			}
 		}
 		if len(failedEnrichers) > 0 {
@@ -217,7 +218,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			if res == nil {
 				continue
 			}
-			cfgName := configs[i].Name
+			cfgName := configs[i].ProviderType.String()
 			finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, cfgName)
 
 			if res.Name != "" {
@@ -286,8 +287,8 @@ type configuredPipeline struct {
 }
 
 type configuredEnricher struct {
-	Name   string
-	Inputs map[string]string
+	ProviderType pb.EnricherProviderType
+	Inputs       map[string]string
 }
 
 func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.UserRecord) []configuredPipeline {
@@ -300,7 +301,7 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 			var enrichers []configuredEnricher
 			for _, e := range p.Enrichers {
 				enrichers = append(enrichers, configuredEnricher{
-					Name:   e.Name,
+					ProviderType:   e.ProviderType,
 					Inputs: e.Inputs,
 				})
 			}
@@ -336,6 +337,25 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	}
 
 	return pipelines
+}
+
+func (o *Orchestrator) getProviderNameFromType(t pb.EnricherProviderType) string {
+	switch t {
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE:
+		return "fitbit-heart-rate"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY:
+		return "workout-summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP:
+		return "muscle-heatmap"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK:
+		return "source-link"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_METADATA_PASSTHROUGH:
+		return "metadata-passthrough"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
+		return "mock-enricher"
+	default:
+		return "unknown"
+	}
 }
 
 func (o *Orchestrator) mapUser(userId string, data map[string]interface{}) (*pb.UserRecord, error) {

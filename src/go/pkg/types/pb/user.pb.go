@@ -22,6 +22,67 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type EnricherProviderType int32
+
+const (
+	EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED          EnricherProviderType = 0
+	EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE    EnricherProviderType = 1
+	EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY      EnricherProviderType = 2
+	EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP       EnricherProviderType = 3
+	EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK          EnricherProviderType = 4
+	EnricherProviderType_ENRICHER_PROVIDER_METADATA_PASSTHROUGH EnricherProviderType = 5
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK                 EnricherProviderType = 99
+)
+
+// Enum value maps for EnricherProviderType.
+var (
+	EnricherProviderType_name = map[int32]string{
+		0:  "ENRICHER_PROVIDER_UNSPECIFIED",
+		1:  "ENRICHER_PROVIDER_FITBIT_HEART_RATE",
+		2:  "ENRICHER_PROVIDER_WORKOUT_SUMMARY",
+		3:  "ENRICHER_PROVIDER_MUSCLE_HEATMAP",
+		4:  "ENRICHER_PROVIDER_SOURCE_LINK",
+		5:  "ENRICHER_PROVIDER_METADATA_PASSTHROUGH",
+		99: "ENRICHER_PROVIDER_MOCK",
+	}
+	EnricherProviderType_value = map[string]int32{
+		"ENRICHER_PROVIDER_UNSPECIFIED":          0,
+		"ENRICHER_PROVIDER_FITBIT_HEART_RATE":    1,
+		"ENRICHER_PROVIDER_WORKOUT_SUMMARY":      2,
+		"ENRICHER_PROVIDER_MUSCLE_HEATMAP":       3,
+		"ENRICHER_PROVIDER_SOURCE_LINK":          4,
+		"ENRICHER_PROVIDER_METADATA_PASSTHROUGH": 5,
+		"ENRICHER_PROVIDER_MOCK":                 99,
+	}
+)
+
+func (x EnricherProviderType) Enum() *EnricherProviderType {
+	p := new(EnricherProviderType)
+	*p = x
+	return p
+}
+
+func (x EnricherProviderType) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (EnricherProviderType) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_proto_enumTypes[0].Descriptor()
+}
+
+func (EnricherProviderType) Type() protoreflect.EnumType {
+	return &file_user_proto_enumTypes[0]
+}
+
+func (x EnricherProviderType) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use EnricherProviderType.Descriptor instead.
+func (EnricherProviderType) EnumDescriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{0}
+}
+
 type UserRecord struct {
 	state        protoimpl.MessageState `protogen:"open.v1"`
 	UserId       string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -400,9 +461,10 @@ func (x *SourceEnrichmentConfig) GetEnrichers() []*EnricherConfig {
 }
 
 type EnricherConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Name          string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`                                                                               // e.g. "ai-description", "fitbit-hr"
-	Inputs        map[string]string      `protobuf:"bytes,2,rep,name=inputs,proto3" json:"inputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // e.g. {"prompt_style": "funny", "priority": "high"}
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Use strictly typed provider enum instead of string name
+	ProviderType  EnricherProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=fitglue.EnricherProviderType" json:"provider_type,omitempty"`
+	Inputs        map[string]string    `protobuf:"bytes,2,rep,name=inputs,proto3" json:"inputs,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -437,11 +499,11 @@ func (*EnricherConfig) Descriptor() ([]byte, []int) {
 	return file_user_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *EnricherConfig) GetName() string {
+func (x *EnricherConfig) GetProviderType() EnricherProviderType {
 	if x != nil {
-		return x.Name
+		return x.ProviderType
 	}
-	return ""
+	return EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
 }
 
 func (x *EnricherConfig) GetInputs() map[string]string {
@@ -561,9 +623,9 @@ const file_user_proto_rawDesc = "" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12$\n" +
 	"\x0efitbit_user_id\x18\x05 \x01(\tR\ffitbitUserId\"O\n" +
 	"\x16SourceEnrichmentConfig\x125\n" +
-	"\tenrichers\x18\x01 \x03(\v2\x17.fitglue.EnricherConfigR\tenrichers\"\x9c\x01\n" +
-	"\x0eEnricherConfig\x12\x12\n" +
-	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
+	"\tenrichers\x18\x01 \x03(\v2\x17.fitglue.EnricherConfigR\tenrichers\"\xcc\x01\n" +
+	"\x0eEnricherConfig\x12B\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e2\x1d.fitglue.EnricherProviderTypeR\fproviderType\x12;\n" +
 	"\x06inputs\x18\x02 \x03(\v2#.fitglue.EnricherConfig.InputsEntryR\x06inputs\x1a9\n" +
 	"\vInputsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
@@ -575,7 +637,15 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1d\n" +
 	"\n" +
-	"athlete_id\x18\x05 \x01(\x03R\tathleteIdB\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
+	"athlete_id\x18\x05 \x01(\x03R\tathleteId*\x9a\x02\n" +
+	"\x14EnricherProviderType\x12!\n" +
+	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
+	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
+	"!ENRICHER_PROVIDER_WORKOUT_SUMMARY\x10\x02\x12$\n" +
+	" ENRICHER_PROVIDER_MUSCLE_HEATMAP\x10\x03\x12!\n" +
+	"\x1dENRICHER_PROVIDER_SOURCE_LINK\x10\x04\x12*\n" +
+	"&ENRICHER_PROVIDER_METADATA_PASSTHROUGH\x10\x05\x12\x1a\n" +
+	"\x16ENRICHER_PROVIDER_MOCK\x10cB\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once
@@ -589,36 +659,39 @@ func file_user_proto_rawDescGZIP() []byte {
 	return file_user_proto_rawDescData
 }
 
+var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_user_proto_goTypes = []any{
-	(*UserRecord)(nil),             // 0: fitglue.UserRecord
-	(*PipelineConfig)(nil),         // 1: fitglue.PipelineConfig
-	(*UserIntegrations)(nil),       // 2: fitglue.UserIntegrations
-	(*HevyIntegration)(nil),        // 3: fitglue.HevyIntegration
-	(*FitbitIntegration)(nil),      // 4: fitglue.FitbitIntegration
-	(*SourceEnrichmentConfig)(nil), // 5: fitglue.SourceEnrichmentConfig
-	(*EnricherConfig)(nil),         // 6: fitglue.EnricherConfig
-	(*StravaIntegration)(nil),      // 7: fitglue.StravaIntegration
-	nil,                            // 8: fitglue.EnricherConfig.InputsEntry
-	(*timestamp.Timestamp)(nil),    // 9: google.protobuf.Timestamp
+	(EnricherProviderType)(0),      // 0: fitglue.EnricherProviderType
+	(*UserRecord)(nil),             // 1: fitglue.UserRecord
+	(*PipelineConfig)(nil),         // 2: fitglue.PipelineConfig
+	(*UserIntegrations)(nil),       // 3: fitglue.UserIntegrations
+	(*HevyIntegration)(nil),        // 4: fitglue.HevyIntegration
+	(*FitbitIntegration)(nil),      // 5: fitglue.FitbitIntegration
+	(*SourceEnrichmentConfig)(nil), // 6: fitglue.SourceEnrichmentConfig
+	(*EnricherConfig)(nil),         // 7: fitglue.EnricherConfig
+	(*StravaIntegration)(nil),      // 8: fitglue.StravaIntegration
+	nil,                            // 9: fitglue.EnricherConfig.InputsEntry
+	(*timestamp.Timestamp)(nil),    // 10: google.protobuf.Timestamp
 }
 var file_user_proto_depIdxs = []int32{
-	9,  // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
-	2,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
-	1,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
-	6,  // 3: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
-	3,  // 4: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
-	4,  // 5: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
-	7,  // 6: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
-	9,  // 7: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	6,  // 8: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
-	8,  // 9: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
-	9,  // 10: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	10, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
+	3,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
+	2,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
+	7,  // 3: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
+	4,  // 4: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
+	5,  // 5: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
+	8,  // 6: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
+	10, // 7: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	7,  // 8: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
+	0,  // 9: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
+	9,  // 10: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
+	10, // 11: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }
@@ -631,13 +704,14 @@ func file_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_user_proto_goTypes,
 		DependencyIndexes: file_user_proto_depIdxs,
+		EnumInfos:         file_user_proto_enumTypes,
 		MessageInfos:      file_user_proto_msgTypes,
 	}.Build()
 	File_user_proto = out.File

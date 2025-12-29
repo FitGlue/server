@@ -8,6 +8,17 @@
 
 export const protobufPackage = "fitglue";
 
+export enum EnricherProviderType {
+  ENRICHER_PROVIDER_UNSPECIFIED = 0,
+  ENRICHER_PROVIDER_FITBIT_HEART_RATE = 1,
+  ENRICHER_PROVIDER_WORKOUT_SUMMARY = 2,
+  ENRICHER_PROVIDER_MUSCLE_HEATMAP = 3,
+  ENRICHER_PROVIDER_SOURCE_LINK = 4,
+  ENRICHER_PROVIDER_METADATA_PASSTHROUGH = 5,
+  ENRICHER_PROVIDER_MOCK = 99,
+  UNRECOGNIZED = -1,
+}
+
 export interface UserRecord {
   userId: string;
   createdAt: Date | undefined;
@@ -53,9 +64,8 @@ export interface SourceEnrichmentConfig {
 }
 
 export interface EnricherConfig {
-  /** e.g. "ai-description", "fitbit-hr" */
-  name: string;
-  /** e.g. {"prompt_style": "funny", "priority": "high"} */
+  /** Use strictly typed provider enum instead of string name */
+  providerType: EnricherProviderType;
   inputs: { [key: string]: string };
 }
 

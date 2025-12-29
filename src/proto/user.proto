@@ -46,8 +46,19 @@ message SourceEnrichmentConfig {
 }
 
 message EnricherConfig {
-  string name = 1; // e.g. "ai-description", "fitbit-hr"
-  map<string, string> inputs = 2; // e.g. {"prompt_style": "funny", "priority": "high"}
+  // Use strictly typed provider enum instead of string name
+  EnricherProviderType provider_type = 1;
+  map<string, string> inputs = 2;
+}
+
+enum EnricherProviderType {
+  ENRICHER_PROVIDER_UNSPECIFIED = 0;
+  ENRICHER_PROVIDER_FITBIT_HEART_RATE = 1;
+  ENRICHER_PROVIDER_WORKOUT_SUMMARY = 2;
+  ENRICHER_PROVIDER_MUSCLE_HEATMAP = 3;
+  ENRICHER_PROVIDER_SOURCE_LINK = 4;
+  ENRICHER_PROVIDER_METADATA_PASSTHROUGH = 5;
+  ENRICHER_PROVIDER_MOCK = 99;
 }
 
 message StravaIntegration {

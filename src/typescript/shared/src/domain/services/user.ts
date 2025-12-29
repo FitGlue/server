@@ -101,13 +101,13 @@ export class UserService {
         await this.db.collection('users').doc(userId).update(updateStub);
     }
 
-    async addPipeline(userId: string, source: string, enrichers: { name: string, inputs?: Record<string, string> }[], destinations: string[]): Promise<string> {
+    async addPipeline(userId: string, source: string, enrichers: { providerType: number, inputs?: Record<string, string> }[], destinations: string[]): Promise<string> {
         const pipelineId = crypto.randomUUID();
         const pipeline = {
             id: pipelineId,
             source: source, // e.g. "SOURCE_HEVY"
             enrichers: enrichers.map(e => ({
-                name: e.name,
+                providerType: e.providerType,
                 inputs: e.inputs || {}
             })),
             destinations: destinations // e.g. ["strava"]
@@ -118,6 +118,55 @@ export class UserService {
         });
 
         return pipelineId;
+    }
+
+    async removePipeline(userId: string, pipelineId: string): Promise<void> {
+        const userRef = this.db.collection('users').doc(userId);
+        const doc = await userRef.get();
+        if (!doc.exists) {
+            throw new Error(`User ${userId} not found`);
+        }
+
+        const data = doc.data();
+        const pipelines = data?.pipelines || [];
+        const newPipelines = pipelines.filter((p: any) => p.id !== pipelineId);
+
+        if (pipelines.length === newPipelines.length) {
+            throw new Error(`Pipeline ${pipelineId} not found for user ${userId}`);
+        }
+
+        await userRef.update({ pipelines: newPipelines });
+    }
+
+    async replacePipeline(userId: string, pipelineId: string, source: string, enrichers: { providerType: number, inputs?: Record<string, string> }[], destinations: string[]): Promise<void> {
+        const userRef = this.db.collection('users').doc(userId);
+        const doc = await userRef.get();
+        if (!doc.exists) {
+            throw new Error(`User ${userId} not found`);
+        }
+
+        const data = doc.data();
+        const pipelines = data?.pipelines || [];
+        const index = pipelines.findIndex((p: any) => p.id === pipelineId);
+
+        if (index === -1) {
+            throw new Error(`Pipeline ${pipelineId} not found for user ${userId}`);
+        }
+
+        const newPipeline = {
+            id: pipelineId, // Keep same ID
+            source: source,
+            enrichers: enrichers.map(e => ({
+                providerType: e.providerType,
+                inputs: e.inputs || {}
+            })),
+            destinations: destinations
+        };
+
+        const newPipelines = [...pipelines];
+        newPipelines[index] = newPipeline;
+
+        await userRef.update({ pipelines: newPipelines });
     }
 
     /**

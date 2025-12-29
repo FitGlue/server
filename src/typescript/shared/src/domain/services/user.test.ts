@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import { UserService } from './user';
+import { EnricherProviderType } from '../../types/pb/user';
 
 // Mock specific firestore methods
 const mockUpdate = jest.fn();
@@ -44,7 +45,7 @@ describe('UserService', () => {
     it('should add a pipeline to the user document', async () => {
       const userId = 'test-user-id';
       const source = 'SOURCE_HEVY';
-      const enrichers = [{ name: 'fitbit-hr', inputs: { priority: 'high' } }];
+      const enrichers = [{ providerType: EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, inputs: { priority: 'high' } }];
       const destinations = ['strava'];
 
       const pipelineId = await userService.addPipeline(userId, source, enrichers, destinations);
@@ -61,11 +62,68 @@ describe('UserService', () => {
               source: source,
               destinations: destinations,
               enrichers: [
-                { name: 'fitbit-hr', inputs: { priority: 'high' } }
+                { providerType: EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, inputs: { priority: 'high' } }
               ]
             })
           ])
         })
+      });
+    });
+  });
+
+  describe('removePipeline', () => {
+    it('should remove a pipeline if it exists', async () => {
+      const userId = 'user-1';
+      const pipelineId = 'pipe-1';
+
+      // Mock get returning generic object with data() method
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          pipelines: [{ id: 'pipe-1' }, { id: 'pipe-2' }]
+        })
+      });
+
+      await userService.removePipeline(userId, pipelineId);
+
+      expect(mockUpdate).toHaveBeenCalledWith({
+        pipelines: [{ id: 'pipe-2' }]
+      });
+    });
+
+    it('should throw if pipeline not found', async () => {
+      const userId = 'user-1';
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({ pipelines: [] })
+      });
+      await expect(userService.removePipeline(userId, 'pipe-missing'))
+        .rejects.toThrow(/not found/);
+    });
+  });
+
+  describe('replacePipeline', () => {
+    it('should replace an existing pipeline', async () => {
+      const userId = 'user-1';
+      const pipelineId = 'pipe-1';
+
+      mockGet.mockResolvedValue({
+        exists: true,
+        data: () => ({
+          pipelines: [{ id: 'pipe-1', source: 'OLD' }]
+        })
+      });
+
+      await userService.replacePipeline(userId, pipelineId, 'NEW_SOURCE', [], ['new-dest']);
+
+      expect(mockUpdate).toHaveBeenCalledWith({
+        pipelines: [
+          expect.objectContaining({
+            id: pipelineId,
+            source: 'NEW_SOURCE',
+            destinations: ['new-dest']
+          })
+        ]
       });
     });
   });

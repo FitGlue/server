@@ -81,7 +81,7 @@ func TestOrchestrator_Process(t *testing.T) {
 							},
 							"enrichers": []interface{}{
 								map[string]interface{}{
-									"name": "mock-enricher",
+									"providerType": 99, // ENRICHER_PROVIDER_MOCK
 									"inputs": map[string]interface{}{
 										"key": "val",
 									},
@@ -247,14 +247,14 @@ func TestOrchestrator_Process(t *testing.T) {
 						map[string]interface{}{
 							"id":        "p1",
 							"source":    "SOURCE_HEVY",
-							"enrichers": []interface{}{map[string]interface{}{"name": "hr-provider"}},
+							"enrichers": []interface{}{map[string]interface{}{"providerType": 99}},
 						},
 					},
 				}, nil
 			},
 		}
 		mockProvider := &MockProvider{
-			NameFunc: func() string { return "hr-provider" },
+			NameFunc: func() string { return "mock-enricher" },
 			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
 				return &providers.EnrichmentResult{
 					HeartRateStream: []int{100, 110, 120}, // 3 data points

@@ -2,6 +2,7 @@ import * as admin from 'firebase-admin';
 import { Command } from 'commander';
 import inquirer from 'inquirer';
 import { UserService } from '@fitglue/shared/dist/domain/services/user';
+import { EnricherProviderType } from '@fitglue/shared/dist/types/pb/user';
 
 // Initialize Firebase
 if (admin.apps.length === 0) {
@@ -502,9 +503,16 @@ program.command('users:add-pipeline')
                 const config = await inquirer.prompt([
                     {
                         type: 'list',
-                        name: 'name',
-                        message: 'Enricher Name:',
-                        choices: ['fitbit-heart-rate', 'mock-enricher'] // Add more as we build them
+                        name: 'providerType',
+                        message: 'Enricher Provider:',
+                        choices: [
+                            { name: 'Fitbit Heart Rate', value: EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE },
+                            { name: 'Workout Summary', value: EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY },
+                            { name: 'Muscle Heatmap', value: EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP },
+                            { name: 'Source Link', value: EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK },
+                            { name: 'Metadata Passthrough', value: EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH },
+                            { name: 'Mock', value: EnricherProviderType.ENRICHER_PROVIDER_MOCK }
+                        ]
                     },
                     // We could ask for inputs here dynamically, but for now simple inputs
                     {
@@ -519,7 +527,7 @@ program.command('users:add-pipeline')
                 ]);
 
                 enrichers.push({
-                    name: config.name,
+                    providerType: config.providerType,
                     inputs: config.inputsJson ? JSON.parse(config.inputsJson) : {}
                 });
             }
@@ -540,6 +548,164 @@ program.command('users:add-pipeline')
 
         } catch (error) {
             console.error('Error adding pipeline:', error);
+            process.exit(1);
+        }
+    });
+
+program.command('users:remove-pipeline')
+    .argument('<userId>', 'User ID')
+    .description('Remove a pipeline from a user')
+    .action(async (userId) => {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                console.error(`User ${userId} not found`);
+                process.exit(1);
+            }
+            const data = userDoc.data();
+            const pipelines = data?.pipelines || [];
+
+            if (pipelines.length === 0) {
+                console.log('No pipelines found for this user.');
+                return;
+            }
+
+            const { pipelineId } = await inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'pipelineId',
+                    message: 'Select pipeline to remove:',
+                    choices: pipelines.map((p: any) => ({
+                        name: `${p.source} -> ${p.destinations.join(', ')} [${p.id}]`,
+                        value: p.id
+                    }))
+                }
+            ]);
+
+            const { confirm } = await inquirer.prompt([{
+                type: 'confirm',
+                name: 'confirm',
+                message: `Are you sure you want to remove pipeline ${pipelineId}?`,
+                default: false
+            }]);
+
+            if (confirm) {
+                await userService.removePipeline(userId, pipelineId);
+                console.log(`Pipeline ${pipelineId} removed.`);
+            } else {
+                console.log('Cancelled.');
+            }
+
+        } catch (error) {
+            console.error('Error removing pipeline:', error);
+            process.exit(1);
+        }
+    });
+
+program.command('users:replace-pipeline')
+    .argument('<userId>', 'User ID')
+    .description('Replace/Reconfigure an existing pipeline')
+    .action(async (userId) => {
+        try {
+            const userDoc = await db.collection('users').doc(userId).get();
+            if (!userDoc.exists) {
+                console.error(`User ${userId} not found`);
+                process.exit(1);
+            }
+            const data = userDoc.data();
+            const pipelines = data?.pipelines || [];
+
+            if (pipelines.length === 0) {
+                console.log('No pipelines found for this user.');
+                return;
+            }
+
+            const { pipelineId } = await inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'pipelineId',
+                    message: 'Select pipeline to replace:',
+                    choices: pipelines.map((p: any) => ({
+                        name: `${p.source} -> ${p.destinations.join(', ')} [${p.id}]`,
+                        value: p.id
+                    }))
+                }
+            ]);
+
+            console.log(`\nReconfiguring Pipeline ${pipelineId}...`);
+
+            // --- Re-use configuration prompts (Duplicate logic from add-pipeline for now for simplicity) ---
+            const sourceAnswers = await inquirer.prompt([
+                {
+                    type: 'list',
+                    name: 'source',
+                    message: 'Select Source:',
+                    choices: ['SOURCE_HEVY', 'SOURCE_KEISER', 'SOURCE_TEST']
+                }
+            ]);
+
+            const enrichers = [];
+            const addMore = true;
+            console.log('\n--- Configure Enrichers (Order Matters) ---');
+            // eslint-disable-next-line no-constant-condition
+            while (true) {
+                const enricherAnswer = await inquirer.prompt([
+                    {
+                        type: 'confirm',
+                        name: 'add',
+                        message: 'Add an enricher?',
+                        default: false
+                    }
+                ]);
+
+                if (!enricherAnswer.add) break;
+
+                const config = await inquirer.prompt([
+                    {
+                        type: 'list',
+                        name: 'providerType',
+                        message: 'Enricher Provider:',
+                        choices: [
+                            { name: 'Fitbit Heart Rate', value: EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE },
+                            { name: 'Workout Summary', value: EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY },
+                            { name: 'Muscle Heatmap', value: EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP },
+                            { name: 'Source Link', value: EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK },
+                            { name: 'Metadata Passthrough', value: EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH },
+                            { name: 'Mock', value: EnricherProviderType.ENRICHER_PROVIDER_MOCK }
+                        ]
+                    },
+                    {
+                        type: 'input',
+                        name: 'inputsJson',
+                        message: 'Inputs (JSON string, optional):',
+                        validate: (input) => {
+                            if (!input) return true;
+                            try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
+                        }
+                    }
+                ]);
+
+                enrichers.push({
+                    providerType: config.providerType,
+                    inputs: config.inputsJson ? JSON.parse(config.inputsJson) : {}
+                });
+            }
+
+            const destAnswers = await inquirer.prompt([
+                {
+                    type: 'checkbox',
+                    name: 'destinations',
+                    message: 'Select Destinations:',
+                    choices: ['strava'],
+                    validate: (input) => input.length > 0 || 'Must select at least one destination'
+                }
+            ]);
+
+            await userService.replacePipeline(userId, pipelineId, sourceAnswers.source, enrichers, destAnswers.destinations);
+            console.log(`Pipeline ${pipelineId} replaced successfully.`);
+
+        } catch (error) {
+            console.error('Error replacing pipeline:', error);
             process.exit(1);
         }
     });
