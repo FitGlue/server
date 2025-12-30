@@ -23,6 +23,10 @@ type MuscleHeatmapProvider struct {
 	coefficients map[pb.MuscleGroup]float64
 }
 
+func init() {
+	Register(NewMuscleHeatmapProvider())
+}
+
 func NewMuscleHeatmapProvider() *MuscleHeatmapProvider {
 	return &MuscleHeatmapProvider{
 		coefficients: map[pb.MuscleGroup]float64{
@@ -55,6 +59,10 @@ func NewMuscleHeatmapProvider() *MuscleHeatmapProvider {
 
 func (p *MuscleHeatmapProvider) Name() string {
 	return "muscle-heatmap"
+}
+
+func (p *MuscleHeatmapProvider) ProviderType() pb.EnricherProviderType {
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP
 }
 
 func getMuscleCoefficient(coeffs map[pb.MuscleGroup]float64, muscle pb.MuscleGroup) float64 {

@@ -46,8 +46,9 @@ func (m *MockBlobStore) Read(ctx context.Context, bucket, object string) ([]byte
 
 // MockProvider implements providers.Provider
 type MockProvider struct {
-	NameFunc   func() string
-	EnrichFunc func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error)
+	NameFunc         func() string
+	ProviderTypeFunc func() pb.EnricherProviderType
+	EnrichFunc       func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error)
 }
 
 func (m *MockProvider) Name() string {
@@ -55,6 +56,13 @@ func (m *MockProvider) Name() string {
 		return m.NameFunc()
 	}
 	return "mock-provider"
+}
+
+func (m *MockProvider) ProviderType() pb.EnricherProviderType {
+	if m.ProviderTypeFunc != nil {
+		return m.ProviderTypeFunc()
+	}
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK
 }
 
 func (m *MockProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {

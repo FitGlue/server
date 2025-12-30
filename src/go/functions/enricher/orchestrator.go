@@ -18,23 +18,28 @@ import (
 )
 
 type Orchestrator struct {
-	database   shared.Database
-	storage    shared.BlobStore
-	bucketName string
-	providers  map[string]providers.Provider
+	database        shared.Database
+	storage         shared.BlobStore
+	bucketName      string
+	providersByName map[string]providers.Provider
+	providersByType map[pb.EnricherProviderType]providers.Provider
 }
 
 func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName string) *Orchestrator {
 	return &Orchestrator{
-		database:   db,
-		storage:    storage,
-		bucketName: bucketName,
-		providers:  make(map[string]providers.Provider),
+		database:        db,
+		storage:         storage,
+		bucketName:      bucketName,
+		providersByName: make(map[string]providers.Provider),
+		providersByType: make(map[pb.EnricherProviderType]providers.Provider),
 	}
 }
 
 func (o *Orchestrator) Register(p providers.Provider) {
-	o.providers[p.Name()] = p
+	o.providersByName[p.Name()] = p
+	if t := p.ProviderType(); t != pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED {
+		o.providersByType[t] = p
+	}
 }
 
 // ProcessResult contains detailed information about the enrichment process
@@ -100,12 +105,16 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		errs := make([]error, len(configs))
 
 		for i, cfg := range configs {
-			providerName := o.getProviderNameFromType(cfg.ProviderType)
-			provider, ok := o.providers[providerName]
+			var provider providers.Provider
+			var ok bool
+
+			// Lookup by Type
+			provider, ok = o.providersByType[cfg.ProviderType]
 			if !ok {
-				slog.Warn("Provider not found, skipping", "name", providerName, "type", cfg.ProviderType)
+				// Fallback or skip
+				slog.Warn("Provider not found for type", "type", cfg.ProviderType)
 				providerExecs[i] = ProviderExecution{
-					ProviderName: providerName,
+					ProviderName: fmt.Sprintf("TYPE:%s", cfg.ProviderType),
 					Status:       "SKIPPED",
 					Error:        "provider not registered",
 				}
@@ -273,7 +282,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		}
 
 		// Always run branding provider last (unconditionally)
-		if brandingProvider, ok := o.providers["branding"]; ok {
+		if brandingProvider, ok := o.providersByName["branding"]; ok {
 			brandingRes, err := brandingProvider.Enrich(ctx, payload.StandardizedActivity, userRec, map[string]string{})
 			if err != nil {
 				slog.Warn("Branding provider failed", "error", err)
@@ -371,26 +380,6 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	return pipelines
 }
 
-func (o *Orchestrator) getProviderNameFromType(t pb.EnricherProviderType) string {
-	switch t {
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE:
-		return "fitbit-heart-rate"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY:
-		return "workout-summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP:
-		return "muscle-heatmap"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK:
-		return "source-link"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_METADATA_PASSTHROUGH:
-		return "metadata-passthrough"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS:
-		return "virtual-gps"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
-		return "mock-enricher"
-	default:
-		return "unknown"
-	}
-}
 
 func (o *Orchestrator) mapUser(userId string, data map[string]interface{}) (*pb.UserRecord, error) {
 	// Convert Firestore map to JSON, then unmarshal using protojson

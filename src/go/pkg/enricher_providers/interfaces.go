@@ -32,6 +32,9 @@ type Provider interface {
 	// Name returns the unique identifier for the provider (e.g., "fitbit-hr", "ai-description").
 	Name() string
 
+	// ProviderType returns the protobuf enum type for this provider
+	ProviderType() pb.EnricherProviderType
+
 	// Enrich applies the logic to the activity.
 	// inputConfig contains the user-specific input parameters for this provider.
 	Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error)

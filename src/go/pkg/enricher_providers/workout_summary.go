@@ -11,12 +11,20 @@ import (
 // WorkoutSummaryProvider generates a text summary of a strength workout.
 type WorkoutSummaryProvider struct{}
 
+func init() {
+	Register(NewWorkoutSummaryProvider())
+}
+
 func NewWorkoutSummaryProvider() *WorkoutSummaryProvider {
 	return &WorkoutSummaryProvider{}
 }
 
 func (p *WorkoutSummaryProvider) Name() string {
 	return "workout-summary"
+}
+
+func (p *WorkoutSummaryProvider) ProviderType() pb.EnricherProviderType {
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY
 }
 
 func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {

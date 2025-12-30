@@ -11,12 +11,20 @@ import (
 // SourceLinkProvider appends a link to the original activity in the description.
 type SourceLinkProvider struct{}
 
+func init() {
+	Register(NewSourceLinkProvider())
+}
+
 func NewSourceLinkProvider() *SourceLinkProvider {
 	return &SourceLinkProvider{}
 }
 
 func (p *SourceLinkProvider) Name() string {
 	return "source-link"
+}
+
+func (p *SourceLinkProvider) ProviderType() pb.EnricherProviderType {
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK
 }
 
 func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {

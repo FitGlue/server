@@ -79,20 +79,22 @@ func TestEnrichActivity(t *testing.T) {
 	mockSecrets := &mocks.MockSecretStore{}
 
 	// Override provider registry with mock provider for testing
-	providerRegistry = []providers.Provider{
-		&MockProvider{
-			NameFunc: func() string { return "mock-enricher" },
-			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
-				return &providers.EnrichmentResult{
-					Name:        "Mock Enriched Activity",
-					Description: "Enriched by mock provider",
-					Metadata: map[string]string{
-						"mock_key": "mock_value",
-					},
-				}, nil
-			},
+	providers.ClearRegistry()
+	providers.Register(&MockProvider{
+		NameFunc:         func() string { return "mock-enricher" },
+		ProviderTypeFunc: func() pb.EnricherProviderType { return pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK },
+		EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
+			return &providers.EnrichmentResult{
+				Name:        "Mock Enriched Activity",
+				Description: "Enriched by mock provider",
+				Metadata: map[string]string{
+					"mock_key": "mock_value",
+				},
+			}, nil
 		},
-	}
+	})
+	// Ensure cleanup
+	defer providers.ClearRegistry()
 
 	// Inject Mocks into Global Service
 	svc = &bootstrap.Service{

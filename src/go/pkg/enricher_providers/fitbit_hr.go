@@ -17,6 +17,10 @@ import (
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
+func init() {
+	Register(NewFitBitHeartRate())
+}
+
 type FitBitHeartRate struct {
 	Service *bootstrap.Service
 }
@@ -31,6 +35,10 @@ func (p *FitBitHeartRate) SetService(svc *bootstrap.Service) {
 
 func (p *FitBitHeartRate) Name() string {
 	return "fitbit-heart-rate"
+}
+
+func (p *FitBitHeartRate) ProviderType() pb.EnricherProviderType {
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE
 }
 
 func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string) (*EnrichmentResult, error) {

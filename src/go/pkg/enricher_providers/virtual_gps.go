@@ -10,12 +10,20 @@ import (
 
 type VirtualGPSProvider struct{}
 
+func init() {
+	Register(NewVirtualGPSProvider())
+}
+
 func NewVirtualGPSProvider() *VirtualGPSProvider {
 	return &VirtualGPSProvider{}
 }
 
 func (p *VirtualGPSProvider) Name() string {
 	return "virtual-gps"
+}
+
+func (p *VirtualGPSProvider) ProviderType() pb.EnricherProviderType {
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS
 }
 
 func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {

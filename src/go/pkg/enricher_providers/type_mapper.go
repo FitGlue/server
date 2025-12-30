@@ -15,12 +15,20 @@ type TypeMappingRule struct {
 
 type TypeMapperProvider struct{}
 
+func init() {
+	Register(NewTypeMapperProvider())
+}
+
 func NewTypeMapperProvider() *TypeMapperProvider {
 	return &TypeMapperProvider{}
 }
 
 func (p *TypeMapperProvider) Name() string {
 	return "type-mapper"
+}
+
+func (p *TypeMapperProvider) ProviderType() pb.EnricherProviderType {
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER
 }
 
 func (p *TypeMapperProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {
