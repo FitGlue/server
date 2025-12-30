@@ -32,6 +32,12 @@ export class UserService {
         return user as UserRecord;
     }
 
+    async getUser(userId: string): Promise<UserRecord | null> {
+        const doc = await this.db.collection('users').doc(userId).get();
+        if (!doc.exists) return null;
+        return doc.data() as UserRecord;
+    }
+
     /**
      * Creates an Ingress API Key, hashes it, stores the hash, and returns the plaintext key.
      */

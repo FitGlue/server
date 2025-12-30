@@ -235,6 +235,72 @@ program.command('users:update')
         }
     });
 
+import { createFitbitClient } from '@fitglue/shared/dist/integrations/fitbit/client';
+import { TOPICS } from '@fitglue/shared';
+
+program.command('fitbit:subscribe')
+    .argument('[userId]', 'FitGlue User ID')
+    .description('Create a Fitbit subscription for the user to receive activity updates')
+    .action(async (userId) => {
+        try {
+            if (!userId) {
+                const answers = await inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'userId',
+                        message: 'Enter FitGlue User ID:',
+                        validate: (input) => input.length > 0 || 'Required'
+                    }
+                ]);
+                userId = answers.userId;
+            }
+
+            const user = await userService.getUser(userId);
+            if (!user) {
+                console.error('User not found');
+                process.exit(1);
+            }
+
+            if (!user.integrations?.fitbit?.accessToken) {
+                console.error('User does not have Fitbit integration configured');
+                process.exit(1);
+            }
+
+            console.log(`Creating Fitbit subscription for user: ${userId} (Fitbit ID: ${user.integrations.fitbit.fitbitUserId})...`);
+
+            const client = createFitbitClient(userService, userId);
+
+            // POST /1/user/-/{collection-path}/apiSubscriptions/{subscription-id}.json
+            // collection-path: activities
+            // subscription-id: fitglue-activities
+            const { data, error, response } = await client.POST("/1/user/-/{collection-path}/apiSubscriptions/{subscription-id}.json", {
+                params: {
+                    path: {
+                        'collection-path': 'activities',
+                        'subscription-id': 'fitglue-activities'
+                    }
+                }
+            });
+
+            if (error) {
+                if (response.status === 409) {
+                    console.log('✅ Subscription already exists (409 Conflict). This is expected.');
+                    return;
+                }
+                console.error('❌ Failed to create subscription:', error);
+                console.error(`Status: ${response.status} ${response.statusText}`);
+                process.exit(1);
+            }
+
+            console.log('✅ Subscription created successfully!');
+            console.log(JSON.stringify(data, null, 2));
+
+        } catch (error) {
+            console.error('Error creating subscription:', error);
+            process.exit(1);
+        }
+    });
+
 program.command('users:delete')
     .argument('<userId>', 'User ID to delete')
     .description('Delete a user and their associated data')

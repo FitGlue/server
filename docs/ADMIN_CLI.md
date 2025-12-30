@@ -128,6 +128,31 @@ Generates an OAuth authorization URL for a specific provider (Strava or Fitbit).
 **Output:**
 Prints a URL that you can send to the user (or click yourself) to authorize the application. Upon success, the callback handler will save the tokens to the user's Firestore record.
 
+### `fitbit:subscribe <userId>`
+
+Creates a Fitbit "API Subscription" for the user. this tells Fitbit's servers to send real-time notifications to our Webhook Handler whenever this user syncs new activities. This command **must** be run after the user has connected their Fitbit account.
+
+**Usage:**
+```bash
+./fitglue-admin fitbit:subscribe my-user-id
+```
+
+**Output:**
+```json
+{
+  "apiSubscriptions": [
+    {
+      "collectionType": "activities",
+      "ownerId": "USER_ID",
+      "ownerType": "user",
+      "subscriberId": "fitglue-activities",
+      "subscriptionId": "fitglue-activities-USER_ID"
+    }
+  ]
+}
+```
+If the user is already subscribed, it will print a success message (treating 409 Conflict as success).
+
 ### `users:delete <userId>`
 
 Permanently deletes a user and their associated root document. Note that subcollections may need manual cleanup in a production environment.
