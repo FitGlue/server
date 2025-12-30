@@ -98,6 +98,7 @@ Pipelines are configured per-user via the Admin CLI. See [Enricher Testing Guide
 - **[FIT Generation](docs/FIT_GENERATION.md)** - Guide to generating FIT files and test data
 - **[OAuth Integration](docs/OAUTH.md)** - OAuth flow for Strava and Fitbit
 - **[OpenAPI Clients](docs/OPENAPI_CLIENTS.md)** - API client generation
+- **[Fitbit Setup](docs/FITBIT_SETUP.md)** - Step-by-step Fitbit configuration
 
 ### Research
 
