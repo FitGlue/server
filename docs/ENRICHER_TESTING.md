@@ -317,6 +317,68 @@ Validate that multiple pipelines can be configured for the same source.
 
 ---
 
+## Test Scenario 5: Type Mapper
+
+### Objective
+Validate Type Mapper correctly overrides activity type based on title keywords.
+
+### Setup
+```bash
+# Add pipeline with Type Mapper
+./fitglue-admin users:add-pipeline <user-id>
+# Source: SOURCE_HEVY
+# Enrichers: Type Mapper
+# Inputs: rules=[{"substring": "Yoga", "target_type": "YOGA"}]
+# Destinations: strava
+```
+
+### Test Data
+- **Activity 1**: "Sunday Morning Yoga" (Type: Weight Training) -> Expect YOGA
+- **Activity 2**: "Heavy Deadlifts" (Type: Weight Training) -> Expect WEIGHT_TRAINING (no match)
+
+### Validation Steps
+```bash
+# 1. Trigger Activity 1
+# 2. Check enricher logs
+./fitglue-admin executions:get <execution-id>
+# Look for: "rule_matched": "true", "new_type": "YOGA"
+
+# 3. Check Strava
+# Activity type should be "Yoga" on Strava
+```
+
+### Success Criteria
+- ✅ "Sunday Morning Yoga" appears as "Yoga"
+- ✅ "Heavy Deadlifts" remains "Weight Training"
+
+---
+
+## Test Scenario 6: Workout Summary Stats
+
+### Objective
+Validate Workout Summary includes headline statistics when configured.
+
+### Setup
+```bash
+# Add pipeline with Workout Summary (Stats Enabled)
+./fitglue-admin users:add-pipeline <user-id>
+# Enricher: Workout Summary
+# Inputs: {"format": "detailed", "show_stats": "true"}
+```
+
+### Expected Output
+```
+Workout Summary:
+📊 4 sets • 3,200kg volume • 32 reps • Heaviest: 100kg (Bench Press)
+
+- Bench Press: 4 x 8 × 100.0kg
+```
+
+### Validation Steps
+- Visual check of description on Strava or in execution logs.
+
+---
+
 ## Automated Testing
 
 ### Unit Tests

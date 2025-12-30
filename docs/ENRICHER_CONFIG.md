@@ -50,7 +50,8 @@ Source (Hevy) → [Enricher 1] → [Enricher 2] → [Enricher N] → Destination
 {
   "providerType": 2,
   "inputs": {
-    "format": "detailed"  // Options: "compact", "detailed", "verbose"
+    "format": "detailed", // Options: "compact", "detailed", "verbose"
+    "show_stats": "true"  // Show headline stats (total volume, sets, etc.) - default: true
   }
 }
 ```
@@ -60,15 +61,51 @@ Source (Hevy) → [Enricher 1] → [Enricher 2] → [Enricher N] → Destination
 - **Detailed** (default): `4 sets × 8 reps @ 100.0kg` - Readable with units
 - **Verbose**: `4 sets of 8 reps at 100.0 kilograms` - Full words
 
+**Headline Stats**:
+When `show_stats` is true, a summary line is added at the top:
+`📊 12 sets • 4,200kg volume • 120 reps • Heaviest: 140kg (Squat)`
+
 **Output Example** (Detailed):
 ```
 Workout Summary:
+📊 12 sets • 4,200kg volume • 120 reps
+
 - Bench Press: 4 x 8 × 100.0kg
 - Squats: 3 x 10 × 120.0kg
 - Deadlifts: 5 x 5 × 140.0kg
 ```
 
 **Appends to**: `description` field
+
+---
+
+### *. Type Mapper
+**Provider Type**: `ENRICHER_PROVIDER_TYPE_MAPPER`
+
+**Purpose**: Overrides the FIT file activity type based on text matching rules in the activity name.
+
+**Trigger**: Activity name matches configured rules.
+
+**Configuration**:
+```json
+{
+  "providerType": 7,
+  "inputs": {
+    "rules": "[{\"substring\": \"Yoga\", \"target_type\": \"YOGA\"}, {\"substring\": \"Run\", \"target_type\": \"RUNNING\"}]"
+  }
+}
+```
+
+**Rule Logic**:
+- Checks config rules in order.
+- If `activity.Name` contains `rule.substring` (case-insensitive):
+  - Sets `activity.Type` to `rule.target_type`.
+  - Stops at first match.
+
+**Supported Target Types**:
+`WEIGHT_TRAINING`, `RUNNING`, `CYCLING`, `SWIMMING`, `HIKING`, `WALKING`, `YOGA`, `WORKOUT`, `CROSSFIT`
+
+**Output**: Modifies `type` field of the activity (does not append to description).
 
 ---
 
