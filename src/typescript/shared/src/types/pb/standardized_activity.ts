@@ -118,4 +118,8 @@ export interface StrengthSet {
   /** Muscle Targeting */
   primaryMuscleGroup: MuscleGroup;
   secondaryMuscleGroups: MuscleGroup[];
+  /** Distance (for cardio/distance-based exercises) */
+  distanceMeters: number;
+  /** Set Type (warmup, normal, failure, dropset) */
+  setType: string;
 }

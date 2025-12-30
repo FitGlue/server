@@ -72,13 +72,79 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 	var sb strings.Builder
 	sb.WriteString("Workout Summary:\n")
 
+	// Check if any supersets exist
+	hasSupersets := false
 	for _, b := range blocks {
-		sb.WriteString(fmt.Sprintf("- %s: ", b.Name))
+		if len(b.Sets) > 0 && b.Sets[0].SupersetId != "" {
+			hasSupersets = true
+			break
+		}
+	}
+
+	// Check if any non-normal set types exist
+	hasSetTypes := false
+	for _, b := range blocks {
+		for _, s := range b.Sets {
+			if s.SetType != "" && s.SetType != "normal" {
+				hasSetTypes = true
+				break
+			}
+		}
+		if hasSetTypes {
+			break
+		}
+	}
+
+	// Add explanatory notes if needed
+	if hasSupersets {
+		sb.WriteString("(Exercises with matching numbers are supersets - performed back-to-back)\n")
+	}
+	if hasSetTypes {
+		sb.WriteString("([W]=Warmup, [F]=Failure, [D]=Dropset)\n")
+	}
+	if hasSupersets || hasSetTypes {
+		sb.WriteString("\n")
+	}
+
+	// Map superset IDs to emoji numbers
+	supersetNumbers := make(map[string]string)
+	supersetCounter := 0
+	emojiNumbers := []string{"1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"}
+
+	for _, b := range blocks {
+		if len(b.Sets) > 0 && b.Sets[0].SupersetId != "" {
+			supersetId := b.Sets[0].SupersetId
+			if _, exists := supersetNumbers[supersetId]; !exists {
+				if supersetCounter < len(emojiNumbers) {
+					supersetNumbers[supersetId] = emojiNumbers[supersetCounter]
+					supersetCounter++
+				}
+			}
+		}
+	}
+
+	for _, b := range blocks {
+		// Check if this exercise is part of a superset
+		var supersetMarker string
+		if len(b.Sets) > 0 && b.Sets[0].SupersetId != "" {
+			supersetId := b.Sets[0].SupersetId
+			if marker, exists := supersetNumbers[supersetId]; exists {
+				supersetMarker = marker + " "
+			}
+		}
+
+		sb.WriteString(fmt.Sprintf("- %s%s: ", supersetMarker, b.Name))
 
 		// Format sets based on style
 		var setStrs []string
 		for _, s := range b.Sets {
-			setStrs = append(setStrs, p.formatSet(s, formatStyle))
+			formatted := p.formatSet(s, formatStyle)
+			// Add set type indicator if not normal
+			if s.SetType != "" && s.SetType != "normal" {
+				indicator := getSetTypeIndicator(s.SetType)
+				formatted = indicator + formatted
+			}
+			setStrs = append(setStrs, formatted)
 		}
 
 		// Collapse identical sets
@@ -107,8 +173,28 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 	}, nil
 }
 
+// getSetTypeIndicator returns a visual indicator for set types
+func getSetTypeIndicator(setType string) string {
+	switch setType {
+	case "warmup":
+		return "[W] "
+	case "failure":
+		return "[F] "
+	case "dropset":
+		return "[D] "
+	default:
+		return ""
+	}
+}
+
 // formatSet formats a single set based on the style
 func (p *WorkoutSummaryProvider) formatSet(set *pb.StrengthSet, style pb.WorkoutSummaryFormat) string {
+	// Handle distance/duration exercises (cardio, running, cycling, etc.)
+	if set.DistanceMeters > 0 || set.DurationSeconds > 0 {
+		return p.formatDistanceDuration(set, style)
+	}
+
+	// Handle weight-based or bodyweight exercises
 	switch style {
 	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
 		// "10×100kg" or "10 reps"
@@ -131,6 +217,54 @@ func (p *WorkoutSummaryProvider) formatSet(set *pb.StrengthSet, style pb.Workout
 		}
 		return fmt.Sprintf("%d reps", set.Reps)
 	}
+}
+
+// formatDistanceDuration formats distance/duration exercises
+func (p *WorkoutSummaryProvider) formatDistanceDuration(set *pb.StrengthSet, style pb.WorkoutSummaryFormat) string {
+	hasDistance := set.DistanceMeters > 0
+	hasDuration := set.DurationSeconds > 0
+
+	switch style {
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
+		if hasDistance && hasDuration {
+			return fmt.Sprintf("%.0fm in %s", set.DistanceMeters, formatDuration(set.DurationSeconds))
+		} else if hasDistance {
+			return fmt.Sprintf("%.0fm", set.DistanceMeters)
+		} else {
+			return formatDuration(set.DurationSeconds)
+		}
+
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE:
+		if hasDistance && hasDuration {
+			return fmt.Sprintf("%.1f meters in %s", set.DistanceMeters, formatDuration(set.DurationSeconds))
+		} else if hasDistance {
+			return fmt.Sprintf("%.1f meters", set.DistanceMeters)
+		} else {
+			return formatDuration(set.DurationSeconds)
+		}
+
+	default: // DETAILED
+		if hasDistance && hasDuration {
+			return fmt.Sprintf("%.0fm in %s", set.DistanceMeters, formatDuration(set.DurationSeconds))
+		} else if hasDistance {
+			return fmt.Sprintf("%.0fm", set.DistanceMeters)
+		} else {
+			return formatDuration(set.DurationSeconds)
+		}
+	}
+}
+
+// formatDuration formats seconds into a readable duration string (e.g., "5:30")
+func formatDuration(seconds int32) string {
+	if seconds < 60 {
+		return fmt.Sprintf("%ds", seconds)
+	}
+	minutes := seconds / 60
+	secs := seconds % 60
+	if secs == 0 {
+		return fmt.Sprintf("%dm", minutes)
+	}
+	return fmt.Sprintf("%d:%02d", minutes, secs)
 }
 
 // formatCollapsedSets formats multiple identical sets

@@ -43,20 +43,25 @@ export function mapHevyWorkoutToStandardized(
         exerciseName: exTitle,
         reps: s.reps || 0,
         weightKg: s.weight_kg || 0,
+        distanceMeters: s.distance_meters || 0,
         startTime: startTimeStr,
-        durationSeconds: 0,
+        durationSeconds: s.duration_seconds || 0,
         notes: ex.notes || '',
         supersetId: supersetId,
         primaryMuscleGroup: primaryMuscle,
         secondaryMuscleGroups: secondaryMuscles,
+        setType: s.type || 'normal',
       } as StrengthSet;
     });
   });
 
+  // Calculate total distance across all sets
+  const totalDistance = strengthSets.reduce((sum, set) => sum + (set.distanceMeters || 0), 0);
+
   const session: Session = {
     startTime: startTimeStr,
     totalElapsedTime: durationSeconds,
-    totalDistance: 0,
+    totalDistance: totalDistance,
     laps: [],
     strengthSets: strengthSets
   };

@@ -512,8 +512,12 @@ type StrengthSet struct {
 	// Muscle Targeting
 	PrimaryMuscleGroup    MuscleGroup   `protobuf:"varint,8,opt,name=primary_muscle_group,json=primaryMuscleGroup,proto3,enum=fitglue.MuscleGroup" json:"primary_muscle_group,omitempty"`
 	SecondaryMuscleGroups []MuscleGroup `protobuf:"varint,9,rep,packed,name=secondary_muscle_groups,json=secondaryMuscleGroups,proto3,enum=fitglue.MuscleGroup" json:"secondary_muscle_groups,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Distance (for cardio/distance-based exercises)
+	DistanceMeters float64 `protobuf:"fixed64,10,opt,name=distance_meters,json=distanceMeters,proto3" json:"distance_meters,omitempty"`
+	// Set Type (warmup, normal, failure, dropset)
+	SetType       string `protobuf:"bytes,11,opt,name=set_type,json=setType,proto3" json:"set_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *StrengthSet) Reset() {
@@ -609,6 +613,20 @@ func (x *StrengthSet) GetSecondaryMuscleGroups() []MuscleGroup {
 	return nil
 }
 
+func (x *StrengthSet) GetDistanceMeters() float64 {
+	if x != nil {
+		return x.DistanceMeters
+	}
+	return 0
+}
+
+func (x *StrengthSet) GetSetType() string {
+	if x != nil {
+		return x.SetType
+	}
+	return ""
+}
+
 var File_standardized_activity_proto protoreflect.FileDescriptor
 
 const file_standardized_activity_proto_rawDesc = "" +
@@ -650,7 +668,7 @@ const file_standardized_activity_proto_rawDesc = "" +
 	"\x05speed\x18\x05 \x01(\x01R\x05speed\x12\x1a\n" +
 	"\baltitude\x18\x06 \x01(\x01R\baltitude\x12!\n" +
 	"\fposition_lat\x18\a \x01(\x01R\vpositionLat\x12#\n" +
-	"\rposition_long\x18\b \x01(\x01R\fpositionLong\"\xfa\x02\n" +
+	"\rposition_long\x18\b \x01(\x01R\fpositionLong\"\xbe\x03\n" +
 	"\vStrengthSet\x12#\n" +
 	"\rexercise_name\x18\x01 \x01(\tR\fexerciseName\x12\x12\n" +
 	"\x04reps\x18\x02 \x01(\x05R\x04reps\x12\x1b\n" +
@@ -662,7 +680,10 @@ const file_standardized_activity_proto_rawDesc = "" +
 	"\vsuperset_id\x18\a \x01(\tR\n" +
 	"supersetId\x12F\n" +
 	"\x14primary_muscle_group\x18\b \x01(\x0e2\x14.fitglue.MuscleGroupR\x12primaryMuscleGroup\x12L\n" +
-	"\x17secondary_muscle_groups\x18\t \x03(\x0e2\x14.fitglue.MuscleGroupR\x15secondaryMuscleGroups*\xbb\x04\n" +
+	"\x17secondary_muscle_groups\x18\t \x03(\x0e2\x14.fitglue.MuscleGroupR\x15secondaryMuscleGroups\x12'\n" +
+	"\x0fdistance_meters\x18\n" +
+	" \x01(\x01R\x0edistanceMeters\x12\x19\n" +
+	"\bset_type\x18\v \x01(\tR\asetType*\xbb\x04\n" +
 	"\vMuscleGroup\x12\x1c\n" +
 	"\x18MUSCLE_GROUP_UNSPECIFIED\x10\x00\x12\x1b\n" +
 	"\x17MUSCLE_GROUP_ABDOMINALS\x10\x01\x12\x1a\n" +

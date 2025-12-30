@@ -141,11 +141,18 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 	}
 
 	// Generate output based on style
+	// Filter out muscle groups with zero volume
 	keys := make([]string, 0, len(volumeScores))
-	for k := range volumeScores {
-		keys = append(keys, k)
+	for k, score := range volumeScores {
+		if score > 0 {
+			keys = append(keys, k)
+		}
 	}
-	sort.Strings(keys)
+
+	// Sort by volume (descending order)
+	sort.Slice(keys, func(i, j int) bool {
+		return volumeScores[keys[i]] > volumeScores[keys[j]]
+	})
 
 	var sb strings.Builder
 	sb.WriteString("Muscle Heatmap:\n")
@@ -255,9 +262,23 @@ func formatMuscleName(m pb.MuscleGroup) string {
 }
 
 func calculateLoad(set *pb.StrengthSet) float64 {
+	// Handle distance-based exercises (running, cycling, rowing, etc.)
+	if set.DistanceMeters > 0 {
+		// Use distance as primary metric: 10m = 1 unit of load
+		return set.DistanceMeters * 0.1
+	}
+
+	// Handle duration-based exercises (without distance)
+	if set.DurationSeconds > 0 && set.Reps == 0 && set.WeightKg == 0 {
+		// Use duration as metric: 2 seconds = 1 unit of load
+		return float64(set.DurationSeconds) * 0.5
+	}
+
+	// Handle weight-based exercises
 	load := set.WeightKg * float64(set.Reps)
-	if set.WeightKg == 0 {
-		load = float64(set.Reps) * 40.0 // heuristic
+	if set.WeightKg == 0 && set.Reps > 0 {
+		// Bodyweight exercises: use heuristic
+		load = float64(set.Reps) * 40.0
 	}
 	return load
 }

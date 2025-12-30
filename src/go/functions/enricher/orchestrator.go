@@ -272,6 +272,24 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			}
 		}
 
+		// Always run branding provider last (unconditionally)
+		if brandingProvider, ok := o.providers["branding"]; ok {
+			brandingRes, err := brandingProvider.Enrich(ctx, payload.StandardizedActivity, userRec, map[string]string{})
+			if err != nil {
+				slog.Warn("Branding provider failed", "error", err)
+			} else if brandingRes != nil && brandingRes.Description != "" {
+				trimmed := strings.TrimSpace(brandingRes.Description)
+				if trimmed != "" {
+					if finalEvent.Description != "" {
+						finalEvent.Description += "\n\n"
+					}
+					finalEvent.Description += trimmed
+				}
+				// Add to applied enrichments
+				finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, "branding")
+			}
+		}
+
 		// 3c. Generate Artifacts (FIT File)
 		fitBytes, err := fit.GenerateFitFile(payload.StandardizedActivity)
 		if err != nil {
