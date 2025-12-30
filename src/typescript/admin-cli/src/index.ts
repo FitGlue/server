@@ -550,115 +550,10 @@ program.command('users:add-pipeline')
                     }
                 ]);
 
-                // Provider-specific configuration prompts
-                let inputs = {};
-                if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS) {
-                    const gpsConfig = await inquirer.prompt([
-                        {
-                            type: 'list',
-                            name: 'route',
-                            message: 'Select Route:',
-                            choices: [
-                                { name: 'London Hyde Park (~4km)', value: 'london' },
-                                { name: 'NYC Central Park (~10km)', value: 'nyc' }
-                            ],
-                            default: 'london'
-                        },
-                        {
-                            type: 'confirm',
-                            name: 'force',
-                            message: 'Force overwrite existing GPS data?',
-                            default: false
-                        }
-                    ]);
-                    inputs = {
-                        route: gpsConfig.route,
-                        ...(gpsConfig.force && { force: 'true' })
-                    };
-                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY) {
-                    const summaryConfig = await inquirer.prompt([
-                        {
-                            type: 'list',
-                            name: 'format',
-                            message: 'Format Style:',
-                            choices: [
-                                { name: 'Compact (4×8@100kg)', value: 'compact' },
-                                { name: 'Detailed (4 sets × 8 reps @ 100.0kg)', value: 'detailed' },
-                                { name: 'Verbose (4 sets of 8 reps at 100.0 kilograms)', value: 'verbose' }
-                            ],
-                            default: 'detailed'
-                        },
-                        {
-                            type: 'confirm',
-                            name: 'showStats',
-                            message: 'Show Headline Stats (sets, volume, etc)?',
-                            default: true
-                        }
-                    ]);
-                    inputs = {
-                        format: summaryConfig.format,
-                        show_stats: summaryConfig.showStats.toString()
-                    };
-                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP) {
-                    const heatmapConfig = await inquirer.prompt([
-                        {
-                            type: 'list',
-                            name: 'style',
-                            message: 'Visualization Style:',
-                            choices: [
-                                { name: 'Emoji Bars (🟪🟪🟪⬜⬜)', value: 'emoji' },
-                                { name: 'Percentage (Chest: 80%)', value: 'percentage' },
-                                { name: 'Text Only (High: Chest)', value: 'text' }
-                            ],
-                            default: 'emoji'
-                        },
-                        {
-                            type: 'number',
-                            name: 'barLength',
-                            message: 'Bar Length (3-10):',
-                            default: 5,
-                            validate: (input) => (input >= 3 && input <= 10) || 'Must be between 3 and 10'
-                        },
-                        {
-                            type: 'list',
-                            name: 'preset',
-                            message: 'Coefficient Preset:',
-                            choices: [
-                                { name: 'Standard (Balanced)', value: 'standard' },
-                                { name: 'Powerlifting (Emphasize compounds)', value: 'powerlifting' },
-                                { name: 'Bodybuilding (Emphasize isolation)', value: 'bodybuilding' }
-                            ],
-                            default: 'standard'
-                        }
-                    ]);
-                    inputs = {
-                        style: heatmapConfig.style,
-                        bar_length: heatmapConfig.barLength.toString(),
-                        preset: heatmapConfig.preset
-                    };
-                } else {
-                    // Only prompt for JSON if the provider might need config
-                    // Skip for providers with no config options
-                    const noConfigProviders = [
-                        EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH,
-                        EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
-                        EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE
-                    ];
 
-                    if (!noConfigProviders.includes(config.providerType)) {
-                        const jsonInput = await inquirer.prompt([{
-                            type: 'input',
-                            name: 'inputsJson',
-                            message: 'Inputs (JSON string, optional):',
-                            validate: (input) => {
-                                if (!input) return true;
-                                try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
-                            }
-                        }]);
-                        inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
-                    }
-                    // else: inputs remains {} for no-config providers
-                }
+                // Provider-specific configuration prompts
+                const inputs = await promptForEnricherConfig(config.providerType);
+
 
                 enrichers.push({
                     providerType: config.providerType,
@@ -811,115 +706,10 @@ program.command('users:replace-pipeline')
                     }
                 ]);
 
-                // Provider-specific configuration prompts
-                let inputs = {};
-                if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS) {
-                    const gpsConfig = await inquirer.prompt([
-                        {
-                            type: 'list',
-                            name: 'route',
-                            message: 'Select Route:',
-                            choices: [
-                                { name: 'London Hyde Park (~4km)', value: 'london' },
-                                { name: 'NYC Central Park (~10km)', value: 'nyc' }
-                            ],
-                            default: 'london'
-                        },
-                        {
-                            type: 'confirm',
-                            name: 'force',
-                            message: 'Force overwrite existing GPS data?',
-                            default: false
-                        }
-                    ]);
-                    inputs = {
-                        route: gpsConfig.route,
-                        ...(gpsConfig.force && { force: 'true' })
-                    };
-                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY) {
-                    const summaryConfig = await inquirer.prompt([
-                        {
-                            type: 'list',
-                            name: 'format',
-                            message: 'Format Style:',
-                            choices: [
-                                { name: 'Compact (4×8@100kg)', value: 'compact' },
-                                { name: 'Detailed (4 sets × 8 reps @ 100.0kg)', value: 'detailed' },
-                                { name: 'Verbose (4 sets of 8 reps at 100.0 kilograms)', value: 'verbose' }
-                            ],
-                            default: 'detailed'
-                        },
-                        {
-                            type: 'confirm',
-                            name: 'showStats',
-                            message: 'Show Headline Stats (sets, volume, etc)?',
-                            default: true
-                        }
-                    ]);
-                    inputs = {
-                        format: summaryConfig.format,
-                        show_stats: summaryConfig.showStats.toString()
-                    };
-                } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP) {
-                    const heatmapConfig = await inquirer.prompt([
-                        {
-                            type: 'list',
-                            name: 'style',
-                            message: 'Visualization Style:',
-                            choices: [
-                                { name: 'Emoji Bars (🟪🟪🟪⬜⬜)', value: 'emoji' },
-                                { name: 'Percentage (Chest: 80%)', value: 'percentage' },
-                                { name: 'Text Only (High: Chest)', value: 'text' }
-                            ],
-                            default: 'emoji'
-                        },
-                        {
-                            type: 'number',
-                            name: 'barLength',
-                            message: 'Bar Length (3-10):',
-                            default: 5,
-                            validate: (input) => (input >= 3 && input <= 10) || 'Must be between 3 and 10'
-                        },
-                        {
-                            type: 'list',
-                            name: 'preset',
-                            message: 'Coefficient Preset:',
-                            choices: [
-                                { name: 'Standard (Balanced)', value: 'standard' },
-                                { name: 'Powerlifting (Emphasize compounds)', value: 'powerlifting' },
-                                { name: 'Bodybuilding (Emphasize isolation)', value: 'bodybuilding' }
-                            ],
-                            default: 'standard'
-                        }
-                    ]);
-                    inputs = {
-                        style: heatmapConfig.style,
-                        bar_length: heatmapConfig.barLength.toString(),
-                        preset: heatmapConfig.preset
-                    };
-                } else {
-                    // Only prompt for JSON if the provider might need config
-                    // Skip for providers with no config options
-                    const noConfigProviders = [
-                        EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH,
-                        EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
-                        EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE
-                    ];
 
-                    if (!noConfigProviders.includes(config.providerType)) {
-                        const jsonInput = await inquirer.prompt([{
-                            type: 'input',
-                            name: 'inputsJson',
-                            message: 'Inputs (JSON string, optional):',
-                            validate: (input) => {
-                                if (!input) return true;
-                                try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
-                            }
-                        }]);
-                        inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
-                    }
-                    // else: inputs remains {} for no-config providers
-                }
+                // Provider-specific configuration prompts
+                const inputs = await promptForEnricherConfig(config.providerType);
+
 
                 enrichers.push({
                     providerType: config.providerType,
@@ -1444,3 +1234,159 @@ program
     });
 
 program.parse();
+
+async function promptForEnricherConfig(providerType: EnricherProviderType): Promise<{ [key: string]: string }> {
+    let inputs: { [key: string]: string } = {};
+
+    if (providerType === EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS) {
+        const gpsConfig = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'route',
+                message: 'Select Route:',
+                choices: [
+                    { name: 'London Hyde Park (~4km)', value: 'london' },
+                    { name: 'NYC Central Park (~10km)', value: 'nyc' }
+                ],
+                default: 'london'
+            },
+            {
+                type: 'confirm',
+                name: 'force',
+                message: 'Force overwrite existing GPS data?',
+                default: false
+            }
+        ]);
+        inputs = {
+            route: gpsConfig.route,
+            ...(gpsConfig.force && { force: 'true' })
+        };
+    } else if (providerType === EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY) {
+        const summaryConfig = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'format',
+                message: 'Format Style:',
+                choices: [
+                    { name: 'Compact (4×8@100kg)', value: 'compact' },
+                    { name: 'Detailed (4 sets × 8 reps @ 100.0kg)', value: 'detailed' },
+                    { name: 'Verbose (4 sets of 8 reps at 100.0 kilograms)', value: 'verbose' }
+                ],
+                default: 'detailed'
+            },
+            {
+                type: 'confirm',
+                name: 'showStats',
+                message: 'Show Headline Stats (sets, volume, etc)?',
+                default: true
+            }
+        ]);
+        inputs = {
+            format: summaryConfig.format,
+            show_stats: summaryConfig.showStats.toString()
+        };
+    } else if (providerType === EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP) {
+        const heatmapConfig = await inquirer.prompt([
+            {
+                type: 'list',
+                name: 'style',
+                message: 'Visualization Style:',
+                choices: [
+                    { name: 'Emoji Bars (🟪🟪🟪⬜⬜)', value: 'emoji' },
+                    { name: 'Percentage (Chest: 80%)', value: 'percentage' },
+                    { name: 'Text Only (High: Chest)', value: 'text' }
+                ],
+                default: 'emoji'
+            },
+            {
+                type: 'number',
+                name: 'barLength',
+                message: 'Bar Length (3-10):',
+                default: 5,
+                validate: (input) => (input >= 3 && input <= 10) || 'Must be between 3 and 10'
+            },
+            {
+                type: 'list',
+                name: 'preset',
+                message: 'Coefficient Preset:',
+                choices: [
+                    { name: 'Standard (Balanced)', value: 'standard' },
+                    { name: 'Powerlifting (Emphasize compounds)', value: 'powerlifting' },
+                    { name: 'Bodybuilding (Emphasize isolation)', value: 'bodybuilding' }
+                ],
+                default: 'standard'
+            }
+        ]);
+        inputs = {
+            style: heatmapConfig.style,
+            bar_length: heatmapConfig.barLength.toString(),
+            preset: heatmapConfig.preset
+        };
+    } else if (providerType === EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER) {
+        const rules = [];
+        let addRule = true;
+        console.log('\n--- Configure Type Mapper Rules ---');
+        while (addRule) {
+            const ruleAnswers = await inquirer.prompt([
+                {
+                    type: 'input',
+                    name: 'substring',
+                    message: 'Substring to match (case-insensitive):',
+                    validate: (input) => input.length > 0 || 'Required'
+                },
+                {
+                    type: 'list',
+                    name: 'targetType',
+                    message: 'Target Activity Type:',
+                    choices: [
+                        'AlpineSki', 'BackcountrySki', 'Badminton', 'Canoeing', 'Crossfit', 'EBikeRide',
+                        'Elliptical', 'EMountainBikeRide', 'Golf', 'GravelRide', 'Handcycle',
+                        'HighIntensityIntervalTraining', 'Hike', 'IceSkate', 'InlineSkate', 'Kayaking',
+                        'Kitesurf', 'MountainBikeRide', 'NordicSki', 'Pickleball', 'Pilates', 'Racquetball',
+                        'Ride', 'RockClimbing', 'RollerSki', 'Rowing', 'Run', 'Sail', 'Skateboard',
+                        'Snowboard', 'Snowshoe', 'Soccer', 'Squash', 'StairStepper', 'StandUpPaddling',
+                        'Surfing', 'Swim', 'TableTennis', 'Tennis', 'TrailRun', 'Velomobile', 'VirtualRide',
+                        'VirtualRow', 'VirtualRun', 'Walk', 'WeightTraining', 'Wheelchair', 'Windsurf',
+                        'Workout', 'Yoga'
+                    ]
+                },
+                {
+                    type: 'confirm',
+                    name: 'addAnother',
+                    message: 'Add another rule?',
+                    default: false
+                }
+            ]);
+
+            rules.push({
+                substring: ruleAnswers.substring,
+                target_type: ruleAnswers.targetType
+            });
+
+            addRule = ruleAnswers.addAnother;
+        }
+        inputs = { rules: JSON.stringify(rules) };
+    } else {
+        // Only prompt for JSON if the provider might need config
+        // Skip for providers with no config options
+        const noConfigProviders = [
+            EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH,
+            EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
+            EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE
+        ];
+
+        if (!noConfigProviders.includes(providerType)) {
+            const jsonInput = await inquirer.prompt([{
+                type: 'input',
+                name: 'inputsJson',
+                message: 'Inputs (JSON string, optional):',
+                validate: (input) => {
+                    if (!input) return true;
+                    try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
+                }
+            }]);
+            inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
+        }
+    }
+    return inputs;
+}

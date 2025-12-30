@@ -53,12 +53,20 @@ func TestUploadToStrava(t *testing.T) {
 				if !bytes.Contains(bodyBytes, []byte("Test Workout")) {
 					t.Error("Expected value 'Test Workout'")
 				}
-				if !bytes.Contains(bodyBytes, []byte(`name="description"`)) {
+				if !bytes.Contains(bodyBytes, []byte(`"description"`)) {
 					t.Error("Expected part 'description'")
 				}
 				if !bytes.Contains(bodyBytes, []byte("Test Activity")) {
 					t.Error("Expected value 'Test Activity'")
 				}
+				// Verify Sport Type in Multipart
+				if !bytes.Contains(bodyBytes, []byte(`"sport_type"`)) {
+					t.Error("Expected part 'sport_type'")
+				}
+				if !bytes.Contains(bodyBytes, []byte("WEIGHT_TRAINING")) {
+					t.Error("Expected value 'WEIGHT_TRAINING'")
+				}
+
 				// Restore body for any downstream reads (unlikely needed here)
 				req.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 

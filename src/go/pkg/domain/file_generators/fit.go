@@ -230,20 +230,50 @@ func GenerateFitFile(activity *pb.StandardizedActivity) ([]byte, error) {
 
 func mapSport(activityType string) (typedef.Sport, typedef.SubSport) {
 	switch activityType {
-	case "WEIGHT_TRAINING":
-		return typedef.SportTraining, typedef.SubSportStrengthTraining
-	case "RUNNING":
+	// Running
+	case "Run", "RUNNING", "VirtualRun", "TrailRun":
 		return typedef.SportRunning, typedef.SubSportGeneric
-	case "CYCLING":
+
+	// Cycling
+	case "Ride", "CYCLING", "VirtualRide", "GravelRide", "MountainBikeRide", "EMountainBikeRide", "EBikeRide", "Velomobile", "Handcycle":
 		return typedef.SportCycling, typedef.SubSportGeneric
-	case "SWIMMING":
+
+	// Swimming
+	case "Swim", "SWIMMING":
 		return typedef.SportSwimming, typedef.SubSportLapSwimming
-	case "HIKING":
-		return typedef.SportHiking, typedef.SubSportGeneric
-	case "WALKING":
+
+	// Walking/Hiking
+	case "Walk", "WALKING":
 		return typedef.SportWalking, typedef.SubSportGeneric
-	case "YOGA":
+	case "Hike", "HIKING", "Snowshoe":
+		return typedef.SportHiking, typedef.SubSportGeneric
+
+	// Training / Gym
+	case "WeightTraining", "WEIGHT_TRAINING":
+		return typedef.SportTraining, typedef.SubSportStrengthTraining
+	case "Workout", "WORKOUT", "Crossfit", "Elliptical", "StairStepper", "Pilates":
+		return typedef.SportTraining, typedef.SubSportGeneric
+	case "Yoga", "YOGA":
 		return typedef.SportTraining, typedef.SubSportYoga
+	case "HighIntensityIntervalTraining", "HIIT":
+		return typedef.SportTraining, typedef.SubSportHiit
+
+	// Water Sports
+	case "Rowing", "VirtualRow", "Canoeing", "Kayaking", "StandUpPaddling", "Surfing", "Windsurf", "Kitesurf", "Sail":
+		return typedef.SportRowing, typedef.SubSportGeneric // Using Rowing as generic fallback for water paddle sports or generic
+
+	// Winter Sports
+	case "AlpineSki", "BackcountrySki", "NordicSki", "RollerSki", "Snowboard", "IceSkate":
+		return typedef.SportGeneric, typedef.SubSportGeneric // Mapping to generic for now as specific sports might need more precise mapping
+
+	// Team / Racket Sports
+	case "Soccer", "Golf", "Tennis", "Squash", "Racquetball", "Badminton", "TableTennis", "Pickleball":
+		return typedef.SportGeneric, typedef.SubSportGeneric
+
+	// Other
+	case "RockClimbing", "Skateboard", "Wheelchair":
+		return typedef.SportGeneric, typedef.SubSportGeneric
+
 	default:
 		return typedef.SportGeneric, typedef.SubSportGeneric
 	}

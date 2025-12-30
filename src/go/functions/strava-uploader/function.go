@@ -108,11 +108,16 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		if eventPayload.Description != "" {
 			writer.WriteField("description", eventPayload.Description)
 		}
+		if eventPayload.ActivityType != "" {
+			writer.WriteField("sport_type", eventPayload.ActivityType)
+			writer.WriteField("activity_type", eventPayload.ActivityType) // Legacy fallback
+		}
 		writer.Close()
 
 		// Log what we're uploading for debugging
 		fwCtx.Logger.Info("Uploading to Strava",
 			"title", eventPayload.Name,
+			"type", eventPayload.ActivityType,
 			"description_length", len(eventPayload.Description),
 			"description_preview", truncateString(eventPayload.Description, 200),
 		)
