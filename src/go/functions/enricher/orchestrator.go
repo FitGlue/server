@@ -380,7 +380,6 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	return pipelines
 }
 
-
 func (o *Orchestrator) mapUser(userId string, data map[string]interface{}) (*pb.UserRecord, error) {
 	// Convert Firestore map to JSON, then unmarshal using protojson
 	// This is type-safe and automatically handles all nested structures
