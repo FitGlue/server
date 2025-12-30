@@ -21,7 +21,7 @@ func (p *BrandingProvider) Enrich(ctx context.Context, activity *pb.Standardized
 	// Get custom message from config, or use default
 	message := inputConfig["message"]
 	if message == "" {
-		message = "Posted via fitglue.tech 💪"
+		message = "Posted via FitGlue 💪"
 	}
 
 	return &EnrichmentResult{

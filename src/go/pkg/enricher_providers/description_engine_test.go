@@ -144,7 +144,7 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 		"View on Hevy: https://hevy.com/workout/test-uuid",
 
 		// Branding footer (always present)
-		"Posted via fitglue.tech 💪",
+		"Posted via FitGlue 💪",
 	}
 
 	for _, part := range expectedParts {
@@ -164,7 +164,7 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 	}
 
 	// Verify branding is at the end
-	if !strings.HasSuffix(strings.TrimSpace(finalDesc), "Posted via fitglue.tech 💪") {
+	if !strings.HasSuffix(strings.TrimSpace(finalDesc), "Posted via FitGlue 💪") {
 		t.Error("Expected branding footer to be at the end of description")
 	}
 }
