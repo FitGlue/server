@@ -7,11 +7,13 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -19,6 +21,86 @@ import (
 
 const (
 	Oauth2Scopes = "oauth2.Scopes"
+)
+
+// Defines values for AlarmVibe.
+const (
+	DEFAULT AlarmVibe = "DEFAULT"
+)
+
+// Defines values for AlarmWeekDays.
+const (
+	FRIDAY    AlarmWeekDays = "FRIDAY"
+	MONDAY    AlarmWeekDays = "MONDAY"
+	SATURDAY  AlarmWeekDays = "SATURDAY"
+	SUNDAY    AlarmWeekDays = "SUNDAY"
+	THURSDAY  AlarmWeekDays = "THURSDAY"
+	TUESDAY   AlarmWeekDays = "TUESDAY"
+	WEDNESDAY AlarmWeekDays = "WEDNESDAY"
+)
+
+// Defines values for DeviceBattery.
+const (
+	Empty  DeviceBattery = "Empty"
+	High   DeviceBattery = "High"
+	Low    DeviceBattery = "Low"
+	Medium DeviceBattery = "Medium"
+)
+
+// Defines values for DeviceType.
+const (
+	SCALE   DeviceType = "SCALE"
+	TRACKER DeviceType = "TRACKER"
+)
+
+// Defines values for EcgReadingResultClassification.
+const (
+	AtrialFibrillation        EcgReadingResultClassification = "Atrial Fibrillation"
+	Inconclusive              EcgReadingResultClassification = "Inconclusive"
+	InconclusiveHighHeartRate EcgReadingResultClassification = "Inconclusive: High heart rate"
+	InconclusiveLowHeartRate  EcgReadingResultClassification = "Inconclusive: Low heart rate"
+	NormalSinusRhythm         EcgReadingResultClassification = "Normal Sinus Rhythm"
+)
+
+// Defines values for FoodAccessLevel.
+const (
+	FoodAccessLevelPRIVATE FoodAccessLevel = "PRIVATE"
+	FoodAccessLevelPUBLIC  FoodAccessLevel = "PUBLIC"
+)
+
+// Defines values for GetActivityLogListResponsePaginationSort.
+const (
+	GetActivityLogListResponsePaginationSortAsc  GetActivityLogListResponsePaginationSort = "asc"
+	GetActivityLogListResponsePaginationSortDesc GetActivityLogListResponsePaginationSort = "desc"
+)
+
+// Defines values for GetSleepLogListResponsePaginationSort.
+const (
+	GetSleepLogListResponsePaginationSortAsc  GetSleepLogListResponsePaginationSort = "asc"
+	GetSleepLogListResponsePaginationSortDesc GetSleepLogListResponsePaginationSort = "desc"
+)
+
+// Defines values for LoggedFoodAccessLevel.
+const (
+	LoggedFoodAccessLevelPRIVATE LoggedFoodAccessLevel = "PRIVATE"
+	LoggedFoodAccessLevelPUBLIC  LoggedFoodAccessLevel = "PUBLIC"
+)
+
+// Defines values for SleepLogLogType.
+const (
+	AutoDetected SleepLogLogType = "auto_detected"
+	Manual       SleepLogLogType = "manual"
+)
+
+// Defines values for SleepLogType.
+const (
+	Classic SleepLogType = "classic"
+	Stages  SleepLogType = "stages"
+)
+
+// Defines values for SleepMetaState.
+const (
+	Pending SleepMetaState = "pending"
 )
 
 // Defines values for GetAZMByDateIntradayParamsDetailLevel.
@@ -47,11 +129,18 @@ const (
 	N7d  GetAZMTimeSeriesByDateParamsPeriod = "7d"
 )
 
+// Defines values for GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel.
+const (
+	GetAZMByIntervalTimeSeriesIntradayParamsDetailLevelN15min GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel = "15min"
+	GetAZMByIntervalTimeSeriesIntradayParamsDetailLevelN1min  GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel = "1min"
+	GetAZMByIntervalTimeSeriesIntradayParamsDetailLevelN5min  GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel = "5min"
+)
+
 // Defines values for GetAZMByIntervalIntradayParamsDetailLevel.
 const (
-	N15min GetAZMByIntervalIntradayParamsDetailLevel = "15min"
-	N1min  GetAZMByIntervalIntradayParamsDetailLevel = "1min"
-	N5min  GetAZMByIntervalIntradayParamsDetailLevel = "5min"
+	GetAZMByIntervalIntradayParamsDetailLevelN15min GetAZMByIntervalIntradayParamsDetailLevel = "15min"
+	GetAZMByIntervalIntradayParamsDetailLevelN1min  GetAZMByIntervalIntradayParamsDetailLevel = "1min"
+	GetAZMByIntervalIntradayParamsDetailLevelN5min  GetAZMByIntervalIntradayParamsDetailLevel = "5min"
 )
 
 // Defines values for GetActivitiesTrackerResourceByDateRangeParamsResourcePath.
@@ -176,18 +265,1729 @@ const (
 	GetFoodsResourceByDatePeriodParamsResourcePathWater      GetFoodsResourceByDatePeriodParamsResourcePath = "water"
 )
 
-// FoodItem defines model for FoodItem.
-type FoodItem struct {
-	Amount *int `json:"amount,omitempty"`
+// ActivityGoals defines model for ActivityGoals.
+type ActivityGoals struct {
+	// ActiveMinutes Daily active minutes goal.
+	ActiveMinutes *int `json:"activeMinutes,omitempty"`
+
+	// ActiveZoneMinutes Daily or weekly active zone minutes goal.
+	ActiveZoneMinutes *int `json:"activeZoneMinutes,omitempty"`
+
+	// CaloriesOut Daily calories burned goal.
+	CaloriesOut *int `json:"caloriesOut,omitempty"`
+
+	// Distance Daily or weekly distance goal.
+	Distance *float32 `json:"distance,omitempty"`
+
+	// Floors Daily or weekly floors climbed goal.
+	Floors *int `json:"floors,omitempty"`
+
+	// Steps Daily or weekly steps taken goal.
+	Steps *int `json:"steps,omitempty"`
+}
+
+// ActivityIntradayDatapoint defines model for ActivityIntradayDatapoint.
+type ActivityIntradayDatapoint struct {
+	// Level Numerical value representing the user's activity-level at the moment when the resource was recorded. 0 = sedentary 1 = lightly active 2 = fairly/moderately active 3 = very active Returned only when resource = calories.
+	Level *int `json:"level,omitempty"`
+
+	// Mets METs value at the moment when the resource was recorded. Returned only when resource = calories.
+	Mets *int `json:"mets,omitempty"`
+
+	// Time The time of the recorded resource.
+	Time *string `json:"time,omitempty"`
+
+	// Value The specified resource's value at the time it is recorded.
+	Value *float32 `json:"value,omitempty"`
+}
+
+// ActivityIntradayDataset defines model for ActivityIntradayDataset.
+type ActivityIntradayDataset struct {
+	Dataset *[]ActivityIntradayDatapoint `json:"dataset,omitempty"`
+
+	// DatasetInterval The requested detail-level numerical interval
+	DatasetInterval *int `json:"datasetInterval,omitempty"`
+
+	// DatasetType The requested detail-level unit of measure
+	DatasetType *string `json:"datasetType,omitempty"`
+}
+
+// ActivityLog defines model for ActivityLog.
+type ActivityLog struct {
+	// ActivityId The ID of the activity.
+	ActivityId *int `json:"activityId,omitempty"`
+
+	// ActivityParentId The ID of the top level ('parent') activity.
+	ActivityParentId *int `json:"activityParentId,omitempty"`
+
+	// ActivityParentName The name of the top level ('parent') activity.
+	ActivityParentName *string `json:"activityParentName,omitempty"`
+
+	// Calories Number of calories burned during the exercise.
+	Calories *int `json:"calories,omitempty"`
+
+	// Description The description of the recorded exercise.
+	Description *string `json:"description,omitempty"`
+
+	// Distance Distance traveled during the on-device recorded exercise.
+	Distance *float32 `json:"distance,omitempty"`
+
+	// Duration The activeDuration (milliseconds) + any pauses that occurred during the activity recording.
+	Duration *int `json:"duration,omitempty"`
+
+	// HasActiveZoneMinutes Indicates if the activity has active zone minutes.
+	HasActiveZoneMinutes *bool `json:"hasActiveZoneMinutes,omitempty"`
+
+	// HasStartTime Indicates if the activity has a start time.
+	HasStartTime *bool `json:"hasStartTime,omitempty"`
+
+	// IsFavorite Indicates if the activity is a favorite.
+	IsFavorite *bool `json:"isFavorite,omitempty"`
+
+	// LastModified Timestamp the exercise was last modified.
+	LastModified *time.Time `json:"lastModified,omitempty"`
+
+	// LogId The activity log identifier for the exercise.
+	LogId *int `json:"logId,omitempty"`
+
+	// Name Name of the recorded exercise.
+	Name *string `json:"name,omitempty"`
+
+	// StartDate The start date of the recorded exercise.
+	StartDate *openapi_types.Date `json:"startDate,omitempty"`
+
+	// StartTime The start time of the recorded exercise.
+	StartTime *string `json:"startTime,omitempty"`
+
+	// Steps Number of steps recorded during the exercise.
+	Steps *int `json:"steps,omitempty"`
+}
+
+// ActivitySummary defines model for ActivitySummary.
+type ActivitySummary struct {
+	// ActiveScore Functionality removed. A response is returned for backward compatibility.
+	ActiveScore *int `json:"activeScore,omitempty"`
+
+	// ActivityCalories The number of calories burned for the day during periods the user was active above sedentary level.
+	ActivityCalories *int `json:"activityCalories,omitempty"`
+
+	// CaloriesBMR Total BMR calories burned for the day.
+	CaloriesBMR *int `json:"caloriesBMR,omitempty"`
+
+	// CaloriesOut Total calories burned for the day.
+	CaloriesOut *int `json:"caloriesOut,omitempty"`
+
+	// Distances List of distances traveled for the day.
+	Distances *[]struct {
+		// Activity The activity name.
+		Activity *string `json:"activity,omitempty"`
+
+		// Distance The distance traveled for the day.
+		Distance *float32 `json:"distance,omitempty"`
+	} `json:"distances,omitempty"`
+
+	// Elevation The elevation traveled for the day.
+	Elevation *float32 `json:"elevation,omitempty"`
+
+	// FairlyActiveMinutes Total minutes the user was fairly/moderately active.
+	FairlyActiveMinutes *int `json:"fairlyActiveMinutes,omitempty"`
+
+	// Floors The equivalent floors climbed for the day.
+	Floors *int `json:"floors,omitempty"`
+
+	// LightlyActiveMinutes Total minutes the user was lightly active.
+	LightlyActiveMinutes *int `json:"lightlyActiveMinutes,omitempty"`
+
+	// MarginalCalories Total marginal estimated calories burned for the day.
+	MarginalCalories *int `json:"marginalCalories,omitempty"`
+
+	// RestingHeartRate The user's calculated resting heart rate.
+	RestingHeartRate *int `json:"restingHeartRate,omitempty"`
+
+	// SedentaryMinutes Total minutes the user was sedentary.
+	SedentaryMinutes *int `json:"sedentaryMinutes,omitempty"`
+
+	// Steps Total steps taken for the day.
+	Steps *int `json:"steps,omitempty"`
+
+	// VeryActiveMinutes Total minutes the user was very active.
+	VeryActiveMinutes *int `json:"veryActiveMinutes,omitempty"`
+}
+
+// ActivityTimeSeriesDatapoint defines model for ActivityTimeSeriesDatapoint.
+type ActivityTimeSeriesDatapoint struct {
+	// DateTime The date of the recorded resource.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+
+	// Value The specified resource's daily total.
+	Value *string `json:"value,omitempty"`
+}
+
+// AddSubscriptionResponse defines model for AddSubscriptionResponse.
+type AddSubscriptionResponse = Subscription
+
+// Alarm defines model for Alarm.
+type Alarm struct {
+	// AlarmId Numerical value representing the alarm ID.
+	AlarmId *int `json:"alarmId,omitempty"`
+
+	// Deleted Indicates if an alarm has been deleted.
+	Deleted *bool `json:"deleted,omitempty"`
+
+	// Enabled Indicates if an alarm is enabled.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Label Label or name for the alarm.
+	Label *string `json:"label,omitempty"`
+
+	// Recurring Indicates if an alarm is recurring.
+	Recurring *bool `json:"recurring,omitempty"`
+
+	// SnoozeCount Indicates the number of times the alarm will snooze.
+	SnoozeCount *int `json:"snoozeCount,omitempty"`
+
+	// SnoozeLength Indicates the time in minutes between snooze periods.
+	SnoozeLength *int `json:"snoozeLength,omitempty"`
+
+	// SyncedToDevice Indicates if the alarm is synced to the device.
+	SyncedToDevice *bool `json:"syncedToDevice,omitempty"`
+
+	// Time The time and UTC offset for the specified alarm.
+	Time *string `json:"time,omitempty"`
+
+	// Vibe Returns the type of vibration configured.
+	Vibe *AlarmVibe `json:"vibe,omitempty"`
+
+	// WeekDays Returns the recurring days of the week which the alarm is set.
+	WeekDays *[]AlarmWeekDays `json:"weekDays,omitempty"`
+}
+
+// AlarmVibe Returns the type of vibration configured.
+type AlarmVibe string
+
+// AlarmWeekDays defines model for Alarm.WeekDays.
+type AlarmWeekDays string
+
+// AlarmResponse defines model for AlarmResponse.
+type AlarmResponse struct {
+	TrackerAlarm *Alarm `json:"trackerAlarm,omitempty"`
+}
+
+// ApiGetAlarmsResponse defines model for ApiGetAlarmsResponse.
+type ApiGetAlarmsResponse struct {
+	// TrackerAlarms List of alarms.
+	TrackerAlarms *[]Alarm `json:"trackerAlarms,omitempty"`
+}
+
+// ApiGetBadgesResponse defines model for ApiGetBadgesResponse.
+type ApiGetBadgesResponse struct {
+	Badges *[]Badge `json:"badges,omitempty"`
+}
+
+// ApiGetBodyGoalsResponse defines model for ApiGetBodyGoalsResponse.
+type ApiGetBodyGoalsResponse struct {
+	Goal *BodyGoal `json:"goal,omitempty"`
+}
+
+// ApiGetDevicesResponse List of devices.
+type ApiGetDevicesResponse = []Device
+
+// ApiGetEcgLogListResponse defines model for ApiGetEcgLogListResponse.
+type ApiGetEcgLogListResponse struct {
+	// EcgReadings List of ECG readings.
+	EcgReadings *[]EcgReading `json:"ecgReadings,omitempty"`
+	Pagination  *struct {
+		// AfterDate The afterDate parameter of the request.
+		AfterDate *openapi_types.Date `json:"afterDate,omitempty"`
+
+		// BeforeDate The beforeDate parameter of the request.
+		BeforeDate *openapi_types.Date `json:"beforeDate,omitempty"`
+
+		// Limit The limit parameter of the request.
+		Limit *int `json:"limit,omitempty"`
+
+		// Next The URL of the request that will fetch the next page of results.
+		Next *string `json:"next,omitempty"`
+
+		// Offset The offset parameter of the request.
+		Offset *int `json:"offset,omitempty"`
+
+		// Previous The URL of the request that will fetch the previous page of results.
+		Previous *string `json:"previous,omitempty"`
+
+		// Sort The sort parameter of the request.
+		Sort *string `json:"sort,omitempty"`
+	} `json:"pagination,omitempty"`
+}
+
+// ApiGetFavoriteFoodsResponse defines model for ApiGetFavoriteFoodsResponse.
+type ApiGetFavoriteFoodsResponse = []Food
+
+// ApiGetFrequentFoodsResponse defines model for ApiGetFrequentFoodsResponse.
+type ApiGetFrequentFoodsResponse struct {
+	Foods *[]Food `json:"foods,omitempty"`
+}
+
+// ApiGetFriendsLeaderboardResponse defines model for ApiGetFriendsLeaderboardResponse.
+type ApiGetFriendsLeaderboardResponse struct {
+	Data *[]LeaderboardFriend `json:"data,omitempty"`
+}
+
+// ApiGetFriendsResponse defines model for ApiGetFriendsResponse.
+type ApiGetFriendsResponse struct {
+	Data *[]Friend `json:"data,omitempty"`
+}
+
+// ApiGetIrnAlertsListResponse defines model for ApiGetIrnAlertsListResponse.
+type ApiGetIrnAlertsListResponse struct {
+	// Alerts List of IRN alerts.
+	Alerts     *[]IrnAlert `json:"alerts,omitempty"`
+	Pagination *struct {
+		// AfterDate The afterDate parameter of the request.
+		AfterDate *openapi_types.Date `json:"afterDate,omitempty"`
+
+		// BeforeDate The beforeDate parameter of the request.
+		BeforeDate *openapi_types.Date `json:"beforeDate,omitempty"`
+
+		// Limit The limit parameter of the request.
+		Limit *int `json:"limit,omitempty"`
+
+		// Next The URL of the request that will fetch the next page of results.
+		Next *string `json:"next,omitempty"`
+
+		// Offset The offset parameter of the request.
+		Offset *int `json:"offset,omitempty"`
+
+		// Previous The URL of the request that will fetch the previous page of results.
+		Previous *string `json:"previous,omitempty"`
+
+		// Sort The sort parameter of the request.
+		Sort *string `json:"sort,omitempty"`
+	} `json:"pagination,omitempty"`
+}
+
+// ApiGetIrnProfileResponse defines model for ApiGetIrnProfileResponse.
+type ApiGetIrnProfileResponse struct {
+	// Enrolled Whether or not the user is currently enrolled in having their data processed for IRN alerts.
+	Enrolled *bool `json:"enrolled,omitempty"`
+
+	// LastUpdated The timestamp of the last piece of analyzable data synced by the user (displayed as local time).
+	LastUpdated *time.Time `json:"lastUpdated,omitempty"`
+
+	// Onboarded Whether or not the user has onboarded onto the IRN feature.
+	Onboarded *bool `json:"onboarded,omitempty"`
+}
+
+// ApiGetMealResponse defines model for ApiGetMealResponse.
+type ApiGetMealResponse struct {
+	Meal *Meal `json:"meal,omitempty"`
+}
+
+// ApiGetMealsResponse defines model for ApiGetMealsResponse.
+type ApiGetMealsResponse struct {
+	Meals *[]Meal `json:"meals,omitempty"`
+}
+
+// ApiGetProfileResponse defines model for ApiGetProfileResponse.
+type ApiGetProfileResponse struct {
+	User *User `json:"user,omitempty"`
+}
+
+// ApiGetRecentFoodsResponse defines model for ApiGetRecentFoodsResponse.
+type ApiGetRecentFoodsResponse struct {
+	Foods *[]Food `json:"foods,omitempty"`
+}
+
+// ApiGetSleepGoalResponse defines model for ApiGetSleepGoalResponse.
+type ApiGetSleepGoalResponse struct {
+	Goal *SleepGoal `json:"goal,omitempty"`
+}
+
+// ApiGetWaterGoalResponse defines model for ApiGetWaterGoalResponse.
+type ApiGetWaterGoalResponse struct {
+	Goal *WaterGoal `json:"goal,omitempty"`
+}
+
+// AzmIntradayDatapoint defines model for AzmIntradayDatapoint.
+type AzmIntradayDatapoint struct {
+	// Time The time of the recorded resource.
+	Time  *string   `json:"time,omitempty"`
+	Value *AzmValue `json:"value,omitempty"`
+}
+
+// AzmIntradayDataset defines model for AzmIntradayDataset.
+type AzmIntradayDataset struct {
+	Dataset *[]AzmIntradayDatapoint `json:"dataset,omitempty"`
+
+	// DatasetInterval The requested detail-level numerical interval
+	DatasetInterval *int `json:"datasetInterval,omitempty"`
+
+	// DatasetType The requested detail-level unit of measure
+	DatasetType *string `json:"datasetType,omitempty"`
+}
+
+// AzmTimeSeriesDatapoint defines model for AzmTimeSeriesDatapoint.
+type AzmTimeSeriesDatapoint struct {
+	// DateTime The date specified in the format YYYY-MM-DD or today.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+	Value    *struct {
+		// ActiveZoneMinutes Total count of active zone minutes.
+		ActiveZoneMinutes *int `json:"activeZoneMinutes,omitempty"`
+
+		// CardioActiveZoneMinutes The number of active zone minutes in the cardio heart rate zone.
+		CardioActiveZoneMinutes *int `json:"cardioActiveZoneMinutes,omitempty"`
+
+		// FatBurnActiveZoneMinutes The number of active zone minutes in the fat burn heart rate zone.
+		FatBurnActiveZoneMinutes *int `json:"fatBurnActiveZoneMinutes,omitempty"`
+
+		// PeakActiveZoneMinutes The number of active zone minutes in the peak heart rate zone.
+		PeakActiveZoneMinutes *int `json:"peakActiveZoneMinutes,omitempty"`
+	} `json:"value,omitempty"`
+}
+
+// AzmValue defines model for AzmValue.
+type AzmValue struct {
+	// ActiveZoneMinutes Total count of active zone minutes earned.
+	ActiveZoneMinutes *int `json:"activeZoneMinutes,omitempty"`
+
+	// CardioActiveZoneMinutes The number of active zone minutes in the cardio heart rate zone.
+	CardioActiveZoneMinutes *int `json:"cardioActiveZoneMinutes,omitempty"`
+
+	// FatBurnActiveZoneMinutes The number of active zone minutes in the fat burn heart rate zone.
+	FatBurnActiveZoneMinutes *int `json:"fatBurnActiveZoneMinutes,omitempty"`
+
+	// PeakActiveZoneMinutes The number of active zone minutes in the peak heart rate zone.
+	PeakActiveZoneMinutes *int `json:"peakActiveZoneMinutes,omitempty"`
+}
+
+// Badge defines model for Badge.
+type Badge struct {
+	BadgeGradientEndColor   *string                   `json:"badgeGradientEndColor,omitempty"`
+	BadgeGradientStartColor *string                   `json:"badgeGradientStartColor,omitempty"`
+	BadgeType               *string                   `json:"badgeType,omitempty"`
+	Category                *string                   `json:"category,omitempty"`
+	Cheers                  *[]map[string]interface{} `json:"cheers,omitempty"`
+	DateTime                *time.Time                `json:"dateTime,omitempty"`
+	Description             *string                   `json:"description,omitempty"`
+	EarnedMessage           *string                   `json:"earnedMessage,omitempty"`
+	EncodedId               *string                   `json:"encodedId,omitempty"`
+	Image100px              *string                   `json:"image100px,omitempty"`
+	Image125px              *string                   `json:"image125px,omitempty"`
+	Image300px              *string                   `json:"image300px,omitempty"`
+	Image50px               *string                   `json:"image50px,omitempty"`
+	Image75px               *string                   `json:"image75px,omitempty"`
+	MarketingDescription    *string                   `json:"marketingDescription,omitempty"`
+	MobileDescription       *string                   `json:"mobileDescription,omitempty"`
+	Name                    *string                   `json:"name,omitempty"`
+	ShareImage640px         *string                   `json:"shareImage640px,omitempty"`
+	ShareText               *string                   `json:"shareText,omitempty"`
+	ShortDescription        *string                   `json:"shortDescription,omitempty"`
+	ShortName               *string                   `json:"shortName,omitempty"`
+	TimesAchieved           *int                      `json:"timesAchieved,omitempty"`
+	Unit                    *string                   `json:"unit,omitempty"`
+	Value                   *int                      `json:"value,omitempty"`
+}
+
+// BodyFatLog defines model for BodyFatLog.
+type BodyFatLog struct {
+	// Date The date the body fat log was recorded.
+	Date *openapi_types.Date `json:"date,omitempty"`
+
+	// Fat The body fat percentage.
+	Fat *float32 `json:"fat,omitempty"`
+
+	// LogId The body fat log Id.
+	LogId *int `json:"logId,omitempty"`
+
+	// Source The location where the body fat data originated.
+	Source *string `json:"source,omitempty"`
+
+	// Time The timestamp when the body fat log was recorded.
+	Time *string `json:"time,omitempty"`
+}
+
+// BodyGoal defines model for BodyGoal.
+type BodyGoal struct {
+	// Fat The body fat goal to achieve.
+	Fat *float32 `json:"fat,omitempty"`
+
+	// GoalType The goal type. Supported: LOSE | GAIN | MAINTAIN
+	GoalType *string `json:"goalType,omitempty"`
+
+	// StartDate The goal start date.
+	StartDate *openapi_types.Date `json:"startDate,omitempty"`
+
+	// StartWeight User's weight when goal was established.
+	StartWeight *float32 `json:"startWeight,omitempty"`
+
+	// Weight The weight goal to achieve.
+	Weight *float32 `json:"weight,omitempty"`
+
+	// WeightThreshold The recommended amount of weight to lose each week to achieve and maintain goal.
+	WeightThreshold *float32 `json:"weightThreshold,omitempty"`
+}
+
+// BodyTimeSeriesDatapoint defines model for BodyTimeSeriesDatapoint.
+type BodyTimeSeriesDatapoint struct {
+	// DateTime The datetime which the resource was recorded.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+
+	// Value The value of the resource.
+	Value *string `json:"value,omitempty"`
+}
+
+// BreathingRateIntradaySummary defines model for BreathingRateIntradaySummary.
+type BreathingRateIntradaySummary struct {
+	// BreathingRate Average number of breaths taken per minute.
+	BreathingRate *float32 `json:"breathingRate,omitempty"`
+}
+
+// BreathingRateIntradayValue defines model for BreathingRateIntradayValue.
+type BreathingRateIntradayValue struct {
+	DeepSleepSummary  *BreathingRateIntradaySummary `json:"deepSleepSummary,omitempty"`
+	FullSleepSummary  *BreathingRateIntradaySummary `json:"fullSleepSummary,omitempty"`
+	LightSleepSummary *BreathingRateIntradaySummary `json:"lightSleepSummary,omitempty"`
+	RemSleepSummary   *BreathingRateIntradaySummary `json:"remSleepSummary,omitempty"`
+}
+
+// BreathingRateSummary defines model for BreathingRateSummary.
+type BreathingRateSummary struct {
+	// DateTime The sleep log date specified in the format YYYY-MM-DD.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+	Value    *BreathingRateValue `json:"value,omitempty"`
+}
+
+// BreathingRateValue defines model for BreathingRateValue.
+type BreathingRateValue struct {
+	// BreathingRate The average number of breaths taken per minute.
+	BreathingRate *float32 `json:"breathingRate,omitempty"`
+}
+
+// CardioScoreSummary defines model for CardioScoreSummary.
+type CardioScoreSummary struct {
+	// DateTime The date specified in the format YYYY-MM-DD.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+	Value    *Vo2MaxValue        `json:"value,omitempty"`
+}
+
+// CreateSleepGoalResponse defines model for CreateSleepGoalResponse.
+type CreateSleepGoalResponse struct {
+	Goal *SleepGoal `json:"goal,omitempty"`
+}
+
+// CreateSleepLogResponse defines model for CreateSleepLogResponse.
+type CreateSleepLogResponse struct {
+	// Sleep Array of sleep log entries.
+	Sleep *[]SleepLog `json:"sleep,omitempty"`
+}
+
+// Device defines model for Device.
+type Device struct {
+	// Battery Returns the battery level of the device.
+	Battery *DeviceBattery `json:"battery,omitempty"`
+
+	// BatteryLevel Returns the battery level percentage of the device.
+	BatteryLevel *int `json:"batteryLevel,omitempty"`
+
+	// DeviceVersion The product name of the device.
+	DeviceVersion *string `json:"deviceVersion,omitempty"`
+
+	// Features Lists any unique features supported by the device.
+	Features *[]string `json:"features,omitempty"`
+
+	// Id The device ID.
+	Id *string `json:"id,omitempty"`
+
+	// LastSyncTime Timestamp representing the last time the device was sync'd with the Fitbit mobile application.
+	LastSyncTime *time.Time `json:"lastSyncTime,omitempty"`
+
+	// Mac Mac ID number
+	Mac *string `json:"mac,omitempty"`
+
+	// Type The type of device.
+	Type *DeviceType `json:"type,omitempty"`
+}
+
+// DeviceBattery Returns the battery level of the device.
+type DeviceBattery string
+
+// DeviceType The type of device.
+type DeviceType string
+
+// EcgReading defines model for EcgReading.
+type EcgReading struct {
+	// AverageHeartRate The average heart rate of the user during the reading.
+	AverageHeartRate *int `json:"averageHeartRate,omitempty"`
+
+	// DeviceName Hardware name of the compatible wrist-worn device used to take the reading.
+	DeviceName *string `json:"deviceName,omitempty"`
+
+	// FeatureVersion The version of the ECG app running on the device.
+	FeatureVersion *string `json:"featureVersion,omitempty"`
+
+	// FirmwareVersion Firmware running on the compatible wrist-worn device used to take the reading.
+	FirmwareVersion *string `json:"firmwareVersion,omitempty"`
+
+	// LeadNumber The ECG lead being used to take the reading.
+	LeadNumber *int `json:"leadNumber,omitempty"`
+
+	// NumberOfWaveformSamples The total number of samples in the reading.
+	NumberOfWaveformSamples *int `json:"numberOfWaveformSamples,omitempty"`
+
+	// ResultClassification The classification of the ECG result.
+	ResultClassification *EcgReadingResultClassification `json:"resultClassification,omitempty"`
+
+	// SamplingFrequencyHz The frequency in hertz at which the Fitbit ECG app sampled the voltage.
+	SamplingFrequencyHz *int `json:"samplingFrequencyHz,omitempty"`
+
+	// ScalingFactor The scaling factor used to convert waveform samples to ECG voltages in mV (mV = waveformSamples / scalingFactor).
+	ScalingFactor *int `json:"scalingFactor,omitempty"`
+
+	// StartTime The date and time when the reading was started on the device.
+	StartTime *time.Time `json:"startTime,omitempty"`
+
+	// WaveformSamples An array of integers representing the ECG waveform.
+	WaveformSamples *[]int `json:"waveformSamples,omitempty"`
+}
+
+// EcgReadingResultClassification The classification of the ECG result.
+type EcgReadingResultClassification string
+
+// Food defines model for Food.
+type Food struct {
+	// AccessLevel The access level of the food.
+	AccessLevel *FoodAccessLevel `json:"accessLevel,omitempty"`
+
+	// Brand The brand of the food.
+	Brand *string `json:"brand,omitempty"`
+
+	// Calories The calories in the food.
+	Calories *int `json:"calories,omitempty"`
+
+	// DefaultServingSize The default serving size.
+	DefaultServingSize *float32  `json:"defaultServingSize,omitempty"`
+	DefaultUnit        *FoodUnit `json:"defaultUnit,omitempty"`
+
+	// FoodId The ID of the food.
 	FoodId *int `json:"foodId,omitempty"`
+
+	// IsGeneric Whether the food is generic.
+	IsGeneric *bool `json:"isGeneric,omitempty"`
+
+	// Locale The locale of the food.
+	Locale *string `json:"locale,omitempty"`
+
+	// Name The name of the food.
+	Name *string `json:"name,omitempty"`
+
+	// Servings List of servings.
+	Servings *[]FoodServing `json:"servings,omitempty"`
+
+	// Units List of unit IDs.
+	Units *[]int `json:"units,omitempty"`
+}
+
+// FoodAccessLevel The access level of the food.
+type FoodAccessLevel string
+
+// FoodGoals defines model for FoodGoals.
+type FoodGoals struct {
+	// Calories The daily calorie consumption goal.
+	Calories *int `json:"calories,omitempty"`
+}
+
+// FoodLocale defines model for FoodLocale.
+type FoodLocale struct {
+	// Barcode Whether barcode is supported.
+	Barcode *bool `json:"barcode,omitempty"`
+
+	// ImageUpload Whether image upload is supported.
+	ImageUpload *bool `json:"imageUpload,omitempty"`
+
+	// Label Name of the locale.
+	Label *string `json:"label,omitempty"`
+
+	// Value The locale value.
+	Value *string `json:"value,omitempty"`
+}
+
+// FoodLogEntry defines model for FoodLogEntry.
+type FoodLogEntry struct {
+	// IsFavorite Whether the food is a favorite.
+	IsFavorite *bool `json:"isFavorite,omitempty"`
+
+	// LogDate The date of the log entry.
+	LogDate *openapi_types.Date `json:"logDate,omitempty"`
+
+	// LogId The ID of the log entry.
+	LogId             *int               `json:"logId,omitempty"`
+	LoggedFood        *LoggedFood        `json:"loggedFood,omitempty"`
+	NutritionalValues *NutritionalValues `json:"nutritionalValues,omitempty"`
+}
+
+// FoodServing defines model for FoodServing.
+type FoodServing struct {
+	// Multiplier The multiplier for the serving size.
+	Multiplier *float32 `json:"multiplier,omitempty"`
+
+	// ServingSize The serving size.
+	ServingSize *float32  `json:"servingSize,omitempty"`
+	Unit        *FoodUnit `json:"unit,omitempty"`
+
+	// UnitId The ID of the unit.
 	UnitId *int `json:"unitId,omitempty"`
 }
 
+// FoodUnit defines model for FoodUnit.
+type FoodUnit struct {
+	// Id The ID of the unit.
+	Id *int `json:"id,omitempty"`
+
+	// Name The name of the unit.
+	Name *string `json:"name,omitempty"`
+
+	// Plural The plural name of the unit.
+	Plural *string `json:"plural,omitempty"`
+}
+
+// Friend defines model for Friend.
+type Friend struct {
+	Attributes *FriendAttributes `json:"attributes,omitempty"`
+
+	// Id Fitbit user id.
+	Id *string `json:"id,omitempty"`
+
+	// Type Supported: person
+	Type *string `json:"type,omitempty"`
+}
+
+// FriendAttributes defines model for FriendAttributes.
+type FriendAttributes struct {
+	// Avatar Link to user's avatar picture.
+	Avatar *string `json:"avatar,omitempty"`
+
+	// Child Boolean value describing friend as a child account.
+	Child *bool `json:"child,omitempty"`
+
+	// Friend Boolean value describing user as a friend.
+	Friend *bool `json:"friend,omitempty"`
+
+	// Name Person's display name.
+	Name *string `json:"name,omitempty"`
+}
+
+// GetActivityGoalsResponse defines model for GetActivityGoalsResponse.
+type GetActivityGoalsResponse struct {
+	Goals *ActivityGoals `json:"goals,omitempty"`
+}
+
+// GetActivityIntradayResponse defines model for GetActivityIntradayResponse.
+type GetActivityIntradayResponse struct {
+	ActivitiesCalories                *[]ActivityTimeSeriesDatapoint `json:"activities-calories,omitempty"`
+	ActivitiesCaloriesIntraday        *ActivityIntradayDataset       `json:"activities-calories-intraday,omitempty"`
+	ActivitiesDistance                *[]ActivityTimeSeriesDatapoint `json:"activities-distance,omitempty"`
+	ActivitiesDistanceIntraday        *ActivityIntradayDataset       `json:"activities-distance-intraday,omitempty"`
+	ActivitiesElevation               *[]ActivityTimeSeriesDatapoint `json:"activities-elevation,omitempty"`
+	ActivitiesElevationIntraday       *ActivityIntradayDataset       `json:"activities-elevation-intraday,omitempty"`
+	ActivitiesFloors                  *[]ActivityTimeSeriesDatapoint `json:"activities-floors,omitempty"`
+	ActivitiesFloorsIntraday          *ActivityIntradayDataset       `json:"activities-floors-intraday,omitempty"`
+	ActivitiesSteps                   *[]ActivityTimeSeriesDatapoint `json:"activities-steps,omitempty"`
+	ActivitiesStepsIntraday           *ActivityIntradayDataset       `json:"activities-steps-intraday,omitempty"`
+	ActivitiesSwimmingStrokes         *[]ActivityTimeSeriesDatapoint `json:"activities-swimming-strokes,omitempty"`
+	ActivitiesSwimmingStrokesIntraday *ActivityIntradayDataset       `json:"activities-swimming-strokes-intraday,omitempty"`
+}
+
+// GetActivityLogListResponse defines model for GetActivityLogListResponse.
+type GetActivityLogListResponse struct {
+	// Activities List of activity log entries.
+	Activities *[]ActivityLog `json:"activities,omitempty"`
+	Pagination *struct {
+		// AfterDate The specified afterDate parameter.
+		AfterDate *openapi_types.Date `json:"afterDate,omitempty"`
+
+		// Limit The specified limit.
+		Limit *int `json:"limit,omitempty"`
+
+		// Next URL for the next page of results.
+		Next *string `json:"next,omitempty"`
+
+		// Offset The specified offset.
+		Offset *int `json:"offset,omitempty"`
+
+		// Previous URL for the previous page of results.
+		Previous *string `json:"previous,omitempty"`
+
+		// Sort The specified sort order.
+		Sort *GetActivityLogListResponsePaginationSort `json:"sort,omitempty"`
+	} `json:"pagination,omitempty"`
+}
+
+// GetActivityLogListResponsePaginationSort The specified sort order.
+type GetActivityLogListResponsePaginationSort string
+
+// GetActivityTimeSeriesResponse defines model for GetActivityTimeSeriesResponse.
+type GetActivityTimeSeriesResponse struct {
+	ActivitiesActivityCalories            *[]ActivityTimeSeriesDatapoint `json:"activities-activityCalories,omitempty"`
+	ActivitiesCalories                    *[]ActivityTimeSeriesDatapoint `json:"activities-calories,omitempty"`
+	ActivitiesCaloriesBMR                 *[]ActivityTimeSeriesDatapoint `json:"activities-caloriesBMR,omitempty"`
+	ActivitiesDistance                    *[]ActivityTimeSeriesDatapoint `json:"activities-distance,omitempty"`
+	ActivitiesElevation                   *[]ActivityTimeSeriesDatapoint `json:"activities-elevation,omitempty"`
+	ActivitiesFloors                      *[]ActivityTimeSeriesDatapoint `json:"activities-floors,omitempty"`
+	ActivitiesMinutesFairlyActive         *[]ActivityTimeSeriesDatapoint `json:"activities-minutesFairlyActive,omitempty"`
+	ActivitiesMinutesLightlyActive        *[]ActivityTimeSeriesDatapoint `json:"activities-minutesLightlyActive,omitempty"`
+	ActivitiesMinutesSedentary            *[]ActivityTimeSeriesDatapoint `json:"activities-minutesSedentary,omitempty"`
+	ActivitiesMinutesVeryActive           *[]ActivityTimeSeriesDatapoint `json:"activities-minutesVeryActive,omitempty"`
+	ActivitiesSteps                       *[]ActivityTimeSeriesDatapoint `json:"activities-steps,omitempty"`
+	ActivitiesSwimmingStrokes             *[]ActivityTimeSeriesDatapoint `json:"activities-swimming-strokes,omitempty"`
+	ActivitiesTrackerActivityCalories     *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-activityCalories,omitempty"`
+	ActivitiesTrackerCalories             *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-calories,omitempty"`
+	ActivitiesTrackerDistance             *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-distance,omitempty"`
+	ActivitiesTrackerElevation            *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-elevation,omitempty"`
+	ActivitiesTrackerFloors               *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-floors,omitempty"`
+	ActivitiesTrackerMinutesFairlyActive  *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-minutesFairlyActive,omitempty"`
+	ActivitiesTrackerMinutesLightlyActive *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-minutesLightlyActive,omitempty"`
+	ActivitiesTrackerMinutesSedentary     *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-minutesSedentary,omitempty"`
+	ActivitiesTrackerMinutesVeryActive    *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-minutesVeryActive,omitempty"`
+	ActivitiesTrackerSteps                *[]ActivityTimeSeriesDatapoint `json:"activities-tracker-steps,omitempty"`
+}
+
+// GetAzmIntradayResponse defines model for GetAzmIntradayResponse.
+type GetAzmIntradayResponse struct {
+	ActivitiesActiveZoneMinutes *[]struct {
+		DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+		Value    *AzmValue           `json:"value,omitempty"`
+	} `json:"activities-active-zone-minutes,omitempty"`
+	ActivitiesActiveZoneMinutesIntraday *AzmIntradayDataset `json:"activities-active-zone-minutes-intraday,omitempty"`
+}
+
+// GetAzmTimeSeriesResponse defines model for GetAzmTimeSeriesResponse.
+type GetAzmTimeSeriesResponse struct {
+	ActivitiesActiveZoneMinutes *[]AzmTimeSeriesDatapoint `json:"activities-active-zone-minutes,omitempty"`
+}
+
+// GetBodyFatLogResponse defines model for GetBodyFatLogResponse.
+type GetBodyFatLogResponse struct {
+	Fat *[]BodyFatLog `json:"fat,omitempty"`
+}
+
+// GetBodyTimeSeriesResponse defines model for GetBodyTimeSeriesResponse.
+type GetBodyTimeSeriesResponse struct {
+	BodyBmi    *[]BodyTimeSeriesDatapoint `json:"body-bmi,omitempty"`
+	BodyFat    *[]BodyTimeSeriesDatapoint `json:"body-fat,omitempty"`
+	BodyWeight *[]BodyTimeSeriesDatapoint `json:"body-weight,omitempty"`
+}
+
+// GetBreathingRateIntradayResponse defines model for GetBreathingRateIntradayResponse.
+type GetBreathingRateIntradayResponse struct {
+	Br *[]struct {
+		DateTime *openapi_types.Date         `json:"dateTime,omitempty"`
+		Value    *BreathingRateIntradayValue `json:"value,omitempty"`
+	} `json:"br,omitempty"`
+}
+
+// GetBreathingRateSummaryResponse defines model for GetBreathingRateSummaryResponse.
+type GetBreathingRateSummaryResponse struct {
+	Br *[]BreathingRateSummary `json:"br,omitempty"`
+}
+
+// GetDailyActivitySummaryResponse defines model for GetDailyActivitySummaryResponse.
+type GetDailyActivitySummaryResponse struct {
+	// Activities List of activity log entries.
+	Activities *[]ActivityLog   `json:"activities,omitempty"`
+	Goals      *ActivityGoals   `json:"goals,omitempty"`
+	Summary    *ActivitySummary `json:"summary,omitempty"`
+}
+
+// GetFoodGoalsResponse defines model for GetFoodGoalsResponse.
+type GetFoodGoalsResponse struct {
+	Goals *FoodGoals `json:"goals,omitempty"`
+}
+
+// GetFoodLocalesResponse defines model for GetFoodLocalesResponse.
+type GetFoodLocalesResponse = []FoodLocale
+
+// GetFoodLogResponse defines model for GetFoodLogResponse.
+type GetFoodLogResponse struct {
+	// Foods List of food log entries.
+	Foods   *[]FoodLogEntry    `json:"foods,omitempty"`
+	Goals   *FoodGoals         `json:"goals,omitempty"`
+	Summary *NutritionalValues `json:"summary,omitempty"`
+}
+
+// GetFoodResponse defines model for GetFoodResponse.
+type GetFoodResponse struct {
+	Food *Food `json:"food,omitempty"`
+}
+
+// GetFoodUnitsResponse defines model for GetFoodUnitsResponse.
+type GetFoodUnitsResponse = []FoodUnit
+
+// GetHeartRateIntradayResponse defines model for GetHeartRateIntradayResponse.
+type GetHeartRateIntradayResponse struct {
+	ActivitiesHeart         *[]HeartRateTimeSeriesDatapoint `json:"activities-heart,omitempty"`
+	ActivitiesHeartIntraday *HeartRateIntradayDataset       `json:"activities-heart-intraday,omitempty"`
+}
+
+// GetHeartRateTimeSeriesResponse defines model for GetHeartRateTimeSeriesResponse.
+type GetHeartRateTimeSeriesResponse struct {
+	ActivitiesHeart *[]HeartRateTimeSeriesDatapoint `json:"activities-heart,omitempty"`
+}
+
+// GetHrvIntradayResponse defines model for GetHrvIntradayResponse.
+type GetHrvIntradayResponse struct {
+	Hrv *[]struct {
+		DateTime *openapi_types.Date  `json:"dateTime,omitempty"`
+		Minutes  *[]HrvIntradayMinute `json:"minutes,omitempty"`
+	} `json:"hrv,omitempty"`
+}
+
+// GetHrvSummaryResponse defines model for GetHrvSummaryResponse.
+type GetHrvSummaryResponse struct {
+	Hrv *[]HrvSummary `json:"hrv,omitempty"`
+}
+
+// GetLifetimeStatsResponse defines model for GetLifetimeStatsResponse.
+type GetLifetimeStatsResponse = LifetimeStats
+
+// GetNutritionTimeSeriesResponse defines model for GetNutritionTimeSeriesResponse.
+type GetNutritionTimeSeriesResponse struct {
+	FoodsLogCaloriesIn *[]NutritionTimeSeriesDatapoint `json:"foods-log-caloriesIn,omitempty"`
+	FoodsLogWater      *[]NutritionTimeSeriesDatapoint `json:"foods-log-water,omitempty"`
+}
+
+// GetSleepLogByDateRangeResponse defines model for GetSleepLogByDateRangeResponse.
+type GetSleepLogByDateRangeResponse struct {
+	// Sleep Array of sleep log entries.
+	Sleep *[]SleepLog `json:"sleep,omitempty"`
+}
+
+// GetSleepLogByDateResponse defines model for GetSleepLogByDateResponse.
+type GetSleepLogByDateResponse struct {
+	Meta *SleepMeta `json:"meta,omitempty"`
+
+	// Sleep Array of sleep log entries.
+	Sleep   *[]SleepLog   `json:"sleep,omitempty"`
+	Summary *SleepSummary `json:"summary,omitempty"`
+}
+
+// GetSleepLogListResponse defines model for GetSleepLogListResponse.
+type GetSleepLogListResponse struct {
+	Pagination *struct {
+		// AfterDate The specified afterDate parameter.
+		AfterDate *openapi_types.Date `json:"afterDate,omitempty"`
+
+		// BeforeDate The specified beforeDate parameter.
+		BeforeDate *openapi_types.Date `json:"beforeDate,omitempty"`
+
+		// Limit The specified limit.
+		Limit *int `json:"limit,omitempty"`
+
+		// Next URL for the next page of results.
+		Next *string `json:"next,omitempty"`
+
+		// Offset The specified offset.
+		Offset *int `json:"offset,omitempty"`
+
+		// Previous URL for the previous page of results.
+		Previous *string `json:"previous,omitempty"`
+
+		// Sort The specified sort order.
+		Sort *GetSleepLogListResponsePaginationSort `json:"sort,omitempty"`
+	} `json:"pagination,omitempty"`
+
+	// Sleep Array of sleep log entries.
+	Sleep   *[]SleepLog   `json:"sleep,omitempty"`
+	Summary *SleepSummary `json:"summary,omitempty"`
+}
+
+// GetSleepLogListResponsePaginationSort The specified sort order.
+type GetSleepLogListResponsePaginationSort string
+
+// GetSpO2IntradayResponse defines model for GetSpO2IntradayResponse.
+type GetSpO2IntradayResponse struct {
+	Spo2 *[]struct {
+		// DateTime The sleep log date specified in the format YYYY-MM-DD.
+		DateTime *openapi_types.Date   `json:"dateTime,omitempty"`
+		Minutes  *[]SpO2IntradayMinute `json:"minutes,omitempty"`
+	} `json:"spo2,omitempty"`
+}
+
+// GetSpO2SummaryResponse defines model for GetSpO2SummaryResponse.
+type GetSpO2SummaryResponse struct {
+	// Spo2 List of SpO2 summaries.
+	Spo2 *[]SpO2Summary `json:"spo2,omitempty"`
+}
+
+// GetSubscriptionListResponse defines model for GetSubscriptionListResponse.
+type GetSubscriptionListResponse struct {
+	ApiSubscriptions *[]Subscription `json:"apiSubscriptions,omitempty"`
+}
+
+// GetTemperatureCoreSummaryResponse defines model for GetTemperatureCoreSummaryResponse.
+type GetTemperatureCoreSummaryResponse struct {
+	TempCore *[]TemperatureCoreLog `json:"tempCore,omitempty"`
+}
+
+// GetTemperatureSkinSummaryResponse defines model for GetTemperatureSkinSummaryResponse.
+type GetTemperatureSkinSummaryResponse struct {
+	TempSkin *[]TemperatureSkinLog `json:"tempSkin,omitempty"`
+}
+
+// GetVo2MaxSummaryResponse defines model for GetVo2MaxSummaryResponse.
+type GetVo2MaxSummaryResponse struct {
+	Cardioscore *[]CardioScoreSummary `json:"cardioscore,omitempty"`
+}
+
+// GetWaterLogResponse defines model for GetWaterLogResponse.
+type GetWaterLogResponse struct {
+	Summary *struct {
+		// Water Total amount of water consumed for the day.
+		Water *int `json:"water,omitempty"`
+	} `json:"summary,omitempty"`
+
+	// Water List of water log entries.
+	Water *[]WaterLog `json:"water,omitempty"`
+}
+
+// GetWeightLogResponse defines model for GetWeightLogResponse.
+type GetWeightLogResponse struct {
+	Weight *[]WeightLog `json:"weight,omitempty"`
+}
+
+// HeartRateIntradayDatapoint defines model for HeartRateIntradayDatapoint.
+type HeartRateIntradayDatapoint struct {
+	// Time The time the intraday heart rate value was recorded
+	Time *string `json:"time,omitempty"`
+
+	// Value The intraday heart rate value
+	Value *float32 `json:"value,omitempty"`
+}
+
+// HeartRateIntradayDataset defines model for HeartRateIntradayDataset.
+type HeartRateIntradayDataset struct {
+	Dataset *[]HeartRateIntradayDatapoint `json:"dataset,omitempty"`
+
+	// DatasetInterval The requested detail-level numerical interval
+	DatasetInterval *int `json:"datasetInterval,omitempty"`
+
+	// DatasetType The requested detail-level unit of measure
+	DatasetType *string `json:"datasetType,omitempty"`
+}
+
+// HeartRateTimeSeriesDatapoint defines model for HeartRateTimeSeriesDatapoint.
+type HeartRateTimeSeriesDatapoint struct {
+	// DateTime Date of the heart rate log.
+	DateTime *openapi_types.Date       `json:"dateTime,omitempty"`
+	Value    *HeartRateTimeSeriesValue `json:"value,omitempty"`
+}
+
+// HeartRateTimeSeriesValue defines model for HeartRateTimeSeriesValue.
+type HeartRateTimeSeriesValue struct {
+	CustomHeartRateZones *[]HeartRateZone `json:"customHeartRateZones,omitempty"`
+	HeartRateZones       *[]HeartRateZone `json:"heartRateZones,omitempty"`
+
+	// RestingHeartRate The user’s calculated resting heart rate.
+	RestingHeartRate *int `json:"restingHeartRate,omitempty"`
+}
+
+// HeartRateZone defines model for HeartRateZone.
+type HeartRateZone struct {
+	// CaloriesOut Number calories burned with the specified heart rate zone.
+	CaloriesOut *float32 `json:"caloriesOut,omitempty"`
+
+	// Max Maximum range for the heart rate zone.
+	Max *int `json:"max,omitempty"`
+
+	// Min Minimum range for the heart rate zone.
+	Min *int `json:"min,omitempty"`
+
+	// Minutes Number minutes withing the specified heart rate zone.
+	Minutes *int `json:"minutes,omitempty"`
+
+	// Name Name of the heart rate zone.
+	Name *string `json:"name,omitempty"`
+}
+
+// HrvIntradayMinute defines model for HrvIntradayMinute.
+type HrvIntradayMinute struct {
+	// Minute A measurement taken at a given time.
+	Minute *string           `json:"minute,omitempty"`
+	Value  *HrvIntradayValue `json:"value,omitempty"`
+}
+
+// HrvIntradayValue defines model for HrvIntradayValue.
+type HrvIntradayValue struct {
+	// Coverage Data completeness in terms of the number of interbeat intervals.
+	Coverage *float32 `json:"coverage,omitempty"`
+
+	// DailyRmssd The Root Mean Square of Successive Differences (RMSSD) between heart beats. (Interval response)
+	DailyRmssd *float32 `json:"dailyRmssd,omitempty"`
+
+	// Hf The power in interbeat interval fluctuations within the high frequency band (0.15 Hz - 0.4 Hz).
+	Hf *float32 `json:"hf,omitempty"`
+
+	// Lf The power in interbeat interval fluctuations within the low frequency band (0.04 Hz - 0.15 Hz).
+	Lf *float32 `json:"lf,omitempty"`
+
+	// Rmssd The Root Mean Square of Successive Differences (RMSSD) between heart beats.
+	Rmssd *float32 `json:"rmssd,omitempty"`
+}
+
+// HrvSummary defines model for HrvSummary.
+type HrvSummary struct {
+	// DateTime The sleep log date specified in the format YYYY-MM-DD.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+	Value    *HrvValue           `json:"value,omitempty"`
+}
+
+// HrvValue defines model for HrvValue.
+type HrvValue struct {
+	// DailyRmssd The Root Mean Square of Successive Differences (RMSSD) between heart beats. It measures short-term variability in the user’s daily heart rate in milliseconds (ms).
+	DailyRmssd *float32 `json:"dailyRmssd,omitempty"`
+
+	// DeepRmssd The Root Mean Square of Successive Differences (RMSSD) between heart beats. It measures short-term variability in the user’s heart rate while in deep sleep, in milliseconds (ms).
+	DeepRmssd *float32 `json:"deepRmssd,omitempty"`
+}
+
+// IrnAlert defines model for IrnAlert.
+type IrnAlert struct {
+	// AlertTime The start time for the irregular rhythm detection.
+	AlertTime *time.Time `json:"alertTime,omitempty"`
+
+	// AlgoVersion The version of the algorithm running when the alert was produced.
+	AlgoVersion *string `json:"algoVersion,omitempty"`
+
+	// DetectedTime The end time for the irregular rhythm detection.
+	DetectedTime *time.Time `json:"detectedTime,omitempty"`
+
+	// DeviceType The name of the device who generated the alert.
+	DeviceType *string `json:"deviceType,omitempty"`
+
+	// ServiceVersion The version of the service running when the alert was produced.
+	ServiceVersion *string `json:"serviceVersion,omitempty"`
+
+	// Windows List of analyzable windows.
+	Windows *[]IrnWindow `json:"windows,omitempty"`
+}
+
+// IrnBpmData defines model for IrnBpmData.
+type IrnBpmData struct {
+	// DataTime The timestamp of the individual heart beat.
+	DataTime *time.Time `json:"dataTime,omitempty"`
+
+	// Value The extrapolated bpm value from the individual heart beat.
+	Value *int `json:"value,omitempty"`
+}
+
+// IrnWindow defines model for IrnWindow.
+type IrnWindow struct {
+	// BpmData List of heart beat data.
+	BpmData *[]IrnBpmData `json:"bpmData,omitempty"`
+
+	// StartTime The start time for the analyzable window (representing 5 consecutive minutes of data following the start time).
+	StartTime *time.Time `json:"startTime,omitempty"`
+}
+
+// LeaderboardFriend defines model for LeaderboardFriend.
+type LeaderboardFriend struct {
+	Attributes *LeaderboardFriendAttributes `json:"attributes,omitempty"`
+
+	// Id Fitbit user id.
+	Id            *string `json:"id,omitempty"`
+	Relationships *struct {
+		User *struct {
+			Data *struct {
+				// Id Fitbit user id.
+				Id *string `json:"id,omitempty"`
+
+				// Type Supported: person
+				Type *string `json:"type,omitempty"`
+			} `json:"data,omitempty"`
+		} `json:"user,omitempty"`
+	} `json:"relationships,omitempty"`
+
+	// Type Describes the user based on the frequency they sync their steps. Supported: ranked-user | inactive-user
+	Type *string `json:"type,omitempty"`
+}
+
+// LeaderboardFriendAttributes defines model for LeaderboardFriendAttributes.
+type LeaderboardFriendAttributes struct {
+	// Avatar Link to user's avatar picture.
+	Avatar *string `json:"avatar,omitempty"`
+
+	// Child Boolean value describing friend as a child account.
+	Child *bool `json:"child,omitempty"`
+
+	// Friend Supported: true
+	Friend *bool `json:"friend,omitempty"`
+
+	// Name Person's display name.
+	Name *string `json:"name,omitempty"`
+
+	// StepRank Ranking among the user's friends.
+	StepRank *int `json:"step-rank,omitempty"`
+
+	// StepSummary Weekly step count.
+	StepSummary *int `json:"step-summary,omitempty"`
+}
+
+// LifetimeStats defines model for LifetimeStats.
+type LifetimeStats struct {
+	// Best The user's best achievements.
+	Best *struct {
+		// Total The user's best achievements including tracker and manual activity log entries.
+		Total *struct {
+			Distance *struct {
+				// Date The date the user's best distance was achieved.
+				Date *openapi_types.Date `json:"date,omitempty"`
+
+				// Value The user's best distance achieved.
+				Value *float32 `json:"value,omitempty"`
+			} `json:"distance,omitempty"`
+			Floors *struct {
+				// Date The date the user's best floors was achieved.
+				Date *openapi_types.Date `json:"date,omitempty"`
+
+				// Value The user's best floors achieved.
+				Value *float32 `json:"value,omitempty"`
+			} `json:"floors,omitempty"`
+			Steps *struct {
+				// Date The date the user's best step count was achieved.
+				Date *openapi_types.Date `json:"date,omitempty"`
+
+				// Value The user's best step count achieved.
+				Value *int `json:"value,omitempty"`
+			} `json:"steps,omitempty"`
+		} `json:"total,omitempty"`
+
+		// Tracker The user's best achievements including tracker data only.
+		Tracker *struct {
+			Distance *struct {
+				// Date The date the user's best distance was achieved.
+				Date *openapi_types.Date `json:"date,omitempty"`
+
+				// Value The user's best distance achieved.
+				Value *float32 `json:"value,omitempty"`
+			} `json:"distance,omitempty"`
+			Floors *struct {
+				// Date The date the user's best floors was achieved.
+				Date *openapi_types.Date `json:"date,omitempty"`
+
+				// Value The user's best floors achieved.
+				Value *float32 `json:"value,omitempty"`
+			} `json:"floors,omitempty"`
+			Steps *struct {
+				// Date The date the user's best step count was achieved.
+				Date *openapi_types.Date `json:"date,omitempty"`
+
+				// Value The user's best step count achieved.
+				Value *int `json:"value,omitempty"`
+			} `json:"steps,omitempty"`
+		} `json:"tracker,omitempty"`
+	} `json:"best,omitempty"`
+
+	// Lifetime The user's lifetime stats.
+	Lifetime *struct {
+		// Total The total lifetime stats including tracker and manual activity log entries.
+		Total *struct {
+			// ActiveScore Functionality removed. A response is returned for backward compatibility.
+			ActiveScore *int `json:"activeScore,omitempty"`
+
+			// CaloriesOut Functionality removed. A response is returned for backward compatibility.
+			CaloriesOut *int `json:"caloriesOut,omitempty"`
+
+			// Distance The total distance recorded over the lifetime of the user's account.
+			Distance *float32 `json:"distance,omitempty"`
+
+			// Floors The total floors recorded over the lifetime of the user's account.
+			Floors *int `json:"floors,omitempty"`
+
+			// Steps The total steps recorded over the lifetime of the user's account.
+			Steps *int `json:"steps,omitempty"`
+		} `json:"total,omitempty"`
+
+		// Tracker The total lifetime stats including tracker data only.
+		Tracker *struct {
+			// ActiveScore Functionality removed. A response is returned for backward compatibility.
+			ActiveScore *int `json:"activeScore,omitempty"`
+
+			// CaloriesOut Functionality removed. A response is returned for backward compatibility.
+			CaloriesOut *int `json:"caloriesOut,omitempty"`
+
+			// Distance The total distance recorded by the tracker over the lifetime of the user's account.
+			Distance *float32 `json:"distance,omitempty"`
+
+			// Floors The total floors recorded by the tracker over the lifetime of the user's account.
+			Floors *int `json:"floors,omitempty"`
+
+			// Steps The total steps recorded by the tracker over the lifetime of the user's account.
+			Steps *int `json:"steps,omitempty"`
+		} `json:"tracker,omitempty"`
+	} `json:"lifetime,omitempty"`
+}
+
+// LoggedFood defines model for LoggedFood.
+type LoggedFood struct {
+	// AccessLevel The access level of the food.
+	AccessLevel *LoggedFoodAccessLevel `json:"accessLevel,omitempty"`
+
+	// Amount The amount of food consumed.
+	Amount *float32 `json:"amount,omitempty"`
+
+	// Brand The brand of the food.
+	Brand *string `json:"brand,omitempty"`
+
+	// Calories The calories in the food.
+	Calories *int `json:"calories,omitempty"`
+
+	// FoodId The ID of the food.
+	FoodId *int `json:"foodId,omitempty"`
+
+	// Locale The locale of the food.
+	Locale *string `json:"locale,omitempty"`
+
+	// MealTypeId The meal type ID.
+	MealTypeId *int `json:"mealTypeId,omitempty"`
+
+	// Name The name of the food.
+	Name *string `json:"name,omitempty"`
+	Unit *struct {
+		// Id The ID of the unit.
+		Id *int `json:"id,omitempty"`
+
+		// Name The name of the unit.
+		Name *string `json:"name,omitempty"`
+
+		// Plural The plural name of the unit.
+		Plural *string `json:"plural,omitempty"`
+	} `json:"unit,omitempty"`
+
+	// Units List of unit IDs.
+	Units *[]int `json:"units,omitempty"`
+}
+
+// LoggedFoodAccessLevel The access level of the food.
+type LoggedFoodAccessLevel string
+
 // Meal defines model for Meal.
 type Meal struct {
-	Description *string     `json:"description,omitempty"`
-	MealFoods   *[]FoodItem `json:"mealFoods,omitempty"`
-	Name        *string     `json:"name,omitempty"`
+	// Description The description of the meal.
+	Description *string `json:"description,omitempty"`
+
+	// Id The ID of the meal.
+	Id        *int64      `json:"id,omitempty"`
+	MealFoods *[]MealFood `json:"mealFoods,omitempty"`
+
+	// Name The name of the meal.
+	Name *string `json:"name,omitempty"`
+}
+
+// MealFood defines model for MealFood.
+type MealFood struct {
+	// AccessLevel The access level of the food (PUBLIC or PRIVATE).
+	AccessLevel *string `json:"accessLevel,omitempty"`
+
+	// Amount The amount of the food.
+	Amount *float32 `json:"amount,omitempty"`
+
+	// Brand The brand of the food.
+	Brand *string `json:"brand,omitempty"`
+
+	// Calories The number of calories in the food.
+	Calories *int `json:"calories,omitempty"`
+
+	// FoodId The ID of the food.
+	FoodId *int64 `json:"foodId,omitempty"`
+
+	// Locale The locale of the food.
+	Locale *string `json:"locale,omitempty"`
+
+	// MealTypeId The meal type ID.
+	MealTypeId *int `json:"mealTypeId,omitempty"`
+
+	// Name The name of the food.
+	Name *string   `json:"name,omitempty"`
+	Unit *FoodUnit `json:"unit,omitempty"`
+
+	// Units List of unit IDs available for this food.
+	Units *[]int `json:"units,omitempty"`
+}
+
+// NutritionTimeSeriesDatapoint defines model for NutritionTimeSeriesDatapoint.
+type NutritionTimeSeriesDatapoint struct {
+	// DateTime The date of the recorded resource.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+
+	// Value The specified resource's daily total.
+	Value *string `json:"value,omitempty"`
+}
+
+// NutritionalValues defines model for NutritionalValues.
+type NutritionalValues struct {
+	// Calories Calories.
+	Calories *int `json:"calories,omitempty"`
+
+	// Carbs Carbohydrates.
+	Carbs *float32 `json:"carbs,omitempty"`
+
+	// Fat Fat.
+	Fat *float32 `json:"fat,omitempty"`
+
+	// Fiber Fiber.
+	Fiber *float32 `json:"fiber,omitempty"`
+
+	// Protein Protein.
+	Protein *float32 `json:"protein,omitempty"`
+
+	// Sodium Sodium.
+	Sodium *float32 `json:"sodium,omitempty"`
+}
+
+// Oauth2Introspect defines model for Oauth2Introspect.
+type Oauth2Introspect struct {
+	// Active True if the token is active, false otherwise.
+	Active *bool `json:"active,omitempty"`
+
+	// ClientId The client ID.
+	ClientId *string `json:"client_id,omitempty"`
+
+	// Exp The timestamp when the token expires.
+	Exp *int `json:"exp,omitempty"`
+
+	// Iat The timestamp when the token was issued.
+	Iat *int `json:"iat,omitempty"`
+
+	// Scope The scopes that the token has access to.
+	Scope *string `json:"scope,omitempty"`
+
+	// TokenType The type of token.
+	TokenType *string `json:"token_type,omitempty"`
+
+	// UserId The user ID.
+	UserId *string `json:"user_id,omitempty"`
+}
+
+// Oauth2Token defines model for Oauth2Token.
+type Oauth2Token struct {
+	// AccessToken The access token.
+	AccessToken *string `json:"access_token,omitempty"`
+
+	// ExpiresIn The number of seconds until the access token expires.
+	ExpiresIn *int `json:"expires_in,omitempty"`
+
+	// RefreshToken The refresh token.
+	RefreshToken *string `json:"refresh_token,omitempty"`
+
+	// Scope The scopes that the token has access to.
+	Scope *string `json:"scope,omitempty"`
+
+	// TokenType The type of token.
+	TokenType *string `json:"token_type,omitempty"`
+
+	// UserId The user ID.
+	UserId *string `json:"user_id,omitempty"`
+}
+
+// SearchFoodsResponse defines model for SearchFoodsResponse.
+type SearchFoodsResponse struct {
+	Foods *[]Food `json:"foods,omitempty"`
+}
+
+// SleepGoal defines model for SleepGoal.
+type SleepGoal struct {
+	// Bedtime The user's targeted bedtime.
+	Bedtime *string `json:"bedtime,omitempty"`
+
+	// MinDuration Length of the sleep goal period in minutes.
+	MinDuration *int `json:"minDuration,omitempty"`
+
+	// UpdatedOn The timestamp that the goal was created/updated.
+	UpdatedOn *time.Time `json:"updatedOn,omitempty"`
+
+	// WakeupTime The user's targeted wake time.
+	WakeupTime *string `json:"wakeupTime,omitempty"`
+}
+
+// SleepLog defines model for SleepLog.
+type SleepLog struct {
+	// DateOfSleep The date the sleep log ended.
+	DateOfSleep *openapi_types.Date `json:"dateOfSleep,omitempty"`
+
+	// Duration Length of the sleep in milliseconds.
+	Duration *int `json:"duration,omitempty"`
+
+	// Efficiency Calculated sleep efficiency score.
+	Efficiency *float32 `json:"efficiency,omitempty"`
+
+	// EndTime Time the sleep log ended.
+	EndTime *string `json:"endTime,omitempty"`
+
+	// InfoCode An integer value representing the quality of data collected within the sleep log. 0 = Sufficient data, 1 = Insufficient heart rate data, 2 = Sleep period too short, 3 = Server-side issue.
+	InfoCode *int `json:"infoCode,omitempty"`
+
+	// IsMainSleep Boolean value indicating if this is the main sleep period.
+	IsMainSleep *bool `json:"isMainSleep,omitempty"`
+	Levels      *struct {
+		Data *[]struct {
+			// DateTime Timestamp the user started in sleep level.
+			DateTime *time.Time `json:"dateTime,omitempty"`
+
+			// Level The sleep level the user entered.
+			Level *string `json:"level,omitempty"`
+
+			// Seconds The length of time the user was in the sleep level in seconds.
+			Seconds *int `json:"seconds,omitempty"`
+		} `json:"data,omitempty"`
+
+		// ShortData Short data periods (3 minutes or less) for stages sleep logs.
+		ShortData *[]struct {
+			// DateTime Timestamp the user started in sleep level.
+			DateTime *time.Time `json:"dateTime,omitempty"`
+
+			// Level The sleep level the user entered.
+			Level *string `json:"level,omitempty"`
+
+			// Seconds The length of time the user was in the sleep level in seconds.
+			Seconds *int `json:"seconds,omitempty"`
+		} `json:"shortData,omitempty"`
+		Summary *map[string]struct {
+			// Count Total number of times the user entered the sleep level.
+			Count *int `json:"count,omitempty"`
+
+			// Minutes Total number of minutes the user appeared in the sleep level.
+			Minutes *int `json:"minutes,omitempty"`
+
+			// ThirtyDayAvgMinutes The average sleep stage time over the past 30 days.
+			ThirtyDayAvgMinutes *int `json:"thirtyDayAvgMinutes,omitempty"`
+		} `json:"summary,omitempty"`
+	} `json:"levels,omitempty"`
+
+	// LogId Sleep log ID.
+	LogId *int `json:"logId,omitempty"`
+
+	// LogType The type of sleep in terms of how it was logged.
+	LogType *SleepLogLogType `json:"logType,omitempty"`
+
+	// MinutesAfterWakeup The total number of minutes after the user woke up.
+	MinutesAfterWakeup *int `json:"minutesAfterWakeup,omitempty"`
+
+	// MinutesAsleep The total number of minutes the user was asleep.
+	MinutesAsleep *int `json:"minutesAsleep,omitempty"`
+
+	// MinutesAwake The total sum of wake minutes only.
+	MinutesAwake *int `json:"minutesAwake,omitempty"`
+
+	// MinutesToFallAsleep The total number of minutes before the user falls asleep.
+	MinutesToFallAsleep *int `json:"minutesToFallAsleep,omitempty"`
+
+	// StartTime Time the sleep log begins.
+	StartTime *string `json:"startTime,omitempty"`
+
+	// TimeInBed Total number of minutes the user was in bed.
+	TimeInBed *int `json:"timeInBed,omitempty"`
+
+	// Type The type of sleep log.
+	Type *SleepLogType `json:"type,omitempty"`
+}
+
+// SleepLogLogType The type of sleep in terms of how it was logged.
+type SleepLogLogType string
+
+// SleepLogType The type of sleep log.
+type SleepLogType string
+
+// SleepMeta defines model for SleepMeta.
+type SleepMeta struct {
+	// RetryDuration The retry duration in milliseconds.
+	RetryDuration *int `json:"retryDuration,omitempty"`
+
+	// State The processing state of the sleep log.
+	State *SleepMetaState `json:"state,omitempty"`
+}
+
+// SleepMetaState The processing state of the sleep log.
+type SleepMetaState string
+
+// SleepSummary defines model for SleepSummary.
+type SleepSummary struct {
+	// Stages Summary of sleep stages with minutes for each stage.
+	Stages *map[string]int `json:"stages,omitempty"`
+
+	// TotalMinutesAsleep Total number of minutes the user was asleep across all sleep records.
+	TotalMinutesAsleep *int `json:"totalMinutesAsleep,omitempty"`
+
+	// TotalSleepRecords The number of sleep records within the sleep log.
+	TotalSleepRecords *int `json:"totalSleepRecords,omitempty"`
+
+	// TotalTimeInBed Total number of minutes the user was in bed across all records.
+	TotalTimeInBed *int `json:"totalTimeInBed,omitempty"`
+}
+
+// SpO2IntradayMinute defines model for SpO2IntradayMinute.
+type SpO2IntradayMinute struct {
+	// Minute The date and time at which the SpO2 measurement was taken.
+	Minute *string `json:"minute,omitempty"`
+
+	// Value The percentage value of SpO2 calculated at a specific date and time in a single day.
+	Value *float32 `json:"value,omitempty"`
+}
+
+// SpO2Summary defines model for SpO2Summary.
+type SpO2Summary struct {
+	// DateTime The sleep log date specified in the format YYYY-MM-DD.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+
+	// Value The SpO2 value.
+	Value *struct {
+		// Avg The mean of the 1 minute SpO2 levels calculated as a percentage value.
+		Avg *float32 `json:"avg,omitempty"`
+
+		// Max The maximum daily SpO2 level calculated as a percentage value.
+		Max *float32 `json:"max,omitempty"`
+
+		// Min The minimum daily SpO2 level calculated as a percentage value.
+		Min *float32 `json:"min,omitempty"`
+	} `json:"value,omitempty"`
+}
+
+// Subscription defines model for Subscription.
+type Subscription struct {
+	// CollectionType The collection type of the subscription.
+	CollectionType *string `json:"collectionType,omitempty"`
+
+	// OwnerId The owner ID of the subscription.
+	OwnerId *string `json:"ownerId,omitempty"`
+
+	// OwnerType The owner type of the subscription.
+	OwnerType *string `json:"ownerType,omitempty"`
+
+	// SubscriberId The subscriber ID of the subscription.
+	SubscriberId *string `json:"subscriberId,omitempty"`
+
+	// SubscriptionId The subscription ID.
+	SubscriptionId *string `json:"subscriptionId,omitempty"`
+}
+
+// TemperatureCoreLog defines model for TemperatureCoreLog.
+type TemperatureCoreLog struct {
+	// DateTime The log timestamp.
+	DateTime *time.Time `json:"dateTime,omitempty"`
+
+	// Value The temperature value.
+	Value *float32 `json:"value,omitempty"`
+}
+
+// TemperatureSkinLog defines model for TemperatureSkinLog.
+type TemperatureSkinLog struct {
+	// DateTime The log date.
+	DateTime *openapi_types.Date `json:"dateTime,omitempty"`
+
+	// LogType The type of skin temperature log created.
+	LogType *string `json:"logType,omitempty"`
+	Value   *struct {
+		// NightlyRelative The user's average temperature during a period of sleep.
+		NightlyRelative *float32 `json:"nightlyRelative,omitempty"`
+	} `json:"value,omitempty"`
+}
+
+// User defines model for User.
+type User struct {
+	Age                    *int                `json:"age,omitempty"`
+	Ambassador             *bool               `json:"ambassador,omitempty"`
+	AutoStrideEnabled      *bool               `json:"autoStrideEnabled,omitempty"`
+	Avatar                 *string             `json:"avatar,omitempty"`
+	Avatar150              *string             `json:"avatar150,omitempty"`
+	Avatar640              *string             `json:"avatar640,omitempty"`
+	AverageDailySteps      *int                `json:"averageDailySteps,omitempty"`
+	ChallengesBeta         *bool               `json:"challengesBeta,omitempty"`
+	ClockTimeDisplayFormat *string             `json:"clockTimeDisplayFormat,omitempty"`
+	Corporate              *bool               `json:"corporate,omitempty"`
+	CorporateAdmin         *bool               `json:"corporateAdmin,omitempty"`
+	Country                *string             `json:"country,omitempty"`
+	DateOfBirth            *openapi_types.Date `json:"dateOfBirth,omitempty"`
+	DisplayName            *string             `json:"displayName,omitempty"`
+	DisplayNameSetting     *string             `json:"displayNameSetting,omitempty"`
+	DistanceUnit           *string             `json:"distanceUnit,omitempty"`
+	EncodedId              *string             `json:"encodedId,omitempty"`
+	Features               *struct {
+		ExerciseGoal *bool `json:"exerciseGoal,omitempty"`
+	} `json:"features,omitempty"`
+	FirstName                *string             `json:"firstName,omitempty"`
+	FoodsLocale              *string             `json:"foodsLocale,omitempty"`
+	FullName                 *string             `json:"fullName,omitempty"`
+	Gender                   *string             `json:"gender,omitempty"`
+	GlucoseUnit              *string             `json:"glucoseUnit,omitempty"`
+	Height                   *float32            `json:"height,omitempty"`
+	HeightUnit               *string             `json:"heightUnit,omitempty"`
+	IsBugReportEnabled       *bool               `json:"isBugReportEnabled,omitempty"`
+	IsChild                  *bool               `json:"isChild,omitempty"`
+	IsCoach                  *bool               `json:"isCoach,omitempty"`
+	LanguageLocale           *string             `json:"languageLocale,omitempty"`
+	LastName                 *string             `json:"lastName,omitempty"`
+	LegalTermsAcceptRequired *bool               `json:"legalTermsAcceptRequired,omitempty"`
+	Locale                   *string             `json:"locale,omitempty"`
+	MemberSince              *openapi_types.Date `json:"memberSince,omitempty"`
+	MfaEnabled               *bool               `json:"mfaEnabled,omitempty"`
+	OffsetFromUTCMillis      *int                `json:"offsetFromUTCMillis,omitempty"`
+	SdkDeveloper             *bool               `json:"sdkDeveloper,omitempty"`
+	SleepTracking            *string             `json:"sleepTracking,omitempty"`
+	StartDayOfWeek           *string             `json:"startDayOfWeek,omitempty"`
+	StrideLengthRunning      *float32            `json:"strideLengthRunning,omitempty"`
+	StrideLengthRunningType  *string             `json:"strideLengthRunningType,omitempty"`
+	StrideLengthWalking      *float32            `json:"strideLengthWalking,omitempty"`
+	StrideLengthWalkingType  *string             `json:"strideLengthWalkingType,omitempty"`
+	SwimUnit                 *string             `json:"swimUnit,omitempty"`
+	Timezone                 *string             `json:"timezone,omitempty"`
+	TopBadges                *[]Badge            `json:"topBadges,omitempty"`
+	WaterUnit                *string             `json:"waterUnit,omitempty"`
+	WaterUnitName            *string             `json:"waterUnitName,omitempty"`
+	Weight                   *float32            `json:"weight,omitempty"`
+	WeightUnit               *string             `json:"weightUnit,omitempty"`
+}
+
+// Vo2MaxValue defines model for Vo2MaxValue.
+type Vo2MaxValue struct {
+	// Vo2Max The displayable value of VO2 Max in mL/kg/min.
+	Vo2Max *string `json:"vo2Max,omitempty"`
+}
+
+// WaterGoal defines model for WaterGoal.
+type WaterGoal struct {
+	// Goal Amount of water to consume daily.
+	Goal *int `json:"goal,omitempty"`
+
+	// StartDate Water goal's start date.
+	StartDate *openapi_types.Date `json:"startDate,omitempty"`
+}
+
+// WaterLog defines model for WaterLog.
+type WaterLog struct {
+	// Amount Amount of water consumed for each period of the day.
+	Amount *int `json:"amount,omitempty"`
+
+	// LogId The water log ID.
+	LogId *int `json:"logId,omitempty"`
+}
+
+// WeightLog defines model for WeightLog.
+type WeightLog struct {
+	// Bmi Calculated BMI.
+	Bmi *float32 `json:"bmi,omitempty"`
+
+	// Date Log entry date.
+	Date *openapi_types.Date `json:"date,omitempty"`
+
+	// LogId Weight Log IDs are unique to the user, but not globally unique.
+	LogId *int `json:"logId,omitempty"`
+
+	// Source The source of the weight log.
+	Source *string `json:"source,omitempty"`
+
+	// Time Time of the measurement.
+	Time *string `json:"time,omitempty"`
+
+	// Weight Weight in the unit system that corresponds to the Accept-Language header provided.
+	Weight *float32 `json:"weight,omitempty"`
 }
 
 // IntrospectFormdataBody defines parameters for Introspect.
@@ -273,6 +2073,9 @@ type GetAZMByDateTimeSeriesIntradayParamsDetailLevel string
 
 // GetAZMTimeSeriesByDateParamsPeriod defines parameters for GetAZMTimeSeriesByDate.
 type GetAZMTimeSeriesByDateParamsPeriod string
+
+// GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel defines parameters for GetAZMByIntervalTimeSeriesIntraday.
+type GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel string
 
 // GetAZMByIntervalIntradayParamsDetailLevel defines parameters for GetAZMByIntervalIntraday.
 type GetAZMByIntervalIntradayParamsDetailLevel string
@@ -740,22 +2543,22 @@ type ClientInterface interface {
 	AddActivitiesLog(ctx context.Context, params *AddActivitiesLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAZMByDateIntraday request
-	GetAZMByDateIntraday(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAZMByDateIntraday(ctx context.Context, date string, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAZMByDateTimeSeriesIntraday request
-	GetAZMByDateTimeSeriesIntraday(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAZMByDateTimeSeriesIntraday(ctx context.Context, date string, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAZMTimeSeriesByDate request
-	GetAZMTimeSeriesByDate(ctx context.Context, date openapi_types.Date, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAZMTimeSeriesByDate(ctx context.Context, date string, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAZMTimeSeriesByInterval request
-	GetAZMTimeSeriesByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAZMTimeSeriesByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAZMByIntervalTimeSeriesIntraday request
-	GetAZMByIntervalTimeSeriesIntraday(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAZMByIntervalTimeSeriesIntraday(ctx context.Context, startDate string, endDate string, startTime string, endTime string, detailLevel GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAZMByIntervalIntraday request
-	GetAZMByIntervalIntraday(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAZMByIntervalIntraday(ctx context.Context, startDate string, endDate string, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesByDate request
 	GetActivitiesByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -782,19 +2585,19 @@ type ClientInterface interface {
 	GetHeartByDateRange(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHeartByDateIntraday request
-	GetHeartByDateIntraday(ctx context.Context, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHeartByDateIntraday(ctx context.Context, date string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHeartByDateTimestampIntraday request
-	GetHeartByDateTimestampIntraday(ctx context.Context, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHeartByDateTimestampIntraday(ctx context.Context, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHeartByDateRangeIntraday request
-	GetHeartByDateRangeIntraday(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHeartByDateRangeIntraday(ctx context.Context, date string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHeartByDateRangeTimestampIntraday request
-	GetHeartByDateRangeTimestampIntraday(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHeartByDateRangeTimestampIntraday(ctx context.Context, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHeartByDatePeriod request
-	GetHeartByDatePeriod(ctx context.Context, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHeartByDatePeriod(ctx context.Context, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesLogList request
 	GetActivitiesLogList(ctx context.Context, params *GetActivitiesLogListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -803,10 +2606,10 @@ type ClientInterface interface {
 	GetRecentActivities(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesTrackerResourceByDateRange request
-	GetActivitiesTrackerResourceByDateRange(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesTrackerResourceByDateRange(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesTrackerResourceByDatePeriod request
-	GetActivitiesTrackerResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesTrackerResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteActivitiesLog request
 	DeleteActivitiesLog(ctx context.Context, activityLogId int, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -815,22 +2618,22 @@ type ClientInterface interface {
 	GetActivitiesTCX(ctx context.Context, logId string, params *GetActivitiesTCXParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesResourceByDateRange request
-	GetActivitiesResourceByDateRange(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesResourceByDateRange(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesResourceByDateRangeIntraday request
-	GetActivitiesResourceByDateRangeIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesResourceByDateRangeIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesResourceByDateIntraday request
-	GetActivitiesResourceByDateIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesResourceByDateIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesResourceByDateTimeSeriesIntraday request
-	GetActivitiesResourceByDateTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesResourceByDateTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesResourceByDateRangeTimeSeriesIntraday request
-	GetActivitiesResourceByDateRangeTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesResourceByDateRangeTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetActivitiesResourceByDatePeriod request
-	GetActivitiesResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetActivitiesResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBadges request
 	GetBadges(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -839,7 +2642,7 @@ type ClientInterface interface {
 	AddBodyFatLog(ctx context.Context, params *AddBodyFatLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBodyFatByDateRange request
-	GetBodyFatByDateRange(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBodyFatByDateRange(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBodyFatByDate request
 	GetBodyFatByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -857,7 +2660,7 @@ type ClientInterface interface {
 	AddWeightLog(ctx context.Context, params *AddWeightLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetWeightByDateRange request
-	GetWeightByDateRange(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetWeightByDateRange(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetWeightByDate request
 	GetWeightByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -875,28 +2678,28 @@ type ClientInterface interface {
 	GetBodyGoals(ctx context.Context, goalType string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBodyResourceByDateRange request
-	GetBodyResourceByDateRange(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBodyResourceByDateRange(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBodyResourceByDatePeriod request
-	GetBodyResourceByDatePeriod(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBodyResourceByDatePeriod(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBreathingRateSummaryByDate request
-	GetBreathingRateSummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBreathingRateSummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBreathingRateIntradayByDate request
-	GetBreathingRateIntradayByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBreathingRateIntradayByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBreathingRateSummaryByInterval request
-	GetBreathingRateSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBreathingRateSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetBreathingRateIntradayByInterval request
-	GetBreathingRateIntradayByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetBreathingRateIntradayByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetVo2MaxSummaryByDate request
-	GetVo2MaxSummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetVo2MaxSummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetVo2MaxSummaryByInterval request
-	GetVo2MaxSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetVo2MaxSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetDevices request
 	GetDevices(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -971,25 +2774,25 @@ type ClientInterface interface {
 	EditFoodsLog(ctx context.Context, foodLogId string, params *EditFoodsLogParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetFoodsByDateRange request
-	GetFoodsByDateRange(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetFoodsByDateRange(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetFoodsResourceByDatePeriod request
-	GetFoodsResourceByDatePeriod(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetFoodsResourceByDatePeriod(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteFoods request
 	DeleteFoods(ctx context.Context, foodId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHrvSummaryDate request
-	GetHrvSummaryDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHrvSummaryDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHrvIntradayByDate request
-	GetHrvIntradayByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHrvIntradayByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHrvSummaryInterval request
-	GetHrvSummaryInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHrvSummaryInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetHrvIntradayByInterval request
-	GetHrvIntradayByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetHrvIntradayByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetIrnAlertsList request
 	GetIrnAlertsList(ctx context.Context, params *GetIrnAlertsListParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1008,6 +2811,9 @@ type ClientInterface interface {
 	// DeleteMeal request
 	DeleteMeal(ctx context.Context, mealId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetMeal request
+	GetMeal(ctx context.Context, mealId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// UpdateMealWithBody request with any body
 	UpdateMealWithBody(ctx context.Context, mealId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -1016,29 +2822,32 @@ type ClientInterface interface {
 	// GetProfile request
 	GetProfile(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// Post1UserProfileJson request
+	Post1UserProfileJson(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetSpO2SummaryByDate request
-	GetSpO2SummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSpO2SummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSpO2IntradayByDate request
-	GetSpO2IntradayByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSpO2IntradayByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSpO2SummaryByInterval request
-	GetSpO2SummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSpO2SummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSpO2IntradayByInterval request
-	GetSpO2IntradayByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetSpO2IntradayByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTempCoreSummaryByDate request
-	GetTempCoreSummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTempCoreSummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTempCoreSummaryByInterval request
-	GetTempCoreSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTempCoreSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTempSkinSummaryDate request
-	GetTempSkinSummaryDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTempSkinSummaryDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetTempSkinSummaryByInterval request
-	GetTempSkinSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetTempSkinSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetSubscriptionsList request
 	GetSubscriptionsList(ctx context.Context, collectionPath string, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -1286,7 +3095,7 @@ func (c *Client) AddActivitiesLog(ctx context.Context, params *AddActivitiesLogP
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAZMByDateIntraday(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAZMByDateIntraday(ctx context.Context, date string, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAZMByDateIntradayRequest(c.Server, date, detailLevel)
 	if err != nil {
 		return nil, err
@@ -1298,7 +3107,7 @@ func (c *Client) GetAZMByDateIntraday(ctx context.Context, date openapi_types.Da
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAZMByDateTimeSeriesIntraday(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAZMByDateTimeSeriesIntraday(ctx context.Context, date string, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAZMByDateTimeSeriesIntradayRequest(c.Server, date, detailLevel, startTime, endTime)
 	if err != nil {
 		return nil, err
@@ -1310,7 +3119,7 @@ func (c *Client) GetAZMByDateTimeSeriesIntraday(ctx context.Context, date openap
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAZMTimeSeriesByDate(ctx context.Context, date openapi_types.Date, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAZMTimeSeriesByDate(ctx context.Context, date string, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAZMTimeSeriesByDateRequest(c.Server, date, period)
 	if err != nil {
 		return nil, err
@@ -1322,7 +3131,7 @@ func (c *Client) GetAZMTimeSeriesByDate(ctx context.Context, date openapi_types.
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAZMTimeSeriesByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAZMTimeSeriesByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAZMTimeSeriesByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1334,8 +3143,8 @@ func (c *Client) GetAZMTimeSeriesByInterval(ctx context.Context, startDate opena
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAZMByIntervalTimeSeriesIntraday(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAZMByIntervalTimeSeriesIntradayRequest(c.Server, startDate, endDate, startTime, endTime)
+func (c *Client) GetAZMByIntervalTimeSeriesIntraday(ctx context.Context, startDate string, endDate string, startTime string, endTime string, detailLevel GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAZMByIntervalTimeSeriesIntradayRequest(c.Server, startDate, endDate, startTime, endTime, detailLevel)
 	if err != nil {
 		return nil, err
 	}
@@ -1346,7 +3155,7 @@ func (c *Client) GetAZMByIntervalTimeSeriesIntraday(ctx context.Context, startDa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAZMByIntervalIntraday(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetAZMByIntervalIntraday(ctx context.Context, startDate string, endDate string, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetAZMByIntervalIntradayRequest(c.Server, startDate, endDate, detailLevel)
 	if err != nil {
 		return nil, err
@@ -1454,7 +3263,7 @@ func (c *Client) GetHeartByDateRange(ctx context.Context, baseDate string, endDa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHeartByDateIntraday(ctx context.Context, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHeartByDateIntraday(ctx context.Context, date string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHeartByDateIntradayRequest(c.Server, date, detailLevel)
 	if err != nil {
 		return nil, err
@@ -1466,7 +3275,7 @@ func (c *Client) GetHeartByDateIntraday(ctx context.Context, date openapi_types.
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHeartByDateTimestampIntraday(ctx context.Context, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHeartByDateTimestampIntraday(ctx context.Context, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHeartByDateTimestampIntradayRequest(c.Server, date, detailLevel, startTime, endTime)
 	if err != nil {
 		return nil, err
@@ -1478,7 +3287,7 @@ func (c *Client) GetHeartByDateTimestampIntraday(ctx context.Context, date opena
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHeartByDateRangeIntraday(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHeartByDateRangeIntraday(ctx context.Context, date string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHeartByDateRangeIntradayRequest(c.Server, date, endDate, detailLevel)
 	if err != nil {
 		return nil, err
@@ -1490,7 +3299,7 @@ func (c *Client) GetHeartByDateRangeIntraday(ctx context.Context, date openapi_t
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHeartByDateRangeTimestampIntraday(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHeartByDateRangeTimestampIntraday(ctx context.Context, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHeartByDateRangeTimestampIntradayRequest(c.Server, date, endDate, detailLevel, startTime, endTime)
 	if err != nil {
 		return nil, err
@@ -1502,7 +3311,7 @@ func (c *Client) GetHeartByDateRangeTimestampIntraday(ctx context.Context, date 
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHeartByDatePeriod(ctx context.Context, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHeartByDatePeriod(ctx context.Context, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHeartByDatePeriodRequest(c.Server, date, period)
 	if err != nil {
 		return nil, err
@@ -1538,7 +3347,7 @@ func (c *Client) GetRecentActivities(ctx context.Context, reqEditors ...RequestE
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesTrackerResourceByDateRange(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesTrackerResourceByDateRange(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesTrackerResourceByDateRangeRequest(c.Server, resourcePath, baseDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1550,7 +3359,7 @@ func (c *Client) GetActivitiesTrackerResourceByDateRange(ctx context.Context, re
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesTrackerResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesTrackerResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesTrackerResourceByDatePeriodRequest(c.Server, resourcePath, date, period)
 	if err != nil {
 		return nil, err
@@ -1586,7 +3395,7 @@ func (c *Client) GetActivitiesTCX(ctx context.Context, logId string, params *Get
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesResourceByDateRange(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesResourceByDateRange(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesResourceByDateRangeRequest(c.Server, resourcePath, baseDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1598,7 +3407,7 @@ func (c *Client) GetActivitiesResourceByDateRange(ctx context.Context, resourceP
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesResourceByDateRangeIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesResourceByDateRangeIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesResourceByDateRangeIntradayRequest(c.Server, resourcePath, baseDate, endDate, detailLevel)
 	if err != nil {
 		return nil, err
@@ -1610,7 +3419,7 @@ func (c *Client) GetActivitiesResourceByDateRangeIntraday(ctx context.Context, r
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesResourceByDateIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesResourceByDateIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date string, detailLevel string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesResourceByDateIntradayRequest(c.Server, resourcePath, date, detailLevel)
 	if err != nil {
 		return nil, err
@@ -1622,7 +3431,7 @@ func (c *Client) GetActivitiesResourceByDateIntraday(ctx context.Context, resour
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesResourceByDateTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesResourceByDateTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesResourceByDateTimeSeriesIntradayRequest(c.Server, resourcePath, date, detailLevel, startTime, endTime)
 	if err != nil {
 		return nil, err
@@ -1634,7 +3443,7 @@ func (c *Client) GetActivitiesResourceByDateTimeSeriesIntraday(ctx context.Conte
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesResourceByDateRangeTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesResourceByDateRangeTimeSeriesIntraday(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesResourceByDateRangeTimeSeriesIntradayRequest(c.Server, resourcePath, date, endDate, detailLevel, startTime, endTime)
 	if err != nil {
 		return nil, err
@@ -1646,7 +3455,7 @@ func (c *Client) GetActivitiesResourceByDateRangeTimeSeriesIntraday(ctx context.
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetActivitiesResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetActivitiesResourceByDatePeriod(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActivitiesResourceByDatePeriodRequest(c.Server, resourcePath, date, period)
 	if err != nil {
 		return nil, err
@@ -1682,7 +3491,7 @@ func (c *Client) AddBodyFatLog(ctx context.Context, params *AddBodyFatLogParams,
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetBodyFatByDateRange(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBodyFatByDateRange(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBodyFatByDateRangeRequest(c.Server, baseDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1754,7 +3563,7 @@ func (c *Client) AddWeightLog(ctx context.Context, params *AddWeightLogParams, r
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetWeightByDateRange(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetWeightByDateRange(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetWeightByDateRangeRequest(c.Server, baseDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1826,7 +3635,7 @@ func (c *Client) GetBodyGoals(ctx context.Context, goalType string, reqEditors .
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetBodyResourceByDateRange(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBodyResourceByDateRange(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBodyResourceByDateRangeRequest(c.Server, resourcePath, baseDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1838,7 +3647,7 @@ func (c *Client) GetBodyResourceByDateRange(ctx context.Context, resourcePath Ge
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetBodyResourceByDatePeriod(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBodyResourceByDatePeriod(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBodyResourceByDatePeriodRequest(c.Server, resourcePath, date, period)
 	if err != nil {
 		return nil, err
@@ -1850,7 +3659,7 @@ func (c *Client) GetBodyResourceByDatePeriod(ctx context.Context, resourcePath G
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetBreathingRateSummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBreathingRateSummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBreathingRateSummaryByDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -1862,7 +3671,7 @@ func (c *Client) GetBreathingRateSummaryByDate(ctx context.Context, date openapi
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetBreathingRateIntradayByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBreathingRateIntradayByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBreathingRateIntradayByDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -1874,7 +3683,7 @@ func (c *Client) GetBreathingRateIntradayByDate(ctx context.Context, date openap
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetBreathingRateSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBreathingRateSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBreathingRateSummaryByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1886,7 +3695,7 @@ func (c *Client) GetBreathingRateSummaryByInterval(ctx context.Context, startDat
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetBreathingRateIntradayByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetBreathingRateIntradayByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetBreathingRateIntradayByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -1898,7 +3707,7 @@ func (c *Client) GetBreathingRateIntradayByInterval(ctx context.Context, startDa
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetVo2MaxSummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetVo2MaxSummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetVo2MaxSummaryByDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -1910,7 +3719,7 @@ func (c *Client) GetVo2MaxSummaryByDate(ctx context.Context, date openapi_types.
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetVo2MaxSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetVo2MaxSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetVo2MaxSummaryByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -2210,7 +4019,7 @@ func (c *Client) EditFoodsLog(ctx context.Context, foodLogId string, params *Edi
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetFoodsByDateRange(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetFoodsByDateRange(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetFoodsByDateRangeRequest(c.Server, resourcePath, baseDate, endDate)
 	if err != nil {
 		return nil, err
@@ -2222,7 +4031,7 @@ func (c *Client) GetFoodsByDateRange(ctx context.Context, resourcePath GetFoodsB
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetFoodsResourceByDatePeriod(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetFoodsResourceByDatePeriod(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetFoodsResourceByDatePeriodRequest(c.Server, resourcePath, date, period)
 	if err != nil {
 		return nil, err
@@ -2246,7 +4055,7 @@ func (c *Client) DeleteFoods(ctx context.Context, foodId string, reqEditors ...R
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHrvSummaryDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHrvSummaryDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHrvSummaryDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -2258,7 +4067,7 @@ func (c *Client) GetHrvSummaryDate(ctx context.Context, date openapi_types.Date,
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHrvIntradayByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHrvIntradayByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHrvIntradayByDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -2270,7 +4079,7 @@ func (c *Client) GetHrvIntradayByDate(ctx context.Context, date openapi_types.Da
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHrvSummaryInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHrvSummaryInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHrvSummaryIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -2282,7 +4091,7 @@ func (c *Client) GetHrvSummaryInterval(ctx context.Context, startDate openapi_ty
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetHrvIntradayByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetHrvIntradayByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetHrvIntradayByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -2366,6 +4175,18 @@ func (c *Client) DeleteMeal(ctx context.Context, mealId string, reqEditors ...Re
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetMeal(ctx context.Context, mealId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetMealRequest(c.Server, mealId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) UpdateMealWithBody(ctx context.Context, mealId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateMealRequestWithBody(c.Server, mealId, contentType, body)
 	if err != nil {
@@ -2402,7 +4223,19 @@ func (c *Client) GetProfile(ctx context.Context, reqEditors ...RequestEditorFn) 
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetSpO2SummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) Post1UserProfileJson(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPost1UserProfileJsonRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetSpO2SummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSpO2SummaryByDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -2414,7 +4247,7 @@ func (c *Client) GetSpO2SummaryByDate(ctx context.Context, date openapi_types.Da
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetSpO2IntradayByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSpO2IntradayByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSpO2IntradayByDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -2426,7 +4259,7 @@ func (c *Client) GetSpO2IntradayByDate(ctx context.Context, date openapi_types.D
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetSpO2SummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSpO2SummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSpO2SummaryByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -2438,7 +4271,7 @@ func (c *Client) GetSpO2SummaryByInterval(ctx context.Context, startDate openapi
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetSpO2IntradayByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetSpO2IntradayByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetSpO2IntradayByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -2450,7 +4283,7 @@ func (c *Client) GetSpO2IntradayByInterval(ctx context.Context, startDate openap
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetTempCoreSummaryByDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTempCoreSummaryByDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTempCoreSummaryByDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -2462,7 +4295,7 @@ func (c *Client) GetTempCoreSummaryByDate(ctx context.Context, date openapi_type
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetTempCoreSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTempCoreSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTempCoreSummaryByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -2474,7 +4307,7 @@ func (c *Client) GetTempCoreSummaryByInterval(ctx context.Context, startDate ope
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetTempSkinSummaryDate(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTempSkinSummaryDate(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTempSkinSummaryDateRequest(c.Server, date)
 	if err != nil {
 		return nil, err
@@ -2486,7 +4319,7 @@ func (c *Client) GetTempSkinSummaryDate(ctx context.Context, date openapi_types.
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetTempSkinSummaryByInterval(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetTempSkinSummaryByInterval(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetTempSkinSummaryByIntervalRequest(c.Server, startDate, endDate)
 	if err != nil {
 		return nil, err
@@ -3374,7 +5207,7 @@ func NewAddActivitiesLogRequest(server string, params *AddActivitiesLogParams) (
 }
 
 // NewGetAZMByDateIntradayRequest generates requests for GetAZMByDateIntraday
-func NewGetAZMByDateIntradayRequest(server string, date openapi_types.Date, detailLevel GetAZMByDateIntradayParamsDetailLevel) (*http.Request, error) {
+func NewGetAZMByDateIntradayRequest(server string, date string, detailLevel GetAZMByDateIntradayParamsDetailLevel) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3415,7 +5248,7 @@ func NewGetAZMByDateIntradayRequest(server string, date openapi_types.Date, deta
 }
 
 // NewGetAZMByDateTimeSeriesIntradayRequest generates requests for GetAZMByDateTimeSeriesIntraday
-func NewGetAZMByDateTimeSeriesIntradayRequest(server string, date openapi_types.Date, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string) (*http.Request, error) {
+func NewGetAZMByDateTimeSeriesIntradayRequest(server string, date string, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3470,7 +5303,7 @@ func NewGetAZMByDateTimeSeriesIntradayRequest(server string, date openapi_types.
 }
 
 // NewGetAZMTimeSeriesByDateRequest generates requests for GetAZMTimeSeriesByDate
-func NewGetAZMTimeSeriesByDateRequest(server string, date openapi_types.Date, period GetAZMTimeSeriesByDateParamsPeriod) (*http.Request, error) {
+func NewGetAZMTimeSeriesByDateRequest(server string, date string, period GetAZMTimeSeriesByDateParamsPeriod) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3511,7 +5344,7 @@ func NewGetAZMTimeSeriesByDateRequest(server string, date openapi_types.Date, pe
 }
 
 // NewGetAZMTimeSeriesByIntervalRequest generates requests for GetAZMTimeSeriesByInterval
-func NewGetAZMTimeSeriesByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetAZMTimeSeriesByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3552,7 +5385,7 @@ func NewGetAZMTimeSeriesByIntervalRequest(server string, startDate openapi_types
 }
 
 // NewGetAZMByIntervalTimeSeriesIntradayRequest generates requests for GetAZMByIntervalTimeSeriesIntraday
-func NewGetAZMByIntervalTimeSeriesIntradayRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date, startTime string, endTime string) (*http.Request, error) {
+func NewGetAZMByIntervalTimeSeriesIntradayRequest(server string, startDate string, endDate string, startTime string, endTime string, detailLevel GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3583,12 +5416,19 @@ func NewGetAZMByIntervalTimeSeriesIntradayRequest(server string, startDate opena
 		return nil, err
 	}
 
+	var pathParam4 string
+
+	pathParam4, err = runtime.StyleParamWithLocation("simple", false, "detail-level", runtime.ParamLocationPath, detailLevel)
+	if err != nil {
+		return nil, err
+	}
+
 	serverURL, err := url.Parse(server)
 	if err != nil {
 		return nil, err
 	}
 
-	operationPath := fmt.Sprintf("/1/user/-/activities/active-zone-minutes/date/%s/%s/time/%s/%s.json", pathParam0, pathParam1, pathParam2, pathParam3)
+	operationPath := fmt.Sprintf("/1/user/-/activities/active-zone-minutes/date/%s/%s/time/%s/%s/%s.json", pathParam0, pathParam1, pathParam2, pathParam3, pathParam4)
 	if operationPath[0] == '/' {
 		operationPath = "." + operationPath
 	}
@@ -3607,7 +5447,7 @@ func NewGetAZMByIntervalTimeSeriesIntradayRequest(server string, startDate opena
 }
 
 // NewGetAZMByIntervalIntradayRequest generates requests for GetAZMByIntervalIntraday
-func NewGetAZMByIntervalIntradayRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date, detailLevel GetAZMByIntervalIntradayParamsDetailLevel) (*http.Request, error) {
+func NewGetAZMByIntervalIntradayRequest(server string, startDate string, endDate string, detailLevel GetAZMByIntervalIntradayParamsDetailLevel) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3950,7 +5790,7 @@ func NewGetHeartByDateRangeRequest(server string, baseDate string, endDate opena
 }
 
 // NewGetHeartByDateIntradayRequest generates requests for GetHeartByDateIntraday
-func NewGetHeartByDateIntradayRequest(server string, date openapi_types.Date, detailLevel string) (*http.Request, error) {
+func NewGetHeartByDateIntradayRequest(server string, date string, detailLevel string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3991,7 +5831,7 @@ func NewGetHeartByDateIntradayRequest(server string, date openapi_types.Date, de
 }
 
 // NewGetHeartByDateTimestampIntradayRequest generates requests for GetHeartByDateTimestampIntraday
-func NewGetHeartByDateTimestampIntradayRequest(server string, date openapi_types.Date, detailLevel string, startTime string, endTime string) (*http.Request, error) {
+func NewGetHeartByDateTimestampIntradayRequest(server string, date string, detailLevel string, startTime string, endTime string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4046,7 +5886,7 @@ func NewGetHeartByDateTimestampIntradayRequest(server string, date openapi_types
 }
 
 // NewGetHeartByDateRangeIntradayRequest generates requests for GetHeartByDateRangeIntraday
-func NewGetHeartByDateRangeIntradayRequest(server string, date openapi_types.Date, endDate openapi_types.Date, detailLevel string) (*http.Request, error) {
+func NewGetHeartByDateRangeIntradayRequest(server string, date string, endDate string, detailLevel string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4094,7 +5934,7 @@ func NewGetHeartByDateRangeIntradayRequest(server string, date openapi_types.Dat
 }
 
 // NewGetHeartByDateRangeTimestampIntradayRequest generates requests for GetHeartByDateRangeTimestampIntraday
-func NewGetHeartByDateRangeTimestampIntradayRequest(server string, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string) (*http.Request, error) {
+func NewGetHeartByDateRangeTimestampIntradayRequest(server string, date string, endDate string, detailLevel string, startTime string, endTime string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4156,7 +5996,7 @@ func NewGetHeartByDateRangeTimestampIntradayRequest(server string, date openapi_
 }
 
 // NewGetHeartByDatePeriodRequest generates requests for GetHeartByDatePeriod
-func NewGetHeartByDatePeriodRequest(server string, date openapi_types.Date, period string) (*http.Request, error) {
+func NewGetHeartByDatePeriodRequest(server string, date string, period string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4325,7 +6165,7 @@ func NewGetRecentActivitiesRequest(server string) (*http.Request, error) {
 }
 
 // NewGetActivitiesTrackerResourceByDateRangeRequest generates requests for GetActivitiesTrackerResourceByDateRange
-func NewGetActivitiesTrackerResourceByDateRangeRequest(server string, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetActivitiesTrackerResourceByDateRangeRequest(server string, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4373,7 +6213,7 @@ func NewGetActivitiesTrackerResourceByDateRangeRequest(server string, resourcePa
 }
 
 // NewGetActivitiesTrackerResourceByDatePeriodRequest generates requests for GetActivitiesTrackerResourceByDatePeriod
-func NewGetActivitiesTrackerResourceByDatePeriodRequest(server string, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string) (*http.Request, error) {
+func NewGetActivitiesTrackerResourceByDatePeriodRequest(server string, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date string, period string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4511,7 +6351,7 @@ func NewGetActivitiesTCXRequest(server string, logId string, params *GetActiviti
 }
 
 // NewGetActivitiesResourceByDateRangeRequest generates requests for GetActivitiesResourceByDateRange
-func NewGetActivitiesResourceByDateRangeRequest(server string, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetActivitiesResourceByDateRangeRequest(server string, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4559,7 +6399,7 @@ func NewGetActivitiesResourceByDateRangeRequest(server string, resourcePath GetA
 }
 
 // NewGetActivitiesResourceByDateRangeIntradayRequest generates requests for GetActivitiesResourceByDateRangeIntraday
-func NewGetActivitiesResourceByDateRangeIntradayRequest(server string, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, detailLevel string) (*http.Request, error) {
+func NewGetActivitiesResourceByDateRangeIntradayRequest(server string, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate string, endDate string, detailLevel string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4614,7 +6454,7 @@ func NewGetActivitiesResourceByDateRangeIntradayRequest(server string, resourceP
 }
 
 // NewGetActivitiesResourceByDateIntradayRequest generates requests for GetActivitiesResourceByDateIntraday
-func NewGetActivitiesResourceByDateIntradayRequest(server string, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date openapi_types.Date, detailLevel string) (*http.Request, error) {
+func NewGetActivitiesResourceByDateIntradayRequest(server string, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date string, detailLevel string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4662,7 +6502,7 @@ func NewGetActivitiesResourceByDateIntradayRequest(server string, resourcePath G
 }
 
 // NewGetActivitiesResourceByDateTimeSeriesIntradayRequest generates requests for GetActivitiesResourceByDateTimeSeriesIntraday
-func NewGetActivitiesResourceByDateTimeSeriesIntradayRequest(server string, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, startTime string, endTime string) (*http.Request, error) {
+func NewGetActivitiesResourceByDateTimeSeriesIntradayRequest(server string, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date string, detailLevel string, startTime string, endTime string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4724,7 +6564,7 @@ func NewGetActivitiesResourceByDateTimeSeriesIntradayRequest(server string, reso
 }
 
 // NewGetActivitiesResourceByDateRangeTimeSeriesIntradayRequest generates requests for GetActivitiesResourceByDateRangeTimeSeriesIntraday
-func NewGetActivitiesResourceByDateRangeTimeSeriesIntradayRequest(server string, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string) (*http.Request, error) {
+func NewGetActivitiesResourceByDateRangeTimeSeriesIntradayRequest(server string, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date string, endDate string, detailLevel string, startTime string, endTime string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4793,7 +6633,7 @@ func NewGetActivitiesResourceByDateRangeTimeSeriesIntradayRequest(server string,
 }
 
 // NewGetActivitiesResourceByDatePeriodRequest generates requests for GetActivitiesResourceByDatePeriod
-func NewGetActivitiesResourceByDatePeriodRequest(server string, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string) (*http.Request, error) {
+func NewGetActivitiesResourceByDatePeriodRequest(server string, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date string, period string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4937,7 +6777,7 @@ func NewAddBodyFatLogRequest(server string, params *AddBodyFatLogParams) (*http.
 }
 
 // NewGetBodyFatByDateRangeRequest generates requests for GetBodyFatByDateRange
-func NewGetBodyFatByDateRangeRequest(server string, baseDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetBodyFatByDateRangeRequest(server string, baseDate string, endDate openapi_types.Date) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5205,7 +7045,7 @@ func NewAddWeightLogRequest(server string, params *AddWeightLogParams) (*http.Re
 }
 
 // NewGetWeightByDateRangeRequest generates requests for GetWeightByDateRange
-func NewGetWeightByDateRangeRequest(server string, baseDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetWeightByDateRangeRequest(server string, baseDate string, endDate openapi_types.Date) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5462,7 +7302,7 @@ func NewGetBodyGoalsRequest(server string, goalType string) (*http.Request, erro
 }
 
 // NewGetBodyResourceByDateRangeRequest generates requests for GetBodyResourceByDateRange
-func NewGetBodyResourceByDateRangeRequest(server string, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetBodyResourceByDateRangeRequest(server string, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5510,7 +7350,7 @@ func NewGetBodyResourceByDateRangeRequest(server string, resourcePath GetBodyRes
 }
 
 // NewGetBodyResourceByDatePeriodRequest generates requests for GetBodyResourceByDatePeriod
-func NewGetBodyResourceByDatePeriodRequest(server string, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string) (*http.Request, error) {
+func NewGetBodyResourceByDatePeriodRequest(server string, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date string, period string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5558,7 +7398,7 @@ func NewGetBodyResourceByDatePeriodRequest(server string, resourcePath GetBodyRe
 }
 
 // NewGetBreathingRateSummaryByDateRequest generates requests for GetBreathingRateSummaryByDate
-func NewGetBreathingRateSummaryByDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetBreathingRateSummaryByDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5592,7 +7432,7 @@ func NewGetBreathingRateSummaryByDateRequest(server string, date openapi_types.D
 }
 
 // NewGetBreathingRateIntradayByDateRequest generates requests for GetBreathingRateIntradayByDate
-func NewGetBreathingRateIntradayByDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetBreathingRateIntradayByDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5626,7 +7466,7 @@ func NewGetBreathingRateIntradayByDateRequest(server string, date openapi_types.
 }
 
 // NewGetBreathingRateSummaryByIntervalRequest generates requests for GetBreathingRateSummaryByInterval
-func NewGetBreathingRateSummaryByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetBreathingRateSummaryByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5667,7 +7507,7 @@ func NewGetBreathingRateSummaryByIntervalRequest(server string, startDate openap
 }
 
 // NewGetBreathingRateIntradayByIntervalRequest generates requests for GetBreathingRateIntradayByInterval
-func NewGetBreathingRateIntradayByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetBreathingRateIntradayByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5708,7 +7548,7 @@ func NewGetBreathingRateIntradayByIntervalRequest(server string, startDate opena
 }
 
 // NewGetVo2MaxSummaryByDateRequest generates requests for GetVo2MaxSummaryByDate
-func NewGetVo2MaxSummaryByDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetVo2MaxSummaryByDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -5742,7 +7582,7 @@ func NewGetVo2MaxSummaryByDateRequest(server string, date openapi_types.Date) (*
 }
 
 // NewGetVo2MaxSummaryByIntervalRequest generates requests for GetVo2MaxSummaryByInterval
-func NewGetVo2MaxSummaryByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetVo2MaxSummaryByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7157,7 +8997,7 @@ func NewEditFoodsLogRequest(server string, foodLogId string, params *EditFoodsLo
 }
 
 // NewGetFoodsByDateRangeRequest generates requests for GetFoodsByDateRange
-func NewGetFoodsByDateRangeRequest(server string, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetFoodsByDateRangeRequest(server string, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7205,7 +9045,7 @@ func NewGetFoodsByDateRangeRequest(server string, resourcePath GetFoodsByDateRan
 }
 
 // NewGetFoodsResourceByDatePeriodRequest generates requests for GetFoodsResourceByDatePeriod
-func NewGetFoodsResourceByDatePeriodRequest(server string, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string) (*http.Request, error) {
+func NewGetFoodsResourceByDatePeriodRequest(server string, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date string, period string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7287,7 +9127,7 @@ func NewDeleteFoodsRequest(server string, foodId string) (*http.Request, error) 
 }
 
 // NewGetHrvSummaryDateRequest generates requests for GetHrvSummaryDate
-func NewGetHrvSummaryDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetHrvSummaryDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7321,7 +9161,7 @@ func NewGetHrvSummaryDateRequest(server string, date openapi_types.Date) (*http.
 }
 
 // NewGetHrvIntradayByDateRequest generates requests for GetHrvIntradayByDate
-func NewGetHrvIntradayByDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetHrvIntradayByDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7355,7 +9195,7 @@ func NewGetHrvIntradayByDateRequest(server string, date openapi_types.Date) (*ht
 }
 
 // NewGetHrvSummaryIntervalRequest generates requests for GetHrvSummaryInterval
-func NewGetHrvSummaryIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetHrvSummaryIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7396,7 +9236,7 @@ func NewGetHrvSummaryIntervalRequest(server string, startDate openapi_types.Date
 }
 
 // NewGetHrvIntradayByIntervalRequest generates requests for GetHrvIntradayByInterval
-func NewGetHrvIntradayByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetHrvIntradayByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7665,6 +9505,40 @@ func NewDeleteMealRequest(server string, mealId string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetMealRequest generates requests for GetMeal
+func NewGetMealRequest(server string, mealId string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "meal-id", runtime.ParamLocationPath, mealId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/user/-/meals/%s.json", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewUpdateMealRequest calls the generic UpdateMeal builder with application/json body
 func NewUpdateMealRequest(server string, mealId string, body UpdateMealJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -7739,8 +9613,35 @@ func NewGetProfileRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewPost1UserProfileJsonRequest generates requests for Post1UserProfileJson
+func NewPost1UserProfileJsonRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/1/user/-/profile.json")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewGetSpO2SummaryByDateRequest generates requests for GetSpO2SummaryByDate
-func NewGetSpO2SummaryByDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetSpO2SummaryByDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7774,7 +9675,7 @@ func NewGetSpO2SummaryByDateRequest(server string, date openapi_types.Date) (*ht
 }
 
 // NewGetSpO2IntradayByDateRequest generates requests for GetSpO2IntradayByDate
-func NewGetSpO2IntradayByDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetSpO2IntradayByDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7808,7 +9709,7 @@ func NewGetSpO2IntradayByDateRequest(server string, date openapi_types.Date) (*h
 }
 
 // NewGetSpO2SummaryByIntervalRequest generates requests for GetSpO2SummaryByInterval
-func NewGetSpO2SummaryByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetSpO2SummaryByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7849,7 +9750,7 @@ func NewGetSpO2SummaryByIntervalRequest(server string, startDate openapi_types.D
 }
 
 // NewGetSpO2IntradayByIntervalRequest generates requests for GetSpO2IntradayByInterval
-func NewGetSpO2IntradayByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetSpO2IntradayByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7890,7 +9791,7 @@ func NewGetSpO2IntradayByIntervalRequest(server string, startDate openapi_types.
 }
 
 // NewGetTempCoreSummaryByDateRequest generates requests for GetTempCoreSummaryByDate
-func NewGetTempCoreSummaryByDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetTempCoreSummaryByDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7924,7 +9825,7 @@ func NewGetTempCoreSummaryByDateRequest(server string, date openapi_types.Date) 
 }
 
 // NewGetTempCoreSummaryByIntervalRequest generates requests for GetTempCoreSummaryByInterval
-func NewGetTempCoreSummaryByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetTempCoreSummaryByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7965,7 +9866,7 @@ func NewGetTempCoreSummaryByIntervalRequest(server string, startDate openapi_typ
 }
 
 // NewGetTempSkinSummaryDateRequest generates requests for GetTempSkinSummaryDate
-func NewGetTempSkinSummaryDateRequest(server string, date openapi_types.Date) (*http.Request, error) {
+func NewGetTempSkinSummaryDateRequest(server string, date string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -7999,7 +9900,7 @@ func NewGetTempSkinSummaryDateRequest(server string, date openapi_types.Date) (*
 }
 
 // NewGetTempSkinSummaryByIntervalRequest generates requests for GetTempSkinSummaryByInterval
-func NewGetTempSkinSummaryByIntervalRequest(server string, startDate openapi_types.Date, endDate openapi_types.Date) (*http.Request, error) {
+func NewGetTempSkinSummaryByIntervalRequest(server string, startDate string, endDate string) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -8447,22 +10348,22 @@ type ClientWithResponsesInterface interface {
 	AddActivitiesLogWithResponse(ctx context.Context, params *AddActivitiesLogParams, reqEditors ...RequestEditorFn) (*AddActivitiesLogResponse, error)
 
 	// GetAZMByDateIntradayWithResponse request
-	GetAZMByDateIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByDateIntradayResponse, error)
+	GetAZMByDateIntradayWithResponse(ctx context.Context, date string, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByDateIntradayResponse, error)
 
 	// GetAZMByDateTimeSeriesIntradayWithResponse request
-	GetAZMByDateTimeSeriesIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetAZMByDateTimeSeriesIntradayResponse, error)
+	GetAZMByDateTimeSeriesIntradayWithResponse(ctx context.Context, date string, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetAZMByDateTimeSeriesIntradayResponse, error)
 
 	// GetAZMTimeSeriesByDateWithResponse request
-	GetAZMTimeSeriesByDateWithResponse(ctx context.Context, date openapi_types.Date, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByDateResponse, error)
+	GetAZMTimeSeriesByDateWithResponse(ctx context.Context, date string, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByDateResponse, error)
 
 	// GetAZMTimeSeriesByIntervalWithResponse request
-	GetAZMTimeSeriesByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByIntervalResponse, error)
+	GetAZMTimeSeriesByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByIntervalResponse, error)
 
 	// GetAZMByIntervalTimeSeriesIntradayWithResponse request
-	GetAZMByIntervalTimeSeriesIntradayWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetAZMByIntervalTimeSeriesIntradayResponse, error)
+	GetAZMByIntervalTimeSeriesIntradayWithResponse(ctx context.Context, startDate string, endDate string, startTime string, endTime string, detailLevel GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByIntervalTimeSeriesIntradayResponse, error)
 
 	// GetAZMByIntervalIntradayWithResponse request
-	GetAZMByIntervalIntradayWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByIntervalIntradayResponse, error)
+	GetAZMByIntervalIntradayWithResponse(ctx context.Context, startDate string, endDate string, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByIntervalIntradayResponse, error)
 
 	// GetActivitiesByDateWithResponse request
 	GetActivitiesByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesByDateResponse, error)
@@ -8489,19 +10390,19 @@ type ClientWithResponsesInterface interface {
 	GetHeartByDateRangeWithResponse(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeResponse, error)
 
 	// GetHeartByDateIntradayWithResponse request
-	GetHeartByDateIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateIntradayResponse, error)
+	GetHeartByDateIntradayWithResponse(ctx context.Context, date string, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateIntradayResponse, error)
 
 	// GetHeartByDateTimestampIntradayWithResponse request
-	GetHeartByDateTimestampIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateTimestampIntradayResponse, error)
+	GetHeartByDateTimestampIntradayWithResponse(ctx context.Context, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateTimestampIntradayResponse, error)
 
 	// GetHeartByDateRangeIntradayWithResponse request
-	GetHeartByDateRangeIntradayWithResponse(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeIntradayResponse, error)
+	GetHeartByDateRangeIntradayWithResponse(ctx context.Context, date string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeIntradayResponse, error)
 
 	// GetHeartByDateRangeTimestampIntradayWithResponse request
-	GetHeartByDateRangeTimestampIntradayWithResponse(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeTimestampIntradayResponse, error)
+	GetHeartByDateRangeTimestampIntradayWithResponse(ctx context.Context, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeTimestampIntradayResponse, error)
 
 	// GetHeartByDatePeriodWithResponse request
-	GetHeartByDatePeriodWithResponse(ctx context.Context, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetHeartByDatePeriodResponse, error)
+	GetHeartByDatePeriodWithResponse(ctx context.Context, date string, period string, reqEditors ...RequestEditorFn) (*GetHeartByDatePeriodResponse, error)
 
 	// GetActivitiesLogListWithResponse request
 	GetActivitiesLogListWithResponse(ctx context.Context, params *GetActivitiesLogListParams, reqEditors ...RequestEditorFn) (*GetActivitiesLogListResponse, error)
@@ -8510,10 +10411,10 @@ type ClientWithResponsesInterface interface {
 	GetRecentActivitiesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetRecentActivitiesResponse, error)
 
 	// GetActivitiesTrackerResourceByDateRangeWithResponse request
-	GetActivitiesTrackerResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDateRangeResponse, error)
+	GetActivitiesTrackerResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDateRangeResponse, error)
 
 	// GetActivitiesTrackerResourceByDatePeriodWithResponse request
-	GetActivitiesTrackerResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDatePeriodResponse, error)
+	GetActivitiesTrackerResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDatePeriodResponse, error)
 
 	// DeleteActivitiesLogWithResponse request
 	DeleteActivitiesLogWithResponse(ctx context.Context, activityLogId int, reqEditors ...RequestEditorFn) (*DeleteActivitiesLogResponse, error)
@@ -8522,22 +10423,22 @@ type ClientWithResponsesInterface interface {
 	GetActivitiesTCXWithResponse(ctx context.Context, logId string, params *GetActivitiesTCXParams, reqEditors ...RequestEditorFn) (*GetActivitiesTCXResponse, error)
 
 	// GetActivitiesResourceByDateRangeWithResponse request
-	GetActivitiesResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeResponse, error)
+	GetActivitiesResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeResponse, error)
 
 	// GetActivitiesResourceByDateRangeIntradayWithResponse request
-	GetActivitiesResourceByDateRangeIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeIntradayResponse, error)
+	GetActivitiesResourceByDateRangeIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeIntradayResponse, error)
 
 	// GetActivitiesResourceByDateIntradayWithResponse request
-	GetActivitiesResourceByDateIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateIntradayResponse, error)
+	GetActivitiesResourceByDateIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date string, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateIntradayResponse, error)
 
 	// GetActivitiesResourceByDateTimeSeriesIntradayWithResponse request
-	GetActivitiesResourceByDateTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateTimeSeriesIntradayResponse, error)
+	GetActivitiesResourceByDateTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateTimeSeriesIntradayResponse, error)
 
 	// GetActivitiesResourceByDateRangeTimeSeriesIntradayWithResponse request
-	GetActivitiesResourceByDateRangeTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse, error)
+	GetActivitiesResourceByDateRangeTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse, error)
 
 	// GetActivitiesResourceByDatePeriodWithResponse request
-	GetActivitiesResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDatePeriodResponse, error)
+	GetActivitiesResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDatePeriodResponse, error)
 
 	// GetBadgesWithResponse request
 	GetBadgesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetBadgesResponse, error)
@@ -8546,7 +10447,7 @@ type ClientWithResponsesInterface interface {
 	AddBodyFatLogWithResponse(ctx context.Context, params *AddBodyFatLogParams, reqEditors ...RequestEditorFn) (*AddBodyFatLogResponse, error)
 
 	// GetBodyFatByDateRangeWithResponse request
-	GetBodyFatByDateRangeWithResponse(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyFatByDateRangeResponse, error)
+	GetBodyFatByDateRangeWithResponse(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyFatByDateRangeResponse, error)
 
 	// GetBodyFatByDateWithResponse request
 	GetBodyFatByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyFatByDateResponse, error)
@@ -8564,7 +10465,7 @@ type ClientWithResponsesInterface interface {
 	AddWeightLogWithResponse(ctx context.Context, params *AddWeightLogParams, reqEditors ...RequestEditorFn) (*AddWeightLogResponse, error)
 
 	// GetWeightByDateRangeWithResponse request
-	GetWeightByDateRangeWithResponse(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetWeightByDateRangeResponse, error)
+	GetWeightByDateRangeWithResponse(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetWeightByDateRangeResponse, error)
 
 	// GetWeightByDateWithResponse request
 	GetWeightByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetWeightByDateResponse, error)
@@ -8582,28 +10483,28 @@ type ClientWithResponsesInterface interface {
 	GetBodyGoalsWithResponse(ctx context.Context, goalType string, reqEditors ...RequestEditorFn) (*GetBodyGoalsResponse, error)
 
 	// GetBodyResourceByDateRangeWithResponse request
-	GetBodyResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyResourceByDateRangeResponse, error)
+	GetBodyResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyResourceByDateRangeResponse, error)
 
 	// GetBodyResourceByDatePeriodWithResponse request
-	GetBodyResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetBodyResourceByDatePeriodResponse, error)
+	GetBodyResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetBodyResourceByDatePeriodResponse, error)
 
 	// GetBreathingRateSummaryByDateWithResponse request
-	GetBreathingRateSummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByDateResponse, error)
+	GetBreathingRateSummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByDateResponse, error)
 
 	// GetBreathingRateIntradayByDateWithResponse request
-	GetBreathingRateIntradayByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByDateResponse, error)
+	GetBreathingRateIntradayByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByDateResponse, error)
 
 	// GetBreathingRateSummaryByIntervalWithResponse request
-	GetBreathingRateSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByIntervalResponse, error)
+	GetBreathingRateSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByIntervalResponse, error)
 
 	// GetBreathingRateIntradayByIntervalWithResponse request
-	GetBreathingRateIntradayByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByIntervalResponse, error)
+	GetBreathingRateIntradayByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByIntervalResponse, error)
 
 	// GetVo2MaxSummaryByDateWithResponse request
-	GetVo2MaxSummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByDateResponse, error)
+	GetVo2MaxSummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByDateResponse, error)
 
 	// GetVo2MaxSummaryByIntervalWithResponse request
-	GetVo2MaxSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByIntervalResponse, error)
+	GetVo2MaxSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByIntervalResponse, error)
 
 	// GetDevicesWithResponse request
 	GetDevicesWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetDevicesResponse, error)
@@ -8678,25 +10579,25 @@ type ClientWithResponsesInterface interface {
 	EditFoodsLogWithResponse(ctx context.Context, foodLogId string, params *EditFoodsLogParams, reqEditors ...RequestEditorFn) (*EditFoodsLogResponse, error)
 
 	// GetFoodsByDateRangeWithResponse request
-	GetFoodsByDateRangeWithResponse(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetFoodsByDateRangeResponse, error)
+	GetFoodsByDateRangeWithResponse(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetFoodsByDateRangeResponse, error)
 
 	// GetFoodsResourceByDatePeriodWithResponse request
-	GetFoodsResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetFoodsResourceByDatePeriodResponse, error)
+	GetFoodsResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetFoodsResourceByDatePeriodResponse, error)
 
 	// DeleteFoodsWithResponse request
 	DeleteFoodsWithResponse(ctx context.Context, foodId string, reqEditors ...RequestEditorFn) (*DeleteFoodsResponse, error)
 
 	// GetHrvSummaryDateWithResponse request
-	GetHrvSummaryDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvSummaryDateResponse, error)
+	GetHrvSummaryDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetHrvSummaryDateResponse, error)
 
 	// GetHrvIntradayByDateWithResponse request
-	GetHrvIntradayByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvIntradayByDateResponse, error)
+	GetHrvIntradayByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetHrvIntradayByDateResponse, error)
 
 	// GetHrvSummaryIntervalWithResponse request
-	GetHrvSummaryIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvSummaryIntervalResponse, error)
+	GetHrvSummaryIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetHrvSummaryIntervalResponse, error)
 
 	// GetHrvIntradayByIntervalWithResponse request
-	GetHrvIntradayByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvIntradayByIntervalResponse, error)
+	GetHrvIntradayByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetHrvIntradayByIntervalResponse, error)
 
 	// GetIrnAlertsListWithResponse request
 	GetIrnAlertsListWithResponse(ctx context.Context, params *GetIrnAlertsListParams, reqEditors ...RequestEditorFn) (*GetIrnAlertsListResponse, error)
@@ -8715,6 +10616,9 @@ type ClientWithResponsesInterface interface {
 	// DeleteMealWithResponse request
 	DeleteMealWithResponse(ctx context.Context, mealId string, reqEditors ...RequestEditorFn) (*DeleteMealResponse, error)
 
+	// GetMealWithResponse request
+	GetMealWithResponse(ctx context.Context, mealId string, reqEditors ...RequestEditorFn) (*GetMealResponse, error)
+
 	// UpdateMealWithBodyWithResponse request with any body
 	UpdateMealWithBodyWithResponse(ctx context.Context, mealId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMealResponse, error)
 
@@ -8723,29 +10627,32 @@ type ClientWithResponsesInterface interface {
 	// GetProfileWithResponse request
 	GetProfileWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetProfileResponse, error)
 
+	// Post1UserProfileJsonWithResponse request
+	Post1UserProfileJsonWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Post1UserProfileJsonResponse, error)
+
 	// GetSpO2SummaryByDateWithResponse request
-	GetSpO2SummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByDateResponse, error)
+	GetSpO2SummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByDateResponse, error)
 
 	// GetSpO2IntradayByDateWithResponse request
-	GetSpO2IntradayByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByDateResponse, error)
+	GetSpO2IntradayByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByDateResponse, error)
 
 	// GetSpO2SummaryByIntervalWithResponse request
-	GetSpO2SummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByIntervalResponse, error)
+	GetSpO2SummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByIntervalResponse, error)
 
 	// GetSpO2IntradayByIntervalWithResponse request
-	GetSpO2IntradayByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByIntervalResponse, error)
+	GetSpO2IntradayByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByIntervalResponse, error)
 
 	// GetTempCoreSummaryByDateWithResponse request
-	GetTempCoreSummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByDateResponse, error)
+	GetTempCoreSummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByDateResponse, error)
 
 	// GetTempCoreSummaryByIntervalWithResponse request
-	GetTempCoreSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByIntervalResponse, error)
+	GetTempCoreSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByIntervalResponse, error)
 
 	// GetTempSkinSummaryDateWithResponse request
-	GetTempSkinSummaryDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryDateResponse, error)
+	GetTempSkinSummaryDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryDateResponse, error)
 
 	// GetTempSkinSummaryByIntervalWithResponse request
-	GetTempSkinSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryByIntervalResponse, error)
+	GetTempSkinSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryByIntervalResponse, error)
 
 	// GetSubscriptionsListWithResponse request
 	GetSubscriptionsListWithResponse(ctx context.Context, collectionPath string, reqEditors ...RequestEditorFn) (*GetSubscriptionsListResponse, error)
@@ -8768,6 +10675,7 @@ type ClientWithResponsesInterface interface {
 type IntrospectResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *Oauth2Introspect
 }
 
 // Status returns HTTPResponse.Status
@@ -8789,6 +10697,7 @@ func (r IntrospectResponse) StatusCode() int {
 type GetFriendsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetFriendsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -8810,6 +10719,7 @@ func (r GetFriendsResponse) StatusCode() int {
 type GetFriendsLeaderboardResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetFriendsLeaderboardResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -8831,6 +10741,7 @@ func (r GetFriendsLeaderboardResponse) StatusCode() int {
 type AddSleepResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON201      *CreateSleepLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -8852,6 +10763,7 @@ func (r AddSleepResponse) StatusCode() int {
 type GetSleepByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSleepLogByDateRangeResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -8873,6 +10785,7 @@ func (r GetSleepByDateRangeResponse) StatusCode() int {
 type GetSleepByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSleepLogByDateResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -8894,6 +10807,7 @@ func (r GetSleepByDateResponse) StatusCode() int {
 type GetSleepGoalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetSleepGoalResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -8915,6 +10829,7 @@ func (r GetSleepGoalResponse) StatusCode() int {
 type UpdateSleepGoalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON201      *CreateSleepGoalResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -8936,6 +10851,7 @@ func (r UpdateSleepGoalResponse) StatusCode() int {
 type GetSleepListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSleepLogListResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9020,6 +10936,7 @@ func (r GetActivitiesTypeDetailResponse) StatusCode() int {
 type GetFoodsLocalesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetFoodLocalesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9041,6 +10958,7 @@ func (r GetFoodsLocalesResponse) StatusCode() int {
 type GetFoodsListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *SearchFoodsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9062,6 +10980,7 @@ func (r GetFoodsListResponse) StatusCode() int {
 type GetFoodsUnitsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetFoodUnitsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9083,6 +11002,7 @@ func (r GetFoodsUnitsResponse) StatusCode() int {
 type GetFoodsInfoResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetFoodResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9104,6 +11024,7 @@ func (r GetFoodsInfoResponse) StatusCode() int {
 type GetActivitiesLogResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetLifetimeStatsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9146,6 +11067,7 @@ func (r AddActivitiesLogResponse) StatusCode() int {
 type GetAZMByDateIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetAzmIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9167,6 +11089,7 @@ func (r GetAZMByDateIntradayResponse) StatusCode() int {
 type GetAZMByDateTimeSeriesIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetAzmIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9188,6 +11111,7 @@ func (r GetAZMByDateTimeSeriesIntradayResponse) StatusCode() int {
 type GetAZMTimeSeriesByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetAzmTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9209,6 +11133,7 @@ func (r GetAZMTimeSeriesByDateResponse) StatusCode() int {
 type GetAZMTimeSeriesByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetAzmTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9230,6 +11155,7 @@ func (r GetAZMTimeSeriesByIntervalResponse) StatusCode() int {
 type GetAZMByIntervalTimeSeriesIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetAzmIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9251,6 +11177,7 @@ func (r GetAZMByIntervalTimeSeriesIntradayResponse) StatusCode() int {
 type GetAZMByIntervalIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetAzmIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9272,6 +11199,7 @@ func (r GetAZMByIntervalIntradayResponse) StatusCode() int {
 type GetActivitiesByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetDailyActivitySummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9377,6 +11305,7 @@ func (r GetFrequentActivitiesResponse) StatusCode() int {
 type GetActivitiesGoalsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityGoalsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9419,6 +11348,7 @@ func (r AddUpdateActivitiesGoalsResponse) StatusCode() int {
 type GetHeartByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHeartRateTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9440,6 +11370,7 @@ func (r GetHeartByDateRangeResponse) StatusCode() int {
 type GetHeartByDateIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHeartRateIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9461,6 +11392,7 @@ func (r GetHeartByDateIntradayResponse) StatusCode() int {
 type GetHeartByDateTimestampIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHeartRateIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9482,6 +11414,7 @@ func (r GetHeartByDateTimestampIntradayResponse) StatusCode() int {
 type GetHeartByDateRangeIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHeartRateIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9503,6 +11436,7 @@ func (r GetHeartByDateRangeIntradayResponse) StatusCode() int {
 type GetHeartByDateRangeTimestampIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHeartRateIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9524,6 +11458,7 @@ func (r GetHeartByDateRangeTimestampIntradayResponse) StatusCode() int {
 type GetHeartByDatePeriodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHeartRateTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9545,6 +11480,7 @@ func (r GetHeartByDatePeriodResponse) StatusCode() int {
 type GetActivitiesLogListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityLogListResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9587,6 +11523,7 @@ func (r GetRecentActivitiesResponse) StatusCode() int {
 type GetActivitiesTrackerResourceByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9608,6 +11545,7 @@ func (r GetActivitiesTrackerResourceByDateRangeResponse) StatusCode() int {
 type GetActivitiesTrackerResourceByDatePeriodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9650,6 +11588,7 @@ func (r DeleteActivitiesLogResponse) StatusCode() int {
 type GetActivitiesTCXResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	XML200       *string
 }
 
 // Status returns HTTPResponse.Status
@@ -9671,6 +11610,7 @@ func (r GetActivitiesTCXResponse) StatusCode() int {
 type GetActivitiesResourceByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9692,6 +11632,7 @@ func (r GetActivitiesResourceByDateRangeResponse) StatusCode() int {
 type GetActivitiesResourceByDateRangeIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9713,6 +11654,7 @@ func (r GetActivitiesResourceByDateRangeIntradayResponse) StatusCode() int {
 type GetActivitiesResourceByDateIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9734,6 +11676,7 @@ func (r GetActivitiesResourceByDateIntradayResponse) StatusCode() int {
 type GetActivitiesResourceByDateTimeSeriesIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9755,6 +11698,7 @@ func (r GetActivitiesResourceByDateTimeSeriesIntradayResponse) StatusCode() int 
 type GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9776,6 +11720,7 @@ func (r GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse) StatusCode()
 type GetActivitiesResourceByDatePeriodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetActivityTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9797,6 +11742,7 @@ func (r GetActivitiesResourceByDatePeriodResponse) StatusCode() int {
 type GetBadgesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetBadgesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9839,6 +11785,7 @@ func (r AddBodyFatLogResponse) StatusCode() int {
 type GetBodyFatByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBodyFatLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9860,6 +11807,7 @@ func (r GetBodyFatByDateRangeResponse) StatusCode() int {
 type GetBodyFatByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBodyFatLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9881,6 +11829,7 @@ func (r GetBodyFatByDateResponse) StatusCode() int {
 type GetBodyFatByDatePeriodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBodyFatLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9965,6 +11914,7 @@ func (r AddWeightLogResponse) StatusCode() int {
 type GetWeightByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetWeightLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -9986,6 +11936,7 @@ func (r GetWeightByDateRangeResponse) StatusCode() int {
 type GetWeightByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetWeightLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10007,6 +11958,7 @@ func (r GetWeightByDateResponse) StatusCode() int {
 type GetWeightByDatePeriodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetWeightLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10070,6 +12022,7 @@ func (r DeleteWeightLogResponse) StatusCode() int {
 type GetBodyGoalsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetBodyGoalsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10091,6 +12044,7 @@ func (r GetBodyGoalsResponse) StatusCode() int {
 type GetBodyResourceByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBodyTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10112,6 +12066,7 @@ func (r GetBodyResourceByDateRangeResponse) StatusCode() int {
 type GetBodyResourceByDatePeriodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBodyTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10133,6 +12088,7 @@ func (r GetBodyResourceByDatePeriodResponse) StatusCode() int {
 type GetBreathingRateSummaryByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBreathingRateSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10154,6 +12110,7 @@ func (r GetBreathingRateSummaryByDateResponse) StatusCode() int {
 type GetBreathingRateIntradayByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBreathingRateIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10175,6 +12132,7 @@ func (r GetBreathingRateIntradayByDateResponse) StatusCode() int {
 type GetBreathingRateSummaryByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBreathingRateSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10196,6 +12154,7 @@ func (r GetBreathingRateSummaryByIntervalResponse) StatusCode() int {
 type GetBreathingRateIntradayByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetBreathingRateIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10217,6 +12176,7 @@ func (r GetBreathingRateIntradayByIntervalResponse) StatusCode() int {
 type GetVo2MaxSummaryByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetVo2MaxSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10238,6 +12198,7 @@ func (r GetVo2MaxSummaryByDateResponse) StatusCode() int {
 type GetVo2MaxSummaryByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetVo2MaxSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10259,6 +12220,7 @@ func (r GetVo2MaxSummaryByIntervalResponse) StatusCode() int {
 type GetDevicesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetDevicesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10280,6 +12242,7 @@ func (r GetDevicesResponse) StatusCode() int {
 type GetAlarmsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetAlarmsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10301,6 +12264,7 @@ func (r GetAlarmsResponse) StatusCode() int {
 type AddAlarmsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON201      *AlarmResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10343,6 +12307,7 @@ func (r DeleteAlarmsResponse) StatusCode() int {
 type UpdateAlarmsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON201      *AlarmResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10364,6 +12329,7 @@ func (r UpdateAlarmsResponse) StatusCode() int {
 type GetEcgLogListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetEcgLogListResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10427,6 +12393,7 @@ func (r AddFoodsLogResponse) StatusCode() int {
 type GetFoodsByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetFoodLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10448,6 +12415,7 @@ func (r GetFoodsByDateResponse) StatusCode() int {
 type GetFavoriteFoodsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetFavoriteFoodsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10511,6 +12479,7 @@ func (r AddFavoriteFoodResponse) StatusCode() int {
 type GetFrequentFoodsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetFrequentFoodsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10532,6 +12501,7 @@ func (r GetFrequentFoodsResponse) StatusCode() int {
 type GetFoodsGoalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetFoodGoalsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10574,6 +12544,7 @@ func (r AddUpdateFoodsGoalResponse) StatusCode() int {
 type GetRecentFoodsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetRecentFoodsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10616,6 +12587,7 @@ func (r AddWaterLogResponse) StatusCode() int {
 type GetWaterByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetWaterLogResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10637,6 +12609,7 @@ func (r GetWaterByDateResponse) StatusCode() int {
 type GetWaterGoalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetWaterGoalResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10763,6 +12736,7 @@ func (r EditFoodsLogResponse) StatusCode() int {
 type GetFoodsByDateRangeResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetNutritionTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10784,6 +12758,7 @@ func (r GetFoodsByDateRangeResponse) StatusCode() int {
 type GetFoodsResourceByDatePeriodResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetNutritionTimeSeriesResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10826,6 +12801,7 @@ func (r DeleteFoodsResponse) StatusCode() int {
 type GetHrvSummaryDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHrvSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10847,6 +12823,7 @@ func (r GetHrvSummaryDateResponse) StatusCode() int {
 type GetHrvIntradayByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHrvIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10868,6 +12845,7 @@ func (r GetHrvIntradayByDateResponse) StatusCode() int {
 type GetHrvSummaryIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHrvSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10889,6 +12867,7 @@ func (r GetHrvSummaryIntervalResponse) StatusCode() int {
 type GetHrvIntradayByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetHrvIntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10910,6 +12889,7 @@ func (r GetHrvIntradayByIntervalResponse) StatusCode() int {
 type GetIrnAlertsListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetIrnAlertsListResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10931,6 +12911,7 @@ func (r GetIrnAlertsListResponse) StatusCode() int {
 type GetIrnProfileResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetIrnProfileResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -10952,6 +12933,7 @@ func (r GetIrnProfileResponse) StatusCode() int {
 type GetMealsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetMealsResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11012,6 +12994,28 @@ func (r DeleteMealResponse) StatusCode() int {
 	return 0
 }
 
+type GetMealResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApiGetMealResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r GetMealResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetMealResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type UpdateMealResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -11036,6 +13040,7 @@ func (r UpdateMealResponse) StatusCode() int {
 type GetProfileResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *ApiGetProfileResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11054,9 +13059,32 @@ func (r GetProfileResponse) StatusCode() int {
 	return 0
 }
 
+type Post1UserProfileJsonResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *ApiGetProfileResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r Post1UserProfileJsonResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r Post1UserProfileJsonResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 type GetSpO2SummaryByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSpO2SummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11078,6 +13106,7 @@ func (r GetSpO2SummaryByDateResponse) StatusCode() int {
 type GetSpO2IntradayByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSpO2IntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11099,6 +13128,7 @@ func (r GetSpO2IntradayByDateResponse) StatusCode() int {
 type GetSpO2SummaryByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSpO2SummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11120,6 +13150,7 @@ func (r GetSpO2SummaryByIntervalResponse) StatusCode() int {
 type GetSpO2IntradayByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSpO2IntradayResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11141,6 +13172,7 @@ func (r GetSpO2IntradayByIntervalResponse) StatusCode() int {
 type GetTempCoreSummaryByDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetTemperatureCoreSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11162,6 +13194,7 @@ func (r GetTempCoreSummaryByDateResponse) StatusCode() int {
 type GetTempCoreSummaryByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetTemperatureCoreSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11183,6 +13216,7 @@ func (r GetTempCoreSummaryByIntervalResponse) StatusCode() int {
 type GetTempSkinSummaryDateResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetTemperatureSkinSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11204,6 +13238,7 @@ func (r GetTempSkinSummaryDateResponse) StatusCode() int {
 type GetTempSkinSummaryByIntervalResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetTemperatureSkinSummaryResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11225,6 +13260,7 @@ func (r GetTempSkinSummaryByIntervalResponse) StatusCode() int {
 type GetSubscriptionsListResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *GetSubscriptionListResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11267,6 +13303,8 @@ func (r DeleteSubscriptionsResponse) StatusCode() int {
 type AddSubscriptionsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *AddSubscriptionResponse
+	JSON201      *AddSubscriptionResponse
 }
 
 // Status returns HTTPResponse.Status
@@ -11309,6 +13347,7 @@ func (r RevokeResponse) StatusCode() int {
 type OauthTokenResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *Oauth2Token
 }
 
 // Status returns HTTPResponse.Status
@@ -11498,7 +13537,7 @@ func (c *ClientWithResponses) AddActivitiesLogWithResponse(ctx context.Context, 
 }
 
 // GetAZMByDateIntradayWithResponse request returning *GetAZMByDateIntradayResponse
-func (c *ClientWithResponses) GetAZMByDateIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByDateIntradayResponse, error) {
+func (c *ClientWithResponses) GetAZMByDateIntradayWithResponse(ctx context.Context, date string, detailLevel GetAZMByDateIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByDateIntradayResponse, error) {
 	rsp, err := c.GetAZMByDateIntraday(ctx, date, detailLevel, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11507,7 +13546,7 @@ func (c *ClientWithResponses) GetAZMByDateIntradayWithResponse(ctx context.Conte
 }
 
 // GetAZMByDateTimeSeriesIntradayWithResponse request returning *GetAZMByDateTimeSeriesIntradayResponse
-func (c *ClientWithResponses) GetAZMByDateTimeSeriesIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetAZMByDateTimeSeriesIntradayResponse, error) {
+func (c *ClientWithResponses) GetAZMByDateTimeSeriesIntradayWithResponse(ctx context.Context, date string, detailLevel GetAZMByDateTimeSeriesIntradayParamsDetailLevel, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetAZMByDateTimeSeriesIntradayResponse, error) {
 	rsp, err := c.GetAZMByDateTimeSeriesIntraday(ctx, date, detailLevel, startTime, endTime, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11516,7 +13555,7 @@ func (c *ClientWithResponses) GetAZMByDateTimeSeriesIntradayWithResponse(ctx con
 }
 
 // GetAZMTimeSeriesByDateWithResponse request returning *GetAZMTimeSeriesByDateResponse
-func (c *ClientWithResponses) GetAZMTimeSeriesByDateWithResponse(ctx context.Context, date openapi_types.Date, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByDateResponse, error) {
+func (c *ClientWithResponses) GetAZMTimeSeriesByDateWithResponse(ctx context.Context, date string, period GetAZMTimeSeriesByDateParamsPeriod, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByDateResponse, error) {
 	rsp, err := c.GetAZMTimeSeriesByDate(ctx, date, period, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11525,7 +13564,7 @@ func (c *ClientWithResponses) GetAZMTimeSeriesByDateWithResponse(ctx context.Con
 }
 
 // GetAZMTimeSeriesByIntervalWithResponse request returning *GetAZMTimeSeriesByIntervalResponse
-func (c *ClientWithResponses) GetAZMTimeSeriesByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByIntervalResponse, error) {
+func (c *ClientWithResponses) GetAZMTimeSeriesByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetAZMTimeSeriesByIntervalResponse, error) {
 	rsp, err := c.GetAZMTimeSeriesByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11534,8 +13573,8 @@ func (c *ClientWithResponses) GetAZMTimeSeriesByIntervalWithResponse(ctx context
 }
 
 // GetAZMByIntervalTimeSeriesIntradayWithResponse request returning *GetAZMByIntervalTimeSeriesIntradayResponse
-func (c *ClientWithResponses) GetAZMByIntervalTimeSeriesIntradayWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetAZMByIntervalTimeSeriesIntradayResponse, error) {
-	rsp, err := c.GetAZMByIntervalTimeSeriesIntraday(ctx, startDate, endDate, startTime, endTime, reqEditors...)
+func (c *ClientWithResponses) GetAZMByIntervalTimeSeriesIntradayWithResponse(ctx context.Context, startDate string, endDate string, startTime string, endTime string, detailLevel GetAZMByIntervalTimeSeriesIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByIntervalTimeSeriesIntradayResponse, error) {
+	rsp, err := c.GetAZMByIntervalTimeSeriesIntraday(ctx, startDate, endDate, startTime, endTime, detailLevel, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -11543,7 +13582,7 @@ func (c *ClientWithResponses) GetAZMByIntervalTimeSeriesIntradayWithResponse(ctx
 }
 
 // GetAZMByIntervalIntradayWithResponse request returning *GetAZMByIntervalIntradayResponse
-func (c *ClientWithResponses) GetAZMByIntervalIntradayWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByIntervalIntradayResponse, error) {
+func (c *ClientWithResponses) GetAZMByIntervalIntradayWithResponse(ctx context.Context, startDate string, endDate string, detailLevel GetAZMByIntervalIntradayParamsDetailLevel, reqEditors ...RequestEditorFn) (*GetAZMByIntervalIntradayResponse, error) {
 	rsp, err := c.GetAZMByIntervalIntraday(ctx, startDate, endDate, detailLevel, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11624,7 +13663,7 @@ func (c *ClientWithResponses) GetHeartByDateRangeWithResponse(ctx context.Contex
 }
 
 // GetHeartByDateIntradayWithResponse request returning *GetHeartByDateIntradayResponse
-func (c *ClientWithResponses) GetHeartByDateIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateIntradayResponse, error) {
+func (c *ClientWithResponses) GetHeartByDateIntradayWithResponse(ctx context.Context, date string, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateIntradayResponse, error) {
 	rsp, err := c.GetHeartByDateIntraday(ctx, date, detailLevel, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11633,7 +13672,7 @@ func (c *ClientWithResponses) GetHeartByDateIntradayWithResponse(ctx context.Con
 }
 
 // GetHeartByDateTimestampIntradayWithResponse request returning *GetHeartByDateTimestampIntradayResponse
-func (c *ClientWithResponses) GetHeartByDateTimestampIntradayWithResponse(ctx context.Context, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateTimestampIntradayResponse, error) {
+func (c *ClientWithResponses) GetHeartByDateTimestampIntradayWithResponse(ctx context.Context, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateTimestampIntradayResponse, error) {
 	rsp, err := c.GetHeartByDateTimestampIntraday(ctx, date, detailLevel, startTime, endTime, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11642,7 +13681,7 @@ func (c *ClientWithResponses) GetHeartByDateTimestampIntradayWithResponse(ctx co
 }
 
 // GetHeartByDateRangeIntradayWithResponse request returning *GetHeartByDateRangeIntradayResponse
-func (c *ClientWithResponses) GetHeartByDateRangeIntradayWithResponse(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeIntradayResponse, error) {
+func (c *ClientWithResponses) GetHeartByDateRangeIntradayWithResponse(ctx context.Context, date string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeIntradayResponse, error) {
 	rsp, err := c.GetHeartByDateRangeIntraday(ctx, date, endDate, detailLevel, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11651,7 +13690,7 @@ func (c *ClientWithResponses) GetHeartByDateRangeIntradayWithResponse(ctx contex
 }
 
 // GetHeartByDateRangeTimestampIntradayWithResponse request returning *GetHeartByDateRangeTimestampIntradayResponse
-func (c *ClientWithResponses) GetHeartByDateRangeTimestampIntradayWithResponse(ctx context.Context, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeTimestampIntradayResponse, error) {
+func (c *ClientWithResponses) GetHeartByDateRangeTimestampIntradayWithResponse(ctx context.Context, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetHeartByDateRangeTimestampIntradayResponse, error) {
 	rsp, err := c.GetHeartByDateRangeTimestampIntraday(ctx, date, endDate, detailLevel, startTime, endTime, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11660,7 +13699,7 @@ func (c *ClientWithResponses) GetHeartByDateRangeTimestampIntradayWithResponse(c
 }
 
 // GetHeartByDatePeriodWithResponse request returning *GetHeartByDatePeriodResponse
-func (c *ClientWithResponses) GetHeartByDatePeriodWithResponse(ctx context.Context, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetHeartByDatePeriodResponse, error) {
+func (c *ClientWithResponses) GetHeartByDatePeriodWithResponse(ctx context.Context, date string, period string, reqEditors ...RequestEditorFn) (*GetHeartByDatePeriodResponse, error) {
 	rsp, err := c.GetHeartByDatePeriod(ctx, date, period, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11687,7 +13726,7 @@ func (c *ClientWithResponses) GetRecentActivitiesWithResponse(ctx context.Contex
 }
 
 // GetActivitiesTrackerResourceByDateRangeWithResponse request returning *GetActivitiesTrackerResourceByDateRangeResponse
-func (c *ClientWithResponses) GetActivitiesTrackerResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDateRangeResponse, error) {
+func (c *ClientWithResponses) GetActivitiesTrackerResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDateRangeResponse, error) {
 	rsp, err := c.GetActivitiesTrackerResourceByDateRange(ctx, resourcePath, baseDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11696,7 +13735,7 @@ func (c *ClientWithResponses) GetActivitiesTrackerResourceByDateRangeWithRespons
 }
 
 // GetActivitiesTrackerResourceByDatePeriodWithResponse request returning *GetActivitiesTrackerResourceByDatePeriodResponse
-func (c *ClientWithResponses) GetActivitiesTrackerResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDatePeriodResponse, error) {
+func (c *ClientWithResponses) GetActivitiesTrackerResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesTrackerResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetActivitiesTrackerResourceByDatePeriodResponse, error) {
 	rsp, err := c.GetActivitiesTrackerResourceByDatePeriod(ctx, resourcePath, date, period, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11723,7 +13762,7 @@ func (c *ClientWithResponses) GetActivitiesTCXWithResponse(ctx context.Context, 
 }
 
 // GetActivitiesResourceByDateRangeWithResponse request returning *GetActivitiesResourceByDateRangeResponse
-func (c *ClientWithResponses) GetActivitiesResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeResponse, error) {
+func (c *ClientWithResponses) GetActivitiesResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeResponse, error) {
 	rsp, err := c.GetActivitiesResourceByDateRange(ctx, resourcePath, baseDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11732,7 +13771,7 @@ func (c *ClientWithResponses) GetActivitiesResourceByDateRangeWithResponse(ctx c
 }
 
 // GetActivitiesResourceByDateRangeIntradayWithResponse request returning *GetActivitiesResourceByDateRangeIntradayResponse
-func (c *ClientWithResponses) GetActivitiesResourceByDateRangeIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeIntradayResponse, error) {
+func (c *ClientWithResponses) GetActivitiesResourceByDateRangeIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeIntradayParamsResourcePath, baseDate string, endDate string, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeIntradayResponse, error) {
 	rsp, err := c.GetActivitiesResourceByDateRangeIntraday(ctx, resourcePath, baseDate, endDate, detailLevel, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11741,7 +13780,7 @@ func (c *ClientWithResponses) GetActivitiesResourceByDateRangeIntradayWithRespon
 }
 
 // GetActivitiesResourceByDateIntradayWithResponse request returning *GetActivitiesResourceByDateIntradayResponse
-func (c *ClientWithResponses) GetActivitiesResourceByDateIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateIntradayResponse, error) {
+func (c *ClientWithResponses) GetActivitiesResourceByDateIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateIntradayParamsResourcePath, date string, detailLevel string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateIntradayResponse, error) {
 	rsp, err := c.GetActivitiesResourceByDateIntraday(ctx, resourcePath, date, detailLevel, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11750,7 +13789,7 @@ func (c *ClientWithResponses) GetActivitiesResourceByDateIntradayWithResponse(ct
 }
 
 // GetActivitiesResourceByDateTimeSeriesIntradayWithResponse request returning *GetActivitiesResourceByDateTimeSeriesIntradayResponse
-func (c *ClientWithResponses) GetActivitiesResourceByDateTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateTimeSeriesIntradayResponse, error) {
+func (c *ClientWithResponses) GetActivitiesResourceByDateTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateTimeSeriesIntradayParamsResourcePath, date string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateTimeSeriesIntradayResponse, error) {
 	rsp, err := c.GetActivitiesResourceByDateTimeSeriesIntraday(ctx, resourcePath, date, detailLevel, startTime, endTime, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11759,7 +13798,7 @@ func (c *ClientWithResponses) GetActivitiesResourceByDateTimeSeriesIntradayWithR
 }
 
 // GetActivitiesResourceByDateRangeTimeSeriesIntradayWithResponse request returning *GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse
-func (c *ClientWithResponses) GetActivitiesResourceByDateRangeTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date openapi_types.Date, endDate openapi_types.Date, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse, error) {
+func (c *ClientWithResponses) GetActivitiesResourceByDateRangeTimeSeriesIntradayWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDateRangeTimeSeriesIntradayParamsResourcePath, date string, endDate string, detailLevel string, startTime string, endTime string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse, error) {
 	rsp, err := c.GetActivitiesResourceByDateRangeTimeSeriesIntraday(ctx, resourcePath, date, endDate, detailLevel, startTime, endTime, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11768,7 +13807,7 @@ func (c *ClientWithResponses) GetActivitiesResourceByDateRangeTimeSeriesIntraday
 }
 
 // GetActivitiesResourceByDatePeriodWithResponse request returning *GetActivitiesResourceByDatePeriodResponse
-func (c *ClientWithResponses) GetActivitiesResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDatePeriodResponse, error) {
+func (c *ClientWithResponses) GetActivitiesResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetActivitiesResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetActivitiesResourceByDatePeriodResponse, error) {
 	rsp, err := c.GetActivitiesResourceByDatePeriod(ctx, resourcePath, date, period, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11795,7 +13834,7 @@ func (c *ClientWithResponses) AddBodyFatLogWithResponse(ctx context.Context, par
 }
 
 // GetBodyFatByDateRangeWithResponse request returning *GetBodyFatByDateRangeResponse
-func (c *ClientWithResponses) GetBodyFatByDateRangeWithResponse(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyFatByDateRangeResponse, error) {
+func (c *ClientWithResponses) GetBodyFatByDateRangeWithResponse(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyFatByDateRangeResponse, error) {
 	rsp, err := c.GetBodyFatByDateRange(ctx, baseDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11849,7 +13888,7 @@ func (c *ClientWithResponses) AddWeightLogWithResponse(ctx context.Context, para
 }
 
 // GetWeightByDateRangeWithResponse request returning *GetWeightByDateRangeResponse
-func (c *ClientWithResponses) GetWeightByDateRangeWithResponse(ctx context.Context, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetWeightByDateRangeResponse, error) {
+func (c *ClientWithResponses) GetWeightByDateRangeWithResponse(ctx context.Context, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetWeightByDateRangeResponse, error) {
 	rsp, err := c.GetWeightByDateRange(ctx, baseDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11903,7 +13942,7 @@ func (c *ClientWithResponses) GetBodyGoalsWithResponse(ctx context.Context, goal
 }
 
 // GetBodyResourceByDateRangeWithResponse request returning *GetBodyResourceByDateRangeResponse
-func (c *ClientWithResponses) GetBodyResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyResourceByDateRangeResponse, error) {
+func (c *ClientWithResponses) GetBodyResourceByDateRangeWithResponse(ctx context.Context, resourcePath GetBodyResourceByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBodyResourceByDateRangeResponse, error) {
 	rsp, err := c.GetBodyResourceByDateRange(ctx, resourcePath, baseDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11912,7 +13951,7 @@ func (c *ClientWithResponses) GetBodyResourceByDateRangeWithResponse(ctx context
 }
 
 // GetBodyResourceByDatePeriodWithResponse request returning *GetBodyResourceByDatePeriodResponse
-func (c *ClientWithResponses) GetBodyResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetBodyResourceByDatePeriodResponse, error) {
+func (c *ClientWithResponses) GetBodyResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetBodyResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetBodyResourceByDatePeriodResponse, error) {
 	rsp, err := c.GetBodyResourceByDatePeriod(ctx, resourcePath, date, period, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11921,7 +13960,7 @@ func (c *ClientWithResponses) GetBodyResourceByDatePeriodWithResponse(ctx contex
 }
 
 // GetBreathingRateSummaryByDateWithResponse request returning *GetBreathingRateSummaryByDateResponse
-func (c *ClientWithResponses) GetBreathingRateSummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByDateResponse, error) {
+func (c *ClientWithResponses) GetBreathingRateSummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByDateResponse, error) {
 	rsp, err := c.GetBreathingRateSummaryByDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11930,7 +13969,7 @@ func (c *ClientWithResponses) GetBreathingRateSummaryByDateWithResponse(ctx cont
 }
 
 // GetBreathingRateIntradayByDateWithResponse request returning *GetBreathingRateIntradayByDateResponse
-func (c *ClientWithResponses) GetBreathingRateIntradayByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByDateResponse, error) {
+func (c *ClientWithResponses) GetBreathingRateIntradayByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByDateResponse, error) {
 	rsp, err := c.GetBreathingRateIntradayByDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11939,7 +13978,7 @@ func (c *ClientWithResponses) GetBreathingRateIntradayByDateWithResponse(ctx con
 }
 
 // GetBreathingRateSummaryByIntervalWithResponse request returning *GetBreathingRateSummaryByIntervalResponse
-func (c *ClientWithResponses) GetBreathingRateSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByIntervalResponse, error) {
+func (c *ClientWithResponses) GetBreathingRateSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetBreathingRateSummaryByIntervalResponse, error) {
 	rsp, err := c.GetBreathingRateSummaryByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11948,7 +13987,7 @@ func (c *ClientWithResponses) GetBreathingRateSummaryByIntervalWithResponse(ctx 
 }
 
 // GetBreathingRateIntradayByIntervalWithResponse request returning *GetBreathingRateIntradayByIntervalResponse
-func (c *ClientWithResponses) GetBreathingRateIntradayByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByIntervalResponse, error) {
+func (c *ClientWithResponses) GetBreathingRateIntradayByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetBreathingRateIntradayByIntervalResponse, error) {
 	rsp, err := c.GetBreathingRateIntradayByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11957,7 +13996,7 @@ func (c *ClientWithResponses) GetBreathingRateIntradayByIntervalWithResponse(ctx
 }
 
 // GetVo2MaxSummaryByDateWithResponse request returning *GetVo2MaxSummaryByDateResponse
-func (c *ClientWithResponses) GetVo2MaxSummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByDateResponse, error) {
+func (c *ClientWithResponses) GetVo2MaxSummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByDateResponse, error) {
 	rsp, err := c.GetVo2MaxSummaryByDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -11966,7 +14005,7 @@ func (c *ClientWithResponses) GetVo2MaxSummaryByDateWithResponse(ctx context.Con
 }
 
 // GetVo2MaxSummaryByIntervalWithResponse request returning *GetVo2MaxSummaryByIntervalResponse
-func (c *ClientWithResponses) GetVo2MaxSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByIntervalResponse, error) {
+func (c *ClientWithResponses) GetVo2MaxSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetVo2MaxSummaryByIntervalResponse, error) {
 	rsp, err := c.GetVo2MaxSummaryByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12191,7 +14230,7 @@ func (c *ClientWithResponses) EditFoodsLogWithResponse(ctx context.Context, food
 }
 
 // GetFoodsByDateRangeWithResponse request returning *GetFoodsByDateRangeResponse
-func (c *ClientWithResponses) GetFoodsByDateRangeWithResponse(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetFoodsByDateRangeResponse, error) {
+func (c *ClientWithResponses) GetFoodsByDateRangeWithResponse(ctx context.Context, resourcePath GetFoodsByDateRangeParamsResourcePath, baseDate string, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetFoodsByDateRangeResponse, error) {
 	rsp, err := c.GetFoodsByDateRange(ctx, resourcePath, baseDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12200,7 +14239,7 @@ func (c *ClientWithResponses) GetFoodsByDateRangeWithResponse(ctx context.Contex
 }
 
 // GetFoodsResourceByDatePeriodWithResponse request returning *GetFoodsResourceByDatePeriodResponse
-func (c *ClientWithResponses) GetFoodsResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date openapi_types.Date, period string, reqEditors ...RequestEditorFn) (*GetFoodsResourceByDatePeriodResponse, error) {
+func (c *ClientWithResponses) GetFoodsResourceByDatePeriodWithResponse(ctx context.Context, resourcePath GetFoodsResourceByDatePeriodParamsResourcePath, date string, period string, reqEditors ...RequestEditorFn) (*GetFoodsResourceByDatePeriodResponse, error) {
 	rsp, err := c.GetFoodsResourceByDatePeriod(ctx, resourcePath, date, period, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12218,7 +14257,7 @@ func (c *ClientWithResponses) DeleteFoodsWithResponse(ctx context.Context, foodI
 }
 
 // GetHrvSummaryDateWithResponse request returning *GetHrvSummaryDateResponse
-func (c *ClientWithResponses) GetHrvSummaryDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvSummaryDateResponse, error) {
+func (c *ClientWithResponses) GetHrvSummaryDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetHrvSummaryDateResponse, error) {
 	rsp, err := c.GetHrvSummaryDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12227,7 +14266,7 @@ func (c *ClientWithResponses) GetHrvSummaryDateWithResponse(ctx context.Context,
 }
 
 // GetHrvIntradayByDateWithResponse request returning *GetHrvIntradayByDateResponse
-func (c *ClientWithResponses) GetHrvIntradayByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvIntradayByDateResponse, error) {
+func (c *ClientWithResponses) GetHrvIntradayByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetHrvIntradayByDateResponse, error) {
 	rsp, err := c.GetHrvIntradayByDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12236,7 +14275,7 @@ func (c *ClientWithResponses) GetHrvIntradayByDateWithResponse(ctx context.Conte
 }
 
 // GetHrvSummaryIntervalWithResponse request returning *GetHrvSummaryIntervalResponse
-func (c *ClientWithResponses) GetHrvSummaryIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvSummaryIntervalResponse, error) {
+func (c *ClientWithResponses) GetHrvSummaryIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetHrvSummaryIntervalResponse, error) {
 	rsp, err := c.GetHrvSummaryInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12245,7 +14284,7 @@ func (c *ClientWithResponses) GetHrvSummaryIntervalWithResponse(ctx context.Cont
 }
 
 // GetHrvIntradayByIntervalWithResponse request returning *GetHrvIntradayByIntervalResponse
-func (c *ClientWithResponses) GetHrvIntradayByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetHrvIntradayByIntervalResponse, error) {
+func (c *ClientWithResponses) GetHrvIntradayByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetHrvIntradayByIntervalResponse, error) {
 	rsp, err := c.GetHrvIntradayByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12306,6 +14345,15 @@ func (c *ClientWithResponses) DeleteMealWithResponse(ctx context.Context, mealId
 	return ParseDeleteMealResponse(rsp)
 }
 
+// GetMealWithResponse request returning *GetMealResponse
+func (c *ClientWithResponses) GetMealWithResponse(ctx context.Context, mealId string, reqEditors ...RequestEditorFn) (*GetMealResponse, error) {
+	rsp, err := c.GetMeal(ctx, mealId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetMealResponse(rsp)
+}
+
 // UpdateMealWithBodyWithResponse request with arbitrary body returning *UpdateMealResponse
 func (c *ClientWithResponses) UpdateMealWithBodyWithResponse(ctx context.Context, mealId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateMealResponse, error) {
 	rsp, err := c.UpdateMealWithBody(ctx, mealId, contentType, body, reqEditors...)
@@ -12332,8 +14380,17 @@ func (c *ClientWithResponses) GetProfileWithResponse(ctx context.Context, reqEdi
 	return ParseGetProfileResponse(rsp)
 }
 
+// Post1UserProfileJsonWithResponse request returning *Post1UserProfileJsonResponse
+func (c *ClientWithResponses) Post1UserProfileJsonWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*Post1UserProfileJsonResponse, error) {
+	rsp, err := c.Post1UserProfileJson(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePost1UserProfileJsonResponse(rsp)
+}
+
 // GetSpO2SummaryByDateWithResponse request returning *GetSpO2SummaryByDateResponse
-func (c *ClientWithResponses) GetSpO2SummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByDateResponse, error) {
+func (c *ClientWithResponses) GetSpO2SummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByDateResponse, error) {
 	rsp, err := c.GetSpO2SummaryByDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12342,7 +14399,7 @@ func (c *ClientWithResponses) GetSpO2SummaryByDateWithResponse(ctx context.Conte
 }
 
 // GetSpO2IntradayByDateWithResponse request returning *GetSpO2IntradayByDateResponse
-func (c *ClientWithResponses) GetSpO2IntradayByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByDateResponse, error) {
+func (c *ClientWithResponses) GetSpO2IntradayByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByDateResponse, error) {
 	rsp, err := c.GetSpO2IntradayByDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12351,7 +14408,7 @@ func (c *ClientWithResponses) GetSpO2IntradayByDateWithResponse(ctx context.Cont
 }
 
 // GetSpO2SummaryByIntervalWithResponse request returning *GetSpO2SummaryByIntervalResponse
-func (c *ClientWithResponses) GetSpO2SummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByIntervalResponse, error) {
+func (c *ClientWithResponses) GetSpO2SummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetSpO2SummaryByIntervalResponse, error) {
 	rsp, err := c.GetSpO2SummaryByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12360,7 +14417,7 @@ func (c *ClientWithResponses) GetSpO2SummaryByIntervalWithResponse(ctx context.C
 }
 
 // GetSpO2IntradayByIntervalWithResponse request returning *GetSpO2IntradayByIntervalResponse
-func (c *ClientWithResponses) GetSpO2IntradayByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByIntervalResponse, error) {
+func (c *ClientWithResponses) GetSpO2IntradayByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetSpO2IntradayByIntervalResponse, error) {
 	rsp, err := c.GetSpO2IntradayByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12369,7 +14426,7 @@ func (c *ClientWithResponses) GetSpO2IntradayByIntervalWithResponse(ctx context.
 }
 
 // GetTempCoreSummaryByDateWithResponse request returning *GetTempCoreSummaryByDateResponse
-func (c *ClientWithResponses) GetTempCoreSummaryByDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByDateResponse, error) {
+func (c *ClientWithResponses) GetTempCoreSummaryByDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByDateResponse, error) {
 	rsp, err := c.GetTempCoreSummaryByDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12378,7 +14435,7 @@ func (c *ClientWithResponses) GetTempCoreSummaryByDateWithResponse(ctx context.C
 }
 
 // GetTempCoreSummaryByIntervalWithResponse request returning *GetTempCoreSummaryByIntervalResponse
-func (c *ClientWithResponses) GetTempCoreSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByIntervalResponse, error) {
+func (c *ClientWithResponses) GetTempCoreSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetTempCoreSummaryByIntervalResponse, error) {
 	rsp, err := c.GetTempCoreSummaryByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12387,7 +14444,7 @@ func (c *ClientWithResponses) GetTempCoreSummaryByIntervalWithResponse(ctx conte
 }
 
 // GetTempSkinSummaryDateWithResponse request returning *GetTempSkinSummaryDateResponse
-func (c *ClientWithResponses) GetTempSkinSummaryDateWithResponse(ctx context.Context, date openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryDateResponse, error) {
+func (c *ClientWithResponses) GetTempSkinSummaryDateWithResponse(ctx context.Context, date string, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryDateResponse, error) {
 	rsp, err := c.GetTempSkinSummaryDate(ctx, date, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12396,7 +14453,7 @@ func (c *ClientWithResponses) GetTempSkinSummaryDateWithResponse(ctx context.Con
 }
 
 // GetTempSkinSummaryByIntervalWithResponse request returning *GetTempSkinSummaryByIntervalResponse
-func (c *ClientWithResponses) GetTempSkinSummaryByIntervalWithResponse(ctx context.Context, startDate openapi_types.Date, endDate openapi_types.Date, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryByIntervalResponse, error) {
+func (c *ClientWithResponses) GetTempSkinSummaryByIntervalWithResponse(ctx context.Context, startDate string, endDate string, reqEditors ...RequestEditorFn) (*GetTempSkinSummaryByIntervalResponse, error) {
 	rsp, err := c.GetTempSkinSummaryByInterval(ctx, startDate, endDate, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -12470,6 +14527,16 @@ func ParseIntrospectResponse(rsp *http.Response) (*IntrospectResponse, error) {
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Oauth2Introspect
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12484,6 +14551,16 @@ func ParseGetFriendsResponse(rsp *http.Response) (*GetFriendsResponse, error) {
 	response := &GetFriendsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetFriendsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12502,6 +14579,16 @@ func ParseGetFriendsLeaderboardResponse(rsp *http.Response) (*GetFriendsLeaderbo
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetFriendsLeaderboardResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12516,6 +14603,16 @@ func ParseAddSleepResponse(rsp *http.Response) (*AddSleepResponse, error) {
 	response := &AddSleepResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CreateSleepLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
 	}
 
 	return response, nil
@@ -12534,6 +14631,16 @@ func ParseGetSleepByDateRangeResponse(rsp *http.Response) (*GetSleepByDateRangeR
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSleepLogByDateRangeResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12548,6 +14655,16 @@ func ParseGetSleepByDateResponse(rsp *http.Response) (*GetSleepByDateResponse, e
 	response := &GetSleepByDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSleepLogByDateResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12566,6 +14683,16 @@ func ParseGetSleepGoalResponse(rsp *http.Response) (*GetSleepGoalResponse, error
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetSleepGoalResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12582,6 +14709,16 @@ func ParseUpdateSleepGoalResponse(rsp *http.Response) (*UpdateSleepGoalResponse,
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest CreateSleepGoalResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12596,6 +14733,16 @@ func ParseGetSleepListResponse(rsp *http.Response) (*GetSleepListResponse, error
 	response := &GetSleepListResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSleepLogListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12662,6 +14809,16 @@ func ParseGetFoodsLocalesResponse(rsp *http.Response) (*GetFoodsLocalesResponse,
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetFoodLocalesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12676,6 +14833,16 @@ func ParseGetFoodsListResponse(rsp *http.Response) (*GetFoodsListResponse, error
 	response := &GetFoodsListResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest SearchFoodsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12694,6 +14861,16 @@ func ParseGetFoodsUnitsResponse(rsp *http.Response) (*GetFoodsUnitsResponse, err
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetFoodUnitsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12710,6 +14887,16 @@ func ParseGetFoodsInfoResponse(rsp *http.Response) (*GetFoodsInfoResponse, error
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetFoodResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12724,6 +14911,16 @@ func ParseGetActivitiesLogResponse(rsp *http.Response) (*GetActivitiesLogRespons
 	response := &GetActivitiesLogResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetLifetimeStatsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12758,6 +14955,16 @@ func ParseGetAZMByDateIntradayResponse(rsp *http.Response) (*GetAZMByDateIntrada
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetAzmIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12772,6 +14979,16 @@ func ParseGetAZMByDateTimeSeriesIntradayResponse(rsp *http.Response) (*GetAZMByD
 	response := &GetAZMByDateTimeSeriesIntradayResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetAzmIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12790,6 +15007,16 @@ func ParseGetAZMTimeSeriesByDateResponse(rsp *http.Response) (*GetAZMTimeSeriesB
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetAzmTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12804,6 +15031,16 @@ func ParseGetAZMTimeSeriesByIntervalResponse(rsp *http.Response) (*GetAZMTimeSer
 	response := &GetAZMTimeSeriesByIntervalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetAzmTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12822,6 +15059,16 @@ func ParseGetAZMByIntervalTimeSeriesIntradayResponse(rsp *http.Response) (*GetAZ
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetAzmIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12838,6 +15085,16 @@ func ParseGetAZMByIntervalIntradayResponse(rsp *http.Response) (*GetAZMByInterva
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetAzmIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12852,6 +15109,16 @@ func ParseGetActivitiesByDateResponse(rsp *http.Response) (*GetActivitiesByDateR
 	response := &GetActivitiesByDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetDailyActivitySummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12934,6 +15201,16 @@ func ParseGetActivitiesGoalsResponse(rsp *http.Response) (*GetActivitiesGoalsRes
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityGoalsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12966,6 +15243,16 @@ func ParseGetHeartByDateRangeResponse(rsp *http.Response) (*GetHeartByDateRangeR
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHeartRateTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -12980,6 +15267,16 @@ func ParseGetHeartByDateIntradayResponse(rsp *http.Response) (*GetHeartByDateInt
 	response := &GetHeartByDateIntradayResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHeartRateIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -12998,6 +15295,16 @@ func ParseGetHeartByDateTimestampIntradayResponse(rsp *http.Response) (*GetHeart
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHeartRateIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13012,6 +15319,16 @@ func ParseGetHeartByDateRangeIntradayResponse(rsp *http.Response) (*GetHeartByDa
 	response := &GetHeartByDateRangeIntradayResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHeartRateIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13030,6 +15347,16 @@ func ParseGetHeartByDateRangeTimestampIntradayResponse(rsp *http.Response) (*Get
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHeartRateIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13046,6 +15373,16 @@ func ParseGetHeartByDatePeriodResponse(rsp *http.Response) (*GetHeartByDatePerio
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHeartRateTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13060,6 +15397,16 @@ func ParseGetActivitiesLogListResponse(rsp *http.Response) (*GetActivitiesLogLis
 	response := &GetActivitiesLogListResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityLogListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13094,6 +15441,16 @@ func ParseGetActivitiesTrackerResourceByDateRangeResponse(rsp *http.Response) (*
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13108,6 +15465,16 @@ func ParseGetActivitiesTrackerResourceByDatePeriodResponse(rsp *http.Response) (
 	response := &GetActivitiesTrackerResourceByDatePeriodResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13142,6 +15509,19 @@ func ParseGetActivitiesTCXResponse(rsp *http.Response) (*GetActivitiesTCXRespons
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "xml") && rsp.StatusCode == 200:
+		var dest string
+		if err := xml.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.XML200 = &dest
+
+	case rsp.StatusCode == 200:
+		// Content-type (application/vnd.garmin.tcx+xml) unsupported
+
+	}
+
 	return response, nil
 }
 
@@ -13156,6 +15536,16 @@ func ParseGetActivitiesResourceByDateRangeResponse(rsp *http.Response) (*GetActi
 	response := &GetActivitiesResourceByDateRangeResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13174,6 +15564,16 @@ func ParseGetActivitiesResourceByDateRangeIntradayResponse(rsp *http.Response) (
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13188,6 +15588,16 @@ func ParseGetActivitiesResourceByDateIntradayResponse(rsp *http.Response) (*GetA
 	response := &GetActivitiesResourceByDateIntradayResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13206,6 +15616,16 @@ func ParseGetActivitiesResourceByDateTimeSeriesIntradayResponse(rsp *http.Respon
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13220,6 +15640,16 @@ func ParseGetActivitiesResourceByDateRangeTimeSeriesIntradayResponse(rsp *http.R
 	response := &GetActivitiesResourceByDateRangeTimeSeriesIntradayResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13238,6 +15668,16 @@ func ParseGetActivitiesResourceByDatePeriodResponse(rsp *http.Response) (*GetAct
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetActivityTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13252,6 +15692,16 @@ func ParseGetBadgesResponse(rsp *http.Response) (*GetBadgesResponse, error) {
 	response := &GetBadgesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetBadgesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13286,6 +15736,16 @@ func ParseGetBodyFatByDateRangeResponse(rsp *http.Response) (*GetBodyFatByDateRa
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBodyFatLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13302,6 +15762,16 @@ func ParseGetBodyFatByDateResponse(rsp *http.Response) (*GetBodyFatByDateRespons
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBodyFatLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13316,6 +15786,16 @@ func ParseGetBodyFatByDatePeriodResponse(rsp *http.Response) (*GetBodyFatByDateP
 	response := &GetBodyFatByDatePeriodResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBodyFatLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13382,6 +15862,16 @@ func ParseGetWeightByDateRangeResponse(rsp *http.Response) (*GetWeightByDateRang
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetWeightLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13398,6 +15888,16 @@ func ParseGetWeightByDateResponse(rsp *http.Response) (*GetWeightByDateResponse,
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetWeightLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13412,6 +15912,16 @@ func ParseGetWeightByDatePeriodResponse(rsp *http.Response) (*GetWeightByDatePer
 	response := &GetWeightByDatePeriodResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetWeightLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13462,6 +15972,16 @@ func ParseGetBodyGoalsResponse(rsp *http.Response) (*GetBodyGoalsResponse, error
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetBodyGoalsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13476,6 +15996,16 @@ func ParseGetBodyResourceByDateRangeResponse(rsp *http.Response) (*GetBodyResour
 	response := &GetBodyResourceByDateRangeResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBodyTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13494,6 +16024,16 @@ func ParseGetBodyResourceByDatePeriodResponse(rsp *http.Response) (*GetBodyResou
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBodyTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13508,6 +16048,16 @@ func ParseGetBreathingRateSummaryByDateResponse(rsp *http.Response) (*GetBreathi
 	response := &GetBreathingRateSummaryByDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBreathingRateSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13526,6 +16076,16 @@ func ParseGetBreathingRateIntradayByDateResponse(rsp *http.Response) (*GetBreath
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBreathingRateIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13540,6 +16100,16 @@ func ParseGetBreathingRateSummaryByIntervalResponse(rsp *http.Response) (*GetBre
 	response := &GetBreathingRateSummaryByIntervalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBreathingRateSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13558,6 +16128,16 @@ func ParseGetBreathingRateIntradayByIntervalResponse(rsp *http.Response) (*GetBr
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetBreathingRateIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13572,6 +16152,16 @@ func ParseGetVo2MaxSummaryByDateResponse(rsp *http.Response) (*GetVo2MaxSummaryB
 	response := &GetVo2MaxSummaryByDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetVo2MaxSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13590,6 +16180,16 @@ func ParseGetVo2MaxSummaryByIntervalResponse(rsp *http.Response) (*GetVo2MaxSumm
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetVo2MaxSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13604,6 +16204,16 @@ func ParseGetDevicesResponse(rsp *http.Response) (*GetDevicesResponse, error) {
 	response := &GetDevicesResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetDevicesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13622,6 +16232,16 @@ func ParseGetAlarmsResponse(rsp *http.Response) (*GetAlarmsResponse, error) {
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetAlarmsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13636,6 +16256,16 @@ func ParseAddAlarmsResponse(rsp *http.Response) (*AddAlarmsResponse, error) {
 	response := &AddAlarmsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest AlarmResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
 	}
 
 	return response, nil
@@ -13670,6 +16300,16 @@ func ParseUpdateAlarmsResponse(rsp *http.Response) (*UpdateAlarmsResponse, error
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest AlarmResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13684,6 +16324,16 @@ func ParseGetEcgLogListResponse(rsp *http.Response) (*GetEcgLogListResponse, err
 	response := &GetEcgLogListResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetEcgLogListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13734,6 +16384,16 @@ func ParseGetFoodsByDateResponse(rsp *http.Response) (*GetFoodsByDateResponse, e
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetFoodLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13748,6 +16408,16 @@ func ParseGetFavoriteFoodsResponse(rsp *http.Response) (*GetFavoriteFoodsRespons
 	response := &GetFavoriteFoodsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetFavoriteFoodsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13798,6 +16468,16 @@ func ParseGetFrequentFoodsResponse(rsp *http.Response) (*GetFrequentFoodsRespons
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetFrequentFoodsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13812,6 +16492,16 @@ func ParseGetFoodsGoalResponse(rsp *http.Response) (*GetFoodsGoalResponse, error
 	response := &GetFoodsGoalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetFoodGoalsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13846,6 +16536,16 @@ func ParseGetRecentFoodsResponse(rsp *http.Response) (*GetRecentFoodsResponse, e
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetRecentFoodsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13878,6 +16578,16 @@ func ParseGetWaterByDateResponse(rsp *http.Response) (*GetWaterByDateResponse, e
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetWaterLogResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -13892,6 +16602,16 @@ func ParseGetWaterGoalResponse(rsp *http.Response) (*GetWaterGoalResponse, error
 	response := &GetWaterGoalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetWaterGoalResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -13990,6 +16710,16 @@ func ParseGetFoodsByDateRangeResponse(rsp *http.Response) (*GetFoodsByDateRangeR
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetNutritionTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14004,6 +16734,16 @@ func ParseGetFoodsResourceByDatePeriodResponse(rsp *http.Response) (*GetFoodsRes
 	response := &GetFoodsResourceByDatePeriodResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetNutritionTimeSeriesResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14038,6 +16778,16 @@ func ParseGetHrvSummaryDateResponse(rsp *http.Response) (*GetHrvSummaryDateRespo
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHrvSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14052,6 +16802,16 @@ func ParseGetHrvIntradayByDateResponse(rsp *http.Response) (*GetHrvIntradayByDat
 	response := &GetHrvIntradayByDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHrvIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14070,6 +16830,16 @@ func ParseGetHrvSummaryIntervalResponse(rsp *http.Response) (*GetHrvSummaryInter
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHrvSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14084,6 +16854,16 @@ func ParseGetHrvIntradayByIntervalResponse(rsp *http.Response) (*GetHrvIntradayB
 	response := &GetHrvIntradayByIntervalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetHrvIntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14102,6 +16882,16 @@ func ParseGetIrnAlertsListResponse(rsp *http.Response) (*GetIrnAlertsListRespons
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetIrnAlertsListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14118,6 +16908,16 @@ func ParseGetIrnProfileResponse(rsp *http.Response) (*GetIrnProfileResponse, err
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetIrnProfileResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14132,6 +16932,16 @@ func ParseGetMealsResponse(rsp *http.Response) (*GetMealsResponse, error) {
 	response := &GetMealsResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetMealsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14169,6 +16979,32 @@ func ParseDeleteMealResponse(rsp *http.Response) (*DeleteMealResponse, error) {
 	return response, nil
 }
 
+// ParseGetMealResponse parses an HTTP response from a GetMealWithResponse call
+func ParseGetMealResponse(rsp *http.Response) (*GetMealResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetMealResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetMealResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseUpdateMealResponse parses an HTTP response from a UpdateMealWithResponse call
 func ParseUpdateMealResponse(rsp *http.Response) (*UpdateMealResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -14198,6 +17034,42 @@ func ParseGetProfileResponse(rsp *http.Response) (*GetProfileResponse, error) {
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetProfileResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePost1UserProfileJsonResponse parses an HTTP response from a Post1UserProfileJsonWithResponse call
+func ParsePost1UserProfileJsonResponse(rsp *http.Response) (*Post1UserProfileJsonResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &Post1UserProfileJsonResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest ApiGetProfileResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14212,6 +17084,16 @@ func ParseGetSpO2SummaryByDateResponse(rsp *http.Response) (*GetSpO2SummaryByDat
 	response := &GetSpO2SummaryByDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSpO2SummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14230,6 +17112,16 @@ func ParseGetSpO2IntradayByDateResponse(rsp *http.Response) (*GetSpO2IntradayByD
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSpO2IntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14244,6 +17136,16 @@ func ParseGetSpO2SummaryByIntervalResponse(rsp *http.Response) (*GetSpO2SummaryB
 	response := &GetSpO2SummaryByIntervalResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSpO2SummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14262,6 +17164,16 @@ func ParseGetSpO2IntradayByIntervalResponse(rsp *http.Response) (*GetSpO2Intrada
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSpO2IntradayResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14276,6 +17188,16 @@ func ParseGetTempCoreSummaryByDateResponse(rsp *http.Response) (*GetTempCoreSumm
 	response := &GetTempCoreSummaryByDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetTemperatureCoreSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14294,6 +17216,16 @@ func ParseGetTempCoreSummaryByIntervalResponse(rsp *http.Response) (*GetTempCore
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetTemperatureCoreSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14308,6 +17240,16 @@ func ParseGetTempSkinSummaryDateResponse(rsp *http.Response) (*GetTempSkinSummar
 	response := &GetTempSkinSummaryDateResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetTemperatureSkinSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14326,6 +17268,16 @@ func ParseGetTempSkinSummaryByIntervalResponse(rsp *http.Response) (*GetTempSkin
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetTemperatureSkinSummaryResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14340,6 +17292,16 @@ func ParseGetSubscriptionsListResponse(rsp *http.Response) (*GetSubscriptionsLis
 	response := &GetSubscriptionsListResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GetSubscriptionListResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -14374,6 +17336,23 @@ func ParseAddSubscriptionsResponse(rsp *http.Response) (*AddSubscriptionsRespons
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest AddSubscriptionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest AddSubscriptionResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -14404,6 +17383,16 @@ func ParseOauthTokenResponse(rsp *http.Response) (*OauthTokenResponse, error) {
 	response := &OauthTokenResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Oauth2Token
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil

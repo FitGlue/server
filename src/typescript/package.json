@@ -6,7 +6,9 @@
     "shared",
     "admin-cli",
     "strava-oauth-handler",
-    "fitbit-oauth-handler"
+    "fitbit-oauth-handler",
+    "fitbit-webhook-handler",
+    "fitbit-ingest"
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",

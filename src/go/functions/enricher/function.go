@@ -37,6 +37,7 @@ func init() {
 		providers.NewMuscleHeatmapProvider(),
 		providers.NewSourceLinkProvider(),
 		providers.NewVirtualGPSProvider(),
+		providers.NewTypeMapperProvider(),
 		providers.NewBrandingProvider(), // Always runs last to add footer
 	}
 }

@@ -1,0 +1,24 @@
+{
+  "name": "@fitglue/fitbit-ingest",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc -w",
+    "clean": "rm -rf dist",
+    "gcp-build": "npm run build",
+    "lint": "eslint src --ext .ts",
+    "test": "jest --passWithNoTests"
+  },
+  "dependencies": {
+    "@fitglue/shared": "file:../../shared",
+    "@google-cloud/functions-framework": "^3.3.0",
+    "fast-xml-parser": "^4.3.2"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.2",
+    "typescript": "^5.3.3"
+  }
+}

@@ -45,3 +45,10 @@ resource "google_secret_manager_secret" "fitbit_client_secret" {
     auto {}
   }
 }
+
+resource "google_secret_manager_secret" "fitbit_verification_code" {
+  secret_id = "fitbit-verification-code"
+  replication {
+    auto {}
+  }
+}

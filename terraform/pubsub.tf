@@ -18,3 +18,8 @@ resource "google_pubsub_topic" "job_upload_other" {
   name    = "topic-job-upload-other"
   project = var.project_id
 }
+
+resource "google_pubsub_topic" "fitbit_updates" {
+  name    = "topic-fitbit-updates"
+  project = var.project_id
+}

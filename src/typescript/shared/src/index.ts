@@ -9,4 +9,5 @@ export { ApiKeyRecord } from './types/pb/auth';
 export { UserRecord, UserIntegrations, HevyIntegration } from './types/pb/user';
 export * from './domain/services/user';
 export * from './integrations/hevy/client';
+export * from './integrations/fitbit/client';
 export * from './infrastructure/oauth';

@@ -10,8 +10,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/oapi-codegen/runtime/types"
-
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/integrations/fitbit"
 
@@ -76,7 +74,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 	}
 
 	// 5. Request Data (Intraday HR)
-	date := types.Date{Time: startTime}
+	date := startTime.Format("2006-01-02")
 	resp, err := client.GetHeartByDateTimestampIntraday(ctx, date, "1sec", startTimeStr, endTimeStr)
 	if err != nil {
 		return nil, fmt.Errorf("fitbit api request failed: %w", err)

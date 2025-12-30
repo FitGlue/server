@@ -124,7 +124,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/1/user/-/activities/active-zone-minutes/date/{start-date}/{end-date}/time/{start-time}/{end-time}.json": {
+    "/1/user/-/activities/active-zone-minutes/date/{start-date}/{end-date}/time/{start-time}/{end-time}/{detail-level}.json": {
         parameters: {
             query?: never;
             header?: never;
@@ -1715,7 +1715,11 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Get Meal
+         * @description Retrieves a single meal created by the user from their food log given the meal id.
+         */
+        get: operations["getMeal"];
         put?: never;
         /**
          * Update Meal
@@ -2213,23 +2217,26 @@ export interface paths {
          */
         get: operations["getProfile"];
         put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description A successful request. */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ApiGetProfileResponse"];
+                    };
+                };
+            };
         };
-        get?: never;
-        put?: never;
-        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2241,11 +2248,16 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         Meal: {
-            /** @example Breakfast */
-            name?: string;
-            /** @example I eat every morning */
+            /** @description The description of the meal. */
             description?: string;
-            mealFoods?: components["schemas"]["FoodItem"][];
+            /**
+             * Format: int64
+             * @description The ID of the meal.
+             */
+            id?: number;
+            mealFoods?: components["schemas"]["MealFood"][];
+            /** @description The name of the meal. */
+            name?: string;
         };
         FoodItem: {
             /** @example 82782 */
@@ -2255,17 +2267,1383 @@ export interface components {
             /** @example 128 */
             unitId?: number;
         };
+        BreathingRateValue: {
+            /** @description The average number of breaths taken per minute. */
+            breathingRate?: number;
+        };
+        GetBreathingRateSummaryResponse: {
+            br?: components["schemas"]["BreathingRateSummary"][];
+        };
+        BreathingRateSummary: {
+            /**
+             * Format: date
+             * @description The sleep log date specified in the format YYYY-MM-DD.
+             */
+            dateTime?: string;
+            value?: components["schemas"]["BreathingRateValue"];
+        };
+        HrvIntradayMinute: {
+            /** @description A measurement taken at a given time. */
+            minute?: string;
+            value?: components["schemas"]["HrvIntradayValue"];
+        };
+        GetHrvIntradayResponse: {
+            hrv?: {
+                /** Format: date */
+                dateTime?: string;
+                minutes?: components["schemas"]["HrvIntradayMinute"][];
+            }[];
+        };
+        HrvIntradayValue: {
+            /** @description The Root Mean Square of Successive Differences (RMSSD) between heart beats. */
+            rmssd?: number;
+            /** @description Data completeness in terms of the number of interbeat intervals. */
+            coverage?: number;
+            /** @description The power in interbeat interval fluctuations within the high frequency band (0.15 Hz - 0.4 Hz). */
+            hf?: number;
+            /** @description The power in interbeat interval fluctuations within the low frequency band (0.04 Hz - 0.15 Hz). */
+            lf?: number;
+            /** @description The Root Mean Square of Successive Differences (RMSSD) between heart beats. (Interval response) */
+            dailyRmssd?: number;
+        };
+        GetSleepLogByDateResponse: {
+            /** @description Array of sleep log entries. */
+            sleep?: components["schemas"]["SleepLog"][];
+            summary?: components["schemas"]["SleepSummary"];
+            meta?: components["schemas"]["SleepMeta"];
+        };
+        ApiGetSleepGoalResponse: {
+            goal?: components["schemas"]["SleepGoal"];
+        };
+        SleepGoal: {
+            /**
+             * Format: date-time
+             * @description The timestamp that the goal was created/updated.
+             */
+            updatedOn?: string;
+            /** @description Length of the sleep goal period in minutes. */
+            minDuration?: number;
+            /** @description The user's targeted bedtime. */
+            bedtime?: string;
+            /** @description The user's targeted wake time. */
+            wakeupTime?: string;
+        };
+        SleepSummary: {
+            /** @description Summary of sleep stages with minutes for each stage. */
+            stages?: {
+                [key: string]: number;
+            };
+            /** @description Total number of minutes the user was asleep across all sleep records. */
+            totalMinutesAsleep?: number;
+            /** @description The number of sleep records within the sleep log. */
+            totalSleepRecords?: number;
+            /** @description Total number of minutes the user was in bed across all records. */
+            totalTimeInBed?: number;
+        };
+        SleepMeta: {
+            /** @description The retry duration in milliseconds. */
+            retryDuration?: number;
+            /**
+             * @description The processing state of the sleep log.
+             * @enum {string}
+             */
+            state?: "pending";
+        };
+        SleepLog: {
+            /**
+             * Format: date
+             * @description The date the sleep log ended.
+             */
+            dateOfSleep?: string;
+            /** @description Length of the sleep in milliseconds. */
+            duration?: number;
+            /** @description Calculated sleep efficiency score. */
+            efficiency?: number;
+            /** @description Time the sleep log ended. */
+            endTime?: string;
+            /** @description An integer value representing the quality of data collected within the sleep log. 0 = Sufficient data, 1 = Insufficient heart rate data, 2 = Sleep period too short, 3 = Server-side issue. */
+            infoCode?: number;
+            /** @description Boolean value indicating if this is the main sleep period. */
+            isMainSleep?: boolean;
+            levels?: {
+                data?: {
+                    /**
+                     * Format: date-time
+                     * @description Timestamp the user started in sleep level.
+                     */
+                    dateTime?: string;
+                    /** @description The sleep level the user entered. */
+                    level?: string;
+                    /** @description The length of time the user was in the sleep level in seconds. */
+                    seconds?: number;
+                }[];
+                /** @description Short data periods (3 minutes or less) for stages sleep logs. */
+                shortData?: {
+                    /**
+                     * Format: date-time
+                     * @description Timestamp the user started in sleep level.
+                     */
+                    dateTime?: string;
+                    /** @description The sleep level the user entered. */
+                    level?: string;
+                    /** @description The length of time the user was in the sleep level in seconds. */
+                    seconds?: number;
+                }[];
+                summary?: {
+                    [key: string]: {
+                        /** @description Total number of times the user entered the sleep level. */
+                        count?: number;
+                        /** @description Total number of minutes the user appeared in the sleep level. */
+                        minutes?: number;
+                        /** @description The average sleep stage time over the past 30 days. */
+                        thirtyDayAvgMinutes?: number;
+                    };
+                };
+            };
+            /** @description Sleep log ID. */
+            logId?: number;
+            /** @description The total number of minutes after the user woke up. */
+            minutesAfterWakeup?: number;
+            /** @description The total number of minutes the user was asleep. */
+            minutesAsleep?: number;
+            /** @description The total sum of wake minutes only. */
+            minutesAwake?: number;
+            /** @description The total number of minutes before the user falls asleep. */
+            minutesToFallAsleep?: number;
+            /**
+             * @description The type of sleep in terms of how it was logged.
+             * @enum {string}
+             */
+            logType?: "auto_detected" | "manual";
+            /** @description Time the sleep log begins. */
+            startTime?: string;
+            /** @description Total number of minutes the user was in bed. */
+            timeInBed?: number;
+            /**
+             * @description The type of sleep log.
+             * @enum {string}
+             */
+            type?: "classic" | "stages";
+        };
+        CreateSleepLogResponse: {
+            /** @description Array of sleep log entries. */
+            sleep?: components["schemas"]["SleepLog"][];
+        };
+        CreateSleepGoalResponse: {
+            goal?: components["schemas"]["SleepGoal"];
+        };
+        GetSleepLogListResponse: {
+            pagination?: {
+                /**
+                 * Format: date
+                 * @description The specified afterDate parameter.
+                 */
+                afterDate?: string;
+                /**
+                 * Format: date
+                 * @description The specified beforeDate parameter.
+                 */
+                beforeDate?: string;
+                /** @description The specified limit. */
+                limit?: number;
+                /** @description URL for the next page of results. */
+                next?: string;
+                /** @description The specified offset. */
+                offset?: number;
+                /** @description URL for the previous page of results. */
+                previous?: string;
+                /**
+                 * @description The specified sort order.
+                 * @enum {string}
+                 */
+                sort?: "asc" | "desc";
+            };
+            /** @description Array of sleep log entries. */
+            sleep?: components["schemas"]["SleepLog"][];
+            summary?: components["schemas"]["SleepSummary"];
+        };
+        GetSleepLogByDateRangeResponse: {
+            /** @description Array of sleep log entries. */
+            sleep?: components["schemas"]["SleepLog"][];
+        };
+        LifetimeStats: {
+            /** @description The user's best achievements. */
+            best?: {
+                /** @description The user's best achievements including tracker and manual activity log entries. */
+                total?: {
+                    distance?: {
+                        /**
+                         * Format: date
+                         * @description The date the user's best distance was achieved.
+                         */
+                        date?: string;
+                        /** @description The user's best distance achieved. */
+                        value?: number;
+                    };
+                    floors?: {
+                        /**
+                         * Format: date
+                         * @description The date the user's best floors was achieved.
+                         */
+                        date?: string;
+                        /** @description The user's best floors achieved. */
+                        value?: number;
+                    };
+                    steps?: {
+                        /**
+                         * Format: date
+                         * @description The date the user's best step count was achieved.
+                         */
+                        date?: string;
+                        /** @description The user's best step count achieved. */
+                        value?: number;
+                    };
+                };
+                /** @description The user's best achievements including tracker data only. */
+                tracker?: {
+                    distance?: {
+                        /**
+                         * Format: date
+                         * @description The date the user's best distance was achieved.
+                         */
+                        date?: string;
+                        /** @description The user's best distance achieved. */
+                        value?: number;
+                    };
+                    floors?: {
+                        /**
+                         * Format: date
+                         * @description The date the user's best floors was achieved.
+                         */
+                        date?: string;
+                        /** @description The user's best floors achieved. */
+                        value?: number;
+                    };
+                    steps?: {
+                        /**
+                         * Format: date
+                         * @description The date the user's best step count was achieved.
+                         */
+                        date?: string;
+                        /** @description The user's best step count achieved. */
+                        value?: number;
+                    };
+                };
+            };
+            /** @description The user's lifetime stats. */
+            lifetime?: {
+                /** @description The total lifetime stats including tracker and manual activity log entries. */
+                total?: {
+                    /** @description Functionality removed. A response is returned for backward compatibility. */
+                    activeScore?: number;
+                    /** @description Functionality removed. A response is returned for backward compatibility. */
+                    caloriesOut?: number;
+                    /** @description The total distance recorded over the lifetime of the user's account. */
+                    distance?: number;
+                    /** @description The total floors recorded over the lifetime of the user's account. */
+                    floors?: number;
+                    /** @description The total steps recorded over the lifetime of the user's account. */
+                    steps?: number;
+                };
+                /** @description The total lifetime stats including tracker data only. */
+                tracker?: {
+                    /** @description Functionality removed. A response is returned for backward compatibility. */
+                    activeScore?: number;
+                    /** @description Functionality removed. A response is returned for backward compatibility. */
+                    caloriesOut?: number;
+                    /** @description The total distance recorded by the tracker over the lifetime of the user's account. */
+                    distance?: number;
+                    /** @description The total floors recorded by the tracker over the lifetime of the user's account. */
+                    floors?: number;
+                    /** @description The total steps recorded by the tracker over the lifetime of the user's account. */
+                    steps?: number;
+                };
+            };
+        };
+        GetDailyActivitySummaryResponse: {
+            /** @description List of activity log entries. */
+            activities?: components["schemas"]["ActivityLog"][];
+            /** @description The user's daily activity goals. */
+            goals?: components["schemas"]["ActivityGoals"];
+            /** @description The user's daily activity summary. */
+            summary?: components["schemas"]["ActivitySummary"];
+        };
+        ActivitySummary: {
+            /** @description Functionality removed. A response is returned for backward compatibility. */
+            activeScore?: number;
+            /** @description The number of calories burned for the day during periods the user was active above sedentary level. */
+            activityCalories?: number;
+            /** @description Total BMR calories burned for the day. */
+            caloriesBMR?: number;
+            /** @description Total calories burned for the day. */
+            caloriesOut?: number;
+            /** @description List of distances traveled for the day. */
+            distances?: {
+                /** @description The activity name. */
+                activity?: string;
+                /** @description The distance traveled for the day. */
+                distance?: number;
+            }[];
+            /** @description The elevation traveled for the day. */
+            elevation?: number;
+            /** @description Total minutes the user was fairly/moderately active. */
+            fairlyActiveMinutes?: number;
+            /** @description The equivalent floors climbed for the day. */
+            floors?: number;
+            /** @description Total minutes the user was lightly active. */
+            lightlyActiveMinutes?: number;
+            /** @description Total marginal estimated calories burned for the day. */
+            marginalCalories?: number;
+            /** @description The user's calculated resting heart rate. */
+            restingHeartRate?: number;
+            /** @description Total minutes the user was sedentary. */
+            sedentaryMinutes?: number;
+            /** @description Total steps taken for the day. */
+            steps?: number;
+            /** @description Total minutes the user was very active. */
+            veryActiveMinutes?: number;
+        };
+        GetLifetimeStatsResponse: components["schemas"]["LifetimeStats"];
+        GetActivityGoalsResponse: {
+            /** @description The user's activity goals. */
+            goals?: components["schemas"]["ActivityGoals"];
+        };
+        ActivityLog: {
+            /** @description The ID of the activity. */
+            activityId?: number;
+            /** @description The ID of the top level ('parent') activity. */
+            activityParentId?: number;
+            /** @description The name of the top level ('parent') activity. */
+            activityParentName?: string;
+            /** @description Number of calories burned during the exercise. */
+            calories?: number;
+            /** @description The description of the recorded exercise. */
+            description?: string;
+            /** @description Distance traveled during the on-device recorded exercise. */
+            distance?: number;
+            /** @description The activeDuration (milliseconds) + any pauses that occurred during the activity recording. */
+            duration?: number;
+            /** @description Indicates if the activity has active zone minutes. */
+            hasActiveZoneMinutes?: boolean;
+            /** @description Indicates if the activity has a start time. */
+            hasStartTime?: boolean;
+            /** @description Indicates if the activity is a favorite. */
+            isFavorite?: boolean;
+            /**
+             * Format: date-time
+             * @description Timestamp the exercise was last modified.
+             */
+            lastModified?: string;
+            /** @description The activity log identifier for the exercise. */
+            logId?: number;
+            /** @description Name of the recorded exercise. */
+            name?: string;
+            /**
+             * Format: date
+             * @description The start date of the recorded exercise.
+             */
+            startDate?: string;
+            /** @description The start time of the recorded exercise. */
+            startTime?: string;
+            /** @description Number of steps recorded during the exercise. */
+            steps?: number;
+        };
+        ActivityGoals: {
+            /** @description Daily active minutes goal. */
+            activeMinutes?: number;
+            /** @description Daily or weekly active zone minutes goal. */
+            activeZoneMinutes?: number;
+            /** @description Daily calories burned goal. */
+            caloriesOut?: number;
+            /** @description Daily or weekly distance goal. */
+            distance?: number;
+            /** @description Daily or weekly floors climbed goal. */
+            floors?: number;
+            /** @description Daily or weekly steps taken goal. */
+            steps?: number;
+        };
+        GetActivityLogListResponse: {
+            /** @description List of activity log entries. */
+            activities?: components["schemas"]["ActivityLog"][];
+            pagination?: {
+                /**
+                 * Format: date
+                 * @description The specified afterDate parameter.
+                 */
+                afterDate?: string;
+                /** @description The specified limit. */
+                limit?: number;
+                /** @description URL for the next page of results. */
+                next?: string;
+                /** @description The specified offset. */
+                offset?: number;
+                /** @description URL for the previous page of results. */
+                previous?: string;
+                /**
+                 * @description The specified sort order.
+                 * @enum {string}
+                 */
+                sort?: "asc" | "desc";
+            };
+        };
+        GetHrvSummaryResponse: {
+            hrv?: components["schemas"]["HrvSummary"][];
+        };
+        HrvSummary: {
+            /**
+             * Format: date
+             * @description The sleep log date specified in the format YYYY-MM-DD.
+             */
+            dateTime?: string;
+            value?: components["schemas"]["HrvValue"];
+        };
+        HrvValue: {
+            /** @description The Root Mean Square of Successive Differences (RMSSD) between heart beats. It measures short-term variability in the user’s daily heart rate in milliseconds (ms). */
+            dailyRmssd?: number;
+            /** @description The Root Mean Square of Successive Differences (RMSSD) between heart beats. It measures short-term variability in the user’s heart rate while in deep sleep, in milliseconds (ms). */
+            deepRmssd?: number;
+        };
+        GetSpO2IntradayResponse: {
+            spo2?: {
+                /**
+                 * Format: date
+                 * @description The sleep log date specified in the format YYYY-MM-DD.
+                 */
+                dateTime?: string;
+                minutes?: components["schemas"]["SpO2IntradayMinute"][];
+            }[];
+        };
+        SpO2IntradayMinute: {
+            /** @description The date and time at which the SpO2 measurement was taken. */
+            minute?: string;
+            /** @description The percentage value of SpO2 calculated at a specific date and time in a single day. */
+            value?: number;
+        };
+        GetBreathingRateIntradayResponse: {
+            br?: {
+                /** Format: date */
+                dateTime?: string;
+                value?: components["schemas"]["BreathingRateIntradayValue"];
+            }[];
+        };
+        BreathingRateIntradayValue: {
+            lightSleepSummary?: components["schemas"]["BreathingRateIntradaySummary"];
+            deepSleepSummary?: components["schemas"]["BreathingRateIntradaySummary"];
+            remSleepSummary?: components["schemas"]["BreathingRateIntradaySummary"];
+            fullSleepSummary?: components["schemas"]["BreathingRateIntradaySummary"];
+        };
+        BreathingRateIntradaySummary: {
+            /** @description Average number of breaths taken per minute. */
+            breathingRate?: number;
+        };
+        GetBodyFatLogResponse: {
+            fat?: components["schemas"]["BodyFatLog"][];
+        };
+        ApiGetBodyGoalsResponse: {
+            goal?: components["schemas"]["BodyGoal"];
+        };
+        BodyFatLog: {
+            /**
+             * Format: date
+             * @description The date the body fat log was recorded.
+             */
+            date?: string;
+            /** @description The body fat percentage. */
+            fat?: number;
+            /** @description The body fat log Id. */
+            logId?: number;
+            /** @description The location where the body fat data originated. */
+            source?: string;
+            /** @description The timestamp when the body fat log was recorded. */
+            time?: string;
+        };
+        GetWeightLogResponse: {
+            weight?: components["schemas"]["WeightLog"][];
+        };
+        WeightLog: {
+            /** @description Calculated BMI. */
+            bmi?: number;
+            /**
+             * Format: date
+             * @description Log entry date.
+             */
+            date?: string;
+            /** @description Weight Log IDs are unique to the user, but not globally unique. */
+            logId?: number;
+            /** @description The source of the weight log. */
+            source?: string;
+            /** @description Time of the measurement. */
+            time?: string;
+            /** @description Weight in the unit system that corresponds to the Accept-Language header provided. */
+            weight?: number;
+        };
+        BodyGoal: {
+            /** @description The goal type. Supported: LOSE | GAIN | MAINTAIN */
+            goalType?: string;
+            /**
+             * Format: date
+             * @description The goal start date.
+             */
+            startDate?: string;
+            /** @description User's weight when goal was established. */
+            startWeight?: number;
+            /** @description The weight goal to achieve. */
+            weight?: number;
+            /** @description The recommended amount of weight to lose each week to achieve and maintain goal. */
+            weightThreshold?: number;
+            /** @description The body fat goal to achieve. */
+            fat?: number;
+        };
+        ApiGetBadgesResponse: {
+            badges?: components["schemas"]["Badge"][];
+        };
+        User: {
+            age?: number;
+            ambassador?: boolean;
+            autoStrideEnabled?: boolean;
+            /** Format: uri */
+            avatar?: string;
+            /** Format: uri */
+            avatar150?: string;
+            /** Format: uri */
+            avatar640?: string;
+            averageDailySteps?: number;
+            challengesBeta?: boolean;
+            clockTimeDisplayFormat?: string;
+            corporate?: boolean;
+            corporateAdmin?: boolean;
+            country?: string;
+            /** Format: date */
+            dateOfBirth?: string;
+            displayName?: string;
+            displayNameSetting?: string;
+            distanceUnit?: string;
+            encodedId?: string;
+            features?: {
+                exerciseGoal?: boolean;
+            };
+            firstName?: string;
+            foodsLocale?: string;
+            fullName?: string;
+            gender?: string;
+            glucoseUnit?: string;
+            height?: number;
+            heightUnit?: string;
+            isBugReportEnabled?: boolean;
+            isChild?: boolean;
+            isCoach?: boolean;
+            languageLocale?: string;
+            lastName?: string;
+            legalTermsAcceptRequired?: boolean;
+            locale?: string;
+            /** Format: date */
+            memberSince?: string;
+            mfaEnabled?: boolean;
+            offsetFromUTCMillis?: number;
+            sdkDeveloper?: boolean;
+            sleepTracking?: string;
+            startDayOfWeek?: string;
+            strideLengthRunning?: number;
+            strideLengthRunningType?: string;
+            strideLengthWalking?: number;
+            strideLengthWalkingType?: string;
+            swimUnit?: string;
+            timezone?: string;
+            topBadges?: components["schemas"]["Badge"][];
+            waterUnit?: string;
+            waterUnitName?: string;
+            weight?: number;
+            weightUnit?: string;
+        };
+        Badge: {
+            badgeGradientEndColor?: string;
+            badgeGradientStartColor?: string;
+            badgeType?: string;
+            category?: string;
+            cheers?: Record<string, never>[];
+            /** Format: date-time */
+            dateTime?: string;
+            description?: string;
+            earnedMessage?: string;
+            encodedId?: string;
+            /** Format: uri */
+            image100px?: string;
+            /** Format: uri */
+            image125px?: string;
+            /** Format: uri */
+            image300px?: string;
+            /** Format: uri */
+            image50px?: string;
+            /** Format: uri */
+            image75px?: string;
+            marketingDescription?: string;
+            mobileDescription?: string;
+            name?: string;
+            /** Format: uri */
+            shareImage640px?: string;
+            shareText?: string;
+            shortDescription?: string;
+            shortName?: string;
+            timesAchieved?: number;
+            value?: number;
+            unit?: string;
+        };
+        ApiGetProfileResponse: {
+            user?: components["schemas"]["User"];
+        };
+        SpO2Summary: {
+            /**
+             * Format: date
+             * @description The sleep log date specified in the format YYYY-MM-DD.
+             */
+            dateTime?: string;
+            /** @description The SpO2 value. */
+            value?: {
+                /** @description The mean of the 1 minute SpO2 levels calculated as a percentage value. */
+                avg?: number;
+                /** @description The minimum daily SpO2 level calculated as a percentage value. */
+                min?: number;
+                /** @description The maximum daily SpO2 level calculated as a percentage value. */
+                max?: number;
+            };
+        };
+        GetSpO2SummaryResponse: {
+            /** @description List of SpO2 summaries. */
+            spo2?: components["schemas"]["SpO2Summary"][];
+        };
+        AzmIntradayDataset: {
+            dataset?: components["schemas"]["AzmIntradayDatapoint"][];
+            /** @description The requested detail-level numerical interval */
+            datasetInterval?: number;
+            /** @description The requested detail-level unit of measure */
+            datasetType?: string;
+        };
+        GetAzmIntradayResponse: {
+            "activities-active-zone-minutes"?: {
+                /** Format: date */
+                dateTime?: string;
+                value?: components["schemas"]["AzmValue"];
+            }[];
+            "activities-active-zone-minutes-intraday"?: components["schemas"]["AzmIntradayDataset"];
+        };
+        AzmValue: {
+            /** @description Total count of active zone minutes earned. */
+            activeZoneMinutes?: number;
+            /** @description The number of active zone minutes in the fat burn heart rate zone. */
+            fatBurnActiveZoneMinutes?: number;
+            /** @description The number of active zone minutes in the cardio heart rate zone. */
+            cardioActiveZoneMinutes?: number;
+            /** @description The number of active zone minutes in the peak heart rate zone. */
+            peakActiveZoneMinutes?: number;
+        };
+        AzmIntradayDatapoint: {
+            /** @description The time of the recorded resource. */
+            time?: string;
+            value?: components["schemas"]["AzmValue"];
+        };
+        Subscription: {
+            /** @description The collection type of the subscription. */
+            collectionType?: string;
+            /** @description The owner ID of the subscription. */
+            ownerId?: string;
+            /** @description The owner type of the subscription. */
+            ownerType?: string;
+            /** @description The subscriber ID of the subscription. */
+            subscriberId?: string;
+            /** @description The subscription ID. */
+            subscriptionId?: string;
+        };
+        GetSubscriptionListResponse: {
+            apiSubscriptions?: components["schemas"]["Subscription"][];
+        };
+        AddSubscriptionResponse: components["schemas"]["Subscription"];
+        ApiGetEcgLogListResponse: {
+            /** @description List of ECG readings. */
+            ecgReadings?: components["schemas"]["EcgReading"][];
+            pagination?: {
+                /**
+                 * Format: date
+                 * @description The afterDate parameter of the request.
+                 */
+                afterDate?: string;
+                /**
+                 * Format: date
+                 * @description The beforeDate parameter of the request.
+                 */
+                beforeDate?: string;
+                /** @description The limit parameter of the request. */
+                limit?: number;
+                /** @description The URL of the request that will fetch the next page of results. */
+                next?: string;
+                /** @description The offset parameter of the request. */
+                offset?: number;
+                /** @description The URL of the request that will fetch the previous page of results. */
+                previous?: string;
+                /** @description The sort parameter of the request. */
+                sort?: string;
+            };
+        };
+        EcgReading: {
+            /**
+             * Format: date-time
+             * @description The date and time when the reading was started on the device.
+             */
+            startTime?: string;
+            /** @description The average heart rate of the user during the reading. */
+            averageHeartRate?: number;
+            /**
+             * @description The classification of the ECG result.
+             * @enum {string}
+             */
+            resultClassification?: "Atrial Fibrillation" | "Normal Sinus Rhythm" | "Inconclusive" | "Inconclusive: High heart rate" | "Inconclusive: Low heart rate";
+            /** @description An array of integers representing the ECG waveform. */
+            waveformSamples?: number[];
+            /** @description The frequency in hertz at which the Fitbit ECG app sampled the voltage. */
+            samplingFrequencyHz?: number;
+            /** @description The scaling factor used to convert waveform samples to ECG voltages in mV (mV = waveformSamples / scalingFactor). */
+            scalingFactor?: number;
+            /** @description The total number of samples in the reading. */
+            numberOfWaveformSamples?: number;
+            /** @description The ECG lead being used to take the reading. */
+            leadNumber?: number;
+            /** @description The version of the ECG app running on the device. */
+            featureVersion?: string;
+            /** @description Hardware name of the compatible wrist-worn device used to take the reading. */
+            deviceName?: string;
+            /** @description Firmware running on the compatible wrist-worn device used to take the reading. */
+            firmwareVersion?: string;
+        };
+        NutritionTimeSeriesDatapoint: {
+            /**
+             * Format: date
+             * @description The date of the recorded resource.
+             */
+            dateTime?: string;
+            /** @description The specified resource's daily total. */
+            value?: string;
+        };
+        GetNutritionTimeSeriesResponse: {
+            "foods-log-caloriesIn"?: components["schemas"]["NutritionTimeSeriesDatapoint"][];
+            "foods-log-water"?: components["schemas"]["NutritionTimeSeriesDatapoint"][];
+        };
+        GetHeartRateTimeSeriesResponse: {
+            "activities-heart"?: components["schemas"]["HeartRateTimeSeriesDatapoint"][];
+        };
+        HeartRateZone: {
+            /** @description Number calories burned with the specified heart rate zone. */
+            caloriesOut?: number;
+            /** @description Maximum range for the heart rate zone. */
+            max?: number;
+            /** @description Minimum range for the heart rate zone. */
+            min?: number;
+            /** @description Number minutes withing the specified heart rate zone. */
+            minutes?: number;
+            /** @description Name of the heart rate zone. */
+            name?: string;
+        };
+        HeartRateTimeSeriesDatapoint: {
+            /**
+             * Format: date
+             * @description Date of the heart rate log.
+             */
+            dateTime?: string;
+            value?: components["schemas"]["HeartRateTimeSeriesValue"];
+        };
+        HeartRateTimeSeriesValue: {
+            customHeartRateZones?: components["schemas"]["HeartRateZone"][];
+            heartRateZones?: components["schemas"]["HeartRateZone"][];
+            /** @description The user’s calculated resting heart rate. */
+            restingHeartRate?: number;
+        };
+        ApiGetFriendsResponse: {
+            data?: components["schemas"]["Friend"][];
+        };
+        Friend: {
+            /** @description Supported: person */
+            type?: string;
+            /** @description Fitbit user id. */
+            id?: string;
+            attributes?: components["schemas"]["FriendAttributes"];
+        };
+        FriendAttributes: {
+            /** @description Link to user's avatar picture. */
+            avatar?: string;
+            /** @description Boolean value describing friend as a child account. */
+            child?: boolean;
+            /** @description Boolean value describing user as a friend. */
+            friend?: boolean;
+            /** @description Person's display name. */
+            name?: string;
+        };
+        ApiGetFriendsLeaderboardResponse: {
+            data?: components["schemas"]["LeaderboardFriend"][];
+        };
+        LeaderboardFriendAttributes: {
+            /** @description Link to user's avatar picture. */
+            avatar?: string;
+            /** @description Boolean value describing friend as a child account. */
+            child?: boolean;
+            /** @description Supported: true */
+            friend?: boolean;
+            /** @description Person's display name. */
+            name?: string;
+            /** @description Ranking among the user's friends. */
+            "step-rank"?: number;
+            /** @description Weekly step count. */
+            "step-summary"?: number;
+        };
+        LeaderboardFriend: {
+            /** @description Describes the user based on the frequency they sync their steps. Supported: ranked-user | inactive-user */
+            type?: string;
+            /** @description Fitbit user id. */
+            id?: string;
+            attributes?: components["schemas"]["LeaderboardFriendAttributes"];
+            relationships?: {
+                user?: {
+                    data?: {
+                        /** @description Fitbit user id. */
+                        id?: string;
+                        /** @description Supported: person */
+                        type?: string;
+                    };
+                };
+            };
+        };
+        HeartRateIntradayDatapoint: {
+            /** @description The time the intraday heart rate value was recorded */
+            time?: string;
+            /** @description The intraday heart rate value */
+            value?: number;
+        };
+        GetHeartRateIntradayResponse: {
+            "activities-heart"?: components["schemas"]["HeartRateTimeSeriesDatapoint"][];
+            "activities-heart-intraday"?: components["schemas"]["HeartRateIntradayDataset"];
+        };
+        HeartRateIntradayDataset: {
+            dataset?: components["schemas"]["HeartRateIntradayDatapoint"][];
+            /** @description The requested detail-level numerical interval */
+            datasetInterval?: number;
+            /** @description The requested detail-level unit of measure */
+            datasetType?: string;
+        };
+        IrnAlert: {
+            /**
+             * Format: date-time
+             * @description The start time for the irregular rhythm detection.
+             */
+            alertTime?: string;
+            /**
+             * Format: date-time
+             * @description The end time for the irregular rhythm detection.
+             */
+            detectedTime?: string;
+            /** @description The version of the service running when the alert was produced. */
+            serviceVersion?: string;
+            /** @description The version of the algorithm running when the alert was produced. */
+            algoVersion?: string;
+            /** @description The name of the device who generated the alert. */
+            deviceType?: string;
+            /** @description List of analyzable windows. */
+            windows?: components["schemas"]["IrnWindow"][];
+        };
+        IrnWindow: {
+            /**
+             * Format: date-time
+             * @description The start time for the analyzable window (representing 5 consecutive minutes of data following the start time).
+             */
+            startTime?: string;
+            /** @description List of heart beat data. */
+            bpmData?: components["schemas"]["IrnBpmData"][];
+        };
+        ApiGetIrnProfileResponse: {
+            /** @description Whether or not the user has onboarded onto the IRN feature. */
+            onboarded?: boolean;
+            /** @description Whether or not the user is currently enrolled in having their data processed for IRN alerts. */
+            enrolled?: boolean;
+            /**
+             * Format: date-time
+             * @description The timestamp of the last piece of analyzable data synced by the user (displayed as local time).
+             */
+            lastUpdated?: string;
+        };
+        ApiGetIrnAlertsListResponse: {
+            /** @description List of IRN alerts. */
+            alerts?: components["schemas"]["IrnAlert"][];
+            pagination?: {
+                /**
+                 * Format: date
+                 * @description The afterDate parameter of the request.
+                 */
+                afterDate?: string;
+                /**
+                 * Format: date
+                 * @description The beforeDate parameter of the request.
+                 */
+                beforeDate?: string;
+                /** @description The limit parameter of the request. */
+                limit?: number;
+                /** @description The URL of the request that will fetch the next page of results. */
+                next?: string;
+                /** @description The offset parameter of the request. */
+                offset?: number;
+                /** @description The URL of the request that will fetch the previous page of results. */
+                previous?: string;
+                /** @description The sort parameter of the request. */
+                sort?: string;
+            };
+        };
+        IrnBpmData: {
+            /**
+             * Format: date-time
+             * @description The timestamp of the individual heart beat.
+             */
+            dataTime?: string;
+            /** @description The extrapolated bpm value from the individual heart beat. */
+            value?: number;
+        };
+        GetActivityTimeSeriesResponse: {
+            "activities-activityCalories"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-calories"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-caloriesBMR"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-distance"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-elevation"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-floors"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-minutesSedentary"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-minutesLightlyActive"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-minutesFairlyActive"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-minutesVeryActive"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-steps"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-swimming-strokes"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-activityCalories"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-calories"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-distance"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-elevation"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-floors"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-minutesSedentary"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-minutesLightlyActive"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-minutesFairlyActive"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-minutesVeryActive"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-tracker-steps"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+        };
+        ActivityTimeSeriesDatapoint: {
+            /**
+             * Format: date
+             * @description The date of the recorded resource.
+             */
+            dateTime?: string;
+            /** @description The specified resource's daily total. */
+            value?: string;
+        };
+        CardioScoreSummary: {
+            /**
+             * Format: date
+             * @description The date specified in the format YYYY-MM-DD.
+             */
+            dateTime?: string;
+            value?: components["schemas"]["Vo2MaxValue"];
+        };
+        GetVo2MaxSummaryResponse: {
+            cardioscore?: components["schemas"]["CardioScoreSummary"][];
+        };
+        Vo2MaxValue: {
+            /** @description The displayable value of VO2 Max in mL/kg/min. */
+            vo2Max?: string;
+        };
+        FoodLocale: {
+            /** @description Whether barcode is supported. */
+            barcode?: boolean;
+            /** @description Whether image upload is supported. */
+            imageUpload?: boolean;
+            /** @description Name of the locale. */
+            label?: string;
+            /** @description The locale value. */
+            value?: string;
+        };
+        WaterLog: {
+            /** @description Amount of water consumed for each period of the day. */
+            amount?: number;
+            /** @description The water log ID. */
+            logId?: number;
+        };
+        GetFoodUnitsResponse: components["schemas"]["FoodUnit"][];
+        FoodServing: {
+            /** @description The multiplier for the serving size. */
+            multiplier?: number;
+            /** @description The serving size. */
+            servingSize?: number;
+            unit?: components["schemas"]["FoodUnit"];
+            /** @description The ID of the unit. */
+            unitId?: number;
+        };
+        ApiGetWaterGoalResponse: {
+            goal?: components["schemas"]["WaterGoal"];
+        };
+        GetFoodLogResponse: {
+            /** @description List of food log entries. */
+            foods?: components["schemas"]["FoodLogEntry"][];
+            goals?: components["schemas"]["FoodGoals"];
+            summary?: components["schemas"]["NutritionalValues"];
+        };
+        ApiGetMealsResponse: {
+            meals?: components["schemas"]["Meal"][];
+        };
+        GetFoodGoalsResponse: {
+            goals?: components["schemas"]["FoodGoals"];
+        };
+        ApiGetFrequentFoodsResponse: {
+            foods?: components["schemas"]["Food"][];
+        };
+        WaterGoal: {
+            /** @description Amount of water to consume daily. */
+            goal?: number;
+            /**
+             * Format: date
+             * @description Water goal's start date.
+             */
+            startDate?: string;
+        };
+        MealFood: {
+            /** @description The access level of the food (PUBLIC or PRIVATE). */
+            accessLevel?: string;
+            /**
+             * Format: float
+             * @description The amount of the food.
+             */
+            amount?: number;
+            /** @description The brand of the food. */
+            brand?: string;
+            /** @description The number of calories in the food. */
+            calories?: number;
+            /**
+             * Format: int64
+             * @description The ID of the food.
+             */
+            foodId?: number;
+            /** @description The locale of the food. */
+            locale?: string;
+            /** @description The meal type ID. */
+            mealTypeId?: number;
+            /** @description The name of the food. */
+            name?: string;
+            unit?: components["schemas"]["FoodUnit"];
+            /** @description List of unit IDs available for this food. */
+            units?: number[];
+        };
+        Food: {
+            /**
+             * @description The access level of the food.
+             * @enum {string}
+             */
+            accessLevel?: "PUBLIC" | "PRIVATE";
+            /** @description The brand of the food. */
+            brand?: string;
+            /** @description The calories in the food. */
+            calories?: number;
+            /** @description The default serving size. */
+            defaultServingSize?: number;
+            defaultUnit?: components["schemas"]["FoodUnit"];
+            /** @description The ID of the food. */
+            foodId?: number;
+            /** @description Whether the food is generic. */
+            isGeneric?: boolean;
+            /** @description The locale of the food. */
+            locale?: string;
+            /** @description The name of the food. */
+            name?: string;
+            /** @description List of servings. */
+            servings?: components["schemas"]["FoodServing"][];
+            /** @description List of unit IDs. */
+            units?: number[];
+        };
+        NutritionalValues: {
+            /** @description Calories. */
+            calories?: number;
+            /** @description Carbohydrates. */
+            carbs?: number;
+            /** @description Fat. */
+            fat?: number;
+            /** @description Fiber. */
+            fiber?: number;
+            /** @description Protein. */
+            protein?: number;
+            /** @description Sodium. */
+            sodium?: number;
+        };
+        ApiGetMealResponse: {
+            meal?: components["schemas"]["Meal"];
+        };
+        ApiGetRecentFoodsResponse: {
+            foods?: components["schemas"]["Food"][];
+        };
+        FoodLogEntry: {
+            /** @description Whether the food is a favorite. */
+            isFavorite?: boolean;
+            /**
+             * Format: date
+             * @description The date of the log entry.
+             */
+            logDate?: string;
+            /** @description The ID of the log entry. */
+            logId?: number;
+            loggedFood?: components["schemas"]["LoggedFood"];
+            nutritionalValues?: components["schemas"]["NutritionalValues"];
+        };
+        GetFoodLocalesResponse: components["schemas"]["FoodLocale"][];
+        LoggedFood: {
+            /**
+             * @description The access level of the food.
+             * @enum {string}
+             */
+            accessLevel?: "PUBLIC" | "PRIVATE";
+            /** @description The amount of food consumed. */
+            amount?: number;
+            /** @description The brand of the food. */
+            brand?: string;
+            /** @description The calories in the food. */
+            calories?: number;
+            /** @description The ID of the food. */
+            foodId?: number;
+            /** @description The locale of the food. */
+            locale?: string;
+            /** @description The meal type ID. */
+            mealTypeId?: number;
+            /** @description The name of the food. */
+            name?: string;
+            unit?: {
+                /** @description The ID of the unit. */
+                id?: number;
+                /** @description The name of the unit. */
+                name?: string;
+                /** @description The plural name of the unit. */
+                plural?: string;
+            };
+            /** @description List of unit IDs. */
+            units?: number[];
+        };
+        SearchFoodsResponse: {
+            foods?: components["schemas"]["Food"][];
+        };
+        GetWaterLogResponse: {
+            summary?: {
+                /** @description Total amount of water consumed for the day. */
+                water?: number;
+            };
+            /** @description List of water log entries. */
+            water?: components["schemas"]["WaterLog"][];
+        };
+        FoodGoals: {
+            /** @description The daily calorie consumption goal. */
+            calories?: number;
+        };
+        FoodUnit: {
+            /** @description The ID of the unit. */
+            id?: number;
+            /** @description The name of the unit. */
+            name?: string;
+            /** @description The plural name of the unit. */
+            plural?: string;
+        };
+        ApiGetFavoriteFoodsResponse: components["schemas"]["Food"][];
+        GetFoodResponse: {
+            food?: components["schemas"]["Food"];
+        };
+        Oauth2Token: {
+            /** @description The access token. */
+            access_token?: string;
+            /** @description The number of seconds until the access token expires. */
+            expires_in?: number;
+            /** @description The refresh token. */
+            refresh_token?: string;
+            /** @description The scopes that the token has access to. */
+            scope?: string;
+            /** @description The type of token. */
+            token_type?: string;
+            /** @description The user ID. */
+            user_id?: string;
+        };
+        Oauth2Introspect: {
+            /** @description True if the token is active, false otherwise. */
+            active?: boolean;
+            /** @description The scopes that the token has access to. */
+            scope?: string;
+            /** @description The client ID. */
+            client_id?: string;
+            /** @description The user ID. */
+            user_id?: string;
+            /** @description The type of token. */
+            token_type?: string;
+            /** @description The timestamp when the token expires. */
+            exp?: number;
+            /** @description The timestamp when the token was issued. */
+            iat?: number;
+        };
+        TemperatureCoreLog: {
+            /**
+             * Format: date-time
+             * @description The log timestamp.
+             */
+            dateTime?: string;
+            /**
+             * Format: float
+             * @description The temperature value.
+             */
+            value?: number;
+        };
+        TemperatureSkinLog: {
+            /**
+             * Format: date
+             * @description The log date.
+             */
+            dateTime?: string;
+            /** @description The type of skin temperature log created. */
+            logType?: string;
+            value?: {
+                /**
+                 * Format: float
+                 * @description The user's average temperature during a period of sleep.
+                 */
+                nightlyRelative?: number;
+            };
+        };
+        GetTemperatureSkinSummaryResponse: {
+            tempSkin?: components["schemas"]["TemperatureSkinLog"][];
+        };
+        GetTemperatureCoreSummaryResponse: {
+            tempCore?: components["schemas"]["TemperatureCoreLog"][];
+        };
+        GetBodyTimeSeriesResponse: {
+            "body-bmi"?: components["schemas"]["BodyTimeSeriesDatapoint"][];
+            "body-fat"?: components["schemas"]["BodyTimeSeriesDatapoint"][];
+            "body-weight"?: components["schemas"]["BodyTimeSeriesDatapoint"][];
+        };
+        BodyTimeSeriesDatapoint: {
+            /**
+             * Format: date
+             * @description The datetime which the resource was recorded.
+             */
+            dateTime?: string;
+            /** @description The value of the resource. */
+            value?: string;
+        };
+        GetAzmTimeSeriesResponse: {
+            "activities-active-zone-minutes"?: components["schemas"]["AzmTimeSeriesDatapoint"][];
+        };
+        AzmTimeSeriesDatapoint: {
+            /**
+             * Format: date
+             * @description The date specified in the format YYYY-MM-DD or today.
+             */
+            dateTime?: string;
+            value?: {
+                /** @description Total count of active zone minutes. */
+                activeZoneMinutes?: number;
+                /** @description The number of active zone minutes in the fat burn heart rate zone. */
+                fatBurnActiveZoneMinutes?: number;
+                /** @description The number of active zone minutes in the cardio heart rate zone. */
+                cardioActiveZoneMinutes?: number;
+                /** @description The number of active zone minutes in the peak heart rate zone. */
+                peakActiveZoneMinutes?: number;
+            };
+        };
+        ApiGetAlarmsResponse: {
+            /** @description List of alarms. */
+            trackerAlarms?: components["schemas"]["Alarm"][];
+        };
+        Alarm: {
+            /** @description Numerical value representing the alarm ID. */
+            alarmId?: number;
+            /** @description Indicates if an alarm has been deleted. */
+            deleted?: boolean;
+            /** @description Indicates if an alarm is enabled. */
+            enabled?: boolean;
+            /** @description Indicates if an alarm is recurring. */
+            recurring?: boolean;
+            /** @description Indicates the number of times the alarm will snooze. */
+            snoozeCount?: number;
+            /** @description Indicates the time in minutes between snooze periods. */
+            snoozeLength?: number;
+            /** @description Indicates if the alarm is synced to the device. */
+            syncedToDevice?: boolean;
+            /** @description The time and UTC offset for the specified alarm. */
+            time?: string;
+            /**
+             * @description Returns the type of vibration configured.
+             * @enum {string}
+             */
+            vibe?: "DEFAULT";
+            /** @description Returns the recurring days of the week which the alarm is set. */
+            weekDays?: ("MONDAY" | "TUESDAY" | "WEDNESDAY" | "THURSDAY" | "FRIDAY" | "SATURDAY" | "SUNDAY")[];
+            /** @description Label or name for the alarm. */
+            label?: string;
+        };
+        AlarmResponse: {
+            /** @description The alarm object. */
+            trackerAlarm?: components["schemas"]["Alarm"];
+        };
+        /** @description List of devices. */
+        ApiGetDevicesResponse: components["schemas"]["Device"][];
+        Device: {
+            /**
+             * @description Returns the battery level of the device.
+             * @enum {string}
+             */
+            battery?: "High" | "Medium" | "Low" | "Empty";
+            /** @description Returns the battery level percentage of the device. */
+            batteryLevel?: number;
+            /** @description The product name of the device. */
+            deviceVersion?: string;
+            /** @description Lists any unique features supported by the device. */
+            features?: string[];
+            /** @description The device ID. */
+            id?: string;
+            /**
+             * Format: date-time
+             * @description Timestamp representing the last time the device was sync'd with the Fitbit mobile application.
+             */
+            lastSyncTime?: string;
+            /** @description Mac ID number */
+            mac?: string;
+            /**
+             * @description The type of device.
+             * @enum {string}
+             */
+            type?: "TRACKER" | "SCALE";
+        };
+        ActivityIntradayDatapoint: {
+            /** @description The time of the recorded resource. */
+            time?: string;
+            /** @description The specified resource's value at the time it is recorded. */
+            value?: number;
+            /** @description Numerical value representing the user's activity-level at the moment when the resource was recorded. 0 = sedentary 1 = lightly active 2 = fairly/moderately active 3 = very active Returned only when resource = calories. */
+            level?: number;
+            /** @description METs value at the moment when the resource was recorded. Returned only when resource = calories. */
+            mets?: number;
+        };
+        ActivityIntradayDataset: {
+            dataset?: components["schemas"]["ActivityIntradayDatapoint"][];
+            /** @description The requested detail-level numerical interval */
+            datasetInterval?: number;
+            /** @description The requested detail-level unit of measure */
+            datasetType?: string;
+        };
+        GetActivityIntradayResponse: {
+            "activities-calories"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-calories-intraday"?: components["schemas"]["ActivityIntradayDataset"];
+            "activities-distance"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-distance-intraday"?: components["schemas"]["ActivityIntradayDataset"];
+            "activities-elevation"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-elevation-intraday"?: components["schemas"]["ActivityIntradayDataset"];
+            "activities-floors"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-floors-intraday"?: components["schemas"]["ActivityIntradayDataset"];
+            "activities-steps"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-steps-intraday"?: components["schemas"]["ActivityIntradayDataset"];
+            "activities-swimming-strokes"?: components["schemas"]["ActivityTimeSeriesDatapoint"][];
+            "activities-swimming-strokes-intraday"?: components["schemas"]["ActivityIntradayDataset"];
+        };
     };
     responses: never;
     parameters: never;
-    requestBodies: {
-        /** @description Meal to create */
-        Meal: {
-            content: {
-                "application/json": components["schemas"]["Meal"];
-            };
-        };
-    };
+    requestBodies: never;
     headers: never;
     pathItems: never;
 }
@@ -2303,7 +3681,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Oauth2Token"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satisfied. */
             400: {
@@ -2349,7 +3729,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["Oauth2Introspect"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satisfied. */
             400: {
@@ -2425,7 +3807,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetAzmIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2473,7 +3857,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetAzmIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2519,7 +3905,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetAzmIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2553,6 +3941,8 @@ export interface operations {
                 "start-date": string;
                 /** @description The date in the format yyyy-MM-dd or today */
                 "end-date": string;
+                /** @description The detail for which data will be returned. **Support:** 1min | 5min | 15min */
+                "detail-level": "1min" | "5min" | "15min";
                 /** @description The start of the period in the format HH:mm. */
                 "start-time": string;
                 /** @description The end of the period in the format HH:mm. */
@@ -2567,7 +3957,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetAzmIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2611,7 +4003,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetAzmTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2655,7 +4049,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetAzmTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2697,7 +4093,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetDailyActivitySummaryResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2743,7 +4141,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2789,7 +4189,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2835,7 +4237,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2881,7 +4285,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2929,7 +4335,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -2975,7 +4383,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3027,7 +4437,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3077,7 +4489,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityIntradayResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3116,7 +4530,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetLifetimeStatsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3257,7 +4673,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityLogListResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3302,7 +4720,10 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/vnd.garmin.tcx+xml": string;
+                    "application/xml": string;
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3633,7 +5054,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetActivityGoalsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3722,7 +5145,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBodyFatLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3759,7 +5184,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBodyFatLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3796,7 +5223,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBodyFatLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -3912,7 +5341,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetBodyGoalsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4035,7 +5466,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetWeightLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4072,7 +5505,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetWeightLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4109,7 +5544,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetWeightLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4229,7 +5666,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBodyTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4268,7 +5707,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBodyTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4298,12 +5739,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBreathingRateSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4335,12 +5778,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBreathingRateSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4370,12 +5815,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBreathingRateIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4407,12 +5854,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetBreathingRateIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4442,12 +5891,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetVo2MaxSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4479,12 +5930,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetVo2MaxSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4516,7 +5969,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetDevicesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4551,7 +6006,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetAlarmsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4597,12 +6054,14 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The request has been fulfilled and resulted in a new resouce being created. */
+            /** @description A successful request. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AlarmResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4654,12 +6113,14 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description The request has been fulfilled and resulted in a new resouce being created. */
+            /** @description A successful request. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AlarmResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4739,7 +6200,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetEcgLogListResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -4766,12 +6229,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetFriendsResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4798,12 +6263,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetFriendsLeaderboardResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4828,12 +6295,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHeartRateTimeSeriesResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4865,12 +6334,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHeartRateTimeSeriesResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4904,12 +6375,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHeartRateIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4947,12 +6420,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHeartRateIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -4984,12 +6459,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHeartRateIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -5025,12 +6502,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHeartRateIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -5060,12 +6539,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHrvSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -5097,12 +6578,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHrvSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -5132,12 +6615,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHrvIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -5169,12 +6654,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetHrvIntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -5217,7 +6704,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetIrnAlertsListResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5249,7 +6738,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetIrnProfileResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -5269,12 +6760,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetFoodLocalesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5313,7 +6806,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetFoodGoalsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5401,7 +6896,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetFoodLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5443,7 +6940,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetWaterLogResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5482,7 +6981,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetWaterGoalResponse"];
+                };
             };
         };
     };
@@ -5549,7 +7050,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetNutritionTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5595,7 +7098,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetNutritionTimeSeriesResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5901,12 +7406,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetFavoriteFoodsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -5940,12 +7447,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetFrequentFoodsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -6056,12 +7565,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetMealsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -6093,7 +7604,12 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["Meal"];
+        /** @description Meal to create */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Meal"];
+            };
+        };
         responses: {
             /** @description Successful request. */
             200: {
@@ -6125,6 +7641,29 @@ export interface operations {
             };
         };
     };
+    getMeal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ID of the meal. */
+                "meal-id": string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A successful request. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiGetMealResponse"];
+                };
+            };
+        };
+    };
     updateMeal: {
         parameters: {
             query?: never;
@@ -6135,7 +7674,12 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: components["requestBodies"]["Meal"];
+        /** @description Meal to create */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Meal"];
+            };
+        };
         responses: {
             /** @description Successful request. */
             200: {
@@ -6211,12 +7755,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetRecentFoodsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -6340,12 +7886,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetFoodResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -6379,12 +7927,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetFoodUnitsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -6426,7 +7976,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SearchFoodsResponse"];
+                };
             };
             /** @description The request had bad syntax or was inherently impossible to be satified. */
             400: {
@@ -6498,12 +8050,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSleepLogByDateResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6535,12 +8089,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSleepLogByDateRangeResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6578,12 +8134,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSleepLogListResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6610,12 +8168,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetSleepGoalResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6651,6 +8211,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description A successful request. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateSleepGoalResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6691,6 +8260,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description A successful request. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreateSleepLogResponse"];
+                };
+            };
             /** @description The request requires user authentication. */
             401: {
                 headers: {
@@ -6719,12 +8297,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSpO2SummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6756,12 +8336,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSpO2SummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6791,12 +8373,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSpO2IntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6828,12 +8412,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSpO2IntradayResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -6863,12 +8449,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Returned if the given user is already subscribed to the stream. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetSubscriptionListResponse"];
+                };
             };
             /** @description Returned if a new subscription was created in response to your request. */
             201: {
@@ -6900,19 +8488,23 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Returned if the given user is already subscribed to the stream. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AddSubscriptionResponse"];
+                };
             };
-            /** @description Returned if a new subscription was created in response to your request. */
+            /** @description A successful request. */
             201: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["AddSubscriptionResponse"];
+                };
             };
             /** @description Returned if the given user is already subscribed to this stream using a different subscription ID, OR if the given subscription ID is already used to identify a subscription to a different stream. */
             409: {
@@ -6972,12 +8564,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetTemperatureCoreSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -7009,12 +8603,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetTemperatureCoreSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -7044,12 +8640,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetTemperatureSkinSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -7081,12 +8679,14 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful request. */
+            /** @description A successful request. */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["GetTemperatureSkinSummaryResponse"];
+                };
             };
             /** @description The request requires user authentication. */
             401: {
@@ -7118,7 +8718,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetBadgesResponse"];
+                };
             };
             /** @description Returned if a new subscription was created in response to your request. */
             201: {
@@ -7150,7 +8752,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["ApiGetProfileResponse"];
+                };
             };
             /** @description Returned if a new subscription was created in response to your request. */
             201: {
