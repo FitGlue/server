@@ -41,6 +41,41 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 		}
 	}
 
+	// Check if stats should be shown (default: true)
+	showStats := true
+	if statsStr, ok := inputConfig["show_stats"]; ok {
+		showStats = statsStr == "true"
+	}
+
+	// Calculate headline stats
+	var stats struct {
+		totalSets     int
+		totalVolume   float64
+		totalReps     int
+		totalDistance float64
+		heaviestLift  struct {
+			weight   float64
+			exercise string
+		}
+	}
+
+	for _, set := range allSets {
+		stats.totalSets++
+		if set.Reps > 0 {
+			stats.totalReps += int(set.Reps)
+		}
+		if set.WeightKg > 0 && set.Reps > 0 {
+			stats.totalVolume += set.WeightKg * float64(set.Reps)
+			if set.WeightKg > stats.heaviestLift.weight {
+				stats.heaviestLift.weight = set.WeightKg
+				stats.heaviestLift.exercise = set.ExerciseName
+			}
+		}
+		if set.DistanceMeters > 0 {
+			stats.totalDistance += set.DistanceMeters
+		}
+	}
+
 	// Group by Exercise Name
 	type ExerciseBlock struct {
 		Name         string
@@ -71,6 +106,30 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 
 	var sb strings.Builder
 	sb.WriteString("Workout Summary:\n")
+
+	if showStats {
+		var statParts []string
+		if stats.totalSets > 0 {
+			statParts = append(statParts, fmt.Sprintf("%d sets", stats.totalSets))
+		}
+		if stats.totalVolume > 0 {
+			statParts = append(statParts, fmt.Sprintf("%.0fkg volume", stats.totalVolume))
+		}
+		if stats.totalReps > 0 {
+			statParts = append(statParts, fmt.Sprintf("%d reps", stats.totalReps))
+		}
+		if stats.totalDistance > 0 {
+			distKm := stats.totalDistance / 1000.0
+			statParts = append(statParts, fmt.Sprintf("%.1fkm distance", distKm))
+		}
+		if stats.heaviestLift.weight > 0 {
+			statParts = append(statParts, fmt.Sprintf("Heaviest: %.0fkg (%s)", stats.heaviestLift.weight, stats.heaviestLift.exercise))
+		}
+
+		if len(statParts) > 0 {
+			sb.WriteString("📊 " + strings.Join(statParts, " • ") + "\n\n")
+		}
+	}
 
 	// Check if any supersets exist
 	hasSupersets := false
@@ -173,6 +232,9 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 		Metadata: map[string]string{
 			"exercise_count": fmt.Sprintf("%d", len(blocks)),
 			"total_sets":     fmt.Sprintf("%d", len(allSets)),
+			"total_volume":   fmt.Sprintf("%.2f", stats.totalVolume),
+			"total_reps":     fmt.Sprintf("%d", stats.totalReps),
+			"has_stats":      fmt.Sprintf("%t", showStats),
 			"has_supersets":  fmt.Sprintf("%t", hasSupersets),
 			"has_set_types":  fmt.Sprintf("%t", hasSetTypes),
 		},

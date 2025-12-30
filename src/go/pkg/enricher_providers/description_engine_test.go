@@ -96,6 +96,7 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 
 		// Workout Summary
 		"Workout Summary:",
+		"📊 22 sets • 8355kg volume • 208 reps • 1.5km distance • Heaviest: 140kg (Squat)",
 		"(Exercises with matching numbers are supersets - performed back-to-back)",
 		"([W]=Warmup, [F]=Failure, [D]=Dropset)",
 
@@ -158,5 +159,24 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 	// Verify branding is at the end
 	if !strings.HasSuffix(strings.TrimSpace(finalDesc), "Posted via fitglue.tech 💪") {
 		t.Error("Expected branding footer to be at the end of description")
+	}
+}
+
+func TestDescriptionEngine_StatsDisabled(t *testing.T) {
+	activity := &pb.StandardizedActivity{
+		Sessions: []*pb.Session{{
+			StrengthSets: []*pb.StrengthSet{
+				{ExerciseName: "Bench Press", Reps: 10, WeightKg: 100},
+			},
+		}},
+	}
+	pSummary := enricher_providers.NewWorkoutSummaryProvider()
+
+	// Test with stats disabled
+	config := map[string]string{"show_stats": "false"}
+	res, _ := pSummary.Enrich(context.Background(), activity, nil, config)
+
+	if strings.Contains(res.Description, "📊") {
+		t.Error("Expected stats to be hidden when show_stats=false")
 	}
 }

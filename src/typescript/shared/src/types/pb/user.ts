@@ -11,6 +11,7 @@ export const protobufPackage = "fitglue";
 export enum EnricherProviderType {
   ENRICHER_PROVIDER_UNSPECIFIED = 0,
   ENRICHER_PROVIDER_FITBIT_HEART_RATE = 1,
+  /** ENRICHER_PROVIDER_WORKOUT_SUMMARY - Config inputs: "format" (compact/detailed/verbose), "show_stats" ("true"/"false") */
   ENRICHER_PROVIDER_WORKOUT_SUMMARY = 2,
   ENRICHER_PROVIDER_MUSCLE_HEATMAP = 3,
   ENRICHER_PROVIDER_SOURCE_LINK = 4,

@@ -574,18 +574,29 @@ program.command('users:add-pipeline')
                         ...(gpsConfig.force && { force: 'true' })
                     };
                 } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY) {
-                    const summaryConfig = await inquirer.prompt([{
-                        type: 'list',
-                        name: 'format',
-                        message: 'Format Style:',
-                        choices: [
-                            { name: 'Compact (4×8@100kg)', value: 'compact' },
-                            { name: 'Detailed (4 sets × 8 reps @ 100.0kg)', value: 'detailed' },
-                            { name: 'Verbose (4 sets of 8 reps at 100.0 kilograms)', value: 'verbose' }
-                        ],
-                        default: 'detailed'
-                    }]);
-                    inputs = { format: summaryConfig.format };
+                    const summaryConfig = await inquirer.prompt([
+                        {
+                            type: 'list',
+                            name: 'format',
+                            message: 'Format Style:',
+                            choices: [
+                                { name: 'Compact (4×8@100kg)', value: 'compact' },
+                                { name: 'Detailed (4 sets × 8 reps @ 100.0kg)', value: 'detailed' },
+                                { name: 'Verbose (4 sets of 8 reps at 100.0 kilograms)', value: 'verbose' }
+                            ],
+                            default: 'detailed'
+                        },
+                        {
+                            type: 'confirm',
+                            name: 'showStats',
+                            message: 'Show Headline Stats (sets, volume, etc)?',
+                            default: true
+                        }
+                    ]);
+                    inputs = {
+                        format: summaryConfig.format,
+                        show_stats: summaryConfig.showStats.toString()
+                    };
                 } else if (config.providerType === EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP) {
                     const heatmapConfig = await inquirer.prompt([
                         {

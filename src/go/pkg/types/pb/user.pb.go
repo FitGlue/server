@@ -25,8 +25,9 @@ const (
 type EnricherProviderType int32
 
 const (
-	EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED          EnricherProviderType = 0
-	EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE    EnricherProviderType = 1
+	EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED       EnricherProviderType = 0
+	EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE EnricherProviderType = 1
+	// Config inputs: "format" (compact/detailed/verbose), "show_stats" ("true"/"false")
 	EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY      EnricherProviderType = 2
 	EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP       EnricherProviderType = 3
 	EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK          EnricherProviderType = 4
