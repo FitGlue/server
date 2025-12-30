@@ -110,6 +110,13 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		}
 		writer.Close()
 
+		// Log what we're uploading for debugging
+		fwCtx.Logger.Info("Uploading to Strava",
+			"title", eventPayload.Name,
+			"description_length", len(eventPayload.Description),
+			"description_preview", truncateString(eventPayload.Description, 200),
+		)
+
 		// Create request
 		req, err := http.NewRequestWithContext(ctx, "POST", "https://www.strava.com/api/v3/uploads", body)
 		if err != nil {
@@ -166,6 +173,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			"fit_file_uri":       eventPayload.FitFileUri,
 			"activity_name":      eventPayload.Name,
 			"activity_type":      eventPayload.ActivityType,
+			"description":        eventPayload.Description,
 		}
 
 		if status != "SUCCESS" {
@@ -228,4 +236,12 @@ func waitForUploadCompletion(ctx context.Context, client *http.Client, uploadID 
 			// Continue polling if still processing (activity_id == 0 and no error)
 		}
 	}
+}
+
+// truncateString truncates a string to maxLen characters, adding "..." if truncated
+func truncateString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+	return s[:maxLen] + "..."
 }
