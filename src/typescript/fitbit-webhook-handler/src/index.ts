@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, TOPICS } from '@fitglue/shared';
 import { createHmac } from 'crypto';
 
 const FITBIT_VERIFICATION_CODE = 'FITBIT_VERIFICATION_CODE';
@@ -76,7 +76,8 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       // Filter and Publish
       const publishPromises = body.map(async (update: any) => {
         if (update.collectionType === 'activities') {
-          await pubsub.topic('fitbit-updates').publishMessage({
+          // Use constant topic name
+          await pubsub.topic(TOPICS.FITBIT_UPDATES).publishMessage({
             json: update,
           });
           logger.info('Published update', { ownerId: update.ownerId, date: update.date });
