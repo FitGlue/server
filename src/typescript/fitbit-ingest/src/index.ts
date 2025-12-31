@@ -30,7 +30,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
 
   // 2. Resolve User
   const usersSnapshot = await db.collection('users')
-    .where('integrations.fitbit.fitbitUserId', '==', ownerId)
+    .where('integrations.fitbit.fitbit_user_id', '==', ownerId)
     .limit(1)
     .get();
 

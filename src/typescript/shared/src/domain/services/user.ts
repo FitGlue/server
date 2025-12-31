@@ -11,31 +11,106 @@ export class UserService {
         const userRef = this.db.collection('users').doc(userId);
         const doc = await userRef.get();
         if (doc.exists) {
-            // Return existing? Or throw? For now just return it
-            return doc.data() as UserRecord;
+            return this.mapFirestoreToUserRecord(doc.data());
         }
 
         const now = Timestamp.now();
-        // Construct using Proto shape. Note: Firestore stores protobuf timestamps as maps usually unless converted.
-        // We'll stick to Firestore native Timestamp for storage if possible, or convert.
-        // The generated types expect google.protobuf.Timestamp structure { seconds, nanos }.
-        // Firestore client usually handles conversion if we pass plain objects.
-
-        // Let's create the record
-        const user: any = { // Using any cast to bypass strict Proto type vs Firestore type mismatch on Timestamp field initially
-            userId: userId,
-            createdAt: now,
+        // Construct using snake_case for DB
+        const userStub: any = {
+            user_id: userId,
+            created_at: now,
             integrations: {}
         };
 
-        await userRef.set(user);
-        return user as UserRecord;
+        await userRef.set(userStub);
+        return this.mapFirestoreToUserRecord(userStub);
     }
 
     async getUser(userId: string): Promise<UserRecord | null> {
         const doc = await this.db.collection('users').doc(userId).get();
         if (!doc.exists) return null;
-        return doc.data() as UserRecord;
+        return this.mapFirestoreToUserRecord(doc.data());
+    }
+
+    /**
+     * Maps Firestore snake_case data to UserRecord camelCase interface.
+     * Prevents invisible fields issue by acting as strictly typed boundary.
+     */
+    private mapFirestoreToUserRecord(data: any): UserRecord {
+        if (!data) throw new Error('Cannot map null data');
+
+        // Helper to convert Timestamp/string to Date
+        const toDate = (ts: any): Date | undefined => {
+            if (!ts) return undefined;
+            if (ts instanceof Timestamp) return ts.toDate();
+            if (ts.seconds) return new Date(ts.seconds * 1000);
+            if (typeof ts === 'string') return new Date(ts);
+            return undefined;
+        };
+
+        const result: UserRecord = {
+            userId: data.user_id || data.userId, // Fallback for transition
+            createdAt: toDate(data.created_at || data.createdAt),
+            integrations: undefined,
+            pipelines: []
+        };
+
+        // INTEGRATIONS
+        if (data.integrations) {
+            result.integrations = {
+                hevy: undefined,
+                fitbit: undefined,
+                strava: undefined
+            };
+
+            const i = data.integrations;
+
+            // Hevy
+            if (i.hevy) {
+                result.integrations.hevy = {
+                    enabled: !!i.hevy.enabled,
+                    apiKey: i.hevy.api_key || i.hevy.apiKey,
+                    userId: i.hevy.user_id || i.hevy.userId
+                };
+            }
+
+            // Strava
+            if (i.strava) {
+                result.integrations.strava = {
+                    enabled: !!i.strava.enabled,
+                    accessToken: i.strava.access_token || i.strava.accessToken,
+                    refreshToken: i.strava.refresh_token || i.strava.refreshToken,
+                    expiresAt: toDate(i.strava.expires_at || i.strava.expiresAt),
+                    athleteId: i.strava.athlete_id || i.strava.athleteId
+                };
+            }
+
+            // Fitbit
+            if (i.fitbit) {
+                result.integrations.fitbit = {
+                    enabled: !!i.fitbit.enabled,
+                    accessToken: i.fitbit.access_token || i.fitbit.accessToken,
+                    refreshToken: i.fitbit.refresh_token || i.fitbit.refreshToken,
+                    expiresAt: toDate(i.fitbit.expires_at || i.fitbit.expiresAt),
+                    fitbitUserId: i.fitbit.fitbit_user_id || i.fitbit.fitbitUserId
+                };
+            }
+        }
+
+        // PIPELINES
+        if (data.pipelines && Array.isArray(data.pipelines)) {
+            result.pipelines = data.pipelines.map((p: any) => ({
+                id: p.id,
+                source: p.source,
+                destinations: p.destinations || [],
+                enrichers: (p.enrichers || []).map((e: any) => ({
+                    providerType: e.provider_type || e.providerType,
+                    inputs: e.inputs || {}
+                }))
+            }));
+        }
+
+        return result;
     }
 
     /**
@@ -49,14 +124,14 @@ export class UserService {
         // 2. Hash: SHA-256
         const hash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
-        // 3. Store Hash
+        // 3. Store Hash (using snake_case)
         const now = Timestamp.now();
         const record: any = {
-            userId,
+            user_id: userId,
             label,
             scopes,
-            createdAt: now,
-            lastUsedAt: null
+            created_at: now,
+            last_used_at: null
         };
 
         await this.db.collection('ingress_api_keys').doc(hash).set(record);
@@ -66,28 +141,25 @@ export class UserService {
 
     async setHevyIntegration(userId: string, hevyApiKey: string, hevyUserId?: string): Promise<void> {
         const updateStub: any = {
-            'integrations.hevy.apiKey': hevyApiKey,
+            'integrations.hevy.api_key': hevyApiKey,
             'integrations.hevy.enabled': true
         };
         if (hevyUserId) {
-            updateStub['integrations.hevy.userId'] = hevyUserId;
+            updateStub['integrations.hevy.user_id'] = hevyUserId;
         }
 
         await this.db.collection('users').doc(userId).update(updateStub);
     }
 
     async setStravaIntegration(userId: string, accessToken: string, refreshToken: string, expiresAtSeconds: number, athleteId: number): Promise<void> {
-        // Convert seconds to Firestore Timestamp (which is what we store, usually)
-        // Or if we store raw seconds? Proto uses google.protobuf.Timestamp { seconds, nanos }
-        // Firestore client accepts Date objects or Timestamp objects.
         const expiresAt = Timestamp.fromMillis(expiresAtSeconds * 1000);
 
         const updateStub: any = {
             'integrations.strava.enabled': true,
-            'integrations.strava.accessToken': accessToken,
-            'integrations.strava.refreshToken': refreshToken,
-            'integrations.strava.expiresAt': expiresAt,
-            'integrations.strava.athleteId': athleteId
+            'integrations.strava.access_token': accessToken,
+            'integrations.strava.refresh_token': refreshToken,
+            'integrations.strava.expires_at': expiresAt,
+            'integrations.strava.athlete_id': athleteId
         };
 
         await this.db.collection('users').doc(userId).update(updateStub);
@@ -98,10 +170,10 @@ export class UserService {
 
         const updateStub: any = {
             'integrations.fitbit.enabled': true,
-            'integrations.fitbit.accessToken': accessToken,
-            'integrations.fitbit.refreshToken': refreshToken,
-            'integrations.fitbit.expiresAt': expiresAt,
-            'integrations.fitbit.fitbitUserId': fitbitUserId
+            'integrations.fitbit.access_token': accessToken,
+            'integrations.fitbit.refresh_token': refreshToken,
+            'integrations.fitbit.expires_at': expiresAt,
+            'integrations.fitbit.fitbit_user_id': fitbitUserId
         };
 
         await this.db.collection('users').doc(userId).update(updateStub);
@@ -111,12 +183,12 @@ export class UserService {
         const pipelineId = crypto.randomUUID();
         const pipeline = {
             id: pipelineId,
-            source: source, // e.g. "SOURCE_HEVY"
+            source: source,
             enrichers: enrichers.map(e => ({
-                providerType: e.providerType,
+                provider_type: e.providerType, // snake_case
                 inputs: e.inputs || {}
             })),
-            destinations: destinations // e.g. ["strava"]
+            destinations: destinations
         };
 
         await this.db.collection('users').doc(userId).update({
@@ -163,7 +235,7 @@ export class UserService {
             id: pipelineId, // Keep same ID
             source: source,
             enrichers: enrichers.map(e => ({
-                providerType: e.providerType,
+                provider_type: e.providerType,
                 inputs: e.inputs || {}
             })),
             destinations: destinations
@@ -223,20 +295,18 @@ export class UserService {
             try {
                 const newTokens = await refreshOAuthToken(provider, refresh_token);
 
-                // Update DB
+                // Update DB with snake_case
                 if (provider === 'strava') {
-                    // We don't have athleteId handy here to reuse setStravaIntegration nicely without fetching validation
-                    // So we just patch fields.
                     await this.db.collection('users').doc(userId).update({
-                        'integrations.strava.accessToken': newTokens.accessToken,
-                        'integrations.strava.refreshToken': newTokens.refreshToken,
-                        'integrations.strava.expiresAt': Timestamp.fromDate(newTokens.expiresAt)
+                        'integrations.strava.access_token': newTokens.accessToken,
+                        'integrations.strava.refresh_token': newTokens.refreshToken,
+                        'integrations.strava.expires_at': Timestamp.fromDate(newTokens.expiresAt)
                     });
                 } else {
                     await this.db.collection('users').doc(userId).update({
-                        'integrations.fitbit.accessToken': newTokens.accessToken,
-                        'integrations.fitbit.refreshToken': newTokens.refreshToken,
-                        'integrations.fitbit.expiresAt': Timestamp.fromDate(newTokens.expiresAt)
+                        'integrations.fitbit.access_token': newTokens.accessToken,
+                        'integrations.fitbit.refresh_token': newTokens.refreshToken,
+                        'integrations.fitbit.expires_at': Timestamp.fromDate(newTokens.expiresAt)
                     });
                 }
 

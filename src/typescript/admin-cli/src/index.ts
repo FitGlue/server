@@ -365,12 +365,14 @@ const formatUserOutput = (doc: admin.firestore.DocumentSnapshot) => {
     if (!data) return;
 
     const integrations = [];
-    if (data.integrations?.hevy?.apiKey) integrations.push('Hevy');
+    if (data.integrations?.hevy?.api_key || data.integrations?.hevy?.apiKey) integrations.push('Hevy');
     if (data.integrations?.strava?.enabled) integrations.push('Strava');
     if (data.integrations?.fitbit?.enabled) integrations.push('Fitbit');
 
     console.log(`ID: ${doc.id}`);
-    console.log(`   Created: ${data.createdAt?.toDate?.()?.toISOString() || 'Unknown'}`);
+    // Handle created_at (snake) or createdAt (legacy)
+    const createdAt = data.created_at || data.createdAt;
+    console.log(`   Created: ${createdAt?.toDate?.()?.toISOString() || 'Unknown'}`);
     console.log(`   Integrations: ${integrations.join(', ') || 'None'}`);
 
     if (data.pipelines && Array.isArray(data.pipelines) && data.pipelines.length > 0) {
@@ -379,7 +381,8 @@ const formatUserOutput = (doc: admin.firestore.DocumentSnapshot) => {
             console.log(`     #${index + 1} [${p.id}]`);
             console.log(`       Source: ${p.source}`);
             if (p.enrichers && p.enrichers.length > 0) {
-                const enricherDesc = p.enrichers.map((e: any) => getEnricherProviderName(e.providerType)).join(' -> ');
+                // Enrichers use provider_type in DB now
+                const enricherDesc = p.enrichers.map((e: any) => getEnricherProviderName(e.provider_type || e.providerType)).join(' -> ');
                 console.log(`       Enrichers: ${enricherDesc}`);
             } else {
                 console.log(`       Enrichers: (None)`);

@@ -62,7 +62,7 @@ describe('UserService', () => {
               source: source,
               destinations: destinations,
               enrichers: [
-                { providerType: EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, inputs: { priority: 'high' } }
+                { provider_type: EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, inputs: { priority: 'high' } }
               ]
             })
           ])

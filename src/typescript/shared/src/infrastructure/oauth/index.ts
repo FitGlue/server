@@ -81,12 +81,13 @@ export async function storeOAuthTokens(
 
   // Update user's integration
   const userRef = db.collection('users').doc(userId);
+  // Write using snake_case (Source of Truth: Proto/Go)
   batch.update(userRef, {
     [`integrations.${provider}.enabled`]: true,
-    [`integrations.${provider}.accessToken`]: tokens.accessToken,
-    [`integrations.${provider}.refreshToken`]: tokens.refreshToken,
-    [`integrations.${provider}.expiresAt`]: tokens.expiresAt,
-    [`integrations.${provider}.${provider === 'strava' ? 'athleteId' : 'fitbitUserId'}`]: provider === 'strava' ? Number(tokens.externalUserId) : tokens.externalUserId,
+    [`integrations.${provider}.access_token`]: tokens.accessToken,
+    [`integrations.${provider}.refresh_token`]: tokens.refreshToken,
+    [`integrations.${provider}.expires_at`]: tokens.expiresAt,
+    [`integrations.${provider}.${provider === 'strava' ? 'athlete_id' : 'fitbit_user_id'}`]: provider === 'strava' ? Number(tokens.externalUserId) : tokens.externalUserId,
   });
 
   // Create identity mapping
