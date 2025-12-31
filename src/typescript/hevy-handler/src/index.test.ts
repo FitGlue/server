@@ -1,11 +1,18 @@
 // Mocks must be defined before imports
+const mockHasProcessedActivity = jest.fn();
+const mockMarkActivityAsProcessed = jest.fn();
+
 // Mock the shared package
 jest.mock('@fitglue/shared', () => ({
     createCloudFunction: (handler: any) => handler,
     FrameworkContext: jest.fn(),
     TOPICS: { RAW_ACTIVITY: 'test-topic' },
     ActivitySource: { SOURCE_HEVY: 'HEVY' }, // Mock enum
-    createHevyClient: jest.fn()
+    createHevyClient: jest.fn(),
+    UserService: jest.fn().mockImplementation(() => ({
+        hasProcessedActivity: mockHasProcessedActivity,
+        markActivityAsProcessed: mockMarkActivityAsProcessed
+    }))
 }));
 
 import { hevyWebhookHandler } from './index';
@@ -29,6 +36,9 @@ describe('hevyWebhookHandler', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+        // Reset UserService mocks default behavior
+        mockHasProcessedActivity.mockResolvedValue(false); // Default: not processed
+        mockMarkActivityAsProcessed.mockResolvedValue(undefined);
 
 
         mockStatus = jest.fn().mockReturnThis();
@@ -89,7 +99,36 @@ describe('hevyWebhookHandler', () => {
         }).rejects.toThrow('Invalid payload: Missing workout_id');
     });
 
-    it('should perform Active Fetch and Publish', async () => {
+    it('should skip processing if workout is already processed', async () => {
+        req.body = {
+            id: 'webhook-event-id',
+            payload: {
+                workoutId: mockWorkout.id
+            }
+        };
+
+        // Mock User
+        mockUserGet.mockResolvedValue({
+            exists: true,
+            data: () => ({ integrations: { hevy: { apiKey: 'hevy-key' } } })
+        });
+
+        // Mock Dedupe check existing
+        mockHasProcessedActivity.mockResolvedValue(true);
+
+        const result = await (hevyWebhookHandler as any)(req, res, mockCtx);
+
+        expect(mockHasProcessedActivity).toHaveBeenCalledWith('test-user', 'hevy', mockWorkout.id);
+        expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ status: 'Skipped', reason: 'Already processed' }));
+        expect(result).toEqual(expect.objectContaining({ status: 'Skipped' }));
+
+        // Ensure no fetch or publish occurred
+        const { createHevyClient } = require('@fitglue/shared');
+        expect(createHevyClient).not.toHaveBeenCalled();
+        expect(mockPubSub.topic).not.toHaveBeenCalled();
+    });
+
+    it('should perform Active Fetch AND Publish AND Mark as Processed', async () => {
         req.body = {
             id: 'webhook-event-id',
             payload: {
@@ -104,6 +143,9 @@ describe('hevyWebhookHandler', () => {
         });
 
         await (hevyWebhookHandler as any)(req, res, mockCtx);
+
+        // Verify Dedupe Check
+        expect(mockHasProcessedActivity).toHaveBeenCalledWith('test-user', 'hevy', mockWorkout.id);
 
         // Verify Hevy Client was mocked and called
         const { createHevyClient } = require('@fitglue/shared');
@@ -128,10 +170,11 @@ describe('hevyWebhookHandler', () => {
                 })
             })
         );
+
+        // Verify Dedupe Mark
+        expect(mockMarkActivityAsProcessed).toHaveBeenCalledWith('test-user', 'hevy', mockWorkout.id);
+
         expect(mockStatus).toHaveBeenCalledWith(200);
         expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ status: 'Processed' }));
-        expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ status: 'Processed' }));
     });
-
-
 });

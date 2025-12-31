@@ -45,7 +45,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   const userService = new UserService(db);
 
   // 3. Initialize Fitbit Client
-  const client = await createFitbitClient(userService, userId);
+  const client = createFitbitClient(userService, userId);
 
   // 4. Fetch Activity Logs for the Date
   // Fitbit only gives us the Date. We have to fetch all activities for that date
@@ -75,6 +75,13 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     // Path parameter in Swagger for TCX endpoint is 'log-id' (kebab-case)
     const logIdStr = act.logId?.toString();
     if (!logIdStr) continue;
+
+    // 5.1 Check if already processed
+    const isProcessed = await userService.hasProcessedActivity(userId, 'fitbit', logIdStr);
+    if (isProcessed) {
+      logger.info(`Activity ${act.logId} already processed, skipping`);
+      continue;
+    }
 
     logger.info(`Fetching TCX for activity ${act.logId}`);
 
@@ -111,6 +118,9 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
           }
         }
       });
+
+      // 8. Mark as Processed
+      await userService.markActivityAsProcessed(userId, 'fitbit', logIdStr);
 
       logger.info(`Published activity ${act.logId} to enrichment pipeline`, { messageId });
       publishedCount++;

@@ -318,4 +318,31 @@ export class UserService {
 
         return access_token;
     }
+    /**
+     * Checks if a raw activity has already been processed for the user.
+     * @param userId The User ID
+     * @param source The source provider (e.g. 'fitbit')
+     * @param activityId The unique activity ID from the provider (e.g. logId)
+     */
+    async hasProcessedActivity(userId: string, source: string, activityId: string): Promise<boolean> {
+        const id = `${source}_${activityId}`;
+        const doc = await this.db.collection('users').doc(userId).collection('raw_activities').doc(id).get();
+        return doc.exists;
+    }
+
+    /**
+     * Marks a raw activity as processed to prevent duplicate ingestion.
+     * @param userId The User ID
+     * @param source The source provider
+     * @param activityId The unique activity ID
+     */
+    async markActivityAsProcessed(userId: string, source: string, activityId: string): Promise<void> {
+        const id = `${source}_${activityId}`;
+        const now = Timestamp.now();
+        await this.db.collection('users').doc(userId).collection('raw_activities').doc(id).set({
+            source,
+            external_id: activityId, // snake_case
+            processed_at: now
+        });
+    }
 }

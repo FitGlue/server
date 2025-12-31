@@ -1,4 +1,4 @@
-import { TOPICS, createCloudFunction, ActivityPayload, FrameworkContext, ActivitySource, createHevyClient } from '@fitglue/shared';
+import { TOPICS, createCloudFunction, ActivityPayload, FrameworkContext, ActivitySource, createHevyClient, UserService } from '@fitglue/shared';
 import { mapHevyWorkoutToStandardized } from './mapper';
 
 // Removed local PubSub instantiation
@@ -50,6 +50,16 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
         res.status(200).send('Configuration Error');
         return { status: 'FAILED', reason: 'Missing Hevy API Key' };
     }
+
+    // --- DEDUPLICATION CHECK ---
+    const userService = new UserService(db);
+    const isProcessed = await userService.hasProcessedActivity(userId, 'hevy', workoutId);
+    if (isProcessed) {
+        logger.info(`Workout ${workoutId} already processed for user ${userId}, skipping`);
+        res.status(200).json({ executionId: ctx.executionId, status: 'Skipped', reason: 'Already processed' });
+        return { status: 'Skipped', reason: 'Already processed', workoutId };
+    }
+    // ---------------------------
 
     // 5. Active Fetch
     logger.info(`Fetching workout ${workoutId} from Hevy API`);
@@ -124,6 +134,10 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     const messageId = await ctx.pubsub.topic(TOPIC_NAME).publishMessage({
         json: messagePayload,
     });
+
+    // --- MARK AS PROCESSED ---
+    await userService.markActivityAsProcessed(userId, 'hevy', workoutId);
+    // -------------------------
 
     logger.info("Processed and fetched workout", { messageId, userId, workoutId });
 
