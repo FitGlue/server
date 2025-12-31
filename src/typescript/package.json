@@ -11,7 +11,7 @@
     "fitbit-ingest"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",
     "gcp-build": "npm run build"
   },
   "devDependencies": {

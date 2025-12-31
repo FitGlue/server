@@ -90,47 +90,34 @@ clean-go:
 
 TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules)
 
+# Note: We enforce building 'shared' first because other packages depend on it
+# and standard npm workspaces don't guarantee topological build order for scripts.
 build-ts: clean-ts
-	@echo "Building TypeScript services..."
-	@echo "Building shared library first..."
-	@(cd $(TS_SRC_DIR)/shared && npm run build) || exit 1
-	@echo "Building function packages..."
-	@for dir in $(TS_DIRS); do \
-		if [ -f "$$dir/package.json" ] && [ "$$(basename $$dir)" != "shared" ]; then \
-			echo "Building $$dir..."; \
-			(cd $$dir && npm run build) || exit 1; \
-		fi \
-	done
+	@echo "Building TypeScript services (via Workspaces)..."
+	@echo "Building shared library..."
+	@cd $(TS_SRC_DIR) && npm run build --workspace=@fitglue/shared
+	@echo "Building all workspaces..."
+	@cd $(TS_SRC_DIR) && npm run build --workspaces --if-present
 
 test-ts:
 	@echo "Testing TypeScript services..."
-	@for dir in $(TS_DIRS); do \
-		if [ -f "$$dir/package.json" ]; then \
-			echo "Testing $$dir..."; \
-			(cd $$dir && npm test) || exit 1; \
-		fi \
-	done
+	@cd $(TS_SRC_DIR) && npm test --workspaces --if-present
 
 lint-ts:
 	@echo "Linting TypeScript..."
-	@for dir in $(TS_DIRS); do \
-		if [ -f "$$dir/package.json" ]; then \
-			echo "Linting $$dir..."; \
-			(cd $$dir && npm run lint) || exit 1; \
-		fi \
-	done
+	@cd $(TS_SRC_DIR) && npm run lint --workspaces --if-present
 
 typecheck-ts:
 	@echo "Typechecking TypeScript..."
-	@for dir in $(TS_DIRS); do \
-		if [ -f "$$dir/package.json" ]; then \
-			echo "Typechecking $$dir..."; \
-			(cd $$dir && npx tsc --noEmit); \
-		fi \
-	done
+	@# tsc --build might be better if tsconfig references are set up, but iterating is safe for now via npm
+	@cd $(TS_SRC_DIR) && npm exec --workspaces --if-present -- tsc --noEmit
 
 clean-ts:
 	@echo "Cleaning TypeScript..."
+	@# We can't easily use workspaces for cleaning specific dirs without a script,
+	@# but we can just ask every workspace to run its clean script if it exists?
+	@# Most don't have a 'clean' script. The previous logic was reliable.
+	@# Let's keep the find logic for cleaning as it's robust against missing scripts.
 	@for dir in $(TS_DIRS); do \
 		if [ -f "$$dir/package.json" ]; then \
 			echo "Cleaning $$dir..."; \

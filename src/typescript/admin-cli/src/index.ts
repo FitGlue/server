@@ -236,7 +236,6 @@ program.command('users:update')
     });
 
 import { createFitbitClient } from '@fitglue/shared/dist/integrations/fitbit/client';
-import { TOPICS } from '@fitglue/shared';
 
 program.command('fitbit:subscribe')
     .argument('[userId]', 'FitGlue User ID')
