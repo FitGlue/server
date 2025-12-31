@@ -2368,6 +2368,18 @@ type GetIrnAlertsListParams struct {
 	Limit int `form:"limit" json:"limit"`
 }
 
+// DeleteSubscriptionsParams defines parameters for DeleteSubscriptions.
+type DeleteSubscriptionsParams struct {
+	// XFitbitSubscriberId The unique ID of the subscriber.
+	XFitbitSubscriberId string `json:"X-Fitbit-Subscriber-Id"`
+}
+
+// AddSubscriptionsParams defines parameters for AddSubscriptions.
+type AddSubscriptionsParams struct {
+	// XFitbitSubscriberId  The unique ID of the subscriber.  This is required for all subscription endpoints.
+	XFitbitSubscriberId string `json:"X-Fitbit-Subscriber-Id"`
+}
+
 // RevokeFormdataBody defines parameters for Revoke.
 type RevokeFormdataBody struct {
 	// Token The access token or refresh token to be revoked
@@ -2853,10 +2865,10 @@ type ClientInterface interface {
 	GetSubscriptionsList(ctx context.Context, collectionPath string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// DeleteSubscriptions request
-	DeleteSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, params *DeleteSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// AddSubscriptions request
-	AddSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error)
+	AddSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, params *AddSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RevokeWithBody request with any body
 	RevokeWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -4343,8 +4355,8 @@ func (c *Client) GetSubscriptionsList(ctx context.Context, collectionPath string
 	return c.Client.Do(req)
 }
 
-func (c *Client) DeleteSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewDeleteSubscriptionsRequest(c.Server, collectionPath, subscriptionId)
+func (c *Client) DeleteSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, params *DeleteSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteSubscriptionsRequest(c.Server, collectionPath, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -4355,8 +4367,8 @@ func (c *Client) DeleteSubscriptions(ctx context.Context, collectionPath string,
 	return c.Client.Do(req)
 }
 
-func (c *Client) AddSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewAddSubscriptionsRequest(c.Server, collectionPath, subscriptionId)
+func (c *Client) AddSubscriptions(ctx context.Context, collectionPath string, subscriptionId string, params *AddSubscriptionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewAddSubscriptionsRequest(c.Server, collectionPath, subscriptionId, params)
 	if err != nil {
 		return nil, err
 	}
@@ -9975,7 +9987,7 @@ func NewGetSubscriptionsListRequest(server string, collectionPath string) (*http
 }
 
 // NewDeleteSubscriptionsRequest generates requests for DeleteSubscriptions
-func NewDeleteSubscriptionsRequest(server string, collectionPath string, subscriptionId string) (*http.Request, error) {
+func NewDeleteSubscriptionsRequest(server string, collectionPath string, subscriptionId string, params *DeleteSubscriptionsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10012,11 +10024,24 @@ func NewDeleteSubscriptionsRequest(server string, collectionPath string, subscri
 		return nil, err
 	}
 
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithLocation("simple", false, "X-Fitbit-Subscriber-Id", runtime.ParamLocationHeader, params.XFitbitSubscriberId)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Fitbit-Subscriber-Id", headerParam0)
+
+	}
+
 	return req, nil
 }
 
 // NewAddSubscriptionsRequest generates requests for AddSubscriptions
-func NewAddSubscriptionsRequest(server string, collectionPath string, subscriptionId string) (*http.Request, error) {
+func NewAddSubscriptionsRequest(server string, collectionPath string, subscriptionId string, params *AddSubscriptionsParams) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -10051,6 +10076,19 @@ func NewAddSubscriptionsRequest(server string, collectionPath string, subscripti
 	req, err := http.NewRequest("POST", queryURL.String(), nil)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+
+		var headerParam0 string
+
+		headerParam0, err = runtime.StyleParamWithLocation("simple", false, "X-Fitbit-Subscriber-Id", runtime.ParamLocationHeader, params.XFitbitSubscriberId)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header.Set("X-Fitbit-Subscriber-Id", headerParam0)
+
 	}
 
 	return req, nil
@@ -10658,10 +10696,10 @@ type ClientWithResponsesInterface interface {
 	GetSubscriptionsListWithResponse(ctx context.Context, collectionPath string, reqEditors ...RequestEditorFn) (*GetSubscriptionsListResponse, error)
 
 	// DeleteSubscriptionsWithResponse request
-	DeleteSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*DeleteSubscriptionsResponse, error)
+	DeleteSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, params *DeleteSubscriptionsParams, reqEditors ...RequestEditorFn) (*DeleteSubscriptionsResponse, error)
 
 	// AddSubscriptionsWithResponse request
-	AddSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*AddSubscriptionsResponse, error)
+	AddSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, params *AddSubscriptionsParams, reqEditors ...RequestEditorFn) (*AddSubscriptionsResponse, error)
 
 	// RevokeWithBodyWithResponse request with any body
 	RevokeWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*RevokeResponse, error)
@@ -14471,8 +14509,8 @@ func (c *ClientWithResponses) GetSubscriptionsListWithResponse(ctx context.Conte
 }
 
 // DeleteSubscriptionsWithResponse request returning *DeleteSubscriptionsResponse
-func (c *ClientWithResponses) DeleteSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*DeleteSubscriptionsResponse, error) {
-	rsp, err := c.DeleteSubscriptions(ctx, collectionPath, subscriptionId, reqEditors...)
+func (c *ClientWithResponses) DeleteSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, params *DeleteSubscriptionsParams, reqEditors ...RequestEditorFn) (*DeleteSubscriptionsResponse, error) {
+	rsp, err := c.DeleteSubscriptions(ctx, collectionPath, subscriptionId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -14480,8 +14518,8 @@ func (c *ClientWithResponses) DeleteSubscriptionsWithResponse(ctx context.Contex
 }
 
 // AddSubscriptionsWithResponse request returning *AddSubscriptionsResponse
-func (c *ClientWithResponses) AddSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, reqEditors ...RequestEditorFn) (*AddSubscriptionsResponse, error) {
-	rsp, err := c.AddSubscriptions(ctx, collectionPath, subscriptionId, reqEditors...)
+func (c *ClientWithResponses) AddSubscriptionsWithResponse(ctx context.Context, collectionPath string, subscriptionId string, params *AddSubscriptionsParams, reqEditors ...RequestEditorFn) (*AddSubscriptionsResponse, error) {
+	rsp, err := c.AddSubscriptions(ctx, collectionPath, subscriptionId, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}

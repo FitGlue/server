@@ -8477,7 +8477,10 @@ export interface operations {
     addSubscriptions: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description The unique ID of the subscriber.  This is required for all subscription endpoints. */
+                "X-Fitbit-Subscriber-Id": string;
+            };
             path: {
                 /** @description This is the resource of the collection to receive notifications from (foods, activities, sleep, or body). If not present, subscription will be created for all collections. If you have both all and specific collection subscriptions, you will get duplicate notifications on that collections' updates. Each subscriber can have only one subscription for a specific user's collection. */
                 "collection-path": string;
@@ -8518,7 +8521,10 @@ export interface operations {
     deleteSubscriptions: {
         parameters: {
             query?: never;
-            header?: never;
+            header: {
+                /** @description The unique ID of the subscriber. */
+                "X-Fitbit-Subscriber-Id": string;
+            };
             path: {
                 /** @description This is the resource of the collection to receive notifications from (foods, activities, sleep, or body). If not present, subscription will be created for all collections. If you have both all and specific collection subscriptions, you will get duplicate notifications on that collections' updates. Each subscriber can have only one subscription for a specific user's collection. */
                 "collection-path": string;

@@ -7471,6 +7471,15 @@
                         "schema": {
                             "type": "string"
                         }
+                    },
+                    {
+                        "name": "X-Fitbit-Subscriber-Id",
+                        "in": "header",
+                        "description": " The unique ID of the subscriber.  This is required for all subscription endpoints.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
@@ -7536,6 +7545,15 @@
                         "name": "subscription-id",
                         "in": "path",
                         "description": "This is the resource of the collection to receive notifications from (foods, activities, sleep, or body). If not present, subscription will be created for all collections. If you have both all and specific collection subscriptions, you will get duplicate notifications on that collections' updates. Each subscriber can have only one subscription for a specific user's collection.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "X-Fitbit-Subscriber-Id",
+                        "in": "header",
+                        "description": "The unique ID of the subscriber.",
                         "required": true,
                         "schema": {
                             "type": "string"

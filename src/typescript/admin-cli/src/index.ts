@@ -254,6 +254,11 @@ program.command('fitbit:subscribe')
                 userId = answers.userId;
             }
 
+            // Ensure env var is set for shared library calls (secrets) so it fetches from the correct GSM project
+            if (!process.env.GOOGLE_CLOUD_PROJECT) {
+                process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-server-dev';
+            }
+
             const user = await userService.getUser(userId);
             if (!user) {
                 console.error('User not found');
@@ -277,6 +282,9 @@ program.command('fitbit:subscribe')
                     path: {
                         'collection-path': 'activities',
                         'subscription-id': 'fitglue-activities'
+                    },
+                    header: {
+                        'X-Fitbit-Subscriber-Id': '1'
                     }
                 }
             });
