@@ -32,7 +32,7 @@ data "archive_file" "typescript_source_zip" {
   type        = "zip"
   source_dir  = "../src/typescript"
   output_path = "/tmp/typescript-source.zip"
-  excludes    = ["node_modules", "build"]
+  excludes    = ["**/node_modules", "**/dist", "**/build", "**/coverage", "**/.DS_Store"]
 }
 
 resource "google_storage_bucket_object" "typescript_source_zip" {
@@ -215,14 +215,14 @@ resource "google_cloudfunctions2_function" "fitbit_webhook_handler" {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
     }
-    
+
     secret_environment_variables {
       key        = "FITBIT_VERIFICATION_CODE"
       project_id = var.project_id
       secret     = google_secret_manager_secret.fitbit_verification_code.secret_id
       version    = "latest"
     }
-    
+
     secret_environment_variables {
       key        = "FITBIT_CLIENT_SECRET"
       project_id = var.project_id
@@ -266,7 +266,7 @@ resource "google_cloudfunctions2_function" "fitbit_ingest" {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
     }
-    
+
     # Secrets needed for createFitbitClient token handling
     secret_environment_variables {
       key        = "FITBIT_CLIENT_ID"

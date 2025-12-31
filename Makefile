@@ -84,20 +84,11 @@ clean-go:
 	@echo "Cleaning Go..."
 	cd $(GO_SRC_DIR) && $(GOCLEAN)
 
-clean-ts:
-	@echo "Cleaning TypeScript..."
-	@for dir in $(TS_DIRS); do \
-		if [ -d "$$dir/dist" ]; then \
-			echo "Cleaning $$dir/dist..."; \
-			rm -rf $$dir/dist; \
-		fi \
-	done
-
 # --- TypeScript Targets ---
 # Assuming one package.json per function for now, or a root workspace.
 # Let's assume we iterate over directories in src/typescript
 
-TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d)
+TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules)
 
 build-ts: clean-ts
 	@echo "Building TypeScript services..."
@@ -135,6 +126,15 @@ typecheck-ts:
 		if [ -f "$$dir/package.json" ]; then \
 			echo "Typechecking $$dir..."; \
 			(cd $$dir && npx tsc --noEmit); \
+		fi \
+	done
+
+clean-ts:
+	@echo "Cleaning TypeScript..."
+	@for dir in $(TS_DIRS); do \
+		if [ -f "$$dir/package.json" ]; then \
+			echo "Cleaning $$dir..."; \
+			rm -rf $$dir/dist $$dir/build; \
 		fi \
 	done
 
