@@ -1,0 +1,36 @@
+{
+  "start_time": "2023-10-25T10:00:00Z",
+  "type": "RUNNING",
+  "sessions": [
+    {
+      "start_time": "2023-10-25T10:00:00Z",
+      "total_elapsed_time": 5,
+      "laps": [
+        {
+          "records": [
+            {
+              "timestamp": "2023-10-25T10:00:00Z",
+              "heart_rate": 140
+            },
+            {
+              "timestamp": "2023-10-25T10:00:01.123Z",
+              "heart_rate": 141
+            },
+            {
+              "timestamp": "2023-10-25T10:00:02",
+              "heart_rate": 142
+            },
+            {
+              "timestamp": "2023-10-25 10:00:03",
+              "heart_rate": 143
+            },
+            {
+              "timestamp": "INVALID_TIMESTAMP",
+              "heart_rate": 144
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

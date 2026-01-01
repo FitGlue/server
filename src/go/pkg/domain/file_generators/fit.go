@@ -3,6 +3,7 @@ package file_generators
 import (
 	"bytes"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/muktihari/fit/encoder"
@@ -115,8 +116,9 @@ func GenerateFitFile(activity *pb.StandardizedActivity) ([]byte, error) {
 	recordCount := 0
 	for _, lap := range session.Laps {
 		for _, record := range lap.Records {
-			ts, err := time.Parse(time.RFC3339, record.Timestamp)
+			ts, err := parseTimestamp(record.Timestamp)
 			if err != nil {
+				slog.Warn("Skipping record with invalid timestamp", "timestamp", record.Timestamp, "error", err)
 				continue // Skip invalid records
 			}
 
@@ -292,4 +294,20 @@ func mapSourceToDevice(source string) (typedef.Manufacturer, string) {
 	default:
 		return manufacturerDevelopment, "FitGlue"
 	}
+}
+
+func parseTimestamp(s string) (time.Time, error) {
+	layouts := []string{
+		time.RFC3339,
+		time.RFC3339Nano,
+		"2006-01-02T15:04:05",     // ISO no offset (assume UTC)
+		"2006-01-02 15:04:05",     // SQL style
+		"2006-01-02T15:04:05.000", // Millis no offset
+	}
+	for _, layout := range layouts {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("failed to parse timestamp '%s' with any known layout", s)
 }
