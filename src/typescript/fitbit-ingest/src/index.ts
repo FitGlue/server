@@ -87,16 +87,33 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
 
     // Fetch TCX
     // Using correct path and parseAs: 'text' for XML response
-    const { data: tcxData, error: tcxError } = await client.GET("/1/user/-/activities/{log-id}.tcx", {
+    const { data: tcxData, error: tcxError, response } = await client.GET("/1/user/-/activities/{log-id}.tcx", {
       params: { path: { 'log-id': logIdStr } },
       parseAs: 'text'
     });
 
     if (tcxError || !tcxData) {
-      // It's expected that many activities (manual logs, auto-detected walks) won't have TCX.
-      // We log info instead of error to avoid noise.
-      logger.info(`No TCX data for activity ${act.logId} (or fetch failed)`);
-      continue;
+      // Granular Error Handling
+      const status = response.status;
+
+      if (status === 404 || status === 204) {
+        // Expected for manual, auto-detected, or non-GPS activities
+        logger.info(`No TCX data for activity ${act.logId} (Status: ${status})`);
+        continue;
+      } else if (status === 403) {
+        // Configuration Error - Log as ERROR but DO NOT throw (to allow processing other activities)
+        // This ensures the error shows up in logs/dashboards
+        logger.error(`Permission denied fetching TCX for ${act.logId}. Check 'location' scope.`, { status, error: tcxError });
+        continue;
+      } else if (status === 429 || status >= 500) {
+        // Transient Error - Throw to trigger Pub/Sub Retry
+        logger.warn(`Transient error fetching TCX for ${act.logId}, retrying...`, { status });
+        throw new Error(`Transient Fitbit API Error: ${status}`);
+      } else {
+        // Unknown Error - Log Warn and Skip
+        logger.warn(`Failed to fetch TCX for ${act.logId}`, { status, error: tcxError });
+        continue;
+      }
     }
 
     // 6. Map to Standardized Activity
