@@ -56,10 +56,9 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 		}
 
 		// Create base logger with configured level
-		opts := &slog.HandlerOptions{
-			Level: logLevel,
-		}
-		logger := slog.New(slog.NewJSONHandler(os.Stderr, opts)).With("service", serviceName)
+		// Create base logger with configured level
+		opts := bootstrap.GetSlogHandlerOptions(logLevel)
+		logger := slog.New(slog.NewJSONHandler(os.Stdout, opts)).With("service", serviceName)
 		if userID != "" {
 			logger = logger.With("user_id", userID)
 		}

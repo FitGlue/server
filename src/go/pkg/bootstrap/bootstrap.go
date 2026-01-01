@@ -47,10 +47,10 @@ func LoadConfig() *Config {
 	}
 }
 
-// InitLogger configures structured logging with Cloud Logging compatible keys
-func InitLogger() {
-	opts := &slog.HandlerOptions{
-		Level: slog.LevelInfo,
+// GetSlogHandlerOptions returns standard handler options for GCP
+func GetSlogHandlerOptions(level slog.Level) *slog.HandlerOptions {
+	return &slog.HandlerOptions{
+		Level: level,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			// Map standard keys to Cloud Logging keys
 			if a.Key == slog.MessageKey {
@@ -62,6 +62,11 @@ func InitLogger() {
 			return a
 		},
 	}
+}
+
+// InitLogger configures structured logging with Cloud Logging compatible keys
+func InitLogger() {
+	opts := GetSlogHandlerOptions(slog.LevelInfo)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
 }
