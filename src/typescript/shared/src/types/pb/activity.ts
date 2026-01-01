@@ -66,6 +66,7 @@ export interface EnrichedActivityEvent {
   /** Routing information determined by the pipeline */
   destinations: string[];
   pipelineId: string;
+  tags: string[];
 }
 
 export interface EnrichedActivityEvent_EnrichmentMetadataEntry {

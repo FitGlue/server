@@ -34,6 +34,7 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_METADATA_PASSTHROUGH EnricherProviderType = 5
 	EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS          EnricherProviderType = 6
 	EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER          EnricherProviderType = 7
+	EnricherProviderType_ENRICHER_PROVIDER_PARKRUN              EnricherProviderType = 8
 	EnricherProviderType_ENRICHER_PROVIDER_MOCK                 EnricherProviderType = 99
 )
 
@@ -48,6 +49,7 @@ var (
 		5:  "ENRICHER_PROVIDER_METADATA_PASSTHROUGH",
 		6:  "ENRICHER_PROVIDER_VIRTUAL_GPS",
 		7:  "ENRICHER_PROVIDER_TYPE_MAPPER",
+		8:  "ENRICHER_PROVIDER_PARKRUN",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -59,6 +61,7 @@ var (
 		"ENRICHER_PROVIDER_METADATA_PASSTHROUGH": 5,
 		"ENRICHER_PROVIDER_VIRTUAL_GPS":          6,
 		"ENRICHER_PROVIDER_TYPE_MAPPER":          7,
+		"ENRICHER_PROVIDER_PARKRUN":              8,
 		"ENRICHER_PROVIDER_MOCK":                 99,
 	}
 )
@@ -853,7 +856,7 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1d\n" +
 	"\n" +
-	"athlete_id\x18\x05 \x01(\x03R\tathleteId*\xe0\x02\n" +
+	"athlete_id\x18\x05 \x01(\x03R\tathleteId*\xff\x02\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -862,7 +865,8 @@ const file_user_proto_rawDesc = "" +
 	"\x1dENRICHER_PROVIDER_SOURCE_LINK\x10\x04\x12*\n" +
 	"&ENRICHER_PROVIDER_METADATA_PASSTHROUGH\x10\x05\x12!\n" +
 	"\x1dENRICHER_PROVIDER_VIRTUAL_GPS\x10\x06\x12!\n" +
-	"\x1dENRICHER_PROVIDER_TYPE_MAPPER\x10\a\x12\x1a\n" +
+	"\x1dENRICHER_PROVIDER_TYPE_MAPPER\x10\a\x12\x1d\n" +
+	"\x19ENRICHER_PROVIDER_PARKRUN\x10\b\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

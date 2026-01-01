@@ -181,6 +181,7 @@ type EnrichedActivityEvent struct {
 	// Routing information determined by the pipeline
 	Destinations  []string `protobuf:"bytes,11,rep,name=destinations,proto3" json:"destinations,omitempty"`
 	PipelineId    string   `protobuf:"bytes,12,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
+	Tags          []string `protobuf:"bytes,13,rep,name=tags,proto3" json:"tags,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -299,6 +300,13 @@ func (x *EnrichedActivityEvent) GetPipelineId() string {
 	return ""
 }
 
+func (x *EnrichedActivityEvent) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
 var File_activity_proto protoreflect.FileDescriptor
 
 const file_activity_proto_rawDesc = "" +
@@ -313,7 +321,7 @@ const file_activity_proto_rawDesc = "" +
 	"\x15standardized_activity\x18\x06 \x01(\v2\x1d.fitglue.StandardizedActivityR\x14standardizedActivity\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xe9\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xfd\x04\n" +
 	"\x15EnrichedActivityEvent\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
 	"\vactivity_id\x18\x02 \x01(\tR\n" +
@@ -330,7 +338,8 @@ const file_activity_proto_rawDesc = "" +
 	" \x03(\v26.fitglue.EnrichedActivityEvent.EnrichmentMetadataEntryR\x12enrichmentMetadata\x12\"\n" +
 	"\fdestinations\x18\v \x03(\tR\fdestinations\x12\x1f\n" +
 	"\vpipeline_id\x18\f \x01(\tR\n" +
-	"pipelineId\x1aE\n" +
+	"pipelineId\x12\x12\n" +
+	"\x04tags\x18\r \x03(\tR\x04tags\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*Y\n" +

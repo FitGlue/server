@@ -17,6 +17,9 @@ import (
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+
+	// Register providers
+	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/parkrun"
 )
 
 var (

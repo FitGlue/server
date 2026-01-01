@@ -257,6 +257,10 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			if res.ActivityType != "" {
 				finalEvent.ActivityType = res.ActivityType
 			}
+			if len(res.Tags) > 0 {
+				finalEvent.Tags = append(finalEvent.Tags, res.Tags...)
+				finalEvent.ActivityData.Tags = append(finalEvent.ActivityData.Tags, res.Tags...)
+			}
 
 			// Merge Data Streams into Records
 			if len(res.HeartRateStream) > 0 {

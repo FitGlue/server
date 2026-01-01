@@ -11,7 +11,9 @@ type EnrichmentResult struct {
 	// Metadata overrides (if empty, original is kept)
 	ActivityType string
 	Description  string
-	Name         string
+
+	Name string
+	Tags []string
 
 	// Raw Data Streams (for merging)
 	HeartRateStream    []int

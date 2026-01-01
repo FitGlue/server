@@ -36,7 +36,7 @@ export function addActivitiesCommands(program: Command) {
     .description('Delete a processed activity record to allow re-ingestion')
     .action(async (userId, source, activityId) => {
       try {
-        const id = `${source}_${activityId} `;
+        const id = `${source}_${activityId}`;
         const ref = adminDb.collection('users').doc(userId).collection('raw_activities').doc(id);
 
         const doc = await ref.get();

@@ -342,6 +342,7 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK]: 'Source Link',
         [EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH]: 'Metadata Passthrough',
         [EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER]: 'Type Mapper',
+        [EnricherProviderType.ENRICHER_PROVIDER_PARKRUN]: 'Parkrun',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };
@@ -358,6 +359,7 @@ const getAvailableEnricherChoices = (selectedProviderTypes: EnricherProviderType
         { name: 'Source Link', value: EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK },
         { name: 'Type Mapper', value: EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER },
         { name: 'Metadata Passthrough', value: EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH },
+        { name: 'Parkrun', value: EnricherProviderType.ENRICHER_PROVIDER_PARKRUN },
         { name: 'Mock', value: EnricherProviderType.ENRICHER_PROVIDER_MOCK }
     ];
 

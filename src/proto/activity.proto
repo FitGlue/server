@@ -49,4 +49,5 @@ message EnrichedActivityEvent {
   // Routing information determined by the pipeline
   repeated string destinations = 11;
   string pipeline_id = 12;
+  repeated string tags = 13;
 }
