@@ -4,13 +4,7 @@ import inquirer from 'inquirer';
 import { UserService } from '@fitglue/shared/dist/domain/services/user';
 import { EnricherProviderType } from '@fitglue/shared/dist/types/pb/user';
 
-// Initialize Firebase
-if (admin.apps.length === 0) {
-    admin.initializeApp({
-        credential: admin.credential.applicationDefault()
-    });
-}
-const db = admin.firestore();
+import { adminDb as db } from './firebase';
 const userService = new UserService(db);
 
 const program = new Command();
@@ -19,6 +13,9 @@ program
     .name('fitglue-admin')
     .description('CLI for FitGlue administration')
     .version('1.0.0');
+
+import { addActivitiesCommands } from './commands/activities';
+addActivitiesCommands(program);
 
 import { randomUUID } from 'crypto';
 
