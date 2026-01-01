@@ -53,6 +53,7 @@ gcloud services enable \
   cloudscheduler.googleapis.com \
   storage.googleapis.com \
   dns.googleapis.com \
+  identitytoolkit.googleapis.com \
   --project="$PROJECT_ID"
 echo "APIs enabled"
 echo ""
