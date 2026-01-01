@@ -8,7 +8,7 @@
     "clean": "rm -rf dist",
     "gcp-build": "npm run build",
     "lint": "eslint src --ext .ts",
-    "test": "jest --passWithNoTests"
+    "test": "jest"
   },
   "dependencies": {
     "@fitglue/shared": "^1.0.0",
