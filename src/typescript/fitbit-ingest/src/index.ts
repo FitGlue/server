@@ -126,6 +126,22 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       // tcxData is string (XML)
       const standardized = mapTCXToStandardized(tcxData as string, act, userId);
 
+      // Debug Logging: Check for GPS/HR
+      let gpsCount = 0;
+      let hrCount = 0;
+      let totalRecords = 0;
+      if (standardized.sessions && standardized.sessions.length > 0) {
+        standardized.sessions.forEach(s => {
+          s.laps.forEach(l => {
+            l.records.forEach(r => {
+              totalRecords++;
+              if (r.positionLat !== 0 || r.positionLong !== 0) gpsCount++;
+              if (r.heartRate !== 0) hrCount++;
+            });
+          });
+        });
+      }
+      logger.info(`[${logIdStr}] Mapped Activity Stats: ${totalRecords} records, ${gpsCount} with GPS, ${hrCount} with HR`);
 
       // 7. Publish to Enrichment Pipeline
       const publisher = new TypedPublisher<ActivityPayload>(pubsub, TOPICS.RAW_ACTIVITY, logger);
@@ -165,7 +181,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     foundActivities: activities.length,
     publishedCount,
     publishedIds,
-    errors
+    errors,
   };
 };
 
