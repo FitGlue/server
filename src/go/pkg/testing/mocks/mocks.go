@@ -40,10 +40,22 @@ func (m *MockDatabase) UpdateUser(ctx context.Context, id string, data map[strin
 
 // --- Mock Publisher ---
 type MockPublisher struct {
-	PublishFunc func(ctx context.Context, topic string, data []byte) (string, error)
+	PublishFunc          func(ctx context.Context, topic string, data []byte) (string, error)
+	PublishWithAttrsFunc func(ctx context.Context, topic string, data []byte, attributes map[string]string) (string, error)
 }
 
 func (m *MockPublisher) Publish(ctx context.Context, topic string, data []byte) (string, error) {
+	if m.PublishFunc != nil {
+		return m.PublishFunc(ctx, topic, data)
+	}
+	return m.PublishWithAttrs(ctx, topic, data, nil)
+}
+
+func (m *MockPublisher) PublishWithAttrs(ctx context.Context, topic string, data []byte, attributes map[string]string) (string, error) {
+	if m.PublishWithAttrsFunc != nil {
+		return m.PublishWithAttrsFunc(ctx, topic, data, attributes)
+	}
+	// Fallback to PublishFunc if AttrsFunc not defined (ignoring attrs), or just return success
 	if m.PublishFunc != nil {
 		return m.PublishFunc(ctx, topic, data)
 	}

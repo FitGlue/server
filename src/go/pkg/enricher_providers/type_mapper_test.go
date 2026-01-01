@@ -68,7 +68,7 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 				config["rules"] = tt.rulesJson
 			}
 
-			res, err := provider.Enrich(ctx, activity, nil, config)
+			res, err := provider.Enrich(ctx, activity, nil, config, false)
 			if err != nil {
 				t.Fatalf("Enrich failed: %v", err)
 			}

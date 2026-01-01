@@ -6,9 +6,10 @@ const (
 	TopicRawActivity      = "topic-raw-activity"
 	TopicEnrichedActivity = "topic-enriched-activity"
 	TopicJobUploadStrava  = "topic-job-upload-strava"
+	TopicFitbitUpdates    = "topic-fitbit-updates"
+	TopicEnrichmentLag    = "topic-enrichment-lag"
 
 	CollectionUsers      = "users"
 	CollectionCursors    = "cursors"
 	CollectionExecutions = "executions"
-	CollectionCache      = "cache"
 )

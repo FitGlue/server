@@ -146,6 +146,31 @@ func LogFailure(ctx context.Context, db Database, execID string, err error, outp
 	return nil
 }
 
+// LogExecutionStatus updates an execution record with a custom status
+func LogExecutionStatus(ctx context.Context, db Database, execID string, status string, outputs interface{}) error {
+	now := timestamppb.Now()
+
+	updates := map[string]interface{}{
+		"status":    status,
+		"timestamp": now.AsTime(),
+		"endTime":   now.AsTime(),
+	}
+
+	// Encode outputs as JSON if provided
+	if outputs != nil {
+		outputsJSON, err := json.Marshal(outputs)
+		if err == nil {
+			updates["outputsJson"] = string(outputsJSON)
+		}
+	}
+
+	if err := db.UpdateExecution(ctx, execID, updates); err != nil {
+		return fmt.Errorf("failed to log execution status %s: %w", status, err)
+	}
+
+	return nil
+}
+
 // executionRecordToMap converts a protobuf ExecutionRecord to a Firestore-compatible map
 func executionRecordToMap(record *pb.ExecutionRecord) map[string]interface{} {
 	data := map[string]interface{}{

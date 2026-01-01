@@ -31,7 +31,7 @@ func (p *TypeMapperProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER
 }
 
-func (p *TypeMapperProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {
+func (p *TypeMapperProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	rulesJson, ok := inputConfig["rules"]
 	if !ok || rulesJson == "" {
 		// No rules configured, nothing to do

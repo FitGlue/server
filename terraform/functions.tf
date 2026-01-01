@@ -65,10 +65,10 @@ resource "google_cloudfunctions2_function" "enricher" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
-      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
     }
+    service_account_email = google_service_account.cloud_function_sa.email
   }
 
   event_trigger {
@@ -77,6 +77,14 @@ resource "google_cloudfunctions2_function" "enricher" {
     pubsub_topic   = google_pubsub_topic.raw_activity.id
     retry_policy   = var.retry_policy
   }
+}
+
+resource "google_cloud_run_service_iam_member" "enricher_invoker" {
+  project  = google_cloudfunctions2_function.enricher.project
+  location = google_cloudfunctions2_function.enricher.location
+  service  = google_cloudfunctions2_function.enricher.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 
 

@@ -31,7 +31,7 @@ func TestVirtualGPS_GeneratesDescription(t *testing.T) {
 		"route": "london",
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, &pb.UserRecord{}, config)
+	result, err := provider.Enrich(context.Background(), activity, &pb.UserRecord{}, config, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}

@@ -25,7 +25,7 @@ func (p *BrandingProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
 }
 
-func (p *BrandingProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {
+func (p *BrandingProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	// Get custom message from config, or use default
 	message := inputConfig["message"]
 	if message == "" {

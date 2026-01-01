@@ -99,8 +99,23 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 		}
 
 		logger.Info("Function completed successfully")
-		if logErr := execution.LogSuccess(ctx, svc.DB, execID, outputs); logErr != nil {
-			logger.Warn("Failed to log execution success", "error", logErr)
+
+		// Check if outputs has a "status" field we should use
+		customStatus := ""
+		if outputsMap, ok := outputs.(map[string]interface{}); ok {
+			if s, ok := outputsMap["status"].(string); ok {
+				customStatus = s
+			}
+		}
+
+		if customStatus != "" {
+			if logErr := execution.LogExecutionStatus(ctx, svc.DB, execID, customStatus, outputs); logErr != nil {
+				logger.Warn("Failed to log execution status", "error", logErr)
+			}
+		} else {
+			if logErr := execution.LogSuccess(ctx, svc.DB, execID, outputs); logErr != nil {
+				logger.Warn("Failed to log execution success", "error", logErr)
+			}
 		}
 
 		return nil

@@ -60,7 +60,8 @@ func TestFitBitHeartRate_Enrich(t *testing.T) {
 	}
 
 	// Execute enrichment
-	result, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient)
+	result, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
+
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -114,7 +115,7 @@ func TestFitBitHeartRate_Enrich_IntegrationDisabled(t *testing.T) {
 		},
 	}
 
-	_, err := provider.Enrich(context.Background(), activity, user, nil)
+	_, err := provider.Enrich(context.Background(), activity, user, nil, false)
 	if err == nil {
 		t.Error("Expected error when Fitbit integration is disabled")
 	}
@@ -150,7 +151,7 @@ func TestFitBitHeartRate_Enrich_APIError(t *testing.T) {
 		},
 	}
 
-	_, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient)
+	_, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
 	if err == nil {
 		t.Error("Expected error when API returns 401")
 	}
@@ -171,10 +172,137 @@ func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	}, nil
 }
 
+func TestFitBitHeartRate_Enrich_LagDetected(t *testing.T) {
+	mockHTTPClient := &http.Client{
+		Transport: &mockTransport{
+			DoFunc: func(req *http.Request) (*http.Response, error) {
+				// Return EMPTY mock heart rate data
+				mockResponse := `{"activities-heart-intraday":{"dataset":[]}}`
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(mockResponse)),
+				}, nil
+			},
+		},
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Activity ended 5 minutes ago (Recent -> Should Retry)
+	endTime := time.Now().Add(-5 * time.Minute)
+	startTime := endTime.Add(-1 * time.Hour)
+
+	activity := &pb.StandardizedActivity{
+		StartTime: startTime.Format(time.RFC3339),
+		Sessions:  []*pb.Session{{TotalElapsedTime: 3600}},
+	}
+
+	user := &pb.UserRecord{
+		UserId: "test-user",
+		Integrations: &pb.UserIntegrations{
+			Fitbit: &pb.FitbitIntegration{Enabled: true, AccessToken: "t"},
+		},
+	}
+
+	_, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
+	if err == nil {
+		t.Fatal("Expected error for recent missing data")
+	}
+
+	if retryErr, ok := err.(*RetryableError); !ok {
+		t.Errorf("Expected RetryableError, got %T: %v", err, err)
+	} else {
+		if retryErr.RetryAfter == 0 {
+			t.Error("Expected non-zero RetryAfter")
+		}
+	}
+}
+
+func TestFitBitHeartRate_Enrich_LagExpired(t *testing.T) {
+	mockHTTPClient := &http.Client{
+		Transport: &mockTransport{
+			DoFunc: func(req *http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
+				}, nil
+			},
+		},
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Activity ended 2 hours ago (Old -> Should Accept Empty)
+	endTime := time.Now().Add(-2 * time.Hour)
+	startTime := endTime.Add(-1 * time.Hour)
+
+	activity := &pb.StandardizedActivity{
+		StartTime: startTime.Format(time.RFC3339),
+		Sessions:  []*pb.Session{{TotalElapsedTime: 3600}},
+	}
+
+	user := &pb.UserRecord{
+		UserId: "test-user",
+		Integrations: &pb.UserIntegrations{
+			Fitbit: &pb.FitbitIntegration{Enabled: true, AccessToken: "t"},
+		},
+	}
+
+	res, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
+	if err != nil {
+		t.Fatalf("Expected success for old missing data, got: %v", err)
+	}
+	if len(res.HeartRateStream) != 3600 {
+		t.Errorf("Expected stream length 3600, got %d", len(res.HeartRateStream))
+	}
+}
+
 func TestFitBitHeartRate_Name(t *testing.T) {
 	provider := NewFitBitHeartRate()
 	expected := "fitbit-heart-rate"
 	if provider.Name() != expected {
 		t.Errorf("Expected provider name %q, got %q", expected, provider.Name())
 	}
+}
+
+func TestFitBitHeartRate_Enrich_LagExhausted(t *testing.T) {
+	mockHTTPClient := &http.Client{
+		Transport: &mockTransport{
+			DoFunc: func(req *http.Request) (*http.Response, error) {
+				// Return EMPTY mock heart rate data
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"activities-heart-intraday":{"dataset":[]}}`)),
+				}, nil
+			},
+		},
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Activity ended 5 minutes ago (Recent -> Should Normally Retry)
+	endTime := time.Now().Add(-5 * time.Minute)
+	startTime := endTime.Add(-1 * time.Hour)
+
+	activity := &pb.StandardizedActivity{
+		StartTime: startTime.Format(time.RFC3339),
+		Sessions:  []*pb.Session{{TotalElapsedTime: 3600}},
+	}
+
+	user := &pb.UserRecord{
+		UserId: "test-user",
+		Integrations: &pb.UserIntegrations{
+			Fitbit: &pb.FitbitIntegration{Enabled: true, AccessToken: "t"},
+		},
+	}
+
+	// Should not return error despite missing data (doNotRetry=true)
+	_, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, true)
+	if err != nil {
+		t.Fatalf("Expected success when doNotRetry is set, got error: %v", err)
+	}
+
 }

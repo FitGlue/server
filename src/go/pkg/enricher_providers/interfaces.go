@@ -37,5 +37,6 @@ type Provider interface {
 
 	// Enrich applies the logic to the activity.
 	// inputConfig contains the user-specific input parameters for this provider.
-	Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error)
+	// doNotRetry indicates if the provider should return partial/success data instead of RetryableError on lag.
+	Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error)
 }

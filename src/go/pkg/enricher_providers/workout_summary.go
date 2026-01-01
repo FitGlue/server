@@ -27,7 +27,7 @@ func (p *WorkoutSummaryProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY
 }
 
-func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {
+func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	// Aggregate all sets from all sessions
 	var allSets []*pb.StrengthSet
 	for _, s := range activity.Sessions {

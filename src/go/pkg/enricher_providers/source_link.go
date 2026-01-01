@@ -27,7 +27,7 @@ func (p *SourceLinkProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK
 }
 
-func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {
+func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	if activity.ExternalId == "" {
 		return &EnrichmentResult{}, nil
 	}

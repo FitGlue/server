@@ -48,7 +48,7 @@ func (m *MockBlobStore) Read(ctx context.Context, bucket, object string) ([]byte
 type MockProvider struct {
 	NameFunc         func() string
 	ProviderTypeFunc func() pb.EnricherProviderType
-	EnrichFunc       func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error)
+	EnrichFunc       func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error)
 }
 
 func (m *MockProvider) Name() string {
@@ -65,9 +65,9 @@ func (m *MockProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK
 }
 
-func (m *MockProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
+func (m *MockProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	if m.EnrichFunc != nil {
-		return m.EnrichFunc(ctx, activity, user, inputConfig)
+		return m.EnrichFunc(ctx, activity, user, inputConfig, doNotRetry)
 	}
 	return &providers.EnrichmentResult{}, nil
 }
@@ -111,7 +111,7 @@ func TestOrchestrator_Process(t *testing.T) {
 
 		mockProvider := &MockProvider{
 			NameFunc: func() string { return "mock-enricher" },
-			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
+			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 				return &providers.EnrichmentResult{
 					Name:        "Enriched Activity",
 					Description: "Added by mock",
@@ -138,7 +138,10 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id")
+		// Update calls
+		// Update calls
+		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", false) // false = doNotRetry
+
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)
 		}
@@ -193,7 +196,10 @@ func TestOrchestrator_Process(t *testing.T) {
 			Timestamp: "2023-01-01T10:00:00Z",
 		}
 
-		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id")
+		// Update calls
+		// Update calls
+		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", false) // false = doNotRetry
+
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)
 		}
@@ -219,7 +225,7 @@ func TestOrchestrator_Process(t *testing.T) {
 				Sessions: []*pb.Session{{}, {}}, // Two sessions
 			},
 		}
-		_, err := orchestrator.Process(ctx, payload, "exec-1")
+		_, err := orchestrator.Process(ctx, payload, "exec-1", false)
 		if err == nil || err.Error() != "multiple sessions not supported" {
 			t.Errorf("Expected 'multiple sessions not supported' error, got %v", err)
 		}
@@ -240,7 +246,7 @@ func TestOrchestrator_Process(t *testing.T) {
 				},
 			},
 		}
-		_, err := orchestrator.Process(ctx, payload, "exec-1")
+		_, err := orchestrator.Process(ctx, payload, "exec-1", false)
 		if err == nil || err.Error() != "session total elapsed time is 0" {
 			t.Errorf("Expected 'session total elapsed time is 0' error, got %v", err)
 		}
@@ -263,7 +269,7 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 		mockProvider := &MockProvider{
 			NameFunc: func() string { return "mock-enricher" },
-			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*providers.EnrichmentResult, error) {
+			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 				return &providers.EnrichmentResult{
 					HeartRateStream: []int{100, 110, 120}, // 3 data points
 				}, nil
@@ -287,7 +293,7 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		_, err := orchestrator.Process(ctx, payload, "exec-1")
+		_, err := orchestrator.Process(ctx, payload, "exec-1", false)
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)
 		}

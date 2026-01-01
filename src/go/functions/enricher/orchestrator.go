@@ -59,7 +59,7 @@ type ProviderExecution struct {
 }
 
 // Process executes the enrichment pipelines for the activity
-func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload, parentExecutionID string) (*ProcessResult, error) {
+func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload, parentExecutionID string, doNotRetry bool) (*ProcessResult, error) {
 	// 1. Fetch User Config
 	userDoc, err := o.database.GetUser(ctx, payload.UserId)
 	if err != nil {
@@ -136,7 +136,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 				providerExecs[idx].ExecutionID = execID
 				providerExecs[idx].Status = "STARTED"
 
-				res, err := p.Enrich(ctx, payload.StandardizedActivity, userRec, inputs)
+				res, err := p.Enrich(ctx, payload.StandardizedActivity, userRec, inputs, doNotRetry)
 				duration := time.Since(startTime).Milliseconds()
 				providerExecs[idx].DurationMs = duration
 
@@ -167,6 +167,18 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		var failedEnrichers []string
 		for i, cfg := range configs {
 			if errs[i] != nil {
+				// Check if this is a RetryableError
+				if retryErr, ok := errs[i].(*providers.RetryableError); ok {
+					slog.Warn("Provider requested retry", "provider", cfg.ProviderType, "reason", retryErr.Reason, "retry_after", retryErr.RetryAfter)
+					// Fail the entire pipeline immediately with the retryable error
+					// NOTE: Even if 'doNotRetry' was true, if the provider returned RetryableError,
+					// it means it chose NOT to return partial data (or couldn't). So we respect the error.
+					return &ProcessResult{
+						Events:             []*pb.EnrichedActivityEvent{},
+						ProviderExecutions: allProviderExecutions,
+					}, retryErr
+				}
+
 				failedEnrichers = append(failedEnrichers, fmt.Sprintf("%s: %v", cfg.ProviderType, errs[i]))
 			}
 		}
@@ -283,7 +295,8 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 		// Always run branding provider last (unconditionally)
 		if brandingProvider, ok := o.providersByName["branding"]; ok {
-			brandingRes, err := brandingProvider.Enrich(ctx, payload.StandardizedActivity, userRec, map[string]string{})
+			// Branding provider doesn't care about retries usually, but we match signature
+			brandingRes, err := brandingProvider.Enrich(ctx, payload.StandardizedActivity, userRec, map[string]string{}, doNotRetry)
 			if err != nil {
 				slog.Warn("Branding provider failed", "error", err)
 			} else if brandingRes != nil && brandingRes.Description != "" {

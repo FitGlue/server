@@ -8,3 +8,8 @@ provider "google-beta" {
   region  = var.region
 }
 
+
+resource "google_service_account" "cloud_function_sa" {
+  account_id   = "cloud-function-sa"
+  display_name = "Cloud Function Service Account"
+}

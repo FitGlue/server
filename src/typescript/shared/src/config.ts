@@ -3,7 +3,8 @@ export const TOPICS = {
   ENRICHED_ACTIVITY: 'topic-enriched-activity',
   JOB_UPLOAD_STRAVA: 'topic-job-upload-strava',
   JOB_UPLOAD_OTHER: 'topic-job-upload-other',
-  FITBIT_UPDATES: 'topic-fitbit-updates'
+  FITBIT_UPDATES: 'topic-fitbit-updates',
+  ENRICHMENT_LAG: 'topic-enrichment-lag'
 };
 
 // In a real monorepo, we might inject this via build process or env var,

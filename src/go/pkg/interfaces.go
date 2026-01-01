@@ -17,6 +17,7 @@ type Database interface {
 
 type Publisher interface {
 	Publish(ctx context.Context, topic string, data []byte) (string, error)
+	PublishWithAttrs(ctx context.Context, topic string, data []byte, attributes map[string]string) (string, error)
 }
 
 // --- Storage Interfaces ---

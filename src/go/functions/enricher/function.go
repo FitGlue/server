@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
+	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -90,9 +91,58 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 		orchestrator.Register(provider)
 	}
 
+	// Calculate lag exhaustion (Force mode / Do Not Retry)
+	doNotRetry := false
+	// For Pub/Sub events, e.Time() is the publish time.
+	// We want to force if the message is older than our max backoff (20 mins + buffer)
+	if !e.Time().IsZero() {
+		lagDuration := time.Since(e.Time())
+		if lagDuration > 25*time.Minute {
+			fwCtx.Logger.Warn("Activity lag exhausted, forcing partial enrichment", "age", lagDuration)
+			doNotRetry = true
+		}
+	}
+
 	// Process
-	processResult, err := orchestrator.Process(ctx, &rawEvent, fwCtx.ExecutionID)
+	processResult, err := orchestrator.Process(ctx, &rawEvent, fwCtx.ExecutionID, doNotRetry)
+
 	if err != nil {
+		// Check if the error is retryable (e.g. data lag)
+		if ok := isRetryable(err); ok {
+
+			// Check if this is already a lag-retry (from attributes)
+			isLagRetry := false
+			if msg.Message.Attributes != nil && msg.Message.Attributes["origin"] == "lag-queue" {
+				isLagRetry = true
+			}
+
+			if isLagRetry {
+				fwCtx.Logger.Warn("Lag Retry failed (will retry with backoff)", "error", err)
+				// Returning error triggers the Lag Subscription's retry policy (60s+ backoff)
+				return map[string]interface{}{
+					"status": "STATUS_LAGGED_RETRY",
+					"error":  err.Error(),
+				}, err
+			} else {
+				fwCtx.Logger.Info("Activity data lagging, offloading to lag queue", "error", err)
+
+				// Publish to Lag Topic with "origin=lag-queue" to break infinite loop on next consumption
+				lagAttributes := map[string]string{"origin": "lag-queue"}
+
+				// Republish the exact same raw payload
+				_, pubErr := fwCtx.Service.Pub.PublishWithAttrs(ctx, shared.TopicEnrichmentLag, msg.Message.Data, lagAttributes)
+				if pubErr != nil {
+					fwCtx.Logger.Error("Failed to publish to lag topic", "error", pubErr)
+					return nil, pubErr // Fail execution to trigger retry of this offload attempt
+				}
+
+				return map[string]interface{}{
+					"status": "STATUS_LAGGED",
+					"reason": err.Error(),
+				}, nil // ACK original message since we've successfully moved it to the delay queue
+			}
+		}
+
 		fwCtx.Logger.Error("Orchestrator failed", "error", err)
 		return nil, err
 	}
@@ -157,4 +207,9 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 		"published_events":    publishedEvents,
 		"provider_executions": processResult.ProviderExecutions,
 	}, nil
+}
+
+func isRetryable(err error) bool {
+	_, ok := err.(*providers.RetryableError)
+	return ok
 }

@@ -74,7 +74,7 @@ func getMuscleCoefficient(coeffs map[pb.MuscleGroup]float64, muscle pb.MuscleGro
 	return 1.0
 }
 
-func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {
+func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	// Aggregate sets
 	var allSets []*pb.StrengthSet
 	for _, s := range activity.Sessions {

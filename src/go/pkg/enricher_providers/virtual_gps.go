@@ -26,7 +26,7 @@ func (p *VirtualGPSProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS
 }
 
-func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string) (*EnrichmentResult, error) {
+func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	// 1. Validation
 	if len(activity.Sessions) == 0 {
 		return &EnrichmentResult{}, nil

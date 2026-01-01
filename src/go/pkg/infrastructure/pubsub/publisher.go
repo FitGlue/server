@@ -13,8 +13,18 @@ type PubSubAdapter struct {
 }
 
 func (a *PubSubAdapter) Publish(ctx context.Context, topicID string, data []byte) (string, error) {
+	return a.PublishWithAttrs(ctx, topicID, data, nil)
+}
+
+func (a *PubSubAdapter) PublishWithAttrs(ctx context.Context, topicID string, data []byte, attributes map[string]string) (string, error) {
 	topic := a.Client.Topic(topicID)
-	res := topic.Publish(ctx, &pubsub.Message{Data: data})
+	msg := &pubsub.Message{
+		Data: data,
+	}
+	if attributes != nil {
+		msg.Attributes = attributes
+	}
+	res := topic.Publish(ctx, msg)
 	return res.Get(ctx)
 }
 
@@ -22,6 +32,10 @@ func (a *PubSubAdapter) Publish(ctx context.Context, topicID string, data []byte
 type LogPublisher struct{}
 
 func (p *LogPublisher) Publish(ctx context.Context, topicID string, data []byte) (string, error) {
-	log.Printf("[LogPublisher] MOCK PUBLISH to %s: %s", topicID, string(data))
+	return p.PublishWithAttrs(ctx, topicID, data, nil)
+}
+
+func (p *LogPublisher) PublishWithAttrs(ctx context.Context, topicID string, data []byte, attributes map[string]string) (string, error) {
+	log.Printf("[LogPublisher] MOCK PUBLISH to %s: %s (attrs: %v)", topicID, string(data), attributes)
 	return "mock-msg-id", nil
 }
