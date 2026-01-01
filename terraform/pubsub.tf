@@ -40,8 +40,8 @@ resource "google_pubsub_subscription" "enrichment_lag_sub" {
   retry_policy {
     # 60s minimum backoff
     minimum_backoff = "60s"
-    # 20 minutes max backoff
-    maximum_backoff = "1200s"
+    # 10 minutes max backoff
+    maximum_backoff = "600s"
   }
 
   # Use a Push Subscription to enforce a custom retry policy (backoff).

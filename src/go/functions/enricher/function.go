@@ -97,7 +97,7 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 	// We want to force if the message is older than our max backoff (20 mins + buffer)
 	if !e.Time().IsZero() {
 		lagDuration := time.Since(e.Time())
-		if lagDuration > 25*time.Minute {
+		if lagDuration > 15*time.Minute {
 			fwCtx.Logger.Warn("Activity lag exhausted, forcing partial enrichment", "age", lagDuration)
 			doNotRetry = true
 		}
