@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package fitglue;
+
+option go_package = "fitglue/pkg/shared/pb";
+
+// FitbitNotification represents the JSON payload sent by Fitbit Webhooks
+// and published to topic-fitbit-updates.
+message FitbitNotification {
+  string collection_type = 1;      // e.g. "activities"
+  string date = 2;                 // e.g. "2023-10-27"
+  string owner_id = 3;             // Fitbit User ID (e.g. "7N8X9Y")
+  string owner_type = 4;           // e.g. "user"
+  string subscription_id = 5;      // The subscription ID we created
+}

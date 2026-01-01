@@ -1,4 +1,4 @@
-import { TOPICS, createCloudFunction, ActivityPayload, FrameworkContext, ActivitySource, createHevyClient, UserService } from '@fitglue/shared';
+import { TOPICS, createCloudFunction, ActivityPayload, FrameworkContext, ActivitySource, createHevyClient, UserService, TypedPublisher } from '@fitglue/shared';
 import { mapHevyWorkoutToStandardized } from './mapper';
 
 // Removed local PubSub instantiation
@@ -131,9 +131,8 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     };
 
     // Uses injected PubSub client
-    const messageId = await ctx.pubsub.topic(TOPIC_NAME).publishMessage({
-        json: messagePayload,
-    });
+    const publisher = new TypedPublisher<ActivityPayload>(ctx.pubsub, TOPIC_NAME, logger);
+    const messageId = await publisher.publish(messagePayload);
 
     // --- MARK AS PROCESSED ---
     await userService.markActivityAsProcessed(userId, 'hevy', workoutId);

@@ -22,7 +22,10 @@ const mockCtx = {
 // Mock Framework
 jest.mock('@fitglue/shared', () => ({
   createCloudFunction: (handler: any) => (req: any, res: any) => handler(req, res, mockCtx),
-  TOPICS: { RAW_ACTIVITY: 'raw-activity', FITBIT_UPDATES: 'topic-fitbit-updates' }
+  TOPICS: { RAW_ACTIVITY: 'raw-activity', FITBIT_UPDATES: 'topic-fitbit-updates' },
+  TypedPublisher: jest.fn().mockImplementation((pubsub, topic) => ({
+    publish: (payload: any) => pubsub.topic(topic).publishMessage({ json: payload })
+  }))
 }));
 
 describe('Fitbit Webhook Handler', () => {

@@ -1,4 +1,5 @@
-import { createCloudFunction, FrameworkContext, TOPICS, createFitbitClient, UserService, ActivitySource } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, TOPICS, createFitbitClient, UserService, ActivitySource, ActivityPayload, TypedPublisher, FitbitNotification } from '@fitglue/shared';
+
 import { mapTCXToStandardized } from './mapper';
 
 const handler = async (req: any, res: any, ctx: FrameworkContext) => {
@@ -7,15 +8,19 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   // 1. Parse Pub/Sub Message
   // This function is triggered by Pub/Sub message from fitbit-webhook-handler
   // The payload is the Fitbit "notification" object: { collectionType, date, ownerId, ownerType, subscriptionId }
-  let notification: any = req.body;
+
+  let notification: FitbitNotification | null = null;
+
+  // Handle direct HTTP or Pub/Sub
   if (req.body && req.body.message && req.body.message.data) {
-    try {
-      const dataBuffer = Buffer.from(req.body.message.data, 'base64');
-      notification = JSON.parse(dataBuffer.toString());
-    } catch (e) {
-      logger.error('Failed to parse Pub/Sub message data');
-      return;
-    }
+    notification = TypedPublisher.unwrap<FitbitNotification>(req.body.message.data);
+  } else {
+    notification = req.body as FitbitNotification;
+  }
+
+  if (!notification) {
+    logger.error('Failed to parse Pub/Sub message data');
+    return;
   }
 
   const { ownerId, date, collectionType } = notification;
@@ -121,20 +126,24 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       // tcxData is string (XML)
       const standardized = mapTCXToStandardized(tcxData as string, act, userId);
 
+
       // 7. Publish to Enrichment Pipeline
-      const messageId = await pubsub.topic(TOPICS.RAW_ACTIVITY).publishMessage({
-        json: {
-          source: ActivitySource.SOURCE_FITBIT,
-          userId: userId,
-          timestamp: new Date().toISOString(),
-          standardizedActivity: standardized,
-          originalPayloadJson: JSON.stringify(act),
-          metadata: {
-            fitbitLogId: act.logId,
-            date: date
-          }
+      const publisher = new TypedPublisher<ActivityPayload>(pubsub, TOPICS.RAW_ACTIVITY, logger);
+
+      const payload: ActivityPayload = {
+        source: ActivitySource.SOURCE_FITBIT,
+        userId: userId,
+        timestamp: new Date().toISOString(),
+        standardizedActivity: standardized,
+        originalPayloadJson: JSON.stringify(act),
+        metadata: {
+          fitbitLogId: logIdStr,
+          date: date
         }
-      });
+      };
+
+      const messageId = await publisher.publish(payload);
+
 
       // 8. Mark as Processed
       await userService.markActivityAsProcessed(userId, 'fitbit', logIdStr);

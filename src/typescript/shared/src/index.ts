@@ -10,4 +10,6 @@ export { UserRecord, UserIntegrations, HevyIntegration } from './types/pb/user';
 export * from './domain/services/user';
 export * from './integrations/hevy/client';
 export * from './integrations/fitbit/client';
+export { FitbitNotification } from './types/pb/fitbit';
 export * from './infrastructure/oauth';
+export * from './infrastructure/pubsub/typed-publisher';

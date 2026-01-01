@@ -12,6 +12,9 @@ jest.mock('@fitglue/shared', () => ({
     UserService: jest.fn().mockImplementation(() => ({
         hasProcessedActivity: mockHasProcessedActivity,
         markActivityAsProcessed: mockMarkActivityAsProcessed
+    })),
+    TypedPublisher: jest.fn().mockImplementation((pubsub, topic) => ({
+        publish: (payload: any) => pubsub.topic(topic).publishMessage({ json: payload })
     }))
 }));
 
@@ -154,7 +157,7 @@ describe('hevyWebhookHandler', () => {
             params: { path: { workoutId: mockWorkout.id } }
         });
 
-        // Verify PubSub Injection Usage
+        // Verify PubSub Injection Usage via TypedPublisher
         expect(mockPubSub.topic).toHaveBeenCalledWith('test-topic');
         expect(mockPublishMessage).toHaveBeenCalledWith(
             expect.objectContaining({
