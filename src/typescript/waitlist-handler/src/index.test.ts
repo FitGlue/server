@@ -1,38 +1,74 @@
 import { waitlistHandler } from './index';
-// Mock firebase-admin
+import * as admin from 'firebase-admin';
+
+// Jest Mock Factory
 jest.mock('firebase-admin', () => {
-  const collectionMock = {
-    add: jest.fn().mockResolvedValue({ id: 'mock-doc-id' }),
-  };
-  const firestoreMock = {
-    collection: jest.fn().mockReturnValue(collectionMock),
-  };
-  const appMock = {
-    length: 0
-  };
-  const firestoreFn = jest.fn(() => firestoreMock);
+  // Create stable mocks inside the factory
+  const mockCreate = jest.fn().mockResolvedValue({ writeTime: 'mock-timestamp' });
+
+  // mockDoc needs to return an object with .create
+  const mockDoc = jest.fn(() => ({ create: mockCreate }));
+
+  // mockCollection needs to return an object with .doc
+  const mockCollection = jest.fn(() => ({ doc: mockDoc }));
+
+  // firestoreFn returns the db object with .collection
+  const firestoreFn = jest.fn(() => ({ collection: mockCollection }));
+
+  // Attach static properties for FieldValue
   Object.assign(firestoreFn, {
     FieldValue: {
       serverTimestamp: jest.fn().mockReturnValue('mock-timestamp')
     }
   });
+
   return {
-    apps: [appMock],
+    apps: [{ length: 0 }],
     initializeApp: jest.fn(),
     firestore: firestoreFn
   };
 });
 
-// Import mocked module to assert on it
-import * as admin from 'firebase-admin';
-
 describe('waitlistHandler', () => {
   let req: any;
   let res: any;
-  let collectionAdd: jest.Mock;
+
+  // Accessors for our mocks
+  let mockCollection: jest.Mock;
+  let mockDoc: jest.Mock;
+  let mockCreate: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Silence logs
+    jest.spyOn(console, 'log').mockImplementation(() => { });
+    jest.spyOn(console, 'warn').mockImplementation(() => { });
+    jest.spyOn(console, 'error').mockImplementation(() => { });
+
+    // Traverse the mock graph to get references
+    // 1. admin.firestore() -> db
+    const db = admin.firestore();
+    // 2. db.collection -> mockCollection
+    mockCollection = db.collection as jest.Mock;
+
+    // 3. invoke collection to get the doc builder
+    const docBuilder = mockCollection('dummy');
+    // 4. docBuilder.doc -> mockDoc
+    mockDoc = docBuilder.doc as jest.Mock;
+
+    // 5. invoke doc to get the doc ref
+    const docRef = mockDoc('dummy');
+    // 6. docRef.create -> mockCreate
+    mockCreate = docRef.create as jest.Mock;
+
+    // Reset Default Behavior
+    mockCreate.mockResolvedValue({ writeTime: 'mock-timestamp' });
+
+    // CLEAR CALL HISTORY from the setup traversal above
+    mockCollection.mockClear();
+    mockDoc.mockClear();
+    mockCreate.mockClear();
 
     // Setup request/response mocks
     req = {
@@ -46,10 +82,10 @@ describe('waitlistHandler', () => {
       json: jest.fn().mockReturnThis(),
       send: jest.fn().mockReturnThis(),
     };
+  });
 
-    // Get reference to the mocked collection.add
-    const db = (admin.firestore as any)();
-    collectionAdd = db.collection('waitlist').add;
+  afterAll(() => {
+    jest.restoreAllMocks();
   });
 
   it('should handle OPTIONS request (CORS)', async () => {
@@ -72,11 +108,8 @@ describe('waitlistHandler', () => {
 
     await waitlistHandler(req, res);
 
-    // Should verify honeypot
-    // Should NOT save to DB
-    expect(collectionAdd).not.toHaveBeenCalled();
-
-    // Should return success to fool bot
+    expect(mockDoc).not.toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
   });
@@ -86,14 +119,18 @@ describe('waitlistHandler', () => {
     await waitlistHandler(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(collectionAdd).not.toHaveBeenCalled();
+    expect(mockCreate).not.toHaveBeenCalled();
   });
 
-  it('should save valid email to firestore', async () => {
-    req.body = { email: 'user@example.com' };
+  it('should save valid email using email as ID', async () => {
+    req.body = { email: 'User@Example.com' }; // Mixed case to test normalization
     await waitlistHandler(req, res);
 
-    expect(collectionAdd).toHaveBeenCalledWith({
+    // Check it used lowercase ID
+    expect(mockCollection).toHaveBeenCalledWith('waitlist');
+    expect(mockDoc).toHaveBeenCalledWith('user@example.com');
+
+    expect(mockCreate).toHaveBeenCalledWith({
       email: 'user@example.com',
       source: 'web',
       createdAt: 'mock-timestamp',
@@ -103,5 +140,21 @@ describe('waitlistHandler', () => {
     });
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
+  });
+
+  it('should return 409 if create fails with ALREADY_EXISTS', async () => {
+    req.body = { email: 'duplicate@example.com' };
+
+    // Mock failure
+    const error: any = new Error('ALREADY_EXISTS');
+    error.code = 6;
+    mockCreate.mockRejectedValue(error);
+
+    await waitlistHandler(req, res);
+
+    expect(mockCreate).toHaveBeenCalled(); // Tried to create
+
+    expect(res.status).toHaveBeenCalledWith(409);
+    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ error: "You're already on the waitlist" }));
   });
 });

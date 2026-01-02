@@ -44,19 +44,28 @@ export const waitlistHandler = async (req: functions.Request, res: functions.Res
     return;
   }
 
+  const normalizedEmail = email.toLowerCase();
+
   try {
     // --- Persistence ---
-    await db.collection('waitlist').add({
-      email,
+    // Use email as document ID to ensure uniqueness and simple lookups.
+    // .create() will fail if the document already exists.
+    await db.collection('waitlist').doc(normalizedEmail).create({
+      email: normalizedEmail,
       source: 'web',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       userAgent: req.get('User-Agent') || 'unknown',
       ip: req.ip || 'unknown'
     });
 
-    console.log(`Waitlist entry added for: ${maskEmail(email)}`);
+    console.log(`Waitlist entry added for: ${maskEmail(normalizedEmail)}`);
     res.status(200).json({ success: true, message: 'Thanks for joining!' });
-  } catch (error) {
+  } catch (error: any) {
+    if (error.code === 6 || error.message.includes('ALREADY_EXISTS')) {
+      console.log(`Duplicate waitlist attempt for: ${maskEmail(normalizedEmail)}`);
+      res.status(409).json({ success: false, error: "You're already on the waitlist" });
+      return;
+    }
     console.error('Error adding to waitlist:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
