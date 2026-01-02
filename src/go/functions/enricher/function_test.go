@@ -8,6 +8,7 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
@@ -19,12 +20,12 @@ import (
 func TestEnrichActivity(t *testing.T) {
 	// Setup Mocks
 	mockDB := &mocks.MockDatabase{
-		SetExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
 			return nil
 		},
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
 			// Verify rich output structure
-			if outputsJSON, ok := data["outputs"].(string); ok {
+			if outputsJSON, ok := data["outputs_json"].(string); ok {
 				var outputs map[string]interface{}
 				if err := json.Unmarshal([]byte(outputsJSON), &outputs); err != nil {
 					t.Errorf("Failed to unmarshal outputs: %v", err)
@@ -44,22 +45,20 @@ func TestEnrichActivity(t *testing.T) {
 			}
 			return nil
 		},
-		GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-			return map[string]interface{}{
-				"user_id": id,
-				"pipelines": []interface{}{
-					map[string]interface{}{
-						"id":     "pipeline-1",
-						"source": "SOURCE_HEVY",
-						"enrichers": []interface{}{
-							map[string]interface{}{
-								"name": "mock-enricher",
-								"inputs": map[string]interface{}{
-									"test_key": "test_value",
-								},
+		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+			return &pb.UserRecord{
+				UserId: id,
+				Pipelines: []*pb.PipelineConfig{
+					{
+						Id:     "pipeline-1",
+						Source: "SOURCE_HEVY",
+						Enrichers: []*pb.EnricherConfig{
+							{
+								ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+								Inputs:       map[string]string{"test_key": "test_value"},
 							},
 						},
-						"destinations": []interface{}{"strava"},
+						Destinations: []string{"strava"},
 					},
 				},
 			}, nil
@@ -112,9 +111,9 @@ func TestEnrichActivity(t *testing.T) {
 	activity := pb.ActivityPayload{
 		Source:    pb.ActivitySource_SOURCE_HEVY,
 		UserId:    "user_123",
-		Timestamp: time.Now().Format(time.RFC3339),
+		Timestamp: timestamppb.New(time.Now()),
 		StandardizedActivity: &pb.StandardizedActivity{
-			StartTime: time.Now().Format(time.RFC3339),
+			StartTime: timestamppb.New(time.Now()),
 			Type:      "WEIGHT_TRAINING",
 			Sessions: []*pb.Session{
 				{TotalElapsedTime: 3600},

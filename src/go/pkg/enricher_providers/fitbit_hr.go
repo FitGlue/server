@@ -47,9 +47,10 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 	}
 
 	// 2. Parse Activity Times
-	startTime, err := time.Parse(time.RFC3339, activity.StartTime)
-	if err != nil {
-		return nil, fmt.Errorf("invalid start time: %w", err)
+	// 2. Parse Activity Times
+	startTime := activity.StartTime.AsTime()
+	if startTime.IsZero() {
+		return nil, fmt.Errorf("invalid start time: zero")
 	}
 
 	// Calculate end time

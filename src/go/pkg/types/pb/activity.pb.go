@@ -7,6 +7,7 @@
 package pb
 
 import (
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -78,8 +79,8 @@ func (ActivitySource) EnumDescriptor() ([]byte, []int) {
 type ActivityPayload struct {
 	state                protoimpl.MessageState `protogen:"open.v1"`
 	Source               ActivitySource         `protobuf:"varint,1,opt,name=source,proto3,enum=fitglue.ActivitySource" json:"source,omitempty"`
-	UserId               string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`                                                                 // Internal FitGlue User ID
-	Timestamp            string                 `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                                                                         // ISO 8601 Timestamp of activity start
+	UserId               string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // Internal FitGlue User ID
+	Timestamp            *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	OriginalPayloadJson  string                 `protobuf:"bytes,4,opt,name=original_payload_json,json=originalPayloadJson,proto3" json:"original_payload_json,omitempty"`                        // Raw JSON payload stringified (flexible but preserved)
 	Metadata             map[string]string      `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"` // Extra tracing context
 	StandardizedActivity *StandardizedActivity  `protobuf:"bytes,6,opt,name=standardized_activity,json=standardizedActivity,proto3" json:"standardized_activity,omitempty"`
@@ -131,11 +132,11 @@ func (x *ActivityPayload) GetUserId() string {
 	return ""
 }
 
-func (x *ActivityPayload) GetTimestamp() string {
+func (x *ActivityPayload) GetTimestamp() *timestamp.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
-	return ""
+	return nil
 }
 
 func (x *ActivityPayload) GetOriginalPayloadJson() string {
@@ -311,11 +312,11 @@ var File_activity_proto protoreflect.FileDescriptor
 
 const file_activity_proto_rawDesc = "" +
 	"\n" +
-	"\x0eactivity.proto\x12\afitglue\x1a\x1bstandardized_activity.proto\"\x82\x03\n" +
+	"\x0eactivity.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\"\x9e\x03\n" +
 	"\x0fActivityPayload\x12/\n" +
 	"\x06source\x18\x01 \x01(\x0e2\x17.fitglue.ActivitySourceR\x06source\x12\x17\n" +
-	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1c\n" +
-	"\ttimestamp\x18\x03 \x01(\tR\ttimestamp\x122\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x128\n" +
+	"\ttimestamp\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x122\n" +
 	"\x15original_payload_json\x18\x04 \x01(\tR\x13originalPayloadJson\x12B\n" +
 	"\bmetadata\x18\x05 \x03(\v2&.fitglue.ActivityPayload.MetadataEntryR\bmetadata\x12R\n" +
 	"\x15standardized_activity\x18\x06 \x01(\v2\x1d.fitglue.StandardizedActivityR\x14standardizedActivity\x1a;\n" +
@@ -369,20 +370,22 @@ var file_activity_proto_goTypes = []any{
 	(*EnrichedActivityEvent)(nil), // 2: fitglue.EnrichedActivityEvent
 	nil,                           // 3: fitglue.ActivityPayload.MetadataEntry
 	nil,                           // 4: fitglue.EnrichedActivityEvent.EnrichmentMetadataEntry
-	(*StandardizedActivity)(nil),  // 5: fitglue.StandardizedActivity
+	(*timestamp.Timestamp)(nil),   // 5: google.protobuf.Timestamp
+	(*StandardizedActivity)(nil),  // 6: fitglue.StandardizedActivity
 }
 var file_activity_proto_depIdxs = []int32{
 	0, // 0: fitglue.ActivityPayload.source:type_name -> fitglue.ActivitySource
-	3, // 1: fitglue.ActivityPayload.metadata:type_name -> fitglue.ActivityPayload.MetadataEntry
-	5, // 2: fitglue.ActivityPayload.standardized_activity:type_name -> fitglue.StandardizedActivity
-	0, // 3: fitglue.EnrichedActivityEvent.source:type_name -> fitglue.ActivitySource
-	5, // 4: fitglue.EnrichedActivityEvent.activity_data:type_name -> fitglue.StandardizedActivity
-	4, // 5: fitglue.EnrichedActivityEvent.enrichment_metadata:type_name -> fitglue.EnrichedActivityEvent.EnrichmentMetadataEntry
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	5, // 1: fitglue.ActivityPayload.timestamp:type_name -> google.protobuf.Timestamp
+	3, // 2: fitglue.ActivityPayload.metadata:type_name -> fitglue.ActivityPayload.MetadataEntry
+	6, // 3: fitglue.ActivityPayload.standardized_activity:type_name -> fitglue.StandardizedActivity
+	0, // 4: fitglue.EnrichedActivityEvent.source:type_name -> fitglue.ActivitySource
+	6, // 5: fitglue.EnrichedActivityEvent.activity_data:type_name -> fitglue.StandardizedActivity
+	4, // 6: fitglue.EnrichedActivityEvent.enrichment_metadata:type_name -> fitglue.EnrichedActivityEvent.EnrichmentMetadataEntry
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_activity_proto_init() }

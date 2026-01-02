@@ -3,23 +3,25 @@ package enricher
 import (
 	"context"
 	"testing"
+	"time"
 
 	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // MockDatabase implements shared.Database
 type MockDatabase struct {
-	GetUserFunc func(ctx context.Context, id string) (map[string]interface{}, error)
+	GetUserFunc func(ctx context.Context, id string) (*pb.UserRecord, error)
 }
 
-func (m *MockDatabase) GetUser(ctx context.Context, id string) (map[string]interface{}, error) {
+func (m *MockDatabase) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
 	if m.GetUserFunc != nil {
 		return m.GetUserFunc(ctx, id)
 	}
 	return nil, nil
 }
-func (m *MockDatabase) SetExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
 	return nil
 }
 func (m *MockDatabase) UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error {
@@ -77,22 +79,18 @@ func TestOrchestrator_Process(t *testing.T) {
 
 	t.Run("Executes configured pipeline", func(t *testing.T) {
 		mockDB := &MockDatabase{
-			GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"user_id": id,
-					"pipelines": []interface{}{
-						map[string]interface{}{
-							"id":     "pipeline-1",
-							"source": "SOURCE_HEVY",
-							"destinations": []interface{}{
-								"strava",
-							},
-							"enrichers": []interface{}{
-								map[string]interface{}{
-									"providerType": 99, // ENRICHER_PROVIDER_MOCK
-									"inputs": map[string]interface{}{
-										"key": "val",
-									},
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{
+					UserId: id,
+					Pipelines: []*pb.PipelineConfig{
+						{
+							Id:           "pipeline-1",
+							Source:       "SOURCE_HEVY",
+							Destinations: []string{"strava"},
+							Enrichers: []*pb.EnricherConfig{
+								{
+									ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+									Inputs:       map[string]string{"key": "val"},
 								},
 							},
 						},
@@ -126,19 +124,18 @@ func TestOrchestrator_Process(t *testing.T) {
 		payload := &pb.ActivityPayload{
 			UserId:    "user-123",
 			Source:    pb.ActivitySource_SOURCE_HEVY,
-			Timestamp: "2023-01-01T10:00:00Z",
+			Timestamp: timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 			StandardizedActivity: &pb.StandardizedActivity{
 				Name: "Original Run",
 				Sessions: []*pb.Session{
 					{
-						StartTime:        "2023-01-01T10:00:00Z",
+						StartTime:        timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 						TotalElapsedTime: 60,
 					},
 				},
 			},
 		}
 
-		// Update calls
 		// Update calls
 		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", false) // false = doNotRetry
 
@@ -167,12 +164,12 @@ func TestOrchestrator_Process(t *testing.T) {
 
 	t.Run("Falls back to default if no pipelines match", func(t *testing.T) {
 		mockDB := &MockDatabase{
-			GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"user_id": id,
-					"integrations": map[string]interface{}{
-						"strava": map[string]interface{}{
-							"enabled": true,
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{
+					UserId: id,
+					Integrations: &pb.UserIntegrations{
+						Strava: &pb.StravaIntegration{
+							Enabled: true,
 						},
 					},
 				}, nil
@@ -188,15 +185,14 @@ func TestOrchestrator_Process(t *testing.T) {
 				Name: "Run",
 				Sessions: []*pb.Session{
 					{
-						StartTime:        "2023-01-01T10:00:00Z",
+						StartTime:        timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 						TotalElapsedTime: 60,
 					},
 				},
 			},
-			Timestamp: "2023-01-01T10:00:00Z",
+			Timestamp: timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 		}
 
-		// Update calls
 		// Update calls
 		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", false) // false = doNotRetry
 
@@ -214,8 +210,8 @@ func TestOrchestrator_Process(t *testing.T) {
 
 	t.Run("Fails if multiple sessions present", func(t *testing.T) {
 		mockDB := &MockDatabase{
-			GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-				return map[string]interface{}{"user_id": id}, nil
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{UserId: id}, nil
 			},
 		}
 		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
@@ -233,8 +229,8 @@ func TestOrchestrator_Process(t *testing.T) {
 
 	t.Run("Fails if session duration is zero", func(t *testing.T) {
 		mockDB := &MockDatabase{
-			GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-				return map[string]interface{}{"user_id": id}, nil
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{UserId: id}, nil
 			},
 		}
 		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
@@ -254,14 +250,16 @@ func TestOrchestrator_Process(t *testing.T) {
 
 	t.Run("Aggregates HR stream into Records", func(t *testing.T) {
 		mockDB := &MockDatabase{
-			GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-				return map[string]interface{}{
-					"user_id": id,
-					"pipelines": []interface{}{
-						map[string]interface{}{
-							"id":        "p1",
-							"source":    "SOURCE_HEVY",
-							"enrichers": []interface{}{map[string]interface{}{"providerType": 99}},
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{
+					UserId: id,
+					Pipelines: []*pb.PipelineConfig{
+						{
+							Id:     "p1",
+							Source: "SOURCE_HEVY",
+							Enrichers: []*pb.EnricherConfig{
+								{ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK},
+							},
 						},
 					},
 				}, nil
@@ -282,10 +280,10 @@ func TestOrchestrator_Process(t *testing.T) {
 			Source: pb.ActivitySource_SOURCE_HEVY,
 			UserId: "u1",
 			StandardizedActivity: &pb.StandardizedActivity{
-				StartTime: "2024-01-01T10:00:00Z",
+				StartTime: timestamppb.New(time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)),
 				Sessions: []*pb.Session{
 					{
-						StartTime:        "2024-01-01T10:00:00Z",
+						StartTime:        timestamppb.New(time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)),
 						TotalElapsedTime: 3,
 						// No initial records
 					},

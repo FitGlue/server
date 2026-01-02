@@ -51,7 +51,7 @@ describe('mapHevyWorkoutToStandardized', () => {
     expect(result.name).toBe('Morning Lift');
     expect(result.type).toBe('WEIGHT_TRAINING');
     expect(result.description).toBe('Heavy chest day');
-    expect(result.startTime).toBe('2023-01-01T10:00:00Z');
+    expect(result.startTime).toEqual(new Date('2023-01-01T10:00:00Z'));
   });
 
   it('should calculate duration from start and end time', () => {

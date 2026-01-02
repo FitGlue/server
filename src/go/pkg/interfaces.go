@@ -2,14 +2,16 @@ package shared
 
 import (
 	"context"
+
+	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 // --- Persistence Interfaces ---
 
 type Database interface {
-	SetExecution(ctx context.Context, id string, data map[string]interface{}) error
+	SetExecution(ctx context.Context, record *pb.ExecutionRecord) error
 	UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error
-	GetUser(ctx context.Context, id string) (map[string]interface{}, error)
+	GetUser(ctx context.Context, id string) (*pb.UserRecord, error)
 	UpdateUser(ctx context.Context, id string, data map[string]interface{}) error
 }
 

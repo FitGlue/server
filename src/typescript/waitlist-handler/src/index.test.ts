@@ -19,6 +19,9 @@ jest.mock('firebase-admin', () => {
   Object.assign(firestoreFn, {
     FieldValue: {
       serverTimestamp: jest.fn().mockReturnValue('mock-timestamp')
+    },
+    Timestamp: {
+      now: jest.fn(() => ({ toDate: () => 'mock-timestamp' }))
     }
   });
 
@@ -28,6 +31,12 @@ jest.mock('firebase-admin', () => {
     firestore: firestoreFn
   };
 });
+
+jest.mock('@fitglue/shared', () => ({
+  storage: {
+    getWaitlistCollection: () => require('firebase-admin').firestore().collection('waitlist')
+  }
+}));
 
 describe('waitlistHandler', () => {
   let req: any;

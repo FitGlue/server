@@ -5,6 +5,16 @@ const mockMarkActivityAsProcessed = jest.fn();
 // Mock the shared package
 jest.mock('@fitglue/shared', () => ({
     createCloudFunction: (handler: any) => handler,
+    validateOAuthState: jest.fn(),
+    storeOAuthTokens: jest.fn(),
+    getSecret: jest.fn(),
+    storage: {
+        getUsersCollection: jest.fn(() => ({
+            doc: jest.fn(() => ({
+                get: jest.fn().mockResolvedValue({ exists: true, data: () => ({ integrations: { hevy: { enabled: true, apiKey: "hevy-key", userId: "u1" } } }) })
+            }))
+        }))
+    },
     FrameworkContext: jest.fn(),
     TOPICS: { RAW_ACTIVITY: 'test-topic' },
     ActivitySource: { SOURCE_HEVY: 'HEVY' }, // Mock enum

@@ -13,3 +13,4 @@ export * from './integrations/fitbit/client';
 export { FitbitNotification } from './types/pb/fitbit';
 export * from './infrastructure/oauth';
 export * from './infrastructure/pubsub/typed-publisher';
+export * as storage from './storage/firestore';

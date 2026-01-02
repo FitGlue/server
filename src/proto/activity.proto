@@ -4,6 +4,7 @@ package fitglue;
 
 option go_package = "fitglue/pkg/shared/pb";
 
+import "google/protobuf/timestamp.proto";
 import "standardized_activity.proto";
 
 // ActivitySource enum defines where the data originated.
@@ -18,7 +19,7 @@ enum ActivitySource {
 message ActivityPayload {
   ActivitySource source = 1;
   string user_id = 2;      // Internal FitGlue User ID
-  string timestamp = 3;    // ISO 8601 Timestamp of activity start
+  google.protobuf.Timestamp timestamp = 3;
   string original_payload_json = 4; // Raw JSON payload stringified (flexible but preserved)
   map<string, string> metadata = 5; // Extra tracing context
   StandardizedActivity standardized_activity = 6;

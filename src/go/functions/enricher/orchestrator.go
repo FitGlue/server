@@ -2,7 +2,6 @@ package enricher
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -14,7 +13,7 @@ import (
 	fit "github.com/ripixel/fitglue-server/src/go/pkg/domain/file_generators"
 	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
-	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type Orchestrator struct {
@@ -61,14 +60,11 @@ type ProviderExecution struct {
 // Process executes the enrichment pipelines for the activity
 func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload, parentExecutionID string, doNotRetry bool) (*ProcessResult, error) {
 	// 1. Fetch User Config
-	userDoc, err := o.database.GetUser(ctx, payload.UserId)
+	userRec, err := o.database.GetUser(ctx, payload.UserId)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user config: %w", err)
 	}
-	userRec, err := o.mapUser(payload.UserId, userDoc)
-	if err != nil {
-		return nil, fmt.Errorf("failed to map user record: %w", err)
-	}
+
 	// 1.5. Validate Payload
 	if payload.StandardizedActivity == nil {
 		return nil, fmt.Errorf("standardized activity is nil")
@@ -227,10 +223,10 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		// Ensure records are large enough
 		currentLen := len(lap.Records)
 		if currentLen < duration {
-			startTime, _ := time.Parse(time.RFC3339, session.StartTime)
+			startTime := session.StartTime.AsTime()
 			// Pad with timestamp-only records
 			for k := currentLen; k < duration; k++ {
-				ts := startTime.Add(time.Duration(k) * time.Second).Format(time.RFC3339)
+				ts := timestamppb.New(startTime.Add(time.Duration(k) * time.Second))
 				lap.Records = append(lap.Records, &pb.Record{Timestamp: ts})
 			}
 		}
@@ -395,24 +391,4 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	}
 
 	return pipelines
-}
-
-func (o *Orchestrator) mapUser(userId string, data map[string]interface{}) (*pb.UserRecord, error) {
-	// Convert Firestore map to JSON, then unmarshal using protojson
-	// This is type-safe and automatically handles all nested structures
-	jsonBytes, err := json.Marshal(data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal user data: %w", err)
-	}
-
-	var rec pb.UserRecord
-	unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := unmarshalOpts.Unmarshal(jsonBytes, &rec); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal user record: %w", err)
-	}
-
-	// Set the user ID (not stored in Firestore document, only as document ID)
-	rec.UserId = userId
-
-	return &rec, nil
 }

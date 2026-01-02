@@ -71,7 +71,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     const expiresAt = new Date(Date.now() + expires_in * 1000);
 
     // Store tokens in Firestore
-    await storeOAuthTokens(db, userId, 'fitbit', {
+    await storeOAuthTokens(userId, 'fitbit', {
       accessToken: access_token,
       refreshToken: refresh_token,
       expiresAt,

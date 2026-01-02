@@ -99,6 +99,59 @@ func (x *ApiKeyRecord) GetLastUsedAt() *timestamp.Timestamp {
 	return nil
 }
 
+// Stored in Firestore collection `integrations/{provider}/ids/{external_id}`
+type IntegrationIdentity struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	CreatedAt     *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IntegrationIdentity) Reset() {
+	*x = IntegrationIdentity{}
+	mi := &file_auth_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IntegrationIdentity) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntegrationIdentity) ProtoMessage() {}
+
+func (x *IntegrationIdentity) ProtoReflect() protoreflect.Message {
+	mi := &file_auth_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntegrationIdentity.ProtoReflect.Descriptor instead.
+func (*IntegrationIdentity) Descriptor() ([]byte, []int) {
+	return file_auth_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *IntegrationIdentity) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *IntegrationIdentity) GetCreatedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
 var File_auth_proto protoreflect.FileDescriptor
 
 const file_auth_proto_rawDesc = "" +
@@ -112,7 +165,11 @@ const file_auth_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
 	"\flast_used_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"lastUsedAtB\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
+	"lastUsedAt\"i\n" +
+	"\x13IntegrationIdentity\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x129\n" +
+	"\n" +
+	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once
@@ -126,19 +183,21 @@ func file_auth_proto_rawDescGZIP() []byte {
 	return file_auth_proto_rawDescData
 }
 
-var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
+var file_auth_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_auth_proto_goTypes = []any{
 	(*ApiKeyRecord)(nil),        // 0: fitglue.ApiKeyRecord
-	(*timestamp.Timestamp)(nil), // 1: google.protobuf.Timestamp
+	(*IntegrationIdentity)(nil), // 1: fitglue.IntegrationIdentity
+	(*timestamp.Timestamp)(nil), // 2: google.protobuf.Timestamp
 }
 var file_auth_proto_depIdxs = []int32{
-	1, // 0: fitglue.ApiKeyRecord.created_at:type_name -> google.protobuf.Timestamp
-	1, // 1: fitglue.ApiKeyRecord.last_used_at:type_name -> google.protobuf.Timestamp
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+	2, // 0: fitglue.ApiKeyRecord.created_at:type_name -> google.protobuf.Timestamp
+	2, // 1: fitglue.ApiKeyRecord.last_used_at:type_name -> google.protobuf.Timestamp
+	2, // 2: fitglue.IntegrationIdentity.created_at:type_name -> google.protobuf.Timestamp
+	3, // [3:3] is the sub-list for method output_type
+	3, // [3:3] is the sub-list for method input_type
+	3, // [3:3] is the sub-list for extension type_name
+	3, // [3:3] is the sub-list for extension extendee
+	0, // [0:3] is the sub-list for field type_name
 }
 
 func init() { file_auth_proto_init() }
@@ -152,7 +211,7 @@ func file_auth_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_auth_proto_rawDesc), len(file_auth_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   1,
+			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

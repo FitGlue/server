@@ -8,11 +8,12 @@ import (
 	"github.com/muktihari/fit/decoder"
 	"github.com/muktihari/fit/profile/typedef"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestGenerateFitFile(t *testing.T) {
 	// Setup input
-	startTime := time.Now().Format(time.RFC3339)
+	startTime := timestamppb.New(time.Now())
 	activity := &pb.StandardizedActivity{
 		StartTime: startTime,
 		Type:      "WEIGHT_TRAINING",
@@ -95,7 +96,7 @@ func TestGenerateFitFile(t *testing.T) {
 }
 
 func TestGenerateFitFile_NoHR(t *testing.T) {
-	startTime := time.Now().Format(time.RFC3339)
+	startTime := timestamppb.New(time.Now())
 	activity := &pb.StandardizedActivity{
 		StartTime: startTime,
 		Sessions: []*pb.Session{

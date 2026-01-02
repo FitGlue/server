@@ -16,3 +16,9 @@ export interface ApiKeyRecord {
   createdAt: Date | undefined;
   lastUsedAt: Date | undefined;
 }
+
+/** Stored in Firestore collection `integrations/{provider}/ids/{external_id}` */
+export interface IntegrationIdentity {
+  userId: string;
+  createdAt: Date | undefined;
+}

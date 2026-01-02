@@ -7,6 +7,7 @@
 package pb
 
 import (
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -136,9 +137,9 @@ type StandardizedActivity struct {
 	ExternalId string                 `protobuf:"bytes,2,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"` // Source's ID (e.g. Hevy workout ID)
 	UserId     string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	// High-level summary
-	StartTime string `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"` // ISO 8601 Timestamp
-	Name      string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`                            // e.g. "Morning Run"
-	Type      string `protobuf:"bytes,6,opt,name=type,proto3" json:"type,omitempty"`                            // e.g. "RUNNING", "CYCLING", "WEIGHT_TRAINING"
+	StartTime *timestamp.Timestamp `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	Name      string               `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"` // e.g. "Morning Run"
+	Type      string               `protobuf:"bytes,6,opt,name=type,proto3" json:"type,omitempty"` // e.g. "RUNNING", "CYCLING", "WEIGHT_TRAINING"
 	// Hierarchy
 	Sessions []*Session `protobuf:"bytes,7,rep,name=sessions,proto3" json:"sessions,omitempty"`
 	// Rich metadata (preserved from source)
@@ -200,11 +201,11 @@ func (x *StandardizedActivity) GetUserId() string {
 	return ""
 }
 
-func (x *StandardizedActivity) GetStartTime() string {
+func (x *StandardizedActivity) GetStartTime() *timestamp.Timestamp {
 	if x != nil {
 		return x.StartTime
 	}
-	return ""
+	return nil
 }
 
 func (x *StandardizedActivity) GetName() string {
@@ -251,7 +252,7 @@ func (x *StandardizedActivity) GetNotes() string {
 
 type Session struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	StartTime        string                 `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	StartTime        *timestamp.Timestamp   `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	TotalElapsedTime float64                `protobuf:"fixed64,2,opt,name=total_elapsed_time,json=totalElapsedTime,proto3" json:"total_elapsed_time,omitempty"` // seconds
 	TotalDistance    float64                `protobuf:"fixed64,3,opt,name=total_distance,json=totalDistance,proto3" json:"total_distance,omitempty"`            // meters
 	Laps             []*Lap                 `protobuf:"bytes,4,rep,name=laps,proto3" json:"laps,omitempty"`
@@ -291,11 +292,11 @@ func (*Session) Descriptor() ([]byte, []int) {
 	return file_standardized_activity_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *Session) GetStartTime() string {
+func (x *Session) GetStartTime() *timestamp.Timestamp {
 	if x != nil {
 		return x.StartTime
 	}
-	return ""
+	return nil
 }
 
 func (x *Session) GetTotalElapsedTime() float64 {
@@ -328,7 +329,7 @@ func (x *Session) GetStrengthSets() []*StrengthSet {
 
 type Lap struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
-	StartTime        string                 `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	StartTime        *timestamp.Timestamp   `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	TotalElapsedTime float64                `protobuf:"fixed64,2,opt,name=total_elapsed_time,json=totalElapsedTime,proto3" json:"total_elapsed_time,omitempty"` // seconds
 	TotalDistance    float64                `protobuf:"fixed64,3,opt,name=total_distance,json=totalDistance,proto3" json:"total_distance,omitempty"`            // meters
 	Records          []*Record              `protobuf:"bytes,4,rep,name=records,proto3" json:"records,omitempty"`
@@ -366,11 +367,11 @@ func (*Lap) Descriptor() ([]byte, []int) {
 	return file_standardized_activity_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Lap) GetStartTime() string {
+func (x *Lap) GetStartTime() *timestamp.Timestamp {
 	if x != nil {
 		return x.StartTime
 	}
-	return ""
+	return nil
 }
 
 func (x *Lap) GetTotalElapsedTime() float64 {
@@ -397,7 +398,7 @@ func (x *Lap) GetRecords() []*Record {
 // Record represents a single data point in time (1Hz is typical)
 type Record struct {
 	state     protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp string                 `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // ISO 8601
+	Timestamp *timestamp.Timestamp   `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
 	// Core Telemetry
 	HeartRate int32   `protobuf:"varint,2,opt,name=heart_rate,json=heartRate,proto3" json:"heart_rate,omitempty"` // bpm
 	Power     int32   `protobuf:"varint,3,opt,name=power,proto3" json:"power,omitempty"`                          // watts
@@ -441,11 +442,11 @@ func (*Record) Descriptor() ([]byte, []int) {
 	return file_standardized_activity_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *Record) GetTimestamp() string {
+func (x *Record) GetTimestamp() *timestamp.Timestamp {
 	if x != nil {
 		return x.Timestamp
 	}
-	return ""
+	return nil
 }
 
 func (x *Record) GetHeartRate() int32 {
@@ -504,7 +505,7 @@ type StrengthSet struct {
 	ExerciseName    string                 `protobuf:"bytes,1,opt,name=exercise_name,json=exerciseName,proto3" json:"exercise_name,omitempty"` // e.g. "Bench Press"
 	Reps            int32                  `protobuf:"varint,2,opt,name=reps,proto3" json:"reps,omitempty"`
 	WeightKg        float64                `protobuf:"fixed64,3,opt,name=weight_kg,json=weightKg,proto3" json:"weight_kg,omitempty"`
-	StartTime       string                 `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"` // ISO 8601
+	StartTime       *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	DurationSeconds int32                  `protobuf:"varint,5,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
 	Notes           string                 `protobuf:"bytes,6,opt,name=notes,proto3" json:"notes,omitempty"`
 	// Organization
@@ -571,11 +572,11 @@ func (x *StrengthSet) GetWeightKg() float64 {
 	return 0
 }
 
-func (x *StrengthSet) GetStartTime() string {
+func (x *StrengthSet) GetStartTime() *timestamp.Timestamp {
 	if x != nil {
 		return x.StartTime
 	}
-	return ""
+	return nil
 }
 
 func (x *StrengthSet) GetDurationSeconds() int32 {
@@ -631,36 +632,36 @@ var File_standardized_activity_proto protoreflect.FileDescriptor
 
 const file_standardized_activity_proto_rawDesc = "" +
 	"\n" +
-	"\x1bstandardized_activity.proto\x12\afitglue\"\xa9\x02\n" +
+	"\x1bstandardized_activity.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\"\xc5\x02\n" +
 	"\x14StandardizedActivity\x12\x16\n" +
 	"\x06source\x18\x01 \x01(\tR\x06source\x12\x1f\n" +
 	"\vexternal_id\x18\x02 \x01(\tR\n" +
 	"externalId\x12\x17\n" +
-	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x1d\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x129\n" +
 	"\n" +
-	"start_time\x18\x04 \x01(\tR\tstartTime\x12\x12\n" +
+	"start_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
 	"\x04type\x18\x06 \x01(\tR\x04type\x12,\n" +
 	"\bsessions\x18\a \x03(\v2\x10.fitglue.SessionR\bsessions\x12 \n" +
 	"\vdescription\x18\b \x01(\tR\vdescription\x12\x12\n" +
 	"\x04tags\x18\t \x03(\tR\x04tags\x12\x14\n" +
 	"\x05notes\x18\n" +
-	" \x01(\tR\x05notes\"\xda\x01\n" +
-	"\aSession\x12\x1d\n" +
+	" \x01(\tR\x05notes\"\xf6\x01\n" +
+	"\aSession\x129\n" +
 	"\n" +
-	"start_time\x18\x01 \x01(\tR\tstartTime\x12,\n" +
+	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +
 	"\x12total_elapsed_time\x18\x02 \x01(\x01R\x10totalElapsedTime\x12%\n" +
 	"\x0etotal_distance\x18\x03 \x01(\x01R\rtotalDistance\x12 \n" +
 	"\x04laps\x18\x04 \x03(\v2\f.fitglue.LapR\x04laps\x129\n" +
-	"\rstrength_sets\x18\x05 \x03(\v2\x14.fitglue.StrengthSetR\fstrengthSets\"\xa4\x01\n" +
-	"\x03Lap\x12\x1d\n" +
+	"\rstrength_sets\x18\x05 \x03(\v2\x14.fitglue.StrengthSetR\fstrengthSets\"\xc0\x01\n" +
+	"\x03Lap\x129\n" +
 	"\n" +
-	"start_time\x18\x01 \x01(\tR\tstartTime\x12,\n" +
+	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +
 	"\x12total_elapsed_time\x18\x02 \x01(\x01R\x10totalElapsedTime\x12%\n" +
 	"\x0etotal_distance\x18\x03 \x01(\x01R\rtotalDistance\x12)\n" +
-	"\arecords\x18\x04 \x03(\v2\x0f.fitglue.RecordR\arecords\"\xef\x01\n" +
-	"\x06Record\x12\x1c\n" +
-	"\ttimestamp\x18\x01 \x01(\tR\ttimestamp\x12\x1d\n" +
+	"\arecords\x18\x04 \x03(\v2\x0f.fitglue.RecordR\arecords\"\x8b\x02\n" +
+	"\x06Record\x128\n" +
+	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x1d\n" +
 	"\n" +
 	"heart_rate\x18\x02 \x01(\x05R\theartRate\x12\x14\n" +
 	"\x05power\x18\x03 \x01(\x05R\x05power\x12\x18\n" +
@@ -668,13 +669,13 @@ const file_standardized_activity_proto_rawDesc = "" +
 	"\x05speed\x18\x05 \x01(\x01R\x05speed\x12\x1a\n" +
 	"\baltitude\x18\x06 \x01(\x01R\baltitude\x12!\n" +
 	"\fposition_lat\x18\a \x01(\x01R\vpositionLat\x12#\n" +
-	"\rposition_long\x18\b \x01(\x01R\fpositionLong\"\xbe\x03\n" +
+	"\rposition_long\x18\b \x01(\x01R\fpositionLong\"\xda\x03\n" +
 	"\vStrengthSet\x12#\n" +
 	"\rexercise_name\x18\x01 \x01(\tR\fexerciseName\x12\x12\n" +
 	"\x04reps\x18\x02 \x01(\x05R\x04reps\x12\x1b\n" +
-	"\tweight_kg\x18\x03 \x01(\x01R\bweightKg\x12\x1d\n" +
+	"\tweight_kg\x18\x03 \x01(\x01R\bweightKg\x129\n" +
 	"\n" +
-	"start_time\x18\x04 \x01(\tR\tstartTime\x12)\n" +
+	"start_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12)\n" +
 	"\x10duration_seconds\x18\x05 \x01(\x05R\x0fdurationSeconds\x12\x14\n" +
 	"\x05notes\x18\x06 \x01(\tR\x05notes\x12\x1f\n" +
 	"\vsuperset_id\x18\a \x01(\tR\n" +
@@ -729,19 +730,25 @@ var file_standardized_activity_proto_goTypes = []any{
 	(*Lap)(nil),                  // 3: fitglue.Lap
 	(*Record)(nil),               // 4: fitglue.Record
 	(*StrengthSet)(nil),          // 5: fitglue.StrengthSet
+	(*timestamp.Timestamp)(nil),  // 6: google.protobuf.Timestamp
 }
 var file_standardized_activity_proto_depIdxs = []int32{
-	2, // 0: fitglue.StandardizedActivity.sessions:type_name -> fitglue.Session
-	3, // 1: fitglue.Session.laps:type_name -> fitglue.Lap
-	5, // 2: fitglue.Session.strength_sets:type_name -> fitglue.StrengthSet
-	4, // 3: fitglue.Lap.records:type_name -> fitglue.Record
-	0, // 4: fitglue.StrengthSet.primary_muscle_group:type_name -> fitglue.MuscleGroup
-	0, // 5: fitglue.StrengthSet.secondary_muscle_groups:type_name -> fitglue.MuscleGroup
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	6,  // 0: fitglue.StandardizedActivity.start_time:type_name -> google.protobuf.Timestamp
+	2,  // 1: fitglue.StandardizedActivity.sessions:type_name -> fitglue.Session
+	6,  // 2: fitglue.Session.start_time:type_name -> google.protobuf.Timestamp
+	3,  // 3: fitglue.Session.laps:type_name -> fitglue.Lap
+	5,  // 4: fitglue.Session.strength_sets:type_name -> fitglue.StrengthSet
+	6,  // 5: fitglue.Lap.start_time:type_name -> google.protobuf.Timestamp
+	4,  // 6: fitglue.Lap.records:type_name -> fitglue.Record
+	6,  // 7: fitglue.Record.timestamp:type_name -> google.protobuf.Timestamp
+	6,  // 8: fitglue.StrengthSet.start_time:type_name -> google.protobuf.Timestamp
+	0,  // 9: fitglue.StrengthSet.primary_muscle_group:type_name -> fitglue.MuscleGroup
+	0,  // 10: fitglue.StrengthSet.secondary_muscle_groups:type_name -> fitglue.MuscleGroup
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_standardized_activity_proto_init() }

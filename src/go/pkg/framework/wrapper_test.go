@@ -7,17 +7,18 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
+	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 // MockDB for Wrapper Test
 type MockDB struct {
-	SetExecutionFunc    func(ctx context.Context, id string, data map[string]interface{}) error
+	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
 	UpdateExecutionFunc func(ctx context.Context, id string, data map[string]interface{}) error
 }
 
-func (m *MockDB) SetExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
 	if m.SetExecutionFunc != nil {
-		return m.SetExecutionFunc(ctx, id, data)
+		return m.SetExecutionFunc(ctx, record)
 	}
 	return nil
 }
@@ -27,7 +28,7 @@ func (m *MockDB) UpdateExecution(ctx context.Context, id string, data map[string
 	}
 	return nil
 }
-func (m *MockDB) GetUser(ctx context.Context, id string) (map[string]interface{}, error) {
+func (m *MockDB) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
 	return nil, nil
 }
 func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
@@ -36,14 +37,14 @@ func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]inte
 
 func TestWrapCloudEvent(t *testing.T) {
 	mockDB := &MockDB{
-		SetExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_STARTED" {
-				t.Errorf("Expected status started, got %v", data["status"])
+		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
+			if record.Status != pb.ExecutionStatus_STATUS_STARTED {
+				t.Errorf("Expected status started, got %v", record.Status)
 			}
 			return nil
 		},
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_SUCCESS" {
+			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_SUCCESS {
 				t.Errorf("Expected status success, got %v", data["status"])
 			}
 			return nil
@@ -79,7 +80,7 @@ func TestWrapCloudEvent(t *testing.T) {
 func TestWrapCloudEvent_Failure(t *testing.T) {
 	mockDB := &MockDB{
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_FAILED" {
+			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_FAILED {
 				t.Errorf("Expected status failed, got %v", data["status"])
 			}
 			return nil

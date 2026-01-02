@@ -36,7 +36,7 @@ export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: strin
       const trackpoints = asArray(track.Trackpoint);
       trackpoints.forEach((tp: any) => {
         const record: Record = {
-          timestamp: tp.Time,
+          timestamp: new Date(tp.Time),
           // GPS
           positionLat: tp.Position?.LatitudeDegrees ? parseFloat(tp.Position.LatitudeDegrees) : 0,
           positionLong: tp.Position?.LongitudeDegrees ? parseFloat(tp.Position.LongitudeDegrees) : 0,
@@ -79,7 +79,7 @@ export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: strin
     }
 
     const lap: Lap = {
-      startTime: tcxLap['@_StartTime'],
+      startTime: new Date(tcxLap['@_StartTime']),
       totalElapsedTime: parseFloat(tcxLap.TotalTimeSeconds || '0'),
       totalDistance: parseFloat(tcxLap.DistanceMeters || '0'),
       records: records
@@ -96,7 +96,7 @@ export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: strin
 
   // Create Session (Fitbit activities usually are single session)
   const session: Session = {
-    startTime: tcxId,
+    startTime: new Date(tcxId),
     totalElapsedTime: durationSeconds,
     totalDistance: totalDistanceToCheck,
     laps: generatedLaps,
@@ -108,7 +108,7 @@ export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: strin
     source: 'FITBIT',
     externalId: logData?.logId?.toString() || tcxId,
     userId: userId,
-    startTime: tcxId, // TCX Id is usually ISO timestamp
+    startTime: new Date(tcxId), // TCX Id is usually ISO timestamp
     name: logData?.activityName || `Fitbit ${sport} Activity`,
     type: sport.toUpperCase(), // e.g. BIKING, RUNNING
     description: logData?.description || '',

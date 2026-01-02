@@ -4,8 +4,10 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestVirtualGPS_GeneratesDescription(t *testing.T) {
@@ -19,7 +21,7 @@ func TestVirtualGPS_GeneratesDescription(t *testing.T) {
 				Laps: []*pb.Lap{
 					{
 						Records: []*pb.Record{
-							{Timestamp: ""},
+							{Timestamp: timestamppb.New(time.Now())},
 						},
 					},
 				},

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestFitBitHeartRate_Enrich(t *testing.T) {
@@ -42,7 +43,7 @@ func TestFitBitHeartRate_Enrich(t *testing.T) {
 	// Create test activity
 	startTime := time.Date(2025, 12, 25, 10, 0, 0, 0, time.UTC)
 	activity := &pb.StandardizedActivity{
-		StartTime: startTime.Format(time.RFC3339),
+		StartTime: timestamppb.New(startTime),
 		Sessions: []*pb.Session{
 			{TotalElapsedTime: 3600}, // 1 hour
 		},
@@ -103,7 +104,7 @@ func TestFitBitHeartRate_Enrich_IntegrationDisabled(t *testing.T) {
 	provider.Service = &bootstrap.Service{}
 
 	activity := &pb.StandardizedActivity{
-		StartTime: time.Now().Format(time.RFC3339),
+		StartTime: timestamppb.New(time.Now()),
 	}
 
 	user := &pb.UserRecord{
@@ -137,7 +138,7 @@ func TestFitBitHeartRate_Enrich_APIError(t *testing.T) {
 	provider.Service = &bootstrap.Service{}
 
 	activity := &pb.StandardizedActivity{
-		StartTime: time.Now().Format(time.RFC3339),
+		StartTime: timestamppb.New(time.Now()),
 		Sessions:  []*pb.Session{{TotalElapsedTime: 3600}},
 	}
 
@@ -194,7 +195,7 @@ func TestFitBitHeartRate_Enrich_LagDetected(t *testing.T) {
 	startTime := endTime.Add(-1 * time.Hour)
 
 	activity := &pb.StandardizedActivity{
-		StartTime: startTime.Format(time.RFC3339),
+		StartTime: timestamppb.New(startTime),
 		Sessions:  []*pb.Session{{TotalElapsedTime: 3600}},
 	}
 
@@ -239,7 +240,7 @@ func TestFitBitHeartRate_Enrich_LagExpired(t *testing.T) {
 	startTime := endTime.Add(-1 * time.Hour)
 
 	activity := &pb.StandardizedActivity{
-		StartTime: startTime.Format(time.RFC3339),
+		StartTime: timestamppb.New(startTime),
 		Sessions:  []*pb.Session{{TotalElapsedTime: 3600}},
 	}
 
@@ -288,7 +289,7 @@ func TestFitBitHeartRate_Enrich_LagExhausted(t *testing.T) {
 	startTime := endTime.Add(-1 * time.Hour)
 
 	activity := &pb.StandardizedActivity{
-		StartTime: startTime.Format(time.RFC3339),
+		StartTime: timestamppb.New(startTime),
 		Sessions:  []*pb.Session{{TotalElapsedTime: 3600}},
 	}
 

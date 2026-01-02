@@ -131,3 +131,11 @@ export interface StravaIntegration {
   expiresAt: Date | undefined;
   athleteId: number;
 }
+
+export interface ProcessedActivityRecord {
+  /** e.g. "hevy", "fitbit" */
+  source: string;
+  /** Unique ID from provider */
+  externalId: string;
+  processedAt: Date | undefined;
+}

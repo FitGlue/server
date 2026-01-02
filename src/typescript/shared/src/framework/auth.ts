@@ -1,7 +1,7 @@
 import * as crypto from 'crypto';
 import * as admin from 'firebase-admin';
 import { FrameworkContext } from './index';
-import { ApiKeyRecord } from '../types/pb/auth';
+
 
 export interface AuthResult {
     userId: string;
@@ -49,20 +49,20 @@ export class ApiKeyStrategy implements AuthStrategy {
         // High-entropy token (32 bytes), SHA-256 for fast O(1) lookup
         const hash = crypto.createHash('sha256').update(token).digest('hex');
 
-        const docSnapshot = await ctx.db.collection('ingress_api_keys').doc(hash).get();
+        const { getIngressApiKeysCollection } = await import('../storage/firestore');
+        const docSnapshot = await getIngressApiKeysCollection().doc(hash).get();
 
         if (!docSnapshot.exists) {
             ctx.logger.warn(`Auth failed: API Key hash not found`, { hashPrefix: hash.substring(0, 8) });
             return null;
         }
 
-        const record = docSnapshot.data() as ApiKeyRecord;
+        const record = docSnapshot.data()!; // Typed result
 
-        // Update lastUsed (fire-and-forget to avoid latency)
-        // using set/merge because protobuf types might not map 1:1 to firestore update paths easily
-        ctx.db.collection('ingress_api_keys').doc(hash).set({
-            lastUsedAt: admin.firestore.Timestamp.now()
-        }, { merge: true }).catch(err => ctx.logger.error('Failed to update lastUsed', { error: err }));
+        // Update lastUsed (fire-and-forget)
+        getIngressApiKeysCollection().doc(hash).withConverter(null).update({
+            last_used_at: admin.firestore.Timestamp.now()
+        }).catch(err => ctx.logger.error('Failed to update lastUsed', { error: err }));
 
         return {
             userId: record.userId,

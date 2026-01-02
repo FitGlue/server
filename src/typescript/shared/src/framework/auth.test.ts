@@ -5,12 +5,23 @@ import { FrameworkContext } from './index';
 // Mock dependencies
 const mockGet = jest.fn();
 const mockSet = jest.fn().mockResolvedValue({});
+const mockUpdate = jest.fn().mockResolvedValue({});
 const mockDoc = jest.fn((_) => ({
   get: mockGet,
-  set: mockSet
+  set: mockSet,
+  withConverter: jest.fn(() => ({
+    update: mockUpdate
+  }))
 }));
 const mockCollection = jest.fn((_) => ({
   doc: mockDoc
+}));
+
+// Mock Firestore Storage Module directly
+jest.mock('../storage/firestore', () => ({
+  getIngressApiKeysCollection: jest.fn(() => ({
+    doc: mockDoc // Returns mockDoc directly which has get/set
+  }))
 }));
 
 const mockDb = {
@@ -57,7 +68,6 @@ describe('ApiKeyStrategy', () => {
     const result = await strategy.authenticate(req, mockCtx);
 
     expect(result).toEqual({ userId: 'user1', scopes: ['read'] });
-    expect(mockCollection).toHaveBeenCalledWith('ingress_api_keys');
     expect(mockDoc).toHaveBeenCalledWith(testHash);
   });
 

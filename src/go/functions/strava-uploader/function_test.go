@@ -92,12 +92,12 @@ func TestUploadToStrava(t *testing.T) {
 	}
 
 	mockDB := &mocks.MockDatabase{
-		SetExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
 			return nil
 		},
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
 			// Verify rich output structure
-			if outputsJSON, ok := data["outputs"].(string); ok {
+			if outputsJSON, ok := data["outputs_json"].(string); ok {
 				var outputs map[string]interface{}
 				if err := json.Unmarshal([]byte(outputsJSON), &outputs); err != nil {
 					t.Errorf("Failed to unmarshal outputs: %v", err)

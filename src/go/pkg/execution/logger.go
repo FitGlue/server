@@ -12,7 +12,7 @@ import (
 
 // Database interface for Firestore operations
 type Database interface {
-	SetExecution(ctx context.Context, id string, data map[string]interface{}) error
+	SetExecution(ctx context.Context, record *pb.ExecutionRecord) error
 	UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error
 }
 
@@ -49,10 +49,7 @@ func LogStart(ctx context.Context, db Database, service string, opts ExecutionOp
 		}
 	}
 
-	// Convert to map for Firestore
-	data := executionRecordToMap(record)
-
-	if err := db.SetExecution(ctx, execID, data); err != nil {
+	if err := db.SetExecution(ctx, record); err != nil {
 		return execID, fmt.Errorf("failed to log execution start: %w", err)
 	}
 
@@ -85,10 +82,7 @@ func LogChildExecutionStart(ctx context.Context, db Database, service string, pa
 		}
 	}
 
-	// Convert to map for Firestore
-	data := executionRecordToMap(record)
-
-	if err := db.SetExecution(ctx, execID, data); err != nil {
+	if err := db.SetExecution(ctx, record); err != nil {
 		return execID, fmt.Errorf("failed to log child execution start: %w", err)
 	}
 
@@ -99,17 +93,18 @@ func LogChildExecutionStart(ctx context.Context, db Database, service string, pa
 func LogSuccess(ctx context.Context, db Database, execID string, outputs interface{}) error {
 	now := timestamppb.Now()
 
+	// Update using snake_case keys manually as we use map[string]interface{}
 	updates := map[string]interface{}{
-		"status":    pb.ExecutionStatus_STATUS_SUCCESS.String(),
+		"status":    int32(pb.ExecutionStatus_STATUS_SUCCESS),
 		"timestamp": now.AsTime(),
-		"endTime":   now.AsTime(),
+		"end_time":  now.AsTime(),
 	}
 
 	// Encode outputs as JSON if provided
 	if outputs != nil {
 		outputsJSON, err := json.Marshal(outputs)
 		if err == nil {
-			updates["outputsJson"] = string(outputsJSON)
+			updates["outputs_json"] = string(outputsJSON)
 		}
 	}
 
@@ -125,17 +120,17 @@ func LogFailure(ctx context.Context, db Database, execID string, err error, outp
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
-		"status":       pb.ExecutionStatus_STATUS_FAILED.String(),
-		"timestamp":    now.AsTime(),
-		"endTime":      now.AsTime(),
-		"errorMessage": err.Error(),
+		"status":        int32(pb.ExecutionStatus_STATUS_FAILED),
+		"timestamp":     now.AsTime(),
+		"end_time":      now.AsTime(),
+		"error_message": err.Error(),
 	}
 
 	// Encode outputs as JSON if provided
 	if outputs != nil {
 		outputsJSON, err := json.Marshal(outputs)
 		if err == nil {
-			updates["outputsJson"] = string(outputsJSON)
+			updates["outputs_json"] = string(outputsJSON)
 		}
 	}
 
@@ -147,56 +142,26 @@ func LogFailure(ctx context.Context, db Database, execID string, err error, outp
 }
 
 // LogExecutionStatus updates an execution record with a custom status
-func LogExecutionStatus(ctx context.Context, db Database, execID string, status string, outputs interface{}) error {
+func LogExecutionStatus(ctx context.Context, db Database, execID string, status pb.ExecutionStatus, outputs interface{}) error {
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
-		"status":    status,
+		"status":    int32(status),
 		"timestamp": now.AsTime(),
-		"endTime":   now.AsTime(),
+		"end_time":  now.AsTime(),
 	}
 
 	// Encode outputs as JSON if provided
 	if outputs != nil {
 		outputsJSON, err := json.Marshal(outputs)
 		if err == nil {
-			updates["outputsJson"] = string(outputsJSON)
+			updates["outputs_json"] = string(outputsJSON)
 		}
 	}
 
 	if err := db.UpdateExecution(ctx, execID, updates); err != nil {
-		return fmt.Errorf("failed to log execution status %s: %w", status, err)
+		return fmt.Errorf("failed to log execution status %v: %w", status, err)
 	}
 
 	return nil
-}
-
-// executionRecordToMap converts a protobuf ExecutionRecord to a Firestore-compatible map
-func executionRecordToMap(record *pb.ExecutionRecord) map[string]interface{} {
-	data := map[string]interface{}{
-		"service":   record.Service,
-		"status":    record.Status.String(),
-		"timestamp": record.Timestamp.AsTime(),
-	}
-
-	if record.UserId != "" {
-		data["user_id"] = record.UserId
-	}
-	if record.TestRunId != "" {
-		data["test_run_id"] = record.TestRunId
-	}
-	if record.TriggerType != "" {
-		data["trigger_type"] = record.TriggerType
-	}
-	if record.StartTime != nil {
-		data["startTime"] = record.StartTime.AsTime()
-	}
-	if record.InputsJson != "" {
-		data["inputs"] = record.InputsJson
-	}
-	if record.ParentExecutionId != "" {
-		data["parent_execution_id"] = record.ParentExecutionId
-	}
-
-	return data
 }

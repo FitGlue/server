@@ -23,8 +23,9 @@ export interface ActivityPayload {
   source: ActivitySource;
   /** Internal FitGlue User ID */
   userId: string;
-  /** ISO 8601 Timestamp of activity start */
-  timestamp: string;
+  timestamp:
+    | Date
+    | undefined;
   /** Raw JSON payload stringified (flexible but preserved) */
   originalPayloadJson: string;
   /** Extra tracing context */

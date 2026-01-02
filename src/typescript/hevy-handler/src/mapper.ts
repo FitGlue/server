@@ -44,7 +44,7 @@ export function mapHevyWorkoutToStandardized(
         reps: s.reps || 0,
         weightKg: s.weight_kg || 0,
         distanceMeters: s.distance_meters || 0,
-        startTime: startTimeStr,
+        startTime: startTime, // Use Date object
         durationSeconds: s.duration_seconds || 0,
         notes: ex.notes || '',
         supersetId: supersetId,
@@ -59,7 +59,7 @@ export function mapHevyWorkoutToStandardized(
   const totalDistance = strengthSets.reduce((sum, set) => sum + (set.distanceMeters || 0), 0);
 
   const session: Session = {
-    startTime: startTimeStr,
+    startTime: startTime, // Use Date object
     totalElapsedTime: durationSeconds,
     totalDistance: totalDistance,
     laps: [],
@@ -70,7 +70,7 @@ export function mapHevyWorkoutToStandardized(
     source: 'HEVY',
     externalId: workout.id || 'unknown',
     userId: userId,
-    startTime: startTimeStr,
+    startTime: startTime, // Use Date object
     name: workout.title || 'Hevy Workout',
     type: 'WEIGHT_TRAINING',
     description: workout.description || '',

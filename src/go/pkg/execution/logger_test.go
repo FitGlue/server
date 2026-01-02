@@ -6,16 +6,17 @@ import (
 	"testing"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
+	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 type MockDB struct {
-	SetExecutionFunc    func(ctx context.Context, id string, data map[string]interface{}) error
+	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
 	UpdateExecutionFunc func(ctx context.Context, id string, data map[string]interface{}) error
 }
 
-func (m *MockDB) SetExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
 	if m.SetExecutionFunc != nil {
-		return m.SetExecutionFunc(ctx, id, data)
+		return m.SetExecutionFunc(ctx, record)
 	}
 	return nil
 }
@@ -26,17 +27,25 @@ func (m *MockDB) UpdateExecution(ctx context.Context, id string, data map[string
 	return nil
 }
 
+func (m *MockDB) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
+	return nil, nil // Not used in this test
+}
+
+func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
+	return nil
+}
+
 func TestLogStart(t *testing.T) {
 	mockDB := &MockDB{
-		SetExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_STARTED" {
-				t.Errorf("Expected STATUS_STARTED, got %v", data["status"])
+		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
+			if record.Status != pb.ExecutionStatus_STATUS_STARTED {
+				t.Errorf("Expected STATUS_STARTED, got %v", record.Status)
 			}
-			if data["service"] != "test-service" {
-				t.Errorf("Expected test-service, got %v", data["service"])
+			if record.Service != "test-service" {
+				t.Errorf("Expected test-service, got %v", record.Service)
 			}
-			if data["user_id"] != "user-1" {
-				t.Errorf("Expected user-1, got %v", data["user_id"])
+			if record.UserId != "user-1" {
+				t.Errorf("Expected user-1, got %v", record.UserId)
 			}
 			return nil
 		},
@@ -58,7 +67,7 @@ func TestLogStart(t *testing.T) {
 func TestLogSuccess(t *testing.T) {
 	mockDB := &MockDB{
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_SUCCESS" {
+			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_SUCCESS {
 				t.Errorf("Expected STATUS_SUCCESS, got %v", data["status"])
 			}
 			return nil
@@ -74,11 +83,11 @@ func TestLogSuccess(t *testing.T) {
 func TestLogFailure(t *testing.T) {
 	mockDB := &MockDB{
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_FAILED" {
+			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_FAILED {
 				t.Errorf("Expected STATUS_FAILED, got %v", data["status"])
 			}
-			if data["errorMessage"] != "oops" {
-				t.Errorf("Expected oops, got %v", data["errorMessage"])
+			if data["error_message"] != "oops" {
+				t.Errorf("Expected oops, got %v", data["error_message"])
 			}
 			return nil
 		},
@@ -93,14 +102,14 @@ func TestLogFailure(t *testing.T) {
 func TestLogFailureWithOutputs(t *testing.T) {
 	mockDB := &MockDB{
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_FAILED" {
+			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_FAILED {
 				t.Errorf("Expected STATUS_FAILED, got %v", data["status"])
 			}
-			if data["errorMessage"] != "oops" {
-				t.Errorf("Expected oops, got %v", data["errorMessage"])
+			if data["error_message"] != "oops" {
+				t.Errorf("Expected oops, got %v", data["error_message"])
 			}
-			if data["outputsJson"] != `{"foo":"bar"}` {
-				t.Errorf("Expected outputsJson to be '{\"foo\":\"bar\"}', got %v", data["outputsJson"])
+			if data["outputs_json"] != `{"foo":"bar"}` {
+				t.Errorf("Expected outputs_json to be '{\"foo\":\"bar\"}', got %v", data["outputs_json"])
 			}
 			return nil
 		},
@@ -115,18 +124,18 @@ func TestLogFailureWithOutputs(t *testing.T) {
 
 func TestLogChildExecutionStart(t *testing.T) {
 	mockDB := &MockDB{
-		SetExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if data["status"] != "STATUS_STARTED" {
-				t.Errorf("Expected STATUS_STARTED, got %v", data["status"])
+		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
+			if record.Status != pb.ExecutionStatus_STATUS_STARTED {
+				t.Errorf("Expected STATUS_STARTED, got %v", record.Status)
 			}
-			if data["service"] != "child-service" {
-				t.Errorf("Expected child-service, got %v", data["service"])
+			if record.Service != "child-service" {
+				t.Errorf("Expected child-service, got %v", record.Service)
 			}
-			if data["parent_execution_id"] != "parent-exec-123" {
-				t.Errorf("Expected parent_execution_id parent-exec-123, got %v", data["parent_execution_id"])
+			if record.ParentExecutionId != "parent-exec-123" {
+				t.Errorf("Expected parent_execution_id parent-exec-123, got %v", record.ParentExecutionId)
 			}
-			if data["user_id"] != "user-1" {
-				t.Errorf("Expected user-1, got %v", data["user_id"])
+			if record.UserId != "user-1" {
+				t.Errorf("Expected user-1, got %v", record.UserId)
 			}
 			return nil
 		},

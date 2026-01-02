@@ -121,7 +121,6 @@ describe('stravaOAuthHandler', () => {
     expect(mockGetSecret).toHaveBeenCalledWith('fitglue-server-dev', 'strava-client-id');
     expect(mockGetSecret).toHaveBeenCalledWith('fitglue-server-dev', 'strava-client-secret');
     expect(mockStoreOAuthTokens).toHaveBeenCalledWith(
-      ctx.db,
       'user-123',
       'strava',
       expect.objectContaining({

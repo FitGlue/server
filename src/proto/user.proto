@@ -104,3 +104,8 @@ message StravaIntegration {
     int64 athlete_id = 5;
 }
 
+message ProcessedActivityRecord {
+  string source = 1;      // e.g. "hevy", "fitbit"
+  string external_id = 2; // Unique ID from provider
+  google.protobuf.Timestamp processed_at = 3;
+}

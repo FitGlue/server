@@ -11,6 +11,7 @@ import (
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
 	"github.com/ripixel/fitglue-server/src/go/pkg/types"
+	"github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 // FrameworkContext contains dependencies injected by the framework
@@ -108,7 +109,30 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 		}
 
 		if customStatus != "" {
-			if logErr := execution.LogExecutionStatus(ctx, svc.DB, execID, customStatus, outputs); logErr != nil {
+			// Map string status to Enum
+			// Enum names are typically STATUS_STARTED, STATUS_SUCCESS etc.
+			// Users might return "success" or "STATUS_SUCCESS". I should handle both loosely?
+			// pb.ExecutionStatus_value map keys are "STATUS_UNKNOWN", "STATUS_STARTED", ...
+			// If user returns "SUCCESS", I might map to "STATUS_SUCCESS"?
+			// For now, strict uppercase match against known keys.
+
+			// Try direct lookup
+			var statusEnum pb.ExecutionStatus
+			if val, ok := pb.ExecutionStatus_value[customStatus]; ok {
+				statusEnum = pb.ExecutionStatus(val)
+			} else if val, ok := pb.ExecutionStatus_value["STATUS_"+strings.ToUpper(customStatus)]; ok {
+				statusEnum = pb.ExecutionStatus(val)
+			} else {
+				// Fallback or Unknown
+				// If unknown, maybe we shouldn't use LogExecutionStatus but LogSuccess with output status field?
+				// But we are here because customStatus != "".
+				// Let's default to SUCCESS but log warning?
+				// Or use STATUS_UNKNOWN?
+				statusEnum = pb.ExecutionStatus_STATUS_UNKNOWN
+				logger.Warn("Unknown custom status returned", "status", customStatus)
+			}
+
+			if logErr := execution.LogExecutionStatus(ctx, svc.DB, execID, statusEnum, outputs); logErr != nil {
 				logger.Warn("Failed to log execution status", "error", logErr)
 			}
 		} else {

@@ -6,7 +6,7 @@ const TOPIC_NAME = TOPICS.RAW_ACTIVITY;
 
 const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     const { db, logger, userId } = ctx;
-    const timestamp = new Date().toISOString();
+    const timestamp = new Date();
 
     // 1. Verify Authentication (Already handled by Middleware, but safe guard)
     if (!userId) {
@@ -34,7 +34,8 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     }
 
     // 3. User Resolution (Egress Config Lookup)
-    const userDoc = await db.collection('users').doc(userId).get();
+    const { storage } = await import('@fitglue/shared');
+    const userDoc = await storage.getUsersCollection().doc(userId).get();
     if (!userDoc.exists) {
         logger.error(`Authenticated user ${userId} not found in users collection`);
         res.status(500).send('User configuration error');
@@ -43,7 +44,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
 
     const userData = userDoc.data();
     // 4. Retrieve Hevy API Key for Active Fetch
-    const hevyApiKey = userData?.integrations?.hevy?.apiKey || userData?.integrations?.hevy?.['api_key'];
+    const hevyApiKey = userData?.integrations?.hevy?.apiKey;
 
     if (!hevyApiKey) {
         logger.error(`User ${userId} missing integrations.hevy.apiKey`);
@@ -53,6 +54,20 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
 
     // --- DEDUPLICATION CHECK ---
     const userService = new UserService(db);
+    // Note: UserService uses raw DB access internally. We should update UserService first OR keep it separate.
+    // Ideally UserService should be refactored to use storage eventually, but for now let's focus on direct usage.
+    // However, here we are checking for processed activity.
+    // The implementation plan says "Use getUsersCollection(), getRawActivitiesCollection()".
+    // AND "UserService" is being used.
+    // I should check if UserService ALREADY does what getRawActivitiesCollection does.
+    // Yes: check `UserService.hasProcessedActivity`.
+    // I should probably REFACTOR UserService to use getRawActivitiesCollection internally!
+    // But since I am editing hevy-handler now:
+
+    // I will replace direct DB access, but UserService is a wrapper.
+    // I will update UserService separately.
+    // Here, I only replaced the direct `db.collection('users').doc(userId).get()`.
+
     const isProcessed = await userService.hasProcessedActivity(userId, 'hevy', workoutId);
     if (isProcessed) {
         logger.info(`Workout ${workoutId} already processed for user ${userId}, skipping`);

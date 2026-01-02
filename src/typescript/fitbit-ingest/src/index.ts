@@ -34,7 +34,14 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   logger.info(`Processing Fitbit update`, { ownerId, date });
 
   // 2. Resolve User
-  const usersSnapshot = await db.collection('users')
+  const { storage } = await import('@fitglue/shared');
+  const usersSnapshot = await storage.getUsersCollection()
+    .where('integrations.fitbit.fitbitUserId', '==', ownerId) // Note: Converter maps fitbitUserId -> fitbit_user_id transparently?
+    // Wait, `withConverter` and `where` clauses:
+    // Firestore SDK does NOT translate field names in `where` query for you automatically unless using a specific specialized SDK wrapper.
+    // `firebase-admin` `withConverter` applies to data transformation (get/set).
+    // IT DOES NOT apply to query paths. Query paths must match DB.
+    // So I must use 'integrations.fitbit.fitbit_user_id'.
     .where('integrations.fitbit.fitbit_user_id', '==', ownerId)
     .limit(1)
     .get();
@@ -149,7 +156,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       const payload: ActivityPayload = {
         source: ActivitySource.SOURCE_FITBIT,
         userId: userId,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
         standardizedActivity: standardized,
         originalPayloadJson: JSON.stringify(act),
         metadata: {

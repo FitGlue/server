@@ -3,8 +3,10 @@ package parkrun
 import (
 	"context"
 	"testing"
+	"time"
 
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestParkrunProvider_Enrich(t *testing.T) {
@@ -12,9 +14,10 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 
 	// Helper to create activity with location
 	createActivity := func(timeStr string, lat, long float64) *pb.StandardizedActivity {
+		tParsed, _ := time.Parse(time.RFC3339, timeStr)
 		return &pb.StandardizedActivity{
 			Type:      "Run",
-			StartTime: timeStr,
+			StartTime: timestamppb.New(tParsed),
 			Sessions: []*pb.Session{
 				{
 					Laps: []*pb.Lap{

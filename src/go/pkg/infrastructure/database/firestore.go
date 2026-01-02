@@ -4,38 +4,42 @@ import (
 	"context"
 
 	"cloud.google.com/go/firestore"
+	storage "github.com/ripixel/fitglue-server/src/go/pkg/storage/firestore"
+	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 // FirestoreAdapter provides database operations using Firestore
+// It wraps our typed storage client
 type FirestoreAdapter struct {
-	Client *firestore.Client
+	Client  *firestore.Client
+	storage *storage.Client // internal typed wrapper
 }
 
-func (a *FirestoreAdapter) SetExecution(ctx context.Context, id string, data map[string]interface{}) error {
-	var ref *firestore.DocumentRef
-	if id == "" {
-		ref = a.Client.Collection("executions").NewDoc()
-	} else {
-		ref = a.Client.Collection("executions").Doc(id)
+func NewFirestoreAdapter(client *firestore.Client) *FirestoreAdapter {
+	return &FirestoreAdapter{
+		Client:  client, // Keep raw client accessible if needed? OR remove it if unused.
+		storage: storage.NewClient(client),
 	}
-	_, err := ref.Set(ctx, data, firestore.MergeAll)
-	return err
+}
+
+func (a *FirestoreAdapter) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
+	// Use typed storage
+	return a.storage.Executions().Doc(record.ExecutionId).Set(ctx, record)
 }
 
 func (a *FirestoreAdapter) UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error {
-	_, err := a.Client.Collection("executions").Doc(id).Set(ctx, data, firestore.MergeAll)
-	return err
+	// Use untyped update on connection
+	return a.storage.Executions().Doc(id).Update(ctx, data)
 }
 
-func (a *FirestoreAdapter) GetUser(ctx context.Context, id string) (map[string]interface{}, error) {
-	snap, err := a.Client.Collection("users").Doc(id).Get(ctx)
+func (a *FirestoreAdapter) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
+	doc, err := a.storage.Users().Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return snap.Data(), nil
+	return doc, nil
 }
 
 func (a *FirestoreAdapter) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
-	_, err := a.Client.Collection("users").Doc(id).Set(ctx, data, firestore.MergeAll)
-	return err
+	return a.storage.Users().Doc(id).Update(ctx, data)
 }

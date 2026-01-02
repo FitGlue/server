@@ -62,7 +62,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     const { access_token, refresh_token, expires_at, athlete } = tokenData;
 
     // Store tokens in Firestore
-    await storeOAuthTokens(db, userId, 'strava', {
+    await storeOAuthTokens(userId, 'strava', {
       accessToken: access_token,
       refreshToken: refresh_token,
       expiresAt: new Date(expires_at * 1000),

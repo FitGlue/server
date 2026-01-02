@@ -54,17 +54,26 @@ func (s *FirestoreTokenSource) ForceRefresh(ctx context.Context) (*Token, error)
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	integrations, ok := userData["integrations"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid integrations format")
+	if userData.Integrations == nil {
+		return nil, fmt.Errorf("user has no integrations linked")
 	}
 
-	providerData, ok := integrations[s.provider].(map[string]interface{})
-	if !ok || providerData == nil {
-		return nil, fmt.Errorf("provider %s not linked", s.provider)
+	var refreshToken string
+	switch s.provider {
+	case "strava":
+		if userData.Integrations.Strava == nil || !userData.Integrations.Strava.Enabled {
+			return nil, fmt.Errorf("strava not linked/enabled")
+		}
+		refreshToken = userData.Integrations.Strava.RefreshToken
+	case "fitbit":
+		if userData.Integrations.Fitbit == nil || !userData.Integrations.Fitbit.Enabled {
+			return nil, fmt.Errorf("fitbit not linked/enabled")
+		}
+		refreshToken = userData.Integrations.Fitbit.RefreshToken
+	default:
+		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
 
-	refreshToken, _ := providerData["refresh_token"].(string)
 	if refreshToken == "" {
 		return nil, fmt.Errorf("missing refresh token for %s", s.provider)
 	}
@@ -83,25 +92,34 @@ func (s *FirestoreTokenSource) Token(ctx context.Context) (*Token, error) {
 		return nil, fmt.Errorf("failed to get user: %w", err)
 	}
 
-	integrations, ok := userData["integrations"].(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("invalid integrations format")
+	if userData.Integrations == nil {
+		return nil, fmt.Errorf("user has no integrations linked")
 	}
 
-	providerData, ok := integrations[s.provider].(map[string]interface{})
-	if !ok || providerData == nil {
-		return nil, fmt.Errorf("provider %s not linked", s.provider)
-	}
-
-	accessToken, _ := providerData["access_token"].(string)
-	refreshToken, _ := providerData["refresh_token"].(string)
-
-	// Handle expiry
+	var accessToken, refreshToken string
 	var expiry time.Time
-	if t, ok := providerData["expires_at"].(time.Time); ok {
-		expiry = t
-	} else if tStr, ok := providerData["expires_at"].(string); ok {
-		expiry, _ = time.Parse(time.RFC3339, tStr)
+
+	switch s.provider {
+	case "strava":
+		if userData.Integrations.Strava == nil || !userData.Integrations.Strava.Enabled {
+			return nil, fmt.Errorf("strava not linked/enabled")
+		}
+		accessToken = userData.Integrations.Strava.AccessToken
+		refreshToken = userData.Integrations.Strava.RefreshToken
+		if userData.Integrations.Strava.ExpiresAt != nil {
+			expiry = userData.Integrations.Strava.ExpiresAt.AsTime()
+		}
+	case "fitbit":
+		if userData.Integrations.Fitbit == nil || !userData.Integrations.Fitbit.Enabled {
+			return nil, fmt.Errorf("fitbit not linked/enabled")
+		}
+		accessToken = userData.Integrations.Fitbit.AccessToken
+		refreshToken = userData.Integrations.Fitbit.RefreshToken
+		if userData.Integrations.Fitbit.ExpiresAt != nil {
+			expiry = userData.Integrations.Fitbit.ExpiresAt.AsTime()
+		}
+	default:
+		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
 
 	if accessToken == "" || refreshToken == "" {
@@ -110,7 +128,7 @@ func (s *FirestoreTokenSource) Token(ctx context.Context) (*Token, error) {
 
 	// 2. Check Expiry (Proactive Refresh)
 	// Refresh if expired or expiring in the next minute
-	if time.Now().Add(1 * time.Minute).After(expiry) {
+	if !expiry.IsZero() && time.Now().Add(1*time.Minute).After(expiry) {
 		return s.refreshToken(ctx, refreshToken)
 	}
 
@@ -185,15 +203,13 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 		newExpiry = time.Unix(result.ExpiresAt, 0)
 	}
 
-	// Update Firestore with properly nested structure
+	// Update Firestore using UpdateUser logic which expects map (for now)
+	// We need snake_case keys for the map update since database.UpdateUser is map-based.
+	// We construct a specific nested update manually.
 	updateData := map[string]interface{}{
-		"integrations": map[string]interface{}{
-			s.provider: map[string]interface{}{
-				"access_token":  result.AccessToken,
-				"refresh_token": result.RefreshToken,
-				"expires_at":    newExpiry,
-			},
-		},
+		"integrations." + s.provider + ".access_token":  result.AccessToken,
+		"integrations." + s.provider + ".refresh_token": result.RefreshToken,
+		"integrations." + s.provider + ".expires_at":    newExpiry,
 	}
 
 	if err := s.db.DB.UpdateUser(ctx, s.userID, updateData); err != nil {

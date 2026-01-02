@@ -6,8 +6,6 @@ if (!admin.apps.length) {
   admin.initializeApp();
 }
 
-const db = admin.firestore();
-
 export const waitlistHandler = async (req: functions.Request, res: functions.Response) => {
   // CORS Headers
   // Allow all origins for the waitlist (public)
@@ -50,10 +48,12 @@ export const waitlistHandler = async (req: functions.Request, res: functions.Res
     // --- Persistence ---
     // Use email as document ID to ensure uniqueness and simple lookups.
     // .create() will fail if the document already exists.
-    await db.collection('waitlist').doc(normalizedEmail).create({
+    const { storage } = await import('@fitglue/shared');
+
+    await storage.getWaitlistCollection().doc(normalizedEmail).create({
       email: normalizedEmail,
       source: 'web',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdAt: admin.firestore.Timestamp.now().toDate(), // Converter expects Date
       userAgent: req.get('User-Agent') || 'unknown',
       ip: req.ip || 'unknown'
     });

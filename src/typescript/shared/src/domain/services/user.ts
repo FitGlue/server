@@ -1,116 +1,38 @@
 import * as admin from 'firebase-admin';
 import * as crypto from 'crypto';
 import { UserRecord } from '../../types/pb/user';
-
+import { getUsersCollection, getIngressApiKeysCollection } from '../../storage/firestore';
 import { Timestamp } from 'firebase-admin/firestore';
 
 export class UserService {
+    // We expect the consumer to have initialized the app (e.g. via framework) or we use lazy loading via `storage`.
+    // The explicit constructor with `db` is legacy but we should keep signature if possible or deprecate.
     constructor(private db: admin.firestore.Firestore) { }
 
     async createUser(userId: string): Promise<UserRecord> {
-        const userRef = this.db.collection('users').doc(userId);
+        const userRef = getUsersCollection().doc(userId);
         const doc = await userRef.get();
         if (doc.exists) {
-            return this.mapFirestoreToUserRecord(doc.data());
+            return doc.data()!;
         }
 
-        const now = Timestamp.now();
-        // Construct using snake_case for DB
-        const userStub: any = {
-            user_id: userId,
-            created_at: now,
-            integrations: {}
-        };
-
-        await userRef.set(userStub);
-        return this.mapFirestoreToUserRecord(userStub);
-    }
-
-    async getUser(userId: string): Promise<UserRecord | null> {
-        const doc = await this.db.collection('users').doc(userId).get();
-        if (!doc.exists) return null;
-        return this.mapFirestoreToUserRecord(doc.data());
-    }
-
-    /**
-     * Maps Firestore snake_case data to UserRecord camelCase interface.
-     * Prevents invisible fields issue by acting as strictly typed boundary.
-     */
-    private mapFirestoreToUserRecord(data: any): UserRecord {
-        if (!data) throw new Error('Cannot map null data');
-
-        // Helper to convert Timestamp/string to Date
-        const toDate = (ts: any): Date | undefined => {
-            if (!ts) return undefined;
-            if (ts instanceof Timestamp) return ts.toDate();
-            if (ts.seconds) return new Date(ts.seconds * 1000);
-            if (typeof ts === 'string') return new Date(ts);
-            return undefined;
-        };
-
-        const result: UserRecord = {
-            userId: data.user_id || data.userId, // Fallback for transition
-            createdAt: toDate(data.created_at || data.createdAt),
+        const now = new Date();
+        // Typed creation
+        const userStub: UserRecord = {
+            userId: userId,
+            createdAt: now,
             integrations: undefined,
             pipelines: []
         };
 
-        // INTEGRATIONS
-        if (data.integrations) {
-            result.integrations = {
-                hevy: undefined,
-                fitbit: undefined,
-                strava: undefined
-            };
+        await userRef.set(userStub);
+        return userStub;
+    }
 
-            const i = data.integrations;
-
-            // Hevy
-            if (i.hevy) {
-                result.integrations.hevy = {
-                    enabled: !!i.hevy.enabled,
-                    apiKey: i.hevy.api_key || i.hevy.apiKey,
-                    userId: i.hevy.user_id || i.hevy.userId
-                };
-            }
-
-            // Strava
-            if (i.strava) {
-                result.integrations.strava = {
-                    enabled: !!i.strava.enabled,
-                    accessToken: i.strava.access_token || i.strava.accessToken,
-                    refreshToken: i.strava.refresh_token || i.strava.refreshToken,
-                    expiresAt: toDate(i.strava.expires_at || i.strava.expiresAt),
-                    athleteId: i.strava.athlete_id || i.strava.athleteId
-                };
-            }
-
-            // Fitbit
-            if (i.fitbit) {
-                result.integrations.fitbit = {
-                    enabled: !!i.fitbit.enabled,
-                    accessToken: i.fitbit.access_token || i.fitbit.accessToken,
-                    refreshToken: i.fitbit.refresh_token || i.fitbit.refreshToken,
-                    expiresAt: toDate(i.fitbit.expires_at || i.fitbit.expiresAt),
-                    fitbitUserId: i.fitbit.fitbit_user_id || i.fitbit.fitbitUserId
-                };
-            }
-        }
-
-        // PIPELINES
-        if (data.pipelines && Array.isArray(data.pipelines)) {
-            result.pipelines = data.pipelines.map((p: any) => ({
-                id: p.id,
-                source: p.source,
-                destinations: p.destinations || [],
-                enrichers: (p.enrichers || []).map((e: any) => ({
-                    providerType: e.provider_type || e.providerType,
-                    inputs: e.inputs || {}
-                }))
-            }));
-        }
-
-        return result;
+    async getUser(userId: string): Promise<UserRecord | null> {
+        const doc = await getUsersCollection().doc(userId).get();
+        if (!doc.exists) return null;
+        return doc.data() || null;
     }
 
     /**
@@ -124,17 +46,16 @@ export class UserService {
         // 2. Hash: SHA-256
         const hash = crypto.createHash('sha256').update(apiKey).digest('hex');
 
-        // 3. Store Hash (using snake_case)
-        const now = Timestamp.now();
-        const record: any = {
-            user_id: userId,
+        // 3. Store Hash (using typed collection)
+        const now = new Date();
+
+        await getIngressApiKeysCollection().doc(hash).set({
+            userId,
             label,
             scopes,
-            created_at: now,
-            last_used_at: null
-        };
-
-        await this.db.collection('ingress_api_keys').doc(hash).set(record);
+            createdAt: now,
+            lastUsedAt: undefined
+        });
 
         return apiKey;
     }

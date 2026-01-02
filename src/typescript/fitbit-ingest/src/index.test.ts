@@ -28,6 +28,9 @@ jest.mock('@fitglue/shared', () => {
       unwrap: (data: any) => data,
       publish: mockPublish
     })),
+    storage: {
+      getUsersCollection: jest.fn(() => mockCtx.db.collection('users')),
+    },
     // Static method workaround if TypedPublisher has static unwrap
     // But here we are mocking the class constructor and unwrap usage in code is `TypedPublisher.unwrap`.
     // We'll handle static unwrap below if needed, or assume it's used as instance (check code: `TypedPublisher.unwrap` is likely static)
@@ -56,16 +59,22 @@ describe('Fitbit Ingest', () => {
     mockFitbitGet.mockReset();
 
     // Default Mock DB behavior for "User Found"
-    (mockCtx.db.collection as jest.Mock).mockReturnValue({
-      where: jest.fn().mockReturnValue({
+    // Helper to create a chainable query mock
+    const createQueryMock = () => {
+      const queryMock: any = {
         limit: jest.fn().mockReturnValue({
           get: jest.fn().mockResolvedValue({
             empty: false,
             docs: [{ id: 'test-user-id' }]
           })
         })
-      })
-    });
+      };
+      // Allow chaining .where().where()
+      queryMock.where = jest.fn().mockReturnValue(queryMock);
+      return queryMock;
+    };
+
+    (mockCtx.db.collection as jest.Mock).mockReturnValue(createQueryMock());
   });
 
   it('should skip non-activity updates', async () => {
@@ -78,15 +87,17 @@ describe('Fitbit Ingest', () => {
 
   it('should throw error if user not found', async () => {
     // Mock DB empty result
-    (mockCtx.db.collection as jest.Mock).mockReturnValue({
-      where: jest.fn().mockReturnValue({
-        limit: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            empty: true
-          })
+    // Mock DB empty result
+    const emptyQueryMock: any = {
+      limit: jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({
+          empty: true
         })
       })
-    });
+    };
+    emptyQueryMock.where = jest.fn().mockReturnValue(emptyQueryMock);
+
+    (mockCtx.db.collection as jest.Mock).mockReturnValue(emptyQueryMock);
 
     const req = { body: { collectionType: 'activities', ownerId: 'unknown-user', date: '2023-01-01' } };
 

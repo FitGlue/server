@@ -17,12 +17,12 @@ import (
 func TestRouteActivity(t *testing.T) {
 	// Setup Mocks
 	mockDB := &mocks.MockDatabase{
-		SetExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
 			return nil
 		},
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
 			// Verify rich output structure
-			if outputsJSON, ok := data["outputs"].(string); ok {
+			if outputsJSON, ok := data["outputs_json"].(string); ok {
 				var outputs map[string]interface{}
 				if err := json.Unmarshal([]byte(outputsJSON), &outputs); err != nil {
 					t.Errorf("Failed to unmarshal outputs: %v", err)
@@ -45,8 +45,8 @@ func TestRouteActivity(t *testing.T) {
 			}
 			return nil
 		},
-		GetUserFunc: func(ctx context.Context, id string) (map[string]interface{}, error) {
-			return map[string]interface{}{}, nil
+		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+			return &pb.UserRecord{}, nil
 		},
 	}
 

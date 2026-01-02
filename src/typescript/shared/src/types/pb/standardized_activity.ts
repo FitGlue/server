@@ -48,7 +48,9 @@ export interface StandardizedActivity {
   externalId: string;
   userId: string;
   /** High-level summary */
-  startTime: string;
+  startTime:
+    | Date
+    | undefined;
   /** e.g. "Morning Run" */
   name: string;
   /** e.g. "RUNNING", "CYCLING", "WEIGHT_TRAINING" */
@@ -62,7 +64,9 @@ export interface StandardizedActivity {
 }
 
 export interface Session {
-  startTime: string;
+  startTime:
+    | Date
+    | undefined;
   /** seconds */
   totalElapsedTime: number;
   /** meters */
@@ -73,7 +77,9 @@ export interface Session {
 }
 
 export interface Lap {
-  startTime: string;
+  startTime:
+    | Date
+    | undefined;
   /** seconds */
   totalElapsedTime: number;
   /** meters */
@@ -83,8 +89,9 @@ export interface Lap {
 
 /** Record represents a single data point in time (1Hz is typical) */
 export interface Record {
-  /** ISO 8601 */
-  timestamp: string;
+  timestamp:
+    | Date
+    | undefined;
   /** Core Telemetry */
   heartRate: number;
   /** watts */
@@ -109,8 +116,7 @@ export interface StrengthSet {
   exerciseName: string;
   reps: number;
   weightKg: number;
-  /** ISO 8601 */
-  startTime: string;
+  startTime: Date | undefined;
   durationSeconds: number;
   notes: string;
   /** Organization */

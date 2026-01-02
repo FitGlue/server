@@ -121,7 +121,6 @@ describe('fitbitOAuthHandler', () => {
     expect(mockGetSecret).toHaveBeenCalledWith('fitglue-server-dev', 'fitbit-client-id');
     expect(mockGetSecret).toHaveBeenCalledWith('fitglue-server-dev', 'fitbit-client-secret');
     expect(mockStoreOAuthTokens).toHaveBeenCalledWith(
-      ctx.db,
       'user-123',
       'fitbit',
       expect.objectContaining({

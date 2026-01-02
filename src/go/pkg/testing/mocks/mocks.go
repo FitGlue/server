@@ -3,19 +3,21 @@ package mocks
 import (
 	"context"
 	"fmt"
+
+	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 // --- Mock Database ---
 type MockDatabase struct {
-	SetExecutionFunc    func(ctx context.Context, id string, data map[string]interface{}) error
+	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
 	UpdateExecutionFunc func(ctx context.Context, id string, data map[string]interface{}) error
-	GetUserFunc         func(ctx context.Context, id string) (map[string]interface{}, error)
+	GetUserFunc         func(ctx context.Context, id string) (*pb.UserRecord, error)
 	UpdateUserFunc      func(ctx context.Context, id string, data map[string]interface{}) error
 }
 
-func (m *MockDatabase) SetExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
 	if m.SetExecutionFunc != nil {
-		return m.SetExecutionFunc(ctx, id, data)
+		return m.SetExecutionFunc(ctx, record)
 	}
 	return nil
 }
@@ -25,7 +27,7 @@ func (m *MockDatabase) UpdateExecution(ctx context.Context, id string, data map[
 	}
 	return nil
 }
-func (m *MockDatabase) GetUser(ctx context.Context, id string) (map[string]interface{}, error) {
+func (m *MockDatabase) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
 	if m.GetUserFunc != nil {
 		return m.GetUserFunc(ctx, id)
 	}

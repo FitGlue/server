@@ -263,7 +263,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     // Log execution start
     let executionId: string;
     try {
-      executionId = await logExecutionStart(db, serviceName, {
+      executionId = await logExecutionStart(serviceName, {
         userId,
         testRunId,
         triggerType,
@@ -301,7 +301,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       const result = await handler(req, res, ctx);
 
       // Log execution success
-      await logExecutionSuccess(db, executionId, result || {});
+      await logExecutionSuccess(executionId, result || {});
 
       contextLogger.info('Function completed successfully');
 
@@ -309,7 +309,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Log execution failure
       ctx.logger.error('Function failed', { error: err.message, stack: err.stack });
 
-      await logExecutionFailure(db, executionId, err);
+      await logExecutionFailure(executionId, err);
 
       // Attach execution ID to response header (safety check)
       if (isHttp && !res.headersSent) {

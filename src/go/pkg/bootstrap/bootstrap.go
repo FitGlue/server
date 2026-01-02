@@ -108,7 +108,7 @@ func NewService(ctx context.Context) (*Service, error) {
 	}
 
 	return &Service{
-		DB:      &database.FirestoreAdapter{Client: fsClient},
+		DB:      database.NewFirestoreAdapter(fsClient),
 		Pub:     pubAdapter,
 		Store:   &infrastorage.StorageAdapter{Client: gcsClient},
 		Secrets: &secrets.SecretsAdapter{},

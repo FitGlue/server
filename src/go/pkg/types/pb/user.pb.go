@@ -808,6 +808,66 @@ func (x *StravaIntegration) GetAthleteId() int64 {
 	return 0
 }
 
+type ProcessedActivityRecord struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Source        string                 `protobuf:"bytes,1,opt,name=source,proto3" json:"source,omitempty"`                           // e.g. "hevy", "fitbit"
+	ExternalId    string                 `protobuf:"bytes,2,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"` // Unique ID from provider
+	ProcessedAt   *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=processed_at,json=processedAt,proto3" json:"processed_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProcessedActivityRecord) Reset() {
+	*x = ProcessedActivityRecord{}
+	mi := &file_user_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessedActivityRecord) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessedActivityRecord) ProtoMessage() {}
+
+func (x *ProcessedActivityRecord) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessedActivityRecord.ProtoReflect.Descriptor instead.
+func (*ProcessedActivityRecord) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ProcessedActivityRecord) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *ProcessedActivityRecord) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
+func (x *ProcessedActivityRecord) GetProcessedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.ProcessedAt
+	}
+	return nil
+}
+
 var File_user_proto protoreflect.FileDescriptor
 
 const file_user_proto_rawDesc = "" +
@@ -856,7 +916,12 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1d\n" +
 	"\n" +
-	"athlete_id\x18\x05 \x01(\x03R\tathleteId*\xff\x02\n" +
+	"athlete_id\x18\x05 \x01(\x03R\tathleteId\"\x91\x01\n" +
+	"\x17ProcessedActivityRecord\x12\x16\n" +
+	"\x06source\x18\x01 \x01(\tR\x06source\x12\x1f\n" +
+	"\vexternal_id\x18\x02 \x01(\tR\n" +
+	"externalId\x12=\n" +
+	"\fprocessed_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vprocessedAt*\xff\x02\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -901,42 +966,44 @@ func file_user_proto_rawDescGZIP() []byte {
 }
 
 var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_user_proto_goTypes = []any{
-	(EnricherProviderType)(0),      // 0: fitglue.EnricherProviderType
-	(WorkoutSummaryFormat)(0),      // 1: fitglue.WorkoutSummaryFormat
-	(MuscleHeatmapStyle)(0),        // 2: fitglue.MuscleHeatmapStyle
-	(MuscleHeatmapPreset)(0),       // 3: fitglue.MuscleHeatmapPreset
-	(VirtualGPSRoute)(0),           // 4: fitglue.VirtualGPSRoute
-	(*UserRecord)(nil),             // 5: fitglue.UserRecord
-	(*PipelineConfig)(nil),         // 6: fitglue.PipelineConfig
-	(*UserIntegrations)(nil),       // 7: fitglue.UserIntegrations
-	(*HevyIntegration)(nil),        // 8: fitglue.HevyIntegration
-	(*FitbitIntegration)(nil),      // 9: fitglue.FitbitIntegration
-	(*SourceEnrichmentConfig)(nil), // 10: fitglue.SourceEnrichmentConfig
-	(*EnricherConfig)(nil),         // 11: fitglue.EnricherConfig
-	(*StravaIntegration)(nil),      // 12: fitglue.StravaIntegration
-	nil,                            // 13: fitglue.EnricherConfig.InputsEntry
-	(*timestamp.Timestamp)(nil),    // 14: google.protobuf.Timestamp
+	(EnricherProviderType)(0),       // 0: fitglue.EnricherProviderType
+	(WorkoutSummaryFormat)(0),       // 1: fitglue.WorkoutSummaryFormat
+	(MuscleHeatmapStyle)(0),         // 2: fitglue.MuscleHeatmapStyle
+	(MuscleHeatmapPreset)(0),        // 3: fitglue.MuscleHeatmapPreset
+	(VirtualGPSRoute)(0),            // 4: fitglue.VirtualGPSRoute
+	(*UserRecord)(nil),              // 5: fitglue.UserRecord
+	(*PipelineConfig)(nil),          // 6: fitglue.PipelineConfig
+	(*UserIntegrations)(nil),        // 7: fitglue.UserIntegrations
+	(*HevyIntegration)(nil),         // 8: fitglue.HevyIntegration
+	(*FitbitIntegration)(nil),       // 9: fitglue.FitbitIntegration
+	(*SourceEnrichmentConfig)(nil),  // 10: fitglue.SourceEnrichmentConfig
+	(*EnricherConfig)(nil),          // 11: fitglue.EnricherConfig
+	(*StravaIntegration)(nil),       // 12: fitglue.StravaIntegration
+	(*ProcessedActivityRecord)(nil), // 13: fitglue.ProcessedActivityRecord
+	nil,                             // 14: fitglue.EnricherConfig.InputsEntry
+	(*timestamp.Timestamp)(nil),     // 15: google.protobuf.Timestamp
 }
 var file_user_proto_depIdxs = []int32{
-	14, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
+	15, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
 	7,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
 	6,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
 	11, // 3: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
 	8,  // 4: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
 	9,  // 5: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
 	12, // 6: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
-	14, // 7: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	15, // 7: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
 	11, // 8: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
 	0,  // 9: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
-	13, // 10: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
-	14, // 11: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	12, // [12:12] is the sub-list for method output_type
-	12, // [12:12] is the sub-list for method input_type
-	12, // [12:12] is the sub-list for extension type_name
-	12, // [12:12] is the sub-list for extension extendee
-	0,  // [0:12] is the sub-list for field type_name
+	14, // 10: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
+	15, // 11: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	15, // 12: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
+	13, // [13:13] is the sub-list for method output_type
+	13, // [13:13] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }
@@ -950,7 +1017,7 @@ func file_user_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
 			NumEnums:      5,
-			NumMessages:   9,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
