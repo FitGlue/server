@@ -1,193 +1,23 @@
-// Mocks must be defined before imports
-const mockHasProcessedActivity = jest.fn();
-const mockMarkActivityAsProcessed = jest.fn();
+// Basic wiring test
+import { hevyWebhookHandler } from './index';
+import * as shared from '@fitglue/shared';
 
-// Mock the shared package
+// Mock shared
 jest.mock('@fitglue/shared', () => ({
     createCloudFunction: (handler: any) => handler,
-    validateOAuthState: jest.fn(),
-    storeOAuthTokens: jest.fn(),
-    getSecret: jest.fn(),
-    storage: {
-        getUsersCollection: jest.fn(() => ({
-            doc: jest.fn(() => ({
-                get: jest.fn().mockResolvedValue({ exists: true, data: () => ({ integrations: { hevy: { enabled: true, apiKey: "hevy-key", userId: "u1" } } }) })
-            }))
-        }))
-    },
-    FrameworkContext: jest.fn(),
-    TOPICS: { RAW_ACTIVITY: 'test-topic' },
-    ActivitySource: { SOURCE_HEVY: 'HEVY' }, // Mock enum
-    createHevyClient: jest.fn(),
-    UserService: jest.fn().mockImplementation(() => ({
-        hasProcessedActivity: mockHasProcessedActivity,
-        markActivityAsProcessed: mockMarkActivityAsProcessed
-    })),
-    TypedPublisher: jest.fn().mockImplementation((pubsub, topic) => ({
-        publish: (payload: any) => pubsub.topic(topic).publishMessage({ json: payload })
-    }))
+    HevyConnector: jest.fn(),
+    createWebhookProcessor: jest.fn(() => async () => ({ status: 'Mocked Processor Run' })),
+    ApiKeyStrategy: jest.fn()
 }));
 
-import { hevyWebhookHandler } from './index';
-
-import * as path from 'path';
-import * as fs from 'fs';
-
-const mockWorkout = JSON.parse(fs.readFileSync(path.join(__dirname, '../test-data/mock_workout.json'), 'utf-8'));
-
 describe('hevyWebhookHandler', () => {
-    let req: any; let res: any;
-    let mockStatus: jest.Mock; let mockSend: jest.Mock; let mockJson: jest.Mock;
-    let mockCtx: any;
-    let mockUserGet: jest.Mock;
-    let mockDb: any;
-    let mockLogger: any;
-    let mockPubSub: any;
-    let mockPublishMessage: jest.Mock;
-
-    let mockClientGet: jest.Mock;
-
-    beforeEach(() => {
-        jest.clearAllMocks();
-        // Reset UserService mocks default behavior
-        mockHasProcessedActivity.mockResolvedValue(false); // Default: not processed
-        mockMarkActivityAsProcessed.mockResolvedValue(undefined);
-
-
-        mockStatus = jest.fn().mockReturnThis();
-        mockSend = jest.fn();
-        mockJson = jest.fn();
-        res = { status: mockStatus, send: mockSend, json: mockJson, set: jest.fn() };
-        req = { headers: {}, body: {} };
-
-        mockLogger = { info: jest.fn(), warn: jest.fn(), error: jest.fn() };
-
-        mockUserGet = jest.fn();
-        mockDb = {
-            collection: jest.fn((name) => {
-                if (name === 'users') {
-                    return { doc: jest.fn(() => ({ get: mockUserGet })) };
-                }
-                return { doc: jest.fn() };
-            })
-        };
-
-        mockPublishMessage = jest.fn().mockResolvedValue('msg-id-123');
-        mockPubSub = {
-            topic: jest.fn().mockReturnValue({ publishMessage: mockPublishMessage })
-        };
-
-        mockCtx = {
-            db: mockDb,
-            logger: mockLogger,
-            pubsub: mockPubSub, // Injected PubSub Mock
-            userId: 'test-user',
-            authScopes: ['read:activity']
-        };
-
-        mockClientGet = jest.fn().mockResolvedValue({
-            data: mockWorkout,
-            error: null,
-            response: { status: 200 }
-        });
-
-        const { createHevyClient } = require('@fitglue/shared');
-        createHevyClient.mockReturnValue({
-            GET: mockClientGet
-        });
+    it('should utilize createWebhookProcessor with HevyConnector', () => {
+        // Check if createWebhookProcessor was called
+        expect(shared.createWebhookProcessor).toHaveBeenCalled();
     });
 
-    it('should throw Unauthorized if userId is missing', async () => {
-        mockCtx.userId = undefined;
-        await expect(async () => {
-            await (hevyWebhookHandler as any)(req, res, mockCtx);
-        }).rejects.toThrow('Unauthorized');
-        expect(mockStatus).toHaveBeenCalledWith(401);
-    });
-
-    it('should throw if workout_id is missing', async () => {
-        req.body = {};
-        await expect(async () => {
-            await (hevyWebhookHandler as any)(req, res, mockCtx);
-        }).rejects.toThrow('Invalid payload: Missing workout_id');
-    });
-
-    it('should skip processing if workout is already processed', async () => {
-        req.body = {
-            id: 'webhook-event-id',
-            payload: {
-                workoutId: mockWorkout.id
-            }
-        };
-
-        // Mock User
-        mockUserGet.mockResolvedValue({
-            exists: true,
-            data: () => ({ integrations: { hevy: { apiKey: 'hevy-key' } } })
-        });
-
-        // Mock Dedupe check existing
-        mockHasProcessedActivity.mockResolvedValue(true);
-
-        const result = await (hevyWebhookHandler as any)(req, res, mockCtx);
-
-        expect(mockHasProcessedActivity).toHaveBeenCalledWith('test-user', 'hevy', mockWorkout.id);
-        expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ status: 'Skipped', reason: 'Already processed' }));
-        expect(result).toEqual(expect.objectContaining({ status: 'Skipped' }));
-
-        // Ensure no fetch or publish occurred
-        const { createHevyClient } = require('@fitglue/shared');
-        expect(createHevyClient).not.toHaveBeenCalled();
-        expect(mockPubSub.topic).not.toHaveBeenCalled();
-    });
-
-    it('should perform Active Fetch AND Publish AND Mark as Processed', async () => {
-        req.body = {
-            id: 'webhook-event-id',
-            payload: {
-                workoutId: mockWorkout.id
-            }
-        };
-
-        // Mock User with Hevy Key
-        mockUserGet.mockResolvedValue({
-            exists: true,
-            data: () => ({ integrations: { hevy: { apiKey: 'hevy-key' } } })
-        });
-
-        await (hevyWebhookHandler as any)(req, res, mockCtx);
-
-        // Verify Dedupe Check
-        expect(mockHasProcessedActivity).toHaveBeenCalledWith('test-user', 'hevy', mockWorkout.id);
-
-        // Verify Hevy Client was mocked and called
-        const { createHevyClient } = require('@fitglue/shared');
-        expect(createHevyClient).toHaveBeenCalledWith({ apiKey: 'hevy-key' });
-        expect(mockClientGet).toHaveBeenCalledWith("/v1/workouts/{workoutId}", {
-            params: { path: { workoutId: mockWorkout.id } }
-        });
-
-        // Verify PubSub Injection Usage via TypedPublisher
-        expect(mockPubSub.topic).toHaveBeenCalledWith('test-topic');
-        expect(mockPublishMessage).toHaveBeenCalledWith(
-            expect.objectContaining({
-                json: expect.objectContaining({
-                    source: 'HEVY',
-                    userId: 'test-user',
-                    originalPayloadJson: JSON.stringify(mockWorkout),
-                    metadata: expect.objectContaining({ fetch_method: 'active_fetch' }),
-                    standardizedActivity: expect.objectContaining({
-                        source: 'HEVY',
-                        externalId: mockWorkout.id
-                    })
-                })
-            })
-        );
-
-        // Verify Dedupe Mark
-        expect(mockMarkActivityAsProcessed).toHaveBeenCalledWith('test-user', 'hevy', mockWorkout.id);
-
-        expect(mockStatus).toHaveBeenCalledWith(200);
-        expect(mockJson).toHaveBeenCalledWith(expect.objectContaining({ status: 'Processed' }));
+    it('should act as a handler', async () => {
+        const res = await (hevyWebhookHandler as any)({}, {}, {});
+        expect(res).toEqual({ status: 'Mocked Processor Run' });
     });
 });

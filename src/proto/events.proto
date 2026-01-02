@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package fitglue.events;
+
+option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
+
+import "google/protobuf/descriptor.proto";
+
+extend google.protobuf.EnumValueOptions {
+  string ce_type = 50000;
+  string ce_source = 50001;
+}
+
+// CloudEventType enumerates all valid event types in the system.
+enum CloudEventType {
+  CLOUD_EVENT_TYPE_UNSPECIFIED = 0;
+  // Activity Created: Payload is ActivityPayload
+  CLOUD_EVENT_TYPE_ACTIVITY_CREATED = 1 [(ce_type) = "com.fitglue.activity.created"];
+  // Activity Enriched: Payload is ActivityPayload
+  CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED = 2 [(ce_type) = "com.fitglue.activity.enriched"];
+  // Job Routed: Payload is ActivityPayload
+  CLOUD_EVENT_TYPE_JOB_ROUTED = 3 [(ce_type) = "com.fitglue.job.routed"];
+  // Fitbit Notification: Payload is FitbitNotification (raw JSON)
+  CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION = 4 [(ce_type) = "com.fitglue.fitbit.notification"];
+  // Enrichment Lag: Payload is ActivityPayload
+  CLOUD_EVENT_TYPE_ENRICHMENT_LAG = 5 [(ce_type) = "com.fitglue.enrichment.lag"];
+}
+
+// CloudEventSource strings are URI references.
+enum CloudEventSource {
+  CLOUD_EVENT_SOURCE_UNSPECIFIED = 0;
+  CLOUD_EVENT_SOURCE_HEVY = 1 [(ce_source) = "/integrations/hevy"];
+  CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK = 2 [(ce_source) = "/integrations/fitbit/webhook"];
+  CLOUD_EVENT_SOURCE_FITBIT_INGEST = 3 [(ce_source) = "/integrations/fitbit/ingest"];
+  CLOUD_EVENT_SOURCE_ENRICHER = 4 [(ce_source) = "/core/enricher"];
+  CLOUD_EVENT_SOURCE_ROUTER = 5 [(ce_source) = "/core/router"];
+}

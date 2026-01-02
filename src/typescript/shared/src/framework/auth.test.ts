@@ -1,5 +1,5 @@
 import * as crypto from 'crypto';
-import { ApiKeyStrategy } from './auth';
+import { ApiKeyStrategy } from './auth-strategies/api-key';
 import { FrameworkContext } from './index';
 
 // Mock dependencies

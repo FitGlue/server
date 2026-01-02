@@ -31,13 +31,37 @@ type HandlerFunc func(ctx context.Context, e event.Event, fwCtx *FrameworkContex
 // Similar to TypeScript's createCloudFunction
 func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerFunc) func(context.Context, event.Event) error {
 	return func(ctx context.Context, e event.Event) error {
-		// Extract metadata from event
+		// --- 1. CloudEvent Unwrapping (Pub/Sub Envelope) ---
+		// Check if this is a Pub/Sub event wrapping a structured CloudEvent
+		if e.Type() == "google.cloud.pubsub.topic.v1.messagePublished" {
+			var msg types.PubSubMessage
+			if err := e.DataAs(&msg); err == nil && len(msg.Message.Data) > 0 {
+				// Try to unmarshal the inner data as a CloudEvent
+				// We expect a JSON representation of a CloudEvent (v1.0)
+				var innerEvent event.Event
+				if err := json.Unmarshal(msg.Message.Data, &innerEvent); err == nil {
+					// Check if it looks valid (e.g. has type/source/specversion)
+					if innerEvent.Type() != "" && innerEvent.Source() != "" {
+						// It IS a nested CloudEvent! Replace 'e' with the inner event.
+						e = innerEvent
+						// Note: We lose the outer Pub/Sub message ID and publish time here
+						// unless we copy them to extensions, but for application logic,
+						// the inner event is what matters.
+					}
+				}
+			}
+		}
+
+		// Extract metadata from event (now potentially unwrapped)
 		userID, testRunID := extractEventMetadata(e)
 
 		// Determine trigger type
-		triggerType := "pubsub"
+		triggerType := "pubsub" // Default assumption
 		if e.Type() == "google.cloud.functions.http" {
 			triggerType = "http"
+		} else if e.Type() != "google.cloud.pubsub.topic.v1.messagePublished" {
+			// If it's not Pub/Sub (and not HTTP), it's a direct CloudEvent (e.g. from unwrapping)
+			triggerType = "cloudevent"
 		}
 
 		// Determine log level from env
@@ -56,7 +80,6 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 			logLevel = slog.LevelInfo
 		}
 
-		// Create base logger with configured level
 		// Create base logger with configured level
 		opts := bootstrap.GetSlogHandlerOptions(logLevel)
 		logger := slog.New(slog.NewJSONHandler(os.Stdout, opts)).With("service", serviceName)
@@ -148,9 +171,9 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 // extractEventMetadata extracts user_id and test_run_id from the event
 // Handles both Pub/Sub messages and HTTP requests
 func extractEventMetadata(e event.Event) (userID string, testRunID string) {
-	// Try to extract from Pub/Sub message
+	// 1. Try Pub/Sub Message Structure
 	var msg types.PubSubMessage
-	if err := e.DataAs(&msg); err == nil {
+	if err := e.DataAs(&msg); err == nil && msg.Message.Data != nil {
 		// Try to parse the message data to extract user_id
 		var payload map[string]interface{}
 		if err := json.Unmarshal(msg.Message.Data, &payload); err == nil {
@@ -168,9 +191,22 @@ func extractEventMetadata(e event.Event) (userID string, testRunID string) {
 				testRunID = trid
 			}
 		}
+	} else {
+		// 2. Try Generic/Direct CloudEvent Data
+		// If it wasn't a Pub/Sub message, maybe the data itself is the payload (unwrapped CloudEvent)
+		var payload map[string]interface{}
+		// Note: DataAs attempts to unmarshal to the target.
+		if err := e.DataAs(&payload); err == nil {
+			if uid, ok := payload["user_id"].(string); ok {
+				userID = uid
+			}
+			if uid, ok := payload["userId"].(string); ok {
+				userID = uid
+			}
+		}
 	}
 
-	// For HTTP requests, check CloudEvent extensions
+	// For HTTP requests, or extensions on any event type
 	// (HTTP headers are mapped to extensions by Functions Framework)
 	if testRunID == "" {
 		extensions := e.Extensions()

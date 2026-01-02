@@ -3,7 +3,8 @@ package shared
 import (
 	"context"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
 // --- Persistence Interfaces ---
@@ -18,8 +19,7 @@ type Database interface {
 // --- Messaging Interfaces ---
 
 type Publisher interface {
-	Publish(ctx context.Context, topic string, data []byte) (string, error)
-	PublishWithAttrs(ctx context.Context, topic string, data []byte, attributes map[string]string) (string, error)
+	PublishCloudEvent(ctx context.Context, topic string, e event.Event) (string, error)
 }
 
 // --- Storage Interfaces ---

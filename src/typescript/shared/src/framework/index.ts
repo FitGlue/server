@@ -1,8 +1,10 @@
-// import { HttpFunction } from '@google-cloud/functions-framework';
 import * as admin from 'firebase-admin';
 import * as winston from 'winston';
 import { logExecutionStart, logExecutionSuccess, logExecutionFailure } from '../execution/logger';
-import { AuthStrategy, ApiKeyStrategy } from './auth';
+import { AuthStrategy } from './auth';
+export * from './connector';
+export * from './base-connector';
+export * from './webhook-processor';
 
 import { PubSub } from '@google-cloud/pubsub';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
@@ -88,7 +90,7 @@ export type FrameworkHandler = (
 
 export interface CloudFunctionOptions {
   auth?: {
-    strategies: ('api_key')[]; // Extensible list of strategy names
+    strategies: AuthStrategy[]; // Only accept strategy instances
     requiredScopes?: string[];
   };
 }
@@ -134,10 +136,6 @@ function extractMetadata(req: any): { userId?: string; testRunId?: string; trigg
 
   return { userId, testRunId, triggerType };
 }
-
-const AUTHORIZED_STRATEGIES: Record<string, AuthStrategy> = {
-  'api_key': new ApiKeyStrategy()
-};
 
 export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFunctionOptions) => {
   return async (reqOrEvent: any, resOrContext?: any) => {
@@ -225,20 +223,18 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
         executionId: 'pre-auth'
       };
 
-      for (const strategyName of options.auth.strategies) {
-        const strategy = AUTHORIZED_STRATEGIES[strategyName];
-        if (strategy) {
-          try {
-            const result = await strategy.authenticate(req, tempCtx);
-            if (result) {
-              userId = result.userId; // Auth overrides extracted user ID
-              authScopes = result.scopes;
-              authenticated = true;
-              break;
-            }
-          } catch (e) {
-            preambleLogger.warn(`Auth strategy ${strategyName} failed`, { error: e });
+      for (const strategy of options.auth.strategies) {
+        try {
+          const authResult = await strategy.authenticate(req, tempCtx);
+          if (authResult) {
+            userId = authResult.userId; // Auth overrides extracted user ID
+            authScopes = authResult.scopes || [];
+            authenticated = true;
+            preambleLogger.info(`Authenticated via ${strategy.name}`, { userId, scopes: authScopes });
+            break;
           }
+        } catch (e) {
+          preambleLogger.warn(`Auth strategy ${strategy.name} failed`, { error: e });
         }
       }
 

@@ -5,12 +5,11 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/cloudevents/sdk-go/v2/event"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/testing/mocks"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -52,7 +51,7 @@ func TestRouteActivity(t *testing.T) {
 
 	publishedTopics := []string{}
 	mockPub := &mocks.MockPublisher{
-		PublishFunc: func(ctx context.Context, topic string, data []byte) (string, error) {
+		PublishCloudEventFunc: func(ctx context.Context, topic string, e cloudevents.Event) (string, error) {
 			publishedTopics = append(publishedTopics, topic)
 			return "msg-routable", nil
 		},
@@ -82,20 +81,11 @@ func TestRouteActivity(t *testing.T) {
 	marshalOpts := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
 	payloadBytes, _ := marshalOpts.Marshal(&eventPayload)
 
-	psMsg := types.PubSubMessage{
-		Message: struct {
-			Data       []byte            `json:"data"`
-			Attributes map[string]string `json:"attributes"`
-		}{
-			Data: payloadBytes,
-		},
-	}
-
-	e := event.New()
+	e := cloudevents.NewEvent()
 	e.SetID("evt-router")
-	e.SetType("google.cloud.pubsub.topic.v1.messagePublished")
-	e.SetSource("//pubsub")
-	e.SetData(event.ApplicationJSON, psMsg)
+	e.SetType("com.fitglue.activity.enriched")
+	e.SetSource("/enricher")
+	e.SetData(cloudevents.ApplicationJSON, payloadBytes)
 
 	// Execute
 	err := RouteActivity(context.Background(), e)

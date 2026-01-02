@@ -15,12 +15,10 @@ import (
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
 	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/oauth"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -63,16 +61,9 @@ func UploadToStrava(ctx context.Context, e event.Event) error {
 // httpClient can be injected for testing; if nil, creates OAuth client
 func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 	return func(ctx context.Context, e event.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
-		// Parse Pub/Sub message
-		var msg types.PubSubMessage
-		if err := e.DataAs(&msg); err != nil {
-			return nil, fmt.Errorf("event.DataAs: %v", err)
-		}
-
 		var eventPayload pb.EnrichedActivityEvent
-		unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
-		if err := unmarshalOpts.Unmarshal(msg.Message.Data, &eventPayload); err != nil {
-			return nil, fmt.Errorf("protojson unmarshal: %v", err)
+		if err := e.DataAs(&eventPayload); err != nil {
+			return nil, fmt.Errorf("event.DataAs(EnrichedActivityEvent): %v", err)
 		}
 
 		fwCtx.Logger.Info("Starting upload", "activity_id", eventPayload.ActivityId, "pipeline_id", eventPayload.PipelineId)

@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, TOPICS, createFitbitClient, UserService, ActivitySource, ActivityPayload, TypedPublisher, FitbitNotification } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, TOPICS, createFitbitClient, UserService, ActivitySource, ActivityPayload, CloudEventPublisher, FitbitNotification, getCloudEventSource, getCloudEventType, CloudEventSource, CloudEventType } from '@fitglue/shared';
 
 import { mapTCXToStandardized } from './mapper';
 
@@ -13,7 +13,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
 
   // Handle direct HTTP or Pub/Sub
   if (req.body && req.body.message && req.body.message.data) {
-    notification = TypedPublisher.unwrap<FitbitNotification>(req.body.message.data);
+    notification = CloudEventPublisher.unwrap<FitbitNotification>(req.body.message.data);
   } else {
     notification = req.body as FitbitNotification;
   }
@@ -151,7 +151,13 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       logger.info(`[${logIdStr}] Mapped Activity Stats: ${totalRecords} records, ${gpsCount} with GPS, ${hrCount} with HR`);
 
       // 7. Publish to Enrichment Pipeline
-      const publisher = new TypedPublisher<ActivityPayload>(pubsub, TOPICS.RAW_ACTIVITY, logger);
+      const publisher = new CloudEventPublisher<ActivityPayload>(
+        pubsub,
+        TOPICS.RAW_ACTIVITY,
+        getCloudEventSource(CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_INGEST),
+        getCloudEventType(CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_CREATED),
+        logger
+      );
 
       const payload: ActivityPayload = {
         source: ActivitySource.SOURCE_FITBIT,
@@ -165,7 +171,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
         }
       };
 
-      const messageId = await publisher.publish(payload);
+      const messageId = await publisher.publish(payload, logIdStr);
 
 
       // 8. Mark as Processed

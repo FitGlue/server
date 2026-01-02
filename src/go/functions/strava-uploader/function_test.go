@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/event"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
@@ -148,15 +147,25 @@ func TestUploadToStrava(t *testing.T) {
 		Name:         "Test Workout",
 		Source:       pb.ActivitySource_SOURCE_HEVY,
 	}
-	marshalOpts := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
-	payloadBytes, _ := marshalOpts.Marshal(&eventPayload)
+	// 1. Create the Inner CloudEvent (Business Event)
+	innerEvent := event.New()
+	innerEvent.SetSpecVersion("1.0")
+	innerEvent.SetType("com.fitglue.activity.enriched")
+	innerEvent.SetSource("/core/enricher")
+	innerEvent.SetData(event.ApplicationJSON, &eventPayload)
 
+	innerEventBytes, err := json.Marshal(innerEvent)
+	if err != nil {
+		t.Fatalf("Failed to marshal inner event: %v", err)
+	}
+
+	// 2. Wrap in Pub/Sub Message (Transport Event)
 	psMsg := types.PubSubMessage{
 		Message: struct {
 			Data       []byte            `json:"data"`
 			Attributes map[string]string `json:"attributes"`
 		}{
-			Data: payloadBytes,
+			Data: innerEventBytes,
 		},
 	}
 
@@ -169,7 +178,7 @@ func TestUploadToStrava(t *testing.T) {
 	// Execute with injected mock HTTP client
 	mockClient := &http.Client{Transport: &mockTransport{mockHTTPClient}}
 	handler := uploadHandler(mockClient)
-	err := framework.WrapCloudEvent("strava-uploader", svc, handler)(context.Background(), e)
+	err = framework.WrapCloudEvent("strava-uploader", svc, handler)(context.Background(), e)
 	if err != nil {
 		t.Fatalf("UploadToStrava failed: %v", err)
 	}

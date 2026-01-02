@@ -23,9 +23,13 @@ const mockCtx = {
 jest.mock('@fitglue/shared', () => ({
   createCloudFunction: (handler: any) => (req: any, res: any) => handler(req, res, mockCtx),
   TOPICS: { RAW_ACTIVITY: 'raw-activity', FITBIT_UPDATES: 'topic-fitbit-updates' },
-  TypedPublisher: jest.fn().mockImplementation((pubsub, topic) => ({
-    publish: (payload: any) => pubsub.topic(topic).publishMessage({ json: payload })
-  }))
+  CloudEventPublisher: jest.fn().mockImplementation((pubsub, topic, source, type) => ({
+    publish: (payload: any) => pubsub.topic(topic).publishMessage({ json: { specversion: '1.0', type, source, data: payload } })
+  })),
+  getCloudEventType: jest.fn((t) => 'com.fitglue.fitbit.notification'),
+  getCloudEventSource: jest.fn((s) => '/integrations/fitbit/webhook'),
+  CloudEventType: { CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION: 4 },
+  CloudEventSource: { CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK: 2 }
 }));
 
 describe('Fitbit Webhook Handler', () => {
@@ -106,7 +110,14 @@ describe('Fitbit Webhook Handler', () => {
       await (fitbitWebhookHandler as any)(req, res);
 
       expect(res.status).toHaveBeenCalledWith(204);
-      expect(mockPublishMessage).toHaveBeenCalledWith({ json: body[0] });
+      expect(mockPublishMessage).toHaveBeenCalledWith({
+        json: {
+          specversion: '1.0',
+          type: 'com.fitglue.fitbit.notification',
+          source: '/integrations/fitbit/webhook',
+          data: body[0]
+        }
+      });
     });
 
     it('should reject invalid signature', async () => {

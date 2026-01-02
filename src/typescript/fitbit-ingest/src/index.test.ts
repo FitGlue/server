@@ -24,8 +24,7 @@ jest.mock('@fitglue/shared', () => {
     createFitbitClient: jest.fn(() => ({
       GET: mockFitbitGet
     })),
-    TypedPublisher: jest.fn().mockImplementation(() => ({
-      unwrap: (data: any) => data,
+    CloudEventPublisher: jest.fn().mockImplementation(() => ({
       publish: mockPublish
     })),
     storage: {
@@ -37,15 +36,19 @@ jest.mock('@fitglue/shared', () => {
   };
 });
 
-// Since TypedPublisher.unwrap is static, we need to mock it on the object itself not just instance
+// Since CloudEventPublisher.unwrap is static, we need to mock it on the object itself
 const shared = require('@fitglue/shared');
-shared.TypedPublisher.unwrap = jest.fn((data: any) => data);
+shared.CloudEventPublisher.unwrap = jest.fn((data: any) => data);
 shared.UserService = jest.fn().mockImplementation(() => ({
   hasProcessedActivity: mockHasProcessed,
   markActivityAsProcessed: mockMarkProcessed,
 }));
 shared.TOPICS = { RAW_ACTIVITY: 'raw-activity' };
 shared.ActivitySource = { SOURCE_FITBIT: 'fitbit' };
+shared.getCloudEventType = jest.fn().mockReturnValue('com.fitglue.activity.created');
+shared.getCloudEventSource = jest.fn().mockReturnValue('/integrations/fitbit/ingest');
+shared.CloudEventType = { CLOUD_EVENT_TYPE_ACTIVITY_CREATED: 1 };
+shared.CloudEventSource = { CLOUD_EVENT_SOURCE_FITBIT_INGEST: 3 };
 
 
 jest.mock('./mapper', () => ({

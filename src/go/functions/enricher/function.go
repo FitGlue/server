@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
-	"github.com/cloudevents/sdk-go/v2/event"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types"
+	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 
 	// Register providers
@@ -46,7 +46,7 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 }
 
 // EnrichActivity is the entry point
-func EnrichActivity(ctx context.Context, e event.Event) error {
+func EnrichActivity(ctx context.Context, e cloudevents.Event) error {
 	svc, err := initService(ctx)
 	if err != nil {
 		return fmt.Errorf("service init failed: %v", err)
@@ -55,11 +55,13 @@ func EnrichActivity(ctx context.Context, e event.Event) error {
 }
 
 // enrichHandler contains the business logic
-func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
-	// Parse Pub/Sub message
-	var msg types.PubSubMessage
-	if err := e.DataAs(&msg); err != nil {
-		return nil, fmt.Errorf("event.DataAs: %v", err)
+func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
+	// Extract payload and attributes
+	// We assume strict CloudEvent input (legacy Pub/Sub messages are no longer supported)
+	rawData := e.Data()
+	isLagRetry := false
+	if val, ok := e.Extensions()["origin"].(string); ok && val == "lag-queue" {
+		isLagRetry = true
 	}
 
 	var rawEvent pb.ActivityPayload
@@ -67,7 +69,7 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 	unmarshalOpts := protojson.UnmarshalOptions{
 		DiscardUnknown: true, // Be resilient to future schema changes
 	}
-	if err := unmarshalOpts.Unmarshal(msg.Message.Data, &rawEvent); err != nil {
+	if err := unmarshalOpts.Unmarshal(rawData, &rawEvent); err != nil {
 		return nil, fmt.Errorf("protojson unmarshal: %v", err)
 	}
 
@@ -98,6 +100,7 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 	doNotRetry := false
 	// For Pub/Sub events, e.Time() is the publish time.
 	// We want to force if the message is older than our max backoff (20 mins + buffer)
+	// Note: For unwrapped events, e.Time() is the original event time, which is what we want.
 	if !e.Time().IsZero() {
 		lagDuration := time.Since(e.Time())
 		if lagDuration > 15*time.Minute {
@@ -113,12 +116,6 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 		// Check if the error is retryable (e.g. data lag)
 		if ok := isRetryable(err); ok {
 
-			// Check if this is already a lag-retry (from attributes)
-			isLagRetry := false
-			if msg.Message.Attributes != nil && msg.Message.Attributes["origin"] == "lag-queue" {
-				isLagRetry = true
-			}
-
 			if isLagRetry {
 				fwCtx.Logger.Warn("Lag Retry failed (will retry with backoff)", "error", err)
 				// Returning error triggers the Lag Subscription's retry policy (60s+ backoff)
@@ -130,10 +127,15 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 				fwCtx.Logger.Info("Activity data lagging, offloading to lag queue", "error", err)
 
 				// Publish to Lag Topic with "origin=lag-queue" to break infinite loop on next consumption
-				lagAttributes := map[string]string{"origin": "lag-queue"}
+				// Create CloudEvent
+				lagEvent, err := infrapubsub.NewCloudEvent("/enricher", "com.fitglue.enrichment.lag", rawData)
+				if err != nil {
+					fwCtx.Logger.Error("Failed to create lag event", "error", err)
+					return nil, err
+				}
+				lagEvent.SetExtension("origin", "lag-queue")
 
-				// Republish the exact same raw payload
-				_, pubErr := fwCtx.Service.Pub.PublishWithAttrs(ctx, shared.TopicEnrichmentLag, msg.Message.Data, lagAttributes)
+				_, pubErr := fwCtx.Service.Pub.PublishCloudEvent(ctx, shared.TopicEnrichmentLag, lagEvent)
 				if pubErr != nil {
 					fwCtx.Logger.Error("Failed to publish to lag topic", "error", pubErr)
 					return nil, pubErr // Fail execution to trigger retry of this offload attempt
@@ -160,7 +162,6 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 
 	// Publish Results to Router
 	var publishedCount int
-	marshalOpts := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}
 
 	// Track published events for rich output
 	type PublishedEvent struct {
@@ -174,13 +175,13 @@ func enrichHandler(ctx context.Context, e event.Event, fwCtx *framework.Framewor
 	publishedEvents := []PublishedEvent{}
 
 	for _, event := range processResult.Events {
-		payload, err := marshalOpts.Marshal(event)
+		resultEvent, err := infrapubsub.NewCloudEvent("/enricher", "com.fitglue.activity.enriched", event)
 		if err != nil {
-			fwCtx.Logger.Error("Failed to marshal enriched event", "error", err)
+			fwCtx.Logger.Error("Failed to create result event", "error", err)
 			continue
 		}
 
-		msgID, err := fwCtx.Service.Pub.Publish(ctx, shared.TopicEnrichedActivity, payload)
+		msgID, err := fwCtx.Service.Pub.PublishCloudEvent(ctx, shared.TopicEnrichedActivity, resultEvent)
 		if err != nil {
 			fwCtx.Logger.Error("Failed to publish result", "error", err, "pipeline_id", event.PipelineId)
 		} else {

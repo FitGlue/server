@@ -6,14 +6,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cloudevents/sdk-go/v2/event"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
 	"github.com/ripixel/fitglue-server/src/go/pkg/testing/mocks"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -65,7 +64,7 @@ func TestEnrichActivity(t *testing.T) {
 		},
 	}
 	mockPub := &mocks.MockPublisher{
-		PublishFunc: func(ctx context.Context, topic string, data []byte) (string, error) {
+		PublishCloudEventFunc: func(ctx context.Context, topic string, e cloudevents.Event) (string, error) {
 			// Verify payload if needed
 			return "msg-123", nil
 		},
@@ -124,23 +123,13 @@ func TestEnrichActivity(t *testing.T) {
 	activityBytes, _ := marshalOpts.Marshal(&activity)
 
 	// Create CloudEvent
-	e := event.New()
+	e := cloudevents.NewEvent()
 	e.SetID("event-123")
-	e.SetType("google.cloud.pubsub.topic.v1.messagePublished")
-	e.SetSource("//pubsub")
+	e.SetType("com.fitglue.activity.created") // Use a realistic type
+	e.SetSource("/fitbit-ingest")
 
-	// Create the PubSubMessage struct expected by the handler
-	psMsg := types.PubSubMessage{
-		Message: struct {
-			Data       []byte            `json:"data"`
-			Attributes map[string]string `json:"attributes"`
-		}{
-			Data: activityBytes,
-		},
-	}
-
-	// Set it as event data
-	e.SetData(event.ApplicationJSON, psMsg)
+	// Set the payload directly as data
+	e.SetData(cloudevents.ApplicationJSON, activityBytes)
 
 	// Execute
 	err := EnrichActivity(context.Background(), e)

@@ -2,11 +2,13 @@ package framework
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
+	"github.com/ripixel/fitglue-server/src/go/pkg/types"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -101,5 +103,58 @@ func TestWrapCloudEvent_Failure(t *testing.T) {
 	err := wrapped(context.Background(), e)
 	if err == nil {
 		t.Fatal("Expected error, got nil")
+	}
+}
+
+func TestWrapCloudEvent_UnwrapsNestedEvent(t *testing.T) {
+	svc := &bootstrap.Service{
+		DB: &MockDB{},
+	}
+
+	expectedID := "inner-event-123"
+	expectedType := "com.fitglue.activity.created"
+
+	handler := func(ctx context.Context, e event.Event, fwCtx *FrameworkContext) (interface{}, error) {
+		// Assert that 'e' is the INNER event
+		if e.ID() != expectedID {
+			t.Errorf("Expected event ID %s, got %s", expectedID, e.ID())
+		}
+		if e.Type() != expectedType {
+			t.Errorf("Expected event type %s, got %s", expectedType, e.Type())
+		}
+		return "ok", nil
+	}
+
+	wrapped := WrapCloudEvent("test-service", svc, handler)
+
+	// 1. Create Inner CloudEvent
+	inner := event.New()
+	inner.SetID(expectedID)
+	inner.SetType(expectedType)
+	inner.SetSource("/test/source")
+	inner.SetData(event.ApplicationJSON, map[string]string{"foo": "bar"})
+
+	innerBytes, _ := json.Marshal(inner)
+
+	// 2. Wrap in Pub/Sub Envelope (as if coming from GCP)
+	psMsg := types.PubSubMessage{
+		Message: struct {
+			Data       []byte            `json:"data"`
+			Attributes map[string]string `json:"attributes"`
+		}{
+			Data: innerBytes,
+		},
+	}
+
+	outer := event.New()
+	outer.SetID("outer-msg-id")
+	outer.SetType("google.cloud.pubsub.topic.v1.messagePublished")
+	outer.SetSource("//pubsub")
+	outer.SetData(event.ApplicationJSON, psMsg)
+
+	// 3. Execute
+	err := wrapped(context.Background(), outer)
+	if err != nil {
+		t.Fatalf("Handler failed: %v", err)
 	}
 }

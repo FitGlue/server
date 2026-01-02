@@ -7,13 +7,13 @@ import (
 	"sync"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
-	"github.com/cloudevents/sdk-go/v2/event"
+	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types"
+	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 )
 
@@ -41,7 +41,7 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 }
 
 // RouteActivity is the entry point
-func RouteActivity(ctx context.Context, e event.Event) error {
+func RouteActivity(ctx context.Context, e cloudevents.Event) error {
 	svc, err := initService(ctx)
 	if err != nil {
 		return fmt.Errorf("service init failed: %v", err)
@@ -50,17 +50,15 @@ func RouteActivity(ctx context.Context, e event.Event) error {
 }
 
 // routeHandler contains the business logic
-func routeHandler(ctx context.Context, e event.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
-	// Parse Pub/Sub message
-	var msg types.PubSubMessage
-	if err := e.DataAs(&msg); err != nil {
-		return nil, fmt.Errorf("event.DataAs: %v", err)
-	}
+func routeHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
+	// Extract payload
+	// We assume strict CloudEvent input
+	rawData := e.Data()
 
 	var eventPayload pb.EnrichedActivityEvent
 	// Use protojson to unmarshal (supports standard Proto JSON format)
 	unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := unmarshalOpts.Unmarshal(msg.Message.Data, &eventPayload); err != nil {
+	if err := unmarshalOpts.Unmarshal(rawData, &eventPayload); err != nil {
 		return nil, fmt.Errorf("protojson unmarshal: %v", err)
 	}
 
@@ -97,7 +95,14 @@ func routeHandler(ctx context.Context, e event.Event, fwCtx *framework.Framework
 			continue
 		}
 
-		resID, err := fwCtx.Service.Pub.Publish(ctx, topic, msg.Message.Data)
+		// Construct routing event
+		routeEvent, err := infrapubsub.NewCloudEvent("/router", fmt.Sprintf("com.fitglue.job.%s", dest), rawData)
+		if err != nil {
+			fwCtx.Logger.Error("Failed to create routing event", "error", err)
+			continue
+		}
+
+		resID, err := fwCtx.Service.Pub.PublishCloudEvent(ctx, topic, routeEvent)
 		if err != nil {
 			fwCtx.Logger.Error("Failed to publish to queue", "dest", dest, "topic", topic, "error", err)
 			routedDestinations = append(routedDestinations, RoutedDestination{

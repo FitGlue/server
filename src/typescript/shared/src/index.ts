@@ -1,16 +1,22 @@
 export * from './config';
 export * from './infrastructure/secrets';
 export * from './infrastructure/crypto';
-export * from './framework';
+export * from './framework/index';
+export * from './framework/auth';
+export * from './framework/auth-strategies';
 export { ActivityPayload, ActivitySource } from './types/pb/activity';
 export { ExecutionRecord, ExecutionStatus } from './types/pb/execution';
+export { CloudEventType, CloudEventSource } from './types/pb/events';
+export * from './types/events-helper';
 export * from './execution/logger';
 export { ApiKeyRecord } from './types/pb/auth';
 export { UserRecord, UserIntegrations, HevyIntegration } from './types/pb/user';
 export * from './domain/services/user';
-export * from './integrations/hevy/client';
+export * from './integrations/hevy';
+export * from './integrations/fitbit';
 export * from './integrations/fitbit/client';
 export { FitbitNotification } from './types/pb/fitbit';
 export * from './infrastructure/oauth';
-export * from './infrastructure/pubsub/typed-publisher';
+
+export * from './infrastructure/pubsub/cloud-event-publisher';
 export * as storage from './storage/firestore';

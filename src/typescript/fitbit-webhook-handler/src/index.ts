@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, TOPICS, TypedPublisher, FitbitNotification } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, TOPICS, CloudEventPublisher, FitbitNotification, getCloudEventSource, getCloudEventType, CloudEventSource, CloudEventType } from '@fitglue/shared';
 
 import { createHmac } from 'crypto';
 
@@ -77,10 +77,17 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       // Filter and Publish
       const publishPromises = body.map(async (update: any) => {
         if (update.collectionType === 'activities') {
-          // Use Typed Publisher
-          const publisher = new TypedPublisher<FitbitNotification>(pubsub, TOPICS.FITBIT_UPDATES, logger);
+          // Use CloudEvent Publisher
+          const publisher = new CloudEventPublisher<FitbitNotification>(
+            pubsub,
+            TOPICS.FITBIT_UPDATES,
+            getCloudEventSource(CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK),
+            getCloudEventType(CloudEventType.CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION),
+            logger
+          );
 
-          await publisher.publish(update as FitbitNotification);
+          // Use ownerId as subject for causality
+          await publisher.publish(update as FitbitNotification, update.ownerId);
           logger.info('Published update', { ownerId: update.ownerId, date: update.date });
           return update; // Return for counting
         }
