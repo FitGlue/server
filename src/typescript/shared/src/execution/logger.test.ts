@@ -1,5 +1,5 @@
 
-import { logExecutionStart, logExecutionSuccess, logExecutionFailure } from './logger';
+import { logExecutionStart, logExecutionSuccess, logExecutionFailure, logExecutionPending } from './logger';
 import { ExecutionService } from '../domain/services/execution';
 import { Logger } from 'winston';
 
@@ -33,22 +33,42 @@ describe('Execution Logger', () => {
     jest.clearAllMocks();
   });
 
-  describe('logExecutionStart', () => {
+  describe('logExecutionPending', () => {
     it('should log info and call service.create', async () => {
       const executionId = 'exec-123';
       const functionName = 'test-func';
       const trigger = 'http';
 
-      await logExecutionStart(mockCtx, executionId, functionName, trigger);
+      await logExecutionPending(mockCtx, executionId, functionName, trigger);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Execution started'),
+        expect.stringContaining('Execution pending'),
         expect.anything()
       );
       expect(mockCreate).toHaveBeenCalledWith(executionId, expect.objectContaining({
         functionName,
         trigger,
-        status: 'running'
+        status: 'pending'
+      }));
+    });
+  });
+
+  describe('logExecutionStart', () => {
+    it('should log info and call service.update', async () => {
+      const executionId = 'exec-123';
+      const functionName = 'test-func';
+      const trigger = 'http';
+      const payload = { foo: 'bar' };
+
+      await logExecutionStart(mockCtx, executionId, functionName, trigger, payload);
+
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        expect.stringContaining('Execution started'),
+        expect.anything()
+      );
+      expect(mockUpdate).toHaveBeenCalledWith(executionId, expect.objectContaining({
+        status: 'running',
+        inputsJson: JSON.stringify(payload)
       }));
     });
   });

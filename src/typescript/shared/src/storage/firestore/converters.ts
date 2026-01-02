@@ -117,27 +117,33 @@ export const executionConverter: FirestoreDataConverter<ExecutionRecord> = {
 
 const mapUserIntegrationsToFirestore = (i?: UserIntegrations): any => {
   if (!i) return undefined;
-  return {
-    hevy: i.hevy ? {
+  const out: any = {};
+  if (i.hevy) {
+    out.hevy = {
       enabled: i.hevy.enabled,
       api_key: i.hevy.apiKey,
       user_id: i.hevy.userId
-    } : undefined,
-    fitbit: i.fitbit ? {
+    };
+  }
+  if (i.fitbit) {
+    out.fitbit = {
       enabled: i.fitbit.enabled,
       access_token: i.fitbit.accessToken,
       refresh_token: i.fitbit.refreshToken,
       expires_at: i.fitbit.expiresAt,
       fitbit_user_id: i.fitbit.fitbitUserId
-    } : undefined,
-    strava: i.strava ? {
+    };
+  }
+  if (i.strava) {
+    out.strava = {
       enabled: i.strava.enabled,
       access_token: i.strava.accessToken,
       refresh_token: i.strava.refreshToken,
       expires_at: i.strava.expiresAt,
       athlete_id: i.strava.athleteId
-    } : undefined
-  };
+    };
+  }
+  return out;
 };
 
 const mapUserIntegrationsFromFirestore = (data: any): UserIntegrations | undefined => {

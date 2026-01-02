@@ -35,17 +35,15 @@ func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]inte
 	return nil
 }
 
-func TestLogStart(t *testing.T) {
+func TestLogPending(t *testing.T) {
 	mockDB := &MockDB{
 		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
-			if record.Status != pb.ExecutionStatus_STATUS_STARTED {
-				t.Errorf("Expected STATUS_STARTED, got %v", record.Status)
+			if record.Status != pb.ExecutionStatus_STATUS_PENDING {
+				t.Errorf("Expected STATUS_PENDING, got %v", record.Status)
 			}
-			if record.Service != "test-service" {
-				t.Errorf("Expected test-service, got %v", record.Service)
-			}
-			if record.UserId != "user-1" {
-				t.Errorf("Expected user-1, got %v", record.UserId)
+			// Inputs should be empty/default as we don't pass them in wrapper
+			if record.InputsJson != "" {
+				t.Errorf("Expected empty inputs JSON, got %v", record.InputsJson)
 			}
 			return nil
 		},
@@ -53,14 +51,42 @@ func TestLogStart(t *testing.T) {
 
 	opts := execution.ExecutionOptions{
 		UserID: "user-1",
+		// wrapper doesn't pass inputs to LogPending anymore
 	}
 
-	id, err := execution.LogStart(context.Background(), mockDB, "test-service", opts)
+	id, err := execution.LogPending(context.Background(), mockDB, "test-service", opts)
 	if err != nil {
-		t.Fatalf("LogStart failed: %v", err)
+		t.Fatalf("LogPending failed: %v", err)
 	}
 	if id == "" {
 		t.Error("Expected execution ID")
+	}
+}
+
+func TestLogStart(t *testing.T) {
+	mockDB := &MockDB{
+		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_STARTED {
+				t.Errorf("Expected STATUS_STARTED, got %v", data["status"])
+			}
+			if data["inputs_json"] != `{"foo":"bar"}` {
+				t.Errorf("Expected inputs_json to be '{\"foo\":\"bar\"}', got %v", data["inputs_json"])
+			}
+			// Check updated metadata
+			if data["user_id"] != "user-updated" {
+				t.Errorf("Expected user_id 'user-updated', got %v", data["user_id"])
+			}
+			return nil
+		},
+	}
+
+	inputs := map[string]string{"foo": "bar"}
+	opts := &execution.ExecutionOptions{
+		UserID: "user-updated",
+	}
+	err := execution.LogStart(context.Background(), mockDB, "exec-1", inputs, opts)
+	if err != nil {
+		t.Fatalf("LogStart failed: %v", err)
 	}
 }
 

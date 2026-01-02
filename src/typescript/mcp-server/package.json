@@ -1,0 +1,21 @@
+{
+  "name": "mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server for FitGlue Tools and Data",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"No tests specified\" && exit 0"
+  },
+  "dependencies": {
+    "@fitglue/shared": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.0.1",
+    "firebase-admin": "^13.6.0",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  }
+}

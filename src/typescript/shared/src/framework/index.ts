@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as winston from 'winston';
-import { logExecutionStart, logExecutionSuccess, logExecutionFailure } from '../execution/logger';
+import { logExecutionStart, logExecutionSuccess, logExecutionFailure, logExecutionPending } from '../execution/logger';
 import { AuthStrategy } from './auth';
 export * from './connector';
 export * from './base-connector';
@@ -200,12 +200,19 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       };
     }
 
-    // Extract metadata from request (handles both HTTP and Pub/Sub)
-    let { userId } = extractMetadata(req);
-    const { testRunId, triggerType } = extractMetadata(req);
+    // Generate execution ID immediately
+    const executionId = `${serviceName}-${Date.now()}`;
 
-    // Initial Logger (Pre-Auth)
-    const preambleLogger = logger.child({});
+    // Extract basic metadata for logging
+    const metadata = extractMetadata(req);
+    const { userId, testRunId, triggerType } = metadata;
+
+    // Initial Logger
+    const preambleLogger = logger.child({
+      executionId,
+      ...(userId && { user_id: userId }),
+      service: serviceName
+    });
 
     // DEBUG: Log incoming request details
     if (isHttp) {
@@ -213,60 +220,79 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
         method: req.method,
         path: req.path,
         query: req.query,
-        headers: req.headers,
-        body: req.body, // Log full body for debugging (only happens at debug log level)
         testRunId
       });
     } else {
       preambleLogger.debug('Incoming Event', {
         triggerType,
-        body: req.body,
         testRunId
       });
+    }
+
+    // EARLY EXECUTION LOGGING
+    // Instantiate just enough to log pending state
+    // const db = admin.firestore(); // Use module-level db
+    const executionStore = new ExecutionStore(db);
+    const executionService = new ExecutionService(executionStore);
+
+    // Minimal context for logger
+    const loggingCtx = {
+      services: { execution: executionService },
+      logger: preambleLogger
+    };
+
+    try {
+      await logExecutionPending(loggingCtx, executionId, serviceName, triggerType);
+    } catch (e) {
+      preambleLogger.error('Failed to log execution pending', { error: e });
+      // Proceeding anyway, though visibility is compromised
     }
 
     // --- AUTHENTICATION MIDDLEWARE ---
     // (Only run Auth for HTTP triggers usually, unless payload carries auth)
     let authScopes: string[] = [];
+    let authenticatedUserId = userId; // Can be overridden by auth
 
-    // Initialize stores once (singleton pattern)
+    // Initialize remaining stores once (singleton pattern)
+    // We reuse executionStore
     const stores = {
       users: new UserStore(db),
-      executions: new ExecutionStore(db),
+      executions: executionStore,
       apiKeys: new ApiKeyStore(db),
       integrationIdentities: new IntegrationIdentityStore(db),
       activities: new ActivityStore(db)
     };
 
-    // Initialize services (singleton pattern) - services use stores
+    // Initialize services
     const services = {
       user: new UserService(stores.users, stores.activities),
       apiKey: new ApiKeyService(stores.apiKeys),
-      execution: new ExecutionService(stores.executions)
+      execution: executionService
     };
 
     // Auth Loop
     if (options?.auth?.strategies) {
       let authenticated = false;
 
-      // Prepare context for Auth Strategy
+      // Prepare minimal context for Auth Strategy
       const tempCtx: FrameworkContext = {
         services,
         stores,
         pubsub,
         secrets: new SecretManagerHelper(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || ''),
         logger: preambleLogger,
-        executionId: 'pre-auth'
+        executionId,
+        userId: authenticatedUserId
       };
 
       for (const strategy of options.auth.strategies) {
         try {
           const authResult = await strategy.authenticate(req, tempCtx);
           if (authResult) {
-            userId = authResult.userId; // Auth overrides extracted user ID
+            authenticatedUserId = authResult.userId; // Auth overrides extracted user ID
             authScopes = authResult.scopes || [];
             authenticated = true;
-            preambleLogger.info(`Authenticated via ${strategy.name}`, { userId, scopes: authScopes });
+            preambleLogger.info(`Authenticated via ${strategy.name}`, { userId: authenticatedUserId, scopes: authScopes });
             break;
           }
         } catch (e) {
@@ -284,7 +310,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       if (options.auth.requiredScopes) {
         const hasScopes = options.auth.requiredScopes.every(scope => authScopes.includes(scope));
         if (!hasScopes) {
-          preambleLogger.warn(`Authenticated user ${userId} missing required scopes`);
+          preambleLogger.warn(`Authenticated user ${authenticatedUserId} missing required scopes`);
           res.status(403).send('Forbidden: Insufficient Scopes');
           return;
         }
@@ -292,13 +318,11 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     }
     // --- END AUTH ---
 
-    // Generate execution ID
-    const executionId = `${serviceName}-${Date.now()}`;
-
-    // Create context with enriched logger
+    // Create context with enriched logger (if user ID changed)
     const contextLogger = logger.child({
       executionId,
-      ...(userId && { user_id: userId })
+      ...(authenticatedUserId && { user_id: authenticatedUserId }),
+      service: serviceName
     });
 
     // Build the full context
@@ -309,12 +333,15 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       secrets: new SecretManagerHelper(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || ''),
       logger: contextLogger,
       executionId,
-      userId,
+      userId: authenticatedUserId,
       authScopes
     };
 
-    // Log execution start (now that we have services)
-    await logExecutionStart(ctx, executionId, serviceName, triggerType);
+    // Capture original payload for logging
+    const originalPayload = isHttp ? req.body : (req.body?.message?.data ? JSON.parse(Buffer.from(req.body.message.data, 'base64').toString()) : req.body);
+
+    // Log execution start (update to running + payload)
+    await logExecutionStart(ctx, executionId, serviceName, triggerType, originalPayload);
 
     try {
       // Attach execution ID to response header early (so it's present even if handler sends response)

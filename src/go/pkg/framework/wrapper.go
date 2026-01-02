@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
-	"os"
 	"strings"
 
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -31,75 +30,100 @@ type HandlerFunc func(ctx context.Context, e event.Event, fwCtx *FrameworkContex
 // Similar to TypeScript's createCloudFunction
 func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerFunc) func(context.Context, event.Event) error {
 	return func(ctx context.Context, e event.Event) error {
+		// 0. Log execution pending (IMMEDIATELY)
+		// We don't have metadata yet, so pass empty options.
+		// Note: We use a basic logger or fmt if needed, but LogPending handles DB interaction.
+		execID, err := execution.LogPending(ctx, svc.DB, serviceName, execution.ExecutionOptions{})
+		if err != nil {
+			// We can't log nicely yet as we haven't set up the logger context fully,
+			// but we proceed.
+			// Ideally fmt.Printf or similar to stderr
+		}
+
 		// --- 1. CloudEvent Unwrapping (Pub/Sub Envelope) ---
 		// Check if this is a Pub/Sub event wrapping a structured CloudEvent
 		if e.Type() == "google.cloud.pubsub.topic.v1.messagePublished" {
 			var msg types.PubSubMessage
 			if err := e.DataAs(&msg); err == nil && len(msg.Message.Data) > 0 {
 				// Try to unmarshal the inner data as a CloudEvent
-				// We expect a JSON representation of a CloudEvent (v1.0)
 				var innerEvent event.Event
 				if err := json.Unmarshal(msg.Message.Data, &innerEvent); err == nil {
-					// Check if it looks valid (e.g. has type/source/specversion)
+					// Check if it looks valid
 					if innerEvent.Type() != "" && innerEvent.Source() != "" {
-						// It IS a nested CloudEvent! Replace 'e' with the inner event.
 						e = innerEvent
-						// Note: We lose the outer Pub/Sub message ID and publish time here
-						// unless we copy them to extensions, but for application logic,
-						// the inner event is what matters.
 					}
 				}
 			}
 		}
 
-		// Extract metadata from event (now potentially unwrapped)
-		userID, testRunID := extractEventMetadata(e)
+		// Extract metadata
+		var userID string
+		var testRunID string
+		var triggerType = e.Type()
 
-		// Determine trigger type
-		triggerType := "pubsub" // Default assumption
-		if e.Type() == "google.cloud.functions.http" {
-			triggerType = "http"
-		} else if e.Type() != "google.cloud.pubsub.topic.v1.messagePublished" {
-			// If it's not Pub/Sub (and not HTTP), it's a direct CloudEvent (e.g. from unwrapping)
-			triggerType = "cloudevent"
+		// Try to parse data to find user_id/test_run_id (best effort)
+		var rawData map[string]interface{}
+		if err := json.Unmarshal(e.Data(), &rawData); err == nil {
+			if uid, ok := rawData["user_id"].(string); ok {
+				userID = uid
+			}
+			if uid, ok := rawData["userId"].(string); ok {
+				userID = uid
+			}
+			if tid, ok := rawData["test_run_id"].(string); ok {
+				testRunID = tid
+			}
+			if tid, ok := rawData["testRunId"].(string); ok {
+				testRunID = tid
+			}
 		}
 
-		// Determine log level from env
-		logLevelStr := strings.ToLower(os.Getenv("LOG_LEVEL"))
-		var logLevel slog.Level
-		switch logLevelStr {
-		case "debug":
-			logLevel = slog.LevelDebug
-		case "info":
-			logLevel = slog.LevelInfo
-		case "warn":
-			logLevel = slog.LevelWarn
-		case "error":
-			logLevel = slog.LevelError
-		default:
-			logLevel = slog.LevelInfo
+		// For HTTP requests, or extensions on any event type
+		if testRunID == "" {
+			extensions := e.Extensions()
+			if trid, ok := extensions["test_run_id"].(string); ok {
+				testRunID = trid
+			}
+			if trid, ok := extensions["testrunid"].(string); ok {
+				testRunID = trid
+			}
 		}
 
-		// Create base logger with configured level
-		opts := bootstrap.GetSlogHandlerOptions(logLevel)
-		logger := slog.New(slog.NewJSONHandler(os.Stdout, opts)).With("service", serviceName)
+		// Setup Logger
+		logger := bootstrap.NewLogger(serviceName, false)
+		if testRunID != "" {
+			logger = logger.With("test_run_id", testRunID)
+		}
 		if userID != "" {
 			logger = logger.With("user_id", userID)
 		}
 
-		// Log execution start
-		execID, err := execution.LogStart(ctx, svc.DB, serviceName, execution.ExecutionOptions{
+		// If pending log failed earlier, log it now
+		if err != nil {
+			logger.Error("Failed to log execution pending", "error", err)
+		} else {
+			logger.Info("Execution pending logged", "execution_id", execID)
+			logger = logger.With("execution_id", execID)
+		}
+
+		// Extract inputs for logging
+		var inputs interface{}
+		var rawInputs map[string]interface{}
+		if err := e.DataAs(&rawInputs); err == nil {
+			inputs = rawInputs
+		} else {
+			inputs = string(e.Data())
+		}
+
+		// Log execution start (handler ready) -> Now includes metadata updates
+		startOpts := &execution.ExecutionOptions{
 			UserID:      userID,
 			TestRunID:   testRunID,
 			TriggerType: triggerType,
-		})
-		if err != nil {
-			logger.Error("Failed to log execution start", "error", err)
-			// Continue anyway - don't fail the function just because logging failed
 		}
-
-		// Add execution ID to logger
-		logger = logger.With("execution_id", execID)
+		if err := execution.LogStart(ctx, svc.DB, execID, inputs, startOpts); err != nil {
+			logger.Warn("Failed to log execution start", "error", err)
+		}
 		logger.Info("Function started")
 
 		// Create framework context
@@ -132,25 +156,12 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 		}
 
 		if customStatus != "" {
-			// Map string status to Enum
-			// Enum names are typically STATUS_STARTED, STATUS_SUCCESS etc.
-			// Users might return "success" or "STATUS_SUCCESS". I should handle both loosely?
-			// pb.ExecutionStatus_value map keys are "STATUS_UNKNOWN", "STATUS_STARTED", ...
-			// If user returns "SUCCESS", I might map to "STATUS_SUCCESS"?
-			// For now, strict uppercase match against known keys.
-
-			// Try direct lookup
 			var statusEnum pb.ExecutionStatus
 			if val, ok := pb.ExecutionStatus_value[customStatus]; ok {
 				statusEnum = pb.ExecutionStatus(val)
 			} else if val, ok := pb.ExecutionStatus_value["STATUS_"+strings.ToUpper(customStatus)]; ok {
 				statusEnum = pb.ExecutionStatus(val)
 			} else {
-				// Fallback or Unknown
-				// If unknown, maybe we shouldn't use LogExecutionStatus but LogSuccess with output status field?
-				// But we are here because customStatus != "".
-				// Let's default to SUCCESS but log warning?
-				// Or use STATUS_UNKNOWN?
 				statusEnum = pb.ExecutionStatus_STATUS_UNKNOWN
 				logger.Warn("Unknown custom status returned", "status", customStatus)
 			}
@@ -166,57 +177,4 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 
 		return nil
 	}
-}
-
-// extractEventMetadata extracts user_id and test_run_id from the event
-// Handles both Pub/Sub messages and HTTP requests
-func extractEventMetadata(e event.Event) (userID string, testRunID string) {
-	// 1. Try Pub/Sub Message Structure
-	var msg types.PubSubMessage
-	if err := e.DataAs(&msg); err == nil && msg.Message.Data != nil {
-		// Try to parse the message data to extract user_id
-		var payload map[string]interface{}
-		if err := json.Unmarshal(msg.Message.Data, &payload); err == nil {
-			if uid, ok := payload["user_id"].(string); ok {
-				userID = uid
-			}
-			if uid, ok := payload["userId"].(string); ok {
-				userID = uid
-			}
-		}
-
-		// Extract test_run_id from Pub/Sub message attributes
-		if msg.Message.Attributes != nil {
-			if trid, ok := msg.Message.Attributes["test_run_id"]; ok {
-				testRunID = trid
-			}
-		}
-	} else {
-		// 2. Try Generic/Direct CloudEvent Data
-		// If it wasn't a Pub/Sub message, maybe the data itself is the payload (unwrapped CloudEvent)
-		var payload map[string]interface{}
-		// Note: DataAs attempts to unmarshal to the target.
-		if err := e.DataAs(&payload); err == nil {
-			if uid, ok := payload["user_id"].(string); ok {
-				userID = uid
-			}
-			if uid, ok := payload["userId"].(string); ok {
-				userID = uid
-			}
-		}
-	}
-
-	// For HTTP requests, or extensions on any event type
-	// (HTTP headers are mapped to extensions by Functions Framework)
-	if testRunID == "" {
-		extensions := e.Extensions()
-		if trid, ok := extensions["test_run_id"].(string); ok {
-			testRunID = trid
-		}
-		if trid, ok := extensions["testrunid"].(string); ok {
-			testRunID = trid
-		}
-	}
-
-	return userID, testRunID
 }

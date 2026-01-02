@@ -24,8 +24,8 @@ type ExecutionOptions struct {
 	Inputs      interface{}
 }
 
-// LogStart creates an execution record with STARTED status
-func LogStart(ctx context.Context, db Database, service string, opts ExecutionOptions) (string, error) {
+// LogPending creates an execution record with PENDING status and captured inputs
+func LogPending(ctx context.Context, db Database, service string, opts ExecutionOptions) (string, error) {
 	execID := fmt.Sprintf("%s-%d", service, time.Now().UnixNano())
 
 	now := timestamppb.Now()
@@ -33,7 +33,7 @@ func LogStart(ctx context.Context, db Database, service string, opts ExecutionOp
 	record := &pb.ExecutionRecord{
 		ExecutionId: execID,
 		Service:     service,
-		Status:      pb.ExecutionStatus_STATUS_STARTED,
+		Status:      pb.ExecutionStatus_STATUS_PENDING,
 		Timestamp:   now,
 		StartTime:   now,
 		UserId:      opts.UserID,
@@ -50,10 +50,47 @@ func LogStart(ctx context.Context, db Database, service string, opts ExecutionOp
 	}
 
 	if err := db.SetExecution(ctx, record); err != nil {
-		return execID, fmt.Errorf("failed to log execution start: %w", err)
+		return execID, fmt.Errorf("failed to log execution pending: %w", err)
 	}
 
 	return execID, nil
+}
+
+// LogStart updates an execution record to STARTED status and adds inputs/metadata
+func LogStart(ctx context.Context, db Database, execID string, inputs interface{}, opts *ExecutionOptions) error {
+	now := timestamppb.Now()
+
+	updates := map[string]interface{}{
+		"status":     int32(pb.ExecutionStatus_STATUS_STARTED),
+		"start_time": now.AsTime(),
+	}
+
+	// Update metadata if provided (wasn't available at Pending time)
+	if opts != nil {
+		if opts.UserID != "" {
+			updates["user_id"] = opts.UserID
+		}
+		if opts.TestRunID != "" {
+			updates["test_run_id"] = opts.TestRunID
+		}
+		if opts.TriggerType != "" {
+			updates["trigger_type"] = opts.TriggerType
+		}
+	}
+
+	// Encode inputs as JSON if provided
+	if inputs != nil {
+		inputsJSON, err := json.Marshal(inputs)
+		if err == nil {
+			updates["inputs_json"] = string(inputsJSON)
+		}
+	}
+
+	if err := db.UpdateExecution(ctx, execID, updates); err != nil {
+		return fmt.Errorf("failed to log execution start: %w", err)
+	}
+
+	return nil
 }
 
 // LogChildExecutionStart creates an execution record with STARTED status and links it to a parent

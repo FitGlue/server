@@ -29,6 +29,7 @@ const (
 	ExecutionStatus_STATUS_STARTED ExecutionStatus = 1
 	ExecutionStatus_STATUS_SUCCESS ExecutionStatus = 2
 	ExecutionStatus_STATUS_FAILED  ExecutionStatus = 3
+	ExecutionStatus_STATUS_PENDING ExecutionStatus = 4
 )
 
 // Enum value maps for ExecutionStatus.
@@ -38,12 +39,14 @@ var (
 		1: "STATUS_STARTED",
 		2: "STATUS_SUCCESS",
 		3: "STATUS_FAILED",
+		4: "STATUS_PENDING",
 	}
 	ExecutionStatus_value = map[string]int32{
 		"STATUS_UNKNOWN": 0,
 		"STATUS_STARTED": 1,
 		"STATUS_SUCCESS": 2,
 		"STATUS_FAILED":  3,
+		"STATUS_PENDING": 4,
 	}
 )
 
@@ -241,12 +244,13 @@ const file_execution_proto_rawDesc = "" +
 	"\vinputs_json\x18\v \x01(\tR\n" +
 	"inputsJson\x12!\n" +
 	"\foutputs_json\x18\f \x01(\tR\voutputsJson\x12.\n" +
-	"\x13parent_execution_id\x18\r \x01(\tR\x11parentExecutionId*`\n" +
+	"\x13parent_execution_id\x18\r \x01(\tR\x11parentExecutionId*t\n" +
 	"\x0fExecutionStatus\x12\x12\n" +
 	"\x0eSTATUS_UNKNOWN\x10\x00\x12\x12\n" +
 	"\x0eSTATUS_STARTED\x10\x01\x12\x12\n" +
 	"\x0eSTATUS_SUCCESS\x10\x02\x12\x11\n" +
-	"\rSTATUS_FAILED\x10\x03B\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
+	"\rSTATUS_FAILED\x10\x03\x12\x12\n" +
+	"\x0eSTATUS_PENDING\x10\x04B\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
 
 var (
 	file_execution_proto_rawDescOnce sync.Once

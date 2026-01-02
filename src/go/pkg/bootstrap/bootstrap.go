@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
@@ -69,6 +70,25 @@ func InitLogger() {
 	opts := GetSlogHandlerOptions(slog.LevelInfo)
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, opts))
 	slog.SetDefault(logger)
+}
+
+// NewLogger creates a configured logger instance
+func NewLogger(serviceName string, isDev bool) *slog.Logger {
+	logLevelStr := os.Getenv("LOG_LEVEL")
+	var level slog.Level
+	switch strings.ToLower(logLevelStr) {
+	case "debug":
+		level = slog.LevelDebug
+	case "warn":
+		level = slog.LevelWarn
+	case "error":
+		level = slog.LevelError
+	default:
+		level = slog.LevelInfo
+	}
+
+	opts := GetSlogHandlerOptions(level)
+	return slog.New(slog.NewJSONHandler(os.Stdout, opts)).With("service", serviceName)
 }
 
 // NewService initializes all standard dependencies

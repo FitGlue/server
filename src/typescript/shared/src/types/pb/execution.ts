@@ -13,6 +13,7 @@ export enum ExecutionStatus {
   STATUS_STARTED = 1,
   STATUS_SUCCESS = 2,
   STATUS_FAILED = 3,
+  STATUS_PENDING = 4,
   UNRECOGNIZED = -1,
 }
 

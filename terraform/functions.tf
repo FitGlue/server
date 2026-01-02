@@ -32,7 +32,7 @@ data "archive_file" "typescript_source_zip" {
   type        = "zip"
   source_dir  = "../src/typescript"
   output_path = "/tmp/typescript-source.zip"
-  excludes    = ["**/node_modules", "**/dist", "**/build", "**/coverage", "**/.DS_Store"]
+  excludes    = ["**/node_modules", "**/dist", "**/build", "**/coverage", "**/.DS_Store", "**/mcp-server"]
 }
 
 resource "google_storage_bucket_object" "typescript_source_zip" {

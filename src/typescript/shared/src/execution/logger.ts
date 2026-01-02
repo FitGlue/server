@@ -1,21 +1,41 @@
 import * as winston from 'winston';
 
 /**
+ * Logs the pending state of a function execution.
+ */
+export async function logExecutionPending(
+  ctx: { services: { execution: any }; logger: winston.Logger },
+  executionId: string,
+  functionName: string,
+  trigger: string
+): Promise<void> {
+  ctx.logger.info(`[${functionName}] Execution pending`, { executionId, trigger });
+
+  await ctx.services.execution.create(executionId, {
+    functionName,
+    trigger,
+    startedAt: new Date(),
+    status: 'pending'
+  });
+}
+
+/**
  * Logs the start of a function execution.
  */
 export async function logExecutionStart(
   ctx: { services: { execution: any }; logger: winston.Logger },
   executionId: string,
   functionName: string,
-  trigger: string
+  trigger: string,
+  originalPayload?: any
 ): Promise<void> {
   ctx.logger.info(`[${functionName}] Execution started`, { executionId, trigger });
 
-  await ctx.services.execution.create(executionId, {
-    functionName,
-    trigger,
+  // Update existing record to running
+  await ctx.services.execution.update(executionId, {
     startedAt: new Date(),
-    status: 'running'
+    status: 'running',
+    inputsJson: originalPayload ? JSON.stringify(originalPayload) : undefined
   });
 }
 

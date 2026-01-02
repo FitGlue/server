@@ -37,21 +37,33 @@ func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]inte
 	return nil
 }
 
+// Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {
 	mockDB := &MockDB{
 		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
-			if record.Status != pb.ExecutionStatus_STATUS_STARTED {
-				t.Errorf("Expected status started, got %v", record.Status)
+			if record.Status != pb.ExecutionStatus_STATUS_PENDING {
+				t.Errorf("Expected status pending, got %v", record.Status)
 			}
 			return nil
 		},
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_SUCCESS {
-				t.Errorf("Expected status success, got %v", data["status"])
+			status, ok := data["status"].(int32)
+			if !ok {
+				// Check for metadata updates
+				if _, ok := data["user_id"]; ok {
+					return nil // User ID update
+				}
+				return nil // some other update
+			}
+			s := pb.ExecutionStatus(status)
+			// Should be either STARTED or SUCCESS
+			if s != pb.ExecutionStatus_STATUS_STARTED && s != pb.ExecutionStatus_STATUS_SUCCESS {
+				t.Errorf("Unexpected status update: %v", s)
 			}
 			return nil
 		},
 	}
+	// ... existing setup ...
 
 	svc := &bootstrap.Service{
 		DB: mockDB,
@@ -81,9 +93,21 @@ func TestWrapCloudEvent(t *testing.T) {
 
 func TestWrapCloudEvent_Failure(t *testing.T) {
 	mockDB := &MockDB{
+		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
+			if record.Status != pb.ExecutionStatus_STATUS_PENDING {
+				t.Errorf("Expected status pending, got %v", record.Status)
+			}
+			return nil
+		},
 		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
-			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_FAILED {
-				t.Errorf("Expected status failed, got %v", data["status"])
+			status, ok := data["status"].(int32)
+			if !ok {
+				return nil
+			}
+			s := pb.ExecutionStatus(status)
+			// Should be STARTED then FAILED
+			if s != pb.ExecutionStatus_STATUS_STARTED && s != pb.ExecutionStatus_STATUS_FAILED {
+				t.Errorf("Unexpected status update: %v", s)
 			}
 			return nil
 		},
