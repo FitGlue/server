@@ -13,9 +13,6 @@ const mockDoc = jest.fn((_) => ({
     update: mockUpdate
   }))
 }));
-const mockCollection = jest.fn((_) => ({
-  doc: mockDoc
-}));
 
 // Mock Firestore Storage Module directly
 jest.mock('../storage/firestore', () => ({

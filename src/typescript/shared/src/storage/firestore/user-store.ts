@@ -53,9 +53,13 @@ export class UserStore {
    */
   async get(userId: string): Promise<UserRecord | null> {
     const doc = await this.collection().doc(userId).get();
-    if (!doc.exists) {
-      return null;
-    }
-    return doc.data() || null;
+    return doc.exists ? doc.data() || null : null;
+  }
+
+  /**
+   * Update a user document.
+   */
+  async update(userId: string, data: any): Promise<void> {
+    await this.collection().doc(userId).update(data);
   }
 }

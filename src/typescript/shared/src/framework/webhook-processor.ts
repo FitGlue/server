@@ -1,6 +1,5 @@
 import { FrameworkContext } from './index';
 import { Connector, ConnectorConfig } from './connector';
-import { UserService } from '../domain/services/user';
 import { ActivityPayload } from '../types/pb/activity';
 import { StandardizedActivity } from '../types/pb/standardized_activity';
 import { CloudEventPublisher } from '../infrastructure/pubsub/cloud-event-publisher';
@@ -134,7 +133,11 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     }
 
     logger.info(`[${connector.name}] Successfully processed ${publishedIds.length}/${standardizedActivities.length} activities for ${externalId}`);
-    res.status(200).json({ status: 'Processed', publishedCount: publishedIds.length, publishedIds });
+    res.status(200).json({
+      status: 'Success',
+      published: publishedIds.length,
+      total: standardizedActivities.length
+    });
 
     return { status: 'Processed', externalId, publishedCount: publishedIds.length, publishedIds };
   };

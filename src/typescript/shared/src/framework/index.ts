@@ -7,7 +7,7 @@ export * from './base-connector';
 import { PubSub } from '@google-cloud/pubsub';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore } from '../storage/firestore';
-import { UserService, ActivityService, ApiKeyService, ExecutionService } from '../domain/services';
+import { UserService, ApiKeyService, ExecutionService } from '../domain/services';
 
 // Initialize Secret Manager
 const secretClient = new SecretManagerServiceClient();
@@ -75,7 +75,6 @@ const logger = winston.createLogger({
 export interface FrameworkContext {
   services: {
     user: import('../domain/services/user').UserService;
-    activity: import('../domain/services/activity').ActivityService;
     apiKey: import('../domain/services/apikey').ApiKeyService;
     execution: import('../domain/services/execution').ExecutionService;
   };
@@ -204,18 +203,21 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
         path: req.path,
         query: req.query,
         headers: req.headers,
-        body: req.body // Log full body for debugging (only happens at debug log level)
+        body: req.body, // Log full body for debugging (only happens at debug log level)
+        testRunId
       });
     } else {
       preambleLogger.debug('Incoming Event', {
         triggerType,
-        body: req.body
+        body: req.body,
+        testRunId
       });
     }
 
     // --- AUTHENTICATION MIDDLEWARE ---
     // (Only run Auth for HTTP triggers usually, unless payload carries auth)
     let authScopes: string[] = [];
+
     // Initialize stores once (singleton pattern)
     const stores = {
       users: new UserStore(db),
@@ -228,7 +230,6 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     // Initialize services (singleton pattern) - services use stores
     const services = {
       user: new UserService(stores.users, stores.activities),
-      activity: new ActivityService(stores.activities),
       apiKey: new ApiKeyService(stores.apiKeys),
       execution: new ExecutionService(stores.executions)
     };
@@ -279,18 +280,8 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     }
     // --- END AUTH ---
 
-    // Log execution start
-    let executionId: string;
-    try {
-      executionId = await logExecutionStart(serviceName, {
-        userId,
-        testRunId,
-        triggerType,
-      });
-    } catch (e) {
-      logger.warn('Failed to log execution start', { error: e });
-      executionId = 'unknown';
-    }
+    // Generate execution ID
+    const executionId = `${serviceName}-${Date.now()}`;
 
     // Create context with enriched logger
     const contextLogger = logger.child({
@@ -309,7 +300,8 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       authScopes
     };
 
-    contextLogger.info('Function started', { isHttp });
+    // Log execution start (now that we have services)
+    await logExecutionStart(ctx, executionId, serviceName, triggerType);
 
     try {
       // Attach execution ID to response header early (so it's present even if handler sends response)
@@ -321,7 +313,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       const result = await handler(req, res, ctx);
 
       // Log execution success
-      await logExecutionSuccess(executionId, result || {});
+      await logExecutionSuccess(ctx, executionId, result || {});
 
       contextLogger.info('Function completed successfully');
 
@@ -329,7 +321,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Log execution failure
       ctx.logger.error('Function failed', { error: err.message, stack: err.stack });
 
-      await logExecutionFailure(executionId, err);
+      await logExecutionFailure(ctx, executionId, err);
 
       // Attach execution ID to response header (safety check)
       if (isHttp && !res.headersSent) {
