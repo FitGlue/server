@@ -3,6 +3,7 @@ package framework
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strings"
 
@@ -137,6 +138,24 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 			Logger:      baseLogger.With("execution_id", execID).With("component", "context"),
 			ExecutionID: execID,
 		}
+
+		// Defer panic recovery
+		defer func() {
+			if r := recover(); r != nil {
+				// Log the panic
+				logger.Error("Function panicked", "panic", r)
+
+				// Attempt to log execution failure
+				// Create an error from the panic
+				panicErr := fmt.Errorf("runtime panic: %v", r)
+
+				// Use the context we hopefully created, or the parent context if not
+				logCtx := ctx
+				if logErr := execution.LogFailure(logCtx, svc.DB, execID, panicErr, nil); logErr != nil {
+					logger.Warn("Failed to log execution failure after panic", "error", logErr)
+				}
+			}
+		}()
 
 		// Execute handler
 		outputs, handlerErr := handler(ctx, e, fwCtx)

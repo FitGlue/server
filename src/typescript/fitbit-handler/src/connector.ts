@@ -1,5 +1,15 @@
 import { BaseConnector, ConnectorConfig, IngestStrategy, StandardizedActivity, CloudEventSource, ActivitySource, createFitbitClient, mapTCXToStandardized, FrameworkContext } from '@fitglue/shared';
 
+interface FitbitNotification {
+  collectionType: string;
+  date: string;
+  ownerId: string;
+  ownerType: string;
+  subscriptionId: string;
+}
+
+type FitbitBody = FitbitNotification[];
+
 export interface FitbitConnectorConfig extends ConnectorConfig {
   fitbit_user_id: string;
   // OAuth tokens are managed by UserService via createFitbitClient
@@ -20,16 +30,20 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
    * We extract the date from the notification payload.
    * Returns null for non-activity notifications to skip processing.
    */
-  extractId(payload: any): string | null {
+  extractId(payload: FitbitBody): string | null {
     if (!payload) return null;
 
-    // Skip non-activity notifications
-    if (payload.collectionType && payload.collectionType !== 'activities') {
+    const fitbitActivitiesSubscription = payload.find((p) => p.subscriptionId === 'fitglue-activities');
+    if (!fitbitActivitiesSubscription) {
       return null;
     }
 
-    // Fitbit notification format: { collectionType, date, ownerId, ownerType, subscriptionId }
-    return payload.date || null;
+    // Skip non-activity notifications
+    if (fitbitActivitiesSubscription.collectionType && fitbitActivitiesSubscription.collectionType !== 'activities') {
+      return null;
+    }
+
+    return fitbitActivitiesSubscription.date || null;
   }
 
   /**
@@ -118,7 +132,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
    * Resolves user ID from Fitbit webhook payload.
    * Maps Fitbit's ownerId to our internal userId.
    */
-  async resolveUser(payload: any, context: any): Promise<string | null> {
+  async resolveUser(payload: FitbitBody, context: any): Promise<string | null> {
     const { logger, services } = context;
 
     // payload is the body of the request, which for Fitbit webhooks is the notification payload
@@ -126,7 +140,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
     // we need to find the ownerId of the first object in the array that is
     // for `subscriptionId: fitglue-activities`
 
-    const fitbitActivitiesSubscription = payload.find((p: any) => p.subscriptionId === 'fitglue-activities');
+    const fitbitActivitiesSubscription = payload.find((p) => p.subscriptionId === 'fitglue-activities');
     if (!fitbitActivitiesSubscription) {
       logger.warn('Fitbit payload missing fitglue-activities subscription');
       return null;
