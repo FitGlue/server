@@ -92,15 +92,12 @@ export function registerUserTools(registerTool: (tool: any, handler: (args: any)
         const token = `fg_sk_${crypto.randomBytes(32).toString('hex')}`;
         const hash = crypto.createHash('sha256').update(token).digest('hex');
 
-        await apiKeyService.create({
-          id: randomUUID(),
-          hash,
+        await apiKeyService.create(hash, {
           label: keyLabel,
           scopes: ['read:activity'],
           userId: finalUserId,
-          enabled: true,
-          created_at: admin.firestore.Timestamp.now()
-        } as any);
+          createdAt: new Date()
+        });
         ingressKey = token;
       }
 

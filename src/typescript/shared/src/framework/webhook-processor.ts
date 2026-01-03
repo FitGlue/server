@@ -29,6 +29,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     const connector = new ConnectorClass(ctx);
 
     // 1. Verify Authentication
+    logger.info('Webhook processor received context', { userId, hasUserId: !!userId, ctxUserId: ctx.userId });
     if (!userId) {
       logger.error('Handler called without authenticated userId');
       res.status(401).send('Unauthorized');

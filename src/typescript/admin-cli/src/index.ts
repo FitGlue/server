@@ -138,15 +138,12 @@ program.command('users:create')
                 const token = `fg_sk_${crypto.randomBytes(32).toString('hex')}`;
                 const hash = crypto.createHash('sha256').update(token).digest('hex');
 
-                await apiKeyService.create({
-                    id: randomUUID(), // ID of the key doc
-                    hash,
+                await apiKeyService.create(hash, {
                     label: answers.label,
                     scopes: answers.scopes,
                     userId,
-                    enabled: true,
-                    created_at: admin.firestore.Timestamp.now()
-                } as any);
+                    createdAt: new Date()
+                });
 
                 console.log('\n==========================================');
                 console.log(`INGRESS API KEY (${answers.label}):`);

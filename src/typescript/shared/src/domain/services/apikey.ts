@@ -10,7 +10,7 @@ export class ApiKeyService {
   /**
    * Find an API key by its hash.
    */
-  async findByHash(hash: string): Promise<ApiKeyRecord | null> {
+  async getByHash(hash: string): Promise<ApiKeyRecord | null> {
     return this.apiKeyStore.getByHash(hash);
   }
 
@@ -18,7 +18,7 @@ export class ApiKeyService {
    * Validate an API key (checks if exists and enabled).
    */
   async validate(hash: string): Promise<{ valid: boolean; userId?: string; scopes?: string[] }> {
-    const apiKey = await this.findByHash(hash);
+    const apiKey = await this.getByHash(hash);
 
     if (!apiKey) {
       return { valid: false };
@@ -34,7 +34,7 @@ export class ApiKeyService {
   /**
    * Create a new API key.
    */
-  async create(record: ApiKeyRecord): Promise<void> {
-    return this.apiKeyStore.create(record);
+  async create(hash: string, record: ApiKeyRecord): Promise<void> {
+    return this.apiKeyStore.create(hash, record);
   }
 }
