@@ -1428,6 +1428,10 @@ program
         }
     });
 
+// Register replay commands
+import { registerReplayCommands } from './commands/replay';
+registerReplayCommands(program);
+
 program.parse();
 
 async function promptForEnricherConfig(providerType: EnricherProviderType): Promise<{ [key: string]: string }> {
