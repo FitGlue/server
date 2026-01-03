@@ -80,24 +80,23 @@ func (ExecutionStatus) EnumDescriptor() ([]byte, []int) {
 // ExecutionRecord represents a function execution in Firestore
 type ExecutionRecord struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
-	ExecutionId string                 `protobuf:"bytes,1,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty"`
-	Service     string                 `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`
-	Status      ExecutionStatus        `protobuf:"varint,3,opt,name=status,proto3,enum=fitglue.ExecutionStatus" json:"status,omitempty"`
-	Timestamp   *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	ExecutionId string                 `protobuf:"bytes,1,opt,name=execution_id,json=executionId,proto3" json:"execution_id,omitempty"`  // Required: unique identifier
+	Service     string                 `protobuf:"bytes,2,opt,name=service,proto3" json:"service,omitempty"`                             // Required: which function executed
+	Status      ExecutionStatus        `protobuf:"varint,3,opt,name=status,proto3,enum=fitglue.ExecutionStatus" json:"status,omitempty"` // Required: current status
+	Timestamp   *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=timestamp,proto3" json:"timestamp,omitempty"`                         // Required: when it started
+	TriggerType string                 `protobuf:"bytes,7,opt,name=trigger_type,json=triggerType,proto3" json:"trigger_type,omitempty"`  // Required: how it was triggered
 	// Optional context fields
-	UserId    string `protobuf:"bytes,5,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	TestRunId string `protobuf:"bytes,6,opt,name=test_run_id,json=testRunId,proto3" json:"test_run_id,omitempty"` // For test cleanup
-	// Trigger information
-	TriggerType string `protobuf:"bytes,7,opt,name=trigger_type,json=triggerType,proto3" json:"trigger_type,omitempty"` // "http", "pubsub", "scheduler"
-	// Timing
-	StartTime *timestamp.Timestamp `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	EndTime   *timestamp.Timestamp `protobuf:"bytes,9,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	// Results
-	ErrorMessage string `protobuf:"bytes,10,opt,name=error_message,json=errorMessage,proto3" json:"error_message,omitempty"`
-	InputsJson   string `protobuf:"bytes,11,opt,name=inputs_json,json=inputsJson,proto3" json:"inputs_json,omitempty"`    // JSON-encoded inputs
-	OutputsJson  string `protobuf:"bytes,12,opt,name=outputs_json,json=outputsJson,proto3" json:"outputs_json,omitempty"` // JSON-encoded outputs
-	// Parent-child execution tracking
-	ParentExecutionId string `protobuf:"bytes,13,opt,name=parent_execution_id,json=parentExecutionId,proto3" json:"parent_execution_id,omitempty"` // Links child executions to parent
+	UserId    *string `protobuf:"bytes,5,opt,name=user_id,json=userId,proto3,oneof" json:"user_id,omitempty"`
+	TestRunId *string `protobuf:"bytes,6,opt,name=test_run_id,json=testRunId,proto3,oneof" json:"test_run_id,omitempty"` // For test cleanup
+	// Optional timing
+	StartTime *timestamp.Timestamp `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3,oneof" json:"start_time,omitempty"`
+	EndTime   *timestamp.Timestamp `protobuf:"bytes,9,opt,name=end_time,json=endTime,proto3,oneof" json:"end_time,omitempty"`
+	// Optional results
+	ErrorMessage *string `protobuf:"bytes,10,opt,name=error_message,json=errorMessage,proto3,oneof" json:"error_message,omitempty"`
+	InputsJson   *string `protobuf:"bytes,11,opt,name=inputs_json,json=inputsJson,proto3,oneof" json:"inputs_json,omitempty"`    // JSON-encoded inputs
+	OutputsJson  *string `protobuf:"bytes,12,opt,name=outputs_json,json=outputsJson,proto3,oneof" json:"outputs_json,omitempty"` // JSON-encoded outputs
+	// Optional parent-child execution tracking
+	ParentExecutionId *string `protobuf:"bytes,13,opt,name=parent_execution_id,json=parentExecutionId,proto3,oneof" json:"parent_execution_id,omitempty"` // Links child executions to parent
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -160,23 +159,23 @@ func (x *ExecutionRecord) GetTimestamp() *timestamp.Timestamp {
 	return nil
 }
 
-func (x *ExecutionRecord) GetUserId() string {
+func (x *ExecutionRecord) GetTriggerType() string {
 	if x != nil {
-		return x.UserId
+		return x.TriggerType
+	}
+	return ""
+}
+
+func (x *ExecutionRecord) GetUserId() string {
+	if x != nil && x.UserId != nil {
+		return *x.UserId
 	}
 	return ""
 }
 
 func (x *ExecutionRecord) GetTestRunId() string {
-	if x != nil {
-		return x.TestRunId
-	}
-	return ""
-}
-
-func (x *ExecutionRecord) GetTriggerType() string {
-	if x != nil {
-		return x.TriggerType
+	if x != nil && x.TestRunId != nil {
+		return *x.TestRunId
 	}
 	return ""
 }
@@ -196,29 +195,29 @@ func (x *ExecutionRecord) GetEndTime() *timestamp.Timestamp {
 }
 
 func (x *ExecutionRecord) GetErrorMessage() string {
-	if x != nil {
-		return x.ErrorMessage
+	if x != nil && x.ErrorMessage != nil {
+		return *x.ErrorMessage
 	}
 	return ""
 }
 
 func (x *ExecutionRecord) GetInputsJson() string {
-	if x != nil {
-		return x.InputsJson
+	if x != nil && x.InputsJson != nil {
+		return *x.InputsJson
 	}
 	return ""
 }
 
 func (x *ExecutionRecord) GetOutputsJson() string {
-	if x != nil {
-		return x.OutputsJson
+	if x != nil && x.OutputsJson != nil {
+		return *x.OutputsJson
 	}
 	return ""
 }
 
 func (x *ExecutionRecord) GetParentExecutionId() string {
-	if x != nil {
-		return x.ParentExecutionId
+	if x != nil && x.ParentExecutionId != nil {
+		return *x.ParentExecutionId
 	}
 	return ""
 }
@@ -227,24 +226,33 @@ var File_execution_proto protoreflect.FileDescriptor
 
 const file_execution_proto_rawDesc = "" +
 	"\n" +
-	"\x0fexecution.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\"\xa1\x04\n" +
+	"\x0fexecution.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcc\x05\n" +
 	"\x0fExecutionRecord\x12!\n" +
 	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12\x18\n" +
 	"\aservice\x18\x02 \x01(\tR\aservice\x120\n" +
 	"\x06status\x18\x03 \x01(\x0e2\x18.fitglue.ExecutionStatusR\x06status\x128\n" +
-	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x17\n" +
-	"\auser_id\x18\x05 \x01(\tR\x06userId\x12\x1e\n" +
-	"\vtest_run_id\x18\x06 \x01(\tR\ttestRunId\x12!\n" +
-	"\ftrigger_type\x18\a \x01(\tR\vtriggerType\x129\n" +
+	"\ttimestamp\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12!\n" +
+	"\ftrigger_type\x18\a \x01(\tR\vtriggerType\x12\x1c\n" +
+	"\auser_id\x18\x05 \x01(\tH\x00R\x06userId\x88\x01\x01\x12#\n" +
+	"\vtest_run_id\x18\x06 \x01(\tH\x01R\ttestRunId\x88\x01\x01\x12>\n" +
 	"\n" +
-	"start_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
-	"\bend_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12#\n" +
+	"start_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampH\x02R\tstartTime\x88\x01\x01\x12:\n" +
+	"\bend_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampH\x03R\aendTime\x88\x01\x01\x12(\n" +
 	"\rerror_message\x18\n" +
-	" \x01(\tR\ferrorMessage\x12\x1f\n" +
-	"\vinputs_json\x18\v \x01(\tR\n" +
-	"inputsJson\x12!\n" +
-	"\foutputs_json\x18\f \x01(\tR\voutputsJson\x12.\n" +
-	"\x13parent_execution_id\x18\r \x01(\tR\x11parentExecutionId*t\n" +
+	" \x01(\tH\x04R\ferrorMessage\x88\x01\x01\x12$\n" +
+	"\vinputs_json\x18\v \x01(\tH\x05R\n" +
+	"inputsJson\x88\x01\x01\x12&\n" +
+	"\foutputs_json\x18\f \x01(\tH\x06R\voutputsJson\x88\x01\x01\x123\n" +
+	"\x13parent_execution_id\x18\r \x01(\tH\aR\x11parentExecutionId\x88\x01\x01B\n" +
+	"\n" +
+	"\b_user_idB\x0e\n" +
+	"\f_test_run_idB\r\n" +
+	"\v_start_timeB\v\n" +
+	"\t_end_timeB\x10\n" +
+	"\x0e_error_messageB\x0e\n" +
+	"\f_inputs_jsonB\x0f\n" +
+	"\r_outputs_jsonB\x16\n" +
+	"\x14_parent_execution_id*t\n" +
 	"\x0fExecutionStatus\x12\x12\n" +
 	"\x0eSTATUS_UNKNOWN\x10\x00\x12\x12\n" +
 	"\x0eSTATUS_STARTED\x10\x01\x12\x12\n" +
@@ -288,6 +296,7 @@ func file_execution_proto_init() {
 	if File_execution_proto != nil {
 		return
 	}
+	file_execution_proto_msgTypes[0].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

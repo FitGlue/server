@@ -71,8 +71,8 @@ export enum VirtualGPSRoute {
 
 export interface UserRecord {
   userId: string;
-  createdAt: Date | undefined;
-  integrations:
+  createdAt?: Date | undefined;
+  integrations?:
     | UserIntegrations
     | undefined;
   /** Pipelines define the data flow: Source -> Enrichers -> Routing */
@@ -90,9 +90,9 @@ export interface PipelineConfig {
 }
 
 export interface UserIntegrations {
-  hevy: HevyIntegration | undefined;
-  fitbit: FitbitIntegration | undefined;
-  strava: StravaIntegration | undefined;
+  hevy?: HevyIntegration | undefined;
+  fitbit?: FitbitIntegration | undefined;
+  strava?: StravaIntegration | undefined;
 }
 
 export interface HevyIntegration {
@@ -105,7 +105,7 @@ export interface FitbitIntegration {
   enabled: boolean;
   accessToken: string;
   refreshToken: string;
-  expiresAt: Date | undefined;
+  expiresAt?: Date | undefined;
   fitbitUserId: string;
 }
 
@@ -128,7 +128,7 @@ export interface StravaIntegration {
   enabled: boolean;
   accessToken: string;
   refreshToken: string;
-  expiresAt: Date | undefined;
+  expiresAt?: Date | undefined;
   athleteId: number;
 }
 
@@ -137,5 +137,5 @@ export interface ProcessedActivityRecord {
   source: string;
   /** Unique ID from provider */
   externalId: string;
-  processedAt: Date | undefined;
+  processedAt?: Date | undefined;
 }

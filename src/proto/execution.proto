@@ -8,29 +8,27 @@ option go_package = "fitglue/pkg/shared/pb";
 
 // ExecutionRecord represents a function execution in Firestore
 message ExecutionRecord {
-  string execution_id = 1;
-  string service = 2;
-  ExecutionStatus status = 3;
-  google.protobuf.Timestamp timestamp = 4;
+  string execution_id = 1;  // Required: unique identifier
+  string service = 2;        // Required: which function executed
+  ExecutionStatus status = 3; // Required: current status
+  google.protobuf.Timestamp timestamp = 4; // Required: when it started
+  string trigger_type = 7;   // Required: how it was triggered
 
   // Optional context fields
-  string user_id = 5;
-  string test_run_id = 6;  // For test cleanup
+  optional string user_id = 5;
+  optional string test_run_id = 6;  // For test cleanup
 
-  // Trigger information
-  string trigger_type = 7;  // "http", "pubsub", "scheduler"
+  // Optional timing
+  optional google.protobuf.Timestamp start_time = 8;
+  optional google.protobuf.Timestamp end_time = 9;
 
-  // Timing
-  google.protobuf.Timestamp start_time = 8;
-  google.protobuf.Timestamp end_time = 9;
+  // Optional results
+  optional string error_message = 10;
+  optional string inputs_json = 11;   // JSON-encoded inputs
+  optional string outputs_json = 12;  // JSON-encoded outputs
 
-  // Results
-  string error_message = 10;
-  string inputs_json = 11;   // JSON-encoded inputs
-  string outputs_json = 12;  // JSON-encoded outputs
-
-  // Parent-child execution tracking
-  string parent_execution_id = 13;  // Links child executions to parent
+  // Optional parent-child execution tracking
+  optional string parent_execution_id = 13;  // Links child executions to parent
 }
 
 enum ExecutionStatus {

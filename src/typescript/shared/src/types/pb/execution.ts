@@ -19,29 +19,43 @@ export enum ExecutionStatus {
 
 /** ExecutionRecord represents a function execution in Firestore */
 export interface ExecutionRecord {
+  /** Required: unique identifier */
   executionId: string;
+  /** Required: which function executed */
   service: string;
+  /** Required: current status */
   status: ExecutionStatus;
-  timestamp:
+  /** Required: when it started */
+  timestamp?:
     | Date
     | undefined;
-  /** Optional context fields */
-  userId: string;
-  /** For test cleanup */
-  testRunId: string;
-  /** Trigger information */
+  /** Required: how it was triggered */
   triggerType: string;
-  /** Timing */
-  startTime: Date | undefined;
-  endTime:
+  /** Optional context fields */
+  userId?:
+    | string
+    | undefined;
+  /** For test cleanup */
+  testRunId?:
+    | string
+    | undefined;
+  /** Optional timing */
+  startTime?: Date | undefined;
+  endTime?:
     | Date
     | undefined;
-  /** Results */
-  errorMessage: string;
+  /** Optional results */
+  errorMessage?:
+    | string
+    | undefined;
   /** JSON-encoded inputs */
-  inputsJson: string;
+  inputsJson?:
+    | string
+    | undefined;
   /** JSON-encoded outputs */
-  outputsJson: string;
-  /** Parent-child execution tracking */
-  parentExecutionId: string;
+  outputsJson?:
+    | string
+    | undefined;
+  /** Optional parent-child execution tracking */
+  parentExecutionId?: string | undefined;
 }

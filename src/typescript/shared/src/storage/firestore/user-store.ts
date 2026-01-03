@@ -130,9 +130,8 @@ export class UserStore {
 
   /**
    * Create or overwrite a user document.
-   * Note: Converter now omits undefined values, so partial data works fine.
    */
-  async create(userId: string, data: Partial<UserRecord>): Promise<void> {
-    await this.collection().doc(userId).set(data as UserRecord);
+  async create(userId: string, data: UserRecord): Promise<void> {
+    await this.collection().doc(userId).set(data);
   }
 }

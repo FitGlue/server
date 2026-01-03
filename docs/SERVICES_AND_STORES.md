@@ -123,12 +123,37 @@ toFirestore(model: ExecutionRecord): FirebaseFirestore.DocumentData {
 
 ### Store Create vs Update
 
-**`create()`**: Use `.set()` **without** `{merge: true}`
+**`create()`**: Use `.set()` **without** `{merge: true}` and **without** `Partial<>`
+- Accepts full record type (e.g., `ExecutionRecord`, not `Partial<ExecutionRecord>`)
+- TypeScript enforces all required fields are provided
+- Optional fields can be omitted (they're marked with `?` in the type)
 - Creates new document
 - Fails if document exists (prevents accidental overwrites)
-- Converter omits undefined fields
 
-**`update()`**: Use `.update()`
+**`update()`**: Use `.update()` **with** `Partial<>`
+- Accepts `Partial<RecordType>` to allow updating any subset of fields
 - Updates existing document
 - Only modifies specified fields
 - Fails if document doesn't exist
+
+### Defining Required vs Optional Fields
+
+Use Proto3's `optional` keyword in `.proto` files to mark truly optional fields:
+
+```protobuf
+message ExecutionRecord {
+  string execution_id = 1;  // Required (no optional keyword)
+  string service = 2;        // Required
+
+  optional string user_id = 5;      // Optional (has optional keyword)
+  optional string error_message = 10; // Optional
+}
+```
+
+**Makefile configuration:**
+- Add `--experimental_allow_proto3_optional` to protoc for Go
+- Use `useOptionals=messages` for ts-proto (only marks `optional` fields as optional)
+
+This generates TypeScript types where:
+- Required fields have no `?`: `executionId: string`
+- Optional fields have `?`: `userId?: string | undefined`

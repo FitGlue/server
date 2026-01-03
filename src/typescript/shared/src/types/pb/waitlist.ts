@@ -12,7 +12,7 @@ export interface WaitlistEntry {
   email: string;
   /** e.g. "web" */
   source: string;
-  createdAt: Date | undefined;
+  createdAt?: Date | undefined;
   userAgent: string;
   ip: string;
 }

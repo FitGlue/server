@@ -23,14 +23,14 @@ export interface ActivityPayload {
   source: ActivitySource;
   /** Internal FitGlue User ID */
   userId: string;
-  timestamp:
+  timestamp?:
     | Date
     | undefined;
   /** Raw JSON payload stringified (flexible but preserved) */
   originalPayloadJson: string;
   /** Extra tracing context */
   metadata: { [key: string]: string };
-  standardizedActivity: StandardizedActivity | undefined;
+  standardizedActivity?: StandardizedActivity | undefined;
 }
 
 export interface ActivityPayload_MetadataEntry {
@@ -55,7 +55,7 @@ export interface EnrichedActivityEvent {
   /** Activity Title */
   name: string;
   /** Full Data */
-  activityData:
+  activityData?:
     | StandardizedActivity
     | undefined;
   /** Generated Artifacts */

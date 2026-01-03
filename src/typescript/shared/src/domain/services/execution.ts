@@ -9,8 +9,9 @@ export class ExecutionService {
 
   /**
    * Create a new execution record.
+   * With proper required/optional fields, all required fields must be provided.
    */
-  async create(executionId: string, data: Partial<ExecutionRecord>): Promise<void> {
+  async create(executionId: string, data: ExecutionRecord): Promise<void> {
     return this.executionStore.create(executionId, data);
   }
 
