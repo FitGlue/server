@@ -27,6 +27,10 @@ func NewFitBitHeartRate() *FitBitHeartRate {
 	return &FitBitHeartRate{}
 }
 
+func (p *FitBitHeartRate) SetService(service *bootstrap.Service) {
+	p.Service = service
+}
+
 func (p *FitBitHeartRate) Name() string {
 	return "fitbit-heart-rate"
 }
