@@ -58,11 +58,10 @@ describe('Execution Logger', () => {
   describe('logExecutionStart', () => {
     it('should log info and call service.update', async () => {
       const executionId = 'exec-123';
-      const functionName = 'test-func';
       const trigger = 'http';
       const payload = { foo: 'bar' };
 
-      await logExecutionStart(mockCtx, executionId, functionName, trigger, payload);
+      await logExecutionStart(mockCtx, executionId, trigger, payload);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         expect.stringContaining('Execution started'),
