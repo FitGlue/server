@@ -44,13 +44,13 @@ export class ExecutionStore {
   /**
    * List executions with optional filters.
    */
-  async list(filters: { service?: string, status?: string, userId?: string, limit?: number }): Promise<{ id: string, data: ExecutionRecord }[]> {
+  async list(filters: { service?: string, status?: number, userId?: string, limit?: number }): Promise<{ id: string, data: ExecutionRecord }[]> {
     let query: admin.firestore.Query = this.collection().orderBy('timestamp', 'desc');
 
     if (filters.service) {
       query = query.where('service', '==', filters.service);
     }
-    if (filters.status) {
+    if (filters.status !== undefined) {
       query = query.where('status', '==', filters.status);
     }
     if (filters.userId) {
@@ -68,13 +68,13 @@ export class ExecutionStore {
   /**
    * Watch executions with real-time updates.
    */
-  watch(filters: { service?: string, status?: string, userId?: string, limit?: number }, onNext: (executions: { id: string, data: ExecutionRecord }[]) => void, onError?: (error: Error) => void): () => void {
+  watch(filters: { service?: string, status?: number, userId?: string, limit?: number }, onNext: (executions: { id: string, data: ExecutionRecord }[]) => void, onError?: (error: Error) => void): () => void {
     let query: admin.firestore.Query = this.collection().orderBy('timestamp', 'desc');
 
     if (filters.service) {
       query = query.where('service', '==', filters.service);
     }
-    if (filters.status) {
+    if (filters.status !== undefined) {
       query = query.where('status', '==', filters.status);
     }
     if (filters.userId) {

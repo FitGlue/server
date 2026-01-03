@@ -1,6 +1,25 @@
 import { ExecutionStore } from '../../storage/firestore';
 import { ExecutionRecord } from '../../types/pb/execution';
 
+import { ExecutionStatus } from '../../types/pb/execution';
+
+// Helper to convert string status input to ExecutionStatus enum value (or undefined)
+function resolveExecutionStatus(statusInput: string | undefined): number | undefined {
+  if (statusInput === undefined || statusInput === null || statusInput === '') return undefined;
+
+  // Check if input is "STATUS_FAILED" or just "FAILED"
+  const normalized = statusInput.toUpperCase().startsWith('STATUS_')
+    ? statusInput.toUpperCase()
+    : `STATUS_${statusInput.toUpperCase()}`;
+
+  // Check key existence in enum (ExecutionStatus is a numeric enum)
+  if (normalized in ExecutionStatus) {
+    return (ExecutionStatus as any)[normalized];
+  }
+
+  return undefined;
+}
+
 /**
  * ExecutionService provides business logic for execution tracking.
  */
@@ -30,14 +49,22 @@ export class ExecutionService {
   }
 
   async listExecutions(filters: { service?: string, status?: string, userId?: string, limit?: number }): Promise<{ id: string, data: ExecutionRecord }[]> {
-    return this.executionStore.list(filters);
+    return this.executionStore.list({
+      ...filters,
+      status: resolveExecutionStatus(filters.status)
+    });
   }
 
   watchExecutions(filters: { service?: string, status?: string, userId?: string, limit?: number }, onNext: (executions: { id: string, data: ExecutionRecord }[]) => void, onError?: (error: Error) => void): () => void {
-    return this.executionStore.watch(filters, onNext, onError);
+    return this.executionStore.watch({
+      ...filters,
+      status: resolveExecutionStatus(filters.status)
+    }, onNext, onError);
   }
 
   async deleteAllExecutions(): Promise<number> {
     return this.executionStore.deleteAll();
   }
 }
+
+

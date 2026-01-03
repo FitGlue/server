@@ -945,7 +945,7 @@ program
             console.log(`Fetching up to ${limit} executions...`);
             const executions = await executionService.listExecutions({
                 service: options.service,
-                status: options.status,
+                status: options.status, // Pass string status directly
                 userId: options.user,
                 limit
             });
@@ -980,7 +980,7 @@ program
 
             const unsubscribe = executionService.watchExecutions({
                 service: options.service,
-                status: options.status,
+                status: options.status, // Pass string status directly
                 userId: options.user,
                 limit
             }, (executions) => {
@@ -1016,6 +1016,124 @@ program
     });
 
 program
+    .command('executions:latest-failed-watch')
+    .description('Watch for the latest failed execution and print full details')
+    .option('-s, --service <service>', 'Filter by service name')
+    .action(async (options) => {
+        try {
+            console.log('Watching for failed executions...');
+            console.log('Press Ctrl+C to stop.\n');
+
+            let lastSeenId: string | null = null;
+
+            const unsubscribe = executionService.watchExecutions({
+                service: options.service,
+                status: 'STATUS_FAILED', // Pass string status directly
+                limit: 1
+            }, (executions) => {
+                if (executions.length > 0) {
+                    const latest = executions[0];
+                    if (latest.id !== lastSeenId) {
+                        // Clear screen and move cursor to top-left to focus attention
+                        process.stdout.write('\x1b[2J\x1b[0;0H');
+
+                        // Banner to make it clear what happened
+                        console.log('=====================================================================================================================================');
+                        console.log(`🚨  NEW FAILED EXECUTION DETECTED  🚨  |  ${new Date().toLocaleTimeString()}`);
+                        console.log('=====================================================================================================================================');
+
+                        printExecutionDetails(latest.id, latest.data);
+
+                        console.log('\nListening for next failure... (Press Ctrl+C to stop)');
+                        lastSeenId = latest.id;
+                    }
+                }
+            }, (error) => {
+                console.error('Watch error:', error.message);
+                process.exit(1);
+            });
+
+            // Keep the process alive.
+            process.on('SIGINT', () => {
+                unsubscribe();
+                console.log('\nStopped watching.');
+                process.exit(0);
+            });
+
+        } catch (error: any) {
+            console.error('Error starting watch:', error.message);
+            process.exit(1);
+        }
+    });
+
+// Helper to print full execution details
+function printExecutionDetails(executionId: string, data: any) {
+    console.log('\n==========================================');
+    console.log('EXECUTION DETAILS');
+    console.log('==========================================');
+    console.log(`ID:            ${executionId}`);
+    console.log(`Service:       ${data.service}`);
+    console.log(`Status:        ${executionStatusToString(data.status)}`);
+    console.log(`Trigger:       ${data.triggerType || 'N/A'}`);
+    console.log(`User ID:       ${data.userId || 'N/A'}`);
+    console.log(`Test Run ID:   ${data.testRunId || 'N/A'}`);
+    console.log('------------------------------------------');
+    console.log(`Timestamp:     ${data.timestamp instanceof Date ? data.timestamp.toISOString() : 'N/A'}`);
+    console.log(`Start Time:    ${data.startTime instanceof Date ? data.startTime.toISOString() : 'N/A'}`);
+    console.log(`End Time:      ${data.endTime instanceof Date ? data.endTime.toISOString() : 'N/A'}`);
+
+    if (data.errorMessage) {
+        console.log('------------------------------------------');
+        console.log(`ERROR:         ${data.errorMessage}`);
+    }
+
+    console.log('------------------------------------------');
+
+    if (data.inputsJson) {
+        console.log('\n[INPUTS]');
+        try {
+            const parsed = JSON.parse(data.inputsJson);
+            console.dir(parsed, { depth: null, colors: true });
+        } catch {
+            console.log(data.inputsJson);
+        }
+    } else {
+        console.log('\n[INPUTS] (None)');
+    }
+
+    if (data.outputsJson) {
+        console.log('\n[OUTPUTS]');
+        try {
+            const parsed = JSON.parse(data.outputsJson);
+            console.dir(parsed, { depth: null, colors: true });
+        } catch {
+            console.log(data.outputsJson);
+        }
+    }
+
+    // Raw metadata dump if needed
+    if (Object.keys(data).some(k => !['executionId', 'service', 'status', 'timestamp', 'userId', 'triggerType', 'startTime', 'endTime', 'errorMessage', 'inputsJson', 'outputsJson', 'testRunId'].includes(k))) {
+        console.log('\n[OTHER METADATA]');
+        const other: any = { ...data };
+        delete other.executionId;
+        delete other.service;
+        delete other.status;
+        delete other.timestamp;
+        delete other.userId;
+        delete other.triggerType;
+        delete other.startTime;
+        delete other.endTime;
+        delete other.errorMessage;
+        delete other.inputsJson;
+        delete other.outputsJson;
+        delete other.testRunId;
+        console.dir(other, { depth: null, colors: true });
+    }
+
+    console.log('==========================================\n');
+}
+
+program
     .command('executions:get <executionId>')
     .description('Get full details of a specific execution')
     .action(async (executionId) => {
@@ -1026,70 +1144,7 @@ program
                 process.exit(1);
             }
 
-            const data = execution;
-            console.log('\n==========================================');
-            console.log('EXECUTION DETAILS');
-            console.log('==========================================');
-            console.log(`ID:            ${executionId}`);
-            console.log(`Service:       ${data.service}`);
-            console.log(`Status:        ${executionStatusToString(data.status)}`);
-            console.log(`Trigger:       ${data.triggerType || 'N/A'}`);
-            console.log(`User ID:       ${data.userId || 'N/A'}`);
-            console.log(`Test Run ID:   ${data.testRunId || 'N/A'}`);
-            console.log('------------------------------------------');
-            console.log(`Timestamp:     ${data.timestamp instanceof Date ? data.timestamp.toISOString() : 'N/A'}`);
-            console.log(`Start Time:    ${data.startTime instanceof Date ? data.startTime.toISOString() : 'N/A'}`);
-            console.log(`End Time:      ${data.endTime instanceof Date ? data.endTime.toISOString() : 'N/A'}`);
-
-            if (data.errorMessage) {
-                console.log('------------------------------------------');
-                console.log(`ERROR:         ${data.errorMessage}`);
-            }
-
-            console.log('------------------------------------------');
-
-            if (data.inputsJson) {
-                console.log('\n[INPUTS]');
-                try {
-                    const parsed = JSON.parse(data.inputsJson);
-                    console.dir(parsed, { depth: null, colors: true });
-                } catch {
-                    console.log(data.inputsJson);
-                }
-            } else {
-                console.log('\n[INPUTS] (None)');
-            }
-
-            if (data.outputsJson) {
-                console.log('\n[OUTPUTS]');
-                try {
-                    const parsed = JSON.parse(data.outputsJson);
-                    console.dir(parsed, { depth: null, colors: true });
-                } catch {
-                    console.log(data.outputsJson);
-                }
-            }
-
-            // Raw metadata dump if needed
-            if (Object.keys(data).some(k => !['executionId', 'service', 'status', 'timestamp', 'userId', 'triggerType', 'startTime', 'endTime', 'errorMessage', 'inputsJson', 'outputsJson', 'testRunId'].includes(k))) {
-                console.log('\n[OTHER METADATA]');
-                const other: any = { ...data };
-                delete other.executionId;
-                delete other.service;
-                delete other.status;
-                delete other.timestamp;
-                delete other.userId;
-                delete other.triggerType;
-                delete other.startTime;
-                delete other.endTime;
-                delete other.errorMessage;
-                delete other.inputsJson;
-                delete other.outputsJson;
-                delete other.testRunId;
-                console.dir(other, { depth: null, colors: true });
-            }
-
-            console.log('==========================================\n');
+            printExecutionDetails(executionId, execution);
 
         } catch (error: any) {
             console.error('Error getting execution:', error.message);
