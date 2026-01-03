@@ -37,6 +37,8 @@ func (a *FirestoreAdapter) GetUser(ctx context.Context, id string) (*pb.UserReco
 	if err != nil {
 		return nil, err
 	}
+	// Manually populate ID since it's the doc key
+	doc.UserId = id
 	return doc, nil
 }
 
