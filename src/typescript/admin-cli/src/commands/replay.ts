@@ -56,11 +56,9 @@ function getSubscriptionName(service: string): string {
 }
 
 export function registerReplayCommands(program: Command) {
-  const replay = program.command('replay').description('Replay failed executions');
-
   // Pub/Sub replay
-  replay
-    .command('pubsub <execution-id>')
+  program
+    .command('replay:pubsub <execution-id>')
     .description('Replay a Pub/Sub execution by seeking to its timestamp')
     .option('--yes', 'Skip confirmation prompt')
     .action(async (executionId: string, options: { yes?: boolean }) => {
@@ -111,8 +109,8 @@ export function registerReplayCommands(program: Command) {
     });
 
   // HTTP webhook replay
-  replay
-    .command('webhook <execution-id>')
+  program
+    .command('replay:webhook <execution-id>')
     .description('Replay an HTTP webhook execution')
     .option('--env <env>', 'Target environment (dev/test/prod)', 'dev')
     .option('--yes', 'Skip confirmation prompt')

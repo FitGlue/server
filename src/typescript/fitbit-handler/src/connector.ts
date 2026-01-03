@@ -121,14 +121,26 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
   async resolveUser(payload: any, context: any): Promise<string | null> {
     const { logger, services } = context;
 
-    if (!payload || !payload.ownerId) {
+    // payload is the body of the request, which for Fitbit webhooks is the notification payload
+    // which is AN ARRAY of objects, with collection types and ownerIds etc.
+    // we need to find the ownerId of the first object in the array that is
+    // for `subscriptionId: fitglue-activities`
+
+    const fitbitActivitiesSubscription = payload.find((p: any) => p.subscriptionId === 'fitglue-activities');
+    if (!fitbitActivitiesSubscription) {
+      logger.warn('Fitbit payload missing fitglue-activities subscription');
+      return null;
+    }
+
+    const fitbitUserId = fitbitActivitiesSubscription.ownerId;
+    if (!fitbitUserId) {
       logger.warn('Fitbit payload missing ownerId');
       return null;
     }
 
-    const user = await services.user.findByFitbitId(payload.ownerId);
+    const user = await services.user.findByFitbitId(fitbitUserId);
     if (!user) {
-      logger.warn(`No user found for Fitbit ID: ${payload.ownerId}`);
+      logger.warn(`No user found for Fitbit ID: ${fitbitUserId}`);
       return null;
     }
 

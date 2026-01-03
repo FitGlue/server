@@ -37,7 +37,12 @@ const program = new Command();
 program
     .name('fitglue-admin')
     .description('CLI for FitGlue administration')
-    .version('1.0.0');
+    .version('1.0.0')
+    .configureHelp({
+        sortSubcommands: true
+    })
+    .showHelpAfterError()
+    .showSuggestionAfterError();
 
 import { addActivitiesCommands } from './commands/activities';
 addActivitiesCommands(program, userService);
@@ -904,6 +909,28 @@ function executionStatusToString(status: number | undefined): string {
     }
 }
 
+// Helper to print execution table uniformly
+function printExecutionTable(executions: { id: string, data: any }[]) {
+    console.log('-------------------------------------------------------------------------------------------------------------------------------------');
+    console.log('Timestamp               | ID                                   | Service                   | Status  | Trigger');
+    console.log('-------------------------------------------------------------------------------------------------------------------------------------');
+    executions.forEach(item => {
+        const data = item.data;
+        const time = data.timestamp instanceof Date ? data.timestamp.toISOString() :
+            (data.timestamp as any)?.toDate ? (data.timestamp as any).toDate().toISOString() : 'Unknown';
+        const status = executionStatusToString(data.status);
+        const service = (data.service || 'unknown').padEnd(25);
+        const trigger = (data.triggerType || 'N/A').padEnd(7);
+
+        // Simple padding and truncated output for table-like look
+        const id = item.id.padEnd(36);
+        const statusStr = status.padEnd(7);
+
+        console.log(`${time.slice(0, 23)} | ${id} | ${service} | ${statusStr} | ${trigger}`);
+    });
+    console.log('-------------------------------------------------------------------------------------------------------------------------------------\n');
+}
+
 program
     .command('executions:list')
     .description('List recent executions')
@@ -929,17 +956,7 @@ program
             }
 
             console.log('\nFound ' + executions.length + ' executions:');
-            console.log('--------------------------------------------------');
-            executions.forEach(item => {
-                const data = item.data;
-                const time = data.timestamp instanceof Date ? data.timestamp.toISOString() : 'Unknown';
-                const status = executionStatusToString(data.status);
-                const service = data.service || 'unknown';
-                const trigger = data.triggerType || 'N/A';
-
-                console.log(`${time} | ${item.id} | ${service} | ${status} | ${trigger}`);
-            });
-            console.log('--------------------------------------------------\n');
+            printExecutionTable(executions);
 
         } catch (error: any) {
             console.error('Error listing executions:', error.message);
@@ -979,24 +996,7 @@ program
                     return;
                 }
 
-                console.log('------------------------------------------------------------------------------------------------------');
-                console.log('Timestamp               | ID                                   | Service         | Status  | Trigger');
-                console.log('------------------------------------------------------------------------------------------------------');
-                executions.forEach(item => {
-                    const data = item.data;
-                    const time = data.timestamp instanceof Date ? data.timestamp.toISOString() :
-                        (data.timestamp as any)?.toDate ? (data.timestamp as any).toDate().toISOString() : 'Unknown';
-                    const status = executionStatusToString(data.status);
-                    const service = (data.service || 'unknown').padEnd(15);
-                    const trigger = (data.triggerType || 'N/A').padEnd(7);
-
-                    // Simple padding and truncated output for table-like look
-                    const id = item.id.padEnd(36);
-                    const statusStr = status.padEnd(7);
-
-                    console.log(`${time.slice(0, 23)} | ${id} | ${service} | ${statusStr} | ${trigger}`);
-                });
-                console.log('------------------------------------------------------------------------------------------------------\n');
+                printExecutionTable(executions);
             }, (error) => {
                 console.error('Watch error:', error.message);
                 process.exit(1);
