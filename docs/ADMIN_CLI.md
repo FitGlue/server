@@ -70,6 +70,88 @@ Deletes **ALL** users from the Firestore database.
 ./fitglue-admin users:clean
 ```
 
+### `users:create-auth <userId>`
+
+Creates a Firebase Auth user for an existing Firestore user ID. This allows the user to authenticate via email/password.
+
+**Usage:**
+```bash
+./fitglue-admin users:create-auth my-user-id
+```
+
+**Prompts:**
+1. **Email**: User's email address
+2. **Password**: Password (minimum 6 characters)
+
+### `users:get <userId>`
+
+Get detailed information about a specific user, including integrations and pipelines.
+
+**Usage:**
+```bash
+./fitglue-admin users:get my-user-id
+```
+
+### `users:remove-pipeline <userId>`
+
+Remove a processing pipeline from a user.
+
+**Usage:**
+```bash
+./fitglue-admin users:remove-pipeline my-user-id
+```
+
+**Prompts:**
+1. **Pipeline Selection**: Choose which pipeline to remove from the list
+2. **Confirmation**: Confirm deletion
+
+### `users:replace-pipeline <userId>`
+
+Replace or reconfigure an existing pipeline for a user.
+
+**Usage:**
+```bash
+./fitglue-admin users:replace-pipeline my-user-id
+```
+
+**Prompts:**
+1. **Pipeline Selection**: Choose which pipeline to replace
+2. **New Configuration**: Configure source, enrichers, and destinations (same as `users:add-pipeline`)
+
+## Activity Management Commands
+
+### `activities:list-processed <userId>`
+
+List all processed activities for a user. Useful for debugging deduplication or finding activities to re-ingest.
+
+**Usage:**
+```bash
+./fitglue-admin activities:list-processed my-user-id
+```
+
+**Output:**
+```
+Found 3 activities:
+--------------------------------------------------
+[SOURCE_HEVY] workout-123 (Processed: 2026-01-03T12:00:00Z)
+[SOURCE_FITBIT] activity-456 (Processed: 2026-01-03T11:30:00Z)
+[SOURCE_HEVY] workout-789 (Processed: 2026-01-03T10:15:00Z)
+--------------------------------------------------
+```
+
+### `activities:delete-processed <userId> <source> <activityId>`
+
+Delete a processed activity record to allow re-ingestion. This is useful when you want to re-process an activity that was already handled.
+
+**Usage:**
+```bash
+# Delete a Hevy workout
+./fitglue-admin activities:delete-processed my-user-id SOURCE_HEVY workout-123
+
+# Delete a Fitbit activity
+./fitglue-admin activities:delete-processed my-user-id SOURCE_FITBIT activity-456
+```
+
 ## Execution Inspection Commands
 
 ### `executions:list`
@@ -146,6 +228,83 @@ Deletes **ALL** execution logs from the Firestore database.
 
 ```bash
 ./fitglue-admin executions:clean
+```
+
+## Execution Replay Commands
+
+### `replay:pubsub <executionId>`
+
+Replay a Pub/Sub-triggered execution by seeking the subscription to just before the original execution time. Useful for re-processing failed enricher, router, or uploader executions.
+
+**Requirements:**
+- `gcloud` CLI authenticated
+- Message must be within retention period (1 hour)
+
+**Options:**
+- `--yes`: Skip confirmation prompt
+
+**Usage:**
+```bash
+# Find failed execution
+./fitglue-admin executions:list --service enricher --status STATUS_FAILED --limit 1
+
+# Replay with confirmation
+./fitglue-admin replay:pubsub enricher-1234567890
+
+# Skip confirmation
+./fitglue-admin replay:pubsub enricher-1234567890 --yes
+```
+
+**Output:**
+```
+📋 Replay Details:
+   Execution ID: enricher-1234567890
+   Service: enricher
+   Subscription: eventarc-us-central1-enricher-885833-sub-349
+   Original time: 2026-01-03T12:00:00Z
+   Seek time: 2026-01-03T11:59:59Z
+   Status: STATUS_FAILED
+
+🔄 Proceed with replay? (y/n): y
+
+Executing: gcloud pubsub subscriptions seek ...
+✅ Replay initiated. Check logs for new execution.
+```
+
+### `replay:webhook <executionId>`
+
+Replay an HTTP webhook execution by re-POSTing the original payload to the webhook endpoint. Useful for re-processing failed Hevy or Fitbit webhook handlers.
+
+**Options:**
+- `--env <env>`: Target environment - `dev`, `test`, or `prod` (default: `dev`)
+- `--yes`: Skip confirmation prompt
+
+**Usage:**
+```bash
+# Find failed webhook
+./fitglue-admin executions:list --service hevy-webhook-handler --status STATUS_FAILED --limit 1
+
+# Replay to dev environment
+./fitglue-admin replay:webhook hevy-webhook-handler-1234567890 --env dev
+
+# Replay to prod
+./fitglue-admin replay:webhook hevy-webhook-handler-1234567890 --env prod --yes
+```
+
+**Output:**
+```
+📋 Replay Details:
+   Execution ID: hevy-webhook-handler-1234567890
+   Service: hevy-webhook-handler
+   Environment: dev
+   URL: https://us-central1-fitglue-dev.cloudfunctions.net/hevy-webhook-handler
+   Status: STATUS_FAILED
+   Payload preview: {"id":"abc123","type":"workout_created"}...
+
+🔄 Proceed with replay? (y/n): y
+
+Sending request...
+✅ Success: 200 OK
 ```
 
 ### `users:connect <userId> <provider>`
