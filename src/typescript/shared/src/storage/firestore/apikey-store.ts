@@ -16,25 +16,9 @@ export class ApiKeyStore {
   }
 
   /**
-   * Find an API key by its hash.
-   */
-  async findByHash(hash: string): Promise<ApiKeyRecord | null> {
-    const snapshot = await this.collection()
-      .where('hash', '==', hash)
-      .limit(1)
-      .get();
-
-    if (snapshot.empty) {
-      return null;
-    }
-
-    return snapshot.docs[0].data();
-  }
-
-  /**
    * Get an API key by ID.
    */
-  async get(keyId: string): Promise<ApiKeyRecord | null> {
+  async getByHash(keyId: string): Promise<ApiKeyRecord | null> {
     const doc = await this.collection().doc(keyId).get();
     if (!doc.exists) {
       return null;

@@ -1,10 +1,12 @@
 import * as winston from 'winston';
+import { ExecutionService } from '../domain/services';
+import { ExecutionStatus } from '../types/pb/execution';
 
 /**
  * Logs the pending state of a function execution.
  */
 export async function logExecutionPending(
-  ctx: { services: { execution: any }; logger: winston.Logger },
+  ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
   functionName: string,
   trigger: string
@@ -12,10 +14,11 @@ export async function logExecutionPending(
   ctx.logger.info(`[${functionName}] Execution pending`, { executionId, trigger });
 
   await ctx.services.execution.create(executionId, {
-    functionName,
-    trigger,
-    startedAt: new Date(),
-    status: 'pending'
+    executionId,
+    service: functionName,
+    triggerType: trigger,
+    timestamp: new Date(),
+    status: ExecutionStatus.STATUS_PENDING
   });
 }
 
@@ -23,7 +26,7 @@ export async function logExecutionPending(
  * Logs the start of a function execution.
  */
 export async function logExecutionStart(
-  ctx: { services: { execution: any }; logger: winston.Logger },
+  ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
   functionName: string,
   trigger: string,
@@ -33,8 +36,8 @@ export async function logExecutionStart(
 
   // Update existing record to running
   await ctx.services.execution.update(executionId, {
-    startedAt: new Date(),
-    status: 'running',
+    startTime: new Date(),
+    status: ExecutionStatus.STATUS_STARTED,
     inputsJson: originalPayload ? JSON.stringify(originalPayload) : undefined
   });
 }
@@ -43,16 +46,16 @@ export async function logExecutionStart(
  * Logs successful completion of a function execution.
  */
 export async function logExecutionSuccess(
-  ctx: { services: { execution: any }; logger: winston.Logger },
+  ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
   result?: any
 ): Promise<void> {
   ctx.logger.info(`Execution completed successfully`, { executionId });
 
   await ctx.services.execution.update(executionId, {
-    completedAt: new Date(),
-    status: 'success',
-    result
+    endTime: new Date(),
+    status: ExecutionStatus.STATUS_SUCCESS,
+    outputsJson: result ? JSON.stringify(result) : undefined
   });
 }
 
@@ -60,18 +63,15 @@ export async function logExecutionSuccess(
  * Logs failed execution.
  */
 export async function logExecutionFailure(
-  ctx: { services: { execution: any }; logger: winston.Logger },
+  ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
   error: Error
 ): Promise<void> {
   ctx.logger.error(`Execution failed`, { executionId, error: error.message, stack: error.stack });
 
   await ctx.services.execution.update(executionId, {
-    completedAt: new Date(),
-    status: 'failed',
-    error: {
-      message: error.message,
-      stack: error.stack
-    }
+    endTime: new Date(),
+    status: ExecutionStatus.STATUS_FAILED,
+    errorMessage: error.message
   });
 }

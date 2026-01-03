@@ -215,19 +215,15 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     });
 
     // DEBUG: Log incoming request details
-    if (isHttp) {
-      preambleLogger.debug('Incoming HTTP Request', {
-        method: req.method,
-        path: req.path,
-        query: req.query,
-        testRunId
-      });
-    } else {
-      preambleLogger.debug('Incoming Event', {
-        triggerType,
-        testRunId
-      });
-    }
+    preambleLogger.debug('Incoming Request', {
+      method: req.method,
+      path: req.path,
+      query: req.query,
+      body: req.body,
+      userId,
+      testRunId,
+      triggerType
+    });
 
     // EARLY EXECUTION LOGGING
     // Instantiate just enough to log pending state

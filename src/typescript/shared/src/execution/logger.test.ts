@@ -1,6 +1,7 @@
 
 import { logExecutionStart, logExecutionSuccess, logExecutionFailure, logExecutionPending } from './logger';
 import { ExecutionService } from '../domain/services/execution';
+import { ExecutionStatus } from '../types/pb/execution';
 import { Logger } from 'winston';
 
 // Mock ExecutionService
@@ -46,9 +47,10 @@ describe('Execution Logger', () => {
         expect.anything()
       );
       expect(mockCreate).toHaveBeenCalledWith(executionId, expect.objectContaining({
-        functionName,
-        trigger,
-        status: 'pending'
+        executionId,
+        service: functionName,
+        triggerType: trigger,
+        status: ExecutionStatus.STATUS_PENDING
       }));
     });
   });
@@ -67,7 +69,7 @@ describe('Execution Logger', () => {
         expect.anything()
       );
       expect(mockUpdate).toHaveBeenCalledWith(executionId, expect.objectContaining({
-        status: 'running',
+        status: ExecutionStatus.STATUS_STARTED,
         inputsJson: JSON.stringify(payload)
       }));
     });
@@ -85,8 +87,8 @@ describe('Execution Logger', () => {
         expect.anything()
       );
       expect(mockUpdate).toHaveBeenCalledWith(executionId, expect.objectContaining({
-        status: 'success',
-        result
+        status: ExecutionStatus.STATUS_SUCCESS,
+        outputsJson: JSON.stringify(result)
       }));
     });
   });
@@ -103,10 +105,8 @@ describe('Execution Logger', () => {
         expect.anything()
       );
       expect(mockUpdate).toHaveBeenCalledWith(executionId, expect.objectContaining({
-        status: 'failed',
-        error: expect.objectContaining({
-          message: 'Test Error'
-        })
+        status: ExecutionStatus.STATUS_FAILED,
+        errorMessage: 'Test Error'
       }));
     });
   });

@@ -11,7 +11,7 @@ export class ApiKeyService {
    * Find an API key by its hash.
    */
   async findByHash(hash: string): Promise<ApiKeyRecord | null> {
-    return this.apiKeyStore.findByHash(hash);
+    return this.apiKeyStore.getByHash(hash);
   }
 
   /**
@@ -21,10 +21,6 @@ export class ApiKeyService {
     const apiKey = await this.findByHash(hash);
 
     if (!apiKey) {
-      return { valid: false };
-    }
-
-    if (!(apiKey as any).enabled) {
       return { valid: false };
     }
 
