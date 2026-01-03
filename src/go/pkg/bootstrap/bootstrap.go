@@ -68,31 +68,55 @@ func GetSlogHandlerOptions(level slog.Level) *slog.HandlerOptions {
 // ComponentHandler wraps a slog.Handler to prepend [component] to the message
 type ComponentHandler struct {
 	slog.Handler
+	component string
+}
+
+// WithGroup implements slog.Handler
+func (h *ComponentHandler) WithGroup(name string) slog.Handler {
+	return &ComponentHandler{
+		Handler:   h.Handler.WithGroup(name),
+		component: h.component,
+	}
+}
+
+// WithAttrs implements slog.Handler
+func (h *ComponentHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	newComp := h.component
+	for _, a := range attrs {
+		if a.Key == "component" {
+			newComp = a.Value.String()
+		}
+	}
+	return &ComponentHandler{
+		Handler:   h.Handler.WithAttrs(attrs),
+		component: newComp,
+	}
 }
 
 // Handle implements slog.Handler
 func (h *ComponentHandler) Handle(ctx context.Context, r slog.Record) error {
-	var component string
+	comp := h.component
 
-	// Iterate to find component attribute
+	// Check if component is overridden in the record attributes
 	r.Attrs(func(a slog.Attr) bool {
 		if a.Key == "component" {
-			component = a.Value.String()
+			comp = a.Value.String()
 			return false // stop
 		}
 		return true
 	})
 
-	if component != "" {
-		newMsg := fmt.Sprintf("[%s] %s", component, r.Message)
+	if comp != "" {
+		newMsg := fmt.Sprintf("[%s] %s", comp, r.Message)
 		// Create a new record with modified message
+		// We use r.Time, r.Level, and r.PC to preserve original metadata
 		newRecord := slog.NewRecord(r.Time, r.Level, newMsg, r.PC)
 
-		// Copy attributes, excluding "component" to match TS behavior
+		// Copy attributes from the original record
+		// We do NOT remove the 'component' attribute here because it might be needed in the structured payload
+		// (User explicitly said they see it in payload and presumably want to keep it there)
 		r.Attrs(func(a slog.Attr) bool {
-			if a.Key != "component" {
-				newRecord.AddAttrs(a)
-			}
+			newRecord.AddAttrs(a)
 			return true
 		})
 		r = newRecord
