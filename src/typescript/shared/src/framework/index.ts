@@ -266,77 +266,90 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       execution: executionService
     };
 
-    // Auth Loop
-    if (options?.auth?.strategies && options.auth.strategies.length > 0) {
-      let authenticated = false;
+    // Full context reference (mutable so we can assign it as we build it)
+    let ctx: FrameworkContext | undefined;
 
-      // Prepare minimal context for Auth Strategy
-      const tempCtx: FrameworkContext = {
+    try {
+      // Auth Loop
+      if (options?.auth?.strategies && options.auth.strategies.length > 0) {
+        let authenticated = false;
+
+        // Prepare minimal context for Auth Strategy
+        const tempCtx: FrameworkContext = {
+          services,
+          stores,
+          pubsub,
+          secrets: new SecretManagerHelper(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || ''),
+          logger: preambleLogger,
+          executionId,
+          userId: authenticatedUserId
+        };
+
+        for (const strategy of options.auth.strategies) {
+          try {
+            const authResult = await strategy.authenticate(req, tempCtx);
+            if (authResult) {
+              authenticatedUserId = authResult.userId; // Auth overrides extracted user ID
+              authScopes = authResult.scopes || [];
+              authenticated = true;
+              preambleLogger.info(`Authenticated via ${strategy.name}`, { userId: authenticatedUserId, scopes: authScopes });
+              break;
+            }
+          } catch (e) {
+            preambleLogger.warn(`Auth strategy ${strategy.name} failed`, { error: e });
+          }
+        }
+
+        if (!authenticated) {
+          const msg = 'Request failed authentication filters';
+          preambleLogger.warn(msg);
+
+          // Log execution failure for Auth rejection
+          await logExecutionFailure(loggingCtx, executionId, new Error(msg));
+
+          res.status(401).send('Unauthorized');
+          return;
+        }
+
+        // Scope Validation (Optional)
+        if (options.auth.requiredScopes) {
+          const hasScopes = options.auth.requiredScopes.every(scope => authScopes.includes(scope));
+          if (!hasScopes) {
+            const msg = `Authenticated user ${authenticatedUserId} missing required scopes`;
+            preambleLogger.warn(msg);
+
+            // Log execution failure for Scope rejection
+            await logExecutionFailure(loggingCtx, executionId, new Error(msg));
+
+            res.status(403).send('Forbidden: Insufficient Scopes');
+            return;
+          }
+        }
+      }
+      // --- END AUTH ---
+
+      // Build the full context
+      ctx = {
         services,
         stores,
         pubsub,
         secrets: new SecretManagerHelper(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || ''),
-        logger: preambleLogger,
+        logger: logger.child({
+          executionId,
+          ...(authenticatedUserId && { user_id: authenticatedUserId }),
+          component: 'context'
+        }),
         executionId,
-        userId: authenticatedUserId
+        userId: authenticatedUserId,
+        authScopes
       };
 
-      for (const strategy of options.auth.strategies) {
-        try {
-          const authResult = await strategy.authenticate(req, tempCtx);
-          if (authResult) {
-            authenticatedUserId = authResult.userId; // Auth overrides extracted user ID
-            authScopes = authResult.scopes || [];
-            authenticated = true;
-            preambleLogger.info(`Authenticated via ${strategy.name}`, { userId: authenticatedUserId, scopes: authScopes });
-            break;
-          }
-        } catch (e) {
-          preambleLogger.warn(`Auth strategy ${strategy.name} failed`, { error: e });
-        }
-      }
+      // Capture original payload for logging
+      const originalPayload = isHttp ? req.body : (req.body?.message?.data ? JSON.parse(Buffer.from(req.body.message.data, 'base64').toString()) : req.body);
 
-      if (!authenticated) {
-        preambleLogger.warn('Request failed authentication filters');
-        res.status(401).send('Unauthorized');
-        return;
-      }
+      // Log execution start (update to running + payload)
+      await logExecutionStart(loggingCtx, executionId, triggerType, originalPayload);
 
-      // Scope Validation (Optional)
-      if (options.auth.requiredScopes) {
-        const hasScopes = options.auth.requiredScopes.every(scope => authScopes.includes(scope));
-        if (!hasScopes) {
-          preambleLogger.warn(`Authenticated user ${authenticatedUserId} missing required scopes`);
-          res.status(403).send('Forbidden: Insufficient Scopes');
-          return;
-        }
-      }
-    }
-    // --- END AUTH ---
-
-    // Build the full context
-    const ctx: FrameworkContext = {
-      services,
-      stores,
-      pubsub,
-      secrets: new SecretManagerHelper(process.env.GOOGLE_CLOUD_PROJECT || process.env.GCP_PROJECT || ''),
-      logger: logger.child({
-        executionId,
-        ...(authenticatedUserId && { user_id: authenticatedUserId }),
-        component: 'context'
-      }),
-      executionId,
-      userId: authenticatedUserId,
-      authScopes
-    };
-
-    // Capture original payload for logging
-    const originalPayload = isHttp ? req.body : (req.body?.message?.data ? JSON.parse(Buffer.from(req.body.message.data, 'base64').toString()) : req.body);
-
-    // Log execution start (update to running + payload)
-    await logExecutionStart(ctx, executionId, serviceName, triggerType, originalPayload);
-
-    try {
       // Attach execution ID to response header early (so it's present even if handler sends response)
       if (isHttp) {
         res.set('x-execution-id', executionId);
@@ -354,7 +367,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Log execution failure
       preambleLogger.error('Function failed', { error: err.message, stack: err.stack });
 
-      await logExecutionFailure(ctx, executionId, err);
+      await logExecutionFailure(loggingCtx, executionId, err);
 
       // Attach execution ID to response header (safety check)
       if (isHttp && !res.headersSent) {

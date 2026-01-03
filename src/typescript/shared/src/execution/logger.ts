@@ -28,7 +28,6 @@ export async function logExecutionPending(
 export async function logExecutionStart(
   ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
-  functionName: string,
   trigger: string,
   originalPayload?: any
 ): Promise<void> {
