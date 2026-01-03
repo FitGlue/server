@@ -125,7 +125,9 @@ const mapUserIntegrationsToFirestore = (i?: UserIntegrations): any => {
     out.hevy = {
       enabled: i.hevy.enabled,
       api_key: i.hevy.apiKey,
-      user_id: i.hevy.userId
+      user_id: i.hevy.userId,
+      created_at: i.hevy.createdAt,
+      last_used_at: i.hevy.lastUsedAt
     };
   }
   if (i.fitbit) {
@@ -134,7 +136,9 @@ const mapUserIntegrationsToFirestore = (i?: UserIntegrations): any => {
       access_token: i.fitbit.accessToken,
       refresh_token: i.fitbit.refreshToken,
       expires_at: i.fitbit.expiresAt,
-      fitbit_user_id: i.fitbit.fitbitUserId
+      fitbit_user_id: i.fitbit.fitbitUserId,
+      created_at: i.fitbit.createdAt,
+      last_used_at: i.fitbit.lastUsedAt
     };
   }
   if (i.strava) {
@@ -143,7 +147,9 @@ const mapUserIntegrationsToFirestore = (i?: UserIntegrations): any => {
       access_token: i.strava.accessToken,
       refresh_token: i.strava.refreshToken,
       expires_at: i.strava.expiresAt,
-      athlete_id: i.strava.athleteId
+      athlete_id: i.strava.athleteId,
+      created_at: i.strava.createdAt,
+      last_used_at: i.strava.lastUsedAt
     };
   }
   return out;
@@ -155,21 +161,27 @@ const mapUserIntegrationsFromFirestore = (data: any): UserIntegrations | undefin
     hevy: data.hevy ? {
       enabled: !!data.hevy.enabled,
       apiKey: data.hevy.api_key || data.hevy.apiKey,
-      userId: data.hevy.user_id || data.hevy.userId
+      userId: data.hevy.user_id || data.hevy.userId,
+      createdAt: toDate(data.hevy.created_at),
+      lastUsedAt: toDate(data.hevy.last_used_at)
     } : undefined,
     fitbit: data.fitbit ? {
       enabled: !!data.fitbit.enabled,
       accessToken: data.fitbit.access_token,
       refreshToken: data.fitbit.refresh_token,
       expiresAt: toDate(data.fitbit.expires_at),
-      fitbitUserId: data.fitbit.fitbit_user_id
+      fitbitUserId: data.fitbit.fitbit_user_id,
+      createdAt: toDate(data.fitbit.created_at),
+      lastUsedAt: toDate(data.fitbit.last_used_at)
     } : undefined,
     strava: data.strava ? {
       enabled: !!data.strava.enabled,
       accessToken: data.strava.access_token,
       refreshToken: data.strava.refresh_token,
       expiresAt: toDate(data.strava.expires_at),
-      athleteId: data.strava.athlete_id
+      athleteId: data.strava.athlete_id,
+      createdAt: toDate(data.strava.created_at),
+      lastUsedAt: toDate(data.strava.last_used_at)
     } : undefined
   };
 };

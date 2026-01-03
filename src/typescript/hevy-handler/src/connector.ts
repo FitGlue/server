@@ -28,7 +28,13 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
 
   async fetchAndMap(activityId: string, config: HevyConnectorConfig): Promise<StandardizedActivity[]> {
     this.context.logger.debug(`HevyConnector: fetching and mapping workout ${activityId}`, { config });
-    const client = createHevyClient({ apiKey: config.apiKey });
+    const client = createHevyClient({
+      apiKey: config.apiKey,
+      usageTracking: {
+        userStore: this.context.stores.users,
+        userId: (config as any).userId
+      }
+    });
     const { data: fullWorkout, error, response } = await client.GET("/v1/workouts/{workoutId}", {
       params: { path: { workoutId: activityId } }
     });

@@ -47,7 +47,6 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        client_id: clientId,
         code,
         grant_type: 'authorization_code',
         redirect_uri: `${process.env.BASE_URL}/auth/fitbit/callback`,

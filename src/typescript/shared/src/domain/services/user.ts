@@ -141,6 +141,10 @@ export class UserService {
         });
     }
 
+    async updateLastUsed(userId: string, provider: string): Promise<void> {
+        return this.userStore.updateLastUsed(userId, provider);
+    }
+
     async getUser(userId: string): Promise<UserRecord | null> {
         return this.get(userId);
     }

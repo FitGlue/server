@@ -29,6 +29,8 @@ export async function storeOAuthTokens(
     accessToken: tokens.accessToken,
     refreshToken: tokens.refreshToken,
     expiresAt: tokens.expiresAt,
+    createdAt: new Date(),
+    lastUsedAt: new Date(),
     // Add provider-specific ID fields
     ...(provider === 'strava' ? { athleteId: Number(tokens.externalUserId) } : {}),
     ...(provider === 'fitbit' ? { fitbitUserId: tokens.externalUserId } : {})

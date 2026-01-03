@@ -207,12 +207,16 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 	}
 
 	// Update Firestore using UpdateUser logic which expects map (for now)
-	// We need snake_case keys for the map update since database.UpdateUser is map-based.
-	// We construct a specific nested update manually.
+	// We use nested maps to ensure proper Firestore object nesting, NOT dotted keys.
 	updateData := map[string]interface{}{
-		"integrations." + s.provider + ".access_token":  result.AccessToken,
-		"integrations." + s.provider + ".refresh_token": result.RefreshToken,
-		"integrations." + s.provider + ".expires_at":    newExpiry,
+		"integrations": map[string]interface{}{
+			s.provider: map[string]interface{}{
+				"access_token":  result.AccessToken,
+				"refresh_token": result.RefreshToken,
+				"expires_at":    newExpiry,
+				"last_used_at":  time.Now(),
+			},
+		},
 	}
 
 	if err := s.db.DB.UpdateUser(ctx, s.userID, updateData); err != nil {

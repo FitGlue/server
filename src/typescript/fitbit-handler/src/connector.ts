@@ -151,7 +151,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
     // Use UserService from context
     const userService = this.context.services.user;
 
-    const client = createFitbitClient(userService, userId);
+    const client = createFitbitClient(userService, userId, { usageTracking: true });
     const date = activityId; // The "activityId" is actually a date for Fitbit
 
     // Fetch activity list for the date

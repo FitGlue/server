@@ -504,6 +504,8 @@ type HevyIntegration struct {
 	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 	ApiKey        string                 `protobuf:"bytes,2,opt,name=api_key,json=apiKey,proto3" json:"api_key,omitempty"`
 	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	CreatedAt     *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUsedAt    *timestamp.Timestamp   `protobuf:"bytes,5,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -559,6 +561,20 @@ func (x *HevyIntegration) GetUserId() string {
 	return ""
 }
 
+func (x *HevyIntegration) GetCreatedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *HevyIntegration) GetLastUsedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.LastUsedAt
+	}
+	return nil
+}
+
 type FitbitIntegration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
@@ -566,6 +582,8 @@ type FitbitIntegration struct {
 	RefreshToken  string                 `protobuf:"bytes,3,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
 	ExpiresAt     *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	FitbitUserId  string                 `protobuf:"bytes,5,opt,name=fitbit_user_id,json=fitbitUserId,proto3" json:"fitbit_user_id,omitempty"`
+	CreatedAt     *timestamp.Timestamp   `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUsedAt    *timestamp.Timestamp   `protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -633,6 +651,20 @@ func (x *FitbitIntegration) GetFitbitUserId() string {
 		return x.FitbitUserId
 	}
 	return ""
+}
+
+func (x *FitbitIntegration) GetCreatedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *FitbitIntegration) GetLastUsedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.LastUsedAt
+	}
+	return nil
 }
 
 type SourceEnrichmentConfig struct {
@@ -739,6 +771,8 @@ type StravaIntegration struct {
 	RefreshToken  string                 `protobuf:"bytes,3,opt,name=refresh_token,json=refreshToken,proto3" json:"refresh_token,omitempty"`
 	ExpiresAt     *timestamp.Timestamp   `protobuf:"bytes,4,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
 	AthleteId     int64                  `protobuf:"varint,5,opt,name=athlete_id,json=athleteId,proto3" json:"athlete_id,omitempty"`
+	CreatedAt     *timestamp.Timestamp   `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUsedAt    *timestamp.Timestamp   `protobuf:"bytes,7,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -806,6 +840,20 @@ func (x *StravaIntegration) GetAthleteId() int64 {
 		return x.AthleteId
 	}
 	return 0
+}
+
+func (x *StravaIntegration) GetCreatedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *StravaIntegration) GetLastUsedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.LastUsedAt
+	}
+	return nil
 }
 
 type ProcessedActivityRecord struct {
@@ -889,18 +937,26 @@ const file_user_proto_rawDesc = "" +
 	"\x10UserIntegrations\x12,\n" +
 	"\x04hevy\x18\x01 \x01(\v2\x18.fitglue.HevyIntegrationR\x04hevy\x122\n" +
 	"\x06fitbit\x18\x02 \x01(\v2\x1a.fitglue.FitbitIntegrationR\x06fitbit\x122\n" +
-	"\x06strava\x18\x03 \x01(\v2\x1a.fitglue.StravaIntegrationR\x06strava\"]\n" +
+	"\x06strava\x18\x03 \x01(\v2\x1a.fitglue.StravaIntegrationR\x06strava\"\xd6\x01\n" +
 	"\x0fHevyIntegration\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x17\n" +
 	"\aapi_key\x18\x02 \x01(\tR\x06apiKey\x12\x17\n" +
-	"\auser_id\x18\x03 \x01(\tR\x06userId\"\xd6\x01\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x129\n" +
+	"\n" +
+	"created_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
+	"\flast_used_at\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastUsedAt\"\xcf\x02\n" +
 	"\x11FitbitIntegration\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12!\n" +
 	"\faccess_token\x18\x02 \x01(\tR\vaccessToken\x12#\n" +
 	"\rrefresh_token\x18\x03 \x01(\tR\frefreshToken\x129\n" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12$\n" +
-	"\x0efitbit_user_id\x18\x05 \x01(\tR\ffitbitUserId\"O\n" +
+	"\x0efitbit_user_id\x18\x05 \x01(\tR\ffitbitUserId\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
+	"\flast_used_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastUsedAt\"O\n" +
 	"\x16SourceEnrichmentConfig\x125\n" +
 	"\tenrichers\x18\x01 \x03(\v2\x17.fitglue.EnricherConfigR\tenrichers\"\xcc\x01\n" +
 	"\x0eEnricherConfig\x12B\n" +
@@ -908,7 +964,7 @@ const file_user_proto_rawDesc = "" +
 	"\x06inputs\x18\x02 \x03(\v2#.fitglue.EnricherConfig.InputsEntryR\x06inputs\x1a9\n" +
 	"\vInputsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcf\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xc8\x02\n" +
 	"\x11StravaIntegration\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12!\n" +
 	"\faccess_token\x18\x02 \x01(\tR\vaccessToken\x12#\n" +
@@ -916,7 +972,11 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12\x1d\n" +
 	"\n" +
-	"athlete_id\x18\x05 \x01(\x03R\tathleteId\"\x91\x01\n" +
+	"athlete_id\x18\x05 \x01(\x03R\tathleteId\x129\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
+	"\flast_used_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastUsedAt\"\x91\x01\n" +
 	"\x17ProcessedActivityRecord\x12\x16\n" +
 	"\x06source\x18\x01 \x01(\tR\x06source\x12\x1f\n" +
 	"\vexternal_id\x18\x02 \x01(\tR\n" +
@@ -993,17 +1053,23 @@ var file_user_proto_depIdxs = []int32{
 	8,  // 4: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
 	9,  // 5: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
 	12, // 6: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
-	15, // 7: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	11, // 8: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
-	0,  // 9: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
-	14, // 10: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
-	15, // 11: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	15, // 12: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
-	13, // [13:13] is the sub-list for method output_type
-	13, // [13:13] is the sub-list for method input_type
-	13, // [13:13] is the sub-list for extension type_name
-	13, // [13:13] is the sub-list for extension extendee
-	0,  // [0:13] is the sub-list for field type_name
+	15, // 7: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
+	15, // 8: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	15, // 9: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	15, // 10: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
+	15, // 11: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	11, // 12: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
+	0,  // 13: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
+	14, // 14: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
+	15, // 15: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	15, // 16: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
+	15, // 17: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	15, // 18: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
+	19, // [19:19] is the sub-list for method output_type
+	19, // [19:19] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }

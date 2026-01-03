@@ -31,6 +31,8 @@ message HevyIntegration {
   bool enabled = 1;
   string api_key = 2;
   string user_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_used_at = 5;
 }
 
 message FitbitIntegration {
@@ -39,6 +41,8 @@ message FitbitIntegration {
     string refresh_token = 3;
     google.protobuf.Timestamp expires_at = 4;
     string fitbit_user_id = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
 }
 
 message SourceEnrichmentConfig {
@@ -102,6 +106,8 @@ message StravaIntegration {
     string refresh_token = 3;
     google.protobuf.Timestamp expires_at = 4;
     int64 athlete_id = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
 }
 
 message ProcessedActivityRecord {

@@ -1,9 +1,13 @@
 package oauth
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"net/http"
+	"time"
+
+	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 )
 
 // Transport is an http.RoundTripper that authenticates all requests
@@ -78,11 +82,59 @@ func cloneRequest(r *http.Request) *http.Request {
 	return r2
 }
 
-// NewHTTPClient creates an HTTP client with OAuth transport
-func NewHTTPClient(source TokenSource) *http.Client {
+// UsageTrackingTransport wraps a RoundTripper and updates the user's last_used_at
+// timestamp on successful requests.
+type UsageTrackingTransport struct {
+	Base     http.RoundTripper
+	Service  *bootstrap.Service
+	UserID   string
+	Provider string
+}
+
+func (t *UsageTrackingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	base := t.Base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+
+	resp, err := base.RoundTrip(req)
+
+	// If request was successful (at transport level), update usage stats asynchronously
+	if err == nil {
+		go func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			updateErr := t.Service.DB.UpdateUser(ctx, t.UserID, map[string]interface{}{
+				"integrations": map[string]interface{}{
+					t.Provider: map[string]interface{}{
+						"last_used_at": time.Now(),
+					},
+				},
+			})
+			if updateErr != nil {
+				slog.Warn("Failed to track usage", "provider", t.Provider, "user_id", t.UserID, "error", updateErr)
+			}
+		}()
+	}
+
+	return resp, err
+}
+
+// NewClientWithUsageTracking creates an HTTP client that automatically handles OAuth
+// and tracks usage stats in Firestore.
+func NewClientWithUsageTracking(source TokenSource, service *bootstrap.Service, userID, provider string) *http.Client {
+	// Stack: Client -> UsageTracking -> OAuth -> Network
+	oauthTransport := &Transport{Source: source}
+
+	usageTransport := &UsageTrackingTransport{
+		Base:     oauthTransport,
+		Service:  service,
+		UserID:   userID,
+		Provider: provider,
+	}
+
 	return &http.Client{
-		Transport: &Transport{
-			Source: source,
-		},
+		Transport: usageTransport,
 	}
 }

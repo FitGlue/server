@@ -71,7 +71,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 	// 3. Initialize OAuth HTTP Client if not provided (for testing)
 	if httpClient == nil {
 		tokenSource := oauth.NewFirestoreTokenSource(p.Service, user.UserId, "fitbit")
-		httpClient = oauth.NewHTTPClient(tokenSource)
+		httpClient = oauth.NewClientWithUsageTracking(tokenSource, p.Service, user.UserId, "fitbit")
 	}
 
 	// 4. Create Fitbit Client with OAuth transport

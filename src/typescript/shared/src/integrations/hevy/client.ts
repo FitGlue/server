@@ -1,5 +1,6 @@
 import createClient, { Middleware } from "openapi-fetch";
 import type { paths, components } from "./schema";
+import type { UserStore } from "../../storage/firestore/user-store";
 
 // Utility type to make a specific header optional in the paths definition
 // This allows middleware to handle headers (like api-key) without forcing the caller to provide them.
@@ -30,12 +31,36 @@ const authMiddleware = (apiKey: string): Middleware => ({
     },
 });
 
+const usageMiddleware = (userStore: UserStore, userId: string): Middleware => ({
+    async onResponse({ response }) {
+        if (response.ok) {
+            // Fire and forget usage tracking
+            userStore.updateLastUsed(userId, 'hevy').catch(err => {
+                console.warn(`[HevyClient] Failed to track usage for user ${userId}`, err);
+            });
+        }
+        return response;
+    }
+});
+
+export interface HevyClientOptions {
+    apiKey: string;
+    usageTracking?: {
+        userStore: UserStore;
+        userId: string;
+    };
+}
+
 export function createHevyClient(options: HevyClientOptions): HevyClient {
     const client = createClient<ClientPaths>({
         baseUrl: "https://api.hevyapp.com",
     });
 
     client.use(authMiddleware(options.apiKey));
+
+    if (options.usageTracking) {
+        client.use(usageMiddleware(options.usageTracking.userStore, options.usageTracking.userId));
+    }
 
     return client;
 }

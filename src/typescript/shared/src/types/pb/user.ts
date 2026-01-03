@@ -99,6 +99,8 @@ export interface HevyIntegration {
   enabled: boolean;
   apiKey: string;
   userId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
 }
 
 export interface FitbitIntegration {
@@ -107,6 +109,8 @@ export interface FitbitIntegration {
   refreshToken: string;
   expiresAt?: Date | undefined;
   fitbitUserId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
 }
 
 export interface SourceEnrichmentConfig {
@@ -130,6 +134,8 @@ export interface StravaIntegration {
   refreshToken: string;
   expiresAt?: Date | undefined;
   athleteId: number;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
 }
 
 export interface ProcessedActivityRecord {

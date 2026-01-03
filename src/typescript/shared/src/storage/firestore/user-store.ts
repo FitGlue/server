@@ -131,7 +131,20 @@ export class UserStore {
   /**
    * Create or overwrite a user document.
    */
+  /**
+   * Create or overwrite a user document.
+   */
   async create(userId: string, data: UserRecord): Promise<void> {
     await this.collection().doc(userId).set(data);
+  }
+
+  /**
+   * Update the last_used_at timestamp for a specific integration.
+   */
+  async updateLastUsed(userId: string, provider: string): Promise<void> {
+    const fieldPath = `integrations.${provider}.last_used_at`;
+    await this.collection().doc(userId).update({
+      [fieldPath]: new Date()
+    });
   }
 }

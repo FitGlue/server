@@ -71,7 +71,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// Initialize OAuth HTTP Client if not provided (for testing)
 		if httpClient == nil {
 			tokenSource := oauth.NewFirestoreTokenSource(fwCtx.Service, eventPayload.UserId, "strava")
-			httpClient = oauth.NewHTTPClient(tokenSource)
+			httpClient = oauth.NewClientWithUsageTracking(tokenSource, fwCtx.Service, eventPayload.UserId, "strava")
 		}
 
 		// Download FIT from GCS
