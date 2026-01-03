@@ -47,12 +47,26 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
   }
 
   /**
-   * Abstract mapping function that must be implemented by the concrete connector.
+   * Verify a request. Defaults to no verification.
+   * Override to add vendor-specific verification.
+   */
+  async verifyRequest(_req: any, _res: any, _context: any): Promise<{ handled: boolean; response?: any } | undefined> {
+    return undefined;
+  }
+
+  /**
+   * Extract an ID from the raw payload. Defaults to null.
+   */
+  abstract extractId(payload: TRawPayload): string | null;
+
+  /**
+   * Map a raw payload to a StandardizedActivity.
    */
   abstract mapActivity(rawPayload: TRawPayload, context?: any): Promise<StandardizedActivity>;
 
-  abstract extractId(payload: TRawPayload): string | null;
-
+  /**
+   * Fetch and map activities for a given ID.
+   */
   abstract fetchAndMap(activityId: string, config: TConfig): Promise<StandardizedActivity[]>;
 
   /**
@@ -62,9 +76,5 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
    */
   async healthCheck(): Promise<boolean> {
     return true; // Stateless connectors are assumed healthy
-  }
-
-  async verifyRequest(_req: any, _res: any, _context: any): Promise<{ handled: boolean; response?: any } | undefined> {
-    return undefined; // No custom verification by default
   }
 }
