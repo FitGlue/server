@@ -913,6 +913,7 @@ function executionStatusToString(status: number | undefined): string {
         case ExecutionStatus.STATUS_STARTED: return 'STARTED';
         case ExecutionStatus.STATUS_SUCCESS: return 'SUCCESS';
         case ExecutionStatus.STATUS_FAILED: return 'FAILED';
+        case ExecutionStatus.STATUS_WAITING: return 'WAITING';
         case ExecutionStatus.STATUS_UNKNOWN: return 'UNKNOWN';
         default: return `UNKNOWN(${status})`;
     }

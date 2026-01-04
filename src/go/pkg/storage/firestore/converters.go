@@ -4,7 +4,7 @@ import (
 	"time"
 
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -319,11 +319,11 @@ func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {
 		"completed_at":    p.CompletedAt.AsTime(),
 	}
 
-	// Serialize original_payload to bytes
+	// Serialize original_payload to JSON string (not binary proto) so TypeScript can republish it
 	if p.OriginalPayload != nil {
-		bytes, err := proto.Marshal(p.OriginalPayload)
+		jsonBytes, err := protojson.Marshal(p.OriginalPayload)
 		if err == nil {
-			m["original_payload"] = bytes
+			m["original_payload"] = string(jsonBytes)
 		}
 	}
 	return m
@@ -377,9 +377,16 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 	}
 
 	if v, ok := m["original_payload"]; ok {
-		if b, ok := v.([]byte); ok {
+		var jsonStr string
+		switch val := v.(type) {
+		case string:
+			jsonStr = val
+		case []byte:
+			jsonStr = string(val)
+		}
+		if jsonStr != "" {
 			var payload pb.ActivityPayload
-			if err := proto.Unmarshal(b, &payload); err == nil {
+			if err := protojson.Unmarshal([]byte(jsonStr), &payload); err == nil {
 				p.OriginalPayload = &payload
 			}
 		}

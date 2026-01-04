@@ -293,7 +293,9 @@ export const FirestoreToPendingInput = (data: any): PendingInput => {
     status: data.status,
     requiredFields: data.required_fields || [],
     inputData: data.input_data || {},
-    originalPayload: data.original_payload, // Pass through, might be buffer/bytes
+    originalPayload: typeof data.original_payload === 'string'
+      ? JSON.parse(data.original_payload)
+      : data.original_payload, // Handle both JSON string and object
     createdAt: toDate(data.created_at),
     updatedAt: toDate(data.updated_at),
     completedAt: toDate(data.completed_at)
