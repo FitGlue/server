@@ -230,6 +230,9 @@ Get full details for a specific execution, including input/output payloads (if l
 ./fitglue-admin executions:get <executionId>
 ```
 
+**Options:**
+- `-v, --verbose`: Show full execution details without truncating large arrays or objects (e.g. FIT file data streams).
+
 ### `executions:create <executionId>`
 
 **Testing Command:** Create a test execution record with minimal data (useful for debugging execution logging).
@@ -486,6 +489,40 @@ If `localPath` is not provided, the file is saved to `server/downloads/<filename
 
 ```bash
 ./fitglue-admin files:download-execution my-execution-id
+```
+
+## Input Management Commands
+These commands manage the `User Input` enricher workflow, where pipelines pause for manual input.
+
+### `inputs:list <userId>`
+
+List all pending inputs for a user (activities with `STATUS_WAITING`).
+
+```bash
+./fitglue-admin inputs:list my-user-id
+```
+
+### `inputs:get <activityId>`
+
+Get details of a specific pending input requirement, including which fields are requested.
+
+```bash
+./fitglue-admin inputs:get my-activity-id
+```
+
+### `inputs:resolve <activityId>`
+
+Provide the required input to resume the pipeline. You can do this interactively or via flags.
+
+**Interactive:**
+```bash
+./fitglue-admin inputs:resolve my-activity-id
+# Prompts for 'title', 'description' etc.
+```
+
+**Non-Interactive:**
+```bash
+./fitglue-admin inputs:resolve my-activity-id --data '{"title": "My Run", "description": "Good vibes"}'
 ```
 
 ## Development

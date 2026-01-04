@@ -222,6 +222,105 @@ View on Hevy: https://hevy.com/workout/abc123
 
 ---
 
+### 7. Parkrun
+**Provider Type**: `ENRICHER_PROVIDER_PARKRUN`
+
+**Purpose**: Identifies Parkrun activities, titles them correctly (e.g. "Bushy Parkrun"), and adds tags.
+
+**Trigger**: Activity is a Run + Sat 9am + Near known Parkrun location.
+
+**Configuration**:
+```json
+{
+  "providerType": 8,
+  "inputs": {
+    "enable_titling": "true", // Rename activity to event name (default: true)
+    "tags": "Parkrun, Race"   // Comma-separated tags (default: "Parkrun")
+  }
+}
+```
+
+**Output**: Sets `name` and adds `tags`.
+
+**How it Works**:
+Checks start location against known Parkrun coordinates. If within 200m and time matches Saturday morning window, it applies the event name and tags.
+
+---
+
+### 8. Condition Matcher
+**Provider Type**: `ENRICHER_PROVIDER_CONDITION_MATCHER`
+
+**Purpose**: Apply changes (Title, Description) ONLY if specific conditions are met (Time, Location, Type).
+
+**Trigger**: Configurable conditions.
+
+**Configuration**:
+```json
+{
+  "providerType": 9,
+  "inputs": {
+    "activity_type": "RUNNING",       // Match specific type
+    "days": "Sat,Sun",                // Match days of week
+    "start_time": "06:00",            // Match start time >= 06:00
+    "end_time": "10:00",              // Match start time <= 10:00
+    "location_lat": "51.456",         // Target Latitude
+    "location_long": "-0.123",        // Target Longitude
+    "radius_m": "500",                // Radius in meters
+    "title_template": "Morning Run",  // Apply if matched
+    "description_template": "Matched condition!" // Apply if matched
+  }
+}
+```
+
+**Output**: Conditionally sets `name` or `description`.
+
+---
+
+### 9. Auto Increment
+**Provider Type**: `ENRICHER_PROVIDER_AUTO_INCREMENT`
+
+**Purpose**: Maintains a counter and appends the current count to the activity name (e.g., "Run (#100)").
+
+**Trigger**: Always runs if configured.
+
+**Configuration**:
+```json
+{
+  "providerType": 10,
+  "inputs": {
+    "counter_key": "my_run_counter", // Unique ID for this counter
+    "initial_value": "1",            // Start counting from here
+    "title_contains": "Run"          // Optional: Only increment if title contains this
+  }
+}
+```
+
+**Output**: Appends `(#N)` to the activity name.
+
+---
+
+### 10. User Input
+**Provider Type**: `ENRICHER_PROVIDER_USER_INPUT`
+
+**Purpose**: Pauses the pipeline and requests manual input from the user via the CLI (or future UI).
+
+**Trigger**: Always runs.
+
+**Configuration**:
+```json
+{
+  "providerType": 11,
+  "inputs": {
+    "fields": "title,description" // Fields to request
+  }
+}
+```
+
+**Behavior**:
+1. Pipeline halts with status `STATUS_WAITING`.
+2. Admin/User must use CLI `inputs:resolve` to provide data.
+3. Pipeline resumes and injects input into activity.
+
 ## Configuring Pipelines via Admin CLI
 
 ### Add a Pipeline
