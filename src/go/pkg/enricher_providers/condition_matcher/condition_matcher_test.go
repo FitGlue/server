@@ -144,4 +144,54 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			t.Fatal("Expected match")
 		}
 	})
+
+	t.Run("Fails validation when only lat is provided", func(t *testing.T) {
+		act := &pb.StandardizedActivity{StartTime: makeTime("Sat", 9)}
+		inputs := map[string]string{
+			"location_lat": "51.41",
+		}
+		_, err := provider.Enrich(ctx, act, nil, inputs, false)
+		if err == nil {
+			t.Fatal("Expected error when location_long is missing")
+		}
+		if err.Error() != "both location_lat and location_long are required for location proximity matching" {
+			t.Errorf("Unexpected error: %v", err)
+		}
+	})
+
+	t.Run("Matches with Aliases", func(t *testing.T) {
+		act := &pb.StandardizedActivity{
+			StartTime: makeTime("Sat", 9),
+			Sessions: []*pb.Session{
+				{
+					Laps: []*pb.Lap{
+						{
+							Records: []*pb.Record{
+								{PositionLat: 51.41, PositionLong: -0.34},
+							},
+						},
+					},
+				},
+			},
+		}
+		inputs := map[string]string{
+			"days_of_week":    "Sat",
+			"start_time":      "08:00",
+			"end_time":        "10:00",
+			"location_lat":    "51.41",
+			"location_long":   "-0.34",
+			"location_radius": "500",
+			"title_template":  "Alias Match",
+		}
+		res, err := provider.Enrich(ctx, act, nil, inputs, false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if res == nil {
+			t.Fatal("Expected match with aliases")
+		}
+		if res.Name != "Alias Match" {
+			t.Errorf("Expected name 'Alias Match', got %s", res.Name)
+		}
+	})
 }

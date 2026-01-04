@@ -46,10 +46,14 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 
 	// B. Days of Week (e.g. "Mon,Tue")
 	startTime := act.StartTime.AsTime()
-	if val, ok := inputs["days"]; ok && val != "" {
+	daysVal, hasDays := inputs["days"]
+	if !hasDays {
+		daysVal = inputs["days_of_week"]
+	}
+	if daysVal != "" {
 		currentDay := startTime.Weekday().String()[:3] // "Mon"
 		match := false
-		for _, day := range strings.Split(val, ",") {
+		for _, day := range strings.Split(daysVal, ",") {
 			if strings.TrimSpace(day) == currentDay {
 				match = true
 				break
@@ -79,33 +83,63 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 		localTime = startTime.Add(time.Duration(offset * float64(time.Hour)))
 	}
 
-	if startStr, ok := inputs["time_start"]; ok && startStr != "" {
-		if !checkTime(localTime, startStr, true) {
+	startTimeVal, hasStartTime := inputs["time_start"]
+	if !hasStartTime {
+		startTimeVal = inputs["start_time"]
+	}
+	if startTimeVal != "" {
+		if !checkTime(localTime, startTimeVal, true) {
 			return nil, nil
 		}
 	}
-	if endStr, ok := inputs["time_end"]; ok && endStr != "" {
-		if !checkTime(localTime, endStr, false) {
+
+	endTimeVal, hasEndTime := inputs["time_end"]
+	if !hasEndTime {
+		endTimeVal = inputs["end_time"]
+	}
+	if endTimeVal != "" {
+		if !checkTime(localTime, endTimeVal, false) {
 			return nil, nil
 		}
 	}
 
 	// D. Location (Lat/Long + Radius)
-	if latStr, ok := inputs["location_lat"]; ok && latStr != "" {
+	latStr := inputs["location_lat"]
+	longStr := inputs["location_long"]
+	if longStr == "" {
+		longStr = inputs["location_lng"]
+	}
+
+	if latStr != "" || longStr != "" {
+		if latStr == "" || longStr == "" {
+			return nil, fmt.Errorf("both location_lat and location_long are required for location proximity matching")
+		}
+
 		if !hasLoc {
 			return nil, nil
 		}
+
 		targetLat, err := strconv.ParseFloat(latStr, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid location_lat: %v", err)
 		}
-		targetLong, err := strconv.ParseFloat(inputs["location_long"], 64)
+		targetLong, err := strconv.ParseFloat(longStr, 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid location_long: %v", err)
 		}
-		radius, err := strconv.ParseFloat(inputs["radius_m"], 64)
-		if err != nil {
-			radius = 200 // Default 200m
+
+		radiusStr, hasRadius := inputs["radius_m"]
+		if !hasRadius {
+			radiusStr = inputs["location_radius"]
+		}
+
+		radius := 200.0 // Default 200m
+		if radiusStr != "" {
+			r, err := strconv.ParseFloat(radiusStr, 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid radius: %v", err)
+			}
+			radius = r
 		}
 
 		dist := distanceMeters(lat, long, targetLat, targetLong)
