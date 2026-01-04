@@ -8,6 +8,8 @@ import (
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -44,7 +46,7 @@ func (p *AutoIncrementProvider) Enrich(ctx context.Context, activity *pb.Standar
 	// it will FAIL because ConditionMatcher hasn't finished yet (or runs in parallel).
 	// This filter is only useful for filtering based on SOURCE name.
 	if filter, ok := inputs["title_contains"]; ok && filter != "" {
-		if !strings.Contains(activity.Name, filter) {
+		if !strings.Contains(strings.ToLower(activity.Name), strings.ToLower(filter)) {
 			return nil, nil
 		}
 	}
@@ -64,8 +66,12 @@ func (p *AutoIncrementProvider) Enrich(ctx context.Context, activity *pb.Standar
 
 	counter, err := p.service.DB.GetCounter(ctx, user.UserId, key)
 	if err != nil {
-		// Real error from DB
-		return nil, fmt.Errorf("failed to get counter: %v", err)
+		if status.Code(err) == codes.NotFound {
+			counter = nil // Treat as missing -> initialize below
+		} else {
+			// Real error from DB
+			return nil, fmt.Errorf("failed to get counter: %v", err)
+		}
 	}
 
 	if counter == nil {
