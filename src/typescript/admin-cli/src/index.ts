@@ -503,9 +503,31 @@ const formatUserOutput = (user: any) => {
             console.log(`     #${index + 1} [${p.id}]`);
             console.log(`       Source: ${p.source}`);
             if (p.enrichers && p.enrichers.length > 0) {
-                // Enrichers use provider_type in DB now
-                const enricherDesc = p.enrichers.map((e: any) => getEnricherProviderName(e.provider_type || e.providerType)).join(' -> ');
-                console.log(`       Enrichers: ${enricherDesc}`);
+                console.log(`       Enrichers:`);
+                p.enrichers.forEach((e: any, eIdx: number) => {
+                    const providerName = getEnricherProviderName(e.provider_type || e.providerType);
+                    console.log(`         ${eIdx + 1}. ${providerName}`);
+                    if (e.inputs && Object.keys(e.inputs).length > 0) {
+                        Object.entries(e.inputs).forEach(([key, val]) => {
+                            let printed = false;
+                            if (typeof val === 'string' && (val.trim().startsWith('{') || val.trim().startsWith('['))) {
+                                try {
+                                    const parsed = JSON.parse(val);
+                                    const formatted = JSON.stringify(parsed, null, 2).split('\n');
+                                    console.log(`              ${key}:`);
+                                    formatted.forEach(line => console.log(`                ${line}`));
+                                    printed = true;
+                                } catch (err) {
+                                    // Not valid JSON, fall through
+                                }
+                            }
+
+                            if (!printed) {
+                                console.log(`              ${key}: ${val}`);
+                            }
+                        });
+                    }
+                });
             } else {
                 console.log(`       Enrichers: (None)`);
             }
