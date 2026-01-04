@@ -112,6 +112,7 @@ export const executionConverter: FirestoreDataConverter<ExecutionRecord> = {
       endTime: toDate(data.end_time),
       errorMessage: data.error_message,
       inputsJson: data.inputs_json || data.inputsJson,
+      outputsJson: data.outputs_json || data.outputsJson,
       expireAt: toDate(data.expire_at)
     };
   }
