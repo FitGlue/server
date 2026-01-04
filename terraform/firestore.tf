@@ -61,7 +61,5 @@ resource "google_firestore_field" "executions_expire_at" {
   collection = "executions"
   field      = "expire_at"
 
-  ttl_config {
-    state = "ACTIVE"
-  }
+  ttl_config {}
 }
