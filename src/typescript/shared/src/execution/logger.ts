@@ -64,13 +64,15 @@ export async function logExecutionSuccess(
 export async function logExecutionFailure(
   ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
-  error: Error
+  error: Error,
+  result?: any
 ): Promise<void> {
-  ctx.logger.error(`Execution failed`, { executionId, error: error.message, stack: error.stack });
+  ctx.logger.error(`Execution failed`, { executionId, error: error.message, stack: error.stack, result });
 
   await ctx.services.execution.update(executionId, {
     endTime: new Date(),
     status: ExecutionStatus.STATUS_FAILED,
-    errorMessage: error.message
+    errorMessage: error.message,
+    outputsJson: result ? JSON.stringify(result) : undefined
   });
 }

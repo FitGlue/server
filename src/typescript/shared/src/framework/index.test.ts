@@ -52,6 +52,8 @@ describe('createCloudFunction', () => {
   let mockReq: any;
   let mockRes: any;
   let handler: jest.Mock;
+  let sendSpy: jest.Mock;
+  let jsonSpy: jest.Mock;
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -62,9 +64,12 @@ describe('createCloudFunction', () => {
       headers: {},
       query: {},
     };
+    sendSpy = jest.fn();
+    jsonSpy = jest.fn();
     mockRes = {
       status: jest.fn().mockReturnThis(),
-      send: jest.fn(),
+      send: sendSpy,
+      json: jsonSpy,
       set: jest.fn(),
     };
     handler = jest.fn().mockResolvedValue({ success: true });
@@ -76,7 +81,6 @@ describe('createCloudFunction', () => {
 
     expect(handler).toHaveBeenCalled();
     expect(mockRes.set).toHaveBeenCalledWith('x-execution-id', expect.stringMatching(/^unknown-function-\d+$/));
-    // We can't easily check logExecutionSuccess called because of deep imports but we can check if handler was called
   });
 
   it('should handle errors and log failure', async () => {
@@ -86,7 +90,7 @@ describe('createCloudFunction', () => {
     await cloudFunction(mockReq, mockRes);
 
     expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(mockRes.send).toHaveBeenCalledWith('Internal Server Error');
+    expect(sendSpy).toHaveBeenCalledWith('Internal Server Error');
   });
 
   it('should extract user_id from body', async () => {
@@ -96,4 +100,16 @@ describe('createCloudFunction', () => {
     const ctx = handler.mock.calls[0][2] as FrameworkContext;
     expect(ctx.userId).toBe('user-1');
   });
+
+  it('should log execution failure on HTTP 400', async () => {
+    handler.mockImplementation(async (req, res) => {
+      res.status(400).json({ error: 'Bad Request' });
+    });
+    const cloudFunction = createCloudFunction(handler);
+    await cloudFunction(mockReq, mockRes);
+
+    expect(mockRes.status).toHaveBeenCalledWith(400);
+    expect(jsonSpy).toHaveBeenCalledWith({ error: 'Bad Request' });
+  });
+
 });

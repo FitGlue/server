@@ -83,7 +83,7 @@ describe('inputs-handler', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         inputs: [{
-          id: 'a1',
+          activity_id: 'a1',
           user_id: 'u1',
           status: 1,
           required_fields: ['title'],

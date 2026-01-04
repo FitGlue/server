@@ -27,7 +27,7 @@ export const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       const inputs = await inputService.listPendingInputs(ctx.userId);
       // Omit original_payload for list view
       const responseInputs = inputs.map((i: any) => ({
-        id: i.activityId,
+        activity_id: i.activityId,
         user_id: i.userId,
         status: i.status,
         required_fields: i.requiredFields,

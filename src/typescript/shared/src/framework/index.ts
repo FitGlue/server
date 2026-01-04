@@ -170,6 +170,8 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       isHttp = true;
     }
 
+    let capturedResponse: any = undefined;
+
     // ADAPT CLOUDEVENT TO REQUEST-LIKE OBJECT
     if (!isHttp) {
       // It's a CloudEvent or Background Function
@@ -193,10 +195,24 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Mock Response object for the handler to use without crashing
       res = {
         status: () => res, // Chainable
-        send: () => { },
-        json: () => { },
+        send: (body: any) => { capturedResponse = body; },
+        json: (body: any) => { capturedResponse = body; },
         set: () => { }, // Safe no-op for headers
         headersSent: false
+      };
+    } else {
+      // HTTP Trigger: Wrap res.send and res.json to capture output
+      const originalSend = res.send.bind(res);
+      const originalJson = res.json.bind(res);
+
+      res.send = (body: any) => {
+        capturedResponse = body;
+        return originalSend(body);
+      };
+
+      res.json = (body: any) => {
+        capturedResponse = body;
+        return originalJson(body);
       };
     }
 
@@ -358,8 +374,29 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Execute Handler
       const result = await handler(req, res, ctx);
 
-      // Log execution success
-      await logExecutionSuccess(ctx, executionId, result || {});
+      // Check HTTP Status for failure
+      if (isHttp && res.statusCode && res.statusCode >= 400) {
+        // It was a handled error (e.g. 400 Bad Request, 404 Not Found), but still an execution failure
+        // from the perspective of "did the task succeed?"
+        const errorMsg = `HTTP Error ${res.statusCode}`;
+
+        // Merge result/capturedResponse for failure context as well
+        let finalResult = capturedResponse || result;
+        if (capturedResponse && typeof capturedResponse === 'object' && result && typeof result === 'object') {
+          finalResult = { ...result, ...capturedResponse };
+        }
+
+        await logExecutionFailure(loggingCtx, executionId, new Error(errorMsg), finalResult);
+      } else {
+        // Log execution success
+        // Combine capturedResponse and result if both exist and are objects, to maximize visibility
+        let finalResult = capturedResponse || result || {};
+        if (capturedResponse && typeof capturedResponse === 'object' && result && typeof result === 'object') {
+          finalResult = { ...result, ...capturedResponse };
+        }
+
+        await logExecutionSuccess(ctx, executionId, finalResult);
+      }
 
       preambleLogger.info('Function completed successfully');
 
@@ -367,7 +404,11 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Log execution failure
       preambleLogger.error('Function failed', { error: err.message, stack: err.stack });
 
-      await logExecutionFailure(loggingCtx, executionId, err);
+      if (capturedResponse && typeof capturedResponse === 'object') {
+        await logExecutionFailure(loggingCtx, executionId, err, capturedResponse);
+      } else {
+        await logExecutionFailure(loggingCtx, executionId, err);
+      }
 
       // Attach execution ID to response header (safety check)
       if (isHttp && !res.headersSent) {
