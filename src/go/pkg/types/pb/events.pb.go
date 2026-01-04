@@ -37,6 +37,8 @@ const (
 	CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION CloudEventType = 4
 	// Enrichment Lag: Payload is ActivityPayload
 	CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG CloudEventType = 5
+	// Input Resolved: Payload is ActivityPayload (resumed)
+	CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED CloudEventType = 6
 )
 
 // Enum value maps for CloudEventType.
@@ -48,6 +50,7 @@ var (
 		3: "CLOUD_EVENT_TYPE_JOB_ROUTED",
 		4: "CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION",
 		5: "CLOUD_EVENT_TYPE_ENRICHMENT_LAG",
+		6: "CLOUD_EVENT_TYPE_INPUT_RESOLVED",
 	}
 	CloudEventType_value = map[string]int32{
 		"CLOUD_EVENT_TYPE_UNSPECIFIED":         0,
@@ -56,6 +59,7 @@ var (
 		"CLOUD_EVENT_TYPE_JOB_ROUTED":          3,
 		"CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION": 4,
 		"CLOUD_EVENT_TYPE_ENRICHMENT_LAG":      5,
+		"CLOUD_EVENT_TYPE_INPUT_RESOLVED":      6,
 	}
 )
 
@@ -96,6 +100,7 @@ const (
 	CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST  CloudEventSource = 3
 	CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER       CloudEventSource = 4
 	CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER         CloudEventSource = 5
+	CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER CloudEventSource = 6
 )
 
 // Enum value maps for CloudEventSource.
@@ -107,6 +112,7 @@ var (
 		3: "CLOUD_EVENT_SOURCE_FITBIT_INGEST",
 		4: "CLOUD_EVENT_SOURCE_ENRICHER",
 		5: "CLOUD_EVENT_SOURCE_ROUTER",
+		6: "CLOUD_EVENT_SOURCE_INPUTS_HANDLER",
 	}
 	CloudEventSource_value = map[string]int32{
 		"CLOUD_EVENT_SOURCE_UNSPECIFIED":    0,
@@ -115,6 +121,7 @@ var (
 		"CLOUD_EVENT_SOURCE_FITBIT_INGEST":  3,
 		"CLOUD_EVENT_SOURCE_ENRICHER":       4,
 		"CLOUD_EVENT_SOURCE_ROUTER":         5,
+		"CLOUD_EVENT_SOURCE_INPUTS_HANDLER": 6,
 	}
 )
 
@@ -176,21 +183,23 @@ var File_events_proto protoreflect.FileDescriptor
 
 const file_events_proto_rawDesc = "" +
 	"\n" +
-	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto*\x97\x03\n" +
+	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto*\xdc\x03\n" +
 	"\x0eCloudEventType\x12 \n" +
 	"\x1cCLOUD_EVENT_TYPE_UNSPECIFIED\x10\x00\x12G\n" +
 	"!CLOUD_EVENT_TYPE_ACTIVITY_CREATED\x10\x01\x1a \x82\xb5\x18\x1ccom.fitglue.activity.created\x12I\n" +
 	"\"CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED\x10\x02\x1a!\x82\xb5\x18\x1dcom.fitglue.activity.enriched\x12;\n" +
 	"\x1bCLOUD_EVENT_TYPE_JOB_ROUTED\x10\x03\x1a\x1a\x82\xb5\x18\x16com.fitglue.job.routed\x12M\n" +
 	"$CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION\x10\x04\x1a#\x82\xb5\x18\x1fcom.fitglue.fitbit.notification\x12C\n" +
-	"\x1fCLOUD_EVENT_TYPE_ENRICHMENT_LAG\x10\x05\x1a\x1e\x82\xb5\x18\x1acom.fitglue.enrichment.lag*\xe1\x02\n" +
+	"\x1fCLOUD_EVENT_TYPE_ENRICHMENT_LAG\x10\x05\x1a\x1e\x82\xb5\x18\x1acom.fitglue.enrichment.lag\x12C\n" +
+	"\x1fCLOUD_EVENT_TYPE_INPUT_RESOLVED\x10\x06\x1a\x1e\x82\xb5\x18\x1acom.fitglue.input.resolved*\xa2\x03\n" +
 	"\x10CloudEventSource\x12\"\n" +
 	"\x1eCLOUD_EVENT_SOURCE_UNSPECIFIED\x10\x00\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_HEVY\x10\x01\x1a\x16\x8a\xb5\x18\x12/integrations/hevy\x12G\n" +
 	"!CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK\x10\x02\x1a \x8a\xb5\x18\x1c/integrations/fitbit/webhook\x12E\n" +
 	" CLOUD_EVENT_SOURCE_FITBIT_INGEST\x10\x03\x1a\x1f\x8a\xb5\x18\x1b/integrations/fitbit/ingest\x123\n" +
 	"\x1bCLOUD_EVENT_SOURCE_ENRICHER\x10\x04\x1a\x12\x8a\xb5\x18\x0e/core/enricher\x12/\n" +
-	"\x19CLOUD_EVENT_SOURCE_ROUTER\x10\x05\x1a\x10\x8a\xb5\x18\f/core/router:<\n" +
+	"\x19CLOUD_EVENT_SOURCE_ROUTER\x10\x05\x1a\x10\x8a\xb5\x18\f/core/router\x12?\n" +
+	"!CLOUD_EVENT_SOURCE_INPUTS_HANDLER\x10\x06\x1a\x18\x8a\xb5\x18\x14/core/inputs-handler:<\n" +
 	"\ace_type\x12!.google.protobuf.EnumValueOptions\x18І\x03 \x01(\tR\x06ceType:@\n" +
 	"\tce_source\x12!.google.protobuf.EnumValueOptions\x18ц\x03 \x01(\tR\bceSourceB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
 

@@ -9,7 +9,8 @@
     "fitbit-handler",
     "auth-hooks",
     "waitlist-handler",
-    "mcp-server"
+    "mcp-server",
+    "inputs-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

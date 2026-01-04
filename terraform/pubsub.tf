@@ -36,8 +36,8 @@ resource "google_pubsub_topic" "enrichment_lag" {
 }
 
 resource "google_pubsub_subscription" "enrichment_lag_sub" {
-  name  = "sub-enrichment-lag"
-  topic = google_pubsub_topic.enrichment_lag.name
+  name    = "sub-enrichment-lag"
+  topic   = google_pubsub_topic.enrichment_lag.name
   project = var.project_id
 
   # 20 minutes max retention (or longer to be safe, e.g. 1h, if backoff is long)

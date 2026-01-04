@@ -327,3 +327,41 @@ resource "google_cloud_run_service_iam_member" "waitlist_handler_invoker" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# ----------------- Inputs Handler -----------------
+resource "google_cloudfunctions2_function" "inputs_handler" {
+  name        = "inputs-handler"
+  location    = var.region
+  description = "Handles pending user input resolutions"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "inputsHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      PUBSUB_TOPIC         = google_pubsub_topic.raw_activity.name
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "inputs_handler_invoker" {
+  project  = google_cloudfunctions2_function.inputs_handler.project
+  location = google_cloudfunctions2_function.inputs_handler.location
+  service  = google_cloudfunctions2_function.inputs_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}

@@ -14,6 +14,16 @@ type Database interface {
 	UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error
 	GetUser(ctx context.Context, id string) (*pb.UserRecord, error)
 	UpdateUser(ctx context.Context, id string, data map[string]interface{}) error
+
+	// Pending Inputs
+	GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error)
+	CreatePendingInput(ctx context.Context, input *pb.PendingInput) error
+	UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error
+	ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) // Optional: for web list
+
+	// Counters
+	GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error)
+	SetCounter(ctx context.Context, userId string, counter *pb.Counter) error
 }
 
 // --- Messaging Interfaces ---

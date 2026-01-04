@@ -12,8 +12,9 @@ type EnrichmentResult struct {
 	ActivityType string
 	Description  string
 
-	Name string
-	Tags []string
+	Name       string
+	NameSuffix string // Appended to the final name (e.g. " (#5)")
+	Tags       []string
 
 	// Raw Data Streams (for merging)
 	HeartRateStream    []int

@@ -32,3 +32,8 @@ exports.waitlistHandler = (req, res) => {
   const waitlist = require('./waitlist-handler/build/index');
   return waitlist.waitlistHandler(req, res);
 };
+
+exports.inputsHandler = (req, res) => {
+  const inputs = require('./inputs-handler/build/index');
+  return inputs.inputsHandler(req, res);
+};

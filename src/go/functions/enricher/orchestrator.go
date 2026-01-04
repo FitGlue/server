@@ -12,6 +12,7 @@ import (
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
 	fit "github.com/ripixel/fitglue-server/src/go/pkg/domain/file_generators"
 	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
+	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/user_input"
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -178,16 +179,47 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		var failedEnrichers []string
 		for i, cfg := range configs {
 			if errs[i] != nil {
-				// Check if this is a RetryableError
 				if retryErr, ok := errs[i].(*providers.RetryableError); ok {
 					slog.Warn("Provider requested retry", "provider", cfg.ProviderType, "reason", retryErr.Reason, "retry_after", retryErr.RetryAfter)
-					// Fail the entire pipeline immediately with the retryable error
-					// NOTE: Even if 'doNotRetry' was true, if the provider returned RetryableError,
-					// it means it chose NOT to return partial data (or couldn't). So we respect the error.
 					return &ProcessResult{
 						Events:             []*pb.EnrichedActivityEvent{},
 						ProviderExecutions: allProviderExecutions,
 					}, retryErr
+				}
+
+				// Check for WaitForInputError
+				if waitErr, ok := errs[i].(*user_input.WaitForInputError); ok {
+					slog.Info("Provider requested user input", "provider", cfg.ProviderType, "activity_id", waitErr.ActivityID)
+					// Create Pending Input in DB
+					pi := &pb.PendingInput{
+						ActivityId:      waitErr.ActivityID,
+						UserId:          payload.UserId,
+						Status:          pb.PendingInput_STATUS_WAITING,
+						RequiredFields:  waitErr.RequiredFields,
+						OriginalPayload: payload, // Full payload for re-publish
+						CreatedAt:       timestamppb.Now(),
+						UpdatedAt:       timestamppb.Now(),
+					}
+					// Use CreatePendingInput (might fail if exists, that's fine/expected if race)
+					// If it exists and matches waiting status, we are fine.
+					// If create fails, check if it exists?
+					// Adapter.CreatePendingInput fails if exists.
+					// We should probably attempt Create, if fail, Log.
+					if err := o.database.CreatePendingInput(ctx, pi); err != nil {
+						// Ignore ALREADY_EXISTS, fail on others?
+						// Note: Database interface doesn't typed errors well yet.
+						// Log warning but proceed to STOP pipeline.
+						slog.Warn("Failed to create pending input (might already exist)", "error", err)
+					}
+
+					// Return SUCCESS (ACK message) but with status STATUS_WAITING.
+					// CRITICAL: This return statement stops the pipeline execution immediately.
+					// The empty Events list ensures no artifacts are created and no destination routing occurs.
+					// We return nil error so Pub/Sub considers the message "processed" (ACK) and doesn't retry it immediately.
+					return &ProcessResult{
+						Events:             []*pb.EnrichedActivityEvent{},
+						ProviderExecutions: allProviderExecutions,
+					}, nil // Return nil error to ACK
 				}
 
 				failedEnrichers = append(failedEnrichers, fmt.Sprintf("%s: %v", cfg.ProviderType, errs[i]))
@@ -255,6 +287,9 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 			if res.Name != "" {
 				finalEvent.Name = res.Name
+			}
+			if res.NameSuffix != "" {
+				finalEvent.Name += res.NameSuffix
 			}
 			if res.Description != "" {
 				trimmed := strings.TrimSpace(res.Description)

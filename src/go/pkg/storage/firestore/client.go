@@ -32,3 +32,20 @@ func (c *Client) Executions() *Collection[pb.ExecutionRecord] {
 		FromFirestore: FirestoreToExecution,
 	}
 }
+
+func (c *Client) PendingInputs() *Collection[pb.PendingInput] {
+	return &Collection[pb.PendingInput]{
+		Ref:           c.fs.Collection("pending_inputs"),
+		ToFirestore:   PendingInputToFirestore,
+		FromFirestore: FirestoreToPendingInput,
+	}
+}
+
+// Counters are sub-collections of Users: users/{uid}/counters/{id}
+func (c *Client) Counters(userId string) *Collection[pb.Counter] {
+	return &Collection[pb.Counter]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("counters"),
+		ToFirestore:   CounterToFirestore,
+		FromFirestore: FirestoreToCounter,
+	}
+}

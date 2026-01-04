@@ -30,6 +30,24 @@ func (m *MockDatabase) UpdateExecution(ctx context.Context, id string, data map[
 func (m *MockDatabase) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
 	return nil
 }
+func (m *MockDatabase) CreatePendingInput(ctx context.Context, input *pb.PendingInput) error {
+	return nil
+}
+func (m *MockDatabase) GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error) {
+	return nil, nil
+}
+func (m *MockDatabase) UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error {
+	return nil
+}
+func (m *MockDatabase) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
+	return nil, nil
+}
+func (m *MockDatabase) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
+	return nil, nil
+}
+func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
+	return nil
+}
 
 // MockBlobStore implements shared.BlobStore
 type MockBlobStore struct {

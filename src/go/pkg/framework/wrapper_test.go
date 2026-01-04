@@ -36,6 +36,24 @@ func (m *MockDB) GetUser(ctx context.Context, id string) (*pb.UserRecord, error)
 func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
 	return nil
 }
+func (m *MockDB) CreatePendingInput(ctx context.Context, input *pb.PendingInput) error {
+	return nil
+}
+func (m *MockDB) GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error) {
+	return nil, nil
+}
+func (m *MockDB) UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error {
+	return nil
+}
+func (m *MockDB) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
+	return nil, nil
+}
+func (m *MockDB) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
+	return nil, nil
+}
+func (m *MockDB) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
+	return nil
+}
 
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {

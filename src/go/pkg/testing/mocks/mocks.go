@@ -14,6 +14,14 @@ type MockDatabase struct {
 	UpdateExecutionFunc func(ctx context.Context, id string, data map[string]interface{}) error
 	GetUserFunc         func(ctx context.Context, id string) (*pb.UserRecord, error)
 	UpdateUserFunc      func(ctx context.Context, id string, data map[string]interface{}) error
+
+	CreatePendingInputFunc func(ctx context.Context, input *pb.PendingInput) error
+	GetPendingInputFunc    func(ctx context.Context, id string) (*pb.PendingInput, error)
+	UpdatePendingInputFunc func(ctx context.Context, id string, data map[string]interface{}) error
+	ListPendingInputsFunc  func(ctx context.Context, userID string) ([]*pb.PendingInput, error)
+
+	GetCounterFunc func(ctx context.Context, userId string, id string) (*pb.Counter, error)
+	SetCounterFunc func(ctx context.Context, userId string, counter *pb.Counter) error
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -37,6 +45,48 @@ func (m *MockDatabase) GetUser(ctx context.Context, id string) (*pb.UserRecord, 
 func (m *MockDatabase) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
 	if m.UpdateUserFunc != nil {
 		return m.UpdateUserFunc(ctx, id, data)
+	}
+	return nil
+}
+
+func (m *MockDatabase) CreatePendingInput(ctx context.Context, input *pb.PendingInput) error {
+	if m.CreatePendingInputFunc != nil {
+		return m.CreatePendingInputFunc(ctx, input)
+	}
+	return nil
+}
+
+func (m *MockDatabase) GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error) {
+	if m.GetPendingInputFunc != nil {
+		return m.GetPendingInputFunc(ctx, id)
+	}
+	return nil, nil
+}
+
+func (m *MockDatabase) UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error {
+	if m.UpdatePendingInputFunc != nil {
+		return m.UpdatePendingInputFunc(ctx, id, data)
+	}
+	return nil
+}
+
+func (m *MockDatabase) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
+	if m.ListPendingInputsFunc != nil {
+		return m.ListPendingInputsFunc(ctx, userID)
+	}
+	return nil, nil
+}
+
+func (m *MockDatabase) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
+	if m.GetCounterFunc != nil {
+		return m.GetCounterFunc(ctx, userId, id)
+	}
+	return nil, nil
+}
+
+func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
+	if m.SetCounterFunc != nil {
+		return m.SetCounterFunc(ctx, userId, counter)
 	}
 	return nil
 }

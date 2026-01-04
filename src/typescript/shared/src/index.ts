@@ -19,6 +19,7 @@ export { FitbitNotification } from './types/pb/fitbit';
 export * from './domain/services/user';
 export * from './domain/services/execution';
 export * from './domain/services/apikey';
+export * from './domain/services/inputs';
 
 // Integrations
 export * from './integrations/hevy/client';
@@ -28,6 +29,6 @@ export * from './infrastructure/oauth';
 // Infrastructure
 export * from './infrastructure/pubsub/cloud-event-publisher';
 export * as storage from './storage/firestore';
-export { UserStore, ActivityStore, ApiKeyStore, ExecutionStore, IntegrationIdentityStore } from './storage/firestore';
+export { UserStore, ActivityStore, ApiKeyStore, ExecutionStore, IntegrationIdentityStore, InputStore } from './storage/firestore';
 export { mapTCXToStandardized } from './domain/file-parsers/tcx';
 export * from './execution/logger';

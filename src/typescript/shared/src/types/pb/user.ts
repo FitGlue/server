@@ -19,6 +19,9 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_VIRTUAL_GPS = 6,
   ENRICHER_PROVIDER_TYPE_MAPPER = 7,
   ENRICHER_PROVIDER_PARKRUN = 8,
+  ENRICHER_PROVIDER_CONDITION_MATCHER = 9,
+  ENRICHER_PROVIDER_AUTO_INCREMENT = 10,
+  ENRICHER_PROVIDER_USER_INPUT = 11,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }
@@ -139,9 +142,15 @@ export interface StravaIntegration {
 }
 
 export interface ProcessedActivityRecord {
-  /** e.g. "hevy", "fitbit" */
   source: string;
   /** Unique ID from provider */
   externalId: string;
   processedAt?: Date | undefined;
+}
+
+export interface Counter {
+  /** Key, e.g. "parkrun_bushy" */
+  id: string;
+  count: number;
+  lastUpdated?: Date | undefined;
 }

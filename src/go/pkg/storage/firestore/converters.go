@@ -4,6 +4,7 @@ import (
 	"time"
 
 	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -273,4 +274,115 @@ func FirestoreToExecution(m map[string]interface{}) *pb.ExecutionRecord {
 	}
 
 	return e
+}
+
+// --- Counter Converters ---
+
+func CounterToFirestore(c *pb.Counter) map[string]interface{} {
+	return map[string]interface{}{
+		"id":           c.Id,
+		"count":        c.Count,
+		"last_updated": c.LastUpdated.AsTime(),
+	}
+}
+
+func FirestoreToCounter(m map[string]interface{}) *pb.Counter {
+	c := &pb.Counter{
+		Id:          getString(m, "id"),
+		LastUpdated: getTime(m, "last_updated"),
+	}
+	// Handle number types
+	if v, ok := m["count"]; ok {
+		switch n := v.(type) {
+		case int64:
+			c.Count = n
+		case int:
+			c.Count = int64(n)
+		case float64:
+			c.Count = int64(n)
+		}
+	}
+	return c
+}
+
+// --- PendingInput Converters ---
+
+func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {
+	m := map[string]interface{}{
+		"activity_id":     p.ActivityId,
+		"user_id":         p.UserId,
+		"status":          int32(p.Status),
+		"required_fields": p.RequiredFields,
+		"input_data":      p.InputData,
+		"created_at":      p.CreatedAt.AsTime(),
+		"updated_at":      p.UpdatedAt.AsTime(),
+		"completed_at":    p.CompletedAt.AsTime(),
+	}
+
+	// Serialize original_payload to bytes
+	if p.OriginalPayload != nil {
+		bytes, err := proto.Marshal(p.OriginalPayload)
+		if err == nil {
+			m["original_payload"] = bytes
+		}
+	}
+	return m
+}
+
+func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
+	p := &pb.PendingInput{
+		ActivityId: getString(m, "activity_id"),
+		UserId:     getString(m, "user_id"),
+		Status:     pb.PendingInput_Status(m["status"].(int64)),
+		RequiredFields: func() []string {
+			if v, ok := m["required_fields"].([]string); ok {
+				return v
+			}
+			// Handle []interface{} from Firestore
+			if v, ok := m["required_fields"].([]interface{}); ok {
+				strs := make([]string, len(v))
+				for i, s := range v {
+					if str, ok := s.(string); ok {
+						strs[i] = str
+					}
+				}
+				return strs
+			}
+			return nil
+		}(),
+		InputData: func() map[string]string {
+			if v, ok := m["input_data"].(map[string]interface{}); ok {
+				out := make(map[string]string)
+				for k, val := range v {
+					if str, ok := val.(string); ok {
+						out[k] = str
+					}
+				}
+				return out
+			}
+			return nil
+		}(),
+		CreatedAt:   getTime(m, "created_at"),
+		UpdatedAt:   getTime(m, "updated_at"),
+		CompletedAt: getTime(m, "completed_at"),
+	}
+
+	if v, ok := m["status"]; ok {
+		switch n := v.(type) {
+		case int64:
+			p.Status = pb.PendingInput_Status(n)
+		case int:
+			p.Status = pb.PendingInput_Status(int32(n))
+		}
+	}
+
+	if v, ok := m["original_payload"]; ok {
+		if b, ok := v.([]byte); ok {
+			var payload pb.ActivityPayload
+			if err := proto.Unmarshal(b, &payload); err == nil {
+				p.OriginalPayload = &payload
+			}
+		}
+	}
+	return p
 }

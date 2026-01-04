@@ -24,6 +24,8 @@ enum CloudEventType {
   CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION = 4 [(ce_type) = "com.fitglue.fitbit.notification"];
   // Enrichment Lag: Payload is ActivityPayload
   CLOUD_EVENT_TYPE_ENRICHMENT_LAG = 5 [(ce_type) = "com.fitglue.enrichment.lag"];
+  // Input Resolved: Payload is ActivityPayload (resumed)
+  CLOUD_EVENT_TYPE_INPUT_RESOLVED = 6 [(ce_type) = "com.fitglue.input.resolved"];
 }
 
 // CloudEventSource strings are URI references.
@@ -34,4 +36,5 @@ enum CloudEventSource {
   CLOUD_EVENT_SOURCE_FITBIT_INGEST = 3 [(ce_source) = "/integrations/fitbit/ingest"];
   CLOUD_EVENT_SOURCE_ENRICHER = 4 [(ce_source) = "/core/enricher"];
   CLOUD_EVENT_SOURCE_ROUTER = 5 [(ce_source) = "/core/router"];
+  CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6 [(ce_source) = "/core/inputs-handler"];
 }

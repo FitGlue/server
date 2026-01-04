@@ -3,6 +3,7 @@ import { UserRecord, UserIntegrations, PipelineConfig, ProcessedActivityRecord }
 import { WaitlistEntry } from '../../types/pb/waitlist';
 import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
+import { PendingInput } from '../../types/pb/pending_input';
 
 // Helper to convert Firestore Timestamp to Date
 const toDate = (val: any): Date | undefined => {
@@ -264,4 +265,37 @@ export const processedActivityConverter: FirestoreDataConverter<ProcessedActivit
       processedAt: toDate(data.processed_at)
     };
   }
+};
+
+export const PendingInputToFirestore = (model: PendingInput): Record<string, any> => {
+  const data: any = {
+    activity_id: model.activityId,
+    user_id: model.userId,
+    status: model.status,
+    required_fields: model.requiredFields,
+    input_data: model.inputData,
+    created_at: model.createdAt,
+    updated_at: model.updatedAt,
+    completed_at: model.completedAt,
+  };
+  // If we had original_payload exposed in TS, we'd map it here, but it's often binary or complex structure
+  // For now, allow passthrough if it exists on model (duck typing)
+  if ((model as any).originalPayload) {
+    data.original_payload = (model as any).originalPayload;
+  }
+  return data;
+};
+
+export const FirestoreToPendingInput = (data: any): PendingInput => {
+  return {
+    activityId: data.activity_id,
+    userId: data.user_id,
+    status: data.status,
+    requiredFields: data.required_fields || [],
+    inputData: data.input_data || {},
+    originalPayload: data.original_payload, // Pass through, might be buffer/bytes
+    createdAt: toDate(data.created_at),
+    updatedAt: toDate(data.updated_at),
+    completedAt: toDate(data.completed_at)
+  };
 };

@@ -47,6 +47,9 @@ program
 import { addActivitiesCommands } from './commands/activities';
 addActivitiesCommands(program, userService);
 
+import { addInputsCommands } from './commands/inputs';
+addInputsCommands(program);
+
 import { randomUUID } from 'crypto';
 import * as crypto from 'crypto';
 
@@ -426,6 +429,9 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH]: 'Metadata Passthrough',
         [EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER]: 'Type Mapper',
         [EnricherProviderType.ENRICHER_PROVIDER_PARKRUN]: 'Parkrun',
+        [EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER]: 'Condition Matcher',
+        [EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT]: 'Auto Increment',
+        [EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT]: 'User Input',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };
@@ -443,6 +449,9 @@ const getAvailableEnricherChoices = (selectedProviderTypes: EnricherProviderType
         { name: 'Type Mapper', value: EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER },
         { name: 'Metadata Passthrough', value: EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH },
         { name: 'Parkrun', value: EnricherProviderType.ENRICHER_PROVIDER_PARKRUN },
+        { name: 'Condition Matcher', value: EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER },
+        { name: 'Auto Increment', value: EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT },
+        { name: 'User Input', value: EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT },
         { name: 'Mock', value: EnricherProviderType.ENRICHER_PROVIDER_MOCK }
     ];
 
@@ -1054,8 +1063,6 @@ program
             if (options.status) console.log(`Filter: Status=${options.status}`);
             console.log('Press Ctrl+C to stop.\n');
 
-            let lastSeenId: string | null = null;
-
             const unsubscribe = executionService.watchExecutions({
                 service: options.service,
                 status: options.status, // Can be undefined, specific status, or raw string
@@ -1073,8 +1080,6 @@ program
                     console.log('Press Ctrl+C to stop.\n');
 
                     printExecutionDetails(latest.id, latest.data);
-
-                    lastSeenId = latest.id;
                 }
             }, (error) => {
                 console.error('Watch error:', error.message);
@@ -1767,6 +1772,100 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
             enable_titling: parkrunConfig.enableTitling.toString(),
             tags: parkrunConfig.tags
         };
+    } else if (providerType === EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER) {
+        const conditionConfig = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'activityType',
+                message: 'Activity Type (optional, e.g. "Run"):',
+            },
+            {
+                type: 'input',
+                name: 'days',
+                message: 'Days (optional, comma-separated e.g. "Mon,Sat"):',
+            },
+            {
+                type: 'input',
+                name: 'timeStart',
+                message: 'Start Time (optional, HH:MM):',
+                validate: (input) => !input || /^\d{2}:\d{2}$/.test(input) || 'Invalid format'
+            },
+            {
+                type: 'input',
+                name: 'timeEnd',
+                message: 'End Time (optional, HH:MM):',
+                validate: (input) => !input || /^\d{2}:\d{2}$/.test(input) || 'Invalid format'
+            },
+            {
+                type: 'input',
+                name: 'locationCoords',
+                message: 'Location (optional, "Lat,Long"):',
+                validate: (input) => !input || /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(input) || 'Invalid format'
+            },
+            {
+                type: 'input',
+                name: 'radius',
+                message: 'Radius (m) (default 200):',
+                when: (answers) => !!answers.locationCoords
+            },
+            {
+                type: 'input',
+                name: 'titleTemplate',
+                message: 'Title Template (optional):',
+            },
+            {
+                type: 'input',
+                name: 'descTemplate',
+                message: 'Description Template (optional):',
+            }
+        ]);
+
+        inputs = {
+            activity_type: conditionConfig.activityType,
+            days: conditionConfig.days,
+            time_start: conditionConfig.timeStart,
+            time_end: conditionConfig.timeEnd,
+            title_template: conditionConfig.titleTemplate,
+            description_template: conditionConfig.descTemplate
+        };
+        if (conditionConfig.locationCoords) {
+            const parts = conditionConfig.locationCoords.split(',');
+            inputs.location_lat = parts[0].trim();
+            inputs.location_long = parts[1].trim();
+            inputs.radius_m = conditionConfig.radius || '200';
+        }
+    } else if (providerType === EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT) {
+        const incrementConfig = await inquirer.prompt([
+            {
+                type: 'input',
+                name: 'key',
+                message: 'Counter Key (required, unique ID e.g. "parkrun_bushy"):',
+                validate: (input) => input.length > 0 || 'Required'
+            },
+            {
+                type: 'input',
+                name: 'filter',
+                message: 'Title Filter (required, substring match):',
+                validate: (input) => input.length > 0 || 'Required'
+            }
+        ]);
+        inputs = {
+            counter_key: incrementConfig.key,
+            title_contains: incrementConfig.filter
+        };
+    } else if (providerType === EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT) {
+        const userConfig = await inquirer.prompt([
+            {
+                type: 'checkbox',
+                name: 'fields',
+                message: 'Fields to ask user for:',
+                choices: ['title', 'description'],
+                default: ['title']
+            }
+        ]);
+        inputs = {
+            fields: userConfig.fields.join(',')
+        };
     } else {
         // Only prompt for JSON if the provider might need config
         // Skip for providers with no config options
@@ -1789,5 +1888,12 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
             inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};
         }
     }
+    // Clean up empty inputs
+    Object.keys(inputs).forEach(key => {
+        if (inputs[key] === '' || inputs[key] === undefined) {
+            delete inputs[key];
+        }
+    });
+
     return inputs;
 }

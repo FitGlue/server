@@ -66,6 +66,9 @@ enum EnricherProviderType {
   ENRICHER_PROVIDER_VIRTUAL_GPS = 6;
   ENRICHER_PROVIDER_TYPE_MAPPER = 7;
   ENRICHER_PROVIDER_PARKRUN = 8;
+  ENRICHER_PROVIDER_CONDITION_MATCHER = 9;
+  ENRICHER_PROVIDER_AUTO_INCREMENT = 10;
+  ENRICHER_PROVIDER_USER_INPUT = 11;
   ENRICHER_PROVIDER_MOCK = 99;
 }
 
@@ -111,7 +114,13 @@ message StravaIntegration {
 }
 
 message ProcessedActivityRecord {
-  string source = 1;      // e.g. "hevy", "fitbit"
+  string source = 1;
   string external_id = 2; // Unique ID from provider
   google.protobuf.Timestamp processed_at = 3;
+}
+
+message Counter {
+  string id = 1; // Key, e.g. "parkrun_bushy"
+  int64 count = 2;
+  google.protobuf.Timestamp last_updated = 3;
 }

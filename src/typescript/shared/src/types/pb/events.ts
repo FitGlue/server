@@ -21,6 +21,8 @@ export enum CloudEventType {
   CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION = 4,
   /** CLOUD_EVENT_TYPE_ENRICHMENT_LAG - Enrichment Lag: Payload is ActivityPayload */
   CLOUD_EVENT_TYPE_ENRICHMENT_LAG = 5,
+  /** CLOUD_EVENT_TYPE_INPUT_RESOLVED - Input Resolved: Payload is ActivityPayload (resumed) */
+  CLOUD_EVENT_TYPE_INPUT_RESOLVED = 6,
   UNRECOGNIZED = -1,
 }
 
@@ -32,5 +34,6 @@ export enum CloudEventSource {
   CLOUD_EVENT_SOURCE_FITBIT_INGEST = 3,
   CLOUD_EVENT_SOURCE_ENRICHER = 4,
   CLOUD_EVENT_SOURCE_ROUTER = 5,
+  CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6,
   UNRECOGNIZED = -1,
 }
