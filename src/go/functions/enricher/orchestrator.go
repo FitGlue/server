@@ -120,6 +120,14 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			wg.Add(1)
 			go func(idx int, p providers.Provider, inputs map[string]string) {
 				defer wg.Done()
+				// Panic Recovery for Child Goroutine
+				defer func() {
+					if r := recover(); r != nil {
+						slog.Error("Provider panicked", "name", p.Name(), "panic", r)
+						providerExecs[idx].Status = "FAILED"
+						providerExecs[idx].Error = fmt.Sprintf("panic: %v", r)
+					}
+				}()
 
 				startTime := time.Now()
 
@@ -141,6 +149,13 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 					errs[idx] = err
 					providerExecs[idx].Status = "FAILED"
 					providerExecs[idx].Error = err.Error()
+					return
+				}
+
+				if res == nil {
+					slog.Warn(fmt.Sprintf("Provider returned nil result: %v", p.Name()), "name", p.Name())
+					providerExecs[idx].Status = "SKIPPED"
+					providerExecs[idx].Error = "nil result"
 					return
 				}
 
