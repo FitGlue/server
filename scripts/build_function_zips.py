@@ -45,14 +45,23 @@ def create_function_zip(function_name, src_dir, output_dir):
                 all_files.append(Path(root) / file)
 
         for file_path in all_files:
-            arcname = file_path.relative_to(temp_dir)
+            arcname = str(file_path.relative_to(temp_dir))
 
-            # Create a ZipInfo object to override timestamp
-            zinfo = zipfile.ZipInfo.from_file(file_path, arcname)
-            # Reset timestamp to a fixed date (1980-01-01 00:00:00) for deterministic hashing
+            # Create a ZipInfo object manually with fully controlled metadata
+            # This ensures deterministic zips regardless of file system metadata
+            zinfo = zipfile.ZipInfo(filename=arcname)
+
+            # Set fixed timestamp (1980-01-01 00:00:00) for deterministic hashing
             zinfo.date_time = (1980, 1, 1, 0, 0, 0)
 
-            # Read file data to write via writestr (writestr + ZipInfo needed for timestamp override)
+            # Set fixed Unix permissions (0644 = rw-r--r--)
+            # Shift left by 16 bits to place in the Unix external_attr field
+            zinfo.external_attr = 0o644 << 16
+
+            # Set compression type
+            zinfo.compress_type = zipfile.ZIP_DEFLATED
+
+            # Read file data to write via writestr
             with open(file_path, 'rb') as f:
                 data = f.read()
             zipf.writestr(zinfo, data)
