@@ -1082,7 +1082,7 @@ program
             }
 
             const latest = executions[0];
-            printExecutionDetails(latest.id, latest.data);
+            printExecutionDetails(latest.id, latest.data, false);
 
         } catch (error: any) {
             console.error('Error fetching execution:', error.message);
@@ -1118,7 +1118,7 @@ program
                     console.log(`Last updated: ${new Date().toLocaleTimeString()}`);
                     console.log('Press Ctrl+C to stop.\n');
 
-                    printExecutionDetails(latest.id, latest.data);
+                    printExecutionDetails(latest.id, latest.data, false);
                 }
             }, (error) => {
                 console.error('Watch error:', error.message);
@@ -1138,13 +1138,45 @@ program
         }
     });
 
+// Recursively truncate large arrays/objects for display
+function truncateData(obj: any, verbose: boolean = false, depth: number = 0): any {
+    if (verbose) return obj;
+    if (depth > 10) return '[Max Depth]';
+    if (!obj) return obj;
+
+    if (Array.isArray(obj)) {
+        if (obj.length > 3) {
+            // Keep first 3, indicate truncation
+            const truncated = obj.slice(0, 3).map(item => truncateData(item, verbose, depth + 1));
+            truncated.push(`... ${obj.length - 3} more items hidden (use --verbose to see all) ...`);
+            return truncated;
+        }
+        return obj.map(item => truncateData(item, verbose, depth + 1));
+    }
+
+    if (typeof obj === 'object') {
+        const newObj: any = {};
+        for (const [key, value] of Object.entries(obj)) {
+            // Special handling for large arrays commonly found in FIT data
+            if (['sessions', 'laps', 'records', 'points'].includes(key) && Array.isArray(value)) {
+                newObj[key] = truncateData(value, verbose, depth + 1);
+            } else {
+                newObj[key] = truncateData(value, verbose, depth + 1);
+            }
+        }
+        return newObj;
+    }
+
+    return obj;
+}
+
 // Helper to print full execution details
-function printExecutionDetails(executionId: string, data: any) {
+function printExecutionDetails(executionId: string, data: any, verbose: boolean) {
     console.log('\n==========================================');
     console.log('EXECUTION DETAILS');
     console.log('==========================================');
     console.log(`ID:            ${executionId}`);
-    console.log(`Service:       ${data.service}`);
+    console.log(`Service:       ${data.service || 'N/A'}`);
     console.log(`Status:        ${executionStatusToString(data.status)}`);
     console.log(`Trigger:       ${data.triggerType || 'N/A'}`);
     console.log(`User ID:       ${data.userId || 'N/A'}`);
@@ -1174,7 +1206,7 @@ function printExecutionDetails(executionId: string, data: any) {
                 parsed.result.activity_type = formatActivityType(parsed.result.activity_type);
             }
 
-            console.dir(parsed, { depth: null, colors: true });
+            console.dir(truncateData(parsed, verbose), { depth: null, colors: true });
         } catch {
             console.log(data.inputsJson);
         }
@@ -1195,7 +1227,7 @@ function printExecutionDetails(executionId: string, data: any) {
                 parsed.result.activity_type = formatActivityType(parsed.result.activity_type);
             }
 
-            console.dir(parsed, { depth: null, colors: true });
+            console.dir(truncateData(parsed, verbose), { depth: null, colors: true });
         } catch {
             console.log(data.outputsJson);
         }
@@ -1226,7 +1258,8 @@ function printExecutionDetails(executionId: string, data: any) {
 program
     .command('executions:get <executionId>')
     .description('Get full details of a specific execution')
-    .action(async (executionId) => {
+    .option('-v, --verbose', 'Show full execution details')
+    .action(async (executionId, options) => {
         try {
             const execution = await executionService.get(executionId);
             if (!execution) {
@@ -1234,7 +1267,7 @@ program
                 process.exit(1);
             }
 
-            printExecutionDetails(executionId, execution);
+            printExecutionDetails(executionId, execution, options.verbose || false);
 
         } catch (error: any) {
             console.error('Error getting execution:', error.message);
