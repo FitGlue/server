@@ -175,6 +175,53 @@ List recent function executions for debugging and auditing.
 ./fitglue-admin executions:list --status STATUS_FAILED
 ```
 
+### `executions:list-watch`
+
+Watch recent executions in real-time. This command clears the screen and updates the list as new executions occur.
+
+**Options:**
+- `-l, --limit <number>`: Limit results (default: 20).
+- `-s, --service <name>`: Filter by service name.
+- `-st, --status <status>`: Filter by status.
+- `-u, --user <userId>`: Filter by user ID.
+
+```bash
+# Watch executions for a specific user
+./fitglue-admin executions:list-watch --user user-123
+```
+
+### `executions:latest`
+
+Get full details of the **single most recent** execution. Supports filtering.
+
+**Options:**
+- `-s, --service <name>`: Filter by service name.
+- `--status <status>`: Filter by status (e.g. `FAILED`).
+
+```bash
+# Show details of the latest execution (whatever it is)
+./fitglue-admin executions:latest
+
+# Show details of the latest FAILURE
+./fitglue-admin executions:latest --status FAILED
+```
+
+### `executions:latest-watch`
+
+Real-time monitor of the **latest single execution**. It auto-updates and redraws the screen whenever a new execution matching the criteria appears. Ideal for debugging a specific flow or waiting for a failure.
+
+**Options:**
+- `-s, --service <name>`: Filter by service name.
+- `--status <status>`: Filter by status.
+
+```bash
+# Watch for ANY new execution and show full details
+./fitglue-admin executions:latest-watch
+
+# Watch for FAILURES only (Great for passive monitoring)
+./fitglue-admin executions:latest-watch --status FAILED
+```
+
 ### `executions:get`
 
 Get full details for a specific execution, including input/output payloads (if logged).

@@ -1016,37 +1016,65 @@ program
     });
 
 program
-    .command('executions:latest-failed-watch')
-    .description('Watch for the latest failed execution and print full details')
+    .command('executions:latest')
+    .description('Get the latest execution details')
     .option('-s, --service <service>', 'Filter by service name')
+    .option('--status <status>', 'Filter by status (e.g. FAILED, SUCCESS)')
     .action(async (options) => {
         try {
-            console.log('Watching for failed executions...');
+            const executions = await executionService.listExecutions({
+                service: options.service,
+                status: options.status, // Pass raw string
+                limit: 1
+            });
+
+            if (executions.length === 0) {
+                console.log('No executions found matching criteria.');
+                return;
+            }
+
+            const latest = executions[0];
+            printExecutionDetails(latest.id, latest.data);
+
+        } catch (error: any) {
+            console.error('Error fetching execution:', error.message);
+            process.exit(1);
+        }
+    });
+
+program
+    .command('executions:latest-watch')
+    .description('Watch for the latest execution and print full details')
+    .option('-s, --service <service>', 'Filter by service name')
+    .option('--status <status>', 'Filter by status (e.g. FAILED, SUCCESS, STARTED)')
+    .action(async (options) => {
+        try {
+            console.log('Watching for executions...');
+            if (options.service) console.log(`Filter: Service=${options.service}`);
+            if (options.status) console.log(`Filter: Status=${options.status}`);
             console.log('Press Ctrl+C to stop.\n');
 
             let lastSeenId: string | null = null;
 
             const unsubscribe = executionService.watchExecutions({
                 service: options.service,
-                status: 'STATUS_FAILED', // Pass string status directly
+                status: options.status, // Can be undefined, specific status, or raw string
                 limit: 1
             }, (executions) => {
                 if (executions.length > 0) {
                     const latest = executions[0];
-                    if (latest.id !== lastSeenId) {
-                        // Clear screen and move cursor to top-left to focus attention
-                        process.stdout.write('\x1b[2J\x1b[0;0H');
+                    // Always redraw if we have data, even if ID is same (to show status updates)
 
-                        // Banner to make it clear what happened
-                        console.log('=====================================================================================================================================');
-                        console.log(`🚨  NEW FAILED EXECUTION DETECTED  🚨  |  ${new Date().toLocaleTimeString()}`);
-                        console.log('=====================================================================================================================================');
+                    // Clear screen and move cursor to top-left
+                    process.stdout.write('\x1b[2J\x1b[0;0H');
 
-                        printExecutionDetails(latest.id, latest.data);
+                    console.log(`Watching Latest Execution | Service: ${options.service || 'All'} | Status: ${options.status || 'All'}`);
+                    console.log(`Last updated: ${new Date().toLocaleTimeString()}`);
+                    console.log('Press Ctrl+C to stop.\n');
 
-                        console.log('\nListening for next failure... (Press Ctrl+C to stop)');
-                        lastSeenId = latest.id;
-                    }
+                    printExecutionDetails(latest.id, latest.data);
+
+                    lastSeenId = latest.id;
                 }
             }, (error) => {
                 console.error('Watch error:', error.message);
