@@ -54,3 +54,14 @@ resource "google_firestore_index" "executions_user_timestamp" {
     order      = "DESCENDING"
   }
 }
+
+resource "google_firestore_field" "executions_expire_at" {
+  project    = var.project_id
+  database   = google_firestore_database.database.name
+  collection = "executions"
+  field      = "expire_at"
+
+  ttl_config {
+    state = "ACTIVE"
+  }
+}

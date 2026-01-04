@@ -26,6 +26,7 @@ message ExecutionRecord {
   optional string error_message = 10;
   optional string inputs_json = 11;   // JSON-encoded inputs
   optional string outputs_json = 12;  // JSON-encoded outputs
+  optional google.protobuf.Timestamp expire_at = 14; // When this record should be deleted
 
   // Optional parent-child execution tracking
   optional string parent_execution_id = 13;  // Links child executions to parent

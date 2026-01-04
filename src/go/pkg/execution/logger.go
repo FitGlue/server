@@ -47,6 +47,7 @@ func LogPending(ctx context.Context, db Database, service string, opts Execution
 		UserId:      stringPtr(opts.UserID),
 		TestRunId:   stringPtr(opts.TestRunID),
 		TriggerType: opts.TriggerType,
+		ExpireAt:    timestamppb.New(time.Now().Add(7 * 24 * time.Hour)),
 	}
 
 	// Encode inputs as JSON if provided

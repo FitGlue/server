@@ -56,6 +56,10 @@ export interface ExecutionRecord {
   outputsJson?:
     | string
     | undefined;
+  /** When this record should be deleted */
+  expireAt?:
+    | Date
+    | undefined;
   /** Optional parent-child execution tracking */
   parentExecutionId?: string | undefined;
 }

@@ -92,9 +92,10 @@ type ExecutionRecord struct {
 	StartTime *timestamp.Timestamp `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3,oneof" json:"start_time,omitempty"`
 	EndTime   *timestamp.Timestamp `protobuf:"bytes,9,opt,name=end_time,json=endTime,proto3,oneof" json:"end_time,omitempty"`
 	// Optional results
-	ErrorMessage *string `protobuf:"bytes,10,opt,name=error_message,json=errorMessage,proto3,oneof" json:"error_message,omitempty"`
-	InputsJson   *string `protobuf:"bytes,11,opt,name=inputs_json,json=inputsJson,proto3,oneof" json:"inputs_json,omitempty"`    // JSON-encoded inputs
-	OutputsJson  *string `protobuf:"bytes,12,opt,name=outputs_json,json=outputsJson,proto3,oneof" json:"outputs_json,omitempty"` // JSON-encoded outputs
+	ErrorMessage *string              `protobuf:"bytes,10,opt,name=error_message,json=errorMessage,proto3,oneof" json:"error_message,omitempty"`
+	InputsJson   *string              `protobuf:"bytes,11,opt,name=inputs_json,json=inputsJson,proto3,oneof" json:"inputs_json,omitempty"`    // JSON-encoded inputs
+	OutputsJson  *string              `protobuf:"bytes,12,opt,name=outputs_json,json=outputsJson,proto3,oneof" json:"outputs_json,omitempty"` // JSON-encoded outputs
+	ExpireAt     *timestamp.Timestamp `protobuf:"bytes,14,opt,name=expire_at,json=expireAt,proto3,oneof" json:"expire_at,omitempty"`          // When this record should be deleted
 	// Optional parent-child execution tracking
 	ParentExecutionId *string `protobuf:"bytes,13,opt,name=parent_execution_id,json=parentExecutionId,proto3,oneof" json:"parent_execution_id,omitempty"` // Links child executions to parent
 	unknownFields     protoimpl.UnknownFields
@@ -215,6 +216,13 @@ func (x *ExecutionRecord) GetOutputsJson() string {
 	return ""
 }
 
+func (x *ExecutionRecord) GetExpireAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.ExpireAt
+	}
+	return nil
+}
+
 func (x *ExecutionRecord) GetParentExecutionId() string {
 	if x != nil && x.ParentExecutionId != nil {
 		return *x.ParentExecutionId
@@ -226,7 +234,7 @@ var File_execution_proto protoreflect.FileDescriptor
 
 const file_execution_proto_rawDesc = "" +
 	"\n" +
-	"\x0fexecution.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\"\xcc\x05\n" +
+	"\x0fexecution.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\"\x98\x06\n" +
 	"\x0fExecutionRecord\x12!\n" +
 	"\fexecution_id\x18\x01 \x01(\tR\vexecutionId\x12\x18\n" +
 	"\aservice\x18\x02 \x01(\tR\aservice\x120\n" +
@@ -242,8 +250,9 @@ const file_execution_proto_rawDesc = "" +
 	" \x01(\tH\x04R\ferrorMessage\x88\x01\x01\x12$\n" +
 	"\vinputs_json\x18\v \x01(\tH\x05R\n" +
 	"inputsJson\x88\x01\x01\x12&\n" +
-	"\foutputs_json\x18\f \x01(\tH\x06R\voutputsJson\x88\x01\x01\x123\n" +
-	"\x13parent_execution_id\x18\r \x01(\tH\aR\x11parentExecutionId\x88\x01\x01B\n" +
+	"\foutputs_json\x18\f \x01(\tH\x06R\voutputsJson\x88\x01\x01\x12<\n" +
+	"\texpire_at\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampH\aR\bexpireAt\x88\x01\x01\x123\n" +
+	"\x13parent_execution_id\x18\r \x01(\tH\bR\x11parentExecutionId\x88\x01\x01B\n" +
 	"\n" +
 	"\b_user_idB\x0e\n" +
 	"\f_test_run_idB\r\n" +
@@ -251,7 +260,9 @@ const file_execution_proto_rawDesc = "" +
 	"\t_end_timeB\x10\n" +
 	"\x0e_error_messageB\x0e\n" +
 	"\f_inputs_jsonB\x0f\n" +
-	"\r_outputs_jsonB\x16\n" +
+	"\r_outputs_jsonB\f\n" +
+	"\n" +
+	"_expire_atB\x16\n" +
 	"\x14_parent_execution_id*t\n" +
 	"\x0fExecutionStatus\x12\x12\n" +
 	"\x0eSTATUS_UNKNOWN\x10\x00\x12\x12\n" +
@@ -284,11 +295,12 @@ var file_execution_proto_depIdxs = []int32{
 	2, // 1: fitglue.ExecutionRecord.timestamp:type_name -> google.protobuf.Timestamp
 	2, // 2: fitglue.ExecutionRecord.start_time:type_name -> google.protobuf.Timestamp
 	2, // 3: fitglue.ExecutionRecord.end_time:type_name -> google.protobuf.Timestamp
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	2, // 4: fitglue.ExecutionRecord.expire_at:type_name -> google.protobuf.Timestamp
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_execution_proto_init() }

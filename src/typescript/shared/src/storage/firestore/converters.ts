@@ -93,6 +93,7 @@ export const executionConverter: FirestoreDataConverter<ExecutionRecord> = {
     if (model.inputsJson !== undefined) data.inputs_json = model.inputsJson;
     if (model.outputsJson !== undefined) data.outputs_json = model.outputsJson;
     if (model.parentExecutionId !== undefined) data.parent_execution_id = model.parentExecutionId;
+    if (model.expireAt !== undefined) data.expire_at = model.expireAt;
 
     return data;
   },
@@ -110,8 +111,7 @@ export const executionConverter: FirestoreDataConverter<ExecutionRecord> = {
       endTime: toDate(data.end_time),
       errorMessage: data.error_message,
       inputsJson: data.inputs_json || data.inputsJson,
-      outputsJson: data.outputs_json || data.outputsJson,
-      parentExecutionId: data.parent_execution_id
+      expireAt: toDate(data.expire_at)
     };
   }
 };
@@ -224,6 +224,7 @@ export const mapExecutionPartialToFirestore = (data: Partial<ExecutionRecord>): 
   if (data.inputsJson !== undefined) out.inputs_json = data.inputsJson;
   if (data.outputsJson !== undefined) out.outputs_json = data.outputsJson;
   if (data.parentExecutionId !== undefined) out.parent_execution_id = data.parentExecutionId;
+  if (data.expireAt !== undefined) out.expire_at = data.expireAt;
   return out;
 };
 

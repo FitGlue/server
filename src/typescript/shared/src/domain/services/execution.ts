@@ -31,7 +31,11 @@ export class ExecutionService {
    * With proper required/optional fields, all required fields must be provided.
    */
   async create(executionId: string, data: ExecutionRecord): Promise<void> {
-    return this.executionStore.create(executionId, data);
+    const record = { ...data };
+    if (!record.expireAt) {
+      record.expireAt = new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)); // Default 7 days retention
+    }
+    return this.executionStore.create(executionId, record);
   }
 
   /**
