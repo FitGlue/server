@@ -259,16 +259,14 @@ func FirestoreToExecution(m map[string]interface{}) *pb.ExecutionRecord {
 		switch val := v.(type) {
 		case int64:
 			e.Status = pb.ExecutionStatus(val)
+		case int:
+			e.Status = pb.ExecutionStatus(int32(val))
 		case string:
-			// If legacy logger stored strings like "STATUS_STARTED"
-			if val == "STATUS_STARTED" {
-				e.Status = pb.ExecutionStatus_STATUS_STARTED
-			}
-			if val == "STATUS_SUCCESS" {
-				e.Status = pb.ExecutionStatus_STATUS_SUCCESS
-			}
-			if val == "STATUS_FAILED" {
-				e.Status = pb.ExecutionStatus_STATUS_FAILED
+			// Use proto-generated map for all status values
+			if enumVal, ok := pb.ExecutionStatus_value[val]; ok {
+				e.Status = pb.ExecutionStatus(enumVal)
+			} else {
+				e.Status = pb.ExecutionStatus_STATUS_UNKNOWN
 			}
 		}
 	}
