@@ -12,7 +12,8 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
   try {
     // GET /stats -> { synchronized_count: N }
-    if (req.path === '/stats' || req.query.mode === 'stats') {
+    // Check if path ends with /stats (handling rewrites)
+    if (req.path.endsWith('/stats') || req.query.mode === 'stats') {
       // Logic: Start of current week (Monday)
       const now = new Date();
       const day = now.getDay(); // 0 is Sunday
