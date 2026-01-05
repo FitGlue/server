@@ -88,7 +88,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 		bucketName = "fitglue-artifacts"
 	}
 
-	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName)
+	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName, fwCtx.Service.Notifications)
 
 	// Register Providers from registry
 	for _, provider := range providers.GetAll() {

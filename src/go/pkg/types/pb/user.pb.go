@@ -318,6 +318,7 @@ type UserRecord struct {
 	Integrations *UserIntegrations      `protobuf:"bytes,3,opt,name=integrations,proto3" json:"integrations,omitempty"`
 	// Pipelines define the data flow: Source -> Enrichers -> Routing
 	Pipelines     []*PipelineConfig `protobuf:"bytes,4,rep,name=pipelines,proto3" json:"pipelines,omitempty"`
+	FcmTokens     []string          `protobuf:"bytes,5,rep,name=fcm_tokens,json=fcmTokens,proto3" json:"fcm_tokens,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -376,6 +377,13 @@ func (x *UserRecord) GetIntegrations() *UserIntegrations {
 func (x *UserRecord) GetPipelines() []*PipelineConfig {
 	if x != nil {
 		return x.Pipelines
+	}
+	return nil
+}
+
+func (x *UserRecord) GetFcmTokens() []string {
+	if x != nil {
+		return x.FcmTokens
 	}
 	return nil
 }
@@ -990,14 +998,16 @@ var File_user_proto protoreflect.FileDescriptor
 const file_user_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\"\xd6\x01\n" +
+	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\"\xf5\x01\n" +
 	"\n" +
 	"UserRecord\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x129\n" +
 	"\n" +
 	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12=\n" +
 	"\fintegrations\x18\x03 \x01(\v2\x19.fitglue.UserIntegrationsR\fintegrations\x125\n" +
-	"\tpipelines\x18\x04 \x03(\v2\x17.fitglue.PipelineConfigR\tpipelines\"\x93\x01\n" +
+	"\tpipelines\x18\x04 \x03(\v2\x17.fitglue.PipelineConfigR\tpipelines\x12\x1d\n" +
+	"\n" +
+	"fcm_tokens\x18\x05 \x03(\tR\tfcmTokens\"\x93\x01\n" +
 	"\x0ePipelineConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x125\n" +

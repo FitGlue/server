@@ -84,6 +84,10 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 		m["integrations"] = integrations
 	}
 
+	if len(u.FcmTokens) > 0 {
+		m["fcm_tokens"] = u.FcmTokens
+	}
+
 	if len(u.Pipelines) > 0 {
 		pipelines := make([]map[string]interface{}, len(u.Pipelines))
 		for i, p := range u.Pipelines {
@@ -151,6 +155,17 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 				}
 			}
 		}
+	}
+
+	if tokens, ok := m["fcm_tokens"].([]interface{}); ok {
+		u.FcmTokens = make([]string, len(tokens))
+		for i, v := range tokens {
+			if s, ok := v.(string); ok {
+				u.FcmTokens[i] = s
+			}
+		}
+	} else if tokens, ok := m["fcm_tokens"].([]string); ok {
+		u.FcmTokens = tokens
 	}
 
 	if pList, ok := m["pipelines"].([]interface{}); ok {

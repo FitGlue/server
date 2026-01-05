@@ -80,6 +80,7 @@ export interface UserRecord {
     | undefined;
   /** Pipelines define the data flow: Source -> Enrichers -> Routing */
   pipelines: PipelineConfig[];
+  fcmTokens: string[];
 }
 
 export interface PipelineConfig {

@@ -21,3 +21,9 @@ resource "google_project_iam_member" "cloud_function_sa_storage_admin" {
   role    = "roles/storage.objectAdmin"
   member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
+
+resource "google_project_iam_member" "cloud_function_sa_fcm_admin" {
+  project = var.project_id
+  role    = "roles/firebase.messaging.admin"
+  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}

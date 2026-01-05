@@ -1,4 +1,4 @@
-import { createCloudFunction, db, InputStore, InputService, FrameworkContext, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy } from '@fitglue/shared';
+import { createCloudFunction, db, InputStore, InputService, FrameworkContext, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore } from '@fitglue/shared';
 
 // PubSub topic name logic via env var
 const TOPIC = process.env.PUBSUB_TOPIC || 'activity-updates';
@@ -16,6 +16,9 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
   const inputStore = new InputStore(db);
   const inputService = new InputService(inputStore);
+  const userStore = new UserStore(db);
+
+  const path = req.path;
 
   // --- Handlers ---
   if (req.method === 'GET') {
@@ -102,6 +105,31 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       } else {
         res.status(500).json({ error: 'Internal Server Error' });
       }
+    }
+    return;
+  }
+
+  // --- User Handlers ---
+  // Allow /fcm-token (relative) or /api/inputs/fcm-token (full)
+  if (req.method === 'POST' && (path === '/fcm-token' || path.endsWith('/fcm-token'))) {
+    if (!ctx.userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { token } = req.body;
+    if (!token) {
+      res.status(400).json({ error: 'Missing token' });
+      return;
+    }
+
+    try {
+      await userStore.addFcmToken(ctx.userId, token);
+      ctx.logger.info('Registered FCM token', { userId: ctx.userId });
+      res.status(200).json({ success: true });
+    } catch (e) {
+      ctx.logger.error('Failed to register FCM token', { error: e });
+      res.status(500).json({ error: 'Internal Server Error' });
     }
     return;
   }

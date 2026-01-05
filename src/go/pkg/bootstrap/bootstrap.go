@@ -16,6 +16,9 @@ import (
 	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
 	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/secrets"
 	infrastorage "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/storage"
+
+	firebase "firebase.google.com/go/v4"
+	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/notifications"
 )
 
 // Config holds standard configuration for all services
@@ -27,11 +30,12 @@ type Config struct {
 
 // Service holds initialized dependencies
 type Service struct {
-	DB      shared.Database
-	Store   shared.BlobStore
-	Pub     shared.Publisher
-	Secrets shared.SecretStore
-	Config  *Config
+	DB            shared.Database
+	Store         shared.BlobStore
+	Pub           shared.Publisher
+	Secrets       shared.SecretStore
+	Notifications shared.NotificationService
+	Config        *Config
 }
 
 // LoadConfig reads configuration from environment variables
@@ -189,11 +193,24 @@ func NewService(ctx context.Context) (*Service, error) {
 		return nil, fmt.Errorf("storage init: %w", err)
 	}
 
+	// Firebase (for FCM and potentially other admin features)
+	fbApp, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: cfg.ProjectID})
+	if err != nil {
+		slog.Error("Firebase App init failed", "error", err)
+		return nil, fmt.Errorf("firebase app init: %w", err)
+	}
+
+	fcmAdapter, err := notifications.NewFCMAdapter(ctx, fbApp)
+	if err != nil {
+		slog.Warn("FCM initialization failed (notifications will be disabled)", "error", err)
+	}
+
 	return &Service{
-		DB:      database.NewFirestoreAdapter(fsClient),
-		Pub:     pubAdapter,
-		Store:   &infrastorage.StorageAdapter{Client: gcsClient},
-		Secrets: &secrets.SecretsAdapter{},
-		Config:  cfg,
+		DB:            database.NewFirestoreAdapter(fsClient),
+		Pub:           pubAdapter,
+		Store:         &infrastorage.StorageAdapter{Client: gcsClient},
+		Secrets:       &secrets.SecretsAdapter{},
+		Notifications: fcmAdapter,
+		Config:        cfg,
 	}, nil
 }

@@ -83,7 +83,8 @@ export class UserService {
             userId: userId,
             createdAt: new Date(),
             integrations: {} as UserIntegrations,
-            pipelines: []
+            pipelines: [],
+            fcmTokens: []
         });
     }
 

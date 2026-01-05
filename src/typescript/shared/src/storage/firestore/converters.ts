@@ -256,6 +256,7 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
     if (model.createdAt !== undefined) data.created_at = model.createdAt;
     if (model.integrations !== undefined) data.integrations = mapUserIntegrationsToFirestore(model.integrations);
     if (model.pipelines !== undefined) data.pipelines = model.pipelines?.map(mapPipelineToFirestore);
+    if (model.fcmTokens !== undefined) data.fcm_tokens = model.fcmTokens;
     return data;
   },
   fromFirestore(snapshot: QueryDocumentSnapshot): UserRecord {
@@ -264,7 +265,8 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
       userId: data.user_id || data.userId,
       createdAt: toDate(data.created_at || data.createdAt),
       integrations: mapUserIntegrationsFromFirestore(data.integrations),
-      pipelines: (data.pipelines || []).map(mapPipelineFromFirestore)
+      pipelines: (data.pipelines || []).map(mapPipelineFromFirestore),
+      fcmTokens: data.fcm_tokens || data.fcmTokens || []
     };
   }
 };

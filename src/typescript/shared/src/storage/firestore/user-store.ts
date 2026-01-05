@@ -158,4 +158,14 @@ export class UserStore {
       [fieldPath]: new Date()
     });
   }
+
+  /**
+   * Add a new FCM token to the user's list.
+   */
+  async addFcmToken(userId: string, token: string): Promise<void> {
+    // Use raw collection to bypass converter types for arrayUnion on specific field
+    await this.db.collection('users').doc(userId).update({
+      fcm_tokens: admin.firestore.FieldValue.arrayUnion(token)
+    });
+  }
 }

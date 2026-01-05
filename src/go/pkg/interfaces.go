@@ -44,3 +44,9 @@ type BlobStore interface {
 type SecretStore interface {
 	GetSecret(ctx context.Context, projectID, name string) (string, error)
 }
+
+// --- Notification Interfaces ---
+
+type NotificationService interface {
+	SendPushNotification(ctx context.Context, userID string, title, body string, tokens []string, data map[string]string) error
+}

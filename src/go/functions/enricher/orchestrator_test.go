@@ -123,7 +123,7 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		orchestrator := NewOrchestrator(mockDB, mockStorage, "test-bucket")
+		orchestrator := NewOrchestrator(mockDB, mockStorage, "test-bucket", nil)
 
 		mockProvider := &MockProvider{
 			NameFunc: func() string { return "mock-enricher" },
@@ -194,7 +194,7 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
 
 		payload := &pb.ActivityPayload{
 			UserId: "user-123",
@@ -232,7 +232,7 @@ func TestOrchestrator_Process(t *testing.T) {
 				return &pb.UserRecord{UserId: id}, nil
 			},
 		}
-		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
 		payload := &pb.ActivityPayload{
 			UserId: "user-1",
 			StandardizedActivity: &pb.StandardizedActivity{
@@ -251,7 +251,7 @@ func TestOrchestrator_Process(t *testing.T) {
 				return &pb.UserRecord{UserId: id}, nil
 			},
 		}
-		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
 		payload := &pb.ActivityPayload{
 			UserId: "user-1",
 			StandardizedActivity: &pb.StandardizedActivity{
@@ -291,7 +291,7 @@ func TestOrchestrator_Process(t *testing.T) {
 				}, nil
 			},
 		}
-		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket")
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
 		orchestrator.Register(mockProvider)
 
 		payload := &pb.ActivityPayload{ // Set source explicitly

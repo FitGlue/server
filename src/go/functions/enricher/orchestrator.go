@@ -22,15 +22,17 @@ type Orchestrator struct {
 	bucketName      string
 	providersByName map[string]providers.Provider
 	providersByType map[pb.EnricherProviderType]providers.Provider
+	notifications   shared.NotificationService
 }
 
-func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName string) *Orchestrator {
+func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName string, notifications shared.NotificationService) *Orchestrator {
 	return &Orchestrator{
 		database:        db,
 		storage:         storage,
 		bucketName:      bucketName,
 		providersByName: make(map[string]providers.Provider),
 		providersByType: make(map[pb.EnricherProviderType]providers.Provider),
+		notifications:   notifications,
 	}
 }
 
@@ -412,6 +414,23 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, payload *pb.Activity
 	}
 	if err := o.database.CreatePendingInput(ctx, pi); err != nil {
 		slog.Warn("Failed to create pending input (might already exist)", "error", err)
+	}
+
+	// Trigger Push Notification
+	if o.notifications != nil {
+		user, err := o.database.GetUser(ctx, payload.UserId)
+		if err == nil && user != nil && len(user.FcmTokens) > 0 {
+			title := "Action Required: FitGlue"
+			body := "An activity needs more information to be processed."
+			data := map[string]string{
+				"activity_id": waitErr.ActivityID,
+				"user_id":     payload.UserId,
+				"type":        "PENDING_INPUT",
+			}
+			if err := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); err != nil {
+				slog.Error("Failed to send push notification", "error", err, "user_id", payload.UserId)
+			}
+		}
 	}
 
 	return &ProcessResult{
