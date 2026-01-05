@@ -5,8 +5,8 @@ const TOPIC = process.env.PUBSUB_TOPIC || 'activity-updates';
 
 
 interface ResolveInputRequest {
-  activity_id: string;
-  input_data: Record<string, string>;
+  activityId: string;
+  inputData: Record<string, string>;
 }
 
 import { Request, Response } from 'express';
@@ -55,14 +55,15 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
     try {
       const inputs = await inputService.listPendingInputs(ctx.userId);
-      // Omit original_payload for list view
+      // Use standard camelCase (DTO matches Service object now)
       const responseInputs = inputs.map((i) => ({
-        activity_id: i.activityId,
-        user_id: i.userId,
+        id: i.activityId, // Added id alias for frontend if needed, or just keep activityId
+        activityId: i.activityId,
+        userId: i.userId,
         status: i.status,
-        required_fields: i.requiredFields,
-        created_at: i.createdAt,
-        input_data: i.inputData
+        requiredFields: i.requiredFields,
+        createdAt: i.createdAt,
+        inputData: i.inputData
       }));
       res.status(200).json({ inputs: responseInputs });
     } catch (e) {
@@ -79,26 +80,26 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     }
 
     const body = req.body as ResolveInputRequest;
-    if (!body.activity_id || !body.input_data) {
-      res.status(400).json({ error: 'Missing activity_id or input_data' });
+    if (!body.activityId || !body.inputData) {
+      res.status(400).json({ error: 'Missing activityId or inputData' });
       return;
     }
 
     try {
-      const input = await inputService.getPendingInput(body.activity_id);
+      const input = await inputService.getPendingInput(body.activityId);
       if (!input) {
         res.status(404).json({ error: 'Not found' });
         return;
       }
 
       // Service validates ownership and status
-      await inputService.resolveInput(body.activity_id, ctx.userId, body.input_data);
+      await inputService.resolveInput(body.activityId, ctx.userId, body.inputData);
 
       // Re-publish Original Payload
       // Re-fetch (or use cached if service returns updated obj, but service returns void currently)
       // Since we didn't change payload, 'input' var has it.
       if (!input.originalPayload) {
-        ctx.logger.error('Original payload missing', { activityId: body.activity_id });
+        ctx.logger.error('Original payload missing', { activityId: body.activityId });
         res.status(500).json({ error: 'Original payload missing, cannot resume' });
         return;
       }
@@ -114,7 +115,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
       await publisher.publish(input.originalPayload);
 
-      ctx.logger.info(`Resolved and re-published activity`, { activityId: body.activity_id });
+      ctx.logger.info(`Resolved and re-published activity`, { activityId: body.activityId });
       res.status(200).json({ success: true });
 
     } catch (e: unknown) {

@@ -212,7 +212,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 
 	finalStatus := "SUCCESS"
 	if processResult.Status == pb.ExecutionStatus_STATUS_WAITING {
-		finalStatus = "STATUS_WAITING"
+		finalStatus = "WAITING"
 	}
 
 	return map[string]interface{}{
