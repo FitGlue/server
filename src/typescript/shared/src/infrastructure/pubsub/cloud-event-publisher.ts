@@ -70,14 +70,14 @@ export class CloudEventPublisher<T> {
       if (typeof raw === 'object' && !Buffer.isBuffer(raw)) {
         // rudimentary check
         if ('specversion' in raw && 'data' in raw) {
-          return (raw as any).data as R;
+          return (raw as { data: R }).data as R;
         }
         // fallback: maybe it's just the data? No, strict mode means we expect envelope.
         // But for now let's try to be helpful.
         // Actually, if we are strictly enforcing CloudEventPublisher usage, we expect an Envelope.
         // Return raw if it fails check? No, safer to return null or throw.
         // Let's assume strict CloudEvent structure for now.
-        return (raw as any).data || null;
+        return (raw as { data?: R }).data || null;
       }
 
       // 2. Buffer/String parsing

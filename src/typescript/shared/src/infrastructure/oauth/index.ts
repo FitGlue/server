@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
 import { UserStore, IntegrationIdentityStore } from '../../storage/firestore';
 import * as crypto from 'crypto';
+import { StravaIntegration, FitbitIntegration } from '../../types/pb/user';
 
 /**
  * Store OAuth tokens for a user integration.
@@ -34,7 +35,7 @@ export async function storeOAuthTokens(
     // Add provider-specific ID fields
     ...(provider === 'strava' ? { athleteId: Number(tokens.externalUserId) } : {}),
     ...(provider === 'fitbit' ? { fitbitUserId: tokens.externalUserId } : {})
-  } as any); // Cast as any because setIntegration expects strict union checks that are hard to satisfy generically here without complex logic
+  } as (typeof provider extends 'strava' ? StravaIntegration : FitbitIntegration));
 
   // Map external user ID to our user ID
   await identityStore.mapIdentity(provider, tokens.externalUserId, userId);

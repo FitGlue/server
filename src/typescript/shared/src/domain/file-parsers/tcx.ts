@@ -2,7 +2,7 @@ import { XMLParser } from 'fast-xml-parser';
 import { StandardizedActivity, Lap, Record, Session, ActivityType } from '../../types/pb/standardized_activity';
 
 // Helper to safely get array even if XML parser returns single object or undefined
-const asArray = (val: any) => {
+const asArray = (val: unknown) => {
   if (!val) return [];
   return Array.isArray(val) ? val : [val];
 };
@@ -20,12 +20,63 @@ function mapTcxSportToActivityType(sport: string): ActivityType {
   }
 }
 
-export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: string, source: string): StandardizedActivity => {
+// TCX Interfaces
+interface TcxTrackpoint {
+  Time: string;
+  Position?: {
+    LatitudeDegrees?: string;
+    LongitudeDegrees?: string;
+  };
+  AltitudeMeters?: string;
+  HeartRateBpm?: { Value?: string };
+  Cadence?: string;
+  Extensions?: {
+    TPX?: {
+      Speed?: string;
+      Watts?: string;
+    };
+  };
+}
+
+interface TcxTrack {
+  Trackpoint?: TcxTrackpoint | TcxTrackpoint[];
+}
+
+interface TcxLap {
+  Track?: TcxTrack;
+  '@_StartTime': string;
+  TotalTimeSeconds?: string;
+  DistanceMeters?: string;
+}
+
+interface TcxActivity {
+  Id: string;
+  '@_Sport'?: string;
+  Lap?: TcxLap | TcxLap[];
+}
+
+interface TcxDatabase {
+  TrainingCenterDatabase?: {
+    Activities?: {
+      Activity?: TcxActivity;
+    };
+  };
+}
+
+interface LogData {
+  duration?: number;
+  logId?: string | number;
+  activityName?: string;
+  description?: string;
+}
+
+export const mapTCXToStandardized = (tcxXml: string, logData: LogData, userId: string, source: string): StandardizedActivity => {
+  const data = logData as LogData;
   const parser = new XMLParser({
     ignoreAttributes: false,
     attributeNamePrefix: "@_"
   });
-  const parsed = parser.parse(tcxXml);
+  const parsed = parser.parse(tcxXml) as TcxDatabase;
 
   const activity = parsed?.TrainingCenterDatabase?.Activities?.Activity;
   if (!activity) {
@@ -41,13 +92,13 @@ export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: strin
 
   const tcxLaps = asArray(activity.Lap);
 
-  tcxLaps.forEach((tcxLap: any) => {
+  tcxLaps.forEach((tcxLap: TcxLap) => {
     const records: Record[] = [];
     const track = tcxLap.Track;
 
     if (track) {
       const trackpoints = asArray(track.Trackpoint);
-      trackpoints.forEach((tp: any) => {
+      trackpoints.forEach((tp: TcxTrackpoint) => {
         const record: Record = {
           timestamp: new Date(tp.Time),
           // GPS
@@ -85,7 +136,7 @@ export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: strin
 
   // Use Log Data for high-level metadata if available
   // note: logData.duration is usually milliseconds
-  const durationSeconds = logData?.duration ? logData.duration / 1000 : totalElapsedTime;
+  const durationSeconds = data?.duration ? data.duration / 1000 : totalElapsedTime;
 
   // Create Session (Fitbit activities usually are single session)
   const session: Session = {
@@ -99,12 +150,12 @@ export const mapTCXToStandardized = (tcxXml: string, logData: any, userId: strin
   // FitGlue Standardized Activity
   const standardized: StandardizedActivity = {
     source,
-    externalId: logData?.logId?.toString() || tcxId,
+    externalId: data?.logId?.toString() || tcxId,
     userId: userId,
     startTime: new Date(tcxId), // TCX Id is usually ISO timestamp
-    name: logData?.activityName || `${sport || 'Unknown'} Activity`,
-    type: mapTcxSportToActivityType(sport),
-    description: logData?.description || '',
+    name: data?.activityName || `${sport || 'Unknown'} Activity`,
+    type: mapTcxSportToActivityType(sport || ''),
+    description: data?.description || '',
     sessions: [session],
     tags: [],
     notes: ''

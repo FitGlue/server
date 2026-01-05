@@ -8,7 +8,7 @@ interface FitbitNotification {
   subscriptionId: string;
 }
 
-type FitbitBody = FitbitNotification[];
+export type FitbitBody = FitbitNotification[];
 
 export interface FitbitConnectorConfig extends ConnectorConfig {
   // OAuth tokens are managed by UserService via createFitbitClient
@@ -109,7 +109,8 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
    * - GET requests for webhook verification
    * - POST signature validation
    */
-  async verifyRequest(req: any, res: any, context: any): Promise<{ handled: boolean; response?: any } | undefined> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async verifyRequest(req: any, res: any, context: FrameworkContext): Promise<{ handled: boolean; response?: Record<string, unknown> } | undefined> {
     const { logger } = context;
 
     // Handle GET verification requests
@@ -150,7 +151,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       }
 
       const { createHmac } = await import('crypto');
-      const rawBody = (req as any).rawBody;
+      const rawBody = req.rawBody;
       if (!rawBody) {
         logger.error('Raw body not available for verification');
         res.status(500).send('Internal Server Error');
@@ -179,7 +180,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
    * Resolves user ID from Fitbit webhook payload.
    * Maps Fitbit's ownerId to our internal userId.
    */
-  async resolveUser(payload: FitbitBody, context: any): Promise<string | null> {
+  async resolveUser(payload: FitbitBody, context: FrameworkContext): Promise<string | null> {
     const { logger, services } = context;
 
     // payload is the body of the request, which for Fitbit webhooks is the notification payload
@@ -215,7 +216,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
    * @param config - Fitbit connector config with userId injected
    */
   async fetchAndMap(activityId: string, config: FitbitConnectorConfig): Promise<StandardizedActivity[]> {
-    const userId = (config as any).userId;
+    const userId = (config as unknown as { userId: string }).userId;
     if (!userId) {
       throw new Error("userId missing in connector config");
     }
@@ -287,7 +288,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
   /**
    * Not used for Fitbit (we use fetchAndMap directly).
    */
-  async mapActivity(_rawPayload: any, _context?: any): Promise<StandardizedActivity> {
+  async mapActivity(_rawPayload: unknown, _context?: unknown): Promise<StandardizedActivity> {
     throw new Error('mapActivity not implemented for FitbitConnector - use fetchAndMap instead');
   }
 }

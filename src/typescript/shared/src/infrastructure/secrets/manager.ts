@@ -36,8 +36,8 @@ export async function getSecret(projectId: string, secretName: string): Promise<
             throw new Error(`Secret payload is empty for ${secretName}`);
         }
         return payload;
-    } catch (err: any) {
-        console.error(`Failed to fetch secret ${secretName}:`, err);
-        throw err;
+    } catch (error: unknown) {
+        console.error(`Failed to fetch secret ${secretName}:`, error);
+        throw error;
     }
 }

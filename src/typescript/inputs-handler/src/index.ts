@@ -9,8 +9,10 @@ interface ResolveInputRequest {
   input_data: Record<string, string>;
 }
 
+import { Request, Response } from 'express';
+
 // Handler Implementation
-export const handler = async (req: any, res: any, ctx: FrameworkContext) => {
+export const handler = async (req: Request, res: Response, ctx: FrameworkContext) => {
 
   const inputStore = new InputStore(db);
   const inputService = new InputService(inputStore);
@@ -26,7 +28,7 @@ export const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     try {
       const inputs = await inputService.listPendingInputs(ctx.userId);
       // Omit original_payload for list view
-      const responseInputs = inputs.map((i: any) => ({
+      const responseInputs = inputs.map((i) => ({
         activity_id: i.activityId,
         user_id: i.userId,
         status: i.status,
@@ -87,15 +89,16 @@ export const handler = async (req: any, res: any, ctx: FrameworkContext) => {
       ctx.logger.info(`Resolved and re-published activity`, { activityId: body.activity_id });
       res.status(200).json({ success: true });
 
-    } catch (e: any) {
+    } catch (e: unknown) {
+      const err = e as { message?: string };
       ctx.logger.error('Failed to resolve input', { error: e });
       // Map common errors
-      if (e.message?.includes('Unauthorized')) {
+      if (err.message?.includes('Unauthorized')) {
         res.status(403).json({ error: 'Forbidden' });
-      } else if (e.message?.includes('not found')) { // unlikely if we checked exists, but race condition
+      } else if (err.message?.includes('not found')) { // unlikely if we checked exists, but race condition
         res.status(404).json({ error: 'Not found' });
-      } else if (e.message?.includes('status')) {
-        res.status(409).json({ error: e.message });
+      } else if (err.message?.includes('status')) {
+        res.status(409).json({ error: err.message });
       } else {
         res.status(500).json({ error: 'Internal Server Error' });
       }

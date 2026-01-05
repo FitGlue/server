@@ -9,11 +9,12 @@ export class ApiKeyStrategy implements AuthStrategy {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
-  async authenticate(req: any, ctx: FrameworkContext): Promise<AuthResult | null> {
+  async authenticate(req: { headers: Record<string, string | string[] | undefined>; query?: Record<string, string | string[] | undefined> }, ctx: FrameworkContext): Promise<AuthResult | null> {
     let token: string | undefined;
 
     // 1. Check Authorization Header (Bearer or Raw)
-    const authHeader = req.headers['authorization'];
+    const authHeaderRaw = req.headers['authorization'];
+    const authHeader = Array.isArray(authHeaderRaw) ? authHeaderRaw[0] : authHeaderRaw;
     if (authHeader) {
       if (authHeader.startsWith('Bearer ')) {
         token = authHeader.split(' ')[1];
@@ -57,8 +58,9 @@ export class ApiKeyStrategy implements AuthStrategy {
         userId: result.userId!,
         scopes: result.scopes || []
       };
-    } catch (err: any) {
-      ctx.logger.error('Error fetching API key', { error: err.message });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      ctx.logger.error('Error fetching API key', { error: errorMessage });
       return null;
     }
   }

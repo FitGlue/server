@@ -32,8 +32,13 @@ export const addInputsCommands = (program: Command) => {
           console.log('--------------------------------------------------');
         });
 
-      } catch (error) {
-        console.error('Error listing inputs:', error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error(`❌ Error listing inputs: ${error.message}`);
+          console.error('Stack:', error.stack);
+        } else {
+          console.error(`❌ An unknown error occurred`);
+        }
         process.exit(1);
       }
     });
@@ -62,8 +67,13 @@ export const addInputsCommands = (program: Command) => {
         console.log(`Original Payload: ${input.originalPayload ? '(Present)' : '(Missing)'}`);
         console.log('--------------------------------------------------\n');
 
-      } catch (error) {
-        console.error('Error getting input:', error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error(`❌ Error getting input: ${error.message}`);
+          console.error('Stack:', error.stack);
+        } else {
+          console.error(`❌ An unknown error occurred`);
+        }
         process.exit(1);
       }
     });
@@ -74,7 +84,7 @@ export const addInputsCommands = (program: Command) => {
     .description('Resolve a pending input and resume the pipeline')
     .action(async (activityId, options) => {
       try {
-        let inputData: any;
+        let inputData: Record<string, string>;
         const input = await service.getPendingInput(activityId);
 
         if (!input) {
@@ -120,13 +130,19 @@ export const addInputsCommands = (program: Command) => {
 
         // originalPayload type in TS is generic/duck-typed in converter
         // In proto it is bytes or object. Converter says "Pass through, might be buffer/bytes"
-        const dataBuffer = Buffer.from(input.originalPayload as any);
+        const payloadStr = typeof input.originalPayload === 'string' ? input.originalPayload : JSON.stringify(input.originalPayload);
+        const dataBuffer = Buffer.from(payloadStr);
         await pubsub.topic(TOPIC).publishMessage({ data: dataBuffer });
 
         console.log('✅ Input resolved and activity re-published successfully.');
 
-      } catch (error) {
-        console.error('Error resolving input:', error);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error(`❌ Error resolving input: ${error.message}`);
+          console.error('Stack:', error.stack);
+        } else {
+          console.error(`❌ An unknown error occurred`);
+        }
         process.exit(1);
       }
     });

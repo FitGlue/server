@@ -21,6 +21,7 @@ export interface ConnectorConstructor<TConfig extends ConnectorConfig, TRaw> {
 export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
   ConnectorClass: ConnectorConstructor<TConfig, TRaw>
 ) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (req: any, res: any, ctx: FrameworkContext) => {
     const { logger, userId } = ctx;
     const timestamp = new Date();
@@ -63,6 +64,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       throw new Error('User not found');
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const connectorConfig = (user.integrations as any)?.[connector.name];
 
     if (!connectorConfig || !connectorConfig.enabled) {
@@ -76,6 +78,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     // 4. Validate Config
     try {
       connector.validateConfig(fullConfig);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error(`Invalid configuration for user ${userId}`, { error: err.message });
       res.status(200).send(`Configuration Error: ${err.message}`);
@@ -94,6 +97,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     let standardizedActivities: StandardizedActivity[];
     try {
       standardizedActivities = await connector.fetchAndMap(externalId, fullConfig);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error(`Failed to fetch/map activity ${externalId}`, { error: err.message });
       res.status(500).send('Failed to process activity');

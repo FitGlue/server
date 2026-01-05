@@ -14,6 +14,7 @@ function resolveExecutionStatus(statusInput: string | undefined): number | undef
 
   // Check key existence in enum (ExecutionStatus is a numeric enum)
   if (normalized in ExecutionStatus) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (ExecutionStatus as any)[normalized];
   }
 

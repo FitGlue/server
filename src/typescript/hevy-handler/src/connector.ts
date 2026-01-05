@@ -20,10 +20,10 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
     context.logger.debug(`HevyConnector: initialized`);
   }
 
-  extractId(body: any): string | null {
+  extractId(body: unknown): string | null {
     // Return workoutId from payload (support various payload shapes)
     if (!body) return null;
-    return body.payload?.workoutId || null;
+    return (body as { payload?: { workoutId?: string } }).payload?.workoutId || null;
   }
 
   async fetchAndMap(activityId: string, config: HevyConnectorConfig): Promise<StandardizedActivity[]> {
@@ -32,7 +32,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
       apiKey: config.apiKey,
       usageTracking: {
         userStore: this.context.stores.users,
-        userId: (config as any).userId
+        userId: (config as unknown as { userId: string }).userId
       }
     });
     const { data: fullWorkout, error, response } = await client.GET("/v1/workouts/{workoutId}", {
@@ -45,7 +45,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
 
     // Identify unique exercise template IDs
     const templateIds = new Set<string>();
-    (fullWorkout.exercises || []).forEach((ex: any) => {
+    (fullWorkout.exercises || []).forEach((ex) => {
       if (ex.exercise_template_id) {
         templateIds.add(ex.exercise_template_id);
       }
@@ -66,7 +66,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
     });
 
     const templates = await Promise.all(templatePromises);
-    const templateMap: Record<string, any> = {};
+    const templateMap: Record<string, HevyExerciseTemplate> = {};
     templates.forEach((res) => {
       if (res.data) {
         templateMap[res.id] = res.data;
@@ -74,7 +74,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
     });
 
     // I'll assume config has userId for now, provided by the caller who loads the config.
-    const userId = (config as any).userId;
+    const userId = (config as unknown as { userId: string }).userId;
     if (!userId) {
       throw new Error("userId missing in connector config");
     }

@@ -1,5 +1,5 @@
 import { UserStore, ActivityStore } from '../../storage/firestore';
-import { UserRecord, UserIntegrations } from '../../types/pb/user';
+import { UserRecord, UserIntegrations, EnricherConfig, ProcessedActivityRecord } from '../../types/pb/user';
 import { FirestoreTokenSource } from '../../infrastructure/oauth/token-source';
 
 /**
@@ -29,13 +29,13 @@ export class UserService {
     /**
      * Load connector configuration for a user.
      */
-    async loadConnectorConfig(userId: string, connectorName: string): Promise<any> {
+    async loadConnectorConfig(userId: string, connectorName: string): Promise<Record<string, unknown>> {
         const user = await this.get(userId);
         if (!user) {
             throw new Error(`User ${userId} not found`);
         }
 
-        const config = (user.integrations as any)?.[connectorName];
+        const config = (user.integrations as Record<string, Record<string, unknown>>)?.[connectorName];
         if (!config || !config.enabled) {
             throw new Error(`${connectorName} integration not enabled for user ${userId}`);
         }
@@ -138,7 +138,8 @@ export class UserService {
         return this.userStore.deleteAll();
     }
 
-    async listProcessedActivities(userId: string): Promise<any[]> {
+    async listProcessedActivities(userId: string): Promise<ProcessedActivityRecord[]> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         return this.activityStore.list(userId);
     }
 
@@ -147,7 +148,7 @@ export class UserService {
     }
 
     // Pipeline methods (legacy support)
-    async addPipeline(userId: string, source: string, enrichers: any[], destinations: string[]): Promise<string> {
+    async addPipeline(userId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<string> {
         const id = `pipe_${Date.now()}`;
         await this.userStore.addPipeline(userId, {
             id, source, enrichers, destinations
@@ -162,7 +163,7 @@ export class UserService {
         await this.userStore.updatePipelines(userId, newPipelines);
     }
 
-    async replacePipeline(userId: string, pipelineId: string, source: string, enrichers: any[], destinations: string[]): Promise<void> {
+    async replacePipeline(userId: string, pipelineId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<void> {
         await this.removePipeline(userId, pipelineId);
         await this.userStore.addPipeline(userId, {
             id: pipelineId, source, enrichers, destinations

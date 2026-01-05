@@ -8,7 +8,7 @@ export class InputStore {
   async getPending(activityId: string): Promise<PendingInput | null> {
     const doc = await this.db.collection('pending_inputs').doc(activityId).get();
     if (!doc.exists) return null;
-    return FirestoreToPendingInput(doc.data() as any);
+    return FirestoreToPendingInput(doc.data() as Record<string, unknown>);
   }
 
   async listPending(userId: string): Promise<PendingInput[]> {
@@ -18,7 +18,7 @@ export class InputStore {
       .orderBy('created_at', 'desc')
       .get();
 
-    return snapshot.docs.map(doc => FirestoreToPendingInput(doc.data() as any));
+    return snapshot.docs.map(doc => FirestoreToPendingInput(doc.data() as Record<string, unknown>));
   }
 
   async resolve(activityId: string, inputData: Record<string, string>): Promise<void> {

@@ -1,6 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as converters from './converters';
-import { UserRecord } from '../../types/pb/user';
+import { FitbitIntegration, HevyIntegration, StravaIntegration, UserRecord } from '../../types/pb/user';
 
 /**
  * UserStore provides typed access to user-related Firestore operations.
@@ -18,7 +18,7 @@ export class UserStore {
   /**
    * Find a user by a specific field value.
    */
-  async findByField(field: string, value: any): Promise<UserRecord | null> {
+  async findByField(field: string, value: unknown): Promise<UserRecord | null> {
     const snapshot = await this.collection()
       .where(field, '==', value)
       .limit(1)
@@ -105,15 +105,16 @@ export class UserStore {
   ): Promise<void> {
     // Construct the dot-notation key for updating nested field
     const fieldPath = `integrations.${provider}`;
-    let firestoreData = data;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let firestoreData: any = data;
 
     // Apply manual conversion for known providers to ensure snake_case
     if (provider === 'fitbit') {
-      firestoreData = converters.mapFitbitToFirestore(data as any);
+      firestoreData = converters.mapFitbitToFirestore(data as FitbitIntegration);
     } else if (provider === 'strava') {
-      firestoreData = converters.mapStravaToFirestore(data as any);
+      firestoreData = converters.mapStravaToFirestore(data as StravaIntegration);
     } else if (provider === 'hevy') {
-      firestoreData = converters.mapHevyToFirestore(data as any);
+      firestoreData = converters.mapHevyToFirestore(data as HevyIntegration);
     }
 
     await this.collection().doc(userId).update({
@@ -141,9 +142,6 @@ export class UserStore {
     });
   }
 
-  /**
-   * Create or overwrite a user document.
-   */
   /**
    * Create or overwrite a user document.
    */

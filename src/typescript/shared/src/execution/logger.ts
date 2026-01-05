@@ -29,7 +29,7 @@ export async function logExecutionStart(
   ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
   trigger: string,
-  originalPayload?: any
+  originalPayload?: unknown
 ): Promise<void> {
   ctx.logger.info(`Execution started`, { executionId, trigger });
 
@@ -47,7 +47,7 @@ export async function logExecutionStart(
 export async function logExecutionSuccess(
   ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
-  result?: any
+  result?: unknown
 ): Promise<void> {
   ctx.logger.info(`Execution completed successfully`, { executionId });
 
@@ -65,7 +65,7 @@ export async function logExecutionFailure(
   ctx: { services: { execution: ExecutionService }; logger: winston.Logger },
   executionId: string,
   error: Error,
-  result?: any
+  result?: unknown
 ): Promise<void> {
   ctx.logger.error(`Execution failed`, { executionId, error: error.message, stack: error.stack, result });
 

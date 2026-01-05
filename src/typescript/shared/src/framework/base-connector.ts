@@ -8,6 +8,7 @@ import { FrameworkContext } from './index';
  * BaseConnector provides a default implementation for common connector tasks.
  * It enforces configuration validation structure.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorConfig, TRawPayload = any>
   implements Connector<TConfig, TRawPayload> {
   protected _context: FrameworkContext;
@@ -50,6 +51,7 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
    * Verify a request. Defaults to no verification.
    * Override to add vendor-specific verification.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async verifyRequest(_req: any, _res: any, _context: any): Promise<{ handled: boolean; response?: any } | undefined> {
     return undefined;
   }
@@ -62,6 +64,7 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
   /**
    * Map a raw payload to a StandardizedActivity.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   abstract mapActivity(rawPayload: TRawPayload, context?: any): Promise<StandardizedActivity>;
 
   /**

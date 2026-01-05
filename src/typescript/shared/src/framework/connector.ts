@@ -27,7 +27,9 @@ export type IngestStrategy = 'webhook' | 'polling' | 'hybrid';
  * ActivityMapper defines the function signature for converting raw vendor payloads
  * into the FitGlue StandardizedActivity format.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface ActivityMapper<T = any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (rawPayload: T, context?: any): Promise<StandardizedActivity>;
 }
 
@@ -36,6 +38,7 @@ export interface ActivityMapper<T = any> {
  * TConfig: The specific configuration type for this connector.
  * TRaw: The type of the raw payload from the vendor.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Connector<TConfig extends ConnectorConfig = ConnectorConfig, TRaw = any> {
   /**
    * Unique identifier for the connector (e.g., 'hevy', 'fitbit').
@@ -70,12 +73,14 @@ export interface Connector<TConfig extends ConnectorConfig = ConnectorConfig, TR
    * Core logic to map the vendor-specific payload to a standardized format.
    * This is the "glue" logic.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   mapActivity(rawPayload: TRaw, context?: any): Promise<StandardizedActivity>;
 
   /**
    * Extracts the unique external ID from a webhook payload.
    * Useful for deduplication before processing.
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   extractId(payload: any): string | null;
 
   /**
@@ -106,6 +111,7 @@ export interface Connector<TConfig extends ConnectorConfig = ConnectorConfig, TR
    *
    * @returns undefined to continue normal processing, or a response object to short-circuit
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   verifyRequest(req: any, res: any, context: any): Promise<{ handled: boolean; response?: any } | undefined>;
 
   /**
@@ -116,5 +122,6 @@ export interface Connector<TConfig extends ConnectorConfig = ConnectorConfig, TR
    *
    * @returns userId if resolved from payload, null to use auth-provided userId
    */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   resolveUser?(payload: any, context: any): Promise<string | null>;
 }

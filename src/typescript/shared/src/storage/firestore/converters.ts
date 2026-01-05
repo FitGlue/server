@@ -3,14 +3,15 @@ import { UserRecord, UserIntegrations, PipelineConfig, ProcessedActivityRecord }
 import { WaitlistEntry } from '../../types/pb/waitlist';
 import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
-import { PendingInput } from '../../types/pb/pending_input';
+import { PendingInput, PendingInput_Status } from '../../types/pb/pending_input';
 
 // Helper to convert Firestore Timestamp to Date
-const toDate = (val: any): Date | undefined => {
+const toDate = (val: unknown): Date | undefined => {
   if (!val) return undefined;
   if (val instanceof Timestamp) return val.toDate();
-  if (val.toDate) return val.toDate(); // Duck typing
-  return new Date(val); // Fallback string/number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if ((val as any).toDate) return (val as any).toDate(); // Duck typing
+  return new Date(val as string | number); // Fallback string/number
 };
 
 // Helper for generic recursive snake->camel for simple objects if strictly needed,
@@ -120,7 +121,7 @@ export const executionConverter: FirestoreDataConverter<ExecutionRecord> = {
 
 // --- User Record Mapping Complex Logic ---
 
-export const mapHevyToFirestore = (i: NonNullable<UserIntegrations['hevy']>): any => ({
+export const mapHevyToFirestore = (i: NonNullable<UserIntegrations['hevy']>): Record<string, unknown> => ({
   enabled: i.enabled,
   api_key: i.apiKey,
   user_id: i.userId,
@@ -128,7 +129,7 @@ export const mapHevyToFirestore = (i: NonNullable<UserIntegrations['hevy']>): an
   last_used_at: i.lastUsedAt
 });
 
-export const mapFitbitToFirestore = (i: NonNullable<UserIntegrations['fitbit']>): any => ({
+export const mapFitbitToFirestore = (i: NonNullable<UserIntegrations['fitbit']>): Record<string, unknown> => ({
   enabled: i.enabled,
   access_token: i.accessToken,
   refresh_token: i.refreshToken,
@@ -138,7 +139,7 @@ export const mapFitbitToFirestore = (i: NonNullable<UserIntegrations['fitbit']>)
   last_used_at: i.lastUsedAt
 });
 
-export const mapStravaToFirestore = (i: NonNullable<UserIntegrations['strava']>): any => ({
+export const mapStravaToFirestore = (i: NonNullable<UserIntegrations['strava']>): Record<string, unknown> => ({
   enabled: i.enabled,
   access_token: i.accessToken,
   refresh_token: i.refreshToken,
@@ -148,49 +149,66 @@ export const mapStravaToFirestore = (i: NonNullable<UserIntegrations['strava']>)
   last_used_at: i.lastUsedAt
 });
 
-const mapUserIntegrationsToFirestore = (i?: UserIntegrations): any => {
+const mapUserIntegrationsToFirestore = (i?: UserIntegrations): Record<string, unknown> | undefined => {
   if (!i) return undefined;
-  const out: any = {};
+  const out: Record<string, unknown> = {};
   if (i.hevy) out.hevy = mapHevyToFirestore(i.hevy);
   if (i.fitbit) out.fitbit = mapFitbitToFirestore(i.fitbit);
   if (i.strava) out.strava = mapStravaToFirestore(i.strava);
   return out;
 };
 
-const mapUserIntegrationsFromFirestore = (data: any): UserIntegrations | undefined => {
+
+interface FirestoreIntegrationData {
+  enabled?: boolean;
+  api_key?: string;
+  apiKey?: string; // Legacy
+  user_id?: string;
+  userId?: string; // Legacy
+  created_at?: unknown;
+  createdAt?: unknown; // Legacy
+  last_used_at?: unknown;
+  access_token?: string;
+  refresh_token?: string;
+  expires_at?: unknown;
+  fitbit_user_id?: string;
+  athlete_id?: string;
+}
+
+const mapUserIntegrationsFromFirestore = (data: Record<string, unknown> | undefined): UserIntegrations | undefined => {
   if (!data) return undefined;
   return {
     hevy: data.hevy ? {
-      enabled: !!data.hevy.enabled,
-      apiKey: data.hevy.api_key || data.hevy.apiKey,
-      userId: data.hevy.user_id || data.hevy.userId,
-      createdAt: toDate(data.hevy.created_at),
-      lastUsedAt: toDate(data.hevy.last_used_at)
+      enabled: !!(data.hevy as FirestoreIntegrationData).enabled,
+      apiKey: (data.hevy as FirestoreIntegrationData).api_key || (data.hevy as FirestoreIntegrationData).apiKey || '',
+      userId: (data.hevy as FirestoreIntegrationData).user_id || (data.hevy as FirestoreIntegrationData).userId || '',
+      createdAt: toDate((data.hevy as FirestoreIntegrationData).created_at),
+      lastUsedAt: toDate((data.hevy as FirestoreIntegrationData).last_used_at)
     } : undefined,
     fitbit: data.fitbit ? {
-      enabled: !!data.fitbit.enabled,
-      accessToken: data.fitbit.access_token,
-      refreshToken: data.fitbit.refresh_token,
-      expiresAt: toDate(data.fitbit.expires_at),
-      fitbitUserId: data.fitbit.fitbit_user_id,
-      createdAt: toDate(data.fitbit.created_at),
-      lastUsedAt: toDate(data.fitbit.last_used_at)
+      enabled: !!(data.fitbit as FirestoreIntegrationData).enabled,
+      accessToken: (data.fitbit as FirestoreIntegrationData).access_token || '',
+      refreshToken: (data.fitbit as FirestoreIntegrationData).refresh_token || '',
+      expiresAt: toDate((data.fitbit as FirestoreIntegrationData).expires_at),
+      fitbitUserId: (data.fitbit as FirestoreIntegrationData).fitbit_user_id || '',
+      createdAt: toDate((data.fitbit as FirestoreIntegrationData).created_at),
+      lastUsedAt: toDate((data.fitbit as FirestoreIntegrationData).last_used_at)
     } : undefined,
     strava: data.strava ? {
-      enabled: !!data.strava.enabled,
-      accessToken: data.strava.access_token,
-      refreshToken: data.strava.refresh_token,
-      expiresAt: toDate(data.strava.expires_at),
-      athleteId: data.strava.athlete_id,
-      createdAt: toDate(data.strava.created_at),
-      lastUsedAt: toDate(data.strava.last_used_at)
+      enabled: !!(data.strava as FirestoreIntegrationData).enabled,
+      accessToken: (data.strava as FirestoreIntegrationData).access_token || '',
+      refreshToken: (data.strava as FirestoreIntegrationData).refresh_token || '',
+      expiresAt: toDate((data.strava as FirestoreIntegrationData).expires_at),
+      athleteId: parseInt((data.strava as FirestoreIntegrationData).athlete_id || '0', 10),
+      createdAt: toDate((data.strava as FirestoreIntegrationData).created_at),
+      lastUsedAt: toDate((data.strava as FirestoreIntegrationData).last_used_at)
     } : undefined
   };
 };
 
 // Pipelines Mapping
 // Pipelines Mapping
-export const mapPipelineToFirestore = (p: PipelineConfig): any => ({
+export const mapPipelineToFirestore = (p: PipelineConfig): Record<string, unknown> => ({
   id: p.id,
   source: p.source,
   destinations: p.destinations,
@@ -200,19 +218,20 @@ export const mapPipelineToFirestore = (p: PipelineConfig): any => ({
   }))
 });
 
-export const mapPipelineFromFirestore = (p: any): PipelineConfig => ({
-  id: p.id,
-  source: p.source,
-  destinations: p.destinations || [],
-  enrichers: (p.enrichers || []).map((e: any) => ({
+export const mapPipelineFromFirestore = (p: Record<string, unknown>): PipelineConfig => ({
+  id: p.id as string,
+  source: p.source as string,
+  destinations: (p.destinations as string[]) || [],
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  enrichers: ((p.enrichers as any[]) || []).map((e: any) => ({
     providerType: e.provider_type || e.providerType,
     inputs: e.inputs || {}
   }))
 });
 
 // Helper for partial execution updates
-export const mapExecutionPartialToFirestore = (data: Partial<ExecutionRecord>): any => {
-  const out: any = {};
+export const mapExecutionPartialToFirestore = (data: Partial<ExecutionRecord>): Record<string, unknown> => {
+  const out: Record<string, unknown> = {};
   if (data.executionId !== undefined) out.execution_id = data.executionId;
   if (data.service !== undefined) out.service = data.service;
   if (data.status !== undefined) out.status = data.status;
@@ -268,8 +287,8 @@ export const processedActivityConverter: FirestoreDataConverter<ProcessedActivit
   }
 };
 
-export const PendingInputToFirestore = (model: PendingInput): Record<string, any> => {
-  const data: any = {
+export const PendingInputToFirestore = (model: PendingInput): Record<string, unknown> => {
+  const data: Record<string, unknown> = {
     activity_id: model.activityId,
     user_id: model.userId,
     status: model.status,
@@ -281,19 +300,21 @@ export const PendingInputToFirestore = (model: PendingInput): Record<string, any
   };
   // If we had original_payload exposed in TS, we'd map it here, but it's often binary or complex structure
   // For now, allow passthrough if it exists on model (duck typing)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ((model as any).originalPayload) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     data.original_payload = (model as any).originalPayload;
   }
   return data;
 };
 
-export const FirestoreToPendingInput = (data: any): PendingInput => {
+export const FirestoreToPendingInput = (data: Record<string, unknown>): PendingInput => {
   return {
-    activityId: data.activity_id,
-    userId: data.user_id,
-    status: data.status,
-    requiredFields: data.required_fields || [],
-    inputData: data.input_data || {},
+    activityId: data.activity_id as string,
+    userId: data.user_id as string,
+    status: data.status as PendingInput_Status,
+    requiredFields: (data.required_fields as string[]) || [],
+    inputData: (data.input_data as Record<string, string>) || {},
     originalPayload: typeof data.original_payload === 'string'
       ? JSON.parse(data.original_payload)
       : data.original_payload, // Handle both JSON string and object

@@ -58,6 +58,7 @@ const logger = winston.createLogger({
         winston.format.timestamp(),
         winston.format.printf(info => {
           // Map to GCP keys
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const gcpInfo: any = {
             timestamp: info.timestamp,
             ...info,
@@ -98,9 +99,12 @@ export interface FrameworkContext {
 
 
 export type FrameworkHandler = (
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   req: any,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   res: any,
   ctx: FrameworkContext
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
 ) => Promise<any>;
 
 export interface CloudFunctionOptions {
@@ -114,6 +118,7 @@ export interface CloudFunctionOptions {
  * Extract metadata from HTTP request
  * Handles both HTTP requests and Pub/Sub messages
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function extractMetadata(req: any): { userId?: string; testRunId?: string; triggerType: string } {
   let userId: string | undefined;
   let testRunId: string | undefined;
@@ -153,6 +158,7 @@ function extractMetadata(req: any): { userId?: string; testRunId?: string; trigg
 }
 
 export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFunctionOptions) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (reqOrEvent: any, resOrContext?: any) => {
     const serviceName = process.env.K_SERVICE || 'unknown-function';
 
@@ -170,6 +176,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       isHttp = true;
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let capturedResponse: any = undefined;
 
     // ADAPT CLOUDEVENT TO REQUEST-LIKE OBJECT
@@ -195,7 +202,9 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Mock Response object for the handler to use without crashing
       res = {
         status: () => res, // Chainable
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         send: (body: any) => { capturedResponse = body; },
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         json: (body: any) => { capturedResponse = body; },
         set: () => { }, // Safe no-op for headers
         headersSent: false
@@ -205,11 +214,13 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       const originalSend = res.send.bind(res);
       const originalJson = res.json.bind(res);
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       res.send = (body: any) => {
         capturedResponse = body;
         return originalSend(body);
       };
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       res.json = (body: any) => {
         capturedResponse = body;
         return originalJson(body);
@@ -400,6 +411,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
 
       preambleLogger.info('Function completed successfully');
 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       // Log execution failure
       preambleLogger.error('Function failed', { error: err.message, stack: err.stack });

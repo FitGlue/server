@@ -11,8 +11,12 @@ import {
     EnricherProviderType,
     db,
     createFitbitClient,
+    UserRecord,
     ExecutionStatus,
-    ActivityType
+    ActivityType,
+    EnricherConfig,
+    PipelineConfig,
+    ExecutionRecord,
 } from '@fitglue/shared';
 
 import * as admin from 'firebase-admin';
@@ -90,17 +94,18 @@ program.command('users:create-auth')
                     password: answers.password,
                 });
                 console.log(`✅ Auth user created successfully: ${userRecord.uid}`);
-            } catch (err: any) {
-                if (err.code === 'auth/uid-already-exists') {
+            } catch (err: unknown) {
+                const e = err as { code?: string };
+                if (e.code === 'auth/uid-already-exists') {
                     console.error('❌ Auth user already exists for this UID.');
-                } else if (err.code === 'auth/email-already-exists') {
+                } else if (e.code === 'auth/email-already-exists') {
                     console.error('❌ Email already in use.');
                 } else {
                     console.error('❌ Error creating auth user:', err);
                 }
             }
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error:', error);
             process.exit(1);
         }
@@ -164,7 +169,7 @@ program.command('users:create')
 
             console.log('User creation complete. Use "users:configure-hevy" or "users:connect" to set up integrations.');
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error creating user:', error);
             process.exit(1);
         }
@@ -194,7 +199,7 @@ program.command('users:configure-hevy')
             await userService.setHevyIntegration(userId, answers.apiKey);
             console.log('Hevy integration configured.');
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error configuring Hevy:', error);
             process.exit(1);
         }
@@ -315,7 +320,7 @@ program.command('users:update')
                 );
                 console.log('Fitbit integration updated.');
             }
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error updating user:', error);
             process.exit(1);
         }
@@ -386,7 +391,7 @@ program.command('fitbit:subscribe')
             console.log('✅ Subscription created successfully!');
             console.log(JSON.stringify(data, null, 2));
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error creating subscription:', error);
             process.exit(1);
         }
@@ -412,7 +417,7 @@ program.command('users:delete')
             await userService.deleteUser(userId);
             // Note: In a real app we might want to recursively delete subcollections or related data
             console.log(`User ${userId} deleted.`);
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error deleting user:', error);
             process.exit(1);
         }
@@ -479,31 +484,32 @@ const formatActivityType = (type: string | number | undefined): string => {
 };
 
 // Helper to format user output
-const formatUserOutput = (user: any) => {
+const formatUserOutput = (user: UserRecord) => {
     // Adapter for legacy format where doc was passed
-    const data = user.data ? user.data() : user;
-    const id = user.id || data.userId || data.user_id;
+    const data = user
 
     if (!data) return;
 
     const integrations = [];
-    if (data.integrations?.hevy?.api_key || data.integrations?.hevy?.apiKey) integrations.push('Hevy');
+    if (data.integrations?.hevy?.apiKey) integrations.push('Hevy');
     if (data.integrations?.strava?.enabled) integrations.push('Strava');
     if (data.integrations?.fitbit?.enabled) integrations.push('Fitbit');
 
-    console.log(`ID: ${id}`);
+    console.log(`ID: ${data.userId}`);
     // Handle created_at (snake) or createdAt (legacy)
-    const createdAt = data.created_at || data.createdAt;
-    console.log(`   Created: ${createdAt?.toDate?.()?.toISOString() || 'Unknown'}`);
+    const createdAt = data.createdAt;
+    console.log(`   Created: ${createdAt || 'Unknown'}`);
     console.log(`   Integrations: ${integrations.join(', ') || 'None'}`);
 
     if (data.pipelines && Array.isArray(data.pipelines) && data.pipelines.length > 0) {
         console.log(`   Pipelines:`);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.pipelines.forEach((p: any, index: number) => {
             console.log(`     #${index + 1} [${p.id}]`);
             console.log(`       Source: ${p.source}`);
             if (p.enrichers && p.enrichers.length > 0) {
                 console.log(`       Enrichers:`);
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 p.enrichers.forEach((e: any, eIdx: number) => {
                     const providerName = getEnricherProviderName(e.provider_type || e.providerType);
                     console.log(`         ${eIdx + 1}. ${providerName}`);
@@ -554,7 +560,7 @@ program.command('users:list')
             console.log('--------------------------------------------------');
             users.forEach(user => formatUserOutput(user));
             console.log('');
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error listing users:', error);
             process.exit(1);
         }
@@ -575,7 +581,7 @@ program.command('users:get')
             console.log('--------------------------------------------------');
             formatUserOutput(user);
             console.log('');
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error getting user:', error);
             process.exit(1);
         }
@@ -648,7 +654,7 @@ program.command('users:connect')
             console.log(`User should visit this URL to authorize ${provider} access.`);
             console.log('After authorization, tokens will be automatically stored in Firestore.\n');
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error generating OAuth URL:', error);
             process.exit(1);
         }
@@ -699,7 +705,7 @@ program.command('users:clean')
             console.log('All users deleted.');
             console.log('All users deleted.');
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error cleaning users:', error);
             process.exit(1);
         }
@@ -731,7 +737,7 @@ program.command('users:add-pipeline')
 
             console.log('\n--- Configure Enrichers (Order Matters) ---');
             while (addMore) {
-                const selectedProviderTypes = enrichers.map((e: any) => e.providerType);
+                const selectedProviderTypes = enrichers.map((e: EnricherConfig) => e.providerType);
                 const availableChoices = getAvailableEnricherChoices(selectedProviderTypes);
 
                 if (availableChoices.length === 0) {
@@ -786,7 +792,7 @@ program.command('users:add-pipeline')
             const id = await userService.addPipeline(userId, sourceAnswers.source, enrichers, destAnswers.destinations);
             console.log(`Pipeline added successfully! ID: ${id}`);
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error adding pipeline:', error);
             process.exit(1);
         }
@@ -815,7 +821,7 @@ program.command('users:remove-pipeline')
                     type: 'list',
                     name: 'pipelineId',
                     message: 'Select pipeline to remove:',
-                    choices: pipelines.map((p: any) => ({
+                    choices: pipelines.map((p: PipelineConfig) => ({
                         name: `${p.source} -> ${p.destinations.join(', ')} [${p.id}]`,
                         value: p.id
                     }))
@@ -836,7 +842,7 @@ program.command('users:remove-pipeline')
                 console.log('Cancelled.');
             }
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error removing pipeline:', error);
             process.exit(1);
         }
@@ -865,7 +871,7 @@ program.command('users:replace-pipeline')
                     type: 'list',
                     name: 'pipelineId',
                     message: 'Select pipeline to replace:',
-                    choices: pipelines.map((p: any) => ({
+                    choices: pipelines.map((p: PipelineConfig) => ({
                         name: `${p.source} -> ${p.destinations.join(', ')} [${p.id}]`,
                         value: p.id
                     }))
@@ -888,7 +894,7 @@ program.command('users:replace-pipeline')
             console.log('\n--- Configure Enrichers (Order Matters) ---');
             // eslint-disable-next-line no-constant-condition
             while (true) {
-                const selectedProviderTypes = enrichers.map((e: any) => e.providerType);
+                const selectedProviderTypes = enrichers.map((e: EnricherConfig) => e.providerType);
                 const availableChoices = getAvailableEnricherChoices(selectedProviderTypes);
 
                 if (availableChoices.length === 0) {
@@ -940,7 +946,7 @@ program.command('users:replace-pipeline')
             await userService.replacePipeline(userId, pipelineId, sourceAnswers.source, enrichers, destAnswers.destinations);
             console.log(`Pipeline ${pipelineId} replaced successfully.`);
 
-        } catch (error) {
+        } catch (error: unknown) {
             console.error('Error replacing pipeline:', error);
             process.exit(1);
         }
@@ -958,14 +964,14 @@ function executionStatusToString(status: number | undefined): string {
 }
 
 // Helper to print execution table uniformly
-function printExecutionTable(executions: { id: string, data: any }[]) {
+function printExecutionTable(executions: { id: string, data: ExecutionRecord }[]) {
     console.log('-------------------------------------------------------------------------------------------------------------------------------------');
     console.log('Timestamp               | ID                                   | Service                   | Status  | Trigger');
     console.log('-------------------------------------------------------------------------------------------------------------------------------------');
     executions.forEach(item => {
         const data = item.data;
         const time = data.timestamp instanceof Date ? data.timestamp.toISOString() :
-            (data.timestamp as any)?.toDate ? (data.timestamp as any).toDate().toISOString() : 'Unknown';
+            (data.timestamp as unknown as { toDate: () => Date })?.toDate ? (data.timestamp as unknown as { toDate: () => Date }).toDate().toISOString() : 'Unknown';
         const status = executionStatusToString(data.status);
         const service = (data.service || 'unknown').padEnd(25);
         const trigger = (data.triggerType || 'N/A').padEnd(7);
@@ -1006,8 +1012,12 @@ program
             console.log('\nFound ' + executions.length + ' executions:');
             printExecutionTable(executions);
 
-        } catch (error: any) {
-            console.error('Error listing executions:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error listing executions: ${error.message}`);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1057,8 +1067,12 @@ program
                 process.exit(0);
             });
 
-        } catch (error: any) {
-            console.error('Error starting watch:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error starting watch: ${error.message}`);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1084,8 +1098,12 @@ program
             const latest = executions[0];
             printExecutionDetails(latest.id, latest.data, false);
 
-        } catch (error: any) {
-            console.error('Error fetching execution:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error fetching execution: ${error.message}`);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1132,14 +1150,18 @@ program
                 process.exit(0);
             });
 
-        } catch (error: any) {
-            console.error('Error starting watch:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error starting watch: ${error.message}`);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
 
 // Recursively truncate large arrays/objects for display
-function truncateData(obj: any, verbose: boolean = false, depth: number = 0): any {
+function truncateData(obj: unknown, verbose: boolean = false, depth: number = 0): unknown {
     if (verbose) return obj;
     if (depth > 10) return '[Max Depth]';
     if (!obj) return obj;
@@ -1154,9 +1176,9 @@ function truncateData(obj: any, verbose: boolean = false, depth: number = 0): an
         return obj.map(item => truncateData(item, verbose, depth + 1));
     }
 
-    if (typeof obj === 'object') {
-        const newObj: any = {};
-        for (const [key, value] of Object.entries(obj)) {
+    if (typeof obj === 'object' && obj !== null) {
+        const newObj: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
             // Special handling for large arrays commonly found in FIT data
             if (['sessions', 'laps', 'records', 'points'].includes(key) && Array.isArray(value)) {
                 newObj[key] = truncateData(value, verbose, depth + 1);
@@ -1171,7 +1193,7 @@ function truncateData(obj: any, verbose: boolean = false, depth: number = 0): an
 }
 
 // Helper to print full execution details
-function printExecutionDetails(executionId: string, data: any, verbose: boolean) {
+function printExecutionDetails(executionId: string, data: ExecutionRecord, verbose: boolean) {
     console.log('\n==========================================');
     console.log('EXECUTION DETAILS');
     console.log('==========================================');
@@ -1236,7 +1258,7 @@ function printExecutionDetails(executionId: string, data: any, verbose: boolean)
     // Raw metadata dump if needed
     if (Object.keys(data).some(k => !['executionId', 'service', 'status', 'timestamp', 'userId', 'triggerType', 'startTime', 'endTime', 'errorMessage', 'inputsJson', 'outputsJson', 'testRunId'].includes(k))) {
         console.log('\n[OTHER METADATA]');
-        const other: any = { ...data };
+        const other: Record<string, unknown> = { ...data } as unknown as Record<string, unknown>;
         delete other.executionId;
         delete other.service;
         delete other.status;
@@ -1269,8 +1291,12 @@ program
 
             printExecutionDetails(executionId, execution, options.verbose || false);
 
-        } catch (error: any) {
-            console.error('Error getting execution:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error getting execution: ${error.message}`);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1295,9 +1321,13 @@ program
             });
 
             console.log('Execution created successfully.');
-        } catch (error: any) {
-            console.error('Error creating execution:', error.message);
-            console.error('Stack:', error.stack);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error creating execution: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1313,7 +1343,7 @@ program
         try {
             console.log(`Updating execution ${executionId}...`);
 
-            const updateData: any = {
+            const updateData: Record<string, unknown> = {
                 status: parseInt(options.status, 10)
             };
 
@@ -1333,9 +1363,13 @@ program
             await executionService.update(executionId, updateData);
 
             console.log('Execution updated successfully.');
-        } catch (error: any) {
-            console.error('Error updating execution:', error.message);
-            console.error('Stack:', error.stack);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error updating execution: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1376,15 +1410,20 @@ program
             const deletedCount = await executionService.deleteAllExecutions();
             console.log(`Successfully deleted ${deletedCount} executions.`);
 
-        } catch (error: any) {
-            console.error('Error cleaning executions:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error cleaning executions: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
 
 // --- Bucket Commands ---
 
-const formatBucket = (bucket: any) => {
+const formatBucket = (bucket: { name: string; metadata: BucketMetadata; }): void => {
     console.log(`Name: ${bucket.name}`);
     console.log(`Location: ${bucket.metadata.location}`);
     console.log(`Storage Class: ${bucket.metadata.storageClass}`);
@@ -1416,8 +1455,13 @@ program
             });
             console.log('');
 
-        } catch (error: any) {
-            console.error('Error listing buckets:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error listing buckets: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1447,8 +1491,13 @@ program
             formatBucket({ name: bucketName, metadata });
             console.log('');
 
-        } catch (error: any) {
-            console.error('Error getting bucket:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error getting bucket: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1528,8 +1577,13 @@ program
             formatBucket({ name: bucketName, metadata });
             console.log('');
 
-        } catch (error: any) {
-            console.error('Error getting bucket from execution:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error getting bucket from execution: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1603,8 +1657,13 @@ program
             await file.download({ destination: destPath });
             console.log('Download complete.');
 
-        } catch (error: any) {
-            console.error('Error downloading file:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error downloading file: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
@@ -1623,13 +1682,13 @@ program
             const uris = new Set<string>();
 
             // Recursive function to find gs:// URIs in objects/strings
-            const findUris = (obj: any) => {
+            const findUris = (obj: unknown) => {
                 if (typeof obj === 'string') {
                     if (obj.startsWith('gs://')) {
                         uris.add(obj);
                     }
                 } else if (typeof obj === 'object' && obj !== null) {
-                    Object.values(obj).forEach(findUris);
+                    Object.values(obj as Record<string, unknown>).forEach(findUris);
                 }
             };
 
@@ -1700,14 +1759,20 @@ program
             await file.download({ destination: destPath });
             console.log('Download complete.');
 
-        } catch (error: any) {
-            console.error('Error downloading from execution:', error.message);
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error downloading from execution: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
             process.exit(1);
         }
     });
 
 // Register replay commands
 import { registerReplayCommands } from './commands/replay';
+import { BucketMetadata } from '@google-cloud/storage';
 registerReplayCommands(program);
 
 program.parse();

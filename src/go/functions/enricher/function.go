@@ -120,12 +120,12 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 		if ok := isRetryable(err); ok {
 
 			if isLagRetry {
-			fwCtx.Logger.Warn("Lag Retry failed (will retry with backoff)", "error", err)
-			// ACK the message and let Pub/Sub retry policy handle backoff
-			return map[string]interface{}{
-				"status": "STATUS_LAGGED_RETRY",
-				"error":  err.Error(),
-			}, nil // ACK message to allow Pub/Sub retry policy to handle backoff
+				fwCtx.Logger.Warn("Lag Retry failed (will retry with backoff)", "error", err)
+				// ACK the message and let Pub/Sub retry policy handle backoff
+				return map[string]interface{}{
+					"status": "STATUS_LAGGED_RETRY",
+					"error":  err.Error(),
+				}, nil // ACK message to allow Pub/Sub retry policy to handle backoff
 			} else {
 				// Preserve the original error before it gets shadowed
 				originalErr := err

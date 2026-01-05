@@ -1,5 +1,6 @@
 import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   const { stores, logger } = ctx;
 
@@ -83,7 +84,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     // Redirect to success page
     res.redirect(`${process.env.BASE_URL}/auth/success?provider=fitbit`);
 
-  } catch (error) {
+  } catch (error: unknown) {
     logger.error('Error processing Fitbit OAuth callback', { error });
     res.redirect(`${process.env.BASE_URL}/auth/error?reason=server_error`);
   }

@@ -59,8 +59,9 @@ export const waitlistHandler = async (req: functions.Request, res: functions.Res
 
     console.log(`Waitlist entry added for: ${maskEmail(normalizedEmail)}`);
     res.status(200).json({ success: true, message: 'Thanks for joining!' });
-  } catch (error: any) {
-    if (error.code === 6 || error.message.includes('ALREADY_EXISTS')) {
+  } catch (error: unknown) {
+    const e = error as { code?: number, message?: string };
+    if (e.code === 6 || e.message?.includes('ALREADY_EXISTS')) {
       console.log(`Duplicate waitlist attempt for: ${maskEmail(normalizedEmail)}`);
       res.status(409).json({ success: false, error: "You're already on the waitlist" });
       return;

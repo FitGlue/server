@@ -5,8 +5,9 @@ import * as admin from 'firebase-admin';
 export class FirebaseAuthStrategy implements AuthStrategy {
   name = 'firebase';
 
-  async authenticate(req: any, ctx: FrameworkContext): Promise<AuthResult | null> {
-    const authHeader = req.headers?.authorization;
+  async authenticate(req: { headers?: Record<string, string | string[] | undefined> }, ctx: FrameworkContext): Promise<AuthResult | null> {
+    const authHeaderRaw = req.headers?.authorization;
+    const authHeader = Array.isArray(authHeaderRaw) ? authHeaderRaw[0] : authHeaderRaw;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return null;
     }

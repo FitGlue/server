@@ -4,6 +4,7 @@ import { AuthStrategy, AuthResult, FrameworkContext } from '@fitglue/shared';
 export class FitbitVerificationStrategy implements AuthStrategy {
   readonly name = 'fitbit_verification_auth';
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async authenticate(req: any, ctx: FrameworkContext): Promise<AuthResult | null> {
     const { logger } = ctx;
 

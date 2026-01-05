@@ -72,8 +72,12 @@ export function registerReplayCommands(program: Command) {
       let subscription: string;
       try {
         subscription = getSubscriptionName(execution.service);
-      } catch (error: any) {
-        console.error(`❌ ${error.message}`);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error(`❌ ${error.message}`);
+        } else {
+          console.error(`❌ An unknown error occurred`);
+        }
         process.exit(1);
       }
 
@@ -102,8 +106,12 @@ export function registerReplayCommands(program: Command) {
         console.log(`\nExecuting: ${cmd}`);
         execSync(cmd, { stdio: 'inherit' });
         console.log('\n✅ Replay initiated. Check logs for new execution.');
-      } catch (error: any) {
-        console.error('❌ Failed to replay:', error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('❌ Failed to replay:', error.message);
+        } else {
+          console.error('❌ Failed to replay: Unknown error');
+        }
         process.exit(1);
       }
     });
@@ -194,8 +202,12 @@ export function registerReplayCommands(program: Command) {
           console.log(`⚠️  Response: ${response.status} ${response.statusText}`);
           console.log('Response data:', response.data);
         }
-      } catch (error: any) {
-        console.error('❌ Failed:', error.message);
+      } catch (error: unknown) {
+        if (error instanceof Error) {
+          console.error('❌ Failed:', error.message);
+        } else {
+          console.error('❌ Failed: Unknown error');
+        }
         process.exit(1);
       }
     });

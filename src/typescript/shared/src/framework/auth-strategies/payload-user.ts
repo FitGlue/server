@@ -12,11 +12,12 @@ export class PayloadUserStrategy implements AuthStrategy {
   name = 'payload_user';
 
   constructor(
-    private resolveUser: (payload: any, ctx: FrameworkContext) => Promise<string | null>
+    private resolveUser: (payload: unknown, ctx: FrameworkContext) => Promise<string | null>
   ) { }
 
-  async authenticate(req: any, ctx: FrameworkContext): Promise<AuthResult | null> {
-    const userId = await this.resolveUser(req.body, ctx);
+  async authenticate(req: unknown, ctx: FrameworkContext): Promise<AuthResult | null> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const userId = await this.resolveUser((req as any).body, ctx);
     if (!userId) {
       return null;
     }
