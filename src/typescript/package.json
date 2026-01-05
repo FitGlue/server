@@ -10,7 +10,8 @@
     "auth-hooks",
     "waitlist-handler",
     "mcp-server",
-    "inputs-handler"
+    "inputs-handler",
+    "activities-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

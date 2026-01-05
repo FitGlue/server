@@ -108,3 +108,9 @@ func (a *FirestoreAdapter) SetCounter(ctx context.Context, userId string, counte
 	// Set (overwrite/create)
 	return a.storage.Counters(userId).Doc(counter.Id).Set(ctx, counter)
 }
+
+// --- Activities ---
+
+func (a *FirestoreAdapter) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
+	return a.storage.Activities(userId).Doc(activity.ActivityId).Set(ctx, activity)
+}

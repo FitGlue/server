@@ -2,8 +2,9 @@ syntax = "proto3";
 package fitglue;
 
 import "google/protobuf/timestamp.proto";
+import "standardized_activity.proto";
 
-option go_package = "fitglue/pkg/shared/pb";
+option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
 
 message UserRecord {
   string user_id = 1;
@@ -124,4 +125,16 @@ message Counter {
   string id = 1; // Key, e.g. "parkrun_bushy"
   int64 count = 2;
   google.protobuf.Timestamp last_updated = 3;
+}
+
+message SynchronizedActivity {
+  string activity_id = 1;
+  string title = 2;
+  string description = 3;
+  ActivityType type = 4;
+  string source = 5; // e.g. "SOURCE_HEVY"
+  google.protobuf.Timestamp start_time = 6;
+  map<string, string> destinations = 7; // destination -> external_id
+  google.protobuf.Timestamp synced_at = 8;
+  string pipeline_id = 9;
 }

@@ -13,6 +13,8 @@ import (
 	"sync"
 	"time"
 
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -164,6 +166,29 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		}
 
 		fwCtx.Logger.Info("Upload complete", "upload_id", uploadResp.ID, "activity_id", uploadResp.ActivityID, "status", uploadResp.Status)
+
+		// Persist SynchronizedActivity if successful
+		if uploadResp.ActivityID != 0 {
+			syncedActivity := &pb.SynchronizedActivity{
+				ActivityId:  eventPayload.ActivityId,
+				Title:       eventPayload.Name,
+				Description: eventPayload.Description,
+				Type:        eventPayload.ActivityType,
+				Source:      "SOURCE_FITFILE", // Currently we only have this pipeline, can improve later
+				StartTime:   eventPayload.StartTime,
+				SyncedAt:    timestamppb.Now(),
+				PipelineId:  eventPayload.PipelineId,
+				Destinations: map[string]string{
+					"strava": fmt.Sprintf("%d", uploadResp.ActivityID),
+				},
+			}
+			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
+				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
+				// Don't fail the function, this is just recording history
+			} else {
+				fwCtx.Logger.Info("Persisted synchronized activity", "activity_id", eventPayload.ActivityId)
+			}
+		}
 
 		status := "SUCCESS"
 		if uploadResp.Error != "" {

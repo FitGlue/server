@@ -325,3 +325,34 @@ export const FirestoreToPendingInput = (data: Record<string, unknown>): PendingI
     completedAt: toDate(data.completed_at)
   };
 };
+
+export const synchronizedActivityConverter: FirestoreDataConverter<import('../../types/pb/user').SynchronizedActivity> = {
+  toFirestore(model: import('../../types/pb/user').SynchronizedActivity): FirebaseFirestore.DocumentData {
+    const data: FirebaseFirestore.DocumentData = {
+      activity_id: model.activityId,
+      title: model.title,
+      description: model.description,
+      type: model.type,
+      source: model.source,
+      start_time: model.startTime,
+      synced_at: model.syncedAt,
+      pipeline_id: model.pipelineId,
+      destinations: model.destinations
+    };
+    return data;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot): import('../../types/pb/user').SynchronizedActivity {
+    const data = snapshot.data();
+    return {
+      activityId: data.activity_id,
+      title: data.title,
+      description: data.description,
+      type: data.type,
+      source: data.source,
+      startTime: toDate(data.start_time),
+      syncedAt: toDate(data.synced_at),
+      pipelineId: data.pipeline_id,
+      destinations: data.destinations || {}
+    };
+  }
+};

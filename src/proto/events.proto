@@ -5,6 +5,9 @@ package fitglue.events;
 option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
 
 import "google/protobuf/descriptor.proto";
+import "google/protobuf/timestamp.proto";
+import "standardized_activity.proto";
+import "activity.proto";
 
 extend google.protobuf.EnumValueOptions {
   string ce_type = 50000;
@@ -37,4 +40,32 @@ enum CloudEventSource {
   CLOUD_EVENT_SOURCE_ENRICHER = 4 [(ce_source) = "/core/enricher"];
   CLOUD_EVENT_SOURCE_ROUTER = 5 [(ce_source) = "/core/router"];
   CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6 [(ce_source) = "/core/inputs-handler"];
+}
+
+// Event payload for CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED
+// Also used contextually for Upload Trigger
+message EnrichedActivityEvent {
+  string activity_id = 1;
+  string user_id = 2;
+  string pipeline_id = 3;
+  string fit_file_uri = 4;
+  string name = 5;
+  string description = 6;
+  ActivityType activity_type = 7;
+  google.protobuf.Timestamp start_time = 8;
+
+  // Restored fields from activity.proto consolidation:
+  ActivitySource source = 9;
+  StandardizedActivity activity_data = 10;
+  repeated string applied_enrichments = 11;
+  map<string, string> enrichment_metadata = 12;
+  repeated string destinations = 13;
+  repeated string tags = 14;
+}
+
+message MessagePublishedData {
+  bytes data = 1;
+  map<string, string> attributes = 2;
+  string message_id = 3;
+  string publish_time = 4;
 }

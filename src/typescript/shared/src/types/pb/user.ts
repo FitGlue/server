@@ -5,6 +5,7 @@
 // source: user.proto
 
 /* eslint-disable */
+import type { ActivityType } from "./standardized_activity";
 
 export const protobufPackage = "fitglue";
 
@@ -154,4 +155,25 @@ export interface Counter {
   id: string;
   count: number;
   lastUpdated?: Date | undefined;
+}
+
+export interface SynchronizedActivity {
+  activityId: string;
+  title: string;
+  description: string;
+  type: ActivityType;
+  /** e.g. "SOURCE_HEVY" */
+  source: string;
+  startTime?:
+    | Date
+    | undefined;
+  /** destination -> external_id */
+  destinations: { [key: string]: string };
+  syncedAt?: Date | undefined;
+  pipelineId: string;
+}
+
+export interface SynchronizedActivity_DestinationsEntry {
+  key: string;
+  value: string;
 }

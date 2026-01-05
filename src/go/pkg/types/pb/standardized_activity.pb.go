@@ -988,7 +988,7 @@ const file_standardized_activity_proto_rawDesc = "" +
 	"\x16MUSCLE_GROUP_FULL_BODY\x10\x13\x12\x16\n" +
 	"\x12MUSCLE_GROUP_OTHER\x10\x14:D\n" +
 	"\vstrava_name\x12!.google.protobuf.EnumValueOptions\x18چ\x03 \x01(\tR\n" +
-	"stravaNameB\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
+	"stravaNameB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_standardized_activity_proto_rawDescOnce sync.Once

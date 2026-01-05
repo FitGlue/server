@@ -8,6 +8,7 @@ package pb
 
 import (
 	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
+	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -152,6 +153,225 @@ func (CloudEventSource) EnumDescriptor() ([]byte, []int) {
 	return file_events_proto_rawDescGZIP(), []int{1}
 }
 
+// Event payload for CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED
+// Also used contextually for Upload Trigger
+type EnrichedActivityEvent struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	ActivityId   string                 `protobuf:"bytes,1,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
+	UserId       string                 `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	PipelineId   string                 `protobuf:"bytes,3,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`
+	FitFileUri   string                 `protobuf:"bytes,4,opt,name=fit_file_uri,json=fitFileUri,proto3" json:"fit_file_uri,omitempty"`
+	Name         string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	Description  string                 `protobuf:"bytes,6,opt,name=description,proto3" json:"description,omitempty"`
+	ActivityType ActivityType           `protobuf:"varint,7,opt,name=activity_type,json=activityType,proto3,enum=fitglue.ActivityType" json:"activity_type,omitempty"`
+	StartTime    *timestamp.Timestamp   `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	// Restored fields from activity.proto consolidation:
+	Source             ActivitySource        `protobuf:"varint,9,opt,name=source,proto3,enum=fitglue.ActivitySource" json:"source,omitempty"`
+	ActivityData       *StandardizedActivity `protobuf:"bytes,10,opt,name=activity_data,json=activityData,proto3" json:"activity_data,omitempty"`
+	AppliedEnrichments []string              `protobuf:"bytes,11,rep,name=applied_enrichments,json=appliedEnrichments,proto3" json:"applied_enrichments,omitempty"`
+	EnrichmentMetadata map[string]string     `protobuf:"bytes,12,rep,name=enrichment_metadata,json=enrichmentMetadata,proto3" json:"enrichment_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Destinations       []string              `protobuf:"bytes,13,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	Tags               []string              `protobuf:"bytes,14,rep,name=tags,proto3" json:"tags,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *EnrichedActivityEvent) Reset() {
+	*x = EnrichedActivityEvent{}
+	mi := &file_events_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnrichedActivityEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnrichedActivityEvent) ProtoMessage() {}
+
+func (x *EnrichedActivityEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_events_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnrichedActivityEvent.ProtoReflect.Descriptor instead.
+func (*EnrichedActivityEvent) Descriptor() ([]byte, []int) {
+	return file_events_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *EnrichedActivityEvent) GetActivityId() string {
+	if x != nil {
+		return x.ActivityId
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetPipelineId() string {
+	if x != nil {
+		return x.PipelineId
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetFitFileUri() string {
+	if x != nil {
+		return x.FitFileUri
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *EnrichedActivityEvent) GetActivityType() ActivityType {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+}
+
+func (x *EnrichedActivityEvent) GetStartTime() *timestamp.Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+func (x *EnrichedActivityEvent) GetSource() ActivitySource {
+	if x != nil {
+		return x.Source
+	}
+	return ActivitySource_SOURCE_UNKNOWN
+}
+
+func (x *EnrichedActivityEvent) GetActivityData() *StandardizedActivity {
+	if x != nil {
+		return x.ActivityData
+	}
+	return nil
+}
+
+func (x *EnrichedActivityEvent) GetAppliedEnrichments() []string {
+	if x != nil {
+		return x.AppliedEnrichments
+	}
+	return nil
+}
+
+func (x *EnrichedActivityEvent) GetEnrichmentMetadata() map[string]string {
+	if x != nil {
+		return x.EnrichmentMetadata
+	}
+	return nil
+}
+
+func (x *EnrichedActivityEvent) GetDestinations() []string {
+	if x != nil {
+		return x.Destinations
+	}
+	return nil
+}
+
+func (x *EnrichedActivityEvent) GetTags() []string {
+	if x != nil {
+		return x.Tags
+	}
+	return nil
+}
+
+type MessagePublishedData struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Attributes    map[string]string      `protobuf:"bytes,2,rep,name=attributes,proto3" json:"attributes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	MessageId     string                 `protobuf:"bytes,3,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	PublishTime   string                 `protobuf:"bytes,4,opt,name=publish_time,json=publishTime,proto3" json:"publish_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *MessagePublishedData) Reset() {
+	*x = MessagePublishedData{}
+	mi := &file_events_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *MessagePublishedData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*MessagePublishedData) ProtoMessage() {}
+
+func (x *MessagePublishedData) ProtoReflect() protoreflect.Message {
+	mi := &file_events_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use MessagePublishedData.ProtoReflect.Descriptor instead.
+func (*MessagePublishedData) Descriptor() ([]byte, []int) {
+	return file_events_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *MessagePublishedData) GetData() []byte {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
+func (x *MessagePublishedData) GetAttributes() map[string]string {
+	if x != nil {
+		return x.Attributes
+	}
+	return nil
+}
+
+func (x *MessagePublishedData) GetMessageId() string {
+	if x != nil {
+		return x.MessageId
+	}
+	return ""
+}
+
+func (x *MessagePublishedData) GetPublishTime() string {
+	if x != nil {
+		return x.PublishTime
+	}
+	return ""
+}
+
 var file_events_proto_extTypes = []protoimpl.ExtensionInfo{
 	{
 		ExtendedType:  (*descriptor.EnumValueOptions)(nil),
@@ -183,7 +403,41 @@ var File_events_proto protoreflect.FileDescriptor
 
 const file_events_proto_rawDesc = "" +
 	"\n" +
-	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto*\xdc\x03\n" +
+	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\"\xd6\x05\n" +
+	"\x15EnrichedActivityEvent\x12\x1f\n" +
+	"\vactivity_id\x18\x01 \x01(\tR\n" +
+	"activityId\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vpipeline_id\x18\x03 \x01(\tR\n" +
+	"pipelineId\x12 \n" +
+	"\ffit_file_uri\x18\x04 \x01(\tR\n" +
+	"fitFileUri\x12\x12\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x06 \x01(\tR\vdescription\x12:\n" +
+	"\ractivity_type\x18\a \x01(\x0e2\x15.fitglue.ActivityTypeR\factivityType\x129\n" +
+	"\n" +
+	"start_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12/\n" +
+	"\x06source\x18\t \x01(\x0e2\x17.fitglue.ActivitySourceR\x06source\x12B\n" +
+	"\ractivity_data\x18\n" +
+	" \x01(\v2\x1d.fitglue.StandardizedActivityR\factivityData\x12/\n" +
+	"\x13applied_enrichments\x18\v \x03(\tR\x12appliedEnrichments\x12n\n" +
+	"\x13enrichment_metadata\x18\f \x03(\v2=.fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntryR\x12enrichmentMetadata\x12\"\n" +
+	"\fdestinations\x18\r \x03(\tR\fdestinations\x12\x12\n" +
+	"\x04tags\x18\x0e \x03(\tR\x04tags\x1aE\n" +
+	"\x17EnrichmentMetadataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x81\x02\n" +
+	"\x14MessagePublishedData\x12\x12\n" +
+	"\x04data\x18\x01 \x01(\fR\x04data\x12T\n" +
+	"\n" +
+	"attributes\x18\x02 \x03(\v24.fitglue.events.MessagePublishedData.AttributesEntryR\n" +
+	"attributes\x12\x1d\n" +
+	"\n" +
+	"message_id\x18\x03 \x01(\tR\tmessageId\x12!\n" +
+	"\fpublish_time\x18\x04 \x01(\tR\vpublishTime\x1a=\n" +
+	"\x0fAttributesEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xdc\x03\n" +
 	"\x0eCloudEventType\x12 \n" +
 	"\x1cCLOUD_EVENT_TYPE_UNSPECIFIED\x10\x00\x12G\n" +
 	"!CLOUD_EVENT_TYPE_ACTIVITY_CREATED\x10\x01\x1a \x82\xb5\x18\x1ccom.fitglue.activity.created\x12I\n" +
@@ -216,19 +470,34 @@ func file_events_proto_rawDescGZIP() []byte {
 }
 
 var file_events_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_events_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_events_proto_goTypes = []any{
 	(CloudEventType)(0),                 // 0: fitglue.events.CloudEventType
 	(CloudEventSource)(0),               // 1: fitglue.events.CloudEventSource
-	(*descriptor.EnumValueOptions)(nil), // 2: google.protobuf.EnumValueOptions
+	(*EnrichedActivityEvent)(nil),       // 2: fitglue.events.EnrichedActivityEvent
+	(*MessagePublishedData)(nil),        // 3: fitglue.events.MessagePublishedData
+	nil,                                 // 4: fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntry
+	nil,                                 // 5: fitglue.events.MessagePublishedData.AttributesEntry
+	(ActivityType)(0),                   // 6: fitglue.ActivityType
+	(*timestamp.Timestamp)(nil),         // 7: google.protobuf.Timestamp
+	(ActivitySource)(0),                 // 8: fitglue.ActivitySource
+	(*StandardizedActivity)(nil),        // 9: fitglue.StandardizedActivity
+	(*descriptor.EnumValueOptions)(nil), // 10: google.protobuf.EnumValueOptions
 }
 var file_events_proto_depIdxs = []int32{
-	2, // 0: fitglue.events.ce_type:extendee -> google.protobuf.EnumValueOptions
-	2, // 1: fitglue.events.ce_source:extendee -> google.protobuf.EnumValueOptions
-	2, // [2:2] is the sub-list for method output_type
-	2, // [2:2] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	0, // [0:2] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	6,  // 0: fitglue.events.EnrichedActivityEvent.activity_type:type_name -> fitglue.ActivityType
+	7,  // 1: fitglue.events.EnrichedActivityEvent.start_time:type_name -> google.protobuf.Timestamp
+	8,  // 2: fitglue.events.EnrichedActivityEvent.source:type_name -> fitglue.ActivitySource
+	9,  // 3: fitglue.events.EnrichedActivityEvent.activity_data:type_name -> fitglue.StandardizedActivity
+	4,  // 4: fitglue.events.EnrichedActivityEvent.enrichment_metadata:type_name -> fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntry
+	5,  // 5: fitglue.events.MessagePublishedData.attributes:type_name -> fitglue.events.MessagePublishedData.AttributesEntry
+	10, // 6: fitglue.events.ce_type:extendee -> google.protobuf.EnumValueOptions
+	10, // 7: fitglue.events.ce_source:extendee -> google.protobuf.EnumValueOptions
+	8,  // [8:8] is the sub-list for method output_type
+	8,  // [8:8] is the sub-list for method input_type
+	8,  // [8:8] is the sub-list for extension type_name
+	6,  // [6:8] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_events_proto_init() }
@@ -236,19 +505,22 @@ func file_events_proto_init() {
 	if File_events_proto != nil {
 		return
 	}
+	file_standardized_activity_proto_init()
+	file_activity_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_events_proto_rawDesc), len(file_events_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   0,
+			NumMessages:   4,
 			NumExtensions: 2,
 			NumServices:   0,
 		},
 		GoTypes:           file_events_proto_goTypes,
 		DependencyIndexes: file_events_proto_depIdxs,
 		EnumInfos:         file_events_proto_enumTypes,
+		MessageInfos:      file_events_proto_msgTypes,
 		ExtensionInfos:    file_events_proto_extTypes,
 	}.Build()
 	File_events_proto = out.File

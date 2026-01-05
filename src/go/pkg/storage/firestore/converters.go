@@ -406,3 +406,62 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 	}
 	return p
 }
+
+// --- SynchronizedActivity Converters ---
+
+func SynchronizedActivityToFirestore(s *pb.SynchronizedActivity) map[string]interface{} {
+	m := map[string]interface{}{
+		"activity_id": s.ActivityId,
+		"title":       s.Title,
+		"description": s.Description,
+		"type":        int32(s.Type),
+		"source":      s.Source,
+		"start_time":  s.StartTime.AsTime(),
+		"synced_at":   s.SyncedAt.AsTime(),
+		"pipeline_id": s.PipelineId,
+	}
+
+	if s.Destinations != nil {
+		m["destinations"] = s.Destinations
+	}
+
+	return m
+}
+
+func FirestoreToSynchronizedActivity(m map[string]interface{}) *pb.SynchronizedActivity {
+	s := &pb.SynchronizedActivity{
+		ActivityId:  getString(m, "activity_id"),
+		Title:       getString(m, "title"),
+		Description: getString(m, "description"),
+		Source:      getString(m, "source"),
+		StartTime:   getTime(m, "start_time"),
+		SyncedAt:    getTime(m, "synced_at"),
+		PipelineId:  getString(m, "pipeline_id"),
+	}
+
+	if v, ok := m["type"]; ok {
+		// Handle int or string legacy
+		switch val := v.(type) {
+		case int64:
+			s.Type = pb.ActivityType(val)
+		case int:
+			s.Type = pb.ActivityType(int32(val))
+		case string:
+			if enumVal, ok := pb.ActivityType_value[val]; ok {
+				s.Type = pb.ActivityType(enumVal)
+			}
+		}
+	}
+
+	if v, ok := m["destinations"].(map[string]interface{}); ok {
+		dests := make(map[string]string)
+		for k, val := range v {
+			if str, ok := val.(string); ok {
+				dests[k] = str
+			}
+		}
+		s.Destinations = dests
+	}
+
+	return s
+}

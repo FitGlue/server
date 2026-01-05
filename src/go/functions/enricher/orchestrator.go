@@ -223,6 +223,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			EnrichmentMetadata: make(map[string]string),
 			Destinations:       pipeline.Destinations,
 			PipelineId:         pipeline.ID,
+			StartTime:          payload.StandardizedActivity.Sessions[0].StartTime,
 		}
 
 		if payload.StandardizedActivity != nil {

@@ -14,8 +14,9 @@ import (
 
 // MockDB for Wrapper Test
 type MockDB struct {
-	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
-	UpdateExecutionFunc func(ctx context.Context, id string, data map[string]interface{}) error
+	SetExecutionFunc            func(ctx context.Context, record *pb.ExecutionRecord) error
+	UpdateExecutionFunc         func(ctx context.Context, id string, data map[string]interface{}) error
+	SetSynchronizedActivityFunc func(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
 }
 
 func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -52,6 +53,9 @@ func (m *MockDB) GetCounter(ctx context.Context, userId string, id string) (*pb.
 	return nil, nil
 }
 func (m *MockDB) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
+	return nil
+}
+func (m *MockDB) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
 	return nil
 }
 

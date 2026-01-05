@@ -277,7 +277,7 @@ const file_execution_proto_rawDesc = "" +
 	"\rSTATUS_FAILED\x10\x03\x12\x12\n" +
 	"\x0eSTATUS_PENDING\x10\x04\x12\x12\n" +
 	"\x0eSTATUS_WAITING\x10\x05\x12\x17\n" +
-	"\x13STATUS_LAGGED_RETRY\x10\x06B\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
+	"\x13STATUS_LAGGED_RETRY\x10\x06B7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_execution_proto_rawDescOnce sync.Once

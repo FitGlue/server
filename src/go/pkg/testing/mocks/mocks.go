@@ -20,8 +20,9 @@ type MockDatabase struct {
 	UpdatePendingInputFunc func(ctx context.Context, id string, data map[string]interface{}) error
 	ListPendingInputsFunc  func(ctx context.Context, userID string) ([]*pb.PendingInput, error)
 
-	GetCounterFunc func(ctx context.Context, userId string, id string) (*pb.Counter, error)
-	SetCounterFunc func(ctx context.Context, userId string, counter *pb.Counter) error
+	GetCounterFunc              func(ctx context.Context, userId string, id string) (*pb.Counter, error)
+	SetCounterFunc              func(ctx context.Context, userId string, counter *pb.Counter) error
+	SetSynchronizedActivityFunc func(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -87,6 +88,13 @@ func (m *MockDatabase) GetCounter(ctx context.Context, userId string, id string)
 func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
 	if m.SetCounterFunc != nil {
 		return m.SetCounterFunc(ctx, userId, counter)
+	}
+	return nil
+}
+
+func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
+	if m.SetSynchronizedActivityFunc != nil {
+		return m.SetSynchronizedActivityFunc(ctx, userId, activity)
 	}
 	return nil
 }

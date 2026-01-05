@@ -5,6 +5,8 @@
 // source: events.proto
 
 /* eslint-disable */
+import type { ActivitySource } from "./activity";
+import type { ActivityType, StandardizedActivity } from "./standardized_activity";
 
 export const protobufPackage = "fitglue.events";
 
@@ -36,4 +38,45 @@ export enum CloudEventSource {
   CLOUD_EVENT_SOURCE_ROUTER = 5,
   CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6,
   UNRECOGNIZED = -1,
+}
+
+/**
+ * Event payload for CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED
+ * Also used contextually for Upload Trigger
+ */
+export interface EnrichedActivityEvent {
+  activityId: string;
+  userId: string;
+  pipelineId: string;
+  fitFileUri: string;
+  name: string;
+  description: string;
+  activityType: ActivityType;
+  startTime?:
+    | Date
+    | undefined;
+  /** Restored fields from activity.proto consolidation: */
+  source: ActivitySource;
+  activityData?: StandardizedActivity | undefined;
+  appliedEnrichments: string[];
+  enrichmentMetadata: { [key: string]: string };
+  destinations: string[];
+  tags: string[];
+}
+
+export interface EnrichedActivityEvent_EnrichmentMetadataEntry {
+  key: string;
+  value: string;
+}
+
+export interface MessagePublishedData {
+  data: Uint8Array;
+  attributes: { [key: string]: string };
+  messageId: string;
+  publishTime: string;
+}
+
+export interface MessagePublishedData_AttributesEntry {
+  key: string;
+  value: string;
 }

@@ -3,7 +3,7 @@ package fitglue;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "fitglue/pkg/shared/pb";
+option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
 
 message WaitlistEntry {
   string email = 1;

@@ -12,7 +12,7 @@ export { ExecutionRecord, ExecutionStatus } from './types/pb/execution';
 export { CloudEventType, CloudEventSource } from './types/pb/events';
 export * from './types/events-helper';
 export { ApiKeyRecord } from './types/pb/auth';
-export { UserRecord, UserIntegrations, HevyIntegration, EnricherProviderType, EnricherConfig, ProcessedActivityRecord, PipelineConfig } from './types/pb/user';
+export { UserRecord, UserIntegrations, HevyIntegration, EnricherProviderType, EnricherConfig, ProcessedActivityRecord, PipelineConfig, SynchronizedActivity } from './types/pb/user';
 export { FitbitNotification } from './types/pb/fitbit';
 
 // Services

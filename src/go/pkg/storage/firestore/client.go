@@ -49,3 +49,12 @@ func (c *Client) Counters(userId string) *Collection[pb.Counter] {
 		FromFirestore: FirestoreToCounter,
 	}
 }
+
+// Activities are sub-collections of Users: users/{uid}/activities/{id}
+func (c *Client) Activities(userId string) *Collection[pb.SynchronizedActivity] {
+	return &Collection[pb.SynchronizedActivity]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("activities"),
+		ToFirestore:   SynchronizedActivityToFirestore,
+		FromFirestore: FirestoreToSynchronizedActivity,
+	}
+}

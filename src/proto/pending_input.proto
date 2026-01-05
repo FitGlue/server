@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package fitglue;
 
-option go_package = "fitglue/pkg/shared/pb";
+option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
 
 import "google/protobuf/timestamp.proto";
 import "activity.proto";

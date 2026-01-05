@@ -47,4 +47,42 @@ export class ActivityStore {
   async delete(userId: string, activityId: string): Promise<void> {
     await this.collection(userId).doc(activityId).delete();
   }
+
+  /**
+   * Get the synchronized activities collection for a specific user.
+   */
+  private synchronizedCollection(userId: string) {
+    return this.db.collection('users').doc(userId).collection('activities').withConverter(converters.synchronizedActivityConverter);
+  }
+
+  async createSynchronized(userId: string, activity: import('../../types/pb/user').SynchronizedActivity): Promise<void> {
+    await this.synchronizedCollection(userId).doc(activity.activityId).set(activity);
+  }
+
+  async countSynchronized(userId: string, since?: Date): Promise<number> {
+
+    let q: FirebaseFirestore.Query = this.synchronizedCollection(userId);
+    if (since) {
+      q = q.where('synced_at', '>=', since);
+    }
+    const snapshot = await q.count().get();
+    return snapshot.data().count;
+  }
+
+  async listSynchronized(userId: string, limit: number = 20, startAfter?: unknown): Promise<import('../../types/pb/user').SynchronizedActivity[]> {
+    let q = this.synchronizedCollection(userId).orderBy('synced_at', 'desc').limit(limit);
+    if (startAfter) {
+      q = q.startAfter(startAfter);
+    }
+    const snapshot = await q.get();
+    return snapshot.docs.map(doc => doc.data());
+  }
+
+  async getSynchronized(userId: string, activityId: string): Promise<import('../../types/pb/user').SynchronizedActivity | null> {
+    const doc = await this.synchronizedCollection(userId).doc(activityId).get();
+    if (!doc.exists) {
+      return null;
+    }
+    return doc.data() || null;
+  }
 }

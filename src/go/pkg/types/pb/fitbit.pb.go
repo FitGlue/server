@@ -110,7 +110,7 @@ const file_fitbit_proto_rawDesc = "" +
 	"\bowner_id\x18\x03 \x01(\tR\aownerId\x12\x1d\n" +
 	"\n" +
 	"owner_type\x18\x04 \x01(\tR\townerType\x12'\n" +
-	"\x0fsubscription_id\x18\x05 \x01(\tR\x0esubscriptionIdB\x17Z\x15fitglue/pkg/shared/pbb\x06proto3"
+	"\x0fsubscription_id\x18\x05 \x01(\tR\x0esubscriptionIdB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_fitbit_proto_rawDescOnce sync.Once

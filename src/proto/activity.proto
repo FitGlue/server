@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package fitglue;
 
-option go_package = "fitglue/pkg/shared/pb";
+option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
 
 import "google/protobuf/timestamp.proto";
 import "standardized_activity.proto";
@@ -25,30 +25,4 @@ message ActivityPayload {
   StandardizedActivity standardized_activity = 6;
 }
 
-// EnrichedActivityEvent is the message format for topic-enriched-activity.
-message EnrichedActivityEvent {
-  // Identity
-  string user_id = 1;
-  string activity_id = 2;  // Unique ID for the processed activity
-  ActivitySource source = 3;
-
-  // Core Metadata (Extracted for easy downstream access)
-  ActivityType activity_type = 4;
-  string description = 5;   // The final description (original or generated)
-  string name = 6;          // Activity Title
-
-  // Full Data
-  StandardizedActivity activity_data = 7;
-
-  // Generated Artifacts
-  string fit_file_uri = 8;      // Path to the generated FIT file (gs://...)
-
-  // Enrichment Metadata
-  repeated string applied_enrichments = 9; // List of enrichers that ran
-  map<string, string> enrichment_metadata = 10; // Extra stats
-  // Routing information determined by the pipeline
-  repeated string destinations = 11;
-  string pipeline_id = 12;
-  repeated string tags = 13;
-}
 
