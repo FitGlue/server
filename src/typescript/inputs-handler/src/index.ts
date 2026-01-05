@@ -21,6 +21,31 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   const path = req.path;
 
   // --- Handlers ---
+
+  // Handle FCM Token Registration FIRST specific paths
+  if (req.method === 'POST' && (path === '/fcm-token' || path.endsWith('/fcm-token'))) {
+    if (!ctx.userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    const { token } = req.body;
+    if (!token) {
+      res.status(400).json({ error: 'Missing token' });
+      return;
+    }
+
+    try {
+      await userStore.addFcmToken(ctx.userId, token);
+      ctx.logger.info('Registered FCM token', { userId: ctx.userId });
+      res.status(200).json({ success: true });
+    } catch (e) {
+      ctx.logger.error('Failed to register FCM token', { error: e });
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+    return;
+  }
+
   if (req.method === 'GET') {
     // User ID is guaranteed by Auth middleware in createCloudFunction
     if (!ctx.userId) {
@@ -110,29 +135,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   }
 
   // --- User Handlers ---
-  // Allow /fcm-token (relative) or /api/inputs/fcm-token (full)
-  if (req.method === 'POST' && (path === '/fcm-token' || path.endsWith('/fcm-token'))) {
-    if (!ctx.userId) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
-    }
-
-    const { token } = req.body;
-    if (!token) {
-      res.status(400).json({ error: 'Missing token' });
-      return;
-    }
-
-    try {
-      await userStore.addFcmToken(ctx.userId, token);
-      ctx.logger.info('Registered FCM token', { userId: ctx.userId });
-      res.status(200).json({ success: true });
-    } catch (e) {
-      ctx.logger.error('Failed to register FCM token', { error: e });
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-    return;
-  }
+  // (Moved to top priority check)
 
   res.status(405).send('Method Not Allowed');
 };
