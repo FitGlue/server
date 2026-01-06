@@ -185,6 +185,8 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 				statusEnum = pb.ExecutionStatus(val)
 			} else if val, ok := pb.ExecutionStatus_value["STATUS_"+strings.ToUpper(customStatus)]; ok {
 				statusEnum = pb.ExecutionStatus(val)
+			} else if val, ok := pb.ExecutionStatus_value[strings.ToUpper(customStatus)]; ok {
+				statusEnum = pb.ExecutionStatus(val)
 			} else {
 				statusEnum = pb.ExecutionStatus_STATUS_UNKNOWN
 				logger.Warn("Unknown custom status returned", "status", customStatus)

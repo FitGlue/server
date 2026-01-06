@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"log/slog"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -17,8 +18,15 @@ type PubSubAdapter struct {
 func (a *PubSubAdapter) PublishCloudEvent(ctx context.Context, topicID string, e event.Event) (string, error) {
 	bytes, err := json.Marshal(e)
 	if err != nil {
+		slog.Error("Failed to marshal CloudEvent", "topic", topicID, "error", err)
 		return "", err
 	}
+	slog.Info("Publishing CloudEvent",
+		"topic", topicID,
+		"event_type", e.Type(),
+		"event_id", e.ID(),
+		"source", e.Source(),
+		"size_bytes", len(bytes))
 	return a.publish(ctx, topicID, bytes)
 }
 
@@ -35,7 +43,13 @@ func (a *PubSubAdapter) publishWithAttrs(ctx context.Context, topicID string, da
 		msg.Attributes = attributes
 	}
 	res := topic.Publish(ctx, msg)
-	return res.Get(ctx)
+	msgID, err := res.Get(ctx)
+	if err != nil {
+		slog.Error("Failed to publish message", "topic", topicID, "error", err)
+		return "", err
+	}
+	slog.Info("Message published successfully", "topic", topicID, "message_id", msgID, "size_bytes", len(data))
+	return msgID, nil
 }
 
 // LogPublisher is a mock publisher for local development
