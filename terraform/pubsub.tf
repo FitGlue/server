@@ -52,14 +52,11 @@ resource "google_pubsub_subscription" "enrichment_lag_sub" {
 
   # Use a Push Subscription to enforce a custom retry policy (backoff).
   # Standard EventArc triggers created by Cloud Functions do not support granular backoff configuration.
-  # We manually configure this subscription to push to the function's endpoint.
+  # We use a separate HTTP-triggered function that properly returns HTTP 500 on errors.
 
   push_config {
-    push_endpoint = google_cloudfunctions2_function.enricher.service_config[0].uri
+    push_endpoint = google_cloudfunctions2_function.enricher_lag.service_config[0].uri
 
-    # Auth is handled by the OIDC token automatically if we configure it?
-    # Actually, simpler: The function is internal-only usually?
-    # We will need the service account.
     oidc_token {
       service_account_email = google_service_account.cloud_function_sa.email
     }

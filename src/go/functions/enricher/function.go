@@ -2,13 +2,17 @@ package enricher
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"sync"
 	"time"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	shared "github.com/ripixel/fitglue-server/src/go/pkg"
@@ -32,7 +36,11 @@ var (
 )
 
 func init() {
+	// CloudEvent handler for EventArc triggers (raw-activity topic)
 	functions.CloudEvent("EnrichActivity", EnrichActivity)
+
+	// HTTP handler for push subscriptions (lag topic) - properly returns HTTP 500 on error
+	functions.HTTP("EnrichActivityHTTP", EnrichActivityHTTP)
 }
 
 func initService(ctx context.Context) (*bootstrap.Service, error) {
@@ -48,13 +56,103 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 	return svc, svcErr
 }
 
-// EnrichActivity is the entry point
+// EnrichActivity is the entry point for EventArc triggers
 func EnrichActivity(ctx context.Context, e cloudevents.Event) error {
 	svc, err := initService(ctx)
 	if err != nil {
 		return fmt.Errorf("service init failed: %v", err)
 	}
 	return framework.WrapCloudEvent("enricher", svc, enrichHandler)(ctx, e)
+}
+
+// EnrichActivityHTTP is the HTTP handler for push subscriptions (lag topic).
+// This handler properly returns HTTP 500 on errors, allowing Pub/Sub to NACK and retry.
+func EnrichActivityHTTP(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	svc, err := initService(ctx)
+	if err != nil {
+		slog.Error("Service init failed", "error", err)
+		http.Error(w, fmt.Sprintf("service init failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Parse CloudEvent from request
+	// Try CloudEvents format first (structured or binary)
+	event, err := cehttp.NewEventFromHTTPRequest(r)
+	if err != nil {
+		// Fall back to Pub/Sub push message format
+		event, err = parseCloudEventFromPubSubPush(r)
+		if err != nil {
+			slog.Error("Failed to parse event from request", "error", err)
+			http.Error(w, fmt.Sprintf("failed to parse event: %v", err), http.StatusBadRequest)
+			return
+		}
+	}
+
+	// Call the existing CloudEvent handler
+	handlerErr := framework.WrapCloudEvent("enricher", svc, enrichHandler)(ctx, *event)
+
+	if handlerErr != nil {
+		// Return HTTP 500 to trigger Pub/Sub NACK and retry
+		slog.Error("Handler failed, returning 500 for retry", "error", handlerErr)
+		http.Error(w, handlerErr.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Success - Pub/Sub will ACK
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"status":"ok"}`))
+}
+
+// parseCloudEventFromPubSubPush parses a CloudEvent from a Pub/Sub push message.
+// Pub/Sub push sends messages in a wrapper format with message.data containing the actual event.
+func parseCloudEventFromPubSubPush(r *http.Request) (*cloudevents.Event, error) {
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read request body: %w", err)
+	}
+	defer r.Body.Close()
+
+	// Pub/Sub push format: {"message": {"data": "base64...", "messageId": "...", ...}, "subscription": "..."}
+	var pushMsg struct {
+		Message struct {
+			Data        []byte            `json:"data"`
+			Attributes  map[string]string `json:"attributes"`
+			MessageID   string            `json:"messageId"`
+			PublishTime string            `json:"publishTime"`
+		} `json:"message"`
+		Subscription string `json:"subscription"`
+	}
+
+	if err := json.Unmarshal(body, &pushMsg); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal push message: %w", err)
+	}
+
+	if len(pushMsg.Message.Data) == 0 {
+		return nil, fmt.Errorf("no data in push message")
+	}
+
+	// The data might be a CloudEvent JSON or just the payload
+	// Try to parse as CloudEvent first
+	var event cloudevents.Event
+	if err := json.Unmarshal(pushMsg.Message.Data, &event); err == nil && event.Type() != "" {
+		return &event, nil
+	}
+
+	// If not a CloudEvent, create one from the raw data
+	event = cloudevents.NewEvent()
+	event.SetID(pushMsg.Message.MessageID)
+	event.SetSource(infrapubsub.GetCloudEventSource(pb.CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER))
+	event.SetType(infrapubsub.GetCloudEventType(pb.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG))
+	event.SetData(cloudevents.ApplicationJSON, pushMsg.Message.Data)
+
+	// Copy attributes as extensions
+	for k, v := range pushMsg.Message.Attributes {
+		event.SetExtension(k, v)
+	}
+
+	return &event, nil
 }
 
 // enrichHandler contains the business logic

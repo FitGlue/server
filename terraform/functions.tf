@@ -87,6 +87,48 @@ resource "google_cloud_run_service_iam_member" "enricher_invoker" {
   member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 
+# ----------------- Enricher Lag Retry Handler -----------------
+# This is a separate HTTP-triggered function for the lag topic push subscription.
+# Unlike CloudEvent handlers, HTTP handlers properly return HTTP 500 on errors,
+# which triggers Pub/Sub retry with backoff.
+resource "google_cloudfunctions2_function" "enricher_lag" {
+  name     = "enricher-lag"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "EnrichActivityHTTP"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.enricher_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      ENABLE_PUBLISH       = "true"
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  # No event_trigger - this is an HTTP-triggered function
+}
+
+resource "google_cloud_run_service_iam_member" "enricher_lag_invoker" {
+  project  = google_cloudfunctions2_function.enricher_lag.project
+  location = google_cloudfunctions2_function.enricher_lag.location
+  service  = google_cloudfunctions2_function.enricher_lag.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
 
 
 
