@@ -151,15 +151,19 @@ export const mapStravaToFirestore = (i: NonNullable<UserIntegrations['strava']>)
   last_used_at: i.lastUsedAt
 });
 
+export const mapMockToFirestore = (i: NonNullable<UserIntegrations['mock']>): Record<string, unknown> => ({
+  enabled: i.enabled
+});
+
 const mapUserIntegrationsToFirestore = (i?: UserIntegrations): Record<string, unknown> | undefined => {
   if (!i) return undefined;
   const out: Record<string, unknown> = {};
   if (i.hevy) out.hevy = mapHevyToFirestore(i.hevy);
   if (i.fitbit) out.fitbit = mapFitbitToFirestore(i.fitbit);
   if (i.strava) out.strava = mapStravaToFirestore(i.strava);
+  if (i.mock) out.mock = mapMockToFirestore(i.mock);
   return out;
 };
-
 
 interface FirestoreIntegrationData {
   enabled?: boolean;
@@ -204,6 +208,9 @@ const mapUserIntegrationsFromFirestore = (data: Record<string, unknown> | undefi
       athleteId: parseInt((data.strava as FirestoreIntegrationData).athlete_id || '0', 10),
       createdAt: toDate((data.strava as FirestoreIntegrationData).created_at),
       lastUsedAt: toDate((data.strava as FirestoreIntegrationData).last_used_at)
+    } : undefined,
+    mock: data.mock ? {
+      enabled: !!(data.mock as FirestoreIntegrationData).enabled
     } : undefined
   };
 };

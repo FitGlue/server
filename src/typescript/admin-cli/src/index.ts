@@ -506,6 +506,7 @@ const formatUserOutput = (user: UserRecord) => {
     if (data.integrations?.hevy?.apiKey) integrations.push('Hevy');
     if (data.integrations?.strava?.enabled) integrations.push('Strava');
     if (data.integrations?.fitbit?.enabled) integrations.push('Fitbit');
+    if (data.integrations?.mock?.enabled) integrations.push('Mock');
 
     console.log(`ID: ${data.userId}`);
     // Handle created_at (snake) or createdAt (legacy)
@@ -1268,8 +1269,8 @@ const configureTestPipeline = async (pipelineId: string, behavior: 'success' | '
 
         if (response.ok) {
             console.log(`✅ Trigger successful! Status: ${response.status}`);
-            const data = await response.json();
-            console.log('Response:', JSON.stringify(data, null, 2));
+            const data = await response.text();
+            console.log('Response:', data);
         } else {
             console.error(`❌ Trigger failed! Status: ${response.status}`);
             const text = await response.text();

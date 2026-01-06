@@ -27,8 +27,12 @@ message UserIntegrations {
   HevyIntegration hevy = 1;
   FitbitIntegration fitbit = 2;
   StravaIntegration strava = 3;
+  MockIntegration mock = 4;
 }
 
+message MockIntegration {
+    bool enabled = 1;
+}
 
 message HevyIntegration {
   bool enabled = 1;

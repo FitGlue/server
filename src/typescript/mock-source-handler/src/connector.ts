@@ -42,7 +42,7 @@ export class MockConnector extends BaseConnector<MockConnectorConfig, unknown> {
     }
 
     const standardized: StandardizedActivity = {
-      source: 'MOCK',
+      source: "SOURCE_TEST",
       externalId: activityId,
       userId: (config as unknown as { userId: string }).userId,
       startTime: new Date(),

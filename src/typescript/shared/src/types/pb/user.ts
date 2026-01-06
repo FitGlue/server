@@ -98,6 +98,11 @@ export interface UserIntegrations {
   hevy?: HevyIntegration | undefined;
   fitbit?: FitbitIntegration | undefined;
   strava?: StravaIntegration | undefined;
+  mock?: MockIntegration | undefined;
+}
+
+export interface MockIntegration {
+  enabled: boolean;
 }
 
 export interface HevyIntegration {
