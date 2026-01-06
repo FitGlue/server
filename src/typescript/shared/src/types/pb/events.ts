@@ -37,6 +37,15 @@ export enum CloudEventSource {
   CLOUD_EVENT_SOURCE_ENRICHER = 4,
   CLOUD_EVENT_SOURCE_ROUTER = 5,
   CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6,
+  CLOUD_EVENT_SOURCE_MOCK = 99,
+  UNRECOGNIZED = -1,
+}
+
+/** Destination defines where enriched activities are routed. */
+export enum Destination {
+  DESTINATION_UNSPECIFIED = 0,
+  DESTINATION_STRAVA = 1,
+  DESTINATION_MOCK = 99,
   UNRECOGNIZED = -1,
 }
 
@@ -60,7 +69,7 @@ export interface EnrichedActivityEvent {
   activityData?: StandardizedActivity | undefined;
   appliedEnrichments: string[];
   enrichmentMetadata: { [key: string]: string };
-  destinations: string[];
+  destinations: Destination[];
   tags: string[];
   /** Execution tracing */
   pipelineExecutionId?: string | undefined;

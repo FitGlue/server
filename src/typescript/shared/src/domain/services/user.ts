@@ -1,6 +1,7 @@
 import { UserStore, ActivityStore } from '../../storage/firestore';
 import { UserRecord, UserIntegrations, EnricherConfig, ProcessedActivityRecord } from '../../types/pb/user';
 import { FirestoreTokenSource } from '../../infrastructure/oauth/token-source';
+import { Destination } from '../../types/pb/events';
 
 /**
  * UserService provides business logic for user operations.
@@ -151,8 +152,9 @@ export class UserService {
     // Pipeline methods (legacy support)
     async addPipeline(userId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<string> {
         const id = `pipe_${Date.now()}`;
+        const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id, source, enrichers, destinations
+            id, source, enrichers, destinations: destEnums
         });
         return id;
     }
@@ -166,8 +168,17 @@ export class UserService {
 
     async replacePipeline(userId: string, pipelineId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<void> {
         await this.removePipeline(userId, pipelineId);
+        const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id: pipelineId, source, enrichers, destinations
+            id: pipelineId, source, enrichers, destinations: destEnums
+        });
+    }
+
+    private mapDestinations(dests: string[]): Destination[] {
+        return dests.map(d => {
+            if (d === 'strava' || d === 'DESTINATION_STRAVA') return Destination.DESTINATION_STRAVA;
+            if (d === 'mock' || d === 'DESTINATION_MOCK') return Destination.DESTINATION_MOCK;
+            return Destination.DESTINATION_UNSPECIFIED;
         });
     }
 }

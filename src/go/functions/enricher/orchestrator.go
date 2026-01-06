@@ -346,7 +346,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 type configuredPipeline struct {
 	ID           string
 	Enrichers    []configuredEnricher
-	Destinations []string
+	Destinations []pb.Destination
 }
 
 type configuredEnricher struct {
@@ -385,9 +385,9 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 		// Let's create a default pipeline that has NO enrichers, but checks legacy destinations.
 
 		// Legacy check: Strava
-		dests := []string{}
+		var dests []pb.Destination
 		if userRec.Integrations != nil && userRec.Integrations.Strava != nil && userRec.Integrations.Strava.Enabled {
-			dests = append(dests, "strava")
+			dests = append(dests, pb.Destination_DESTINATION_STRAVA)
 		}
 
 		if len(dests) > 0 {

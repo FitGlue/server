@@ -209,12 +209,25 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 					}
 				}
 
-				// Destinations
-				var dests []string
+				// Destinations - handle both legacy strings and new enum ints
+				var dests []pb.Destination
 				if dList, ok := pMap["destinations"].([]interface{}); ok {
 					for _, d := range dList {
-						if s, ok := d.(string); ok {
-							dests = append(dests, s)
+						switch val := d.(type) {
+						case int64:
+							dests = append(dests, pb.Destination(val))
+						case int:
+							dests = append(dests, pb.Destination(val))
+						case float64:
+							dests = append(dests, pb.Destination(int32(val)))
+						case string:
+							// Legacy string support - map known strings to enums
+							switch val {
+							case "strava", "DESTINATION_STRAVA":
+								dests = append(dests, pb.Destination_DESTINATION_STRAVA)
+							case "mock", "DESTINATION_MOCK":
+								dests = append(dests, pb.Destination_DESTINATION_MOCK)
+							}
 						}
 					}
 				}

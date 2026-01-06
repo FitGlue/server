@@ -108,7 +108,7 @@ func TestOrchestrator_Process(t *testing.T) {
 						{
 							Id:           "pipeline-1",
 							Source:       "SOURCE_HEVY",
-							Destinations: []string{"strava"},
+							Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
 							Enrichers: []*pb.EnricherConfig{
 								{
 									ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
@@ -179,7 +179,7 @@ func TestOrchestrator_Process(t *testing.T) {
 		if event.EnrichmentMetadata["processed_by"] != "mock" {
 			t.Errorf("Expected metadata 'processed_by'='mock'")
 		}
-		if len(event.Destinations) != 1 || event.Destinations[0] != "strava" {
+		if len(event.Destinations) != 1 || event.Destinations[0] != pb.Destination_DESTINATION_STRAVA {
 			t.Errorf("Expected destination 'strava'")
 		}
 	})

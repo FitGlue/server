@@ -102,18 +102,20 @@ const (
 	CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER       CloudEventSource = 4
 	CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER         CloudEventSource = 5
 	CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER CloudEventSource = 6
+	CloudEventSource_CLOUD_EVENT_SOURCE_MOCK           CloudEventSource = 99
 )
 
 // Enum value maps for CloudEventSource.
 var (
 	CloudEventSource_name = map[int32]string{
-		0: "CLOUD_EVENT_SOURCE_UNSPECIFIED",
-		1: "CLOUD_EVENT_SOURCE_HEVY",
-		2: "CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK",
-		3: "CLOUD_EVENT_SOURCE_FITBIT_INGEST",
-		4: "CLOUD_EVENT_SOURCE_ENRICHER",
-		5: "CLOUD_EVENT_SOURCE_ROUTER",
-		6: "CLOUD_EVENT_SOURCE_INPUTS_HANDLER",
+		0:  "CLOUD_EVENT_SOURCE_UNSPECIFIED",
+		1:  "CLOUD_EVENT_SOURCE_HEVY",
+		2:  "CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK",
+		3:  "CLOUD_EVENT_SOURCE_FITBIT_INGEST",
+		4:  "CLOUD_EVENT_SOURCE_ENRICHER",
+		5:  "CLOUD_EVENT_SOURCE_ROUTER",
+		6:  "CLOUD_EVENT_SOURCE_INPUTS_HANDLER",
+		99: "CLOUD_EVENT_SOURCE_MOCK",
 	}
 	CloudEventSource_value = map[string]int32{
 		"CLOUD_EVENT_SOURCE_UNSPECIFIED":    0,
@@ -123,6 +125,7 @@ var (
 		"CLOUD_EVENT_SOURCE_ENRICHER":       4,
 		"CLOUD_EVENT_SOURCE_ROUTER":         5,
 		"CLOUD_EVENT_SOURCE_INPUTS_HANDLER": 6,
+		"CLOUD_EVENT_SOURCE_MOCK":           99,
 	}
 )
 
@@ -153,6 +156,56 @@ func (CloudEventSource) EnumDescriptor() ([]byte, []int) {
 	return file_events_proto_rawDescGZIP(), []int{1}
 }
 
+// Destination defines where enriched activities are routed.
+type Destination int32
+
+const (
+	Destination_DESTINATION_UNSPECIFIED Destination = 0
+	Destination_DESTINATION_STRAVA      Destination = 1
+	Destination_DESTINATION_MOCK        Destination = 99
+)
+
+// Enum value maps for Destination.
+var (
+	Destination_name = map[int32]string{
+		0:  "DESTINATION_UNSPECIFIED",
+		1:  "DESTINATION_STRAVA",
+		99: "DESTINATION_MOCK",
+	}
+	Destination_value = map[string]int32{
+		"DESTINATION_UNSPECIFIED": 0,
+		"DESTINATION_STRAVA":      1,
+		"DESTINATION_MOCK":        99,
+	}
+)
+
+func (x Destination) Enum() *Destination {
+	p := new(Destination)
+	*p = x
+	return p
+}
+
+func (x Destination) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (Destination) Descriptor() protoreflect.EnumDescriptor {
+	return file_events_proto_enumTypes[2].Descriptor()
+}
+
+func (Destination) Type() protoreflect.EnumType {
+	return &file_events_proto_enumTypes[2]
+}
+
+func (x Destination) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use Destination.Descriptor instead.
+func (Destination) EnumDescriptor() ([]byte, []int) {
+	return file_events_proto_rawDescGZIP(), []int{2}
+}
+
 // Event payload for CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED
 // Also used contextually for Upload Trigger
 type EnrichedActivityEvent struct {
@@ -170,7 +223,7 @@ type EnrichedActivityEvent struct {
 	ActivityData       *StandardizedActivity `protobuf:"bytes,10,opt,name=activity_data,json=activityData,proto3" json:"activity_data,omitempty"`
 	AppliedEnrichments []string              `protobuf:"bytes,11,rep,name=applied_enrichments,json=appliedEnrichments,proto3" json:"applied_enrichments,omitempty"`
 	EnrichmentMetadata map[string]string     `protobuf:"bytes,12,rep,name=enrichment_metadata,json=enrichmentMetadata,proto3" json:"enrichment_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Destinations       []string              `protobuf:"bytes,13,rep,name=destinations,proto3" json:"destinations,omitempty"`
+	Destinations       []Destination         `protobuf:"varint,13,rep,packed,name=destinations,proto3,enum=fitglue.events.Destination" json:"destinations,omitempty"`
 	Tags               []string              `protobuf:"bytes,14,rep,name=tags,proto3" json:"tags,omitempty"`
 	// Execution tracing
 	PipelineExecutionId *string `protobuf:"bytes,15,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
@@ -292,7 +345,7 @@ func (x *EnrichedActivityEvent) GetEnrichmentMetadata() map[string]string {
 	return nil
 }
 
-func (x *EnrichedActivityEvent) GetDestinations() []string {
+func (x *EnrichedActivityEvent) GetDestinations() []Destination {
 	if x != nil {
 		return x.Destinations
 	}
@@ -398,6 +451,14 @@ var file_events_proto_extTypes = []protoimpl.ExtensionInfo{
 		Tag:           "bytes,50001,opt,name=ce_source",
 		Filename:      "events.proto",
 	},
+	{
+		ExtendedType:  (*descriptor.EnumValueOptions)(nil),
+		ExtensionType: (*string)(nil),
+		Field:         50002,
+		Name:          "fitglue.events.dest_topic",
+		Tag:           "bytes,50002,opt,name=dest_topic",
+		Filename:      "events.proto",
+	},
 }
 
 // Extension fields to descriptor.EnumValueOptions.
@@ -406,13 +467,15 @@ var (
 	E_CeType = &file_events_proto_extTypes[0]
 	// optional string ce_source = 50001;
 	E_CeSource = &file_events_proto_extTypes[1]
+	// optional string dest_topic = 50002;
+	E_DestTopic = &file_events_proto_extTypes[2]
 )
 
 var File_events_proto protoreflect.FileDescriptor
 
 const file_events_proto_rawDesc = "" +
 	"\n" +
-	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\"\xa9\x06\n" +
+	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\"\xc6\x06\n" +
 	"\x15EnrichedActivityEvent\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -430,8 +493,8 @@ const file_events_proto_rawDesc = "" +
 	"\ractivity_data\x18\n" +
 	" \x01(\v2\x1d.fitglue.StandardizedActivityR\factivityData\x12/\n" +
 	"\x13applied_enrichments\x18\v \x03(\tR\x12appliedEnrichments\x12n\n" +
-	"\x13enrichment_metadata\x18\f \x03(\v2=.fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntryR\x12enrichmentMetadata\x12\"\n" +
-	"\fdestinations\x18\r \x03(\tR\fdestinations\x12\x12\n" +
+	"\x13enrichment_metadata\x18\f \x03(\v2=.fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntryR\x12enrichmentMetadata\x12?\n" +
+	"\fdestinations\x18\r \x03(\x0e2\x1b.fitglue.events.DestinationR\fdestinations\x12\x12\n" +
 	"\x04tags\x18\x0e \x03(\tR\x04tags\x127\n" +
 	"\x15pipeline_execution_id\x18\x0f \x01(\tH\x00R\x13pipelineExecutionId\x88\x01\x01\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
@@ -456,7 +519,7 @@ const file_events_proto_rawDesc = "" +
 	"\x1bCLOUD_EVENT_TYPE_JOB_ROUTED\x10\x03\x1a\x1a\x82\xb5\x18\x16com.fitglue.job.routed\x12M\n" +
 	"$CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION\x10\x04\x1a#\x82\xb5\x18\x1fcom.fitglue.fitbit.notification\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_ENRICHMENT_LAG\x10\x05\x1a\x1e\x82\xb5\x18\x1acom.fitglue.enrichment.lag\x12C\n" +
-	"\x1fCLOUD_EVENT_TYPE_INPUT_RESOLVED\x10\x06\x1a\x1e\x82\xb5\x18\x1acom.fitglue.input.resolved*\xa2\x03\n" +
+	"\x1fCLOUD_EVENT_TYPE_INPUT_RESOLVED\x10\x06\x1a\x1e\x82\xb5\x18\x1acom.fitglue.input.resolved*\xd7\x03\n" +
 	"\x10CloudEventSource\x12\"\n" +
 	"\x1eCLOUD_EVENT_SOURCE_UNSPECIFIED\x10\x00\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_HEVY\x10\x01\x1a\x16\x8a\xb5\x18\x12/integrations/hevy\x12G\n" +
@@ -464,9 +527,16 @@ const file_events_proto_rawDesc = "" +
 	" CLOUD_EVENT_SOURCE_FITBIT_INGEST\x10\x03\x1a\x1f\x8a\xb5\x18\x1b/integrations/fitbit/ingest\x123\n" +
 	"\x1bCLOUD_EVENT_SOURCE_ENRICHER\x10\x04\x1a\x12\x8a\xb5\x18\x0e/core/enricher\x12/\n" +
 	"\x19CLOUD_EVENT_SOURCE_ROUTER\x10\x05\x1a\x10\x8a\xb5\x18\f/core/router\x12?\n" +
-	"!CLOUD_EVENT_SOURCE_INPUTS_HANDLER\x10\x06\x1a\x18\x8a\xb5\x18\x14/core/inputs-handler:<\n" +
+	"!CLOUD_EVENT_SOURCE_INPUTS_HANDLER\x10\x06\x1a\x18\x8a\xb5\x18\x14/core/inputs-handler\x123\n" +
+	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\x90\x01\n" +
+	"\vDestination\x12\x1b\n" +
+	"\x17DESTINATION_UNSPECIFIED\x10\x00\x123\n" +
+	"\x12DESTINATION_STRAVA\x10\x01\x1a\x1b\x92\xb5\x18\x17topic-job-upload-strava\x12/\n" +
+	"\x10DESTINATION_MOCK\x10c\x1a\x19\x92\xb5\x18\x15topic-job-upload-mock:<\n" +
 	"\ace_type\x12!.google.protobuf.EnumValueOptions\x18І\x03 \x01(\tR\x06ceType:@\n" +
-	"\tce_source\x12!.google.protobuf.EnumValueOptions\x18ц\x03 \x01(\tR\bceSourceB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"\tce_source\x12!.google.protobuf.EnumValueOptions\x18ц\x03 \x01(\tR\bceSource:B\n" +
+	"\n" +
+	"dest_topic\x12!.google.protobuf.EnumValueOptions\x18҆\x03 \x01(\tR\tdestTopicB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_events_proto_rawDescOnce sync.Once
@@ -480,35 +550,38 @@ func file_events_proto_rawDescGZIP() []byte {
 	return file_events_proto_rawDescData
 }
 
-var file_events_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
+var file_events_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
 var file_events_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_events_proto_goTypes = []any{
 	(CloudEventType)(0),                 // 0: fitglue.events.CloudEventType
 	(CloudEventSource)(0),               // 1: fitglue.events.CloudEventSource
-	(*EnrichedActivityEvent)(nil),       // 2: fitglue.events.EnrichedActivityEvent
-	(*MessagePublishedData)(nil),        // 3: fitglue.events.MessagePublishedData
-	nil,                                 // 4: fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntry
-	nil,                                 // 5: fitglue.events.MessagePublishedData.AttributesEntry
-	(ActivityType)(0),                   // 6: fitglue.ActivityType
-	(*timestamp.Timestamp)(nil),         // 7: google.protobuf.Timestamp
-	(ActivitySource)(0),                 // 8: fitglue.ActivitySource
-	(*StandardizedActivity)(nil),        // 9: fitglue.StandardizedActivity
-	(*descriptor.EnumValueOptions)(nil), // 10: google.protobuf.EnumValueOptions
+	(Destination)(0),                    // 2: fitglue.events.Destination
+	(*EnrichedActivityEvent)(nil),       // 3: fitglue.events.EnrichedActivityEvent
+	(*MessagePublishedData)(nil),        // 4: fitglue.events.MessagePublishedData
+	nil,                                 // 5: fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntry
+	nil,                                 // 6: fitglue.events.MessagePublishedData.AttributesEntry
+	(ActivityType)(0),                   // 7: fitglue.ActivityType
+	(*timestamp.Timestamp)(nil),         // 8: google.protobuf.Timestamp
+	(ActivitySource)(0),                 // 9: fitglue.ActivitySource
+	(*StandardizedActivity)(nil),        // 10: fitglue.StandardizedActivity
+	(*descriptor.EnumValueOptions)(nil), // 11: google.protobuf.EnumValueOptions
 }
 var file_events_proto_depIdxs = []int32{
-	6,  // 0: fitglue.events.EnrichedActivityEvent.activity_type:type_name -> fitglue.ActivityType
-	7,  // 1: fitglue.events.EnrichedActivityEvent.start_time:type_name -> google.protobuf.Timestamp
-	8,  // 2: fitglue.events.EnrichedActivityEvent.source:type_name -> fitglue.ActivitySource
-	9,  // 3: fitglue.events.EnrichedActivityEvent.activity_data:type_name -> fitglue.StandardizedActivity
-	4,  // 4: fitglue.events.EnrichedActivityEvent.enrichment_metadata:type_name -> fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntry
-	5,  // 5: fitglue.events.MessagePublishedData.attributes:type_name -> fitglue.events.MessagePublishedData.AttributesEntry
-	10, // 6: fitglue.events.ce_type:extendee -> google.protobuf.EnumValueOptions
-	10, // 7: fitglue.events.ce_source:extendee -> google.protobuf.EnumValueOptions
-	8,  // [8:8] is the sub-list for method output_type
-	8,  // [8:8] is the sub-list for method input_type
-	8,  // [8:8] is the sub-list for extension type_name
-	6,  // [6:8] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	7,  // 0: fitglue.events.EnrichedActivityEvent.activity_type:type_name -> fitglue.ActivityType
+	8,  // 1: fitglue.events.EnrichedActivityEvent.start_time:type_name -> google.protobuf.Timestamp
+	9,  // 2: fitglue.events.EnrichedActivityEvent.source:type_name -> fitglue.ActivitySource
+	10, // 3: fitglue.events.EnrichedActivityEvent.activity_data:type_name -> fitglue.StandardizedActivity
+	5,  // 4: fitglue.events.EnrichedActivityEvent.enrichment_metadata:type_name -> fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntry
+	2,  // 5: fitglue.events.EnrichedActivityEvent.destinations:type_name -> fitglue.events.Destination
+	6,  // 6: fitglue.events.MessagePublishedData.attributes:type_name -> fitglue.events.MessagePublishedData.AttributesEntry
+	11, // 7: fitglue.events.ce_type:extendee -> google.protobuf.EnumValueOptions
+	11, // 8: fitglue.events.ce_source:extendee -> google.protobuf.EnumValueOptions
+	11, // 9: fitglue.events.dest_topic:extendee -> google.protobuf.EnumValueOptions
+	10, // [10:10] is the sub-list for method output_type
+	10, // [10:10] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	7,  // [7:10] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_events_proto_init() }
@@ -524,9 +597,9 @@ func file_events_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_events_proto_rawDesc), len(file_events_proto_rawDesc)),
-			NumEnums:      2,
+			NumEnums:      3,
 			NumMessages:   4,
-			NumExtensions: 2,
+			NumExtensions: 3,
 			NumServices:   0,
 		},
 		GoTypes:           file_events_proto_goTypes,

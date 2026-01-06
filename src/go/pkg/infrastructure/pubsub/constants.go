@@ -49,3 +49,22 @@ func GetCloudEventSource(s pb.CloudEventSource) string {
 
 	return "unknown"
 }
+
+// GetDestinationTopic returns the Pub/Sub topic name for a given Destination enum using the custom dest_topic option.
+func GetDestinationTopic(d pb.Destination) string {
+	ed := d.Descriptor()
+	ev := ed.Values().ByNumber(protoreflect.EnumNumber(d))
+	if ev == nil {
+		return ""
+	}
+
+	opts := ev.Options()
+	if proto.HasExtension(opts, pb.E_DestTopic) {
+		val := proto.GetExtension(opts, pb.E_DestTopic)
+		if strVal, ok := val.(string); ok {
+			return strVal
+		}
+	}
+
+	return ""
+}

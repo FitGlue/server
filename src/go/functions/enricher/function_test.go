@@ -57,7 +57,7 @@ func TestEnrichActivity(t *testing.T) {
 								Inputs:       map[string]string{"test_key": "test_value"},
 							},
 						},
-						Destinations: []string{"strava"},
+						Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
 					},
 				},
 			}, nil

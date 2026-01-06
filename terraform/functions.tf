@@ -206,6 +206,79 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
   }
 }
 
+# ----------------- Mock Uploader (Dev Only) -----------------
+resource "google_storage_bucket_object" "mock_uploader_zip" {
+  count  = var.environment == "dev" ? 1 : 0
+  name   = "mock-uploader-${filemd5("/tmp/fitglue-function-zips/mock-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/mock-uploader.zip"
+}
+
+resource "google_cloudfunctions2_function" "mock_uploader" {
+  count    = var.environment == "dev" ? 1 : 0
+  name     = "mock-uploader"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "MockUpload"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.mock_uploader_zip[0].name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.job_upload_mock[0].id
+    retry_policy   = var.retry_policy
+  }
+}
+
+# ----------------- Mock Source Handler (Dev Only) -----------------
+resource "google_cloudfunctions2_function" "mock_source_handler" {
+  count       = var.environment == "dev" ? 1 : 0
+  name        = "mock-source-handler"
+  location    = var.region
+  description = "Mocks source events for testing"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "mockSourceHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
 # ----------------- Hevy Webhook Handler -----------------
 
 resource "google_cloudfunctions2_function" "hevy_handler" {

@@ -12,6 +12,7 @@ import "activity.proto";
 extend google.protobuf.EnumValueOptions {
   string ce_type = 50000;
   string ce_source = 50001;
+  string dest_topic = 50002;
 }
 
 // CloudEventType enumerates all valid event types in the system.
@@ -40,6 +41,14 @@ enum CloudEventSource {
   CLOUD_EVENT_SOURCE_ENRICHER = 4 [(ce_source) = "/core/enricher"];
   CLOUD_EVENT_SOURCE_ROUTER = 5 [(ce_source) = "/core/router"];
   CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6 [(ce_source) = "/core/inputs-handler"];
+  CLOUD_EVENT_SOURCE_MOCK = 99 [(ce_source) = "/integrations/mock"];
+}
+
+// Destination defines where enriched activities are routed.
+enum Destination {
+  DESTINATION_UNSPECIFIED = 0;
+  DESTINATION_STRAVA = 1 [(dest_topic) = "topic-job-upload-strava"];
+  DESTINATION_MOCK = 99 [(dest_topic) = "topic-job-upload-mock"];
 }
 
 // Event payload for CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED
@@ -59,7 +68,7 @@ message EnrichedActivityEvent {
   StandardizedActivity activity_data = 10;
   repeated string applied_enrichments = 11;
   map<string, string> enrichment_metadata = 12;
-  repeated string destinations = 13;
+  repeated Destination destinations = 13;
   repeated string tags = 14;
 
   // Execution tracing
@@ -72,3 +81,4 @@ message MessagePublishedData {
   string message_id = 3;
   string publish_time = 4;
 }
+

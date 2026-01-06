@@ -25,6 +25,7 @@ import (
 	// Register providers
 	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/auto_increment"
 	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/condition_matcher"
+	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/mock"
 	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/parkrun"
 	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/user_input"
 )
@@ -311,7 +312,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 			publishedEvents = append(publishedEvents, PublishedEvent{
 				ActivityID:         event.ActivityId,
 				PipelineID:         event.PipelineId,
-				Destinations:       event.Destinations,
+				Destinations:       destinationsToStrings(event.Destinations),
 				AppliedEnrichments: event.AppliedEnrichments,
 				FitFileURI:         event.FitFileUri,
 				PubSubMessageID:    msgID,
@@ -338,4 +339,12 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 func isRetryable(err error) bool {
 	_, ok := err.(*providers.RetryableError)
 	return ok
+}
+
+func destinationsToStrings(dests []pb.Destination) []string {
+	strs := make([]string, len(dests))
+	for i, d := range dests {
+		strs[i] = d.String()
+	}
+	return strs
 }

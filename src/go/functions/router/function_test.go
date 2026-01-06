@@ -75,7 +75,7 @@ func TestRouteActivity(t *testing.T) {
 		ActivityType: pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
 		Name:         "Test Workout",
 		Source:       pb.ActivitySource_SOURCE_HEVY,
-		Destinations: []string{"strava"},
+		Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
 		PipelineId:   "pipe-test-1",
 	}
 	marshalOpts := protojson.MarshalOptions{UseProtoNames: false, EmitUnpopulated: true}

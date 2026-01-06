@@ -5,6 +5,7 @@
 // source: user.proto
 
 /* eslint-disable */
+import type { Destination } from "./events";
 import type { ActivityType } from "./standardized_activity";
 
 export const protobufPackage = "fitglue";
@@ -90,8 +91,7 @@ export interface PipelineConfig {
   /** e.g. "SOURCE_HEVY" */
   source: string;
   enrichers: EnricherConfig[];
-  /** e.g. ["strava", "gcs"] */
-  destinations: string[];
+  destinations: Destination[];
 }
 
 export interface UserIntegrations {

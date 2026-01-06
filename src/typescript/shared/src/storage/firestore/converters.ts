@@ -4,6 +4,7 @@ import { WaitlistEntry } from '../../types/pb/waitlist';
 import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
 import { PendingInput, PendingInput_Status } from '../../types/pb/pending_input';
+import { Destination } from '../../types/pb/events';
 
 // Helper to convert Firestore Timestamp to Date
 const toDate = (val: unknown): Date | undefined => {
@@ -208,11 +209,11 @@ const mapUserIntegrationsFromFirestore = (data: Record<string, unknown> | undefi
 };
 
 // Pipelines Mapping
-// Pipelines Mapping
+
 export const mapPipelineToFirestore = (p: PipelineConfig): Record<string, unknown> => ({
   id: p.id,
   source: p.source,
-  destinations: p.destinations,
+  destinations: p.destinations, // Stored as numbers (enum values)
   enrichers: p.enrichers?.map(e => ({
     provider_type: e.providerType,
     inputs: e.inputs
@@ -222,7 +223,15 @@ export const mapPipelineToFirestore = (p: PipelineConfig): Record<string, unknow
 export const mapPipelineFromFirestore = (p: Record<string, unknown>): PipelineConfig => ({
   id: p.id as string,
   source: p.source as string,
-  destinations: (p.destinations as string[]) || [],
+  destinations: ((p.destinations as unknown[]) || []).map(d => {
+    if (typeof d === 'number') return d as Destination;
+    if (typeof d === 'string') {
+      // Legacy string support
+      if (d === 'strava' || d === 'DESTINATION_STRAVA') return Destination.DESTINATION_STRAVA;
+      if (d === 'mock' || d === 'DESTINATION_MOCK') return Destination.DESTINATION_MOCK;
+    }
+    return Destination.DESTINATION_UNSPECIFIED;
+  }),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   enrichers: ((p.enrichers as any[]) || []).map((e: any) => ({
     providerType: e.provider_type || e.providerType,

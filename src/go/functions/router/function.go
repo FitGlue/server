@@ -10,7 +10,6 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	shared "github.com/ripixel/fitglue-server/src/go/pkg"
 	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
 	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
 	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
@@ -90,22 +89,25 @@ func routeHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fra
 	fwCtx.Logger.Info("Resolved destinations from payload", "dests", destinations)
 
 	for _, dest := range destinations {
-		var topic string
-		switch dest {
-		case "strava":
-			topic = shared.TopicJobUploadStrava
-		default:
-			fwCtx.Logger.Warn("Unknown destination", "dest", dest)
+		destName := dest.String()
+		topic := infrapubsub.GetDestinationTopic(dest)
+
+		if topic == "" {
+			fwCtx.Logger.Warn("Unknown or unsupported destination", "dest", destName)
 			routedDestinations = append(routedDestinations, RoutedDestination{
-				Destination: dest,
+				Destination: destName,
 				Status:      "SKIPPED",
-				Error:       "unknown destination",
+				Error:       "unknown destination or missing topic configuration",
 			})
 			continue
 		}
 
 		// Construct routing event
-		routeEvent, err := infrapubsub.NewCloudEvent("/router", fmt.Sprintf("com.fitglue.job.%s", dest), rawData)
+		routeEvent, err := infrapubsub.NewCloudEvent(
+			infrapubsub.GetCloudEventSource(pb.CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER),
+			fmt.Sprintf("com.fitglue.job.%s", destName),
+			rawData,
+		)
 		if err != nil {
 			fwCtx.Logger.Error("Failed to create routing event", "error", err)
 			continue
@@ -116,17 +118,17 @@ func routeHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fra
 
 		resID, err := fwCtx.Service.Pub.PublishCloudEvent(ctx, topic, routeEvent)
 		if err != nil {
-			fwCtx.Logger.Error("Failed to publish to queue", "dest", dest, "topic", topic, "error", err)
+			fwCtx.Logger.Error("Failed to publish to queue", "dest", destName, "topic", topic, "error", err)
 			routedDestinations = append(routedDestinations, RoutedDestination{
-				Destination: dest,
+				Destination: destName,
 				Topic:       topic,
 				Status:      "FAILED",
 				Error:       err.Error(),
 			})
 		} else {
-			fwCtx.Logger.Info("Routed to destination", "dest", dest, "topic", topic, "message_id", resID)
+			fwCtx.Logger.Info("Routed to destination", "dest", destName, "topic", topic, "message_id", resID)
 			routedDestinations = append(routedDestinations, RoutedDestination{
-				Destination:     dest,
+				Destination:     destName,
 				Topic:           topic,
 				PubSubMessageID: resID,
 				Status:          "SUCCESS",

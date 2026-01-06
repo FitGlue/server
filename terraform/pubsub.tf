@@ -22,18 +22,18 @@ resource "google_pubsub_topic" "job_upload_strava" {
   message_retention_duration = "3600s"
 }
 
-# Future extensibility
-resource "google_pubsub_topic" "job_upload_other" {
-  name    = "topic-job-upload-other"
-  project = var.project_id
-}
-
-
-
 resource "google_pubsub_topic" "enrichment_lag" {
   name    = "topic-enrichment-lag"
   project = var.project_id
 }
+
+# Mock topic for testing (dev only)
+resource "google_pubsub_topic" "job_upload_mock" {
+  count   = var.environment == "dev" ? 1 : 0
+  name    = "topic-job-upload-mock"
+  project = var.project_id
+}
+
 
 resource "google_pubsub_subscription" "enrichment_lag_sub" {
   name    = "sub-enrichment-lag"

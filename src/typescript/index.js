@@ -42,3 +42,8 @@ exports.activitiesHandler = (req, res) => {
   const activities = require('./activities-handler/build/index');
   return activities.activitiesHandler(req, res);
 };
+
+exports.mockSourceHandler = (req, res) => {
+  const mockSource = require('./mock-source-handler/build/index');
+  return mockSource.mockSourceHandler(req, res);
+};

@@ -3,6 +3,7 @@ package fitglue;
 
 import "google/protobuf/timestamp.proto";
 import "standardized_activity.proto";
+import "events.proto";
 
 option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
 
@@ -19,7 +20,7 @@ message PipelineConfig {
   string id = 1; // Unique ID (uuid) for tracing
   string source = 2; // e.g. "SOURCE_HEVY"
   repeated EnricherConfig enrichers = 3;
-  repeated string destinations = 4; // e.g. ["strava", "gcs"]
+  repeated fitglue.events.Destination destinations = 4;
 }
 
 message UserIntegrations {

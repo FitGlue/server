@@ -783,7 +783,7 @@ program.command('users:add-pipeline')
                     type: 'checkbox',
                     name: 'destinations',
                     message: 'Select Destinations:',
-                    choices: ['strava'],
+                    choices: ['strava', 'mock'],
                     validate: (input) => input.length > 0 || 'Must select at least one destination'
                 }
             ]);
@@ -938,7 +938,7 @@ program.command('users:replace-pipeline')
                     type: 'checkbox',
                     name: 'destinations',
                     message: 'Select Destinations:',
-                    choices: ['strava'],
+                    choices: ['strava', 'mock'],
                     validate: (input) => input.length > 0 || 'Must select at least one destination'
                 }
             ]);
