@@ -251,7 +251,8 @@ resource "google_cloudfunctions2_function" "mock_uploader" {
 
 # ----------------- Mock Source Handler (Dev Only) -----------------
 resource "google_cloudfunctions2_function" "mock_source_handler" {
-  count       = var.environment == "dev" ? 1 : 0
+  // Needs to be deployed to test and prod otherwise firebase.json will fail with "can't find function"
+  // But we do *not* allow this to be run from the web on test/prod by omiting the mock_source_handler_invoker
   name        = "mock-source-handler"
   location    = var.region
   description = "Mocks source events for testing"
