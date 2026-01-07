@@ -122,56 +122,8 @@ resource "google_firestore_index" "executions_pipeline_timestamp_asc" {
 # Note: These are collection group indexes on subcollection 'activities'
 # under users/{userId}/activities
 
-resource "google_firestore_index" "activities_destination_strava" {
-  project    = var.project_id
-  database   = google_firestore_database.database.name
-  collection = "activities"
 
-  query_scope = "COLLECTION"
 
-  fields {
-    field_path = "destinations.strava"
-    order      = "ASCENDING"
-  }
 
-  fields {
-    field_path = "__name__"
-    order      = "ASCENDING"
-  }
-}
 
-resource "google_firestore_index" "activities_destination_hevy" {
-  project    = var.project_id
-  database   = google_firestore_database.database.name
-  collection = "activities"
 
-  query_scope = "COLLECTION"
-
-  fields {
-    field_path = "destinations.hevy"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "__name__"
-    order      = "ASCENDING"
-  }
-}
-
-resource "google_firestore_index" "activities_destination_mock" {
-  project    = var.project_id
-  database   = google_firestore_database.database.name
-  collection = "activities"
-
-  query_scope = "COLLECTION"
-
-  fields {
-    field_path = "destinations.mock"
-    order      = "ASCENDING"
-  }
-
-  fields {
-    field_path = "__name__"
-    order      = "ASCENDING"
-  }
-}
