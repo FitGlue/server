@@ -18,7 +18,10 @@ import {
     PipelineConfig,
     ExecutionRecord,
     Destination,
+    INTEGRATIONS,
+    UserIntegrations,
 } from '@fitglue/shared';
+
 
 import * as admin from 'firebase-admin';
 
@@ -178,11 +181,20 @@ program.command('users:create')
         }
     });
 
-program.command('users:configure-mock')
+program.command('users:configure-integration')
+    .argument('<provider>', 'Provider key (hevy, mock, etc)')
     .argument('<userId>', 'User ID to configure')
-    .description('Configure Mock integration for a user')
-    .action(async (userId) => {
+    .description('Configure an integration for a user')
+    .action(async (provider, userId) => {
         try {
+            // Validate provider
+            const definition = INTEGRATIONS[provider as keyof UserIntegrations];
+            if (!definition) {
+                console.error(`Unknown provider: ${provider}`);
+                console.log('Available providers:', Object.keys(INTEGRATIONS).join(', '));
+                process.exit(1);
+            }
+
             // Verify user exists
             const user = await userService.getUser(userId);
             if (!user) {
@@ -190,162 +202,46 @@ program.command('users:configure-mock')
                 process.exit(1);
             }
 
-            await userService.setMockIntegration(userId, true);
-            console.log('Mock integration configured.');
+            console.log(`Configuring ${definition.displayName} for user ${userId}...`);
+
+            const answers: Record<string, unknown> = {};
+
+            // Dynamic prompts
+            if (definition.configurableFields.length > 0) {
+                const prompts = definition.configurableFields.map(field => ({
+                    type: field.type === 'password' ? 'password' : (field.type === 'boolean' ? 'confirm' : 'input'),
+                    name: field.field,
+                    message: `${field.name}:`,
+                    validate: (input: unknown) => {
+                        if (field.required && (input === '' || input === undefined)) return `${field.name} is required`;
+                        return true;
+                    }
+                }));
+
+                const results = await inquirer.prompt(prompts);
+                Object.assign(answers, results);
+            } else {
+                console.log('No configurable fields for this integration.');
+            }
+
+            const payload = {
+                ...answers,
+                createdAt: new Date(),
+                lastUsedAt: new Date(),
+                enabled: true
+            };
+
+            if (!('enabled' in payload)) {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (payload as any).enabled = true;
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await userService.setIntegration(userId, provider as keyof UserIntegrations, payload as any);
+            console.log(`✅ ${definition.displayName} integration configured.`);
 
         } catch (error: unknown) {
-            console.error('Error configuring Mock:', error);
-            process.exit(1);
-        }
-    });
-
-program.command('users:configure-hevy')
-    .argument('<userId>', 'User ID to configure')
-    .description('Configure Hevy integration for a user')
-    .action(async (userId) => {
-        try {
-            // Verify user exists
-            const user = await userService.getUser(userId);
-            if (!user) {
-                console.error(`User ${userId} not found`);
-                process.exit(1);
-            }
-
-            const answers = await inquirer.prompt([
-                {
-                    type: 'password',
-                    name: 'apiKey',
-                    message: 'Hevy API Key:',
-                    validate: (input) => input.length > 0 || 'API Key is required'
-                }
-            ]);
-
-            await userService.setHevyIntegration(userId, answers.apiKey);
-            console.log('Hevy integration configured.');
-
-        } catch (error: unknown) {
-            console.error('Error configuring Hevy:', error);
-            process.exit(1);
-        }
-    });
-
-program.command('users:update')
-    .argument('<userId>', 'User ID to update')
-    .description('Update an existing user configuration')
-    .action(async (userId) => {
-        try {
-            const hevyAnswers = await inquirer.prompt([
-                {
-                    type: 'confirm',
-                    name: 'updateHevy',
-                    message: 'Update Hevy Integration?',
-                    default: true
-                },
-                {
-                    type: 'password',
-                    name: 'apiKey',
-                    message: 'New Hevy API Key:',
-                    when: (answers) => answers.updateHevy
-                }
-            ]);
-
-            if (hevyAnswers.updateHevy) {
-                await userService.setHevyIntegration(userId, hevyAnswers.apiKey);
-                console.log('Hevy integration updated.');
-            }
-
-            const stravaAnswers = await inquirer.prompt([
-                {
-                    type: 'confirm',
-                    name: 'updateStrava',
-                    message: 'Update Strava Integration?',
-                    default: false
-                },
-                {
-                    type: 'input',
-                    name: 'accessToken',
-                    message: 'Access Token:',
-                    when: (answers) => answers.updateStrava
-                },
-                {
-                    type: 'input',
-                    name: 'refreshToken',
-                    message: 'Refresh Token:',
-                    when: (answers) => answers.updateStrava
-                },
-                {
-                    type: 'input',
-                    name: 'expiresAt',
-                    message: 'Expires At (Unix Timestamp Seconds):',
-                    when: (answers) => answers.updateStrava,
-                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
-                },
-                {
-                    type: 'input',
-                    name: 'athleteId',
-                    message: 'Athlete ID:',
-                    when: (answers) => answers.updateStrava,
-                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
-                }
-            ]);
-
-            if (stravaAnswers.updateStrava) {
-                await userService.setStravaIntegration(
-                    userId,
-                    stravaAnswers.accessToken,
-                    stravaAnswers.refreshToken,
-                    parseInt(stravaAnswers.expiresAt, 10),
-                    parseInt(stravaAnswers.athleteId, 10)
-                );
-                console.log('Strava integration updated.');
-            }
-
-            const fitbitAnswers = await inquirer.prompt([
-                {
-                    type: 'confirm',
-                    name: 'updateFitbit',
-                    message: 'Update Fitbit Integration?',
-                    default: false
-                },
-                {
-                    type: 'input',
-                    name: 'accessToken',
-                    message: 'Access Token:',
-                    when: (answers) => answers.updateFitbit
-                },
-                {
-                    type: 'input',
-                    name: 'refreshToken',
-                    message: 'Refresh Token:',
-                    when: (answers) => answers.updateFitbit
-                },
-                {
-                    type: 'input',
-                    name: 'expiresAt',
-                    message: 'Expires At (Unix Timestamp Seconds):',
-                    when: (answers) => answers.updateFitbit,
-                    validate: (input) => !isNaN(parseInt(input)) || 'Must be a number'
-                },
-                {
-                    type: 'input',
-                    name: 'fitbitUserId',
-                    message: 'Fitbit User ID:',
-                    when: (answers) => answers.updateFitbit
-                }
-            ]);
-
-            if (fitbitAnswers.updateFitbit) {
-                await userService.setFitbitIntegration(
-                    userId,
-                    fitbitAnswers.accessToken,
-                    fitbitAnswers.refreshToken,
-                    parseInt(fitbitAnswers.expiresAt, 10),
-                    fitbitAnswers.fitbitUserId
-                );
-                console.log('Fitbit integration updated.');
-            }
-        } catch (error: unknown) {
-            console.error('Error updating user:', error);
+            console.error('Error configuring integration:', error);
             process.exit(1);
         }
     });

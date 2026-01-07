@@ -103,6 +103,8 @@ export interface UserIntegrations {
 
 export interface MockIntegration {
   enabled: boolean;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
 }
 
 export interface HevyIntegration {

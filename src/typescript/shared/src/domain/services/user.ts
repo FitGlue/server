@@ -92,37 +92,53 @@ export class UserService {
     /**
      * Set Hevy integration for a user.
      */
+    async setIntegration<K extends keyof UserIntegrations>(
+        userId: string,
+        key: K,
+        data: UserIntegrations[K]
+    ): Promise<void> {
+        return this.userStore.setIntegration(userId, key, data);
+    }
+
     async setHevyIntegration(userId: string, apiKey: string): Promise<void> {
-        await this.userStore.setIntegration(userId, 'hevy', {
+        await this.setIntegration(userId, 'hevy', {
             enabled: true,
             apiKey: apiKey,
-            userId: userId // Enforcing userId requirement from HevyIntegration interface
+            userId: userId,
+            createdAt: new Date(),
+            lastUsedAt: new Date()
         });
     }
 
     async setStravaIntegration(userId: string, accessToken: string, refreshToken: string, expiresAt: number, athleteId: number): Promise<void> {
-        await this.userStore.setIntegration(userId, 'strava', {
+        await this.setIntegration(userId, 'strava', {
             enabled: true,
             accessToken,
             refreshToken,
-            expiresAt: new Date(expiresAt * 1000), // Convert to Date
-            athleteId
+            expiresAt: new Date(expiresAt * 1000),
+            athleteId,
+            createdAt: new Date(),
+            lastUsedAt: new Date()
         });
     }
 
     async setFitbitIntegration(userId: string, accessToken: string, refreshToken: string, expiresAt: number, fitbitUserId: string): Promise<void> {
-        await this.userStore.setIntegration(userId, 'fitbit', {
+        await this.setIntegration(userId, 'fitbit', {
             enabled: true,
             accessToken,
             refreshToken,
-            expiresAt: new Date(expiresAt * 1000), // Convert to Date
+            expiresAt: new Date(expiresAt * 1000),
             fitbitUserId,
+            createdAt: new Date(),
+            lastUsedAt: new Date()
         });
     }
 
     async setMockIntegration(userId: string, enabled: boolean): Promise<void> {
-        await this.userStore.setIntegration(userId, 'mock', {
+        await this.setIntegration(userId, 'mock', {
             enabled,
+            createdAt: new Date(),
+            lastUsedAt: new Date()
         });
     }
 

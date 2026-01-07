@@ -527,6 +527,8 @@ func (x *UserIntegrations) GetMock() *MockIntegration {
 type MockIntegration struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Enabled       bool                   `protobuf:"varint,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	CreatedAt     *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	LastUsedAt    *timestamp.Timestamp   `protobuf:"bytes,3,opt,name=last_used_at,json=lastUsedAt,proto3" json:"last_used_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -566,6 +568,20 @@ func (x *MockIntegration) GetEnabled() bool {
 		return x.Enabled
 	}
 	return false
+}
+
+func (x *MockIntegration) GetCreatedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *MockIntegration) GetLastUsedAt() *timestamp.Timestamp {
+	if x != nil {
+		return x.LastUsedAt
+	}
+	return nil
 }
 
 type HevyIntegration struct {
@@ -1185,9 +1201,13 @@ const file_user_proto_rawDesc = "" +
 	"\x04hevy\x18\x01 \x01(\v2\x18.fitglue.HevyIntegrationR\x04hevy\x122\n" +
 	"\x06fitbit\x18\x02 \x01(\v2\x1a.fitglue.FitbitIntegrationR\x06fitbit\x122\n" +
 	"\x06strava\x18\x03 \x01(\v2\x1a.fitglue.StravaIntegrationR\x06strava\x12,\n" +
-	"\x04mock\x18\x04 \x01(\v2\x18.fitglue.MockIntegrationR\x04mock\"+\n" +
+	"\x04mock\x18\x04 \x01(\v2\x18.fitglue.MockIntegrationR\x04mock\"\xa4\x01\n" +
 	"\x0fMockIntegration\x12\x18\n" +
-	"\aenabled\x18\x01 \x01(\bR\aenabled\"\xd6\x01\n" +
+	"\aenabled\x18\x01 \x01(\bR\aenabled\x129\n" +
+	"\n" +
+	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12<\n" +
+	"\flast_used_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"lastUsedAt\"\xd6\x01\n" +
 	"\x0fHevyIntegration\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12\x17\n" +
 	"\aapi_key\x18\x02 \x01(\tR\x06apiKey\x12\x17\n" +
@@ -1337,28 +1357,30 @@ var file_user_proto_depIdxs = []int32{
 	10, // 6: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
 	13, // 7: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
 	8,  // 8: fitglue.UserIntegrations.mock:type_name -> fitglue.MockIntegration
-	19, // 9: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
-	19, // 10: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	19, // 11: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	19, // 12: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
-	19, // 13: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	12, // 14: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
-	0,  // 15: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
-	17, // 16: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
-	19, // 17: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	19, // 18: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
-	19, // 19: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	19, // 20: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
-	19, // 21: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
-	21, // 22: fitglue.SynchronizedActivity.type:type_name -> fitglue.ActivityType
-	19, // 23: fitglue.SynchronizedActivity.start_time:type_name -> google.protobuf.Timestamp
-	18, // 24: fitglue.SynchronizedActivity.destinations:type_name -> fitglue.SynchronizedActivity.DestinationsEntry
-	19, // 25: fitglue.SynchronizedActivity.synced_at:type_name -> google.protobuf.Timestamp
-	26, // [26:26] is the sub-list for method output_type
-	26, // [26:26] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	19, // 9: fitglue.MockIntegration.created_at:type_name -> google.protobuf.Timestamp
+	19, // 10: fitglue.MockIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	19, // 11: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
+	19, // 12: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	19, // 13: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	19, // 14: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
+	19, // 15: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	12, // 16: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
+	0,  // 17: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
+	17, // 18: fitglue.EnricherConfig.inputs:type_name -> fitglue.EnricherConfig.InputsEntry
+	19, // 19: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	19, // 20: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
+	19, // 21: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	19, // 22: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
+	19, // 23: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
+	21, // 24: fitglue.SynchronizedActivity.type:type_name -> fitglue.ActivityType
+	19, // 25: fitglue.SynchronizedActivity.start_time:type_name -> google.protobuf.Timestamp
+	18, // 26: fitglue.SynchronizedActivity.destinations:type_name -> fitglue.SynchronizedActivity.DestinationsEntry
+	19, // 27: fitglue.SynchronizedActivity.synced_at:type_name -> google.protobuf.Timestamp
+	28, // [28:28] is the sub-list for method output_type
+	28, // [28:28] is the sub-list for method input_type
+	28, // [28:28] is the sub-list for extension type_name
+	28, // [28:28] is the sub-list for extension extendee
+	0,  // [0:28] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }

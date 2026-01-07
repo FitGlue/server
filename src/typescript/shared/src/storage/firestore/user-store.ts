@@ -1,6 +1,8 @@
 import * as admin from 'firebase-admin';
 import * as converters from './converters';
-import { FitbitIntegration, HevyIntegration, StravaIntegration, UserRecord } from '../../types/pb/user';
+
+import { UserRecord } from '../../types/pb/user';
+
 
 /**
  * UserStore provides typed access to user-related Firestore operations.
@@ -105,17 +107,11 @@ export class UserStore {
   ): Promise<void> {
     // Construct the dot-notation key for updating nested field
     const fieldPath = `integrations.${provider}`;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let firestoreData: any = data;
 
-    // Apply manual conversion for known providers to ensure snake_case
-    if (provider === 'fitbit') {
-      firestoreData = converters.mapFitbitToFirestore(data as FitbitIntegration);
-    } else if (provider === 'strava') {
-      firestoreData = converters.mapStravaToFirestore(data as StravaIntegration);
-    } else if (provider === 'hevy') {
-      firestoreData = converters.mapHevyToFirestore(data as HevyIntegration);
-    }
+    // Use generic converter to ensure snake_case mapping based on logic
+    // We cast data to Record<string, unknown> because we know it matches the generic integration structure
+    // enforced by the K generic, and the converter handles the dynamic key lookup.
+    const firestoreData = converters.mapGenericIntegrationToFirestore(data as unknown as Record<string, unknown>, provider);
 
     await this.collection().doc(userId).update({
       [fieldPath]: firestoreData

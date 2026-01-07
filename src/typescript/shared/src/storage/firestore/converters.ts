@@ -5,6 +5,9 @@ import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
 import { PendingInput, PendingInput_Status } from '../../types/pb/pending_input';
 import { Destination } from '../../types/pb/events';
+import { INTEGRATIONS, OAuthIntegrationDefinition } from '../../types/integrations';
+
+
 
 // Helper to convert Firestore Timestamp to Date
 const toDate = (val: unknown): Date | undefined => {
@@ -123,96 +126,151 @@ export const executionConverter: FirestoreDataConverter<ExecutionRecord> = {
 
 // --- User Record Mapping Complex Logic ---
 
-export const mapHevyToFirestore = (i: NonNullable<UserIntegrations['hevy']>): Record<string, unknown> => ({
-  enabled: i.enabled,
-  api_key: i.apiKey,
-  user_id: i.userId,
-  created_at: i.createdAt,
-  last_used_at: i.lastUsedAt
-});
+// --- User Record Mapping Generic Logic ---
 
-export const mapFitbitToFirestore = (i: NonNullable<UserIntegrations['fitbit']>): Record<string, unknown> => ({
-  enabled: i.enabled,
-  access_token: i.accessToken,
-  refresh_token: i.refreshToken,
-  expires_at: i.expiresAt,
-  fitbit_user_id: i.fitbitUserId,
-  created_at: i.createdAt,
-  last_used_at: i.lastUsedAt
-});
+interface GenericIntegrationData {
+  enabled?: boolean;
+  apiKey?: string;
+  api_key?: string;
+  userId?: string;
+  user_id?: string;
+  fitbitUserId?: string;
+  fitbit_user_id?: string;
+  athleteId?: number | string;
+  athlete_id?: string;
+  accessToken?: string;
+  access_token?: string;
+  refreshToken?: string;
+  refresh_token?: string;
+  expiresAt?: Date | Timestamp;
+  expires_at?: Date | Timestamp;
+  createdAt?: Date | Timestamp;
+  created_at?: Date | Timestamp;
+  lastUsedAt?: Date | Timestamp;
+  last_used_at?: Date | Timestamp;
+  [key: string]: unknown;
+}
 
-export const mapStravaToFirestore = (i: NonNullable<UserIntegrations['strava']>): Record<string, unknown> => ({
-  enabled: i.enabled,
-  access_token: i.accessToken,
-  refresh_token: i.refreshToken,
-  expires_at: i.expiresAt,
-  athlete_id: i.athleteId,
-  created_at: i.createdAt,
-  last_used_at: i.lastUsedAt
-});
+export const mapGenericIntegrationToFirestore = (i: Record<string, unknown>, key: string): Record<string, unknown> => {
+  const def = INTEGRATIONS[key as keyof UserIntegrations];
+  if (!def) return {}; // Should not happen if calling safely
 
-export const mapMockToFirestore = (i: NonNullable<UserIntegrations['mock']>): Record<string, unknown> => ({
-  enabled: i.enabled
-});
+  const out: Record<string, unknown> = {
+    enabled: i.enabled
+  };
+
+  if ('createdAt' in i) out.created_at = i.createdAt;
+  if ('lastUsedAt' in i) out.last_used_at = i.lastUsedAt;
+
+  // Handle OAuth specific fields
+  if (def.type === 'oauth') {
+    const oauthDef = def as OAuthIntegrationDefinition;
+    out.access_token = i.accessToken;
+    out.refresh_token = i.refreshToken;
+
+    out.expires_at = i.expiresAt;
+
+    // Map generic externalUserId internal field to the database field (snake_case)
+    // Actually our Proto defines them as athleteId / fitbitUserId.
+    // We need to map from the Proto keys to the DB keys (snake_case).
+    // The definition has externalUserIdField like 'athleteId' -> snake would be 'athlete_id'
+
+    // Simple heuristic: if the object has the property, map it to snake_case
+    // Or check the specific definition field
+    const extId = i[oauthDef.externalUserIdField];
+    if (extId) {
+      // Convention: camelCase -> snake_case
+      const dbKey = oauthDef.externalUserIdField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      out[dbKey] = extId;
+    }
+  } else {
+    // API Key based or others
+    // Check specific fields from registry? Or just hardcode common ones like apiKey/userId?
+    // Current usage for Hevy: apiKey, userId
+    if ('apiKey' in i) out.api_key = i.apiKey;
+    if ('userId' in i) out.user_id = i.userId;
+  }
+
+  return out;
+};
 
 const mapUserIntegrationsToFirestore = (i?: UserIntegrations): Record<string, unknown> | undefined => {
   if (!i) return undefined;
   const out: Record<string, unknown> = {};
-  if (i.hevy) out.hevy = mapHevyToFirestore(i.hevy);
-  if (i.fitbit) out.fitbit = mapFitbitToFirestore(i.fitbit);
-  if (i.strava) out.strava = mapStravaToFirestore(i.strava);
-  if (i.mock) out.mock = mapMockToFirestore(i.mock);
+
+  // Dynamic iteration based on registry, but we have to check actual data presence
+  for (const key of Object.keys(INTEGRATIONS)) {
+    const k = key as keyof UserIntegrations;
+    if (i[k]) {
+      out[key] = mapGenericIntegrationToFirestore(i[k] as unknown as Record<string, unknown>, key);
+    }
+  }
+
   return out;
 };
 
-interface FirestoreIntegrationData {
-  enabled?: boolean;
-  api_key?: string;
-  apiKey?: string; // Legacy
-  user_id?: string;
-  userId?: string; // Legacy
-  created_at?: unknown;
-  createdAt?: unknown; // Legacy
-  last_used_at?: unknown;
-  access_token?: string;
-  refresh_token?: string;
-  expires_at?: unknown;
-  fitbit_user_id?: string;
-  athlete_id?: string;
-}
+const mapGenericIntegrationFromFirestore = (data: GenericIntegrationData, key: string): Record<string, unknown> | undefined => {
+  if (!data) return undefined;
+
+  const def = INTEGRATIONS[key as keyof UserIntegrations];
+  if (!def) return undefined;
+
+  const out: Record<string, unknown> = {
+    enabled: !!data.enabled
+  };
+
+  // Standard timestamps
+  out.createdAt = toDate(data.created_at || data.createdAt);
+  out.lastUsedAt = toDate(data.last_used_at || data.lastUsedAt);
+
+  if (def.type === 'oauth') {
+    out.accessToken = data.access_token || data.accessToken || '';
+    out.refreshToken = data.refresh_token || data.refreshToken || '';
+
+    out.expiresAt = toDate(data.expires_at || data.expiresAt);
+
+    const extField = (def as OAuthIntegrationDefinition).externalUserIdField;
+    // camel -> snake for lookup
+    const dbKey = extField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
+    // Special handling for number mapping (Strava athleteId)
+    // Current logic was: parseInt(data.athlete_id || '0', 10)
+    // We need to know if the target field expects a number.
+    // Typescript reflection isn't perfect here.
+    // For now we can stick to string for externalIds unless verified.
+    // Strava athleteId is indeed a number in Proto (int64 -> number/long).
+
+    const val = data[dbKey] || data[extField];
+    if (key === 'strava' && val) {
+      out[extField] = parseInt(String(val), 10);
+    } else {
+      out[extField] = val || '';
+    }
+  } else {
+    // API Key / User ID
+    // Hevy logic: apiKey, userId
+    if (key === 'hevy') {
+      out.apiKey = data.api_key || data.apiKey || '';
+      out.userId = data.user_id || data.userId || '';
+    }
+  }
+
+  return out;
+};
 
 const mapUserIntegrationsFromFirestore = (data: Record<string, unknown> | undefined): UserIntegrations | undefined => {
   if (!data) return undefined;
-  return {
-    hevy: data.hevy ? {
-      enabled: !!(data.hevy as FirestoreIntegrationData).enabled,
-      apiKey: (data.hevy as FirestoreIntegrationData).api_key || (data.hevy as FirestoreIntegrationData).apiKey || '',
-      userId: (data.hevy as FirestoreIntegrationData).user_id || (data.hevy as FirestoreIntegrationData).userId || '',
-      createdAt: toDate((data.hevy as FirestoreIntegrationData).created_at),
-      lastUsedAt: toDate((data.hevy as FirestoreIntegrationData).last_used_at)
-    } : undefined,
-    fitbit: data.fitbit ? {
-      enabled: !!(data.fitbit as FirestoreIntegrationData).enabled,
-      accessToken: (data.fitbit as FirestoreIntegrationData).access_token || '',
-      refreshToken: (data.fitbit as FirestoreIntegrationData).refresh_token || '',
-      expiresAt: toDate((data.fitbit as FirestoreIntegrationData).expires_at),
-      fitbitUserId: (data.fitbit as FirestoreIntegrationData).fitbit_user_id || '',
-      createdAt: toDate((data.fitbit as FirestoreIntegrationData).created_at),
-      lastUsedAt: toDate((data.fitbit as FirestoreIntegrationData).last_used_at)
-    } : undefined,
-    strava: data.strava ? {
-      enabled: !!(data.strava as FirestoreIntegrationData).enabled,
-      accessToken: (data.strava as FirestoreIntegrationData).access_token || '',
-      refreshToken: (data.strava as FirestoreIntegrationData).refresh_token || '',
-      expiresAt: toDate((data.strava as FirestoreIntegrationData).expires_at),
-      athleteId: parseInt((data.strava as FirestoreIntegrationData).athlete_id || '0', 10),
-      createdAt: toDate((data.strava as FirestoreIntegrationData).created_at),
-      lastUsedAt: toDate((data.strava as FirestoreIntegrationData).last_used_at)
-    } : undefined,
-    mock: data.mock ? {
-      enabled: !!(data.mock as FirestoreIntegrationData).enabled
-    } : undefined
-  };
+  const out: Partial<UserIntegrations> = {};
+
+  for (const key of Object.keys(INTEGRATIONS)) {
+    const k = key as keyof UserIntegrations;
+    if (data[key]) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      out[k] = mapGenericIntegrationFromFirestore(data[key] as GenericIntegrationData, key) as any;
+    }
+  }
+
+  return out as UserIntegrations;
 };
 
 // Pipelines Mapping
