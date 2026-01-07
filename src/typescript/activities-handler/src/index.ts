@@ -120,6 +120,95 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       return;
     }
 
+    // GET /unsynchronized/:pipelineExecutionId -> Get full trace for an unsynchronized pipeline
+    if (req.path.includes('/unsynchronized/') && !req.path.endsWith('/unsynchronized')) {
+      const pathParts = req.path.split('/').filter(s => s !== '');
+      const pipelineExecutionId = pathParts[pathParts.length - 1];
+
+      if (pipelineExecutionId) {
+        try {
+          const executions = await ctx.services.execution.listByPipeline(pipelineExecutionId);
+          if (executions.length === 0) {
+            res.status(404).json({ error: 'Pipeline execution not found' });
+            return;
+          }
+
+          // Map to swagger schema
+          const pipelineExecution = executions.map(e => ({
+            executionId: e.id,
+            service: e.data.service,
+            status: executionStatusToString(e.data.status),
+            timestamp: e.data.timestamp ? new Date(e.data.timestamp as unknown as string).toISOString() : null,
+            startTime: e.data.startTime ? new Date(e.data.startTime as unknown as string).toISOString() : null,
+            endTime: e.data.endTime ? new Date(e.data.endTime as unknown as string).toISOString() : null,
+            errorMessage: e.data.errorMessage,
+            triggerType: e.data.triggerType,
+            inputsJson: e.data.inputsJson,
+            outputsJson: e.data.outputsJson
+          }));
+
+          res.status(200).json({ pipelineExecution, pipelineExecutionId });
+          return;
+        } catch (err) {
+          ctx.logger.error('Failed to fetch pipeline trace', { error: err });
+          res.status(500).json({ error: 'Internal Server Error' });
+          return;
+        }
+      }
+    }
+
+    // GET /unsynchronized -> List pipeline executions without matching synchronized activities
+    if (req.path.endsWith('/unsynchronized')) {
+      const limit = parseInt(req.query.limit as string || '20', 10);
+
+      // Get distinct pipeline executions for user
+      const allPipelines = await ctx.stores.executions.listDistinctPipelines(ctx.userId, limit * 3);
+
+      // Get synchronized pipeline IDs
+      const syncedPipelineIds = await activityStore.getSynchronizedPipelineIds(ctx.userId);
+
+      // Filter to unsynchronized (absence-based)
+      const unsyncedPipelines = allPipelines.filter(
+        p => p.data.pipelineExecutionId && !syncedPipelineIds.has(p.data.pipelineExecutionId)
+      ).slice(0, limit);
+
+      // Synthesize meaningful entries from inputsJson
+      const executions = unsyncedPipelines.map(e => {
+        let title: string | undefined;
+        let activityType: string | undefined;
+        let source: string | undefined;
+
+        // Try to extract activity info from inputsJson
+        if (e.data.inputsJson) {
+          try {
+            const inputs = JSON.parse(e.data.inputsJson);
+            // Activity data could be nested in various ways
+            const activity = inputs.activity || inputs.standardizedActivity || inputs;
+            title = activity.title || activity.name;
+            if (activity.type !== undefined) {
+              activityType = activityTypeToString(activity.type);
+            }
+            source = activity.source ? activitySourceToString(activity.source) : undefined;
+          } catch {
+            // Ignore parse errors
+          }
+        }
+
+        return {
+          pipelineExecutionId: e.data.pipelineExecutionId,
+          title: title || 'Unknown Activity',
+          activityType: activityType || 'Unknown',
+          source: source || 'Unknown',
+          status: executionStatusToString(e.data.status),
+          errorMessage: e.data.errorMessage,
+          timestamp: e.data.timestamp ? new Date(e.data.timestamp as unknown as string).toISOString() : null
+        };
+      });
+
+      res.status(200).json({ executions });
+      return;
+    }
+
     // GET /:id -> Single activity
     // Check if this is a list request (path ends with /activities or is just /)
     if (req.path === '/' || req.path === '/activities' || req.path.endsWith('/activities')) {

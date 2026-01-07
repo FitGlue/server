@@ -78,6 +78,43 @@ export class ExecutionStore {
   }
 
   /**
+   * List distinct pipeline executions for a user.
+   * Returns the most recent execution record per unique pipeline_execution_id.
+   * Used for finding unsynchronized executions (those that don't have a matching synced activity).
+   *
+   * Note: We fetch more than limit to account for deduplication, then trim.
+   */
+  async listDistinctPipelines(userId: string, limit: number = 50): Promise<{ id: string, data: ExecutionRecord }[]> {
+    // Fetch a larger set to account for multiple executions per pipeline
+    const fetchLimit = limit * 10;
+
+    const query = this.collection()
+      .where('user_id', '==', userId)
+      .orderBy('timestamp', 'desc')
+      .limit(fetchLimit);
+
+    const snapshot = await query.get();
+
+    // Deduplicate by pipeline_execution_id, keeping the most recent (first seen since ordered desc)
+    const seenPipelines = new Set<string>();
+    const deduped: { id: string, data: ExecutionRecord }[] = [];
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data() as ExecutionRecord;
+      const pipelineId = data.pipelineExecutionId;
+
+      if (pipelineId && !seenPipelines.has(pipelineId)) {
+        seenPipelines.add(pipelineId);
+        deduped.push({ id: doc.id, data });
+      }
+
+      if (deduped.length >= limit) break;
+    }
+
+    return deduped;
+  }
+
+  /**
    * Watch executions with real-time updates.
    */
   watch(filters: { service?: string, status?: number, userId?: string, limit?: number }, onNext: (executions: { id: string, data: ExecutionRecord }[]) => void, onError?: (error: Error) => void): () => void {

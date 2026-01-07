@@ -107,4 +107,25 @@ export class ActivityStore {
 
     return !snapshot.empty;
   }
+
+  /**
+   * Get all pipeline_execution_ids that have synchronized activities for a user.
+   * Used for absence-based unsynchronized detection.
+   */
+  async getSynchronizedPipelineIds(userId: string, limit: number = 200): Promise<Set<string>> {
+    const snapshot = await this.synchronizedCollection(userId)
+      .orderBy('synced_at', 'desc')
+      .limit(limit)
+      .select('pipeline_execution_id')
+      .get();
+
+    const ids = new Set<string>();
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+      if (data.pipelineExecutionId) {
+        ids.add(data.pipelineExecutionId);
+      }
+    }
+    return ids;
+  }
 }

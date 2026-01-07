@@ -141,5 +141,128 @@ describe('activities-handler', () => {
       } as any), res, ctx);
       expect(res.status).toHaveBeenCalledWith(500);
     });
+
+    describe('/unsynchronized', () => {
+      beforeEach(() => {
+        // Add executions store and execution service mocks
+        ctx.stores.executions = {
+          listDistinctPipelines: jest.fn(),
+        };
+        ctx.services = {
+          execution: {
+            listByPipeline: jest.fn(),
+          },
+        };
+        ctx.stores.activities.getSynchronizedPipelineIds = jest.fn();
+      });
+
+      it('/unsynchronized returns list of unsynchronized executions', async () => {
+        // Mock: one pipeline execution that is NOT synchronized
+        ctx.stores.executions.listDistinctPipelines.mockResolvedValue([{
+          id: 'exec-1',
+          data: {
+            pipelineExecutionId: 'pipeline-1',
+            service: 'enricher',
+            status: 7, // STATUS_SKIPPED
+            timestamp: new Date('2026-01-01T12:00:00Z'),
+            errorMessage: 'Activity filter rejected',
+            inputsJson: JSON.stringify({ activity: { title: 'Morning Run', type: 27, source: 'SOURCE_FITBIT' } }),
+          },
+        }]);
+        ctx.stores.activities.getSynchronizedPipelineIds.mockResolvedValue(new Set());
+
+        await handler(({
+          method: 'GET',
+          body: {},
+          query: {},
+          path: '/unsynchronized',
+        } as any), res, ctx);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({
+          executions: [{
+            pipelineExecutionId: 'pipeline-1',
+            title: 'Morning Run',
+            activityType: 'Run',
+            source: 'Fitbit',
+            status: 'SKIPPED',
+            errorMessage: 'Activity filter rejected',
+            timestamp: '2026-01-01T12:00:00.000Z',
+          }],
+        });
+      });
+
+      it('/unsynchronized filters out synchronized pipelines', async () => {
+        ctx.stores.executions.listDistinctPipelines.mockResolvedValue([{
+          id: 'exec-1',
+          data: {
+            pipelineExecutionId: 'pipeline-synced',
+            service: 'enricher',
+            status: 2, // STATUS_SUCCESS
+            timestamp: new Date(),
+          },
+        }]);
+        // This pipeline is synchronized
+        ctx.stores.activities.getSynchronizedPipelineIds.mockResolvedValue(new Set(['pipeline-synced']));
+
+        await handler(({
+          method: 'GET',
+          body: {},
+          query: {},
+          path: '/unsynchronized',
+        } as any), res, ctx);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({ executions: [] });
+      });
+
+      it('/unsynchronized/:id returns pipeline trace', async () => {
+        ctx.services.execution.listByPipeline.mockResolvedValue([{
+          id: 'exec-1',
+          data: {
+            service: 'fitbit-handler',
+            status: 1,
+            timestamp: new Date('2026-01-01T12:00:00Z'),
+          },
+        }, {
+          id: 'exec-2',
+          data: {
+            service: 'enricher',
+            status: 7,
+            timestamp: new Date('2026-01-01T12:00:01Z'),
+            errorMessage: 'Skipped by filter',
+          },
+        }]);
+
+        await handler(({
+          method: 'GET',
+          body: {},
+          query: {},
+          path: '/unsynchronized/pipeline-1',
+        } as any), res, ctx);
+
+        expect(res.status).toHaveBeenCalledWith(200);
+        expect(res.json).toHaveBeenCalledWith({
+          pipelineExecutionId: 'pipeline-1',
+          pipelineExecution: expect.arrayContaining([
+            expect.objectContaining({ service: 'fitbit-handler', status: 'STARTED' }),
+            expect.objectContaining({ service: 'enricher', status: 'SKIPPED', errorMessage: 'Skipped by filter' }),
+          ]),
+        });
+      });
+
+      it('/unsynchronized/:id returns 404 if not found', async () => {
+        ctx.services.execution.listByPipeline.mockResolvedValue([]);
+
+        await handler(({
+          method: 'GET',
+          body: {},
+          query: {},
+          path: '/unsynchronized/unknown',
+        } as any), res, ctx);
+
+        expect(res.status).toHaveBeenCalledWith(404);
+      });
+    });
   });
 });
