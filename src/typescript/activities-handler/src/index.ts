@@ -167,9 +167,11 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       // Get synchronized pipeline IDs
       const syncedPipelineIds = await activityStore.getSynchronizedPipelineIds(ctx.userId);
 
-      // Filter to unsynchronized (absence-based)
+      // Filter to unsynchronized (absence-based) AND not successful (to avoid historical false positives)
       const unsyncedPipelines = allPipelines.filter(
-        p => p.data.pipelineExecutionId && !syncedPipelineIds.has(p.data.pipelineExecutionId)
+        p => p.data.pipelineExecutionId &&
+          !syncedPipelineIds.has(p.data.pipelineExecutionId) &&
+          p.data.status !== ExecutionStatus.STATUS_SUCCESS
       ).slice(0, limit);
 
       // Synthesize meaningful entries from inputsJson
