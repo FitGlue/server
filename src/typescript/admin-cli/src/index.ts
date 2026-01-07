@@ -61,6 +61,9 @@ addActivitiesCommands(program, userService);
 import { addInputsCommands } from './commands/inputs';
 addInputsCommands(program);
 
+import { addTerraformCommands } from './commands/terraform';
+addTerraformCommands(program);
+
 import { randomUUID } from 'crypto';
 import * as crypto from 'crypto';
 

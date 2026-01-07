@@ -32,17 +32,17 @@ Creates a new user in the system. If `userId` is omitted, a random UUID will be 
     *   **Label**: A descriptive name for the key (e.g., "Mobile App").
     *   **Scopes**: Select `read:activity` (required for ingesting data).
 
-### `users:configure-hevy <userId>`
+### `users:configure-integration <provider> <userId>`
 
-Configures the Hevy integration for a specific user by setting their Hevy API Key.
+Configures an integration for a specific user. This command dynamically prompts for fields required by the provider (e.g., API keys, client secrets).
 
 **Usage:**
 ```bash
-./fitglue-admin users:configure-hevy my-user-id
+./fitglue-admin users:configure-integration hevy my-user-id
 ```
 
 **Prompts:**
-1.  **Hevy API Key**: Enter the user's Hevy API Key.
+Prompts vary by provider. For Hevy, it will ask for the Hevy API Key.
 
 ### `users:list`
 
@@ -222,7 +222,7 @@ Real-time monitor of the **latest single execution**. It auto-updates and redraw
 ./fitglue-admin executions:latest-watch --status FAILED
 ```
 
-### `executions:get`
+### `executions:get <executionId>`
 
 Get full details for a specific execution, including input/output payloads (if logged).
 
@@ -232,6 +232,14 @@ Get full details for a specific execution, including input/output payloads (if l
 
 **Options:**
 - `-v, --verbose`: Show full execution details without truncating large arrays or objects (e.g. FIT file data streams).
+
+### `executions:get-by-pipeline <pipelineExecutionId>`
+
+Get all executions associated with a specific pipeline run.
+
+```bash
+./fitglue-admin executions:get-by-pipeline <pipelineExecutionId>
+```
 
 ### `executions:create <executionId>`
 
@@ -273,16 +281,18 @@ Get full details for a specific execution, including input/output payloads (if l
 <span style="color:red">**DANGER ZONE**</span>
 
 Deletes **ALL** execution logs from the Firestore database.
-- Requires explicit `yes` confirmation.
-- Requires typing `DELETE ALL` to proceed.
 
+**Options:**
+- `-f, --force`: Skip confirmation prompts (DANGEROUS).
+
+**Usage:**
 ```bash
 ./fitglue-admin executions:clean
 ```
 
 ## Execution Replay Commands
 
-### `replay:pubsub <executionId>`
+### `replay:pubsub <execution-id>`
 
 Replay a Pub/Sub-triggered execution by seeking the subscription to just before the original execution time. Useful for re-processing failed enricher, router, or uploader executions.
 
@@ -321,7 +331,7 @@ Executing: gcloud pubsub subscriptions seek ...
 ✅ Replay initiated. Check logs for new execution.
 ```
 
-### `replay:webhook <executionId>`
+### `replay:webhook <execution-id>`
 
 Replay an HTTP webhook execution by re-POSTing the original payload to the webhook endpoint. Useful for re-processing failed Hevy or Fitbit webhook handlers.
 
@@ -372,7 +382,7 @@ Generates an OAuth authorization URL for a specific provider (Strava or Fitbit).
 **Output:**
 Prints a URL that you can send to the user (or click yourself) to authorize the application. Upon success, the callback handler will save the tokens to the user's Firestore record.
 
-### `fitbit:subscribe <userId>`
+### `fitbit:subscribe [userId]`
 
 Creates a Fitbit "API Subscription" for the user. this tells Fitbit's servers to send real-time notifications to our Webhook Handler whenever this user syncs new activities. This command **must** be run after the user has connected their Fitbit account.
 
@@ -407,19 +417,6 @@ Permanently deletes a user and their associated root document. Note that subcoll
 ```
 
 
-### `users:update <userId>`
-
-Updates the configuration for an existing user. Currently supports updating integration settings.
-
-**Usage:**
-```bash
-./fitglue-admin users:update my-test-user
-```
-
-**Prompts:**
-1.  **Hevy Integration**: Update Hevy API Key?
-2.  **Strava Integration**: Update Strava credentials? (Access Token, Refresh Token, Expires At, Athlete ID)
-3.  **Fitbit Integration**: Update Fitbit credentials? (Access Token, Refresh Token, Expires At, User ID)
 
 ### `users:add-pipeline <userId>`
 
@@ -438,6 +435,22 @@ Adds a data processing pipeline to a user. This command allows you to define com
     *   You can optionally provide a JSON string for specific enricher inputs.
 3.  **Destinations**: Select where the final data should be sent (e.g., `strava`).
 
+## Infrastructure Commands
+
+### `terraform:unlock <environment>`
+
+Attempt to find and clear a Terraform state lock for a specific environment (`dev`, `test`, `prod`).
+
+This command is useful when a Terraform run is interrupted and leaves the state locked. It re-initializes Terraform for the target environment and uses a lightweight `state list` check to detect locks without requiring deployment artifacts (ZIPs).
+
+**Usage:**
+```bash
+./fitglue-admin terraform:unlock dev
+```
+
+**Prompt:**
+If a lock is detected, it will display the Lock ID and ask for confirmation before force-unlocking.
+
 ## GCS Bucket Commands
 
 ### `buckets:list`
@@ -447,7 +460,7 @@ List all GCS buckets in the project.
 ./fitglue-admin buckets:list
 ```
 
-### `buckets:get <bucketId>`
+### `buckets:get <bucketName>`
 Get details about a specific GCS bucket.
 
 ```bash
