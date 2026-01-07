@@ -337,16 +337,22 @@ Checks start location against known Parkrun coordinates. If within 200m and time
   "inputs": {
     "exclude_activity_types": "WALK,YOGA", // Comma-separated list of types to skip
     "exclude_title_contains": "commute",   // Skip if title contains this (case-insensitive)
-    "exclude_description_contains": ""     // Skip if description contains this
+    "exclude_description_contains": "",    // Skip if description contains this
+    "include_activity_types": "RUNNING",   // OPTIONAL: Only allow these types
+    "include_title_contains": "",          // OPTIONAL: Only allow if title contains this
+    "include_description_contains": ""     // OPTIONAL: Only allow if description contains this
   }
 }
 ```
 
 **Behavior**:
-- Checks if activity matches any exclusion criteria.
-- If matched, returns `HaltPipeline: true`.
-- Orchestrator stops processing and sets execution status to `STATUS_SKIPPED`.
-- Activity is NOT sent to destinations.
+1. **Exclusions**: Checks if activity matches any `exclude_*` criteria. If matched -> **HALT**.
+2. **Inclusions** (Allow-list):
+   - If any `include_*` fields are set, activity MUST match at least one of them.
+   - If no match found -> **HALT**.
+   - If no `include_*` fields are set -> **PASS**.
+   - Matches are case-insensitive.
+- When halted, Orchestrator returns `STATUS_SKIPPED`.
 
 ## Configuring Pipelines via Admin CLI
 

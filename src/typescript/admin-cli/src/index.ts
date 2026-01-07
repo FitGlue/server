@@ -2170,6 +2170,21 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
                 type: 'input',
                 name: 'exclude_description_contains',
                 message: 'Exclude Descriptions Containing (comma-separated case-insensitive):',
+            },
+            {
+                type: 'input',
+                name: 'include_activity_types',
+                message: 'Include ONLY Activity Types (Optional. If set, others are skipped):',
+            },
+            {
+                type: 'input',
+                name: 'include_title_contains',
+                message: 'Include ONLY Titles Containing (Optional):',
+            },
+            {
+                type: 'input',
+                name: 'include_description_contains',
+                message: 'Include ONLY Descriptions Containing (Optional):',
             }
         ]);
         inputs = answers;
