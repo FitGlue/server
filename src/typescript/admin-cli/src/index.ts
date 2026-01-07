@@ -2155,11 +2155,21 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
             fields: userConfig.fields.join(',')
         };
     } else if (providerType === EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER) {
+        // Reuse choice list logic from ENRICHER_PROVIDER_CONDITION_MATCHER
+        const activityTypeChoices = Object.keys(ActivityType)
+            .filter(k => isNaN(Number(k)))
+            .map(k => ({
+                name: formatActivityType(k),
+                value: ActivityType[k as keyof typeof ActivityType]
+            }))
+            .sort((a, b) => a.name.localeCompare(b.name));
+
         const answers = await inquirer.prompt([
             {
-                type: 'input',
+                type: 'checkbox',
                 name: 'exclude_activity_types',
-                message: 'Exclude Activity Types (comma-separated, e.g. WALK, YOGA):',
+                message: 'Exclude Activity Types (Select multiple):',
+                choices: activityTypeChoices
             },
             {
                 type: 'input',
@@ -2172,9 +2182,10 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
                 message: 'Exclude Descriptions Containing (comma-separated case-insensitive):',
             },
             {
-                type: 'input',
+                type: 'checkbox',
                 name: 'include_activity_types',
                 message: 'Include ONLY Activity Types (Optional. If set, others are skipped):',
+                choices: activityTypeChoices
             },
             {
                 type: 'input',
@@ -2187,7 +2198,19 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
                 message: 'Include ONLY Descriptions Containing (Optional):',
             }
         ]);
-        inputs = answers;
+
+        // Convert selected enum values (or strings depending on how inquirer returns them with value) back to comma-sep strings if needed,
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapTypesToString = (selectedValues: any[]) => {
+            return selectedValues.map(v => ActivityType[v]).join(',');
+        };
+
+        inputs = {
+            ...answers,
+            exclude_activity_types: mapTypesToString(answers.exclude_activity_types),
+            include_activity_types: mapTypesToString(answers.include_activity_types)
+        };
     } else {
         // Only prompt for JSON if the provider might need config
         // Skip for providers with no config options
