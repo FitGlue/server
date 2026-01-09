@@ -527,3 +527,130 @@ resource "google_cloud_run_service_iam_member" "activities_handler_invoker" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# ----------------- User Profile Handler -----------------
+resource "google_cloudfunctions2_function" "user_profile_handler" {
+  name        = "user-profile-handler"
+  location    = var.region
+  description = "Handles user profile operations (GET, PATCH, DELETE)"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "userProfileHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "user_profile_handler_invoker" {
+  project  = google_cloudfunctions2_function.user_profile_handler.project
+  location = google_cloudfunctions2_function.user_profile_handler.location
+  service  = google_cloudfunctions2_function.user_profile_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ----------------- User Integrations Handler -----------------
+resource "google_cloudfunctions2_function" "user_integrations_handler" {
+  name        = "user-integrations-handler"
+  location    = var.region
+  description = "Handles user integration management (list, connect, disconnect)"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "userIntegrationsHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      BASE_URL             = var.base_url
+    }
+
+    secret_environment_variables {
+      key        = "STRAVA_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.strava_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "FITBIT_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.fitbit_client_id.secret_id
+      version    = "latest"
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "user_integrations_handler_invoker" {
+  project  = google_cloudfunctions2_function.user_integrations_handler.project
+  location = google_cloudfunctions2_function.user_integrations_handler.location
+  service  = google_cloudfunctions2_function.user_integrations_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ----------------- User Pipelines Handler -----------------
+resource "google_cloudfunctions2_function" "user_pipelines_handler" {
+  name        = "user-pipelines-handler"
+  location    = var.region
+  description = "Handles user pipeline CRUD operations"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "userPipelinesHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "user_pipelines_handler_invoker" {
+  project  = google_cloudfunctions2_function.user_pipelines_handler.project
+  location = google_cloudfunctions2_function.user_pipelines_handler.location
+  service  = google_cloudfunctions2_function.user_pipelines_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}

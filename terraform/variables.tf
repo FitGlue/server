@@ -30,3 +30,8 @@ variable "domain_name" {
   description = "Custom domain for Firebase Hosting"
   type        = string
 }
+
+variable "base_url" {
+  description = "Base URL for the application (used for OAuth redirects)"
+  type        = string
+}

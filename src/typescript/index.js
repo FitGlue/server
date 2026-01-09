@@ -47,3 +47,18 @@ exports.mockSourceHandler = (req, res) => {
   const mockSource = require('./mock-source-handler/build/index');
   return mockSource.mockSourceHandler(req, res);
 };
+
+exports.userProfileHandler = (req, res) => {
+  const userProfile = require('./user-profile-handler/build/index');
+  return userProfile.userProfileHandler(req, res);
+};
+
+exports.userIntegrationsHandler = (req, res) => {
+  const userIntegrations = require('./user-integrations-handler/build/index');
+  return userIntegrations.userIntegrationsHandler(req, res);
+};
+
+exports.userPipelinesHandler = (req, res) => {
+  const userPipelines = require('./user-pipelines-handler/build/index');
+  return userPipelines.userPipelinesHandler(req, res);
+};
