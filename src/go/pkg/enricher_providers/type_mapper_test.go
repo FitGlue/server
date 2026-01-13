@@ -103,4 +103,3 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 		})
 	}
 }
-

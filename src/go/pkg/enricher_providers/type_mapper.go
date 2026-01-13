@@ -87,4 +87,3 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 	// No matching mapping found
 	return &EnrichmentResult{}, nil
 }
-

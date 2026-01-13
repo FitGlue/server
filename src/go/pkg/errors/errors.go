@@ -14,9 +14,9 @@ type ErrorCode string
 // Common error codes used throughout FitGlue.
 const (
 	// User errors
-	CodeUserNotFound      ErrorCode = "USER_NOT_FOUND"
-	CodeUserUnauthorized  ErrorCode = "USER_UNAUTHORIZED"
-	CodeUserForbidden     ErrorCode = "USER_FORBIDDEN"
+	CodeUserNotFound     ErrorCode = "USER_NOT_FOUND"
+	CodeUserUnauthorized ErrorCode = "USER_UNAUTHORIZED"
+	CodeUserForbidden    ErrorCode = "USER_FORBIDDEN"
 
 	// Integration errors
 	CodeIntegrationNotFound    ErrorCode = "INTEGRATION_NOT_FOUND"
@@ -25,23 +25,23 @@ const (
 	CodeIntegrationRateLimited ErrorCode = "INTEGRATION_RATE_LIMITED"
 
 	// Pipeline errors
-	CodePipelineNotFound     ErrorCode = "PIPELINE_NOT_FOUND"
+	CodePipelineNotFound      ErrorCode = "PIPELINE_NOT_FOUND"
 	CodePipelineInvalidConfig ErrorCode = "PIPELINE_INVALID_CONFIG"
 
 	// Enricher errors
-	CodeEnricherFailed      ErrorCode = "ENRICHER_FAILED"
-	CodeEnricherNotFound    ErrorCode = "ENRICHER_NOT_FOUND"
-	CodeEnricherTimeout     ErrorCode = "ENRICHER_TIMEOUT"
-	CodeEnricherSkipped     ErrorCode = "ENRICHER_SKIPPED"
+	CodeEnricherFailed   ErrorCode = "ENRICHER_FAILED"
+	CodeEnricherNotFound ErrorCode = "ENRICHER_NOT_FOUND"
+	CodeEnricherTimeout  ErrorCode = "ENRICHER_TIMEOUT"
+	CodeEnricherSkipped  ErrorCode = "ENRICHER_SKIPPED"
 
 	// Activity errors
-	CodeActivityNotFound     ErrorCode = "ACTIVITY_NOT_FOUND"
+	CodeActivityNotFound      ErrorCode = "ACTIVITY_NOT_FOUND"
 	CodeActivityInvalidFormat ErrorCode = "ACTIVITY_INVALID_FORMAT"
 
 	// Infrastructure errors
-	CodeStorageError    ErrorCode = "STORAGE_ERROR"
-	CodePubSubError     ErrorCode = "PUBSUB_ERROR"
-	CodeSecretError     ErrorCode = "SECRET_ERROR"
+	CodeStorageError      ErrorCode = "STORAGE_ERROR"
+	CodePubSubError       ErrorCode = "PUBSUB_ERROR"
+	CodeSecretError       ErrorCode = "SECRET_ERROR"
 	CodeNotificationError ErrorCode = "NOTIFICATION_ERROR"
 
 	// General errors
@@ -147,9 +147,9 @@ var (
 	ErrNotificationError = &FitGlueError{Code: CodeNotificationError, Message: "notification error", Retryable: true}
 
 	// General errors
-	ErrValidation    = &FitGlueError{Code: CodeValidationError, Message: "validation error", Retryable: false}
-	ErrInternal      = &FitGlueError{Code: CodeInternalError, Message: "internal error", Retryable: false}
-	ErrTimeout       = &FitGlueError{Code: CodeTimeoutError, Message: "timeout", Retryable: true}
+	ErrValidation = &FitGlueError{Code: CodeValidationError, Message: "validation error", Retryable: false}
+	ErrInternal   = &FitGlueError{Code: CodeInternalError, Message: "internal error", Retryable: false}
+	ErrTimeout    = &FitGlueError{Code: CodeTimeoutError, Message: "timeout", Retryable: true}
 )
 
 // New creates a new FitGlueError with the given code and message.
