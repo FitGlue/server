@@ -30,6 +30,7 @@ interface EnricherConfig {
 }
 
 interface Pipeline {
+  id?: string;
   source?: string;
   enrichers?: EnricherConfig[];
   destinations?: string[];
@@ -69,30 +70,34 @@ async function main() {
 
   for (const userDoc of usersSnapshot.docs) {
     const userId = userDoc.id;
+    const userData = userDoc.data();
 
-    // Get all pipelines for this user
-    const pipelinesSnapshot = await db
-      .collection('users')
-      .doc(userId)
-      .collection('pipelines')
-      .get();
+    // Pipelines are stored on the user document, not in a subcollection
+    const pipelines = (userData.pipelines || []) as Pipeline[];
 
-    if (pipelinesSnapshot.empty) continue;
+    if (pipelines.length === 0) {
+      console.log(`\n👤 User: ${userId} (no pipelines)`);
+      continue;
+    }
 
-    console.log(`\n👤 User: ${userId} (${pipelinesSnapshot.size} pipelines)`);
+    console.log(`\n👤 User: ${userId} (${pipelines.length} pipelines)`);
 
-    for (const pipelineDoc of pipelinesSnapshot.docs) {
+    let userNeedsMigration = false;
+    const updatedPipelines: Pipeline[] = [];
+
+    for (let pIdx = 0; pIdx < pipelines.length; pIdx++) {
       totalPipelines++;
-      const pipelineId = pipelineDoc.id;
-      const pipeline = pipelineDoc.data() as Pipeline;
+      const pipeline = pipelines[pIdx];
+      const pipelineId = pipeline.id || `pipeline-${pIdx}`;
 
       if (!pipeline.enrichers || pipeline.enrichers.length === 0) {
         console.log(`  📝 ${pipelineId}: No enrichers, skipping`);
+        updatedPipelines.push(pipeline);
         skippedPipelines++;
         continue;
       }
 
-      let needsMigration = false;
+      let pipelineNeedsMigration = false;
       const updatedEnrichers: EnricherConfig[] = [];
 
       for (const enricher of pipeline.enrichers) {
@@ -104,14 +109,14 @@ async function main() {
             // Migrate inputs → typedConfig
             updated.typedConfig = { ...enricher.inputs };
             delete updated.inputs;
-            needsMigration = true;
+            pipelineNeedsMigration = true;
             migratedEnrichers++;
             console.log(`  ✨ ${pipelineId}: Migrating enricher type ${enricher.providerType}`);
             console.log(`     inputs: ${JSON.stringify(enricher.inputs)}`);
           } else {
             // Both exist - prefer typedConfig, remove inputs
             delete updated.inputs;
-            needsMigration = true;
+            pipelineNeedsMigration = true;
             console.log(`  ⚠️ ${pipelineId}: Both fields exist, removing inputs`);
           }
         }
@@ -119,22 +124,27 @@ async function main() {
         updatedEnrichers.push(updated);
       }
 
-      if (needsMigration) {
+      if (pipelineNeedsMigration) {
         migratedPipelines++;
-
-        if (!DRY_RUN) {
-          await pipelineDoc.ref.update({
-            enrichers: updatedEnrichers,
-            _migratedAt: new Date().toISOString(),
-            _migrationVersion: 'inputs_to_typedConfig_v1',
-          });
-          console.log(`  ✓ ${pipelineId}: Updated in Firestore`);
-        } else {
-          console.log(`  🔍 ${pipelineId}: Would update (dry run)`);
-        }
+        userNeedsMigration = true;
+        updatedPipelines.push({ ...pipeline, enrichers: updatedEnrichers });
       } else {
         console.log(`  ✓ ${pipelineId}: Already migrated or no inputs`);
+        updatedPipelines.push(pipeline);
         skippedPipelines++;
+      }
+    }
+
+    if (userNeedsMigration) {
+      if (!DRY_RUN) {
+        await userDoc.ref.update({
+          pipelines: updatedPipelines,
+          _migratedAt: new Date().toISOString(),
+          _migrationVersion: 'inputs_to_typedConfig_v1',
+        });
+        console.log(`  ✓ User ${userId}: Updated in Firestore`);
+      } else {
+        console.log(`  🔍 User ${userId}: Would update (dry run)`);
       }
     }
   }
