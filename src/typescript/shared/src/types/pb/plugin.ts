@@ -69,6 +69,22 @@ export interface PluginManifest {
   marketingDescription: string;
   /** List of features/capabilities to display */
   features: string[];
+  /** Before/after examples showing what the plugin does */
+  transformations: Transformation[];
+  /** List of use cases (e.g., "Share detailed workout logs") */
+  useCases: string[];
+}
+
+/** Transformation shows a before/after example of what a plugin does to a field */
+export interface Transformation {
+  /** Field being transformed (e.g., "description", "gpsData") */
+  field: string;
+  /** Human-readable label (e.g., "Activity Description") */
+  label: string;
+  /** Example value before transformation */
+  before: string;
+  /** Example value after transformation */
+  after: string;
 }
 
 /** ConfigFieldSchema defines a single configuration field */

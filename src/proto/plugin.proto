@@ -30,6 +30,16 @@ message PluginManifest {
   // Marketing metadata
   string marketing_description = 11;          // Extended description for marketing site (markdown supported)
   repeated string features = 12;              // List of features/capabilities to display
+  repeated Transformation transformations = 13; // Before/after examples showing what the plugin does
+  repeated string use_cases = 14;             // List of use cases (e.g., "Share detailed workout logs")
+}
+
+// Transformation shows a before/after example of what a plugin does to a field
+message Transformation {
+  string field = 1;                           // Field being transformed (e.g., "description", "gpsData")
+  string label = 2;                           // Human-readable label (e.g., "Activity Description")
+  string before = 3;                          // Example value before transformation
+  string after = 4;                           // Example value after transformation
 }
 
 

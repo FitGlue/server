@@ -105,6 +105,8 @@ When you complete a workout in Hevy, FitGlue receives a webhook notification and
     '✅ Real-time sync via webhooks',
     '✅ Works seamlessly with all FitGlue boosters',
   ],
+  transformations: [],
+  useCases: [],
 });
 
 registerSource({
@@ -129,6 +131,8 @@ FitGlue connects to the Fitbit API and receives notifications when you complete 
     '✅ GPS tracks for outdoor activities',
     '✅ Automatic sync when activities complete',
   ],
+  transformations: [],
+  useCases: [],
 });
 
 registerSource({
@@ -142,6 +146,8 @@ registerSource({
   configSchema: [],
   marketingDescription: '',
   features: [],
+  transformations: [],
+  useCases: [],
 });
 
 // ============================================================================
@@ -171,6 +177,8 @@ Once activities pass through your enrichment pipeline, FitGlue uploads them to S
     '✅ Heart rate and GPS data attached',
     '✅ Secure OAuth connection to your Strava account',
   ],
+  transformations: [],
+  useCases: [],
 });
 
 // ============================================================================
@@ -221,26 +229,29 @@ FitGlue analyzes your sets, reps, and weight data, identifies your primary muscl
     '✅ Narrative summaries of your strength workouts',
     '✅ Highlights key lifts and personal bests',
     '✅ Analyzes volume trends and intensity',
-    '✅ customizable formats (Compact, Detailed, Verbose)',
+    '✅ Customizable formats (Compact, Detailed, Verbose)',
   ],
-  exampleBefore: 'Upper Body Workout',
-  exampleAfter: `💪 Upper Body Workout
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: '(empty)',
+      after: `Workout Summary:
+📊 20 sets • 8,240kg volume • 57 reps • Heaviest: 80kg (Bench Press)
 
-Hit a solid upper body session today — 5 exercises, 20 sets total. Focused on chest and shoulders with some triceps accessory work.
-
-**Bench Press** • 4 × 8 × 80kg (2,560kg volume)
-**Overhead Press** • 4 × 10 × 40kg
-**Incline DB Press** • 4 × 12 × 24kg
-**Lateral Raises** • 4 × 15 × 10kg
-**Tricep Pushdowns** • 4 × 12 × 25kg
-
-📊 Total Volume: 8,240kg | 57 reps | New PR on Bench!`,
+- Bench Press: 4 x 8 × 80.0kg
+- Overhead Press: 4 x 10 × 40.0kg
+- Incline DB Press: 4 x 12 × 24.0kg
+- Lateral Raises: 4 x 15 × 10.0kg
+- Tricep Pushdowns: 4 x 12 × 25.0kg`,
+    },
+  ],
   useCases: [
-    'Share detailed workout logs on Strava',
+    'Share detailed strength logs on Strava',
     'Track progressive overload with volume stats',
     'Celebrate personal records automatically',
   ],
-} as PluginManifest & { exampleBefore?: string; exampleAfter?: string; useCases?: string[] });
+});
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP, {
   id: 'muscle-heatmap',
@@ -301,21 +312,26 @@ Every exercise in your workout is mapped to primary and secondary muscle groups.
     '✅ Adjustable muscle coefficients',
     '✅ Works with all strength activities',
   ],
-  exampleBefore: 'Push Day completed',
-  exampleAfter: `Push Day completed
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Push Day completed',
+      after: `Push Day completed
 
-🔥 Muscle Heatmap
-━━━━━━━━━━━━━━━━
-Chest    🟪🟪🟪🟪🟪
-Shoulders 🟪🟪🟪🟪⬜
-Triceps  🟪🟪🟪⬜⬜
-Core     🟪🟪⬜⬜⬜`,
+Muscle Heatmap:
+- Chest: 🟪🟪🟪🟪🟪
+- Shoulders: 🟪🟪🟪🟪⬜
+- Triceps: 🟪🟪🟪⬜⬜
+- Core: 🟪🟪⬜⬜⬜`,
+    },
+  ],
   useCases: [
     'Visualize muscle balance in your program',
     'Show training focus areas on Strava',
     'Identify lagging muscle groups',
   ],
-} as PluginManifest & { exampleBefore?: string; exampleAfter?: string; useCases?: string[] });
+});
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, {
   id: 'fitbit-heart-rate',
@@ -338,6 +354,19 @@ When an activity is imported (e.g., from Hevy), FitGlue checks your Fitbit accou
     '✅ Perfect for gym workouts where you don\'t start a GPS watch',
     '✅ Accurate calorie data based on heart rate',
     '✅ Seamless background synchronization',
+  ],
+  transformations: [
+    {
+      field: 'heartRateStream',
+      label: 'Heart Rate Data',
+      before: '(no heart rate)',
+      after: '❤️ Second-by-second HR stream attached\nAvg: ~130bpm | Max: ~165bpm',
+    },
+  ],
+  useCases: [
+    'Add heart rate to Hevy gym workouts',
+    'Complete activity data on Strava',
+    'Track training intensity across all activities',
   ],
 });
 
@@ -385,6 +414,25 @@ When an activity is processed, Virtual GPS overlays a pre-defined GPS route onto
     '✅ Choice of scenic routes (London, NYC)',
     '✅ Route scaled to match workout duration',
   ],
+  transformations: [
+    {
+      field: 'gpsData',
+      label: 'GPS Coordinates',
+      before: '(no location)',
+      after: '📍 Hyde Park, London\nSecond-by-second lat/long stream attached',
+    },
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: '(empty)',
+      after: '🗺️ Took a virtual tour of Hyde Park, London (GPS generated for this indoor workout)',
+    },
+  ],
+  useCases: [
+    'Get indoor activities on your Strava heatmap',
+    'Add visual interest to home gym sessions',
+    'Virtual touring while on the treadmill',
+  ],
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK, {
@@ -407,6 +455,19 @@ When activities are imported from sources like Hevy or Fitbit, Source Link adds 
     '✅ Adds a link to the original activity',
     '✅ Easy cross-referencing between apps',
     '✅ Works with all source integrations',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Upper Body Workout',
+      after: 'Upper Body Workout\n\n🔗 View in Hevy: https://hevy.app/workout/abc123',
+    },
+  ],
+  useCases: [
+    'Trace activities back to the source app',
+    'Keep links to detailed exercise data',
+    'Cross-reference between platforms',
   ],
 });
 
@@ -440,6 +501,14 @@ Define mapping rules like "WeightTraining" → "Weight Training" or "Ride" → "
     '✅ Convert activity types between platforms',
     '✅ Configurable mapping rules',
     '✅ Works with all source and destination types',
+  ],
+  transformations: [
+    { field: 'activityType', label: 'Activity Type', before: 'WeightTraining', after: 'Weight Training' },
+  ],
+  useCases: [
+    'Normalize activity types across platforms',
+    'Convert indoor activities to virtual types',
+    'Fix naming inconsistencies',
   ],
 });
 
@@ -484,6 +553,14 @@ If your Saturday morning run starts near a known Parkrun location at the right t
     '✅ Customizable activity title format',
     '✅ Automatic tagging for filtering',
   ],
+  transformations: [
+    { field: 'title', label: 'Activity Title', before: 'Morning Run', after: 'Parkrun @ Newark' },
+  ],
+  useCases: [
+    'Auto-name Parkrun activities',
+    'Track Parkrun attendance',
+    'Tag Parkrun events for filtering',
+  ],
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER, {
@@ -518,6 +595,14 @@ Define conditions like "Saturday morning run near the park" and specify a title 
     '✅ Perfect for recurring workout names',
     '✅ Radius-based location matching',
   ],
+  transformations: [
+    { field: 'title', label: 'Activity Title', before: 'Workout', after: 'Morning Gym Session' },
+  ],
+  useCases: [
+    'Auto-title recurring workouts',
+    'Name activities by location',
+    'Set titles by day or time',
+  ],
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT, {
@@ -546,6 +631,14 @@ Define a counter key and optional title filter. Activities matching the filter g
     '✅ Title filtering for targeted numbering',
     '✅ Configurable starting value',
   ],
+  transformations: [
+    { field: 'title', label: 'Activity Title', before: 'Leg Day', after: 'Leg Day #42' },
+  ],
+  useCases: [
+    'Number workout series',
+    'Track session counts',
+    'Create numbered runs',
+  ],
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT, {
@@ -571,6 +664,15 @@ When an activity reaches this booster, it’s held pending your input. You recei
     '✅ Activity held until you approve',
     '✅ Notification when input is needed',
     '✅ Configurable required fields',
+  ],
+  transformations: [
+    { field: 'title', label: 'Activity Title', before: 'Workout', after: '(your custom title)' },
+    { field: 'description', label: 'Activity Description', before: '(empty)', after: '(your custom description)' },
+  ],
+  useCases: [
+    'Add personal notes to activities',
+    'Review before publishing',
+    'Custom titles per workout',
   ],
 });
 
@@ -601,6 +703,12 @@ Define include or exclude rules by activity type or title keywords. Activities m
     '✅ Stop unwanted activities from syncing',
     '✅ Flexible pattern matching',
   ],
+  transformations: [],
+  useCases: [
+    'Skip test workouts',
+    'Filter by activity type',
+    'Only sync strength sessions',
+  ],
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
@@ -630,6 +738,8 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   ],
   marketingDescription: '',
   features: [],
+  transformations: [],
+  useCases: [],
 });
 
 // ============================================================================
