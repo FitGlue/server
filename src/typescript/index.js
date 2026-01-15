@@ -72,3 +72,8 @@ exports.integrationRequestHandler = (req, res) => {
   const integrationRequest = require('./integration-request-handler/dist/index');
   return integrationRequest.integrationRequestHandler(req, res);
 };
+
+exports.mobileSyncHandler = (req, res) => {
+  const mobileSync = require('./mobile-sync-handler/dist/index');
+  return mobileSync.mobileSyncHandler(req, res);
+};

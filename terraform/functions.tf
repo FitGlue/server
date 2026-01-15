@@ -618,6 +618,45 @@ resource "google_cloud_run_service_iam_member" "user_integrations_handler_invoke
   member   = "allUsers"
 }
 
+# ----------------- Mobile Sync Handler -----------------
+resource "google_cloudfunctions2_function" "mobile_sync_handler" {
+  name        = "mobile-sync-handler"
+  location    = var.region
+  description = "Handles mobile sync requests"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "mobileSyncHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      BASE_URL             = var.base_url
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "mobile_sync_handler_invoker" {
+  project  = google_cloudfunctions2_function.mobile_sync_handler.project
+  location = google_cloudfunctions2_function.mobile_sync_handler.location
+  service  = google_cloudfunctions2_function.mobile_sync_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
 # ----------------- User Pipelines Handler -----------------
 resource "google_cloudfunctions2_function" "user_pipelines_handler" {
   name        = "user-pipelines-handler"
