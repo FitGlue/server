@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/cloudevents/sdk-go/v2/event"
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/execution"
+	"github.com/fitglue/server/src/go/pkg/types"
+	"github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // FrameworkContext contains dependencies injected by the framework

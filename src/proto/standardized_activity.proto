@@ -5,7 +5,7 @@ package fitglue;
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/descriptor.proto";
 
-option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb";
 
 // Extension for Strava activity type name mapping
 extend google.protobuf.EnumValueOptions {

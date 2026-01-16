@@ -5,7 +5,7 @@ import "google/protobuf/timestamp.proto";
 import "standardized_activity.proto";
 import "events.proto";
 
-option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb";
 
 message UserRecord {
   string user_id = 1;

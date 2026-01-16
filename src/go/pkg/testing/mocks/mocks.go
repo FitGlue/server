@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/cloudevents/sdk-go/v2/event"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // --- Mock Database ---

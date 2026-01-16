@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package fitglue.events;
 
-option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb";
 
 import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";

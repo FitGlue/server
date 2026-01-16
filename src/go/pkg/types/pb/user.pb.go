@@ -1371,7 +1371,7 @@ const file_user_proto_rawDesc = "" +
 	"\x0fVirtualGPSRoute\x12!\n" +
 	"\x1dVIRTUAL_GPS_ROUTE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18VIRTUAL_GPS_ROUTE_LONDON\x10\x01\x12\x19\n" +
-	"\x15VIRTUAL_GPS_ROUTE_NYC\x10\x02B7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"\x15VIRTUAL_GPS_ROUTE_NYC\x10\x02B/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_user_proto_rawDescOnce sync.Once

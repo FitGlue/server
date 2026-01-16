@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"cloud.google.com/go/firestore"
-	storage "github.com/ripixel/fitglue-server/src/go/pkg/storage/firestore"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	storage "github.com/fitglue/server/src/go/pkg/storage/firestore"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // FirestoreAdapter provides database operations using Firestore

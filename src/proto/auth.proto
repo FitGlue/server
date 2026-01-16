@@ -3,7 +3,7 @@ package fitglue;
 
 import "google/protobuf/timestamp.proto";
 
-option go_package = "github.com/ripixel/fitglue-server/src/go/pkg/types/pb";
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb";
 
 // Stored in Firestore collection `ingress_api_keys/{hash}`
 message ApiKeyRecord {

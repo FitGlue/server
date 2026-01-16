@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

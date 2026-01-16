@@ -1,4 +1,4 @@
-module github.com/ripixel/fitglue-server/src/go
+module github.com/fitglue/server/src/go
 
 go 1.25.5
 

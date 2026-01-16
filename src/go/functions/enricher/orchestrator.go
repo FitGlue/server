@@ -8,12 +8,12 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	shared "github.com/ripixel/fitglue-server/src/go/pkg"
-	fit "github.com/ripixel/fitglue-server/src/go/pkg/domain/file_generators"
-	"github.com/ripixel/fitglue-server/src/go/pkg/domain/tier"
-	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/user_input"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	shared "github.com/fitglue/server/src/go/pkg"
+	fit "github.com/fitglue/server/src/go/pkg/domain/file_generators"
+	"github.com/fitglue/server/src/go/pkg/domain/tier"
+	providers "github.com/fitglue/server/src/go/pkg/enricher_providers"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers/user_input"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

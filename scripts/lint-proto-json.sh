@@ -6,14 +6,14 @@ GO_FILES=$(find src/go -name "*.go" -not -path "*/vendor/*" -not -path "*/api/*/
 
 # Pattern to search for: json.Unmarshal or json.Marshal
 # We want to flag usage where the variable being marshalled/unmarshalled is likely a Protobuf type.
-# This is hard to do perfectly with grep, but we can flag ANY json.Marshal/Unmarshal in files that import "github.com/ripixel/fitglue-server/src/go/pkg/types/pb".
+# This is hard to do perfectly with grep, but we can flag ANY json.Marshal/Unmarshal in files that import "github.com/fitglue/server/src/go/pkg/types/pb".
 
 echo "Checking for potential Protobuf JSON misuse..."
 FAILED=0
 
 for file in $GO_FILES; do
     # Check if file imports the pb package
-    if grep -q "github.com/ripixel/fitglue-server/src/go/pkg/types/pb" "$file"; then
+    if grep -q "github.com/fitglue/server/src/go/pkg/types/pb" "$file"; then
         # Check if file uses encoding/json
         if grep -q "\"encoding/json\"" "$file"; then
             echo "WARNING: $file imports protobuf types AND encoding/json. Verify usage."

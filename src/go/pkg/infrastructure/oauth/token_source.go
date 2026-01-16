@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
 )
 
 // Token represents the OAuth token structure we care about

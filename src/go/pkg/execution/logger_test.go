@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/execution"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/execution"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type MockDB struct {

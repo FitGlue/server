@@ -3,7 +3,7 @@ package enricher_providers
 import (
 	"context"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // BrandingProvider adds a footer to the activity description

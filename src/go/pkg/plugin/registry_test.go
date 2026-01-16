@@ -3,7 +3,7 @@ package plugin
 import (
 	"testing"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func TestRegisterSource(t *testing.T) {

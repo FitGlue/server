@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/testing/mocks"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/testing/mocks"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func TestUserInput_Enrich(t *testing.T) {

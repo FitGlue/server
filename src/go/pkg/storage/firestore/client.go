@@ -2,7 +2,7 @@ package firestore
 
 import (
 	"cloud.google.com/go/firestore"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type Client struct {

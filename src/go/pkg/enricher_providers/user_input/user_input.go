@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	"github.com/ripixel/fitglue-server/src/go/pkg/plugin"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
+	"github.com/fitglue/server/src/go/pkg/plugin"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type WaitForInputError struct {

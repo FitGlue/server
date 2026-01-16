@@ -190,7 +190,7 @@ const file_activity_proto_rawDesc = "" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +
 	"\rSOURCE_FITBIT\x10\x03\x12\x0f\n" +
-	"\vSOURCE_TEST\x10cB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"\vSOURCE_TEST\x10cB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_activity_proto_rawDescOnce sync.Once

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/plugin"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/plugin"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type VirtualGPSProvider struct{}

@@ -293,8 +293,8 @@ package enricher_providers
 import (
 	"context"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/plugin"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/plugin"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func init() {
@@ -419,8 +419,8 @@ import (
 	"net/http"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
-	shared "github.com/ripixel/fitglue-server/src/go/pkg"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	shared "github.com/fitglue/server/src/go/pkg"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func init() {

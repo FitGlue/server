@@ -15,20 +15,20 @@ import (
 	cehttp "github.com/cloudevents/sdk-go/v2/protocol/http"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	shared "github.com/ripixel/fitglue-server/src/go/pkg"
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	providers "github.com/fitglue/server/src/go/pkg/enricher_providers"
+	"github.com/fitglue/server/src/go/pkg/framework"
+	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 
 	// Register providers
-	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/activity_filter"
-	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/auto_increment"
-	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/condition_matcher"
-	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/mock"
-	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/parkrun"
-	_ "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/user_input"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/activity_filter"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/auto_increment"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/condition_matcher"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/mock"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/parkrun"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/user_input"
 )
 
 var (

@@ -19,11 +19,11 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/domain/activity"
-	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/oauth"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
+	"github.com/fitglue/server/src/go/pkg/framework"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 var (

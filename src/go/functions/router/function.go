@@ -10,10 +10,10 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/framework"
-	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/framework"
+	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 var (

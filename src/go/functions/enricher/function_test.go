@@ -10,10 +10,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	"github.com/ripixel/fitglue-server/src/go/pkg/testing/mocks"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	providers "github.com/fitglue/server/src/go/pkg/enricher_providers"
+	"github.com/fitglue/server/src/go/pkg/testing/mocks"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func TestEnrichActivity(t *testing.T) {

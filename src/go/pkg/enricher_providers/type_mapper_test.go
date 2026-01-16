@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/domain/activity"
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func TestTypeMapperProvider_Enrich(t *testing.T) {

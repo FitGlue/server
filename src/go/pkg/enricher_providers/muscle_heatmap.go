@@ -6,9 +6,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers/muscle_heatmap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/plugin"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers/muscle_heatmap"
+	"github.com/fitglue/server/src/go/pkg/plugin"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // MuscleHeatmapProvider generates an emoji-based "heatmap" of muscle volume.

@@ -1053,7 +1053,7 @@ const file_plugin_proto_rawDesc = "" +
 	"\x13IntegrationAuthType\x12%\n" +
 	"!INTEGRATION_AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bINTEGRATION_AUTH_TYPE_OAUTH\x10\x01\x12!\n" +
-	"\x1dINTEGRATION_AUTH_TYPE_API_KEY\x10\x02B7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"\x1dINTEGRATION_AUTH_TYPE_API_KEY\x10\x02B/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_plugin_proto_rawDescOnce sync.Once

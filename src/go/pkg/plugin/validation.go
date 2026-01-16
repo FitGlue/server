@@ -5,7 +5,7 @@ import (
 	"regexp"
 	"strconv"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // ValidateConfig validates a config map against an enricher's schema

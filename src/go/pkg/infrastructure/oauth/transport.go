@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
 )
 
 // Transport is an http.RoundTripper that authenticates all requests

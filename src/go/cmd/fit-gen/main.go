@@ -8,8 +8,8 @@ import (
 
 	"google.golang.org/protobuf/encoding/protojson"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/domain/file_generators"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/domain/file_generators"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func main() {

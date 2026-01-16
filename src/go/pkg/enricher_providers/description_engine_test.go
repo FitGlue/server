@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func TestDescriptionEngine_Integration(t *testing.T) {

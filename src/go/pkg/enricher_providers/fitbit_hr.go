@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/oauth"
-	fitbit "github.com/ripixel/fitglue-server/src/go/pkg/integrations/fitbit"
-	"github.com/ripixel/fitglue-server/src/go/pkg/plugin"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
+	fitbit "github.com/fitglue/server/src/go/pkg/integrations/fitbit"
+	"github.com/fitglue/server/src/go/pkg/plugin"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type FitBitHeartRate struct {

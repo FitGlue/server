@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	providers "github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	providers "github.com/fitglue/server/src/go/pkg/enricher_providers"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

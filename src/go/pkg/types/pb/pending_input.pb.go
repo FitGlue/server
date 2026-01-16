@@ -208,7 +208,7 @@ const file_pending_input_proto_rawDesc = "" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eSTATUS_WAITING\x10\x01\x12\x14\n" +
-	"\x10STATUS_COMPLETED\x10\x02B7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"\x10STATUS_COMPLETED\x10\x02B/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_pending_input_proto_rawDescOnce sync.Once

@@ -3,7 +3,7 @@ package muscle_heatmap
 import (
 	"testing"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func TestLookupExercise_ExactMatch(t *testing.T) {

@@ -7,7 +7,7 @@ import (
 
 	"github.com/muktihari/fit/decoder"
 	"github.com/muktihari/fit/profile/typedef"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

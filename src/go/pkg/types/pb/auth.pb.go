@@ -169,7 +169,7 @@ const file_auth_proto_rawDesc = "" +
 	"\x13IntegrationIdentity\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x129\n" +
 	"\n" +
-	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAtB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_auth_proto_rawDescOnce sync.Once

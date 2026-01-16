@@ -3,7 +3,7 @@ package plugin
 import (
 	"sync"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 var (

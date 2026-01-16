@@ -3,7 +3,7 @@ package enricher_providers
 import (
 	"context"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // EnrichmentResult represents the outcome of an enrichment provider.

@@ -536,7 +536,7 @@ const file_events_proto_rawDesc = "" +
 	"\ace_type\x12!.google.protobuf.EnumValueOptions\x18І\x03 \x01(\tR\x06ceType:@\n" +
 	"\tce_source\x12!.google.protobuf.EnumValueOptions\x18ц\x03 \x01(\tR\bceSource:B\n" +
 	"\n" +
-	"dest_topic\x12!.google.protobuf.EnumValueOptions\x18҆\x03 \x01(\tR\tdestTopicB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"dest_topic\x12!.google.protobuf.EnumValueOptions\x18҆\x03 \x01(\tR\tdestTopicB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_events_proto_rawDescOnce sync.Once

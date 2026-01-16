@@ -11,14 +11,14 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 
-	shared "github.com/ripixel/fitglue-server/src/go/pkg"
-	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/database"
-	infrapubsub "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/pubsub"
-	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/secrets"
-	infrastorage "github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/storage"
+	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/database"
+	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/secrets"
+	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 
 	firebase "firebase.google.com/go/v4"
-	"github.com/ripixel/fitglue-server/src/go/pkg/infrastructure/notifications"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/notifications"
 )
 
 // Config holds standard configuration for all services

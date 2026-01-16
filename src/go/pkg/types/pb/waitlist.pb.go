@@ -110,7 +110,7 @@ const file_waitlist_proto_rawDesc = "" +
 	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12\x1d\n" +
 	"\n" +
 	"user_agent\x18\x04 \x01(\tR\tuserAgent\x12\x0e\n" +
-	"\x02ip\x18\x05 \x01(\tR\x02ipB7Z5github.com/ripixel/fitglue-server/src/go/pkg/types/pbb\x06proto3"
+	"\x02ip\x18\x05 \x01(\tR\x02ipB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_waitlist_proto_rawDescOnce sync.Once

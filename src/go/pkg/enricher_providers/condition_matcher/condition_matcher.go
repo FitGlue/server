@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ripixel/fitglue-server/src/go/pkg/domain/activity"
-	"github.com/ripixel/fitglue-server/src/go/pkg/enricher_providers"
-	"github.com/ripixel/fitglue-server/src/go/pkg/plugin"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
+	"github.com/fitglue/server/src/go/pkg/plugin"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // ConditionMatcherProvider applies enrichments based on a set of conditions.

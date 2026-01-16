@@ -11,7 +11,7 @@ import (
 	"github.com/muktihari/fit/profile/typedef"
 	"github.com/muktihari/fit/proto"
 
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // GenerateFitFile creates a FIT file from StandardizedActivity

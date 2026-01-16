@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/cloudevents/sdk-go/v2/event"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // --- Persistence Interfaces ---

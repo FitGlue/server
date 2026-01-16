@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	"github.com/cloudevents/sdk-go/v2/event"
-	"github.com/ripixel/fitglue-server/src/go/pkg/bootstrap"
-	"github.com/ripixel/fitglue-server/src/go/pkg/types"
-	pb "github.com/ripixel/fitglue-server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/types"
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // MockDB for Wrapper Test
