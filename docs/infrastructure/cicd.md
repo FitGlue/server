@@ -67,7 +67,7 @@ After running the script, you can optionally verify the OIDC provider configurat
 1. Go to [IAM & Admin → Workload Identity Federation](https://console.cloud.google.com/iam-admin/workload-identity-pools)
 2. Select the `circleci-pool`
 3. Click on `circleci-provider`
-4. Verify **Allowed audiences** contains your CircleCI Organization ID: `b2fc92f7-4f8d-4676-95b1-94d7f15c0a8e`
+4. Verify **Allowed audiences** contains your CircleCI Organization ID: `ecdc6640-c8ad-40c7-8710-b28261eb9107`
 
 > **Note**: The setup script automatically configures the allowed audiences, so this verification step is optional.
 
@@ -87,7 +87,7 @@ google.subject       = assertion.sub
 
 ### 2. Allowed Audiences
 **CRITICAL**: The allowed audience must be your **CircleCI Organization ID**, NOT the GCP resource path.
-- ✅ **Correct**: `b2fc92f7-4f8d-4676-95b1-94d7f15c0a8e` (CircleCI Org ID)
+- ✅ **Correct**: `ecdc6640-c8ad-40c7-8710-b28261eb9107` (CircleCI Org ID)
 - ❌ **Wrong**: `//iam.googleapis.com/projects/...`
 
 To find your CircleCI Org ID:

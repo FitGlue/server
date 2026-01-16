@@ -88,6 +88,43 @@ describe('activities-handler', () => {
       });
     });
 
+    it('/ with includeExecution=true returns activities with pipelineExecution', async () => {
+      ctx.stores.activities.listSynchronized.mockResolvedValue([{
+        activityId: 'a1',
+        title: 'Enhanced Workout',
+        type: 46,
+        source: 'SOURCE_HEVY',
+        pipelineExecutionId: 'pipeline-123',
+      }]);
+
+      ctx.services.execution = {
+        listByPipeline: jest.fn().mockResolvedValue([{
+          id: 'exec-1',
+          data: {
+            service: 'enricher',
+            status: 2, // STATUS_SUCCESS
+            timestamp: new Date('2026-01-15T10:00:00Z'),
+            outputsJson: JSON.stringify({ provider_executions: [{ ProviderName: 'muscle-heatmap', Status: 'SUCCESS' }] }),
+          },
+        }]),
+      };
+
+      await handler(({
+        method: 'GET',
+        body: {},
+        query: { includeExecution: 'true' },
+        path: '',
+      } as any), res, ctx);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      const response = res.json.mock.calls[0][0];
+      expect(response.activities).toHaveLength(1);
+      expect(response.activities[0].pipelineExecution).toBeDefined();
+      expect(response.activities[0].pipelineExecution).toHaveLength(1);
+      expect(response.activities[0].pipelineExecution[0].service).toBe('enricher');
+      expect(response.activities[0].pipelineExecutionId).toBe('pipeline-123');
+    });
+
     it('/stats returns a count of', async () => {
       ctx.stores.activities.countSynchronized.mockResolvedValue(1);
 

@@ -215,9 +215,46 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     // Check if this is a list request (path ends with /activities or is just /)
     if (req.path === '/' || req.path === '/activities' || req.path.endsWith('/activities')) {
       // GET / -> List
-      const limit = parseInt(req.query.limit as string || '20', 10);
+      const includeExecution = req.query.includeExecution === 'true';
+      // Limit to 10 when fetching executions for performance (more Firestore reads)
+      const limit = includeExecution
+        ? Math.min(parseInt(req.query.limit as string || '10', 10), 10)
+        : parseInt(req.query.limit as string || '20', 10);
+
       const activities = await activityStore.listSynchronized(ctx.userId, limit);
       const transformedActivities = activities.map(transformActivity);
+
+      // Optionally fetch pipelineExecution for each activity
+      if (includeExecution && ctx.services.execution) {
+        for (const activity of transformedActivities) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const originalActivity = activities.find(a => a.activityId === (activity as any).activityId);
+          if (originalActivity?.pipelineExecutionId) {
+            try {
+              const executions = await ctx.services.execution.listByPipeline(originalActivity.pipelineExecutionId);
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (activity as any).pipelineExecution = executions.map(e => ({
+                executionId: e.id,
+                service: e.data.service,
+                status: executionStatusToString(e.data.status),
+                timestamp: e.data.timestamp ? new Date(e.data.timestamp as unknown as string).toISOString() : null,
+                startTime: e.data.startTime ? new Date(e.data.startTime as unknown as string).toISOString() : null,
+                endTime: e.data.endTime ? new Date(e.data.endTime as unknown as string).toISOString() : null,
+                errorMessage: e.data.errorMessage,
+                triggerType: e.data.triggerType,
+                inputsJson: e.data.inputsJson,
+                outputsJson: e.data.outputsJson
+              }));
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (activity as any).pipelineExecutionId = originalActivity.pipelineExecutionId;
+            } catch (err) {
+              ctx.logger.error('Failed to fetch pipeline executions for activity', { activityId: originalActivity.activityId, error: err });
+              // Don't fail the request, just omit the trace
+            }
+          }
+        }
+      }
+
       res.status(200).json({ activities: transformedActivities });
       return;
     }
