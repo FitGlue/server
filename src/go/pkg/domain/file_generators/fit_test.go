@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"github.com/muktihari/fit/decoder"
 	"github.com/muktihari/fit/profile/typedef"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
