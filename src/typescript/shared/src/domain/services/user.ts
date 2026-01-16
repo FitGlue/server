@@ -195,9 +195,10 @@ export class UserService {
     // Pipeline methods (legacy support)
     async addPipeline(userId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<string> {
         const id = `pipe_${Date.now()}`;
+        const normalizedSource = this.normalizeSource(source);
         const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id, source, enrichers, destinations: destEnums
+            id, source: normalizedSource, enrichers, destinations: destEnums
         });
         return id;
     }
@@ -211,9 +212,10 @@ export class UserService {
 
     async replacePipeline(userId: string, pipelineId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<void> {
         await this.removePipeline(userId, pipelineId);
+        const normalizedSource = this.normalizeSource(source);
         const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id: pipelineId, source, enrichers, destinations: destEnums
+            id: pipelineId, source: normalizedSource, enrichers, destinations: destEnums
         });
     }
 
@@ -223,6 +225,30 @@ export class UserService {
             if (d === 'mock' || d === 'DESTINATION_MOCK') return Destination.DESTINATION_MOCK;
             return Destination.DESTINATION_UNSPECIFIED;
         });
+    }
+
+    /**
+     * Normalize source ID from registry format to protobuf enum string format.
+     * Maps registry IDs (e.g., 'hevy') to Go-expected format (e.g., 'SOURCE_HEVY').
+     * This is the source of truth for source ID mappings - matches registry.ts source IDs.
+     */
+    private normalizeSource(source: string): string {
+        // Mapping from registry IDs to protobuf enum strings
+        const sourceMap: Record<string, string> = {
+            'hevy': 'SOURCE_HEVY',
+            'fitbit': 'SOURCE_FITBIT',
+            'mock': 'SOURCE_TEST',
+            'apple-health': 'SOURCE_APPLE_HEALTH',
+            'health-connect': 'SOURCE_HEALTH_CONNECT',
+        };
+
+        // If already in protobuf format, return as-is
+        if (source.startsWith('SOURCE_')) {
+            return source;
+        }
+
+        // Map from registry ID to protobuf format
+        return sourceMap[source.toLowerCase()] ?? `SOURCE_${source.toUpperCase()}`;
     }
 }
 

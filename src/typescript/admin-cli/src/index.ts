@@ -358,7 +358,6 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP]: 'Muscle Heatmap',
         [EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS]: 'Virtual GPS',
         [EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK]: 'Source Link',
-        [EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH]: 'Metadata Passthrough',
         [EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER]: 'Type Mapper',
         [EnricherProviderType.ENRICHER_PROVIDER_PARKRUN]: 'Parkrun',
         [EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER]: 'Condition Matcher',
@@ -380,7 +379,6 @@ const getAvailableEnricherChoices = (selectedProviderTypes: EnricherProviderType
         { name: 'Virtual GPS', value: EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS },
         { name: 'Source Link', value: EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK },
         { name: 'Type Mapper', value: EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER },
-        { name: 'Metadata Passthrough', value: EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH },
         { name: 'Parkrun', value: EnricherProviderType.ENRICHER_PROVIDER_PARKRUN },
         { name: 'Condition Matcher', value: EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER },
         { name: 'Auto Increment', value: EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT },
@@ -2215,7 +2213,6 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
         // Only prompt for JSON if the provider might need config
         // Skip for providers with no config options
         const noConfigProviders = [
-            EnricherProviderType.ENRICHER_PROVIDER_METADATA_PASSTHROUGH,
             EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
             EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE
         ];

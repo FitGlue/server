@@ -9,15 +9,22 @@ jest.mock('@fitglue/shared', () => {
       collection: jest.fn().mockReturnThis(),
       doc: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
-      get: jest.fn().mockResolvedValue({ empty: true, size: 0, forEach: jest.fn() }),
+      get: jest.fn().mockResolvedValue({ empty: true, size: 0, forEach: jest.fn(), docs: [] }),
       batch: jest.fn().mockReturnValue({
         delete: jest.fn(),
         commit: jest.fn().mockResolvedValue(undefined)
-      })
+      }),
+      update: jest.fn().mockResolvedValue(undefined)
     },
     UserStore: jest.fn(),
     UserService: jest.fn(),
-    ActivityStore: jest.fn()
+    ActivityStore: jest.fn(),
+    ForbiddenError: class ForbiddenError extends Error {
+      constructor(message: string = 'Access denied') {
+        super(message);
+        this.name = 'ForbiddenError';
+      }
+    }
   };
 });
 
@@ -28,11 +35,18 @@ describe('user-profile-handler', () => {
   let res: any;
   let ctx: any;
   let mockUserService: any;
+  let mockAuthorizationService: any;
 
   beforeEach(() => {
     mockUserService = {
       get: jest.fn(),
       deleteUser: jest.fn()
+    };
+    mockAuthorizationService = {
+      requireAdmin: jest.fn(),
+      requireAccess: jest.fn(),
+      isAdmin: jest.fn(),
+      canAccessUser: jest.fn()
     };
     (UserService as any).mockImplementation(() => mockUserService);
 
@@ -54,7 +68,8 @@ describe('user-profile-handler', () => {
         error: jest.fn()
       },
       services: {
-        user: mockUserService
+        user: mockUserService,
+        authorization: mockAuthorizationService
       }
     };
   });
@@ -101,6 +116,36 @@ describe('user-profile-handler', () => {
     });
   });
 
+  describe('GET /admin/users', () => {
+    beforeEach(() => {
+      req.path = '/admin/users';
+    });
+
+    it('returns 403 if not admin', async () => {
+      const { ForbiddenError: FE } = jest.requireMock('@fitglue/shared');
+      mockAuthorizationService.requireAdmin.mockRejectedValue(new FE('Admin access required'));
+      await handler(req, res, ctx);
+      expect(res.status).toHaveBeenCalledWith(403);
+    });
+
+    it('returns user list for admin', async () => {
+      mockAuthorizationService.requireAdmin.mockResolvedValue(undefined);
+      const { db } = jest.requireMock('@fitglue/shared');
+      db.get.mockResolvedValue({
+        docs: [
+          { id: 'user-1', data: () => ({ tier: 'pro', isAdmin: true }) },
+          { id: 'user-2', data: () => ({ tier: 'free', isAdmin: false }) }
+        ]
+      });
+
+      await handler(req, res, ctx);
+
+      expect(mockAuthorizationService.requireAdmin).toHaveBeenCalledWith('user-1');
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json.mock.calls[0][0]).toHaveLength(2);
+    });
+  });
+
   describe('PATCH /users/me', () => {
     beforeEach(() => {
       req.method = 'PATCH';
@@ -116,6 +161,10 @@ describe('user-profile-handler', () => {
   describe('DELETE /users/me', () => {
     beforeEach(() => {
       req.method = 'DELETE';
+      req.path = '/users/me';
+      // Reset db.get to return empty collections for cascade delete
+      const { db } = jest.requireMock('@fitglue/shared');
+      db.get.mockResolvedValue({ empty: true, size: 0, forEach: jest.fn(), docs: [] });
     });
 
     it('returns 401 if no user', async () => {
@@ -140,3 +189,4 @@ describe('user-profile-handler', () => {
     });
   });
 });
+

@@ -11,9 +11,10 @@ GO_SRC_DIR=src/go
 TS_SRC_DIR=src/typescript
 
 # --- Phony Targets ---
-.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination
+.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase
 
 all: generate build test lint
+
 
 setup:
 	@echo "Setting up dependencies..."
@@ -129,10 +130,17 @@ clean-ts:
 # --- Combined Targets ---
 build: build-go build-ts
 test: test-go test-ts
-lint: lint-go lint-ts
+lint: lint-go lint-ts lint-codebase
 prepare: prepare-go
 clean: clean-go clean-ts
 	rm -rf bin/
+
+# --- Codebase Consistency Check ---
+lint-codebase:
+	@echo "Running codebase consistency checks..."
+	@npm install --silent
+	@npx ts-node scripts/lint-codebase.ts
+
 
 # --- Plugin Scaffolding ---
 # Usage: make plugin-source name=garmin

@@ -40,6 +40,8 @@ message Transformation {
   string label = 2;                           // Human-readable label (e.g., "Activity Description")
   string before = 3;                          // Example value before transformation
   string after = 4;                           // Example value after transformation
+  string visual_type = 5;                     // Visual rendering type (e.g., "hr-graph", "gps-map") - if set, renders SVG instead of text
+  string after_html = 6;                      // Pre-formatted HTML for after state (used instead of after when set)
 }
 
 
@@ -53,6 +55,17 @@ message ConfigFieldSchema {
   string default_value = 6;                   // Default value (as string)
   repeated ConfigFieldOption options = 7;     // For SELECT/MULTI_SELECT types
   ConfigFieldValidation validation = 8;       // Validation rules
+  optional ConfigFieldDependency depends_on = 9;  // Show only when dependency is met
+  // For KEY_VALUE_MAP: independent options for left (key) and right (value) sides
+  // If set, renders a dropdown instead of text input for that side
+  repeated ConfigFieldOption key_options = 10;    // Options for the left side (key)
+  repeated ConfigFieldOption value_options = 11;  // Options for the right side (value)
+}
+
+// ConfigFieldDependency defines when a field should be visible
+message ConfigFieldDependency {
+  string field_key = 1;        // Key of the field this depends on
+  repeated string values = 2;  // Show when dependent field has one of these values
 }
 
 enum ConfigFieldType {

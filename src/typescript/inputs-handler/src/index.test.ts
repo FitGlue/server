@@ -1,15 +1,30 @@
 import { handler } from './index';
-import { InputService, CloudEventPublisher } from '@fitglue/shared';
+import { CloudEventPublisher } from '@fitglue/shared';
 
 // Mock shared dependencies
 jest.mock('@fitglue/shared', () => {
   const original = jest.requireActual('@fitglue/shared');
+
+  // Create a mock InputService class that accepts authorization
+  const MockInputService = jest.fn().mockImplementation(() => ({
+    listPendingInputs: jest.fn(),
+    getPendingInput: jest.fn(),
+    resolveInput: jest.fn(),
+    dismissInput: jest.fn(),
+  }));
+
   return {
     ...original,
     InputStore: jest.fn(),
-    InputService: jest.fn(),
+    InputService: MockInputService,
     CloudEventPublisher: jest.fn(),
     db: {}, // Mock db object
+    ForbiddenError: class ForbiddenError extends Error {
+      constructor(message: string = 'Access denied') {
+        super(message);
+        this.name = 'ForbiddenError';
+      }
+    }
   };
 });
 
@@ -17,16 +32,19 @@ describe('inputs-handler', () => {
   let req: any;
   let res: any;
   let ctx: any;
-  let mockInputService: any;
   let mockPublish: any;
+  let mockInputService: any;
 
   beforeEach(() => {
+    // Get mocked InputService and reset it
+    const { InputService } = jest.requireMock('@fitglue/shared');
     mockInputService = {
       listPendingInputs: jest.fn(),
       getPendingInput: jest.fn(),
       resolveInput: jest.fn(),
+      dismissInput: jest.fn(),
     };
-    (InputService as any).mockImplementation(() => mockInputService);
+    InputService.mockImplementation(() => mockInputService);
 
     mockPublish = jest.fn();
     (CloudEventPublisher as any).mockImplementation(() => ({
@@ -50,8 +68,15 @@ describe('inputs-handler', () => {
         info: jest.fn(),
         error: jest.fn(),
       },
-      pubsub: {}, // Mock pubsub object (CloudEventPublisher uses it, but we mocked the class)
-      services: {},
+      pubsub: {},
+      services: {
+        authorization: {
+          requireAdmin: jest.fn(),
+          requireAccess: jest.fn(),
+          canAccessUser: jest.fn().mockResolvedValue(true),
+          isAdmin: jest.fn().mockResolvedValue(false),
+        }
+      },
     };
   });
 
@@ -75,7 +100,7 @@ describe('inputs-handler', () => {
           requiredFields: ['title'],
           createdAt: { seconds: 100 },
           inputData: {},
-          originalPayload: { some: 'data' } // Should be omitted
+          originalPayload: { some: 'data' }
         }
       ]);
 
@@ -124,7 +149,6 @@ describe('inputs-handler', () => {
     });
 
     it('resolves and republishes successfully', async () => {
-      // Mock existing input with payload
       const mockPayload = { source: 'HEVY' };
       mockInputService.getPendingInput.mockResolvedValue({
         activityId: 'act-1',
@@ -135,7 +159,6 @@ describe('inputs-handler', () => {
 
       expect(mockInputService.resolveInput).toHaveBeenCalledWith('act-1', 'user-1', { title: 'New Title' });
       expect(mockPublish).toHaveBeenCalledWith(mockPayload);
-
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });
@@ -160,12 +183,22 @@ describe('inputs-handler', () => {
       await handler(req, res, ctx);
       expect(res.status).toHaveBeenCalledWith(409);
     });
+
+    it('handles ForbiddenError from authorization', async () => {
+      const { ForbiddenError } = jest.requireMock('@fitglue/shared');
+      mockInputService.getPendingInput.mockResolvedValue({ activityId: 'act-1' });
+      mockInputService.resolveInput.mockRejectedValue(new ForbiddenError('You do not have permission'));
+
+      await handler(req, res, ctx);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ error: 'You do not have permission' });
+    });
   });
+
   describe('DELETE /:activityId', () => {
     beforeEach(() => {
       req.method = 'DELETE';
       req.path = '/act-1';
-      mockInputService.dismissInput = jest.fn();
     });
 
     it('returns 400 if missing activityId', async () => {
@@ -186,11 +219,21 @@ describe('inputs-handler', () => {
       await handler(req, res, ctx);
       expect(res.status).toHaveBeenCalledWith(500);
     });
+
     it('handles encoded IDs', async () => {
       req.path = '/api/inputs/FITBIT%3A123';
       await handler(req, res, ctx);
       expect(mockInputService.dismissInput).toHaveBeenCalledWith('FITBIT:123', 'user-1');
       expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('handles ForbiddenError from authorization', async () => {
+      const { ForbiddenError } = jest.requireMock('@fitglue/shared');
+      mockInputService.dismissInput.mockRejectedValue(new ForbiddenError('Access denied'));
+
+      await handler(req, res, ctx);
+      expect(res.status).toHaveBeenCalledWith(403);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Access denied' });
     });
   });
 });

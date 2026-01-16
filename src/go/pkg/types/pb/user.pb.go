@@ -28,16 +28,16 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED       EnricherProviderType = 0
 	EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE EnricherProviderType = 1
 	// Config inputs: "format" (compact/detailed/verbose), "show_stats" ("true"/"false")
-	EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY      EnricherProviderType = 2
-	EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP       EnricherProviderType = 3
-	EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK          EnricherProviderType = 4
-	EnricherProviderType_ENRICHER_PROVIDER_METADATA_PASSTHROUGH EnricherProviderType = 5
-	EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS          EnricherProviderType = 6
-	EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER          EnricherProviderType = 7
-	EnricherProviderType_ENRICHER_PROVIDER_PARKRUN              EnricherProviderType = 8
-	EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER    EnricherProviderType = 9
-	EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT       EnricherProviderType = 10
-	EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT           EnricherProviderType = 11
+	EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY EnricherProviderType = 2
+	EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP  EnricherProviderType = 3
+	EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK     EnricherProviderType = 4
+	// 5 was METADATA_PASSTHROUGH (removed)
+	EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS       EnricherProviderType = 6
+	EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER       EnricherProviderType = 7
+	EnricherProviderType_ENRICHER_PROVIDER_PARKRUN           EnricherProviderType = 8
+	EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER EnricherProviderType = 9
+	EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT    EnricherProviderType = 10
+	EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT        EnricherProviderType = 11
 	// Config inputs: "exclude_activity_types" (comma-separated), "exclude_title_contains" (string)
 	EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER EnricherProviderType = 12
 	EnricherProviderType_ENRICHER_PROVIDER_MOCK            EnricherProviderType = 99
@@ -51,7 +51,6 @@ var (
 		2:  "ENRICHER_PROVIDER_WORKOUT_SUMMARY",
 		3:  "ENRICHER_PROVIDER_MUSCLE_HEATMAP",
 		4:  "ENRICHER_PROVIDER_SOURCE_LINK",
-		5:  "ENRICHER_PROVIDER_METADATA_PASSTHROUGH",
 		6:  "ENRICHER_PROVIDER_VIRTUAL_GPS",
 		7:  "ENRICHER_PROVIDER_TYPE_MAPPER",
 		8:  "ENRICHER_PROVIDER_PARKRUN",
@@ -62,20 +61,19 @@ var (
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
-		"ENRICHER_PROVIDER_UNSPECIFIED":          0,
-		"ENRICHER_PROVIDER_FITBIT_HEART_RATE":    1,
-		"ENRICHER_PROVIDER_WORKOUT_SUMMARY":      2,
-		"ENRICHER_PROVIDER_MUSCLE_HEATMAP":       3,
-		"ENRICHER_PROVIDER_SOURCE_LINK":          4,
-		"ENRICHER_PROVIDER_METADATA_PASSTHROUGH": 5,
-		"ENRICHER_PROVIDER_VIRTUAL_GPS":          6,
-		"ENRICHER_PROVIDER_TYPE_MAPPER":          7,
-		"ENRICHER_PROVIDER_PARKRUN":              8,
-		"ENRICHER_PROVIDER_CONDITION_MATCHER":    9,
-		"ENRICHER_PROVIDER_AUTO_INCREMENT":       10,
-		"ENRICHER_PROVIDER_USER_INPUT":           11,
-		"ENRICHER_PROVIDER_ACTIVITY_FILTER":      12,
-		"ENRICHER_PROVIDER_MOCK":                 99,
+		"ENRICHER_PROVIDER_UNSPECIFIED":       0,
+		"ENRICHER_PROVIDER_FITBIT_HEART_RATE": 1,
+		"ENRICHER_PROVIDER_WORKOUT_SUMMARY":   2,
+		"ENRICHER_PROVIDER_MUSCLE_HEATMAP":    3,
+		"ENRICHER_PROVIDER_SOURCE_LINK":       4,
+		"ENRICHER_PROVIDER_VIRTUAL_GPS":       6,
+		"ENRICHER_PROVIDER_TYPE_MAPPER":       7,
+		"ENRICHER_PROVIDER_PARKRUN":           8,
+		"ENRICHER_PROVIDER_CONDITION_MATCHER": 9,
+		"ENRICHER_PROVIDER_AUTO_INCREMENT":    10,
+		"ENRICHER_PROVIDER_USER_INPUT":        11,
+		"ENRICHER_PROVIDER_ACTIVITY_FILTER":   12,
+		"ENRICHER_PROVIDER_MOCK":              99,
 	}
 )
 
@@ -1339,14 +1337,13 @@ const file_user_proto_rawDesc = "" +
 	" \x01(\tR\x13pipelineExecutionId\x1a?\n" +
 	"\x11DestinationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\x97\x04\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01*\xeb\x03\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
 	"!ENRICHER_PROVIDER_WORKOUT_SUMMARY\x10\x02\x12$\n" +
 	" ENRICHER_PROVIDER_MUSCLE_HEATMAP\x10\x03\x12!\n" +
-	"\x1dENRICHER_PROVIDER_SOURCE_LINK\x10\x04\x12*\n" +
-	"&ENRICHER_PROVIDER_METADATA_PASSTHROUGH\x10\x05\x12!\n" +
+	"\x1dENRICHER_PROVIDER_SOURCE_LINK\x10\x04\x12!\n" +
 	"\x1dENRICHER_PROVIDER_VIRTUAL_GPS\x10\x06\x12!\n" +
 	"\x1dENRICHER_PROVIDER_TYPE_MAPPER\x10\a\x12\x1d\n" +
 	"\x19ENRICHER_PROVIDER_PARKRUN\x10\b\x12'\n" +

@@ -1,8 +1,12 @@
 import { InputStore } from '../../storage/firestore/inputs';
 import { PendingInput } from '../../types/pb/pending_input';
+import { AuthorizationService, ForbiddenError } from './authorization';
 
 export class InputService {
-  constructor(private store: InputStore) { }
+  constructor(
+    private store: InputStore,
+    private authorization?: AuthorizationService
+  ) { }
 
   async getPendingInput(activityId: string): Promise<PendingInput | null> {
     return this.store.getPending(activityId);
@@ -12,14 +16,27 @@ export class InputService {
     return this.store.listPending(userId);
   }
 
-  async resolveInput(activityId: string, userId: string, inputData: Record<string, string>): Promise<void> {
+  /**
+   * Resolve a pending input.
+   * Validates ownership: requesting user must own the input OR be admin.
+   */
+  async resolveInput(activityId: string, requestingUserId: string, inputData: Record<string, string>): Promise<void> {
     const pending = await this.store.getPending(activityId);
     if (!pending) {
       throw new Error(`Pending input ${activityId} not found`);
     }
 
-    if (pending.userId !== userId) {
-      throw new Error('Unauthorized');
+    // Authorization check: requesting user must own the input or be admin
+    if (this.authorization) {
+      const canAccess = await this.authorization.canAccessUser(requestingUserId, pending.userId);
+      if (!canAccess) {
+        throw new ForbiddenError('You do not have permission to resolve this input');
+      }
+    } else {
+      // Fallback to direct comparison if no authorization service
+      if (pending.userId !== requestingUserId) {
+        throw new Error('Unauthorized');
+      }
     }
 
     if (pending.status !== 1) { // STATUS_WAITING
@@ -29,15 +46,28 @@ export class InputService {
     await this.store.resolve(activityId, inputData);
   }
 
-  async dismissInput(activityId: string, userId: string): Promise<void> {
+  /**
+   * Dismiss a pending input.
+   * Validates ownership: requesting user must own the input OR be admin.
+   */
+  async dismissInput(activityId: string, requestingUserId: string): Promise<void> {
     const pending = await this.store.getPending(activityId);
     if (!pending) {
       // Idempotent success if already gone
       return;
     }
 
-    if (pending.userId !== userId) {
-      throw new Error('Unauthorized');
+    // Authorization check: requesting user must own the input or be admin
+    if (this.authorization) {
+      const canAccess = await this.authorization.canAccessUser(requestingUserId, pending.userId);
+      if (!canAccess) {
+        throw new ForbiddenError('You do not have permission to dismiss this input');
+      }
+    } else {
+      // Fallback to direct comparison if no authorization service
+      if (pending.userId !== requestingUserId) {
+        throw new Error('Unauthorized');
+      }
     }
 
     await this.store.delete(activityId);

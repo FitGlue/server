@@ -9,6 +9,7 @@ import { PubSub } from '@google-cloud/pubsub';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore } from '../storage/firestore';
 import { UserService, ApiKeyService, ExecutionService } from '../domain/services';
+import { AuthorizationService } from '../domain/services/authorization';
 
 // Initialize Secret Manager
 const secretClient = new SecretManagerServiceClient();
@@ -79,6 +80,7 @@ export interface FrameworkContext {
     user: import('../domain/services/user').UserService;
     apiKey: import('../domain/services/apikey').ApiKeyService;
     execution: import('../domain/services/execution').ExecutionService;
+    authorization: AuthorizationService;
   };
   stores: {
     users: import('../storage/firestore').UserStore;
@@ -320,7 +322,8 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     const services = {
       user: new UserService(stores.users, stores.activities),
       apiKey: new ApiKeyService(stores.apiKeys),
-      execution: executionService
+      execution: executionService,
+      authorization: new AuthorizationService(stores.users)
     };
 
     // Full context reference (mutable so we can assign it as we build it)

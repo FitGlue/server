@@ -85,6 +85,10 @@ export interface Transformation {
   before: string;
   /** Example value after transformation */
   after: string;
+  /** Visual rendering type (e.g., "hr-graph", "gps-map") - if set, renders SVG instead of text */
+  visualType: string;
+  /** Pre-formatted HTML for after state (used instead of after when set) */
+  afterHtml: string;
 }
 
 /** ConfigFieldSchema defines a single configuration field */
@@ -104,7 +108,28 @@ export interface ConfigFieldSchema {
   /** For SELECT/MULTI_SELECT types */
   options: ConfigFieldOption[];
   /** Validation rules */
-  validation?: ConfigFieldValidation | undefined;
+  validation?:
+    | ConfigFieldValidation
+    | undefined;
+  /** Show only when dependency is met */
+  dependsOn?:
+    | ConfigFieldDependency
+    | undefined;
+  /**
+   * For KEY_VALUE_MAP: independent options for left (key) and right (value) sides
+   * If set, renders a dropdown instead of text input for that side
+   */
+  keyOptions: ConfigFieldOption[];
+  /** Options for the right side (value) */
+  valueOptions: ConfigFieldOption[];
+}
+
+/** ConfigFieldDependency defines when a field should be visible */
+export interface ConfigFieldDependency {
+  /** Key of the field this depends on */
+  fieldKey: string;
+  /** Show when dependent field has one of these values */
+  values: string[];
 }
 
 export interface ConfigFieldOption {

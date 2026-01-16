@@ -403,7 +403,7 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	sourceName := source.String()
 
 	for _, p := range userRec.Pipelines {
-		// Match Source
+		// Match Source - expects canonical format like "SOURCE_HEVY" (normalized by TypeScript layer)
 		if p.Source == sourceName {
 			var enrichers []configuredEnricher
 			for _, e := range p.Enrichers {

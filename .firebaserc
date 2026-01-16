@@ -1,0 +1,8 @@
+{
+  "projects": {
+    "dev": "fitglue-server-dev",
+    "test": "fitglue-server-test",
+    "prod": "fitglue-server-prod",
+    "default": "fitglue-server-dev"
+  }
+}

@@ -60,6 +60,10 @@ func init() {
 				Required:     false,
 				DefaultValue: "5",
 				Validation:   &pb.ConfigFieldValidation{MinValue: &minBarLen, MaxValue: &maxBarLen},
+				DependsOn: &pb.ConfigFieldDependency{
+					FieldKey: "style",
+					Values:   []string{"emoji"},
+				},
 			},
 			{
 				Key:          "preset",

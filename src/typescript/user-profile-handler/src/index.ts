@@ -2,7 +2,8 @@ import {
   createCloudFunction,
   db,
   FrameworkContext,
-  FirebaseAuthStrategy
+  FirebaseAuthStrategy,
+  ForbiddenError
 } from '@fitglue/shared';
 import { Request, Response } from 'express';
 
@@ -99,16 +100,6 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   // Extract subpath: /users/me, /admin/users, etc.
   const subPath = req.path.replace(/^\/api/, '') || '/';
 
-  // Helper to check if current user is an admin
-  const checkAdmin = async () => {
-    const currentUser = await services.user.get(userId);
-    if (!currentUser?.isAdmin) {
-      res.status(403).json({ error: 'Forbidden: Admin access required' });
-      return false;
-    }
-    return true;
-  };
-
   // --- GET /users/me ---
   if (subPath === '/users/me' && req.method === 'GET') {
     try {
@@ -139,9 +130,9 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
   // --- GET /admin/users (Admin Only) ---
   if (subPath === '/admin/users' && req.method === 'GET') {
-    if (!await checkAdmin()) return;
-
     try {
+      await services.authorization.requireAdmin(userId);
+
       const snapshot = await db.collection('users').get();
       const users = snapshot.docs.map(doc => {
         const data = doc.data();
@@ -157,6 +148,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       });
       res.status(200).json(users);
     } catch (e) {
+      if (e instanceof ForbiddenError) {
+        res.status(403).json({ error: e.message });
+        return;
+      }
       logger.error('Failed to list admin users', { error: e, userId });
       res.status(500).json({ error: 'Internal Server Error' });
     }
@@ -166,11 +161,12 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   // --- PATCH /admin/users/:targetUserId (Admin Only) ---
   const userUpdateMatch = subPath.match(/^\/admin\/users\/([^/]+)$/);
   if (userUpdateMatch && req.method === 'PATCH') {
-    if (!await checkAdmin()) return;
     const targetUserId = userUpdateMatch[1];
     const { tier, isAdmin } = req.body;
 
     try {
+      await services.authorization.requireAdmin(userId);
+
       const updates: Record<string, string | boolean> = {};
       if (tier !== undefined) updates.tier = tier;
       if (isAdmin !== undefined) updates.isAdmin = isAdmin;
@@ -180,6 +176,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       }
       res.status(200).json({ success: true });
     } catch (e) {
+      if (e instanceof ForbiddenError) {
+        res.status(403).json({ error: e.message });
+        return;
+      }
       logger.error('Failed to update user via admin', { error: e, userId, targetUserId });
       res.status(500).json({ error: 'Internal Server Error' });
     }

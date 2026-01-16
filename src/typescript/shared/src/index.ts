@@ -26,6 +26,7 @@ export * from './domain/services/user';
 export * from './domain/services/execution';
 export * from './domain/services/apikey';
 export * from './domain/services/inputs';
+export * from './domain/services/authorization';
 
 // Domain Logic
 export * from './domain/tier';

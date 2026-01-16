@@ -1,4 +1,4 @@
-import { createCloudFunction, db, InputStore, InputService, FrameworkContext, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore } from '@fitglue/shared';
+import { createCloudFunction, db, InputStore, InputService, FrameworkContext, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore, ForbiddenError } from '@fitglue/shared';
 
 // PubSub topic name logic via env var
 const TOPIC = process.env.PUBSUB_TOPIC || 'activity-updates';
@@ -15,7 +15,7 @@ import { Request, Response } from 'express';
 export const handler = async (req: Request, res: Response, ctx: FrameworkContext) => {
 
   const inputStore = new InputStore(db);
-  const inputService = new InputService(inputStore);
+  const inputService = new InputService(inputStore, ctx.services.authorization);
   const userStore = new UserStore(db);
 
   const path = req.path;
@@ -122,9 +122,9 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       const err = e as { message?: string };
       ctx.logger.error('Failed to resolve input', { error: e });
       // Map common errors
-      if (err.message?.includes('Unauthorized')) {
-        res.status(403).json({ error: 'Forbidden' });
-      } else if (err.message?.includes('not found')) { // unlikely if we checked exists, but race condition
+      if (e instanceof ForbiddenError || err.message?.includes('Unauthorized')) {
+        res.status(403).json({ error: e instanceof ForbiddenError ? e.message : 'Forbidden' });
+      } else if (err.message?.includes('not found')) {
         res.status(404).json({ error: 'Not found' });
       } else if (err.message?.includes('status')) {
         res.status(409).json({ error: err.message });
@@ -160,8 +160,8 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     } catch (e: unknown) {
       const err = e as { message?: string };
       ctx.logger.error('Failed to dismiss input', { error: e, activityId });
-      if (err.message?.includes('Unauthorized')) {
-        res.status(403).json({ error: 'Forbidden' });
+      if (e instanceof ForbiddenError || err.message?.includes('Unauthorized')) {
+        res.status(403).json({ error: e instanceof ForbiddenError ? e.message : 'Forbidden' });
       } else {
         res.status(500).json({ error: 'Internal Server Error' });
       }

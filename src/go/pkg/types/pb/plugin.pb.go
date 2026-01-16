@@ -340,10 +340,12 @@ func (x *PluginManifest) GetUseCases() []string {
 // Transformation shows a before/after example of what a plugin does to a field
 type Transformation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Field         string                 `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`   // Field being transformed (e.g., "description", "gpsData")
-	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`   // Human-readable label (e.g., "Activity Description")
-	Before        string                 `protobuf:"bytes,3,opt,name=before,proto3" json:"before,omitempty"` // Example value before transformation
-	After         string                 `protobuf:"bytes,4,opt,name=after,proto3" json:"after,omitempty"`   // Example value after transformation
+	Field         string                 `protobuf:"bytes,1,opt,name=field,proto3" json:"field,omitempty"`                             // Field being transformed (e.g., "description", "gpsData")
+	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`                             // Human-readable label (e.g., "Activity Description")
+	Before        string                 `protobuf:"bytes,3,opt,name=before,proto3" json:"before,omitempty"`                           // Example value before transformation
+	After         string                 `protobuf:"bytes,4,opt,name=after,proto3" json:"after,omitempty"`                             // Example value after transformation
+	VisualType    string                 `protobuf:"bytes,5,opt,name=visual_type,json=visualType,proto3" json:"visual_type,omitempty"` // Visual rendering type (e.g., "hr-graph", "gps-map") - if set, renders SVG instead of text
+	AfterHtml     string                 `protobuf:"bytes,6,opt,name=after_html,json=afterHtml,proto3" json:"after_html,omitempty"`    // Pre-formatted HTML for after state (used instead of after when set)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -406,17 +408,36 @@ func (x *Transformation) GetAfter() string {
 	return ""
 }
 
+func (x *Transformation) GetVisualType() string {
+	if x != nil {
+		return x.VisualType
+	}
+	return ""
+}
+
+func (x *Transformation) GetAfterHtml() string {
+	if x != nil {
+		return x.AfterHtml
+	}
+	return ""
+}
+
 // ConfigFieldSchema defines a single configuration field
 type ConfigFieldSchema struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`                                                            // Field key in config map
-	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`                                                        // Human-readable label
-	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`                                            // Help text
-	FieldType     ConfigFieldType        `protobuf:"varint,4,opt,name=field_type,json=fieldType,proto3,enum=fitglue.ConfigFieldType" json:"field_type,omitempty"` // Type of input
-	Required      bool                   `protobuf:"varint,5,opt,name=required,proto3" json:"required,omitempty"`                                                 // Whether field is required
-	DefaultValue  string                 `protobuf:"bytes,6,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`                      // Default value (as string)
-	Options       []*ConfigFieldOption   `protobuf:"bytes,7,rep,name=options,proto3" json:"options,omitempty"`                                                    // For SELECT/MULTI_SELECT types
-	Validation    *ConfigFieldValidation `protobuf:"bytes,8,opt,name=validation,proto3" json:"validation,omitempty"`                                              // Validation rules
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Key          string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`                                                            // Field key in config map
+	Label        string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`                                                        // Human-readable label
+	Description  string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"`                                            // Help text
+	FieldType    ConfigFieldType        `protobuf:"varint,4,opt,name=field_type,json=fieldType,proto3,enum=fitglue.ConfigFieldType" json:"field_type,omitempty"` // Type of input
+	Required     bool                   `protobuf:"varint,5,opt,name=required,proto3" json:"required,omitempty"`                                                 // Whether field is required
+	DefaultValue string                 `protobuf:"bytes,6,opt,name=default_value,json=defaultValue,proto3" json:"default_value,omitempty"`                      // Default value (as string)
+	Options      []*ConfigFieldOption   `protobuf:"bytes,7,rep,name=options,proto3" json:"options,omitempty"`                                                    // For SELECT/MULTI_SELECT types
+	Validation   *ConfigFieldValidation `protobuf:"bytes,8,opt,name=validation,proto3" json:"validation,omitempty"`                                              // Validation rules
+	DependsOn    *ConfigFieldDependency `protobuf:"bytes,9,opt,name=depends_on,json=dependsOn,proto3,oneof" json:"depends_on,omitempty"`                         // Show only when dependency is met
+	// For KEY_VALUE_MAP: independent options for left (key) and right (value) sides
+	// If set, renders a dropdown instead of text input for that side
+	KeyOptions    []*ConfigFieldOption `protobuf:"bytes,10,rep,name=key_options,json=keyOptions,proto3" json:"key_options,omitempty"`       // Options for the left side (key)
+	ValueOptions  []*ConfigFieldOption `protobuf:"bytes,11,rep,name=value_options,json=valueOptions,proto3" json:"value_options,omitempty"` // Options for the right side (value)
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -507,6 +528,80 @@ func (x *ConfigFieldSchema) GetValidation() *ConfigFieldValidation {
 	return nil
 }
 
+func (x *ConfigFieldSchema) GetDependsOn() *ConfigFieldDependency {
+	if x != nil {
+		return x.DependsOn
+	}
+	return nil
+}
+
+func (x *ConfigFieldSchema) GetKeyOptions() []*ConfigFieldOption {
+	if x != nil {
+		return x.KeyOptions
+	}
+	return nil
+}
+
+func (x *ConfigFieldSchema) GetValueOptions() []*ConfigFieldOption {
+	if x != nil {
+		return x.ValueOptions
+	}
+	return nil
+}
+
+// ConfigFieldDependency defines when a field should be visible
+type ConfigFieldDependency struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FieldKey      string                 `protobuf:"bytes,1,opt,name=field_key,json=fieldKey,proto3" json:"field_key,omitempty"` // Key of the field this depends on
+	Values        []string               `protobuf:"bytes,2,rep,name=values,proto3" json:"values,omitempty"`                     // Show when dependent field has one of these values
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfigFieldDependency) Reset() {
+	*x = ConfigFieldDependency{}
+	mi := &file_plugin_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfigFieldDependency) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfigFieldDependency) ProtoMessage() {}
+
+func (x *ConfigFieldDependency) ProtoReflect() protoreflect.Message {
+	mi := &file_plugin_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfigFieldDependency.ProtoReflect.Descriptor instead.
+func (*ConfigFieldDependency) Descriptor() ([]byte, []int) {
+	return file_plugin_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ConfigFieldDependency) GetFieldKey() string {
+	if x != nil {
+		return x.FieldKey
+	}
+	return ""
+}
+
+func (x *ConfigFieldDependency) GetValues() []string {
+	if x != nil {
+		return x.Values
+	}
+	return nil
+}
+
 type ConfigFieldOption struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"` // Stored value (descriptive string)
@@ -517,7 +612,7 @@ type ConfigFieldOption struct {
 
 func (x *ConfigFieldOption) Reset() {
 	*x = ConfigFieldOption{}
-	mi := &file_plugin_proto_msgTypes[3]
+	mi := &file_plugin_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -529,7 +624,7 @@ func (x *ConfigFieldOption) String() string {
 func (*ConfigFieldOption) ProtoMessage() {}
 
 func (x *ConfigFieldOption) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_proto_msgTypes[3]
+	mi := &file_plugin_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -542,7 +637,7 @@ func (x *ConfigFieldOption) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigFieldOption.ProtoReflect.Descriptor instead.
 func (*ConfigFieldOption) Descriptor() ([]byte, []int) {
-	return file_plugin_proto_rawDescGZIP(), []int{3}
+	return file_plugin_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *ConfigFieldOption) GetValue() string {
@@ -572,7 +667,7 @@ type ConfigFieldValidation struct {
 
 func (x *ConfigFieldValidation) Reset() {
 	*x = ConfigFieldValidation{}
-	mi := &file_plugin_proto_msgTypes[4]
+	mi := &file_plugin_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -584,7 +679,7 @@ func (x *ConfigFieldValidation) String() string {
 func (*ConfigFieldValidation) ProtoMessage() {}
 
 func (x *ConfigFieldValidation) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_proto_msgTypes[4]
+	mi := &file_plugin_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -597,7 +692,7 @@ func (x *ConfigFieldValidation) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ConfigFieldValidation.ProtoReflect.Descriptor instead.
 func (*ConfigFieldValidation) Descriptor() ([]byte, []int) {
-	return file_plugin_proto_rawDescGZIP(), []int{4}
+	return file_plugin_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ConfigFieldValidation) GetMinLength() int32 {
@@ -659,7 +754,7 @@ type IntegrationManifest struct {
 
 func (x *IntegrationManifest) Reset() {
 	*x = IntegrationManifest{}
-	mi := &file_plugin_proto_msgTypes[5]
+	mi := &file_plugin_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -671,7 +766,7 @@ func (x *IntegrationManifest) String() string {
 func (*IntegrationManifest) ProtoMessage() {}
 
 func (x *IntegrationManifest) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_proto_msgTypes[5]
+	mi := &file_plugin_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -684,7 +779,7 @@ func (x *IntegrationManifest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IntegrationManifest.ProtoReflect.Descriptor instead.
 func (*IntegrationManifest) Descriptor() ([]byte, []int) {
-	return file_plugin_proto_rawDescGZIP(), []int{5}
+	return file_plugin_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *IntegrationManifest) GetId() string {
@@ -791,7 +886,7 @@ type PluginRegistryResponse struct {
 
 func (x *PluginRegistryResponse) Reset() {
 	*x = PluginRegistryResponse{}
-	mi := &file_plugin_proto_msgTypes[6]
+	mi := &file_plugin_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -803,7 +898,7 @@ func (x *PluginRegistryResponse) String() string {
 func (*PluginRegistryResponse) ProtoMessage() {}
 
 func (x *PluginRegistryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_proto_msgTypes[6]
+	mi := &file_plugin_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -816,7 +911,7 @@ func (x *PluginRegistryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PluginRegistryResponse.ProtoReflect.Descriptor instead.
 func (*PluginRegistryResponse) Descriptor() ([]byte, []int) {
-	return file_plugin_proto_rawDescGZIP(), []int{6}
+	return file_plugin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *PluginRegistryResponse) GetSources() []*PluginManifest {
@@ -869,12 +964,16 @@ const file_plugin_proto_rawDesc = "" +
 	"\x0ftransformations\x18\r \x03(\v2\x17.fitglue.TransformationR\x0ftransformations\x12\x1b\n" +
 	"\tuse_cases\x18\x0e \x03(\tR\buseCasesB\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
-	"\x11_destination_type\"j\n" +
+	"\x11_destination_type\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +
 	"\x06before\x18\x03 \x01(\tR\x06before\x12\x14\n" +
-	"\x05after\x18\x04 \x01(\tR\x05after\"\xcd\x02\n" +
+	"\x05after\x18\x04 \x01(\tR\x05after\x12\x1f\n" +
+	"\vvisual_type\x18\x05 \x01(\tR\n" +
+	"visualType\x12\x1d\n" +
+	"\n" +
+	"after_html\x18\x06 \x01(\tR\tafterHtml\"\x9e\x04\n" +
 	"\x11ConfigFieldSchema\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12 \n" +
@@ -886,7 +985,17 @@ const file_plugin_proto_rawDesc = "" +
 	"\aoptions\x18\a \x03(\v2\x1a.fitglue.ConfigFieldOptionR\aoptions\x12>\n" +
 	"\n" +
 	"validation\x18\b \x01(\v2\x1e.fitglue.ConfigFieldValidationR\n" +
-	"validation\"?\n" +
+	"validation\x12B\n" +
+	"\n" +
+	"depends_on\x18\t \x01(\v2\x1e.fitglue.ConfigFieldDependencyH\x00R\tdependsOn\x88\x01\x01\x12;\n" +
+	"\vkey_options\x18\n" +
+	" \x03(\v2\x1a.fitglue.ConfigFieldOptionR\n" +
+	"keyOptions\x12?\n" +
+	"\rvalue_options\x18\v \x03(\v2\x1a.fitglue.ConfigFieldOptionR\fvalueOptionsB\r\n" +
+	"\v_depends_on\"L\n" +
+	"\x15ConfigFieldDependency\x12\x1b\n" +
+	"\tfield_key\x18\x01 \x01(\tR\bfieldKey\x12\x16\n" +
+	"\x06values\x18\x02 \x03(\tR\x06values\"?\n" +
 	"\x11ConfigFieldOption\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\"\x88\x02\n" +
@@ -959,7 +1068,7 @@ func file_plugin_proto_rawDescGZIP() []byte {
 }
 
 var file_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_plugin_proto_goTypes = []any{
 	(PluginType)(0),                // 0: fitglue.PluginType
 	(ConfigFieldType)(0),           // 1: fitglue.ConfigFieldType
@@ -967,28 +1076,32 @@ var file_plugin_proto_goTypes = []any{
 	(*PluginManifest)(nil),         // 3: fitglue.PluginManifest
 	(*Transformation)(nil),         // 4: fitglue.Transformation
 	(*ConfigFieldSchema)(nil),      // 5: fitglue.ConfigFieldSchema
-	(*ConfigFieldOption)(nil),      // 6: fitglue.ConfigFieldOption
-	(*ConfigFieldValidation)(nil),  // 7: fitglue.ConfigFieldValidation
-	(*IntegrationManifest)(nil),    // 8: fitglue.IntegrationManifest
-	(*PluginRegistryResponse)(nil), // 9: fitglue.PluginRegistryResponse
+	(*ConfigFieldDependency)(nil),  // 6: fitglue.ConfigFieldDependency
+	(*ConfigFieldOption)(nil),      // 7: fitglue.ConfigFieldOption
+	(*ConfigFieldValidation)(nil),  // 8: fitglue.ConfigFieldValidation
+	(*IntegrationManifest)(nil),    // 9: fitglue.IntegrationManifest
+	(*PluginRegistryResponse)(nil), // 10: fitglue.PluginRegistryResponse
 }
 var file_plugin_proto_depIdxs = []int32{
 	0,  // 0: fitglue.PluginManifest.type:type_name -> fitglue.PluginType
 	5,  // 1: fitglue.PluginManifest.config_schema:type_name -> fitglue.ConfigFieldSchema
 	4,  // 2: fitglue.PluginManifest.transformations:type_name -> fitglue.Transformation
 	1,  // 3: fitglue.ConfigFieldSchema.field_type:type_name -> fitglue.ConfigFieldType
-	6,  // 4: fitglue.ConfigFieldSchema.options:type_name -> fitglue.ConfigFieldOption
-	7,  // 5: fitglue.ConfigFieldSchema.validation:type_name -> fitglue.ConfigFieldValidation
-	2,  // 6: fitglue.IntegrationManifest.auth_type:type_name -> fitglue.IntegrationAuthType
-	3,  // 7: fitglue.PluginRegistryResponse.sources:type_name -> fitglue.PluginManifest
-	3,  // 8: fitglue.PluginRegistryResponse.enrichers:type_name -> fitglue.PluginManifest
-	3,  // 9: fitglue.PluginRegistryResponse.destinations:type_name -> fitglue.PluginManifest
-	8,  // 10: fitglue.PluginRegistryResponse.integrations:type_name -> fitglue.IntegrationManifest
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	7,  // 4: fitglue.ConfigFieldSchema.options:type_name -> fitglue.ConfigFieldOption
+	8,  // 5: fitglue.ConfigFieldSchema.validation:type_name -> fitglue.ConfigFieldValidation
+	6,  // 6: fitglue.ConfigFieldSchema.depends_on:type_name -> fitglue.ConfigFieldDependency
+	7,  // 7: fitglue.ConfigFieldSchema.key_options:type_name -> fitglue.ConfigFieldOption
+	7,  // 8: fitglue.ConfigFieldSchema.value_options:type_name -> fitglue.ConfigFieldOption
+	2,  // 9: fitglue.IntegrationManifest.auth_type:type_name -> fitglue.IntegrationAuthType
+	3,  // 10: fitglue.PluginRegistryResponse.sources:type_name -> fitglue.PluginManifest
+	3,  // 11: fitglue.PluginRegistryResponse.enrichers:type_name -> fitglue.PluginManifest
+	3,  // 12: fitglue.PluginRegistryResponse.destinations:type_name -> fitglue.PluginManifest
+	9,  // 13: fitglue.PluginRegistryResponse.integrations:type_name -> fitglue.IntegrationManifest
+	14, // [14:14] is the sub-list for method output_type
+	14, // [14:14] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_plugin_proto_init() }
@@ -997,14 +1110,15 @@ func file_plugin_proto_init() {
 		return
 	}
 	file_plugin_proto_msgTypes[0].OneofWrappers = []any{}
-	file_plugin_proto_msgTypes[4].OneofWrappers = []any{}
+	file_plugin_proto_msgTypes[2].OneofWrappers = []any{}
+	file_plugin_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plugin_proto_rawDesc), len(file_plugin_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

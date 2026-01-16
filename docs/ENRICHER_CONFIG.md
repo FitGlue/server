@@ -19,26 +19,7 @@ Source (Hevy) → [Enricher 1] → [Enricher 2] → [Enricher N] → Destination
 
 ## Available Enrichers
 
-### 1. Metadata Passthrough
-**Provider Type**: `ENRICHER_PROVIDER_METADATA_PASSTHROUGH`
-
-**Purpose**: Preserves the original activity name and description from the source.
-
-**When to Use**: First in pipeline to seed metadata before other enrichers append to it.
-
-**Configuration**: None required
-```json
-{
-  "providerType": 5,
-  "inputs": {}
-}
-```
-
-**Output**: Sets `name` and `description` fields on the enriched activity.
-
----
-
-### 2. Workout Summary
+### 1. Workout Summary
 **Provider Type**: `ENRICHER_PROVIDER_WORKOUT_SUMMARY`
 
 **Purpose**: Generates a formatted summary of strength training exercises.
@@ -374,10 +355,10 @@ Checks start location against known Parkrun coordinates. If within 200m and time
 ```
 ? Select Source: SOURCE_HEVY
 ? Add an enricher? Yes
-? Enricher Provider: Metadata Passthrough
+? Enricher Provider: Workout Summary
 ? Inputs (JSON string, optional): <Enter>
 ? Add an enricher? Yes
-? Enricher Provider: Workout Summary
+? Enricher Provider: Muscle Heatmap
 ? Inputs (JSON string, optional): <Enter>
 ? Add an enricher? Yes
 ? Enricher Provider: Virtual GPS
@@ -431,12 +412,12 @@ You can create multiple pipelines for the same source:
 ```bash
 # Pipeline 1: Full enrichment for Strava
 ./fitglue-admin users:add-pipeline user-123
-# Enrichers: Metadata → Summary → Heatmap → Fitbit HR → Virtual GPS → Link
+# Enrichers: Summary → Heatmap → Fitbit HR → Virtual GPS → Link
 # Destinations: strava
 
 # Pipeline 2: Minimal for backup
 ./fitglue-admin users:add-pipeline user-123
-# Enrichers: Metadata Passthrough
+# Enrichers: Source Link
 # Destinations: strava
 ```
 
@@ -444,7 +425,7 @@ You can create multiple pipelines for the same source:
 
 ### Configuration Tips
 
-1. **Start Simple**: Begin with Metadata Passthrough only, then add enrichers incrementally
+1. **Start Simple**: Begin with Workout Summary only, then add enrichers incrementally
 2. **Test Locally**: Use test activities to verify enricher output before production
 3. **Monitor Logs**: Check execution logs to verify enrichers are running
 4. **Validate FIT Files**: Use `fit-inspect` to verify binary output

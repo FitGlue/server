@@ -24,10 +24,10 @@ func init() {
 		Enabled:     true,
 		ConfigSchema: []*pb.ConfigFieldSchema{
 			{
-				Key:         "type_mappings",
-				Label:       "Type Mappings",
-				Description: "Map original activity types to desired types",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+				Key:         "rules",
+				Label:       "Type Mapping Rules",
+				Description: "JSON array of rules: [{substring: 'title text', target_type: 'ActivityType'}]",
+				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
 				Required:    true,
 			},
 		},
@@ -46,44 +46,78 @@ func (p *TypeMapperProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER
 }
 
+// TypeMapperRule represents a single rule for mapping activity types based on title
+type TypeMapperRule struct {
+	Substring  string `json:"substring"`
+	TargetType string `json:"target_type"`
+}
+
 func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
-	// Get type mappings config (stored as JSON object: {"OriginalType": "DesiredType"})
-	mappingsJson, ok := inputConfig["type_mappings"]
-	if !ok || mappingsJson == "" {
-		// No mappings configured, nothing to do
+	var rules []TypeMapperRule
+
+	// Check for type_rules JSON map (from web UI: {"title substring": "ACTIVITY_TYPE_..."})
+	typeRulesJson, hasTypeRules := inputConfig["type_rules"]
+	if hasTypeRules && typeRulesJson != "" {
+		var typeRulesMap map[string]string
+		if err := json.Unmarshal([]byte(typeRulesJson), &typeRulesMap); err == nil {
+			for substring, targetType := range typeRulesMap {
+				if substring != "" && targetType != "" {
+					rules = append(rules, TypeMapperRule{
+						Substring:  substring,
+						TargetType: targetType,
+					})
+				}
+			}
+		}
+	}
+
+	// Also check for rules JSON array (from admin-cli)
+	rulesJson, ok := inputConfig["rules"]
+	if ok && rulesJson != "" {
+		var jsonRules []TypeMapperRule
+		if err := json.Unmarshal([]byte(rulesJson), &jsonRules); err == nil {
+			rules = append(rules, jsonRules...)
+		}
+	}
+
+	// No rules configured, nothing to do
+	if len(rules) == 0 {
 		return &EnrichmentResult{}, nil
 	}
 
-	// Parse the JSON map
-	var mappings map[string]string
-	if err := json.Unmarshal([]byte(mappingsJson), &mappings); err != nil {
-		// Silent failure on invalid config is safer than crashing pipeline
+	// Get the current activity title
+	activityTitle := act.Name
+	if activityTitle == "" {
 		return &EnrichmentResult{}, nil
 	}
 
-	// Get the current activity type as a string (friendly name)
+	// Get original type for metadata
 	originalType := act.Type
 	originalTypeName := activity.GetStravaActivityType(originalType)
 
-	// Check if there's a mapping for this type
-	for fromType, toType := range mappings {
-		// Match case-insensitively
-		if strings.EqualFold(fromType, originalTypeName) {
+	// Check each rule - first match wins
+	for _, rule := range rules {
+		if rule.Substring == "" {
+			continue
+		}
+		// Match case-insensitively against the activity title
+		if strings.Contains(strings.ToLower(activityTitle), strings.ToLower(rule.Substring)) {
 			// Parse the target type
-			newType := activity.ParseActivityTypeFromString(toType)
+			newType := activity.ParseActivityTypeFromString(rule.TargetType)
 			if newType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
 				act.Type = newType
 				return &EnrichmentResult{
 					Metadata: map[string]string{
-						"original_type": originalTypeName,
-						"new_type":      activity.GetStravaActivityType(newType),
-						"mapping_used":  fromType + " → " + toType,
+						"original_type":   originalTypeName,
+						"new_type":        activity.GetStravaActivityType(newType),
+						"matched_title":   activityTitle,
+						"matched_pattern": rule.Substring,
 					},
 				}, nil
 			}
 		}
 	}
 
-	// No matching mapping found
+	// No matching rule found
 	return &EnrichmentResult{}, nil
 }

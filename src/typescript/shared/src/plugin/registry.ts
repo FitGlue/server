@@ -10,10 +10,53 @@ import {
   PluginRegistryResponse,
   PluginType,
   ConfigFieldType,
+  ConfigFieldSchema,
   IntegrationManifest,
   IntegrationAuthType,
 } from '../types/pb/plugin';
 import { EnricherProviderType } from '../types/pb/user';
+
+/**
+ * TypeScript ergonomics for ConfigFieldSchema.
+ *
+ * In protobuf3, repeated fields default to empty arrays. However, ts-proto generates
+ * them as required arrays in TypeScript. This type allows omitting keyOptions and
+ * valueOptions when not needed - they'll be normalized to empty arrays.
+ *
+ * The actual schema is defined in plugin.proto - this is just a TypeScript convenience.
+ */
+type ConfigFieldSchemaInput = Omit<ConfigFieldSchema, 'keyOptions' | 'valueOptions'> & {
+  keyOptions?: ConfigFieldSchema['keyOptions'];
+  valueOptions?: ConfigFieldSchema['valueOptions'];
+};
+
+/**
+ * Normalizes ConfigFieldSchemaInput to full ConfigFieldSchema by adding default empty arrays.
+ */
+function normalizeConfigField(input: ConfigFieldSchemaInput): ConfigFieldSchema {
+  return {
+    ...input,
+    keyOptions: input.keyOptions ?? [],
+    valueOptions: input.valueOptions ?? [],
+  };
+}
+
+/**
+ * TypeScript ergonomics for PluginManifest - allows optional keyOptions/valueOptions in configSchema.
+ */
+type PluginManifestInput = Omit<PluginManifest, 'configSchema'> & {
+  configSchema: ConfigFieldSchemaInput[];
+};
+
+/**
+ * Normalizes PluginManifestInput to full PluginManifest.
+ */
+function normalizeManifest(input: PluginManifestInput): PluginManifest {
+  return {
+    ...input,
+    configSchema: input.configSchema.map(normalizeConfigField),
+  };
+}
 
 // Registry stores
 const sources: Map<string, PluginManifest> = new Map();
@@ -24,14 +67,15 @@ const integrations: Map<string, IntegrationManifest> = new Map();
 /**
  * Register a source plugin manifest
  */
-export function registerSource(manifest: PluginManifest): void {
-  sources.set(manifest.id, manifest);
+export function registerSource(manifest: PluginManifestInput): void {
+  sources.set(manifest.id, normalizeManifest(manifest));
 }
 
 /**
  * Register an enricher plugin manifest
  */
-export function registerEnricher(providerType: EnricherProviderType, manifest: PluginManifest): void {
+export function registerEnricher(providerType: EnricherProviderType, input: PluginManifestInput): void {
+  const manifest = normalizeManifest(input);
   manifest.enricherProviderType = providerType;
   enrichers.set(providerType, manifest);
 }
@@ -39,8 +83,8 @@ export function registerEnricher(providerType: EnricherProviderType, manifest: P
 /**
  * Register a destination plugin manifest
  */
-export function registerDestination(manifest: PluginManifest): void {
-  destinations.set(manifest.id, manifest);
+export function registerDestination(manifest: PluginManifestInput): void {
+  destinations.set(manifest.id, normalizeManifest(manifest));
 }
 
 /**
@@ -296,6 +340,8 @@ FitGlue analyzes your sets, reps, and weight data, identifies your primary muscl
 - Incline DB Press: 4 x 12 × 24.0kg
 - Lateral Raises: 4 x 15 × 10.0kg
 - Tricep Pushdowns: 4 x 12 × 25.0kg`,
+      visualType: '',
+      afterHtml: '',
     },
   ],
   useCases: [
@@ -372,15 +418,11 @@ Our database includes 100+ canonical exercises with fuzzy matching, so even cust
   transformations: [
     {
       field: 'description',
-      label: 'Activity Description',
-      before: 'Push Day completed',
-      after: `Push Day completed
-
-Muscle Heatmap:
-- Chest: 🟪🟪🟪🟪🟪
-- Shoulders: 🟪🟪🟪🟪⬜
-- Triceps: 🟪🟪🟪⬜⬜
-- Core: 🟪🟪⬜⬜⬜`,
+      label: 'Muscle Heatmap',
+      before: 'Weight Training\n45 min',
+      after: '',
+      visualType: '',
+      afterHtml: '<strong>🔥 Muscle Activation</strong><br><br><span class="heatmap-row">Chest: <span class="heatmap-bar high">🟪🟪🟪🟪🟪</span></span><br><span class="heatmap-row">Shoulders: <span class="heatmap-bar high">🟪🟪🟪🟪⬛</span></span><br><span class="heatmap-row">Triceps: <span class="heatmap-bar med">🟪🟪⬛⬛⬛</span></span><br><span class="heatmap-row">Core: <span class="heatmap-bar low">🟪⬛⬛⬛⬛</span></span>',
     },
   ],
   useCases: [
@@ -423,7 +465,9 @@ When your activity has GPS data (from a phone app or watch), FitGlue uses an "El
       field: 'heartRateStream',
       label: 'Heart Rate Data',
       before: '(no heart rate)',
-      after: '❤️ Second-by-second HR stream attached\\nAvg: ~130bpm | Max: ~165bpm',
+      after: '',
+      visualType: 'hr-graph',
+      afterHtml: '',
     },
   ],
   useCases: [
@@ -482,15 +526,11 @@ When an activity is processed, Virtual GPS overlays a pre-defined GPS route onto
   transformations: [
     {
       field: 'gpsData',
-      label: 'GPS Coordinates',
-      before: '(no location)',
-      after: '📍 Hyde Park, London\nSecond-by-second lat/long stream attached',
-    },
-    {
-      field: 'description',
-      label: 'Activity Description',
-      before: '(empty)',
-      after: '🗺️ Took a virtual tour of Hyde Park, London (GPS generated for this indoor workout)',
+      label: 'GPS Routes',
+      before: 'Indoor workout\nNo location',
+      after: '',
+      visualType: 'gps-map',
+      afterHtml: '',
     },
   ],
   useCases: [
@@ -527,6 +567,8 @@ When activities are imported from sources like Hevy or Fitbit, Source Link adds 
       label: 'Activity Description',
       before: 'Upper Body Workout',
       after: 'Upper Body Workout\n\n🔗 View in Hevy: https://hevy.app/workout/abc123',
+      visualType: '',
+      afterHtml: '',
     },
   ],
   useCases: [
@@ -540,40 +582,93 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER, {
   id: 'type-mapper',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Type Mapper',
-  description: 'Maps activity types from one type to another (e.g., Ride → Virtual Ride)',
+  description: 'Maps activity types based on title keywords (e.g., title containing "Zwift" → Virtual Ride)',
   icon: '🏷️',
   enabled: true,
   requiredIntegrations: [],
   configSchema: [
     {
-      key: 'type_mappings',
-      label: 'Type Mappings',
-      description: 'Map original activity types to desired types',
+      key: 'type_rules',
+      label: 'Type Mapping Rules',
+      description: 'Map activity titles to desired types. Enter the text to match (case-insensitive), then select the activity type.',
       fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
       required: true,
       defaultValue: '',
       options: [],
+      valueOptions: [
+        { value: 'ACTIVITY_TYPE_ALPINE_SKI', label: 'Alpine Ski' },
+        { value: 'ACTIVITY_TYPE_BACKCOUNTRY_SKI', label: 'Backcountry Ski' },
+        { value: 'ACTIVITY_TYPE_BADMINTON', label: 'Badminton' },
+        { value: 'ACTIVITY_TYPE_CANOEING', label: 'Canoeing' },
+        { value: 'ACTIVITY_TYPE_CROSSFIT', label: 'Crossfit' },
+        { value: 'ACTIVITY_TYPE_EBIKE_RIDE', label: 'E-Bike Ride' },
+        { value: 'ACTIVITY_TYPE_ELLIPTICAL', label: 'Elliptical' },
+        { value: 'ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE', label: 'E-Mountain Bike Ride' },
+        { value: 'ACTIVITY_TYPE_GOLF', label: 'Golf' },
+        { value: 'ACTIVITY_TYPE_GRAVEL_RIDE', label: 'Gravel Ride' },
+        { value: 'ACTIVITY_TYPE_HANDCYCLE', label: 'Handcycle' },
+        { value: 'ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING', label: 'HIIT' },
+        { value: 'ACTIVITY_TYPE_HIKE', label: 'Hike' },
+        { value: 'ACTIVITY_TYPE_ICE_SKATE', label: 'Ice Skate' },
+        { value: 'ACTIVITY_TYPE_INLINE_SKATE', label: 'Inline Skate' },
+        { value: 'ACTIVITY_TYPE_KAYAKING', label: 'Kayaking' },
+        { value: 'ACTIVITY_TYPE_KITESURF', label: 'Kitesurf' },
+        { value: 'ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE', label: 'Mountain Bike Ride' },
+        { value: 'ACTIVITY_TYPE_NORDIC_SKI', label: 'Nordic Ski' },
+        { value: 'ACTIVITY_TYPE_PICKLEBALL', label: 'Pickleball' },
+        { value: 'ACTIVITY_TYPE_PILATES', label: 'Pilates' },
+        { value: 'ACTIVITY_TYPE_RACQUETBALL', label: 'Racquetball' },
+        { value: 'ACTIVITY_TYPE_RIDE', label: 'Ride' },
+        { value: 'ACTIVITY_TYPE_ROCK_CLIMBING', label: 'Rock Climbing' },
+        { value: 'ACTIVITY_TYPE_ROLLER_SKI', label: 'Roller Ski' },
+        { value: 'ACTIVITY_TYPE_ROWING', label: 'Rowing' },
+        { value: 'ACTIVITY_TYPE_RUN', label: 'Run' },
+        { value: 'ACTIVITY_TYPE_SAIL', label: 'Sail' },
+        { value: 'ACTIVITY_TYPE_SKATEBOARD', label: 'Skateboard' },
+        { value: 'ACTIVITY_TYPE_SNOWBOARD', label: 'Snowboard' },
+        { value: 'ACTIVITY_TYPE_SNOWSHOE', label: 'Snowshoe' },
+        { value: 'ACTIVITY_TYPE_SOCCER', label: 'Soccer' },
+        { value: 'ACTIVITY_TYPE_SQUASH', label: 'Squash' },
+        { value: 'ACTIVITY_TYPE_STAIR_STEPPER', label: 'Stair Stepper' },
+        { value: 'ACTIVITY_TYPE_STAND_UP_PADDLING', label: 'Stand Up Paddling' },
+        { value: 'ACTIVITY_TYPE_SURFING', label: 'Surfing' },
+        { value: 'ACTIVITY_TYPE_SWIM', label: 'Swim' },
+        { value: 'ACTIVITY_TYPE_TABLE_TENNIS', label: 'Table Tennis' },
+        { value: 'ACTIVITY_TYPE_TENNIS', label: 'Tennis' },
+        { value: 'ACTIVITY_TYPE_TRAIL_RUN', label: 'Trail Run' },
+        { value: 'ACTIVITY_TYPE_VELOMOBILE', label: 'Velomobile' },
+        { value: 'ACTIVITY_TYPE_VIRTUAL_RIDE', label: 'Virtual Ride' },
+        { value: 'ACTIVITY_TYPE_VIRTUAL_ROW', label: 'Virtual Row' },
+        { value: 'ACTIVITY_TYPE_VIRTUAL_RUN', label: 'Virtual Run' },
+        { value: 'ACTIVITY_TYPE_WALK', label: 'Walk' },
+        { value: 'ACTIVITY_TYPE_WEIGHT_TRAINING', label: 'Weight Training' },
+        { value: 'ACTIVITY_TYPE_WHEELCHAIR', label: 'Wheelchair' },
+        { value: 'ACTIVITY_TYPE_WINDSURF', label: 'Windsurf' },
+        { value: 'ACTIVITY_TYPE_WORKOUT', label: 'Workout' },
+        { value: 'ACTIVITY_TYPE_YOGA', label: 'Yoga' },
+      ],
     },
   ],
   marketingDescription: `
-### Remap Activity Types
-Convert activity types from one category to another. Perfect for when your source app uses different type names than your destination.
+### Remap Activity Types by Title
+Automatically change an activity's type based on keywords in the title. Perfect for when your source app doesn't correctly categorize your workouts.
 
 ### How it works
-Define mapping rules like "WeightTraining" → "Weight Training" or "Ride" → "Virtual Ride". When activities are processed, their type is automatically converted according to your mappings.
+Define matching rules like "title contains 'Zwift'" → "Virtual Ride" or "title contains 'Treadmill'" → "Run". When activities are processed, their type is automatically updated if the title matches your pattern.
   `,
   features: [
-    '✅ Convert activity types between platforms',
-    '✅ Configurable mapping rules',
-    '✅ Works with all source and destination types',
+    '✅ Match activity titles with keywords',
+    '✅ Full Strava activity type dropdown',
+    '✅ Case-insensitive matching',
+    '✅ Multiple rules per enricher',
   ],
   transformations: [
-    { field: 'activityType', label: 'Activity Type', before: 'WeightTraining', after: 'Weight Training' },
+    { field: 'activityType', label: 'Activity Type', before: 'Workout (from source)', after: 'Virtual Ride (matched "Zwift" in title)', visualType: '', afterHtml: '' },
   ],
   useCases: [
-    'Normalize activity types across platforms',
-    'Convert indoor activities to virtual types',
-    'Fix naming inconsistencies',
+    'Categorize indoor cycling as Virtual Ride',
+    'Mark treadmill runs correctly',
+    'Fix incorrect activity types from source apps',
   ],
 });
 
@@ -619,7 +714,7 @@ If your Saturday morning run starts near a known Parkrun location at the right t
     '✅ Automatic tagging for filtering',
   ],
   transformations: [
-    { field: 'title', label: 'Activity Title', before: 'Morning Run', after: 'Parkrun @ Newark' },
+    { field: 'title', label: 'Activity Title', before: 'Morning Run', after: 'Parkrun @ Newark', visualType: '', afterHtml: '' },
   ],
   useCases: [
     'Auto-name Parkrun activities',
@@ -661,7 +756,7 @@ Define conditions like "Saturday morning run near the park" and specify a title 
     '✅ Radius-based location matching',
   ],
   transformations: [
-    { field: 'title', label: 'Activity Title', before: 'Workout', after: 'Morning Gym Session' },
+    { field: 'title', label: 'Activity Title', before: 'Workout', after: 'Morning Gym Session', visualType: '', afterHtml: '' },
   ],
   useCases: [
     'Auto-title recurring workouts',
@@ -697,7 +792,7 @@ Define a counter key and optional title filter. Activities matching the filter g
     '✅ Configurable starting value',
   ],
   transformations: [
-    { field: 'title', label: 'Activity Title', before: 'Leg Day', after: 'Leg Day #42' },
+    { field: 'title', label: 'Activity Title', before: 'Leg Day', after: 'Leg Day #42', visualType: '', afterHtml: '' },
   ],
   useCases: [
     'Number workout series',
@@ -731,8 +826,8 @@ When an activity reaches this booster, it’s held pending your input. You recei
     '✅ Configurable required fields',
   ],
   transformations: [
-    { field: 'title', label: 'Activity Title', before: 'Workout', after: '(your custom title)' },
-    { field: 'description', label: 'Activity Description', before: '(empty)', after: '(your custom description)' },
+    { field: 'title', label: 'Activity Title', before: 'Workout', after: '(your custom title)', visualType: '', afterHtml: '' },
+    { field: 'description', label: 'Activity Description', before: '(empty)', after: '(your custom description)', visualType: '', afterHtml: '' },
   ],
   useCases: [
     'Add personal notes to activities',

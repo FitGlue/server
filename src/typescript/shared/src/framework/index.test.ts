@@ -112,4 +112,10 @@ describe('createCloudFunction', () => {
     expect(jsonSpy).toHaveBeenCalledWith({ error: 'Bad Request' });
   });
 
+  it('should throw if no auth strategies and not allowUnauthenticated', () => {
+    expect(() => createCloudFunction(handler)).toThrow('Security: Auth required');
+    expect(() => createCloudFunction(handler, {})).toThrow('Security: Auth required');
+    expect(() => createCloudFunction(handler, { auth: { strategies: [] } })).toThrow('Security: Auth required');
+  });
+
 });

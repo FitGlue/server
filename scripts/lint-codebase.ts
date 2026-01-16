@@ -1,0 +1,564 @@
+/**
+ * lint-codebase.ts
+ *
+ * Static analysis tool for FitGlue codebase consistency.
+ * Ensures configuration alignment across TypeScript, Go, Terraform, and registries.
+ *
+ * Usage: npx ts-node scripts/lint-codebase.ts [--verbose]
+ */
+
+import * as fs from 'fs';
+import * as path from 'path';
+import { Project, SyntaxKind, CallExpression, Node } from 'ts-morph';
+
+// ============================================================================
+// Configuration
+// ============================================================================
+
+const SERVER_ROOT = path.resolve(__dirname, '..');
+const TS_SRC_DIR = path.join(SERVER_ROOT, 'src/typescript');
+const GO_SRC_DIR = path.join(SERVER_ROOT, 'src/go');
+const TERRAFORM_DIR = path.join(SERVER_ROOT, 'terraform');
+const PROTO_DIR = path.join(SERVER_ROOT, 'src/proto');
+
+// Packages that are NOT cloud functions (excluded from function checks)
+const NON_FUNCTION_PACKAGES = ['shared', 'admin-cli', 'mcp-server', 'node_modules'];
+
+// Handler directories that don't need Terraform (internal tools)
+const NO_TERRAFORM_REQUIRED = ['admin-cli', 'mcp-server'];
+
+// ============================================================================
+// Result Types
+// ============================================================================
+
+interface CheckResult {
+  name: string;
+  passed: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+function getDirectories(dirPath: string): string[] {
+  if (!fs.existsSync(dirPath)) return [];
+  return fs.readdirSync(dirPath, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+}
+
+function getFiles(dirPath: string, extension?: string): string[] {
+  if (!fs.existsSync(dirPath)) return [];
+  return fs.readdirSync(dirPath, { withFileTypes: true })
+    .filter(dirent => dirent.isFile())
+    .filter(dirent => !extension || dirent.name.endsWith(extension))
+    .map(dirent => dirent.name);
+}
+
+// ============================================================================
+// Check 1: Terraform Coverage
+// ============================================================================
+
+function checkTerraformCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Special case mappings: directory name -> expected Terraform resource name
+  const specialCaseMappings: Record<string, string> = {
+    'auth-hooks': 'auth_on_create', // Uses Gen1 function with different naming
+  };
+
+  // Get all TypeScript handler directories
+  const tsDirs = getDirectories(TS_SRC_DIR)
+    .filter(d => d.endsWith('-handler') || d === 'auth-hooks')
+    .filter(d => !NO_TERRAFORM_REQUIRED.includes(d));
+
+  // Get all Go function directories
+  const goDirs = getDirectories(path.join(GO_SRC_DIR, 'functions'));
+
+  // Read Terraform files
+  const tfFiles = ['functions.tf', 'oauth_functions.tf']
+    .map(f => path.join(TERRAFORM_DIR, f))
+    .filter(f => fs.existsSync(f));
+
+  const tfContent = tfFiles.map(f => fs.readFileSync(f, 'utf-8')).join('\n');
+
+  // Extract function names from Terraform
+  // Pattern: resource "google_cloudfunctions2_function" "name" or resource "google_cloudfunctions_function" "name"
+  const tfFunctionPattern = /resource\s+"google_cloudfunctions2?_function"\s+"([^"]+)"/g;
+  const tfFunctions = new Set<string>();
+  let match;
+  while ((match = tfFunctionPattern.exec(tfContent)) !== null) {
+    tfFunctions.add(match[1]);
+  }
+
+  // Helper to normalize names for comparison
+  const normalize = (name: string): string => name.replace(/-/g, '_').toLowerCase();
+
+  // Check TypeScript handlers
+  for (const dir of tsDirs) {
+    // Check special case mappings first
+    if (specialCaseMappings[dir]) {
+      const expectedTfName = specialCaseMappings[dir];
+      if (!tfFunctions.has(expectedTfName)) {
+        errors.push(`TypeScript function '${dir}' not found in Terraform (expected '${expectedTfName}')`);
+      }
+      continue;
+    }
+
+    // Convert handler name: 'hevy-handler' -> 'hevy_handler'
+    const normalizedDir = normalize(dir);
+
+    // Check if any Terraform resource matches
+    const found = [...tfFunctions].some(tf => normalize(tf) === normalizedDir);
+
+    if (!found) {
+      errors.push(`TypeScript function '${dir}' not found in Terraform`);
+    }
+  }
+
+  // Check Go functions
+  for (const dir of goDirs) {
+    const normalizedDir = normalize(dir);
+
+    // Go functions: 'enricher' -> 'enricher', 'strava-uploader' -> 'strava_uploader'
+    const found = [...tfFunctions].some(tf => normalize(tf) === normalizedDir);
+
+    if (!found) {
+      errors.push(`Go function '${dir}' not found in Terraform`);
+    }
+  }
+
+  return {
+    name: 'Terraform Coverage',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+
+
+// ============================================================================
+// Check 2: Root index.js Exports
+// ============================================================================
+
+function checkIndexJsExports(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const indexPath = path.join(TS_SRC_DIR, 'index.js');
+  if (!fs.existsSync(indexPath)) {
+    errors.push('Root index.js not found');
+    return { name: 'Root index.js Exports', passed: false, errors, warnings };
+  }
+
+  const indexContent = fs.readFileSync(indexPath, 'utf-8');
+
+  // Get all handler directories (handlers + auth-hooks)
+  const handlerDirs = getDirectories(TS_SRC_DIR)
+    .filter(d => d.endsWith('-handler') || d === 'auth-hooks')
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  // Extract referenced packages from index.js
+  // Pattern: require('./xxx-handler/build/index') or require('./xxx-handler/dist/index')
+  const requirePattern = /require\(['"]\.\/([^/]+)\/(build|dist)\/index['"]\)/g;
+  const exportedPackages = new Set<string>();
+  let match;
+  while ((match = requirePattern.exec(indexContent)) !== null) {
+    exportedPackages.add(match[1]);
+  }
+
+  // Check each handler is exported
+  for (const dir of handlerDirs) {
+    if (!exportedPackages.has(dir)) {
+      errors.push(`Handler '${dir}' not exported in index.js`);
+    }
+  }
+
+  // Check for exports that don't have matching directories
+  for (const pkg of exportedPackages) {
+    if (!handlerDirs.includes(pkg)) {
+      warnings.push(`index.js exports '${pkg}' but directory doesn't match expected patterns`);
+    }
+  }
+
+  return {
+    name: 'Root index.js Exports',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+
+// ============================================================================
+// Check 3: Connector Pattern (Source Handlers)
+// ============================================================================
+
+function checkConnectorPattern(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Known source handlers that should use the Connector pattern
+  const sourceHandlers = ['hevy-handler', 'fitbit-handler', 'mock-source-handler', 'mobile-sync-handler'];
+
+  const project = new Project({
+    tsConfigFilePath: path.join(TS_SRC_DIR, 'shared/tsconfig.json'),
+    skipAddingFilesFromTsConfig: true
+  });
+
+  for (const handler of sourceHandlers) {
+    const handlerDir = path.join(TS_SRC_DIR, handler);
+    if (!fs.existsSync(handlerDir)) continue;
+
+    const srcDir = path.join(handlerDir, 'src');
+    if (!fs.existsSync(srcDir)) continue;
+
+    // Check for connector.ts
+    const connectorPath = path.join(srcDir, 'connector.ts');
+    const hasConnector = fs.existsSync(connectorPath);
+
+    // Check index.ts for createWebhookProcessor usage
+    const indexPath = path.join(srcDir, 'index.ts');
+    if (!fs.existsSync(indexPath)) continue;
+
+    const indexContent = fs.readFileSync(indexPath, 'utf-8');
+    const usesWebhookProcessor = indexContent.includes('createWebhookProcessor');
+
+    if (!hasConnector && !usesWebhookProcessor) {
+      warnings.push(`Source handler '${handler}' does not use Connector pattern`);
+    } else if (hasConnector && !usesWebhookProcessor) {
+      warnings.push(`Source handler '${handler}' has connector.ts but doesn't use createWebhookProcessor`);
+    }
+  }
+
+  return {
+    name: 'Connector Pattern',
+    passed: true, // Warnings only, not blocking
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 4: Registry Coverage
+// ============================================================================
+
+function checkRegistryCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+  if (!fs.existsSync(registryPath)) {
+    errors.push('Plugin registry not found');
+    return { name: 'Registry Coverage', passed: false, errors, warnings };
+  }
+
+  const project = new Project({
+    skipAddingFilesFromTsConfig: true
+  });
+
+  const sourceFile = project.addSourceFileAtPath(registryPath);
+
+  // Find all registerEnricher calls and extract the EnricherProviderType
+  const registeredEnrichers = new Set<string>();
+  const registerEnricherCalls = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)
+    .filter((call: CallExpression) => call.getExpression().getText() === 'registerEnricher');
+
+  for (const call of registerEnricherCalls) {
+    const args = call.getArguments();
+    if (args.length >= 1) {
+      // First arg is EnricherProviderType.XXX
+      const enumText = args[0].getText();
+      registeredEnrichers.add(enumText);
+    }
+  }
+
+  // Read the user.proto generated types to find all EnricherProviderType values
+  const userTypesPath = path.join(TS_SRC_DIR, 'shared/src/types/pb/user.ts');
+  if (fs.existsSync(userTypesPath)) {
+    const userContent = fs.readFileSync(userTypesPath, 'utf-8');
+
+    // Extract enum values from the generated file
+    const enumPattern = /ENRICHER_PROVIDER_[A-Z_]+\s*=\s*\d+/g;
+    const allEnumValues: string[] = [];
+    let match;
+    while ((match = enumPattern.exec(userContent)) !== null) {
+      const enumName = match[0].split('=')[0].trim();
+      if (enumName !== 'ENRICHER_PROVIDER_UNSPECIFIED') {
+        allEnumValues.push(`EnricherProviderType.${enumName}`);
+      }
+    }
+
+    // Check each enum value is registered
+    for (const enumValue of allEnumValues) {
+      if (!registeredEnrichers.has(enumValue)) {
+        errors.push(`${enumValue} is not registered in registry.ts`);
+      }
+    }
+  }
+
+  // Check source registrations
+  const registerSourceCalls = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression)
+    .filter((call: CallExpression) => call.getExpression().getText() === 'registerSource');
+
+  const registeredSources = new Set<string>();
+  for (const call of registerSourceCalls) {
+    const args = call.getArguments();
+    if (args.length >= 1) {
+      // Extract id from the manifest object
+      const manifestText = args[0].getText();
+      const idMatch = /id:\s*['"]([^'"]+)['"]/.exec(manifestText);
+      if (idMatch) {
+        registeredSources.add(idMatch[1]);
+      }
+    }
+  }
+
+  // Known sources that should be registered
+  const expectedSources = ['hevy', 'fitbit', 'mock', 'apple-health', 'health-connect'];
+  for (const source of expectedSources) {
+    if (!registeredSources.has(source)) {
+      warnings.push(`Source '${source}' may not be registered`);
+    }
+  }
+
+  return {
+    name: 'Registry Coverage',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 5: Workspace Membership
+// ============================================================================
+
+function checkWorkspaceMembership(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const packageJsonPath = path.join(TS_SRC_DIR, 'package.json');
+  if (!fs.existsSync(packageJsonPath)) {
+    errors.push('Root TypeScript package.json not found');
+    return { name: 'Workspace Membership', passed: false, errors, warnings };
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+  const workspaces: string[] = packageJson.workspaces || [];
+
+  // Get all directories that have a package.json
+  const allDirs = getDirectories(TS_SRC_DIR)
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d) || d === 'shared')
+    .filter(d => d !== 'node_modules')
+    .filter(d => fs.existsSync(path.join(TS_SRC_DIR, d, 'package.json')));
+
+  // Check each directory is in workspaces
+  for (const dir of allDirs) {
+    if (!workspaces.includes(dir)) {
+      errors.push(`Package '${dir}' not in workspaces list`);
+    }
+  }
+
+  // Check for workspaces entries that don't exist
+  for (const ws of workspaces) {
+    const wsPath = path.join(TS_SRC_DIR, ws);
+    if (!fs.existsSync(wsPath)) {
+      warnings.push(`Workspace '${ws}' directory doesn't exist`);
+    }
+  }
+
+  return {
+    name: 'Workspace Membership',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 6: Protobuf Type Alignment
+// ============================================================================
+
+function checkProtobufAlignment(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const pbGeneratedDir = path.join(TS_SRC_DIR, 'shared/src/types/pb');
+
+  // Get all .proto files
+  const protoFiles = getFiles(PROTO_DIR, '.proto');
+
+  // Get all generated .ts files (excluding google/ subdirectory)
+  const generatedFiles = getFiles(pbGeneratedDir, '.ts');
+
+  // Check each proto has a corresponding generated file
+  for (const proto of protoFiles) {
+    const baseName = proto.replace('.proto', '.ts');
+    if (!generatedFiles.includes(baseName)) {
+      errors.push(`Proto '${proto}' has no generated TypeScript (run 'make generate')`);
+    }
+  }
+
+  // Optional: Check for generated files without corresponding proto
+  for (const ts of generatedFiles) {
+    const baseName = ts.replace('.ts', '.proto');
+    if (!protoFiles.includes(baseName)) {
+      warnings.push(`Generated file '${ts}' has no corresponding .proto file`);
+    }
+  }
+
+  return {
+    name: 'Protobuf Alignment',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 7: Firebase Routing
+// ============================================================================
+
+function checkFirebaseRouting(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Handlers that are NOT public-facing (internal or background triggers)
+  const NON_PUBLIC_HANDLERS = [
+    'auth-hooks',         // Firebase Auth trigger, not HTTP
+    'admin-cli',          // CLI tool, not a function
+    'mcp-server',         // MCP server, not a Cloud Function
+    'shared',             // Library package
+  ];
+
+  const firebaseJsonPath = path.join(SERVER_ROOT, '..', 'web', 'firebase.json');
+  if (!fs.existsSync(firebaseJsonPath)) {
+    warnings.push('web/firebase.json not found (skipping check)');
+    return { name: 'Firebase Routing', passed: true, errors, warnings };
+  }
+
+  const firebaseConfig = JSON.parse(fs.readFileSync(firebaseJsonPath, 'utf-8'));
+  const rewrites = firebaseConfig.hosting?.rewrites || [];
+
+  // Extract all serviceIds from rewrites that start with /api, /auth, or /hooks
+  const routedServiceIds = new Set<string>();
+  for (const rewrite of rewrites) {
+    const source = rewrite.source || '';
+    const serviceId = rewrite.run?.serviceId;
+
+    if (serviceId && (source.startsWith('/api') || source.startsWith('/auth') || source.startsWith('/hooks'))) {
+      routedServiceIds.add(serviceId);
+    }
+  }
+
+  // Get all TypeScript handler directories (public-facing)
+  const handlerDirs = getDirectories(TS_SRC_DIR)
+    .filter(d => d.endsWith('-handler') || d.endsWith('-oauth-handler'))
+    .filter(d => !NON_PUBLIC_HANDLERS.includes(d));
+
+  // Check each handler is routed
+  for (const dir of handlerDirs) {
+    // Convert directory name to expected serviceId (same format, kebab-case)
+    // e.g., 'hevy-handler' -> could be 'hevy-handler' or 'hevy-webhook-handler'
+    const possibleServiceIds = [
+      dir,
+      dir.replace('-handler', '-webhook-handler'),
+    ];
+
+    const found = possibleServiceIds.some(id => routedServiceIds.has(id));
+
+    if (!found) {
+      errors.push(`Handler '${dir}' not routed in web/firebase.json`);
+    }
+  }
+
+  return {
+    name: 'Firebase Routing',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Main Runner
+// ============================================================================
+
+function printResult(result: CheckResult, verbose: boolean): void {
+  const status = result.passed ? '✅' : '❌';
+  console.log(`\n${status} ${result.name}`);
+
+  for (const error of result.errors) {
+    console.log(`   ❌ ${error}`);
+  }
+
+  if (verbose || result.warnings.length <= 3) {
+    for (const warning of result.warnings) {
+      console.log(`   ⚠️  ${warning}`);
+    }
+  } else if (result.warnings.length > 0) {
+    console.log(`   ⚠️  ${result.warnings.length} warnings (use --verbose to see all)`);
+  }
+}
+
+function main(): void {
+  const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
+
+  console.log('🔍 FitGlue Codebase Lint');
+  console.log('========================');
+
+  const checks = [
+    checkTerraformCoverage,
+    checkIndexJsExports,
+    checkConnectorPattern,
+    checkRegistryCoverage,
+    checkWorkspaceMembership,
+    checkProtobufAlignment,
+    checkFirebaseRouting,
+
+  ];
+
+  const results: CheckResult[] = [];
+
+  for (const check of checks) {
+    try {
+      const result = check();
+      results.push(result);
+      printResult(result, verbose);
+    } catch (error) {
+      console.error(`\n❌ Check failed with error: ${error}`);
+      results.push({
+        name: check.name,
+        passed: false,
+        errors: [`Check threw error: ${error}`],
+        warnings: []
+      });
+    }
+  }
+
+  // Summary
+  console.log('\n========================');
+  const passed = results.filter(r => r.passed).length;
+  const total = results.length;
+  const allPassed = passed === total;
+
+  if (allPassed) {
+    console.log(`✅ All ${total} checks passed!`);
+  } else {
+    console.log(`❌ ${passed}/${total} checks passed`);
+    console.log('\nFailed checks:');
+    for (const result of results.filter(r => !r.passed)) {
+      console.log(`  - ${result.name}`);
+    }
+  }
+
+  // Exit with error code if any check failed
+  process.exit(allPassed ? 0 : 1);
+}
+
+main();
