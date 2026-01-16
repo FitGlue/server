@@ -124,6 +124,41 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     }
     return;
   }
+  // POST /api/billing/portal - Create Stripe billing portal session
+  if (subPath === '/portal' && req.method === 'POST') {
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+
+    try {
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
+      const stripeClient = await getStripe();
+
+      const user = await services.user.get(userId);
+      if (!user?.stripeCustomerId) {
+        res.status(400).json({ error: 'No billing account found. Please subscribe first.' });
+        return;
+      }
+
+      // Determine environment URL
+      const env = projectId.includes('-prod') ? 'prod' : projectId.includes('-test') ? 'test' : 'dev';
+      const baseUrl = env === 'prod' ? 'https://fitglue.tech' : `https://${env}.fitglue.tech`;
+
+      // Create portal session
+      const session = await stripeClient.billingPortal.sessions.create({
+        customer: user.stripeCustomerId,
+        return_url: `${baseUrl}/settings/subscription`,
+      });
+
+      logger.info('Portal session created', { userId });
+      res.json({ url: session.url });
+    } catch (error) {
+      logger.error('Portal error', { error, userId });
+      res.status(500).json({ error: 'Failed to create billing portal session' });
+    }
+    return;
+  }
 
   res.status(404).json({ error: 'Not Found' });
 };

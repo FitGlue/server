@@ -30,6 +30,12 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       return await handleListPipelines(userId, res, ctx);
     }
 
+    // GET /users/me/pipelines/{pipelineId} - Get single pipeline
+    if (req.method === 'GET' && pathParts.length >= 1) {
+      const pipelineId = pathParts[0];
+      return await handleGetPipeline(userId, pipelineId, res, ctx);
+    }
+
     // POST /users/me/pipelines - Create new pipeline
     if (req.method === 'POST' && pathParts.length === 0) {
       return await handleCreatePipeline(userId, req, res, ctx);
@@ -62,6 +68,22 @@ async function handleListPipelines(userId: string, res: Response, ctx: Framework
   }
 
   res.status(200).json({ pipelines: user.pipelines || [] });
+}
+
+async function handleGetPipeline(userId: string, pipelineId: string, res: Response, ctx: FrameworkContext) {
+  const user = await ctx.services.user.get(userId);
+  if (!user) {
+    res.status(404).json({ error: 'User not found' });
+    return;
+  }
+
+  const pipeline = (user.pipelines || []).find((p: { id: string }) => p.id === pipelineId);
+  if (!pipeline) {
+    res.status(404).json({ error: 'Pipeline not found' });
+    return;
+  }
+
+  res.status(200).json(pipeline);
 }
 
 async function handleCreatePipeline(userId: string, req: Request, res: Response, ctx: FrameworkContext) {
