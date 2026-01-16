@@ -213,7 +213,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
     // GET /:id -> Single activity
     // Check if this is a list request (path ends with /activities or is just /)
-    if (req.path === '/' || req.path === '/activities' || req.path.endsWith('/activities')) {
+    if (req.path === '' || req.path === '/' || req.path === '/activities' || req.path.endsWith('/activities')) {
       // GET / -> List
       const includeExecution = req.query.includeExecution === 'true';
       // Limit to 10 when fetching executions for performance (more Firestore reads)
