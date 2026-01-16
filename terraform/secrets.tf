@@ -52,3 +52,26 @@ resource "google_secret_manager_secret" "fitbit_verification_code" {
     auto {}
   }
 }
+
+# Stripe Billing Secrets
+resource "google_secret_manager_secret" "stripe_secret_key" {
+  secret_id = "stripe-secret-key"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "stripe_webhook_secret" {
+  secret_id = "stripe-webhook-secret"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "stripe_price_id" {
+  secret_id = "stripe-price-id"
+  replication {
+    auto {}
+  }
+}
+
