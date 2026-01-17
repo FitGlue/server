@@ -881,10 +881,11 @@ resource "google_cloud_scheduler_job" "parkrun_results_extended" {
 }
 
 # Cloud Scheduler: Christmas Day Parkrun results polling
+# Runs at 10:00, 10:30, 11:00, 11:30, 12:00, 12:30, 13:00, 14:00, 16:00, 18:00, 20:00, 22:00 UTC on Dec 25
 resource "google_cloud_scheduler_job" "parkrun_results_christmas" {
   name        = "parkrun-results-christmas"
   description = "Poll for Parkrun results on Christmas Day"
-  schedule    = "0,30 10-13,0 14,16,18,20,22 25 12 *"
+  schedule    = "0,30 10-13 25 12 *"
   time_zone   = "UTC"
   region      = var.region
 
@@ -895,10 +896,11 @@ resource "google_cloud_scheduler_job" "parkrun_results_christmas" {
 }
 
 # Cloud Scheduler: New Year's Day Parkrun results polling
+# Runs at 10:00, 10:30, 11:00, 11:30, 12:00, 12:30, 13:00 UTC on Jan 1
 resource "google_cloud_scheduler_job" "parkrun_results_newyear" {
   name        = "parkrun-results-newyear"
   description = "Poll for Parkrun results on New Year's Day"
-  schedule    = "0,30 10-13,0 14,16,18,20,22 1 1 *"
+  schedule    = "0,30 10-13 1 1 *"
   time_zone   = "UTC"
   region      = var.region
 
@@ -907,3 +909,4 @@ resource "google_cloud_scheduler_job" "parkrun_results_newyear" {
     data       = base64encode("{\"trigger\":\"scheduled\",\"mode\":\"newyear\"}")
   }
 }
+
