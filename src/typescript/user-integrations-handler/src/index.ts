@@ -273,8 +273,26 @@ async function handleConfigure(
       createdAt: new Date(),
     });
 
-    logger.info('Configured Hevy integration', { userId });
-    res.status(200).json({ message: 'Hevy connected successfully' });
+    // Generate a new Ingress API Key for this provider
+    // The user needs this to configure the provider's webhook
+    const crypto = await import('crypto');
+    const rawIngressKey = crypto.randomBytes(32).toString('hex');
+    const keyHash = crypto.createHash('sha256').update(rawIngressKey).digest('hex');
+    const label = `${provider.charAt(0).toUpperCase() + provider.slice(1)} Webhook`;
+
+    await ctx.stores.apiKeys.create(keyHash, {
+      userId,
+      label,
+      scopes: ['ingress'],
+      createdAt: new Date(),
+    });
+
+    logger.info('Configured integration and generated ingress key', { userId, provider, label });
+    res.status(200).json({
+      message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connected successfully`,
+      ingressApiKey: rawIngressKey,
+      ingressKeyLabel: label,
+    });
 
   } catch (err) {
     logger.error('Failed to configure Hevy integration', { error: err });
@@ -285,7 +303,8 @@ async function handleConfigure(
 async function validateHevyApiKey(apiKey: string): Promise<boolean> {
   try {
     // Make a simple API call to validate the key
-    const response = await fetch('https://api.hevyapp.com/v1/user', {
+    // Use /v1/workouts with page_count=1 for efficiency (the /v1/user endpoint doesn't exist)
+    const response = await fetch('https://api.hevyapp.com/v1/workouts?page_count=1', {
       headers: {
         'api-key': apiKey,
         'Accept': 'application/json',
