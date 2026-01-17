@@ -131,6 +131,19 @@ function checkTerraformCoverage(): CheckResult {
     }
   }
 
+  // Check Go functions are in build_function_zips.py
+  const buildScriptPath = path.join(SERVER_ROOT, 'scripts/build_function_zips.py');
+  if (fs.existsSync(buildScriptPath)) {
+    const buildScriptContent = fs.readFileSync(buildScriptPath, 'utf-8');
+
+    for (const dir of goDirs) {
+      // Check if function is mentioned in the build script
+      if (!buildScriptContent.includes(`"${dir}"`)) {
+        errors.push(`Go function '${dir}' not in build_function_zips.py (deployment will fail)`);
+      }
+    }
+  }
+
   return {
     name: 'Terraform Coverage',
     passed: errors.length === 0,
