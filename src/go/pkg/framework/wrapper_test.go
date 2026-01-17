@@ -64,6 +64,18 @@ func (m *MockDB) IncrementSyncCount(ctx context.Context, userID string) error {
 func (m *MockDB) ResetSyncCount(ctx context.Context, userID string) error {
 	return nil
 }
+func (m *MockDB) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
+	return nil, nil, nil
+}
+func (m *MockDB) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
+	return nil
+}
+func (m *MockDB) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
+	return nil, nil
+}
+func (m *MockDB) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
+	return nil, nil
+}
 
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {

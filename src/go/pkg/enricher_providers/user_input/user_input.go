@@ -7,7 +7,6 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/enricher_providers"
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -34,25 +33,6 @@ type UserInputProvider struct {
 
 func init() {
 	enricher_providers.Register(&UserInputProvider{})
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT, &pb.PluginManifest{
-		Id:          "user-input",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "User Input",
-		Description: "Pauses pipeline to wait for user input (title, description, etc.)",
-		Icon:        "✍️",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:          "fields",
-				Label:        "Required Fields",
-				Description:  "Comma-separated fields to request (title,description)",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:     false,
-				DefaultValue: "description",
-			},
-		},
-	})
 }
 
 func (p *UserInputProvider) SetService(s *bootstrap.Service) {

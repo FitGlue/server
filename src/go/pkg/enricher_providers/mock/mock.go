@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/enricher_providers"
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -19,44 +18,6 @@ type MockProvider struct{}
 
 func init() {
 	enricher_providers.Register(NewMockProvider())
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK, &pb.PluginManifest{
-		Id:          "mock",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Mock",
-		Description: "Testing enricher that simulates various behaviors",
-		Icon:        "🧪",
-		Enabled:     false, // Testing only
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:          "behavior",
-				Label:        "Behavior",
-				Description:  "How the mock should behave",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-				Required:     false,
-				DefaultValue: "success",
-				Options: []*pb.ConfigFieldOption{
-					{Value: "success", Label: "Success"},
-					{Value: "lag", Label: "Simulate Lag (triggers retry)"},
-					{Value: "fail", Label: "Fail"},
-				},
-			},
-			{
-				Key:         "name",
-				Label:       "Activity Name",
-				Description: "Name to set on activity (success mode)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "description",
-				Label:       "Description",
-				Description: "Description to add to activity (success mode)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-		},
-	})
 }
 
 func NewMockProvider() *MockProvider {

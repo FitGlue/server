@@ -333,6 +333,197 @@ function checkRegistryCoverage(): CheckResult {
     warnings
   };
 }
+// ============================================================================
+// Check 5: Plugin Registration (Proto-Driven)
+// ============================================================================
+
+/**
+ * Comprehensive check that ensures all proto-defined plugin types that are
+ * used in the codebase are properly registered in the TypeScript registry.
+ *
+ * Checks:
+ * - EnricherProviderType (user.proto) -> registerEnricher()
+ * - ActivitySource (activity.proto) -> registerSource()
+ * - Destination (events.proto) -> registerDestination()
+ * - UserIntegrations fields (user.proto) -> registerIntegration()
+ */
+function checkPluginRegistration(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+  if (!fs.existsSync(registryPath)) {
+    errors.push('Plugin registry not found');
+    return { name: 'Plugin Registration', passed: false, errors, warnings };
+  }
+
+  const registryContent = fs.readFileSync(registryPath, 'utf-8');
+
+  // Helper: Extract enum values from proto file
+  const extractProtoEnum = (protoFile: string, enumName: string): string[] => {
+    const protoPath = path.join(PROTO_DIR, protoFile);
+    if (!fs.existsSync(protoPath)) return [];
+
+    const content = fs.readFileSync(protoPath, 'utf-8');
+    const enumPattern = new RegExp(`enum\\s+${enumName}\\s*\\{([^}]+)\\}`, 's');
+    const enumMatch = content.match(enumPattern);
+    if (!enumMatch) return [];
+
+    const values: string[] = [];
+    const valuePattern = /^\s*(\w+)\s*=/gm;
+    let match;
+    while ((match = valuePattern.exec(enumMatch[1])) !== null) {
+      const value = match[1];
+      // Skip UNSPECIFIED, UNKNOWN, TEST, and MOCK values (development only)
+      if (!value.includes('UNSPECIFIED') && !value.includes('UNKNOWN') &&
+        !value.includes('_TEST') && !value.includes('_MOCK')) {
+        values.push(value);
+      }
+    }
+    return values;
+  };
+
+  // Helper: Extract integration field names from UserIntegrations message
+  const extractIntegrations = (): string[] => {
+    const protoPath = path.join(PROTO_DIR, 'user.proto');
+    if (!fs.existsSync(protoPath)) return [];
+
+    const content = fs.readFileSync(protoPath, 'utf-8');
+    const msgPattern = /message\s+UserIntegrations\s*\{([^}]+)\}/s;
+    const msgMatch = content.match(msgPattern);
+    if (!msgMatch) return [];
+
+    const integrations: string[] = [];
+    // Match field names like: HevyIntegration hevy = 1;
+    const fieldPattern = /(\w+)Integration\s+(\w+)\s*=/g;
+    let match;
+    while ((match = fieldPattern.exec(msgMatch[1])) !== null) {
+      integrations.push(match[2]); // e.g., "hevy", "fitbit", "strava"
+    }
+    return integrations;
+  };
+
+  // Helper: Check if enum value is used in codebase
+  const isUsedInCode = (enumValue: string): boolean => {
+    // Search in Go files
+    const goFiles = findFilesRecursive(GO_SRC_DIR, '.go');
+    for (const file of goFiles) {
+      if (file.includes('_test.go')) continue;
+      const content = fs.readFileSync(file, 'utf-8');
+      if (content.includes(enumValue)) return true;
+    }
+
+    // Search in TypeScript files
+    const tsFiles = findFilesRecursive(TS_SRC_DIR, '.ts');
+    for (const file of tsFiles) {
+      if (file.includes('.test.ts') || file.includes('.spec.ts')) continue;
+      const content = fs.readFileSync(file, 'utf-8');
+      if (content.includes(enumValue)) return true;
+    }
+
+    return false;
+  };
+
+  // Helper: Find files recursively
+  const findFilesRecursive = (dir: string, extension: string): string[] => {
+    if (!fs.existsSync(dir)) return [];
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory() && !item.name.includes('node_modules')) {
+        files.push(...findFilesRecursive(fullPath, extension));
+      } else if (item.isFile() && item.name.endsWith(extension)) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  // -------------------------------------------------------------------------
+  // 1. Check Enrichers (EnricherProviderType -> registerEnricher)
+  // -------------------------------------------------------------------------
+  const enricherEnums = extractProtoEnum('user.proto', 'EnricherProviderType');
+  const registeredEnrichersPattern = /registerEnricher\s*\(\s*EnricherProviderType\.(\w+)/g;
+  const registeredEnrichers = new Set<string>();
+  let match;
+  while ((match = registeredEnrichersPattern.exec(registryContent)) !== null) {
+    registeredEnrichers.add(match[1]);
+  }
+
+  for (const enumValue of enricherEnums) {
+    if (isUsedInCode(enumValue) && !registeredEnrichers.has(enumValue)) {
+      errors.push(`Enricher '${enumValue}' used in code but not registered in registry.ts`);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. Check Sources (ActivitySource -> registerSource)
+  // -------------------------------------------------------------------------
+  const sourceEnums = extractProtoEnum('activity.proto', 'ActivitySource');
+  // Sources use string ids like 'hevy', 'fitbit' rather than enum names
+  const registeredSourcesPattern = /registerSource\s*\(\s*\{[^}]*id:\s*['"]([^'"]+)['"]/g;
+  const registeredSources = new Set<string>();
+  while ((match = registeredSourcesPattern.exec(registryContent)) !== null) {
+    registeredSources.add(match[1].toLowerCase());
+  }
+
+  for (const enumValue of sourceEnums) {
+    // Convert SOURCE_HEVY -> hevy
+    const sourceId = enumValue.replace(/^SOURCE_/, '').toLowerCase();
+    if (isUsedInCode(enumValue) && !registeredSources.has(sourceId)) {
+      errors.push(`Source '${enumValue}' used in code but not registered in registry.ts (expected id: '${sourceId}')`);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 3. Check Destinations (Destination -> registerDestination)
+  // -------------------------------------------------------------------------
+  const destEnums = extractProtoEnum('events.proto', 'Destination');
+  const registeredDestsPattern = /registerDestination\s*\(\s*\{[^}]*id:\s*['"]([^'"]+)['"]/g;
+  const registeredDests = new Set<string>();
+  while ((match = registeredDestsPattern.exec(registryContent)) !== null) {
+    registeredDests.add(match[1].toLowerCase());
+  }
+
+  for (const enumValue of destEnums) {
+    // Convert DESTINATION_STRAVA -> strava
+    const destId = enumValue.replace(/^DESTINATION_/, '').replace(/_UPDATE$/, '-update').toLowerCase();
+    if (isUsedInCode(enumValue) && !registeredDests.has(destId)) {
+      errors.push(`Destination '${enumValue}' used in code but not registered in registry.ts (expected id: '${destId}')`);
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // 4. Check Integrations (UserIntegrations fields -> registerIntegration)
+  // -------------------------------------------------------------------------
+  const integrationFields = extractIntegrations();
+  const registeredIntegrationsPattern = /registerIntegration\s*\(\s*\{[^}]*id:\s*['"]([^'"]+)['"]/g;
+  const registeredIntegrations = new Set<string>();
+  while ((match = registeredIntegrationsPattern.exec(registryContent)) !== null) {
+    registeredIntegrations.add(match[1].toLowerCase());
+  }
+
+  for (const integration of integrationFields) {
+    // Skip mock integration (development only)
+    if (integration.toLowerCase() === 'mock') continue;
+
+    // Check if the integration is enabled/used (has XxxIntegration message)
+    const protoContent = fs.readFileSync(path.join(PROTO_DIR, 'user.proto'), 'utf-8');
+    const hasMessage = protoContent.includes(`message ${integration.charAt(0).toUpperCase() + integration.slice(1)}Integration`);
+
+    if (hasMessage && !registeredIntegrations.has(integration.toLowerCase())) {
+      errors.push(`Integration '${integration}' defined in UserIntegrations but not registered in registry.ts`);
+    }
+  }
+
+  return {
+    name: 'Plugin Registration',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
 
 // ============================================================================
 // Check 5: Workspace Membership
@@ -517,6 +708,7 @@ function main(): void {
     checkIndexJsExports,
     checkConnectorPattern,
     checkRegistryCoverage,
+    checkPluginRegistration,
     checkWorkspaceMembership,
     checkProtobufAlignment,
     checkFirebaseRouting,

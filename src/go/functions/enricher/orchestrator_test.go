@@ -58,8 +58,19 @@ func (m *MockDatabase) IncrementSyncCount(ctx context.Context, userID string) er
 func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error {
 	return nil
 }
+func (m *MockDatabase) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
+	return nil, nil, nil
+}
+func (m *MockDatabase) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
+	return nil
+}
+func (m *MockDatabase) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
+	return nil, nil
+}
+func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
+	return nil, nil
+}
 
-// MockBlobStore implements shared.BlobStore
 type MockBlobStore struct {
 	WriteFunc func(ctx context.Context, bucket, object string, data []byte) error
 }

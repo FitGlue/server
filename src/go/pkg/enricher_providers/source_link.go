@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -14,16 +13,6 @@ type SourceLinkProvider struct{}
 
 func init() {
 	Register(NewSourceLinkProvider())
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK, &pb.PluginManifest{
-		Id:           "source-link",
-		Type:         pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:         "Source Link",
-		Description:  "Appends a link to the original activity in the description",
-		Icon:         "🔗",
-		Enabled:      true,
-		ConfigSchema: []*pb.ConfigFieldSchema{}, // No config needed
-	})
 }
 
 func NewSourceLinkProvider() *SourceLinkProvider {
@@ -40,7 +29,9 @@ func (p *SourceLinkProvider) ProviderType() pb.EnricherProviderType {
 
 func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	if activity.ExternalId == "" {
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{"status": "skipped", "reason": "no_external_id"},
+		}, nil
 	}
 
 	var link string
@@ -54,7 +45,9 @@ func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 		link = fmt.Sprintf("https://www.strava.com/activities/%s", activity.ExternalId)
 	default:
 		// If unknown source, don't generate a link
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{"status": "skipped", "reason": "unknown_source", "source": sourceLower},
+		}, nil
 	}
 
 	// Format: "View on [Source]: [URL]"

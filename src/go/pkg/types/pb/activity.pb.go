@@ -26,10 +26,11 @@ const (
 type ActivitySource int32
 
 const (
-	ActivitySource_SOURCE_UNKNOWN ActivitySource = 0
-	ActivitySource_SOURCE_HEVY    ActivitySource = 1
-	ActivitySource_SOURCE_FITBIT  ActivitySource = 3
-	ActivitySource_SOURCE_TEST    ActivitySource = 99
+	ActivitySource_SOURCE_UNKNOWN         ActivitySource = 0
+	ActivitySource_SOURCE_HEVY            ActivitySource = 1
+	ActivitySource_SOURCE_FITBIT          ActivitySource = 3
+	ActivitySource_SOURCE_PARKRUN_RESULTS ActivitySource = 4 // Parkrun official results (CREATE mode)
+	ActivitySource_SOURCE_TEST            ActivitySource = 99
 )
 
 // Enum value maps for ActivitySource.
@@ -38,13 +39,15 @@ var (
 		0:  "SOURCE_UNKNOWN",
 		1:  "SOURCE_HEVY",
 		3:  "SOURCE_FITBIT",
+		4:  "SOURCE_PARKRUN_RESULTS",
 		99: "SOURCE_TEST",
 	}
 	ActivitySource_value = map[string]int32{
-		"SOURCE_UNKNOWN": 0,
-		"SOURCE_HEVY":    1,
-		"SOURCE_FITBIT":  3,
-		"SOURCE_TEST":    99,
+		"SOURCE_UNKNOWN":         0,
+		"SOURCE_HEVY":            1,
+		"SOURCE_FITBIT":          3,
+		"SOURCE_PARKRUN_RESULTS": 4,
+		"SOURCE_TEST":            99,
 	}
 )
 
@@ -86,8 +89,15 @@ type ActivityPayload struct {
 	StandardizedActivity *StandardizedActivity  `protobuf:"bytes,6,opt,name=standardized_activity,json=standardizedActivity,proto3" json:"standardized_activity,omitempty"`
 	// Execution tracing
 	PipelineExecutionId *string `protobuf:"bytes,7,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	ActivityId          *string `protobuf:"bytes,8,opt,name=activity_id,json=activityId,proto3,oneof" json:"activity_id,omitempty"` // FitGlue activity ID (set after initial processing)
+	PipelineId          *string `protobuf:"bytes,9,opt,name=pipeline_id,json=pipelineId,proto3,oneof" json:"pipeline_id,omitempty"` // Pipeline that processed this activity
+	// Resume mode for delayed enrichment (e.g., Parkrun results)
+	IsResume             bool     `protobuf:"varint,10,opt,name=is_resume,json=isResume,proto3" json:"is_resume,omitempty"`                                              // Bypasses processed check, signals UPDATE mode
+	ResumeOnlyEnrichers  []string `protobuf:"bytes,11,rep,name=resume_only_enrichers,json=resumeOnlyEnrichers,proto3" json:"resume_only_enrichers,omitempty"`            // Only run these enrichers (others skipped)
+	UseUpdateMethod      bool     `protobuf:"varint,12,opt,name=use_update_method,json=useUpdateMethod,proto3" json:"use_update_method,omitempty"`                       // Destinations use UPDATE not CREATE
+	ResumePendingInputId *string  `protobuf:"bytes,13,opt,name=resume_pending_input_id,json=resumePendingInputId,proto3,oneof" json:"resume_pending_input_id,omitempty"` // The pending input that triggered this resume
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *ActivityPayload) Reset() {
@@ -169,11 +179,53 @@ func (x *ActivityPayload) GetPipelineExecutionId() string {
 	return ""
 }
 
+func (x *ActivityPayload) GetActivityId() string {
+	if x != nil && x.ActivityId != nil {
+		return *x.ActivityId
+	}
+	return ""
+}
+
+func (x *ActivityPayload) GetPipelineId() string {
+	if x != nil && x.PipelineId != nil {
+		return *x.PipelineId
+	}
+	return ""
+}
+
+func (x *ActivityPayload) GetIsResume() bool {
+	if x != nil {
+		return x.IsResume
+	}
+	return false
+}
+
+func (x *ActivityPayload) GetResumeOnlyEnrichers() []string {
+	if x != nil {
+		return x.ResumeOnlyEnrichers
+	}
+	return nil
+}
+
+func (x *ActivityPayload) GetUseUpdateMethod() bool {
+	if x != nil {
+		return x.UseUpdateMethod
+	}
+	return false
+}
+
+func (x *ActivityPayload) GetResumePendingInputId() string {
+	if x != nil && x.ResumePendingInputId != nil {
+		return *x.ResumePendingInputId
+	}
+	return ""
+}
+
 var File_activity_proto protoreflect.FileDescriptor
 
 const file_activity_proto_rawDesc = "" +
 	"\n" +
-	"\x0eactivity.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\"\xf1\x03\n" +
+	"\x0eactivity.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\"\xb2\x06\n" +
 	"\x0fActivityPayload\x12/\n" +
 	"\x06source\x18\x01 \x01(\x0e2\x17.fitglue.ActivitySourceR\x06source\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x128\n" +
@@ -181,15 +233,28 @@ const file_activity_proto_rawDesc = "" +
 	"\x15original_payload_json\x18\x04 \x01(\tR\x13originalPayloadJson\x12B\n" +
 	"\bmetadata\x18\x05 \x03(\v2&.fitglue.ActivityPayload.MetadataEntryR\bmetadata\x12R\n" +
 	"\x15standardized_activity\x18\x06 \x01(\v2\x1d.fitglue.StandardizedActivityR\x14standardizedActivity\x127\n" +
-	"\x15pipeline_execution_id\x18\a \x01(\tH\x00R\x13pipelineExecutionId\x88\x01\x01\x1a;\n" +
+	"\x15pipeline_execution_id\x18\a \x01(\tH\x00R\x13pipelineExecutionId\x88\x01\x01\x12$\n" +
+	"\vactivity_id\x18\b \x01(\tH\x01R\n" +
+	"activityId\x88\x01\x01\x12$\n" +
+	"\vpipeline_id\x18\t \x01(\tH\x02R\n" +
+	"pipelineId\x88\x01\x01\x12\x1b\n" +
+	"\tis_resume\x18\n" +
+	" \x01(\bR\bisResume\x122\n" +
+	"\x15resume_only_enrichers\x18\v \x03(\tR\x13resumeOnlyEnrichers\x12*\n" +
+	"\x11use_update_method\x18\f \x01(\bR\x0fuseUpdateMethod\x12:\n" +
+	"\x17resume_pending_input_id\x18\r \x01(\tH\x03R\x14resumePendingInputId\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_pipeline_execution_id*Y\n" +
+	"\x16_pipeline_execution_idB\x0e\n" +
+	"\f_activity_idB\x0e\n" +
+	"\f_pipeline_idB\x1a\n" +
+	"\x18_resume_pending_input_id*u\n" +
 	"\x0eActivitySource\x12\x12\n" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +
-	"\rSOURCE_FITBIT\x10\x03\x12\x0f\n" +
+	"\rSOURCE_FITBIT\x10\x03\x12\x1a\n" +
+	"\x16SOURCE_PARKRUN_RESULTS\x10\x04\x12\x0f\n" +
 	"\vSOURCE_TEST\x10cB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (

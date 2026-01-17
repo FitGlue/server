@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/fitglue/server/src/go/pkg/enricher_providers"
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -16,52 +15,6 @@ type ActivityFilterProvider struct{}
 
 func init() {
 	enricher_providers.Register(NewActivityFilterProvider())
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER, &pb.PluginManifest{
-		Id:          "activity-filter",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Activity Filter",
-		Description: "Skips activities that match exclude patterns or don't match include patterns",
-		Icon:        "🚫",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:         "exclude_activity_types",
-				Label:       "Exclude Activity Types",
-				Description: "Comma-separated activity types to exclude (e.g., Walk,Yoga)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "exclude_title_contains",
-				Label:       "Exclude Titles Containing",
-				Description: "Comma-separated patterns to exclude (e.g., test,morning)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "exclude_description_contains",
-				Label:       "Exclude Descriptions Containing",
-				Description: "Comma-separated patterns to exclude from description",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "include_activity_types",
-				Label:       "Include Only Activity Types",
-				Description: "Comma-separated activity types to include (all others excluded)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "include_title_contains",
-				Label:       "Include Only Titles Containing",
-				Description: "Activity must contain one of these patterns",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-		},
-	})
 }
 
 func NewActivityFilterProvider() *ActivityFilterProvider {

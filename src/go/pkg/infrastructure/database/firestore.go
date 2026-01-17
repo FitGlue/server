@@ -131,3 +131,80 @@ func (a *FirestoreAdapter) SetCounter(ctx context.Context, userId string, counte
 func (a *FirestoreAdapter) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
 	return a.storage.Activities(userId).Doc(activity.ActivityId).Set(ctx, activity)
 }
+
+// ListPendingParkrunActivities queries all users' activities with pending Parkrun results
+func (a *FirestoreAdapter) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
+	// Query across ALL users' activities subcollections using collection group query
+	// Filter by parkrun_results_state == PARKRUN_RESULTS_STATE_PENDING (2)
+	iter := a.Client.CollectionGroup("activities").
+		Where("parkrun_results_state", "==", int32(pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING)).
+		Documents(ctx)
+
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var activities []*pb.SynchronizedActivity
+	var userIDs []string
+
+	for _, d := range docs {
+		// Extract user ID from path: users/{userId}/activities/{activityId}
+		pathParts := d.Ref.Parent.Parent.ID // This gets us the userId
+		userID := pathParts
+
+		m := d.Data()
+		activity := storage.FirestoreToSynchronizedActivity(m)
+		if activity.ActivityId == "" {
+			activity.ActivityId = d.Ref.ID
+		}
+		activities = append(activities, activity)
+		userIDs = append(userIDs, userID)
+	}
+
+	return activities, userIDs, nil
+}
+
+// UpdateSynchronizedActivity updates specific fields on an activity
+func (a *FirestoreAdapter) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
+	return a.storage.Activities(userId).Doc(activityId).Update(ctx, data)
+}
+
+// GetSynchronizedActivity retrieves a single synchronized activity
+func (a *FirestoreAdapter) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
+	activity, err := a.storage.Activities(userId).Doc(activityId).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Ensure activity ID is set
+	if activity != nil && activity.ActivityId == "" {
+		activity.ActivityId = activityId
+	}
+	return activity, nil
+}
+
+// ListPendingInputsByEnricher retrieves pending inputs for a specific enricher
+func (a *FirestoreAdapter) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
+	// Query across all pending inputs using collection group query
+	iter := a.Client.CollectionGroup("pending_inputs").
+		Where("enricher_provider_id", "==", enricherId).
+		Where("status", "==", int32(status)).
+		Documents(ctx)
+
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var inputs []*pb.PendingInput
+	for _, d := range docs {
+		m := d.Data()
+		input := storage.FirestoreToPendingInput(m)
+		if input.ActivityId == "" {
+			input.ActivityId = d.Ref.ID
+		}
+		inputs = append(inputs, input)
+	}
+
+	return inputs, nil
+}

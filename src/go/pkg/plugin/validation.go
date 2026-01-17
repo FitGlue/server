@@ -8,15 +8,7 @@ import (
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
-// ValidateConfig validates a config map against an enricher's schema
-func ValidateConfig(providerType pb.EnricherProviderType, config map[string]string) error {
-	manifest, ok := GetEnricherManifest(providerType)
-	if !ok {
-		return fmt.Errorf("unknown enricher provider type: %v", providerType)
-	}
-
-	return ValidateConfigAgainstSchema(config, manifest.ConfigSchema)
-}
+// ValidateConfigAgainstSchema validates config against a schema
 
 // ValidateConfigAgainstSchema validates config against a schema
 func ValidateConfigAgainstSchema(config map[string]string, schema []*pb.ConfigFieldSchema) error {

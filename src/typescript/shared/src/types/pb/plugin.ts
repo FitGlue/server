@@ -36,6 +36,8 @@ export enum IntegrationAuthType {
   INTEGRATION_AUTH_TYPE_UNSPECIFIED = 0,
   INTEGRATION_AUTH_TYPE_OAUTH = 1,
   INTEGRATION_AUTH_TYPE_API_KEY = 2,
+  /** INTEGRATION_AUTH_TYPE_APP_SYNC - Mobile app handles auth (Apple Health, Health Connect) */
+  INTEGRATION_AUTH_TYPE_APP_SYNC = 3,
   UNRECOGNIZED = -1,
 }
 

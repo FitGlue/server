@@ -41,6 +41,7 @@ message UserIntegrations {
   FitbitIntegration fitbit = 2;
   StravaIntegration strava = 3;
   MockIntegration mock = 4;
+  ParkrunIntegration parkrun = 5;
 }
 
 message MockIntegration {
@@ -139,6 +140,15 @@ message StravaIntegration {
     google.protobuf.Timestamp last_used_at = 7;
 }
 
+message ParkrunIntegration {
+    bool enabled = 1;
+    string athlete_id = 2;            // Barcode number e.g., "A12345"
+    string country_url = 3;           // e.g., "www.parkrun.org.uk"
+    bool consent_given = 4;           // GDPR consent for data fetching
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp last_used_at = 6;
+}
+
 message ProcessedActivityRecord {
   string source = 1;
   string external_id = 2; // Unique ID from provider
@@ -162,4 +172,20 @@ message SynchronizedActivity {
   google.protobuf.Timestamp synced_at = 8;
   string pipeline_id = 9;
   string pipeline_execution_id = 10;
+
+  // Parkrun results tracking
+  ParkrunResultsState parkrun_results_state = 11;
+  string parkrun_event_name = 12;     // e.g., "Newark Parkrun"
+  string parkrun_event_slug = 13;     // e.g., "newark"
+  google.protobuf.Timestamp parkrun_polling_deadline = 14;
 }
+
+// ParkrunResultsState tracks the state of official results enrichment
+enum ParkrunResultsState {
+  PARKRUN_RESULTS_STATE_UNSPECIFIED = 0;
+  PARKRUN_RESULTS_STATE_PENDING = 1;        // Awaiting results fetch (auto-populated pending input created)
+  PARKRUN_RESULTS_STATE_COMPLETE = 2;       // Results applied via resume
+  PARKRUN_RESULTS_STATE_EXPIRED = 3;        // Polling deadline passed, no results found
+  PARKRUN_RESULTS_STATE_IMMEDIATE = 4;      // Results found during initial enrichment (no pending input)
+}
+

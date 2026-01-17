@@ -433,6 +433,14 @@ func SynchronizedActivityToFirestore(s *pb.SynchronizedActivity) map[string]inte
 		"synced_at":             s.SyncedAt.AsTime(),
 		"pipeline_id":           s.PipelineId,
 		"pipeline_execution_id": s.PipelineExecutionId,
+		// Parkrun tracking fields
+		"parkrun_results_state": int32(s.ParkrunResultsState),
+		"parkrun_event_name":    s.ParkrunEventName,
+		"parkrun_event_slug":    s.ParkrunEventSlug,
+	}
+
+	if s.ParkrunPollingDeadline != nil {
+		m["parkrun_polling_deadline"] = s.ParkrunPollingDeadline.AsTime()
 	}
 
 	if s.Destinations != nil {
@@ -444,14 +452,17 @@ func SynchronizedActivityToFirestore(s *pb.SynchronizedActivity) map[string]inte
 
 func FirestoreToSynchronizedActivity(m map[string]interface{}) *pb.SynchronizedActivity {
 	s := &pb.SynchronizedActivity{
-		ActivityId:          getString(m, "activity_id"),
-		Title:               getString(m, "title"),
-		Description:         getString(m, "description"),
-		Source:              getString(m, "source"),
-		StartTime:           getTime(m, "start_time"),
-		SyncedAt:            getTime(m, "synced_at"),
-		PipelineId:          getString(m, "pipeline_id"),
-		PipelineExecutionId: getString(m, "pipeline_execution_id"),
+		ActivityId:             getString(m, "activity_id"),
+		Title:                  getString(m, "title"),
+		Description:            getString(m, "description"),
+		Source:                 getString(m, "source"),
+		StartTime:              getTime(m, "start_time"),
+		SyncedAt:               getTime(m, "synced_at"),
+		PipelineId:             getString(m, "pipeline_id"),
+		PipelineExecutionId:    getString(m, "pipeline_execution_id"),
+		ParkrunEventName:       getString(m, "parkrun_event_name"),
+		ParkrunEventSlug:       getString(m, "parkrun_event_slug"),
+		ParkrunPollingDeadline: getTime(m, "parkrun_polling_deadline"),
 	}
 
 	if v, ok := m["type"]; ok {
@@ -465,6 +476,17 @@ func FirestoreToSynchronizedActivity(m map[string]interface{}) *pb.SynchronizedA
 			if enumVal, ok := pb.ActivityType_value[val]; ok {
 				s.Type = pb.ActivityType(enumVal)
 			}
+		}
+	}
+
+	if v, ok := m["parkrun_results_state"]; ok {
+		switch val := v.(type) {
+		case int64:
+			s.ParkrunResultsState = pb.ParkrunResultsState(val)
+		case int:
+			s.ParkrunResultsState = pb.ParkrunResultsState(int32(val))
+		case float64:
+			s.ParkrunResultsState = pb.ParkrunResultsState(int32(val))
 		}
 	}
 

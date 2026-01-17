@@ -7,7 +7,6 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/enricher_providers"
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,39 +19,6 @@ type AutoIncrementProvider struct {
 
 func init() {
 	enricher_providers.Register(&AutoIncrementProvider{})
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT, &pb.PluginManifest{
-		Id:          "auto-increment",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Auto Increment",
-		Description: "Appends an incrementing counter number to activity titles",
-		Icon:        "🔢",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:         "counter_key",
-				Label:       "Counter Key",
-				Description: "Unique identifier for this counter (e.g., morning_run)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    true,
-			},
-			{
-				Key:         "title_contains",
-				Label:       "Title Filter",
-				Description: "Only increment if title contains this text (optional)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:          "initial_value",
-				Label:        "Initial Value",
-				Description:  "Starting number for the counter",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:     false,
-				DefaultValue: "1",
-			},
-		},
-	})
 }
 
 func (p *AutoIncrementProvider) SetService(s *bootstrap.Service) {

@@ -87,135 +87,276 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			httpClient = oauth.NewClientWithUsageTracking(tokenSource, fwCtx.Service, eventPayload.UserId, "strava")
 		}
 
-		// Download FIT from GCS
-		bucketName := fwCtx.Service.Config.GCSArtifactBucket
-		if bucketName == "" {
-			bucketName = "fitglue-artifacts"
-		}
-		objectName := strings.TrimPrefix(eventPayload.FitFileUri, "gs://"+bucketName+"/")
-
-		fileData, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
-		if err != nil {
-			fwCtx.Logger.Error("GCS Read Error", "error", err)
-			return nil, fmt.Errorf("GCS Read Error: %w", err)
+		// Check if this is an UPDATE operation (resume mode with existing activity)
+		// The ActivityPayload metadata contains the use_update_method flag
+		if useUpdate, ok := eventPayload.EnrichmentMetadata["use_update_method"]; ok && useUpdate == "true" {
+			return handleStravaUpdate(ctx, httpClient, &eventPayload, fwCtx)
 		}
 
-		// Build multipart form data
-		body := &bytes.Buffer{}
-		writer := multipart.NewWriter(body)
-		part, _ := writer.CreateFormFile("file", "activity.fit")
-		part.Write(fileData)
-		writer.WriteField("data_type", "fit")
-		if eventPayload.Name != "" {
-			writer.WriteField("name", eventPayload.Name)
-		}
-		if eventPayload.Description != "" {
-			writer.WriteField("description", eventPayload.Description)
-		}
-		if eventPayload.ActivityType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
-			stravaType := activity.GetStravaActivityType(eventPayload.ActivityType)
-			writer.WriteField("sport_type", stravaType)
-			writer.WriteField("activity_type", stravaType) // Legacy fallback
-		}
-		writer.Close()
-
-		// Log what we're uploading for debugging
-		fwCtx.Logger.Info("Uploading to Strava",
-			"title", eventPayload.Name,
-			"type", eventPayload.ActivityType,
-			"description_length", len(eventPayload.Description),
-			"description_preview", truncateString(eventPayload.Description, 200),
-		)
-
-		// Create request
-		req, err := http.NewRequestWithContext(ctx, "POST", "https://www.strava.com/api/v3/uploads", body)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create request: %w", err)
-		}
-		req.Header.Set("Content-Type", writer.FormDataContentType())
-
-		// Execute with OAuth transport (handles auth + token refresh)
-		httpResp, err := httpClient.Do(req)
-		if err != nil {
-			fwCtx.Logger.Error("Strava API Error", "error", err)
-			return nil, fmt.Errorf("Strava API Error: %w", err)
-		}
-		defer httpResp.Body.Close()
-
-		if httpResp.StatusCode >= 400 {
-			bodyBytes, _ := io.ReadAll(httpResp.Body)
-			fwCtx.Logger.Error("Strava upload failed", "status", httpResp.StatusCode, "body", string(bodyBytes))
-			return nil, fmt.Errorf("strava upload failed: status %d", httpResp.StatusCode)
-		}
-
-		var uploadResp stravaUploadResponse
-		json.NewDecoder(httpResp.Body).Decode(&uploadResp)
-
-		fwCtx.Logger.Info("Upload initiated", "upload_id", uploadResp.ID, "status", uploadResp.Status)
-
-		// Soft Poll: Wait up to 15 seconds for completion
-		// This covers 95% of use cases without needing complex async infrastructure
-		if uploadResp.ActivityID == 0 {
-			finalResp, err := waitForUploadCompletion(ctx, httpClient, uploadResp.ID, fwCtx.Logger)
-			if err != nil {
-				// Log warning but return SUCCESS with partial data so pipeline continues
-				fwCtx.Logger.Warn("Soft polling finished without final ID (async processing continues)", "error", err)
-			} else {
-				uploadResp = *finalResp
-			}
-		}
-
-		fwCtx.Logger.Info("Upload complete", "upload_id", uploadResp.ID, "activity_id", uploadResp.ActivityID, "status", uploadResp.Status)
-
-		// Persist SynchronizedActivity if successful
-		if uploadResp.ActivityID != 0 {
-			syncedActivity := &pb.SynchronizedActivity{
-				ActivityId:          eventPayload.ActivityId,
-				Title:               eventPayload.Name,
-				Description:         eventPayload.Description,
-				Type:                eventPayload.ActivityType,
-				Source:              eventPayload.Source.String(), // Use original event source (FROM webhook trigger)
-				StartTime:           eventPayload.StartTime,
-				SyncedAt:            timestamppb.Now(),
-				PipelineId:          eventPayload.PipelineId,
-				PipelineExecutionId: fwCtx.PipelineExecutionId, // Link to execution trace
-				Destinations: map[string]string{
-					"strava": fmt.Sprintf("%d", uploadResp.ActivityID),
-				},
-			}
-			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-				// Don't fail the function, this is just recording history
-			} else {
-				fwCtx.Logger.Info("Persisted synchronized activity", "activity_id", eventPayload.ActivityId)
-			}
-		}
-
-		status := "SUCCESS"
-		if uploadResp.Error != "" {
-			status = "FAILED_STRAVA_PROCESSING"
-		}
-
-		result := map[string]interface{}{
-			"status":             status,
-			"strava_upload_id":   uploadResp.ID,
-			"strava_activity_id": uploadResp.ActivityID,
-			"upload_status":      uploadResp.Status,
-			"upload_error":       uploadResp.Error,
-			"activity_id":        eventPayload.ActivityId,
-			"pipeline_id":        eventPayload.PipelineId,
-			"fit_file_uri":       eventPayload.FitFileUri,
-			"activity_name":      eventPayload.Name,
-			"activity_type":      activity.GetStravaActivityType(eventPayload.ActivityType),
-			"description":        eventPayload.Description,
-		}
-
-		if status != "SUCCESS" {
-			return result, fmt.Errorf("strava upload failed: %s", uploadResp.Error)
-		}
-
-		return result, nil
+		// --- CREATE MODE ---
+		return handleStravaCreate(ctx, httpClient, &eventPayload, fwCtx)
 	}
+}
+
+// handleStravaCreate uploads a new activity to Strava (POST /uploads)
+func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPayload *pb.EnrichedActivityEvent, fwCtx *framework.FrameworkContext) (interface{}, error) {
+	// Download FIT from GCS
+	bucketName := fwCtx.Service.Config.GCSArtifactBucket
+	if bucketName == "" {
+		bucketName = "fitglue-artifacts"
+	}
+	objectName := strings.TrimPrefix(eventPayload.FitFileUri, "gs://"+bucketName+"/")
+
+	fileData, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
+	if err != nil {
+		fwCtx.Logger.Error("GCS Read Error", "error", err)
+		return nil, fmt.Errorf("GCS Read Error: %w", err)
+	}
+
+	// Build multipart form data
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, _ := writer.CreateFormFile("file", "activity.fit")
+	part.Write(fileData)
+	writer.WriteField("data_type", "fit")
+	if eventPayload.Name != "" {
+		writer.WriteField("name", eventPayload.Name)
+	}
+	if eventPayload.Description != "" {
+		writer.WriteField("description", eventPayload.Description)
+	}
+	if eventPayload.ActivityType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+		stravaType := activity.GetStravaActivityType(eventPayload.ActivityType)
+		writer.WriteField("sport_type", stravaType)
+		writer.WriteField("activity_type", stravaType) // Legacy fallback
+	}
+	writer.Close()
+
+	// Log what we're uploading for debugging
+	fwCtx.Logger.Info("Uploading to Strava (CREATE)",
+		"title", eventPayload.Name,
+		"type", eventPayload.ActivityType,
+		"description_length", len(eventPayload.Description),
+		"description_preview", truncateString(eventPayload.Description, 200),
+	)
+
+	// Create request
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://www.strava.com/api/v3/uploads", body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Execute with OAuth transport (handles auth + token refresh)
+	httpResp, err := httpClient.Do(req)
+	if err != nil {
+		fwCtx.Logger.Error("Strava API Error", "error", err)
+		return nil, fmt.Errorf("Strava API Error: %w", err)
+	}
+	defer httpResp.Body.Close()
+
+	if httpResp.StatusCode >= 400 {
+		bodyBytes, _ := io.ReadAll(httpResp.Body)
+		fwCtx.Logger.Error("Strava upload failed", "status", httpResp.StatusCode, "body", string(bodyBytes))
+		return nil, fmt.Errorf("strava upload failed: status %d", httpResp.StatusCode)
+	}
+
+	var uploadResp stravaUploadResponse
+	json.NewDecoder(httpResp.Body).Decode(&uploadResp)
+
+	fwCtx.Logger.Info("Upload initiated", "upload_id", uploadResp.ID, "status", uploadResp.Status)
+
+	// Soft Poll: Wait up to 15 seconds for completion
+	// This covers 95% of use cases without needing complex async infrastructure
+	if uploadResp.ActivityID == 0 {
+		finalResp, err := waitForUploadCompletion(ctx, httpClient, uploadResp.ID, fwCtx.Logger)
+		if err != nil {
+			// Log warning but return SUCCESS with partial data so pipeline continues
+			fwCtx.Logger.Warn("Soft polling finished without final ID (async processing continues)", "error", err)
+		} else {
+			uploadResp = *finalResp
+		}
+	}
+
+	fwCtx.Logger.Info("Upload complete", "upload_id", uploadResp.ID, "activity_id", uploadResp.ActivityID, "status", uploadResp.Status)
+
+	// Persist SynchronizedActivity if successful
+	if uploadResp.ActivityID != 0 {
+		syncedActivity := &pb.SynchronizedActivity{
+			ActivityId:          eventPayload.ActivityId,
+			Title:               eventPayload.Name,
+			Description:         eventPayload.Description,
+			Type:                eventPayload.ActivityType,
+			Source:              eventPayload.Source.String(), // Use original event source (FROM webhook trigger)
+			StartTime:           eventPayload.StartTime,
+			SyncedAt:            timestamppb.Now(),
+			PipelineId:          eventPayload.PipelineId,
+			PipelineExecutionId: fwCtx.PipelineExecutionId, // Link to execution trace
+			Destinations: map[string]string{
+				"strava": fmt.Sprintf("%d", uploadResp.ActivityID),
+			},
+		}
+		if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
+			fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
+			// Don't fail the function, this is just recording history
+		} else {
+			fwCtx.Logger.Info("Persisted synchronized activity", "activity_id", eventPayload.ActivityId)
+		}
+	}
+
+	status := "SUCCESS"
+	if uploadResp.Error != "" {
+		status = "FAILED_STRAVA_PROCESSING"
+	}
+
+	result := map[string]interface{}{
+		"status":             status,
+		"strava_upload_id":   uploadResp.ID,
+		"strava_activity_id": uploadResp.ActivityID,
+		"upload_status":      uploadResp.Status,
+		"upload_error":       uploadResp.Error,
+		"activity_id":        eventPayload.ActivityId,
+		"pipeline_id":        eventPayload.PipelineId,
+		"fit_file_uri":       eventPayload.FitFileUri,
+		"activity_name":      eventPayload.Name,
+		"activity_type":      activity.GetStravaActivityType(eventPayload.ActivityType),
+		"description":        eventPayload.Description,
+	}
+
+	if status != "SUCCESS" {
+		return result, fmt.Errorf("strava upload failed: %s", uploadResp.Error)
+	}
+
+	return result, nil
+}
+
+// handleStravaUpdate modifies an existing Strava activity (PUT /activities/{id})
+// Used in resume mode for delayed enrichment (e.g., Parkrun results)
+func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPayload *pb.EnrichedActivityEvent, fwCtx *framework.FrameworkContext) (interface{}, error) {
+	fwCtx.Logger.Info("Starting Strava UPDATE",
+		"activity_id", eventPayload.ActivityId,
+		"user_id", eventPayload.UserId)
+
+	// 1. Lookup SynchronizedActivity to get Strava activity ID
+	syncActivity, err := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get synchronized activity: %w", err)
+	}
+	if syncActivity == nil {
+		return nil, fmt.Errorf("synchronized activity not found for activity_id: %s", eventPayload.ActivityId)
+	}
+
+	stravaIDStr, ok := syncActivity.Destinations["strava"]
+	if !ok || stravaIDStr == "" {
+		return nil, fmt.Errorf("no Strava destination found in synchronized activity")
+	}
+
+	fwCtx.Logger.Info("Found existing Strava activity", "strava_activity_id", stravaIDStr)
+
+	// 2. GET current activity from Strava to get existing description
+	getURL := fmt.Sprintf("https://www.strava.com/api/v3/activities/%s", stravaIDStr)
+	getReq, err := http.NewRequestWithContext(ctx, "GET", getURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create GET request: %w", err)
+	}
+
+	getResp, err := httpClient.Do(getReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to GET existing activity: %w", err)
+	}
+	defer getResp.Body.Close()
+
+	if getResp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(getResp.Body)
+		return nil, fmt.Errorf("GET activity failed: status %d, body: %s", getResp.StatusCode, string(bodyBytes))
+	}
+
+	var existingActivity struct {
+		ID          int64  `json:"id"`
+		Name        string `json:"name"`
+		Description string `json:"description"`
+	}
+	if err := json.NewDecoder(getResp.Body).Decode(&existingActivity); err != nil {
+		return nil, fmt.Errorf("failed to decode existing activity: %w", err)
+	}
+
+	// 3. Merge new description with existing (append, don't overwrite)
+	mergedDescription := existingActivity.Description
+	if eventPayload.Description != "" {
+		if mergedDescription != "" {
+			mergedDescription += "\n\n" + eventPayload.Description
+		} else {
+			mergedDescription = eventPayload.Description
+		}
+	}
+
+	// 4. Build update payload
+	updateBody := map[string]interface{}{}
+	if eventPayload.Name != "" && eventPayload.Name != existingActivity.Name {
+		updateBody["name"] = eventPayload.Name
+	}
+	if mergedDescription != existingActivity.Description {
+		updateBody["description"] = mergedDescription
+	}
+
+	if len(updateBody) == 0 {
+		fwCtx.Logger.Info("No changes to update, skipping PUT")
+		return map[string]interface{}{
+			"status":             "SUCCESS",
+			"strava_activity_id": stravaIDStr,
+			"update_skipped":     true,
+			"reason":             "no_changes",
+		}, nil
+	}
+
+	bodyJSON, err := json.Marshal(updateBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal update body: %w", err)
+	}
+
+	// 5. PUT to Strava
+	putURL := fmt.Sprintf("https://www.strava.com/api/v3/activities/%s", stravaIDStr)
+	putReq, err := http.NewRequestWithContext(ctx, "PUT", putURL, bytes.NewReader(bodyJSON))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create PUT request: %w", err)
+	}
+	putReq.Header.Set("Content-Type", "application/json")
+
+	fwCtx.Logger.Info("Updating Strava activity (PUT)",
+		"strava_activity_id", stravaIDStr,
+		"updated_fields", updateBody,
+		"description_length", len(mergedDescription),
+	)
+
+	putResp, err := httpClient.Do(putReq)
+	if err != nil {
+		return nil, fmt.Errorf("failed to PUT activity: %w", err)
+	}
+	defer putResp.Body.Close()
+
+	if putResp.StatusCode >= 400 {
+		bodyBytes, _ := io.ReadAll(putResp.Body)
+		fwCtx.Logger.Error("Strava PUT failed", "status", putResp.StatusCode, "body", string(bodyBytes))
+		return nil, fmt.Errorf("strava PUT failed: status %d", putResp.StatusCode)
+	}
+
+	fwCtx.Logger.Info("Successfully updated Strava activity",
+		"strava_activity_id", stravaIDStr,
+		"updated_fields", updateBody)
+
+	// 6. Update SynchronizedActivity with new description
+	if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
+		"description": mergedDescription,
+	}); err != nil {
+		fwCtx.Logger.Warn("Failed to update synchronized activity description", "error", err)
+	}
+
+	return map[string]interface{}{
+		"status":             "SUCCESS",
+		"strava_activity_id": stravaIDStr,
+		"updated_fields":     updateBody,
+		"mode":               "UPDATE",
+	}, nil
 }
 
 type stravaUploadResponse struct {

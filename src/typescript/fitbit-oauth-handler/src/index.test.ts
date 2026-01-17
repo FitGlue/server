@@ -64,7 +64,7 @@ describe('fitbitOAuthHandler', () => {
     await (fitbitOAuthHandler as any)(req, res, ctx);
 
     expect(ctx.logger.warn).toHaveBeenCalledWith('User denied Fitbit authorization', { error: 'access_denied' });
-    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/auth/error?reason=denied');
+    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/app/connections/fitbit/error?reason=denied');
   });
 
   it('should redirect to error page if code is missing', async () => {
@@ -73,7 +73,7 @@ describe('fitbitOAuthHandler', () => {
     await (fitbitOAuthHandler as any)(req, res, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/auth/error?reason=missing_params');
+    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/app/connections/fitbit/error?reason=missing_params');
   });
 
   it('should redirect to error page if state is missing', async () => {
@@ -82,7 +82,7 @@ describe('fitbitOAuthHandler', () => {
     await (fitbitOAuthHandler as any)(req, res, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/auth/error?reason=missing_params');
+    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/app/connections/fitbit/error?reason=missing_params');
   });
 
   it('should redirect to error page if state token is invalid', async () => {
@@ -93,7 +93,7 @@ describe('fitbitOAuthHandler', () => {
 
     expect(mockValidateOAuthState).toHaveBeenCalledWith('invalid-state');
     expect(ctx.logger.error).toHaveBeenCalledWith('Invalid or expired state token');
-    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/auth/error?reason=invalid_state');
+    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/app/connections/fitbit/error?reason=invalid_state');
   });
 
   it('should successfully process OAuth callback and store tokens', async () => {
@@ -135,7 +135,7 @@ describe('fitbitOAuthHandler', () => {
       userId: 'user-123',
       fitbitUserId: 'ABC123',
     });
-    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/auth/success?provider=fitbit');
+    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/app/connections/fitbit/success');
   });
 
   it('should redirect to error page if token exchange fails', async () => {
@@ -153,6 +153,6 @@ describe('fitbitOAuthHandler', () => {
     await (fitbitOAuthHandler as any)(req, res, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Error processing Fitbit OAuth callback', expect.anything());
-    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/auth/error?reason=server_error');
+    expect(res.redirect).toHaveBeenCalledWith('https://dev.fitglue.tech/app/connections/fitbit/error?reason=server_error');
   });
 });

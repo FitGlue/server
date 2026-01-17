@@ -246,6 +246,31 @@ Install the FitGlue mobile app on your Android device and grant access to Health
   useCases: [],
 });
 
+registerSource({
+  id: 'parkrun_results',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'Parkrun Results',
+  description: 'Create activities from official Parkrun results',
+  icon: '🏃',
+  enabled: false, // Internal source - not user-configurable
+  requiredIntegrations: ['parkrun'],
+  configSchema: [],
+  marketingDescription: `
+### Official Parkrun Results
+Creates activities directly from official Parkrun results when no GPS activity exists. Used for GPS-less participants who want their official times tracked.
+
+### How it works
+When you complete a Parkrun but don't have a GPS watch, FitGlue can still track your result by polling parkrun.org for your official time after the event.
+  `,
+  features: [
+    '✅ Track Parkrun results without GPS',
+    '✅ Official times from parkrun.org',
+    '✅ Position and age grade included',
+  ],
+  transformations: [],
+  useCases: [],
+});
+
 // ============================================================================
 // Register all known destination manifests
 // ============================================================================
@@ -278,6 +303,8 @@ Once activities pass through your enrichment pipeline, FitGlue uploads them to S
 });
 
 // ============================================================================
+
+
 // Register all known enricher manifests
 // These match the Go plugin registrations in enricher_providers/
 // ============================================================================
@@ -676,15 +703,42 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
   id: 'parkrun',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Parkrun',
-  description: 'Detects Parkrun events based on location and time, and sets activity title',
+  description: 'Detects Parkrun events, sets title, and enriches with official results',
   icon: '🏃',
   enabled: true,
-  requiredIntegrations: [],
+  requiredIntegrations: ['parkrun'], // Required for official results fetching
   configSchema: [
     {
       key: 'enable_titling',
       label: 'Set Title',
       description: 'Replace activity title with Parkrun event name',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+    {
+      key: 'title_pattern',
+      label: 'Title Pattern',
+      description: 'Template for activity title. Use {event} for event name.',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: false,
+      defaultValue: 'Parkrun @ {event}',
+      options: [],
+    },
+    {
+      key: 'special_title_pattern',
+      label: 'Special Event Title',
+      description: 'Title pattern for Christmas/New Year events (e.g., 🎄 {event})',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: false,
+      defaultValue: '🎄 {event} Parkrun',
+      options: [],
+    },
+    {
+      key: 'fetch_results',
+      label: 'Fetch Official Results',
+      description: 'Automatically fetch your official position, time, and age grade after the event',
       fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
       required: false,
       defaultValue: 'true',
@@ -701,27 +755,38 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
     },
   ],
   marketingDescription: `
-### Automatic Parkrun Detection
-Automatically detects when your activity is a Parkrun event based on location and time, then names it accordingly.
+### Automatic Parkrun Detection & Results
+Automatically detects when your activity is a Parkrun event based on GPS location and time, then enriches it with your official results.
 
 ### How it works
-If your Saturday morning run starts near a known Parkrun location at the right time, this booster recognizes it and updates your activity title to "Parkrun @ [Location Name]". Tags are also added for easy filtering.
+1. **Detection**: If your Saturday morning run starts near any of 2,500+ Parkrun locations at the right time, FitGlue recognizes it
+2. **Immediate Update**: Your activity title is updated to "Parkrun @ [Location]"
+3. **Delayed Results**: ~2 hours after your run, we fetch your **official results** from parkrun.org and update your activity with position, time, age grade, and PB status
+
+### Special Events
+Christmas Day and New Year's Day Parkruns get festive titles automatically!
   `,
   features: [
-    '✅ Automatic Parkrun event detection',
-    '✅ Location and time-based matching',
-    '✅ Customizable activity title format',
-    '✅ Automatic tagging for filtering',
+    '✅ Automatic Parkrun detection via GPS',
+    '✅ 2,500+ worldwide Parkrun locations supported',
+    '✅ Official results fetched automatically',
+    '✅ Position, time, and age grade in description',
+    '✅ PB celebrations highlighted 🎉',
+    '✅ Special Christmas & New Year event titles',
+    '✅ Customizable title patterns',
   ],
   transformations: [
     { field: 'title', label: 'Activity Title', before: 'Morning Run', after: 'Parkrun @ Newark', visualType: '', afterHtml: '' },
+    { field: 'description', label: 'Official Results', before: '(empty)', after: '🏃 **Official Parkrun Results**\n\n📍 Newark Parkrun\n🏁 Position: 42\n⏱️ Official Time: 24:12\n📊 Age Grade: 65.2%', visualType: '', afterHtml: '' },
   ],
   useCases: [
-    'Auto-name Parkrun activities',
-    'Track Parkrun attendance',
-    'Tag Parkrun events for filtering',
+    'Auto-name Parkrun activities with official results',
+    'Track your Parkrun positions and times',
+    'Celebrate PBs with automatic highlighting',
+    'Special event detection for Christmas & New Year',
   ],
 });
+
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER, {
   id: 'condition-matcher',
@@ -922,7 +987,7 @@ registerIntegration({
 2. Go to **Settings** (gear icon)
 3. Scroll down and tap **Developer API**
 4. Tap **Generate API Key**
-5. Copy the key and paste it below
+5. Copy the key and enter it in your **FitGlue Dashboard**
 
 Your workouts will automatically sync when you log them in Hevy.`,
   apiKeyLabel: 'Hevy API Key',
@@ -951,7 +1016,15 @@ registerIntegration({
   enabled: true,
   docsUrl: '',
   setupTitle: 'Connect Fitbit',
-  setupInstructions: 'Click **Connect** to authorize FitGlue to access your Fitbit activity and heart rate data. You will be redirected to Fitbit to sign in.',
+  setupInstructions: `Connect your Fitbit account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on Fitbit
+3. Sign in to your **Fitbit account** when redirected
+4. Review and **Accept Permissions** to allow FitGlue access
+5. You're connected! Activities will sync automatically
+
+FitGlue uses secure OAuth — your Fitbit password is never stored.`,
   apiKeyLabel: '',
   apiKeyHelpUrl: '',
   marketingDescription: `
@@ -978,7 +1051,15 @@ registerIntegration({
   enabled: true,
   docsUrl: '',
   setupTitle: 'Connect Strava',
-  setupInstructions: 'Click **Connect** to authorize FitGlue to upload enriched activities to your Strava profile. You will be redirected to Strava to sign in.',
+  setupInstructions: `Connect your Strava account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on Strava
+3. Sign in to your **Strava account** when redirected
+4. Review and **Accept Permissions** to allow FitGlue to upload activities
+5. You're connected! Enhanced activities will appear on your Strava feed
+
+FitGlue uses secure OAuth — your Strava password is never stored.`,
   apiKeyLabel: '',
   apiKeyHelpUrl: '',
   marketingDescription: `
@@ -1001,7 +1082,7 @@ registerIntegration({
   name: 'Apple Health',
   description: 'Sync workouts and health data from your iOS device',
   icon: '🍎',
-  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED, // Uses mobile app, no auth fields needed
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
   enabled: true,
   docsUrl: '',
   setupTitle: 'Connect Apple Health',
@@ -1035,7 +1116,7 @@ registerIntegration({
   name: 'Health Connect',
   description: 'Sync workouts and health data from your Android device',
   icon: '🤖',
-  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED, // Uses mobile app, no auth fields needed
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
   enabled: true,
   docsUrl: '',
   setupTitle: 'Connect Health Connect',
@@ -1063,3 +1144,39 @@ FitGlue's mobile app reads your workout data from Health Connect and syncs it to
     '✅ Background sync via FitGlue mobile app',
   ],
 });
+
+registerIntegration({
+  id: 'parkrun',
+  name: 'Parkrun',
+  description: 'Enhanced Parkrun detection with official results',
+  icon: '🏃',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+  enabled: true,
+  docsUrl: 'https://www.parkrun.com',
+  setupTitle: 'Connect Parkrun',
+  setupInstructions: `To connect Parkrun, you'll need your athlete barcode number:
+
+1. Find your **Parkrun barcode** — it starts with **A** followed by numbers (e.g. A12345678)
+2. This is printed on your barcode card or available on the Parkrun website
+3. Enter your barcode number below
+
+Once connected, FitGlue can fetch your official results and update your activities automatically.`,
+  apiKeyLabel: 'Barcode Number',
+  apiKeyHelpUrl: 'https://www.parkrun.com/register/',
+  marketingDescription: `
+### What is Parkrun?
+Parkrun is a free, community-organized 5K running event held every Saturday morning at locations worldwide. Millions of people participate, from first-timers to elite runners.
+
+### What FitGlue Does
+FitGlue automatically detects when your run is a Parkrun based on GPS location and time. With your barcode connected, we can fetch your **official results** — position, time, age grade, and PB status — and update your activity with all the details.
+  `,
+  features: [
+    '✅ Automatic Parkrun event detection via GPS',
+    '✅ Official results fetched after the event',
+    '✅ Position, time, and age grade added to description',
+    '✅ PB celebrations highlighted',
+    '✅ Special event detection (Christmas, New Year)',
+    '✅ 2,500+ worldwide Parkrun locations supported',
+  ],
+});
+

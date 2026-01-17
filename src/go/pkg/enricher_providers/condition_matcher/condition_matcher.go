@@ -10,7 +10,6 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/enricher_providers"
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -19,81 +18,6 @@ type ConditionMatcherProvider struct{}
 
 func init() {
 	enricher_providers.Register(NewConditionMatcherProvider())
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER, &pb.PluginManifest{
-		Id:          "condition-matcher",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Condition Matcher",
-		Description: "Applies title/description templates when conditions match (type, day, time, location)",
-		Icon:        "🎯",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:         "activity_type",
-				Label:       "Activity Type",
-				Description: "Match specific activity type (e.g., Run, Ride, Walk)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "days_of_week",
-				Label:       "Days of Week",
-				Description: "Comma-separated days (e.g., Mon,Wed,Sat or 0,3,6)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "start_time",
-				Label:       "Start Time",
-				Description: "Earliest time to match (HH:MM format)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "end_time",
-				Label:       "End Time",
-				Description: "Latest time to match (HH:MM format)",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "location_lat",
-				Label:       "Location Latitude",
-				Description: "Target location latitude",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "location_long",
-				Label:       "Location Longitude",
-				Description: "Target location longitude",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:          "radius_m",
-				Label:        "Radius (meters)",
-				Description:  "Match radius in meters",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:     false,
-				DefaultValue: "200",
-			},
-			{
-				Key:         "title_template",
-				Label:       "Title Template",
-				Description: "Title to set when conditions match",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-			{
-				Key:         "description_template",
-				Label:       "Description Template",
-				Description: "Description to set when conditions match",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    false,
-			},
-		},
-	})
 }
 
 func NewConditionMatcherProvider() *ConditionMatcherProvider {

@@ -105,7 +105,35 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 	pipelines := o.resolvePipelines(payload.Source, userRec)
 	slog.Info("Resolved pipelines", "count", len(pipelines), "source", payload.Source)
 
+	// 2.1 Handle Resume Mode
+	// If is_resume=true, we're resuming after a pending input was resolved
+	isResumeMode := payload.IsResume
+	resumeOnlyEnrichers := payload.ResumeOnlyEnrichers
+	useUpdateMethod := payload.UseUpdateMethod
+
+	if isResumeMode {
+		slog.Info("Resume mode activated",
+			"resume_only_enrichers", resumeOnlyEnrichers,
+			"use_update_method", useUpdateMethod,
+			"resume_pending_input_id", payload.ResumePendingInputId)
+
+		// If a specific pipeline ID is set, filter to just that pipeline
+		if payload.PipelineId != nil && *payload.PipelineId != "" {
+			var filteredPipelines []configuredPipeline
+			for _, p := range pipelines {
+				if p.ID == *payload.PipelineId {
+					filteredPipelines = append(filteredPipelines, p)
+					break
+				}
+			}
+			if len(filteredPipelines) > 0 {
+				pipelines = filteredPipelines
+			}
+		}
+	}
+
 	if len(pipelines) == 0 {
+
 		return &ProcessResult{
 			Events:             []*pb.EnrichedActivityEvent{},
 			ProviderExecutions: []ProviderExecution{},
@@ -145,6 +173,26 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 				continue
 			}
 
+			// 3a.1 Resume Mode: Skip enrichers not in the resume list
+			if isResumeMode && len(resumeOnlyEnrichers) > 0 {
+				shouldRun := false
+				for _, allowedName := range resumeOnlyEnrichers {
+					if provider.Name() == allowedName {
+						shouldRun = true
+						break
+					}
+				}
+				if !shouldRun {
+					slog.Debug("Skipping enricher in resume mode", "name", provider.Name())
+					providerExecs = append(providerExecs, ProviderExecution{
+						ProviderName: provider.Name(),
+						Status:       "SKIPPED",
+						Metadata:     map[string]string{"skip_reason": "not_in_resume_list"},
+					})
+					continue
+				}
+			}
+
 			startTime := time.Now()
 			execID := uuid.NewString()
 
@@ -163,12 +211,26 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 				slog.Error(fmt.Sprintf("Provider failed: %v", provider.Name()), "name", provider.Name(), "error", err, "duration_ms", duration, "execution_id", execID)
 				// Check for retryable/wait errors
 				if retryErr, ok := err.(*providers.RetryableError); ok {
+					pe.Status = "RETRY"
+					pe.Error = retryErr.Reason
+					pe.Metadata = map[string]string{
+						"retry_after":  retryErr.RetryAfter.String(),
+						"retry_reason": retryErr.Reason,
+					}
+					providerExecs = append(providerExecs, pe)
 					return &ProcessResult{
 						Events:             []*pb.EnrichedActivityEvent{},
-						ProviderExecutions: append(allProviderExecutions, providerExecs...), // Include partial
+						ProviderExecutions: append(allProviderExecutions, providerExecs...),
+						Status:             pb.ExecutionStatus_STATUS_LAGGED_RETRY,
 					}, retryErr
 				}
 				if waitErr, ok := err.(*user_input.WaitForInputError); ok {
+					pe.Status = "WAITING"
+					pe.Metadata = map[string]string{
+						"activity_id":     waitErr.ActivityID,
+						"required_fields": strings.Join(waitErr.RequiredFields, ","),
+					}
+					providerExecs = append(providerExecs, pe)
 					return o.handleWaitError(ctx, payload, append(allProviderExecutions, providerExecs...), waitErr)
 				}
 
@@ -264,6 +326,17 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			PipelineId:          pipeline.ID,
 			PipelineExecutionId: &pipelineExecutionID,
 			StartTime:           payload.StandardizedActivity.Sessions[0].StartTime,
+		}
+
+		// 3b.1 Resume Mode: Add update metadata and use original activity ID
+		if isResumeMode {
+			if useUpdateMethod {
+				finalEvent.EnrichmentMetadata["use_update_method"] = "true"
+			}
+			// Use the original activity ID for updates (from payload)
+			if payload.ActivityId != nil && *payload.ActivityId != "" {
+				finalEvent.ActivityId = *payload.ActivityId
+			}
 		}
 
 		if payload.StandardizedActivity != nil {

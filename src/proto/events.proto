@@ -30,6 +30,8 @@ enum CloudEventType {
   CLOUD_EVENT_TYPE_ENRICHMENT_LAG = 5 [(ce_type) = "com.fitglue.enrichment.lag"];
   // Input Resolved: Payload is ActivityPayload (resumed)
   CLOUD_EVENT_TYPE_INPUT_RESOLVED = 6 [(ce_type) = "com.fitglue.input.resolved"];
+  // Parkrun Results Available: Triggers resume for pending Parkrun activities
+  CLOUD_EVENT_TYPE_PARKRUN_RESULTS = 7 [(ce_type) = "com.fitglue.parkrun.results"];
 }
 
 // CloudEventSource strings are URI references.
@@ -41,10 +43,12 @@ enum CloudEventSource {
   CLOUD_EVENT_SOURCE_ENRICHER = 4 [(ce_source) = "/core/enricher"];
   CLOUD_EVENT_SOURCE_ROUTER = 5 [(ce_source) = "/core/router"];
   CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6 [(ce_source) = "/core/inputs-handler"];
+  CLOUD_EVENT_SOURCE_PARKRUN_RESULTS = 7 [(ce_source) = "/integrations/parkrun/results"];
   CLOUD_EVENT_SOURCE_MOCK = 99 [(ce_source) = "/integrations/mock"];
 }
 
 // Destination defines where enriched activities are routed.
+// Each destination supports both CREATE and UPDATE operations (determined by use_update_method flag).
 enum Destination {
   DESTINATION_UNSPECIFIED = 0;
   DESTINATION_STRAVA = 1 [(dest_topic) = "topic-job-upload-strava"];
@@ -82,3 +86,4 @@ message MessagePublishedData {
   string publish_time = 4;
 }
 
+// NOTE: StravaUpdateEvent removed - UPDATE is now handled by ActivityPayload with use_update_method=true

@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -13,37 +12,6 @@ type VirtualGPSProvider struct{}
 
 func init() {
 	Register(NewVirtualGPSProvider())
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS, &pb.PluginManifest{
-		Id:          "virtual-gps",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Virtual GPS",
-		Description: "Adds GPS coordinates from a virtual route to indoor activities",
-		Icon:        "🗺️",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:          "route",
-				Label:        "Route",
-				Description:  "Virtual route to use for GPS generation",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-				Required:     false,
-				DefaultValue: "london",
-				Options: []*pb.ConfigFieldOption{
-					{Value: "london", Label: "London Hyde Park (~4km loop)"},
-					{Value: "nyc", Label: "NYC Central Park (~10km loop)"},
-				},
-			},
-			{
-				Key:          "force",
-				Label:        "Force Override",
-				Description:  "Override existing GPS data if present",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
-				Required:     false,
-				DefaultValue: "false",
-			},
-		},
-	})
 }
 
 func NewVirtualGPSProvider() *VirtualGPSProvider {
@@ -61,7 +29,9 @@ func (p *VirtualGPSProvider) ProviderType() pb.EnricherProviderType {
 func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
 	// 1. Validation
 	if len(activity.Sessions) == 0 {
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{"status": "skipped", "reason": "no_sessions"},
+		}, nil
 	}
 	session := activity.Sessions[0]
 	duration := int(session.TotalElapsedTime)
@@ -69,7 +39,9 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 
 	// Only apply if distance > 0 and duration > 0
 	if distance <= 0 || duration <= 0 {
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{"status": "skipped", "reason": "no_distance_or_duration"},
+		}, nil
 	}
 
 	// 2. Check overlap logic: If we already have GPS, we probably shouldn't overwrite unless forced.
@@ -86,7 +58,9 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 	// Allow override via inputConfig
 	force := inputConfig["force"] == "true"
 	if hasGPS && !force {
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{"status": "skipped", "reason": "gps_already_exists", "force": "false"},
+		}, nil
 	}
 
 	// 3. Select Route

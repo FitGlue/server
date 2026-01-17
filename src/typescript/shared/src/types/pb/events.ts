@@ -25,6 +25,8 @@ export enum CloudEventType {
   CLOUD_EVENT_TYPE_ENRICHMENT_LAG = 5,
   /** CLOUD_EVENT_TYPE_INPUT_RESOLVED - Input Resolved: Payload is ActivityPayload (resumed) */
   CLOUD_EVENT_TYPE_INPUT_RESOLVED = 6,
+  /** CLOUD_EVENT_TYPE_PARKRUN_RESULTS - Parkrun Results Available: Triggers resume for pending Parkrun activities */
+  CLOUD_EVENT_TYPE_PARKRUN_RESULTS = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -37,11 +39,15 @@ export enum CloudEventSource {
   CLOUD_EVENT_SOURCE_ENRICHER = 4,
   CLOUD_EVENT_SOURCE_ROUTER = 5,
   CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6,
+  CLOUD_EVENT_SOURCE_PARKRUN_RESULTS = 7,
   CLOUD_EVENT_SOURCE_MOCK = 99,
   UNRECOGNIZED = -1,
 }
 
-/** Destination defines where enriched activities are routed. */
+/**
+ * Destination defines where enriched activities are routed.
+ * Each destination supports both CREATE and UPDATE operations (determined by use_update_method flag).
+ */
 export enum Destination {
   DESTINATION_UNSPECIFIED = 0,
   DESTINATION_STRAVA = 1,

@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/fitglue/server/src/go/pkg/enricher_providers/muscle_heatmap"
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -27,59 +26,6 @@ type MuscleHeatmapProvider struct {
 
 func init() {
 	Register(NewMuscleHeatmapProvider())
-
-	minBarLen := float64(3)
-	maxBarLen := float64(10)
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP, &pb.PluginManifest{
-		Id:          "muscle-heatmap",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Muscle Heatmap",
-		Description: "Generates an emoji-based heatmap showing muscle group volume",
-		Icon:        "🔥",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:          "style",
-				Label:        "Display Style",
-				Description:  "How the heatmap should be rendered",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-				Required:     false,
-				DefaultValue: "emoji",
-				Options: []*pb.ConfigFieldOption{
-					{Value: "emoji", Label: "Emoji Bars (🟪🟪🟪⬜⬜)"},
-					{Value: "percentage", Label: "Percentage (Chest: 80%)"},
-					{Value: "text", Label: "Text Only (High: Chest, Medium: Legs)"},
-				},
-			},
-			{
-				Key:          "bar_length",
-				Label:        "Bar Length",
-				Description:  "Number of squares in emoji bar",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
-				Required:     false,
-				DefaultValue: "5",
-				Validation:   &pb.ConfigFieldValidation{MinValue: &minBarLen, MaxValue: &maxBarLen},
-				DependsOn: &pb.ConfigFieldDependency{
-					FieldKey: "style",
-					Values:   []string{"emoji"},
-				},
-			},
-			{
-				Key:          "preset",
-				Label:        "Coefficient Preset",
-				Description:  "Muscle weighting preset",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-				Required:     false,
-				DefaultValue: "standard",
-				Options: []*pb.ConfigFieldOption{
-					{Value: "standard", Label: "Standard (balanced)"},
-					{Value: "powerlifting", Label: "Powerlifting (emphasize compounds)"},
-					{Value: "bodybuilding", Label: "Bodybuilding (emphasize isolation)"},
-				},
-			},
-		},
-	})
 }
 
 func NewMuscleHeatmapProvider() *MuscleHeatmapProvider {

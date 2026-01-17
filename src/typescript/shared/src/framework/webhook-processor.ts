@@ -141,7 +141,11 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
           'connector': connector.name
         },
         standardizedActivity: standardizedActivity,
-        pipelineExecutionId: ctx.executionId // Root execution ID
+        pipelineExecutionId: ctx.executionId, // Root execution ID
+        // Resume mode fields (false for initial processing)
+        isResume: false,
+        resumeOnlyEnrichers: [],
+        useUpdateMethod: false,
       };
 
       const publisher = new CloudEventPublisher<ActivityPayload>(

@@ -9,8 +9,37 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// createMockLocationsService creates a service with test locations pre-loaded.
+func createMockLocationsService() *ParkrunLocationsService {
+	svc := NewParkrunLocationsService()
+
+	// Add test locations (mimicking the old hardcoded ones)
+	testLocations := []ParkrunLocation{
+		{Name: "Bushy Park Parkrun", EventSlug: "bushypark", CountryURL: "www.parkrun.org.uk", Latitude: 51.4106, Longitude: -0.3421},
+		{Name: "Newark Parkrun", EventSlug: "newark", CountryURL: "www.parkrun.org.uk", Latitude: 53.0764, Longitude: -0.8088},
+		{Name: "Cardiff Parkrun", EventSlug: "cardiff", CountryURL: "www.parkrun.org.uk", Latitude: 51.4845, Longitude: -3.1647},
+		{Name: "Woodhouse Moor Parkrun", EventSlug: "woodhousemoor", CountryURL: "www.parkrun.org.uk", Latitude: 53.8130, Longitude: -1.5612},
+		{Name: "Albert Parkrun, Melbourne", EventSlug: "albertpark", CountryURL: "www.parkrun.com.au", Latitude: -37.8427, Longitude: 144.9654},
+		{Name: "Delta Park Parkrun", EventSlug: "deltapark", CountryURL: "www.parkrun.co.za", Latitude: -26.0931, Longitude: 28.0039},
+	}
+
+	svc.locations = testLocations
+	svc.lastFetch = time.Now()
+
+	// Build grid index
+	svc.grid = make(map[string][]ParkrunLocation)
+	for _, loc := range testLocations {
+		key := gridKey(loc.Latitude, loc.Longitude)
+		svc.grid[key] = append(svc.grid[key], loc)
+	}
+
+	return svc
+}
+
 func TestParkrunProvider_Enrich(t *testing.T) {
-	provider := NewParkrunProvider()
+	// Use mock location service
+	mockSvc := createMockLocationsService()
+	provider := NewParkrunProviderWithService(mockSvc)
 
 	// Helper to create activity with location
 	createActivity := func(timeStr string, lat, long float64) *pb.StandardizedActivity {
@@ -84,14 +113,15 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 			wantMatch: false,
 		},
 		{
-			name: "Christmas Day (Special Event check)",
+			name: "Christmas Day (Special Event)",
 			time: "2025-12-25T09:00:00Z", // Thursday, but Xmas
 			lat:  51.4106,
 			long: -0.3421,
 			inputs: map[string]string{
 				"enable_titling": "true",
-			}, wantMatch: true,
-			wantName: "Bushy Park Parkrun",
+			},
+			wantMatch: true,
+			wantName:  "Bushy Park Parkrun - Christmas Day Edition",
 		},
 		{
 			name: "Australian Parkrun (Timezone check - Albert Park)",
@@ -133,8 +163,11 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 			}
 
 			if !tt.wantMatch {
-				if res != nil {
-					t.Errorf("Expected nil result (no match), got %v", res)
+				if res == nil {
+					t.Fatalf("Expected result with skip metadata, got nil")
+				}
+				if res.Metadata == nil || res.Metadata["status"] != "skipped" {
+					t.Errorf("Expected status='skipped' in metadata, got %v", res.Metadata)
 				}
 				return
 			}
@@ -151,6 +184,142 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 				if len(res.Tags) != len(tt.wantTags) {
 					t.Errorf("Expected %d tags, got %v", len(tt.wantTags), res.Tags)
 				}
+			}
+		})
+	}
+}
+
+func TestTitlePatterns(t *testing.T) {
+	tests := []struct {
+		name           string
+		normalPattern  string
+		specialPattern string
+		location       string
+		time           time.Time
+		specialDay     string
+		want           string
+	}{
+		{
+			name:          "Default location only",
+			normalPattern: "{location}",
+			location:      "Newark Parkrun",
+			time:          time.Date(2025, 12, 20, 9, 0, 0, 0, time.UTC),
+			want:          "Newark Parkrun",
+		},
+		{
+			name:          "Location with date",
+			normalPattern: "{location} - {date}",
+			location:      "Newark Parkrun",
+			time:          time.Date(2025, 12, 20, 9, 0, 0, 0, time.UTC),
+			want:          "Newark Parkrun - 20 Dec 2025",
+		},
+		{
+			name:           "Special day uses special pattern",
+			normalPattern:  "{location}",
+			specialPattern: "{location} - {special} Edition",
+			location:       "Newark Parkrun",
+			time:           time.Date(2025, 12, 25, 9, 0, 0, 0, time.UTC),
+			specialDay:     "Christmas Day",
+			want:           "Newark Parkrun - Christmas Day Edition",
+		},
+		{
+			name:           "New Year's Day",
+			normalPattern:  "{location}",
+			specialPattern: "{location} 🎉 {special}",
+			location:       "Newark Parkrun",
+			time:           time.Date(2026, 1, 1, 9, 0, 0, 0, time.UTC),
+			specialDay:     "New Year's Day",
+			want:           "Newark Parkrun 🎉 New Year's Day",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := applyTitlePattern(tt.normalPattern, tt.specialPattern, tt.location, tt.time, tt.specialDay)
+			if got != tt.want {
+				t.Errorf("applyTitlePattern() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestParkrunLocationsService_FindNearest(t *testing.T) {
+	svc := createMockLocationsService()
+
+	tests := []struct {
+		name      string
+		lat, lng  float64
+		threshold float64
+		wantName  string
+		wantFound bool
+	}{
+		{
+			name:      "Exact match Bushy Park",
+			lat:       51.4106,
+			lng:       -0.3421,
+			threshold: 200,
+			wantName:  "Bushy Park Parkrun",
+			wantFound: true,
+		},
+		{
+			name:      "100m away still matches",
+			lat:       51.4115,
+			lng:       -0.3421,
+			threshold: 200,
+			wantName:  "Bushy Park Parkrun",
+			wantFound: true,
+		},
+		{
+			name:      "1km away does not match",
+			lat:       51.4206,
+			lng:       -0.3421,
+			threshold: 200,
+			wantFound: false,
+		},
+		{
+			name:      "Southern hemisphere (Melbourne)",
+			lat:       -37.8427,
+			lng:       144.9654,
+			threshold: 200,
+			wantName:  "Albert Parkrun, Melbourne",
+			wantFound: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := svc.FindNearest(tt.lat, tt.lng, tt.threshold)
+			if tt.wantFound {
+				if got == nil {
+					t.Errorf("Expected to find location, got nil")
+				} else if got.Name != tt.wantName {
+					t.Errorf("Expected %q, got %q", tt.wantName, got.Name)
+				}
+			} else {
+				if got != nil {
+					t.Errorf("Expected nil, got %s", got.Name)
+				}
+			}
+		})
+	}
+}
+
+func TestSpecialDayDetection(t *testing.T) {
+	tests := []struct {
+		time time.Time
+		want string
+	}{
+		{time.Date(2025, 12, 25, 9, 0, 0, 0, time.UTC), "Christmas Day"},
+		{time.Date(2026, 1, 1, 9, 0, 0, 0, time.UTC), "New Year's Day"},
+		{time.Date(2025, 12, 20, 9, 0, 0, 0, time.UTC), ""},
+		{time.Date(2025, 6, 15, 9, 0, 0, 0, time.UTC), ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.time.Format("2006-01-02"), func(t *testing.T) {
+			got := getSpecialDay(tt.time)
+			if got != tt.want {
+				t.Errorf("getSpecialDay(%v) = %q, want %q", tt.time, got, tt.want)
 			}
 		})
 	}

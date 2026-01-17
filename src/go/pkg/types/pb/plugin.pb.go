@@ -142,6 +142,7 @@ const (
 	IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED IntegrationAuthType = 0
 	IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH       IntegrationAuthType = 1
 	IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY     IntegrationAuthType = 2
+	IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC    IntegrationAuthType = 3 // Mobile app handles auth (Apple Health, Health Connect)
 )
 
 // Enum value maps for IntegrationAuthType.
@@ -150,11 +151,13 @@ var (
 		0: "INTEGRATION_AUTH_TYPE_UNSPECIFIED",
 		1: "INTEGRATION_AUTH_TYPE_OAUTH",
 		2: "INTEGRATION_AUTH_TYPE_API_KEY",
+		3: "INTEGRATION_AUTH_TYPE_APP_SYNC",
 	}
 	IntegrationAuthType_value = map[string]int32{
 		"INTEGRATION_AUTH_TYPE_UNSPECIFIED": 0,
 		"INTEGRATION_AUTH_TYPE_OAUTH":       1,
 		"INTEGRATION_AUTH_TYPE_API_KEY":     2,
+		"INTEGRATION_AUTH_TYPE_APP_SYNC":    3,
 	}
 )
 
@@ -1049,11 +1052,12 @@ const file_plugin_proto_rawDesc = "" +
 	"\x19CONFIG_FIELD_TYPE_BOOLEAN\x10\x03\x12\x1c\n" +
 	"\x18CONFIG_FIELD_TYPE_SELECT\x10\x04\x12\"\n" +
 	"\x1eCONFIG_FIELD_TYPE_MULTI_SELECT\x10\x05\x12#\n" +
-	"\x1fCONFIG_FIELD_TYPE_KEY_VALUE_MAP\x10\x06*\x80\x01\n" +
+	"\x1fCONFIG_FIELD_TYPE_KEY_VALUE_MAP\x10\x06*\xa4\x01\n" +
 	"\x13IntegrationAuthType\x12%\n" +
 	"!INTEGRATION_AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bINTEGRATION_AUTH_TYPE_OAUTH\x10\x01\x12!\n" +
-	"\x1dINTEGRATION_AUTH_TYPE_API_KEY\x10\x02B/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
+	"\x1dINTEGRATION_AUTH_TYPE_API_KEY\x10\x02\x12\"\n" +
+	"\x1eINTEGRATION_AUTH_TYPE_APP_SYNC\x10\x03B/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_plugin_proto_rawDescOnce sync.Once

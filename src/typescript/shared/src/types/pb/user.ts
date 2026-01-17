@@ -76,6 +76,20 @@ export enum VirtualGPSRoute {
   UNRECOGNIZED = -1,
 }
 
+/** ParkrunResultsState tracks the state of official results enrichment */
+export enum ParkrunResultsState {
+  PARKRUN_RESULTS_STATE_UNSPECIFIED = 0,
+  /** PARKRUN_RESULTS_STATE_PENDING - Awaiting results fetch (auto-populated pending input created) */
+  PARKRUN_RESULTS_STATE_PENDING = 1,
+  /** PARKRUN_RESULTS_STATE_COMPLETE - Results applied via resume */
+  PARKRUN_RESULTS_STATE_COMPLETE = 2,
+  /** PARKRUN_RESULTS_STATE_EXPIRED - Polling deadline passed, no results found */
+  PARKRUN_RESULTS_STATE_EXPIRED = 3,
+  /** PARKRUN_RESULTS_STATE_IMMEDIATE - Results found during initial enrichment (no pending input) */
+  PARKRUN_RESULTS_STATE_IMMEDIATE = 4,
+  UNRECOGNIZED = -1,
+}
+
 export interface UserRecord {
   userId: string;
   createdAt?: Date | undefined;
@@ -116,6 +130,7 @@ export interface UserIntegrations {
   fitbit?: FitbitIntegration | undefined;
   strava?: StravaIntegration | undefined;
   mock?: MockIntegration | undefined;
+  parkrun?: ParkrunIntegration | undefined;
 }
 
 export interface MockIntegration {
@@ -171,6 +186,18 @@ export interface StravaIntegration {
   lastUsedAt?: Date | undefined;
 }
 
+export interface ParkrunIntegration {
+  enabled: boolean;
+  /** Barcode number e.g., "A12345" */
+  athleteId: string;
+  /** e.g., "www.parkrun.org.uk" */
+  countryUrl: string;
+  /** GDPR consent for data fetching */
+  consentGiven: boolean;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
 export interface ProcessedActivityRecord {
   source: string;
   /** Unique ID from provider */
@@ -200,6 +227,13 @@ export interface SynchronizedActivity {
   syncedAt?: Date | undefined;
   pipelineId: string;
   pipelineExecutionId: string;
+  /** Parkrun results tracking */
+  parkrunResultsState: ParkrunResultsState;
+  /** e.g., "Newark Parkrun" */
+  parkrunEventName: string;
+  /** e.g., "newark" */
+  parkrunEventSlug: string;
+  parkrunPollingDeadline?: Date | undefined;
 }
 
 export interface SynchronizedActivity_DestinationsEntry {

@@ -12,8 +12,10 @@ enum ActivitySource {
   SOURCE_UNKNOWN = 0;
   SOURCE_HEVY = 1;
   SOURCE_FITBIT = 3;
+  SOURCE_PARKRUN_RESULTS = 4; // Parkrun official results (CREATE mode)
   SOURCE_TEST = 99;
 }
+
 
 // ActivityPayload is the unified message format published to Pub/Sub.
 message ActivityPayload {
@@ -26,6 +28,12 @@ message ActivityPayload {
 
   // Execution tracing
   optional string pipeline_execution_id = 7;
+  optional string activity_id = 8;  // FitGlue activity ID (set after initial processing)
+  optional string pipeline_id = 9;  // Pipeline that processed this activity
+
+  // Resume mode for delayed enrichment (e.g., Parkrun results)
+  bool is_resume = 10;                          // Bypasses processed check, signals UPDATE mode
+  repeated string resume_only_enrichers = 11;   // Only run these enrichers (others skipped)
+  bool use_update_method = 12;                  // Destinations use UPDATE not CREATE
+  optional string resume_pending_input_id = 13; // The pending input that triggered this resume
 }
-
-

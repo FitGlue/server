@@ -9,20 +9,37 @@ import type { ActivityPayload } from "./activity";
 
 export const protobufPackage = "fitglue";
 
-/** PendingInput represents a paused pipeline execution waiting for user interaction. */
+/**
+ * PendingInput represents a paused pipeline execution waiting for user interaction.
+ * For auto-populated inputs (e.g., Parkrun results), the pipeline continues and resumes later.
+ */
 export interface PendingInput {
   activityId: string;
   userId: string;
   status: PendingInput_Status;
   /** Fields the user interface should ask for (e.g. "title", "description") */
   requiredFields: string[];
-  /** Data provided by the user (filled when status=COMPLETED) */
+  /** Data provided by the user or auto-populated (filled when status=COMPLETED) */
   inputData: { [key: string]: string };
   /** The original payload to be re-published once input is provided */
   originalPayload?: ActivityPayload | undefined;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
-  completedAt?: Date | undefined;
+  completedAt?:
+    | Date
+    | undefined;
+  /** For "continue anyway" enrichers (e.g., Parkrun) - pipeline continues despite pending input */
+  continuedWithoutResolution: boolean;
+  /** Activity that was created while pending */
+  linkedActivityId: string;
+  /** Pipeline that contains this enricher */
+  pipelineId: string;
+  /** Enricher that created this pending input */
+  enricherProviderId: string;
+  /** Auto-population mode - system will auto-fill, not user */
+  autoPopulated: boolean;
+  /** If not auto-resolved by deadline, prompt user */
+  autoDeadline?: Date | undefined;
 }
 
 export enum PendingInput_Status {

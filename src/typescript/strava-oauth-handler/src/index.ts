@@ -10,14 +10,14 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   // Handle authorization denial
   if (error) {
     logger.warn('User denied Strava authorization', { error });
-    res.redirect(`${process.env.BASE_URL}/auth/error?reason=denied`);
+    res.redirect(`${process.env.BASE_URL}/app/connections/strava/error?reason=denied`);
     return;
   }
 
   // Validate required parameters
   if (!code || !state) {
     logger.error('Missing required OAuth parameters');
-    res.redirect(`${process.env.BASE_URL}/auth/error?reason=missing_params`);
+    res.redirect(`${process.env.BASE_URL}/app/connections/strava/error?reason=missing_params`);
     return;
   }
 
@@ -25,7 +25,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   const validation = await validateOAuthState(state);
   if (!validation.valid || !validation.userId) {
     logger.error('Invalid or expired state token');
-    res.redirect(`${process.env.BASE_URL}/auth/error?reason=invalid_state`);
+    res.redirect(`${process.env.BASE_URL}/app/connections/strava/error?reason=invalid_state`);
     return;
   }
   const userId = validation.userId;
@@ -74,11 +74,11 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     logger.info('Successfully connected Strava account', { userId, athleteId: athlete.id });
 
     // Redirect to success page
-    res.redirect(`${process.env.BASE_URL}/auth/success?provider=strava`);
+    res.redirect(`${process.env.BASE_URL}/app/connections/strava/success`);
 
   } catch (error: unknown) {
     logger.error('Error processing Strava OAuth callback', { error });
-    res.redirect(`${process.env.BASE_URL}/auth/error?reason=server_error`);
+    res.redirect(`${process.env.BASE_URL}/app/connections/strava/error?reason=server_error`);
   }
 };
 

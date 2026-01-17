@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -14,24 +13,6 @@ type TypeMapperProvider struct{}
 
 func init() {
 	Register(NewTypeMapperProvider())
-
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER, &pb.PluginManifest{
-		Id:          "type-mapper",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Type Mapper",
-		Description: "Maps activity types from one type to another (e.g., Ride → Virtual Ride)",
-		Icon:        "🏷️",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:         "rules",
-				Label:       "Type Mapping Rules",
-				Description: "JSON array of rules: [{substring: 'title text', target_type: 'ActivityType'}]",
-				FieldType:   pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-				Required:    true,
-			},
-		},
-	})
 }
 
 func NewTypeMapperProvider() *TypeMapperProvider {
@@ -82,13 +63,17 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 
 	// No rules configured, nothing to do
 	if len(rules) == 0 {
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{"status": "skipped", "reason": "no_rules_configured"},
+		}, nil
 	}
 
 	// Get the current activity title
 	activityTitle := act.Name
 	if activityTitle == "" {
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{"status": "skipped", "reason": "no_activity_title"},
+		}, nil
 	}
 
 	// Get original type for metadata
@@ -119,5 +104,7 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 	}
 
 	// No matching rule found
-	return &EnrichmentResult{}, nil
+	return &EnrichmentResult{
+		Metadata: map[string]string{"status": "skipped", "reason": "no_matching_rule", "title": activityTitle},
+	}, nil
 }

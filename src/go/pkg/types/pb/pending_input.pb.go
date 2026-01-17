@@ -72,6 +72,7 @@ func (PendingInput_Status) EnumDescriptor() ([]byte, []int) {
 }
 
 // PendingInput represents a paused pipeline execution waiting for user interaction.
+// For auto-populated inputs (e.g., Parkrun results), the pipeline continues and resumes later.
 type PendingInput struct {
 	state      protoimpl.MessageState `protogen:"open.v1"`
 	ActivityId string                 `protobuf:"bytes,1,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
@@ -79,15 +80,23 @@ type PendingInput struct {
 	Status     PendingInput_Status    `protobuf:"varint,3,opt,name=status,proto3,enum=fitglue.PendingInput_Status" json:"status,omitempty"`
 	// Fields the user interface should ask for (e.g. "title", "description")
 	RequiredFields []string `protobuf:"bytes,4,rep,name=required_fields,json=requiredFields,proto3" json:"required_fields,omitempty"`
-	// Data provided by the user (filled when status=COMPLETED)
+	// Data provided by the user or auto-populated (filled when status=COMPLETED)
 	InputData map[string]string `protobuf:"bytes,5,rep,name=input_data,json=inputData,proto3" json:"input_data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	// The original payload to be re-published once input is provided
 	OriginalPayload *ActivityPayload     `protobuf:"bytes,6,opt,name=original_payload,json=originalPayload,proto3" json:"original_payload,omitempty"`
 	CreatedAt       *timestamp.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	UpdatedAt       *timestamp.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	CompletedAt     *timestamp.Timestamp `protobuf:"bytes,9,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	// For "continue anyway" enrichers (e.g., Parkrun) - pipeline continues despite pending input
+	ContinuedWithoutResolution bool   `protobuf:"varint,10,opt,name=continued_without_resolution,json=continuedWithoutResolution,proto3" json:"continued_without_resolution,omitempty"`
+	LinkedActivityId           string `protobuf:"bytes,11,opt,name=linked_activity_id,json=linkedActivityId,proto3" json:"linked_activity_id,omitempty"`       // Activity that was created while pending
+	PipelineId                 string `protobuf:"bytes,12,opt,name=pipeline_id,json=pipelineId,proto3" json:"pipeline_id,omitempty"`                           // Pipeline that contains this enricher
+	EnricherProviderId         string `protobuf:"bytes,13,opt,name=enricher_provider_id,json=enricherProviderId,proto3" json:"enricher_provider_id,omitempty"` // Enricher that created this pending input
+	// Auto-population mode - system will auto-fill, not user
+	AutoPopulated bool                 `protobuf:"varint,14,opt,name=auto_populated,json=autoPopulated,proto3" json:"auto_populated,omitempty"`
+	AutoDeadline  *timestamp.Timestamp `protobuf:"bytes,15,opt,name=auto_deadline,json=autoDeadline,proto3" json:"auto_deadline,omitempty"` // If not auto-resolved by deadline, prompt user
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PendingInput) Reset() {
@@ -183,11 +192,53 @@ func (x *PendingInput) GetCompletedAt() *timestamp.Timestamp {
 	return nil
 }
 
+func (x *PendingInput) GetContinuedWithoutResolution() bool {
+	if x != nil {
+		return x.ContinuedWithoutResolution
+	}
+	return false
+}
+
+func (x *PendingInput) GetLinkedActivityId() string {
+	if x != nil {
+		return x.LinkedActivityId
+	}
+	return ""
+}
+
+func (x *PendingInput) GetPipelineId() string {
+	if x != nil {
+		return x.PipelineId
+	}
+	return ""
+}
+
+func (x *PendingInput) GetEnricherProviderId() string {
+	if x != nil {
+		return x.EnricherProviderId
+	}
+	return ""
+}
+
+func (x *PendingInput) GetAutoPopulated() bool {
+	if x != nil {
+		return x.AutoPopulated
+	}
+	return false
+}
+
+func (x *PendingInput) GetAutoDeadline() *timestamp.Timestamp {
+	if x != nil {
+		return x.AutoDeadline
+	}
+	return nil
+}
+
 var File_pending_input_proto protoreflect.FileDescriptor
 
 const file_pending_input_proto_rawDesc = "" +
 	"\n" +
-	"\x13pending_input.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0eactivity.proto\"\xf0\x04\n" +
+	"\x13pending_input.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0eactivity.proto\"\x9b\a\n" +
 	"\fPendingInput\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -201,7 +252,15 @@ const file_pending_input_proto_rawDesc = "" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12=\n" +
-	"\fcompleted_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x1a<\n" +
+	"\fcompleted_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vcompletedAt\x12@\n" +
+	"\x1ccontinued_without_resolution\x18\n" +
+	" \x01(\bR\x1acontinuedWithoutResolution\x12,\n" +
+	"\x12linked_activity_id\x18\v \x01(\tR\x10linkedActivityId\x12\x1f\n" +
+	"\vpipeline_id\x18\f \x01(\tR\n" +
+	"pipelineId\x120\n" +
+	"\x14enricher_provider_id\x18\r \x01(\tR\x12enricherProviderId\x12%\n" +
+	"\x0eauto_populated\x18\x0e \x01(\bR\rautoPopulated\x12?\n" +
+	"\rauto_deadline\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\fautoDeadline\x1a<\n" +
 	"\x0eInputDataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"J\n" +
@@ -238,11 +297,12 @@ var file_pending_input_proto_depIdxs = []int32{
 	4, // 3: fitglue.PendingInput.created_at:type_name -> google.protobuf.Timestamp
 	4, // 4: fitglue.PendingInput.updated_at:type_name -> google.protobuf.Timestamp
 	4, // 5: fitglue.PendingInput.completed_at:type_name -> google.protobuf.Timestamp
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	4, // 6: fitglue.PendingInput.auto_deadline:type_name -> google.protobuf.Timestamp
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_pending_input_proto_init() }

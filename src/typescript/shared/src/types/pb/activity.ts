@@ -14,6 +14,8 @@ export enum ActivitySource {
   SOURCE_UNKNOWN = 0,
   SOURCE_HEVY = 1,
   SOURCE_FITBIT = 3,
+  /** SOURCE_PARKRUN_RESULTS - Parkrun official results (CREATE mode) */
+  SOURCE_PARKRUN_RESULTS = 4,
   SOURCE_TEST = 99,
   UNRECOGNIZED = -1,
 }
@@ -34,7 +36,25 @@ export interface ActivityPayload {
     | StandardizedActivity
     | undefined;
   /** Execution tracing */
-  pipelineExecutionId?: string | undefined;
+  pipelineExecutionId?:
+    | string
+    | undefined;
+  /** FitGlue activity ID (set after initial processing) */
+  activityId?:
+    | string
+    | undefined;
+  /** Pipeline that processed this activity */
+  pipelineId?:
+    | string
+    | undefined;
+  /** Resume mode for delayed enrichment (e.g., Parkrun results) */
+  isResume: boolean;
+  /** Only run these enrichers (others skipped) */
+  resumeOnlyEnrichers: string[];
+  /** Destinations use UPDATE not CREATE */
+  useUpdateMethod: boolean;
+  /** The pending input that triggered this resume */
+  resumePendingInputId?: string | undefined;
 }
 
 export interface ActivityPayload_MetadataEntry {

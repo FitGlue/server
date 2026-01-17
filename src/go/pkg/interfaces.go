@@ -24,6 +24,7 @@ type Database interface {
 	CreatePendingInput(ctx context.Context, input *pb.PendingInput) error
 	UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error
 	ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) // Optional: for web list
+	ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error)
 
 	// Counters
 	GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error)
@@ -31,6 +32,9 @@ type Database interface {
 
 	// Activities
 	SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
+	GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error)
+	ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error)
+	UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error
 }
 
 // --- Messaging Interfaces ---

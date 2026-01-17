@@ -62,3 +62,11 @@ resource "google_pubsub_subscription" "enrichment_lag_sub" {
     }
   }
 }
+
+# NOTE: topic-job-update-strava removed - UPDATE operations now use the standard strava-uploader topic
+
+
+resource "google_pubsub_topic" "parkrun_results_trigger" {
+  name    = "topic-parkrun-results-trigger"
+  project = var.project_id
+}

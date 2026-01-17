@@ -57,5 +57,11 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     type: 'oauth',
     externalUserIdField: 'fitbitUserId',
     configurableFields: []
+  },
+  parkrun: {
+    key: 'parkrun',
+    displayName: 'Parkrun',
+    type: 'basic',
+    configurableFields: [{ field: 'athleteId', name: 'Barcode Number', type: 'string', required: true }]
   }
 };

@@ -198,33 +198,3 @@ func TestValidateConfig_MultiSelectField(t *testing.T) {
 		})
 	}
 }
-
-func TestValidateConfig_UnknownEnricher(t *testing.T) {
-	ClearRegistry()
-	err := ValidateConfig(pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK, map[string]string{})
-	if err == nil {
-		t.Error("expected error for unknown enricher")
-	}
-}
-
-func TestValidateConfig_RegisteredEnricher(t *testing.T) {
-	ClearRegistry()
-	RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK, &pb.PluginManifest{
-		Id: "mock",
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{Key: "delay", FieldType: pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER},
-		},
-	})
-
-	// Valid config
-	err := ValidateConfig(pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK, map[string]string{"delay": "100"})
-	if err != nil {
-		t.Errorf("unexpected error: %v", err)
-	}
-
-	// Invalid config
-	err = ValidateConfig(pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK, map[string]string{"delay": "not-a-number"})
-	if err == nil {
-		t.Error("expected error for invalid config")
-	}
-}

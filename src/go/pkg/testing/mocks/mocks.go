@@ -111,6 +111,26 @@ func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error 
 	return nil
 }
 
+func (m *MockDatabase) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
+	// No-op for tests by default
+	return nil, nil, nil
+}
+
+func (m *MockDatabase) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
+func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)

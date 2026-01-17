@@ -806,3 +806,104 @@ resource "google_cloud_run_service_iam_member" "integration_request_handler_invo
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# NOTE: strava-updater removed - UPDATE operations are now handled by strava-uploader via use_update_method flag
+
+
+# ----------------- Parkrun Results Source -----------------
+# Scheduled function to poll for official Parkrun results
+resource "google_storage_bucket_object" "parkrun_results_source_zip" {
+  name   = "parkrun-results-source-${filemd5("/tmp/fitglue-function-zips/parkrun-results-source.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/parkrun-results-source.zip"
+}
+
+resource "google_cloudfunctions2_function" "parkrun_results_source" {
+  name     = "parkrun-results-source"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "PollParkrunResults"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.parkrun_results_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.parkrun_results_trigger.id
+    retry_policy   = var.retry_policy
+  }
+}
+
+# Cloud Scheduler: Saturday Parkrun results polling (rapid - every 30 min from 10am-2pm UTC)
+resource "google_cloud_scheduler_job" "parkrun_results_rapid" {
+  name        = "parkrun-results-rapid"
+  description = "Poll for Parkrun results every 30 min on Saturday mornings"
+  schedule    = "0,30 10-13 * * 6"  # Saturdays 10:00-13:30 UTC
+  time_zone   = "UTC"
+  region      = var.region
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.parkrun_results_trigger.id
+    data       = base64encode("{\"trigger\":\"scheduled\",\"mode\":\"rapid\"}")
+  }
+}
+
+# Cloud Scheduler: Saturday Parkrun results polling (extended - every 2 hr from 2pm-10pm UTC)
+resource "google_cloud_scheduler_job" "parkrun_results_extended" {
+  name        = "parkrun-results-extended"
+  description = "Poll for Parkrun results every 2 hours on Saturday afternoons"
+  schedule    = "0 14,16,18,20,22 * * 6"  # Saturdays 14:00-22:00 UTC
+  time_zone   = "UTC"
+  region      = var.region
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.parkrun_results_trigger.id
+    data       = base64encode("{\"trigger\":\"scheduled\",\"mode\":\"extended\"}")
+  }
+}
+
+# Cloud Scheduler: Christmas Day Parkrun results polling
+resource "google_cloud_scheduler_job" "parkrun_results_christmas" {
+  name        = "parkrun-results-christmas"
+  description = "Poll for Parkrun results on Christmas Day"
+  schedule    = "0,30 10-13,0 14,16,18,20,22 25 12 *"
+  time_zone   = "UTC"
+  region      = var.region
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.parkrun_results_trigger.id
+    data       = base64encode("{\"trigger\":\"scheduled\",\"mode\":\"christmas\"}")
+  }
+}
+
+# Cloud Scheduler: New Year's Day Parkrun results polling
+resource "google_cloud_scheduler_job" "parkrun_results_newyear" {
+  name        = "parkrun-results-newyear"
+  description = "Poll for Parkrun results on New Year's Day"
+  schedule    = "0,30 10-13,0 14,16,18,20,22 1 1 *"
+  time_zone   = "UTC"
+  region      = var.region
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.parkrun_results_trigger.id
+    data       = base64encode("{\"trigger\":\"scheduled\",\"mode\":\"newyear\"}")
+  }
+}

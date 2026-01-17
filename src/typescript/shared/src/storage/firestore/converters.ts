@@ -412,9 +412,17 @@ export const FirestoreToPendingInput = (data: Record<string, unknown>): PendingI
       : data.original_payload, // Handle both JSON string and object
     createdAt: toDate(data.created_at),
     updatedAt: toDate(data.updated_at),
-    completedAt: toDate(data.completed_at)
+    completedAt: toDate(data.completed_at),
+    // Resume pattern fields
+    continuedWithoutResolution: data.continued_without_resolution as boolean ?? false,
+    linkedActivityId: data.linked_activity_id as string ?? '',
+    pipelineId: data.pipeline_id as string ?? '',
+    enricherProviderId: data.enricher_provider_id as string ?? '',
+    autoPopulated: data.auto_populated as boolean ?? false,
+    autoDeadline: toDate(data.auto_deadline),
   };
 };
+
 
 export const synchronizedActivityConverter: FirestoreDataConverter<import('../../types/pb/user').SynchronizedActivity> = {
   toFirestore(model: import('../../types/pb/user').SynchronizedActivity): FirebaseFirestore.DocumentData {
@@ -428,7 +436,12 @@ export const synchronizedActivityConverter: FirestoreDataConverter<import('../..
       synced_at: model.syncedAt,
       pipeline_id: model.pipelineId,
       destinations: model.destinations,
-      pipeline_execution_id: model.pipelineExecutionId
+      pipeline_execution_id: model.pipelineExecutionId,
+      // Parkrun tracking fields
+      parkrun_results_state: model.parkrunResultsState,
+      parkrun_event_name: model.parkrunEventName,
+      parkrun_event_slug: model.parkrunEventSlug,
+      parkrun_polling_deadline: model.parkrunPollingDeadline
     };
     return data;
   },
@@ -444,7 +457,12 @@ export const synchronizedActivityConverter: FirestoreDataConverter<import('../..
       syncedAt: toDate(data.synced_at),
       pipelineId: data.pipeline_id,
       destinations: data.destinations || {},
-      pipelineExecutionId: data.pipeline_execution_id
+      pipelineExecutionId: data.pipeline_execution_id,
+      // Parkrun tracking fields
+      parkrunResultsState: data.parkrun_results_state || 0,
+      parkrunEventName: data.parkrun_event_name || '',
+      parkrunEventSlug: data.parkrun_event_slug || '',
+      parkrunPollingDeadline: toDate(data.parkrun_polling_deadline)
     };
   }
 };

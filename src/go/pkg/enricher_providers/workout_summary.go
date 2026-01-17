@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fitglue/server/src/go/pkg/plugin"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -14,39 +13,6 @@ type WorkoutSummaryProvider struct{}
 
 func init() {
 	Register(NewWorkoutSummaryProvider())
-
-	// Register manifest for plugin discovery
-	plugin.RegisterEnricher(pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY, &pb.PluginManifest{
-		Id:          "workout-summary",
-		Type:        pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		Name:        "Workout Summary",
-		Description: "Generates a text summary of strength training exercises",
-		Icon:        "📋",
-		Enabled:     true,
-		ConfigSchema: []*pb.ConfigFieldSchema{
-			{
-				Key:          "format",
-				Label:        "Summary Format",
-				Description:  "How sets should be displayed",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-				Required:     false,
-				DefaultValue: "detailed",
-				Options: []*pb.ConfigFieldOption{
-					{Value: "compact", Label: "Compact (4×10×100kg)"},
-					{Value: "detailed", Label: "Detailed (4 x 10 × 100.0kg)"},
-					{Value: "verbose", Label: "Verbose (4 sets of 10 reps at 100.0 kilograms)"},
-				},
-			},
-			{
-				Key:          "show_stats",
-				Label:        "Show Stats",
-				Description:  "Include headline stats (total volume, reps, etc.)",
-				FieldType:    pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
-				Required:     false,
-				DefaultValue: "true",
-			},
-		},
-	})
 }
 
 func NewWorkoutSummaryProvider() *WorkoutSummaryProvider {
@@ -69,7 +35,12 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 	}
 
 	if len(allSets) == 0 {
-		return &EnrichmentResult{}, nil
+		return &EnrichmentResult{
+			Metadata: map[string]string{
+				"status": "skipped",
+				"reason": "no_strength_sets",
+			},
+		}, nil
 	}
 
 	// Parse format style from config (default: detailed)
