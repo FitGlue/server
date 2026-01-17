@@ -147,9 +147,10 @@ jobs:
             LOCAL_HEAD=$(git rev-parse HEAD)
             REMOTE_HEAD=$(git rev-parse origin/main)
             if [ "$LOCAL_HEAD" != "$REMOTE_HEAD" ]; then
-              echo "ERROR: main branch has newer commits since this pipeline started."
-              echo "This release is now stale. The newer commits will go through their own pipeline."
-              exit 1
+              echo "NOTICE: main branch has newer commits since this pipeline started."
+              echo "Skipping release - the newer commits will go through their own pipeline."
+              echo "Pipeline will continue without creating a release."
+              exit 0
             fi
 
             npm run release
