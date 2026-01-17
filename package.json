@@ -1,8 +1,12 @@
 {
+  "name": "fitglue-server",
+  "version": "1.0.0",
+  "description": "FitGlue server-side Cloud Functions and API handlers",
   "dependencies": {
     "ts-proto": "^2.8.3"
   },
   "scripts": {
+    "release": "standard-version --releaseCommitMessageFormat \"chore(release): {{currentTag}} [skip ci]\"",
     "test:integration": "jest",
     "test:local": "TEST_ENVIRONMENT=local jest --testPathPatterns=local.test.ts",
     "test:deployed": "jest --testPathPatterns=deployed.test.ts",
@@ -21,6 +25,7 @@
     "ts-morph": "^27.0.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "uuid": "^13.0.0"
+    "uuid": "^13.0.0",
+    "standard-version": "^9.5.0"
   }
 }
