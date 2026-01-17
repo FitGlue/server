@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"strings"
 
 	"cloud.google.com/go/firestore"
 	storage "github.com/fitglue/server/src/go/pkg/storage/firestore"
@@ -183,7 +184,6 @@ func (a *FirestoreAdapter) GetSynchronizedActivity(ctx context.Context, userId s
 	return activity, nil
 }
 
-// ListPendingInputsByEnricher retrieves pending inputs for a specific enricher
 func (a *FirestoreAdapter) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
 	// Query across all pending inputs using collection group query
 	iter := a.Client.CollectionGroup("pending_inputs").
@@ -207,4 +207,48 @@ func (a *FirestoreAdapter) ListPendingInputsByEnricher(ctx context.Context, enri
 	}
 
 	return inputs, nil
+}
+
+// --- Showcased Activities (public shareable snapshots) ---
+
+// ShowcaseActivityExists checks if a showcase ID already exists
+func (a *FirestoreAdapter) ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error) {
+	_, err := a.storage.ShowcasedActivities().Doc(showcaseId).Ref.Get(ctx)
+	if err != nil {
+		// Check if it's a "not found" error
+		if err.Error() == "rpc error: code = NotFound desc = Document not found" ||
+			err.Error() == "document not found" ||
+			isNotFoundError(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+// SetShowcasedActivity creates or updates a showcased activity
+func (a *FirestoreAdapter) SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error {
+	return a.storage.ShowcasedActivities().Doc(activity.ShowcaseId).Set(ctx, activity)
+}
+
+// GetShowcasedActivity retrieves a showcased activity by ID
+func (a *FirestoreAdapter) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
+	activity, err := a.storage.ShowcasedActivities().Doc(showcaseId).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Ensure showcase ID is set
+	if activity != nil && activity.ShowcaseId == "" {
+		activity.ShowcaseId = showcaseId
+	}
+	return activity, nil
+}
+
+// isNotFoundError checks if error is a Firestore not found error
+func isNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := err.Error()
+	return strings.Contains(errStr, "NotFound") || strings.Contains(errStr, "not found")
 }

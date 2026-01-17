@@ -35,6 +35,11 @@ type Database interface {
 	GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error)
 	ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error)
 	UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error
+
+	// Showcased Activities (public shareable snapshots)
+	ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error)
+	SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error
+	GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error)
 }
 
 // --- Messaging Interfaces ---

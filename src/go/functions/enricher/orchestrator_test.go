@@ -70,6 +70,15 @@ func (m *MockDatabase) GetSynchronizedActivity(ctx context.Context, userId strin
 func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
 	return nil, nil
 }
+func (m *MockDatabase) ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error) {
+	return false, nil
+}
+func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error {
+	return nil
+}
+func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
+	return nil, nil
+}
 
 type MockBlobStore struct {
 	WriteFunc func(ctx context.Context, bucket, object string, data []byte) error

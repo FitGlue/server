@@ -5,8 +5,9 @@
 // source: user.proto
 
 /* eslint-disable */
+import type { ActivitySource } from "./activity";
 import type { Destination } from "./events";
-import type { ActivityType } from "./standardized_activity";
+import type { ActivityType, StandardizedActivity } from "./standardized_activity";
 
 export const protobufPackage = "fitglue";
 
@@ -237,6 +238,51 @@ export interface SynchronizedActivity {
 }
 
 export interface SynchronizedActivity_DestinationsEntry {
+  key: string;
+  value: string;
+}
+
+/**
+ * ShowcasedActivity represents a publicly shareable activity snapshot.
+ * Stored in top-level showcased_activities/{showcase_id} collection.
+ */
+export interface ShowcasedActivity {
+  /** Human-readable ID (e.g., "morning-run-2026-01-17") */
+  showcaseId: string;
+  /** Original FitGlue activity ID */
+  activityId: string;
+  /** Owner (for tier lookup, not displayed publicly) */
+  userId: string;
+  /** Activity metadata */
+  title: string;
+  description: string;
+  activityType: ActivityType;
+  source: ActivitySource;
+  startTime?:
+    | Date
+    | undefined;
+  /** Full activity data for rendering */
+  activityData?:
+    | StandardizedActivity
+    | undefined;
+  /** GCS URI for FIT file */
+  fitFileUri: string;
+  /** Enrichment info */
+  appliedEnrichments: string[];
+  enrichmentMetadata: { [key: string]: string };
+  tags: string[];
+  pipelineExecutionId?:
+    | string
+    | undefined;
+  /** Lifecycle */
+  createdAt?:
+    | Date
+    | undefined;
+  /** null = never expires (Athlete tier) */
+  expiresAt?: Date | undefined;
+}
+
+export interface ShowcasedActivity_EnrichmentMetadataEntry {
   key: string;
   value: string;
 }

@@ -76,6 +76,15 @@ func (m *MockDB) GetSynchronizedActivity(ctx context.Context, userId string, act
 func (m *MockDB) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
 	return nil, nil
 }
+func (m *MockDB) ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error) {
+	return false, nil
+}
+func (m *MockDB) SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error {
+	return nil
+}
+func (m *MockDB) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
+	return nil, nil
+}
 
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {

@@ -58,3 +58,12 @@ func (c *Client) Activities(userId string) *Collection[pb.SynchronizedActivity] 
 		FromFirestore: FirestoreToSynchronizedActivity,
 	}
 }
+
+// ShowcasedActivities is a top-level collection: showcased_activities/{showcase_id}
+func (c *Client) ShowcasedActivities() *Collection[pb.ShowcasedActivity] {
+	return &Collection[pb.ShowcasedActivity]{
+		Ref:           c.fs.Collection("showcased_activities"),
+		ToFirestore:   ShowcasedActivityToFirestore,
+		FromFirestore: FirestoreToShowcasedActivity,
+	}
+}

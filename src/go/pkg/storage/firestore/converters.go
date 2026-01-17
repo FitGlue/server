@@ -502,3 +502,132 @@ func FirestoreToSynchronizedActivity(m map[string]interface{}) *pb.SynchronizedA
 
 	return s
 }
+
+// --- ShowcasedActivity Converters ---
+
+func ShowcasedActivityToFirestore(s *pb.ShowcasedActivity) map[string]interface{} {
+	m := map[string]interface{}{
+		"showcase_id":         s.ShowcaseId,
+		"activity_id":         s.ActivityId,
+		"user_id":             s.UserId,
+		"title":               s.Title,
+		"description":         s.Description,
+		"activity_type":       int32(s.ActivityType),
+		"source":              int32(s.Source),
+		"applied_enrichments": s.AppliedEnrichments,
+		"enrichment_metadata": s.EnrichmentMetadata,
+		"tags":                s.Tags,
+		"fit_file_uri":        s.FitFileUri,
+	}
+
+	if s.StartTime != nil {
+		m["start_time"] = s.StartTime.AsTime()
+	}
+	if s.CreatedAt != nil {
+		m["created_at"] = s.CreatedAt.AsTime()
+	}
+	if s.ExpiresAt != nil {
+		m["expires_at"] = s.ExpiresAt.AsTime()
+	}
+	if s.PipelineExecutionId != nil {
+		m["pipeline_execution_id"] = *s.PipelineExecutionId
+	}
+
+	// Serialize StandardizedActivity to JSON for easy TypeScript consumption
+	if s.ActivityData != nil {
+		jsonBytes, err := protojson.Marshal(s.ActivityData)
+		if err == nil {
+			m["activity_data"] = string(jsonBytes)
+		}
+	}
+
+	return m
+}
+
+func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivity {
+	s := &pb.ShowcasedActivity{
+		ShowcaseId:          getString(m, "showcase_id"),
+		ActivityId:          getString(m, "activity_id"),
+		UserId:              getString(m, "user_id"),
+		Title:               getString(m, "title"),
+		Description:         getString(m, "description"),
+		FitFileUri:          getString(m, "fit_file_uri"),
+		StartTime:           getTime(m, "start_time"),
+		CreatedAt:           getTime(m, "created_at"),
+		ExpiresAt:           getTime(m, "expires_at"),
+		PipelineExecutionId: stringPtrOrNil(getString(m, "pipeline_execution_id")),
+	}
+
+	// ActivityType
+	if v, ok := m["activity_type"]; ok {
+		switch val := v.(type) {
+		case int64:
+			s.ActivityType = pb.ActivityType(val)
+		case int:
+			s.ActivityType = pb.ActivityType(int32(val))
+		case float64:
+			s.ActivityType = pb.ActivityType(int32(val))
+		}
+	}
+
+	// Source
+	if v, ok := m["source"]; ok {
+		switch val := v.(type) {
+		case int64:
+			s.Source = pb.ActivitySource(val)
+		case int:
+			s.Source = pb.ActivitySource(int32(val))
+		case float64:
+			s.Source = pb.ActivitySource(int32(val))
+		}
+	}
+
+	// Applied enrichments
+	if v, ok := m["applied_enrichments"].([]interface{}); ok {
+		s.AppliedEnrichments = make([]string, len(v))
+		for i, val := range v {
+			if str, ok := val.(string); ok {
+				s.AppliedEnrichments[i] = str
+			}
+		}
+	}
+
+	// Tags
+	if v, ok := m["tags"].([]interface{}); ok {
+		s.Tags = make([]string, len(v))
+		for i, val := range v {
+			if str, ok := val.(string); ok {
+				s.Tags[i] = str
+			}
+		}
+	}
+
+	// Enrichment metadata
+	if v, ok := m["enrichment_metadata"].(map[string]interface{}); ok {
+		s.EnrichmentMetadata = make(map[string]string)
+		for k, val := range v {
+			if str, ok := val.(string); ok {
+				s.EnrichmentMetadata[k] = str
+			}
+		}
+	}
+
+	// Activity data - deserialize from JSON
+	if v, ok := m["activity_data"]; ok {
+		var jsonStr string
+		switch val := v.(type) {
+		case string:
+			jsonStr = val
+		case []byte:
+			jsonStr = string(val)
+		}
+		if jsonStr != "" {
+			var data pb.StandardizedActivity
+			if err := protojson.Unmarshal([]byte(jsonStr), &data); err == nil {
+				s.ActivityData = &data
+			}
+		}
+	}
+
+	return s
+}

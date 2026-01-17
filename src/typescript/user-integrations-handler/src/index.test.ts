@@ -16,12 +16,17 @@ describe('user-integrations-handler', () => {
   let ctx: any;
   let mockUserService: any;
   let mockUserStore: any;
+  let mockApiKeysStore: any;
 
   beforeEach(() => {
     mockUserService = {
       get: jest.fn(),
     };
+    mockApiKeysStore = {
+      deleteByUserAndLabel: jest.fn().mockResolvedValue(0),
+    };
     mockUserStore = {
+      deleteIntegration: jest.fn().mockResolvedValue(undefined),
       setIntegration: jest.fn(),
     };
 
@@ -47,6 +52,7 @@ describe('user-integrations-handler', () => {
       },
       stores: {
         users: mockUserStore,
+        apiKeys: mockApiKeysStore,
       },
     };
 
@@ -152,11 +158,26 @@ describe('user-integrations-handler', () => {
 
     it('disconnects integration successfully', async () => {
       await handler(req, res, ctx);
-      expect(mockUserStore.setIntegration).toHaveBeenCalledWith(
+      expect(mockUserStore.deleteIntegration).toHaveBeenCalledWith(
         'user-1',
-        'strava',
-        expect.objectContaining({ enabled: false })
+        'strava'
       );
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('deletes associated ingress keys for hevy', async () => {
+      req.path = '/hevy';
+      mockUserService.get.mockResolvedValue({
+        integrations: {
+          hevy: { enabled: true, apiKey: 'secret', userId: 'hevy-123' }
+        }
+      });
+      mockApiKeysStore.deleteByUserAndLabel.mockResolvedValue(1);
+
+      await handler(req, res, ctx);
+
+      expect(mockUserStore.deleteIntegration).toHaveBeenCalledWith('user-1', 'hevy');
+      expect(mockApiKeysStore.deleteByUserAndLabel).toHaveBeenCalledWith('user-1', 'Hevy Webhook');
       expect(res.status).toHaveBeenCalledWith(200);
     });
   });

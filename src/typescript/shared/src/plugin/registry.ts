@@ -302,6 +302,39 @@ Once activities pass through your enrichment pipeline, FitGlue uploads them to S
   useCases: [],
 });
 
+registerDestination({
+  id: 'showcase',
+  type: PluginType.PLUGIN_TYPE_DESTINATION,
+  name: 'Showcase',
+  description: 'Generate a public, shareable link to your enriched activity',
+  icon: '🔗',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  destinationType: 2, // DestinationType.DESTINATION_SHOWCASE
+  marketingDescription: `
+### Share Your Magic
+Create beautiful, public links to your enriched activities. Share your workout data—HR graphs, GPS maps, boosters applied—with anyone, no login required.
+
+### Tiered Retention
+- **Hobbyist**: Showcase links expire after 1 month
+- **Athlete**: Showcase links never expire
+  `,
+  features: [
+    '✅ Beautiful public activity pages',
+    '✅ Heart rate graphs and GPS maps',
+    '✅ Shows all applied FitGlue boosters',
+    '✅ Social sharing with rich previews',
+    '✅ Mobile-optimized design',
+  ],
+  transformations: [],
+  useCases: [
+    'Share workouts with friends and coaches',
+    'Embed activity summaries in blogs',
+    'Create a public fitness portfolio',
+  ],
+});
+
 // ============================================================================
 
 
@@ -981,15 +1014,15 @@ registerIntegration({
   enabled: true,
   docsUrl: 'https://docs.hevy.com',
   setupTitle: 'Connect Hevy',
-  setupInstructions: `To connect Hevy, you'll need to generate an API key from the Hevy app:
+  setupInstructions: `To connect Hevy, you'll need a **Hevy Pro** subscription and an API key:
 
 1. Open the **Hevy app** on your phone
 2. Go to **Settings** (gear icon)
-3. Scroll down and tap **Developer API**
+3. Scroll down and tap **Developer** (requires Hevy Pro)
 4. Tap **Generate API Key**
 5. Copy the key and enter it in your **FitGlue Dashboard**
 
-Your workouts will automatically sync when you log them in Hevy.`,
+**Note:** The Developer API requires **Hevy Pro**. Free tier accounts cannot access this feature.`,
   apiKeyLabel: 'Hevy API Key',
   apiKeyHelpUrl: 'https://docs.hevy.com/developer-api',
   marketingDescription: `

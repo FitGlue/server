@@ -293,6 +293,7 @@ export const mapPipelineFromFirestore = (p: Record<string, unknown>): PipelineCo
     if (typeof d === 'string') {
       // Legacy string support
       if (d === 'strava' || d === 'DESTINATION_STRAVA') return Destination.DESTINATION_STRAVA;
+      if (d === 'showcase' || d === 'DESTINATION_SHOWCASE') return Destination.DESTINATION_SHOWCASE;
       if (d === 'mock' || d === 'DESTINATION_MOCK') return Destination.DESTINATION_MOCK;
     }
     return Destination.DESTINATION_UNSPECIFIED;

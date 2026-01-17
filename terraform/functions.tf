@@ -249,6 +249,47 @@ resource "google_cloudfunctions2_function" "mock_uploader" {
   }
 }
 
+# ----------------- Showcase Uploader (Public Shareable URLs) -----------------
+resource "google_storage_bucket_object" "showcase_uploader_zip" {
+  name   = "showcase-uploader-${filemd5("/tmp/fitglue-function-zips/showcase-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/showcase-uploader.zip"
+}
+
+resource "google_cloudfunctions2_function" "showcase_uploader" {
+  name     = "showcase-uploader"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "ShowcaseUpload"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.showcase_uploader_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.job_upload_showcase.id
+    retry_policy   = var.retry_policy
+  }
+}
+
 # ----------------- Mock Source Handler (Dev Only) -----------------
 resource "google_cloudfunctions2_function" "mock_source_handler" {
   // Needs to be deployed to test and prod otherwise firebase.json will fail with "can't find function"

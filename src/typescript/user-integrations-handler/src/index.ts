@@ -157,57 +157,34 @@ async function handleConnect(userId: string, provider: string, res: Response, ct
 async function handleDisconnect(userId: string, provider: string, res: Response, ctx: FrameworkContext) {
   const { logger } = ctx;
 
-  // Validate provider
-  if (!['strava', 'fitbit', 'hevy'].includes(provider)) {
+  // Import integration definitions dynamically to validate provider
+  const { INTEGRATIONS } = await import('@fitglue/shared');
+  const integrationDef = INTEGRATIONS[provider as keyof typeof INTEGRATIONS];
+
+  if (!integrationDef) {
     res.status(400).json({ error: `Invalid provider: ${provider}` });
     return;
   }
 
   try {
-    // Get current user to build disabled integration with required fields
+    // Verify user exists
     const user = await ctx.services.user.get(userId);
     if (!user) {
       res.status(404).json({ error: 'User not found' });
       return;
     }
 
-    const integrations = user.integrations || {};
+    // Delete the integration data entirely (not just disable)
+    await ctx.stores.users.deleteIntegration(userId, provider);
 
-    // Build disabled integration with all required fields per provider type
-    if (provider === 'strava') {
-      const current = integrations.strava;
-      await ctx.stores.users.setIntegration(userId, 'strava', {
-        enabled: false,
-        accessToken: '',
-        refreshToken: '',
-        athleteId: current?.athleteId || 0,
-        expiresAt: current?.expiresAt,
-        createdAt: current?.createdAt,
-        lastUsedAt: current?.lastUsedAt,
-      });
-    } else if (provider === 'fitbit') {
-      const current = integrations.fitbit;
-      await ctx.stores.users.setIntegration(userId, 'fitbit', {
-        enabled: false,
-        accessToken: '',
-        refreshToken: '',
-        fitbitUserId: current?.fitbitUserId || '',
-        expiresAt: current?.expiresAt,
-        createdAt: current?.createdAt,
-        lastUsedAt: current?.lastUsedAt,
-      });
-    } else if (provider === 'hevy') {
-      const current = integrations.hevy;
-      await ctx.stores.users.setIntegration(userId, 'hevy', {
-        enabled: false,
-        apiKey: '',
-        userId: current?.userId || '',
-        createdAt: current?.createdAt,
-        lastUsedAt: current?.lastUsedAt,
-      });
+    // Try to delete any associated ingress keys (matches label pattern from handleConfigure)
+    const label = `${integrationDef.displayName} Webhook`;
+    const deletedKeys = await ctx.stores.apiKeys.deleteByUserAndLabel(userId, label);
+    if (deletedKeys > 0) {
+      logger.info('Deleted ingress key', { userId, provider, label, count: deletedKeys });
     }
 
-    logger.info('Disconnected integration', { userId, provider });
+    logger.info('Deleted integration', { userId, provider });
     res.status(200).json({ message: `Disconnected ${provider}` });
 
   } catch (err) {

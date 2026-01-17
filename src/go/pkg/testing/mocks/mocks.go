@@ -131,6 +131,23 @@ func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricher
 	return nil, nil
 }
 
+// --- Showcased Activities (public shareable snapshots) ---
+
+func (m *MockDatabase) ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error) {
+	// No-op for tests by default
+	return false, nil
+}
+
+func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)

@@ -32,4 +32,22 @@ export class ApiKeyStore {
   async create(hash: string, record: ApiKeyRecord): Promise<void> {
     await this.collection().doc(hash).set(record);
   }
+
+  /**
+   * Delete all API keys for a user matching a specific label.
+   * Returns the number of keys deleted.
+   */
+  async deleteByUserAndLabel(userId: string, label: string): Promise<number> {
+    const snapshot = await this.collection()
+      .where('user_id', '==', userId)
+      .where('label', '==', label)
+      .get();
+
+    if (snapshot.empty) return 0;
+
+    const batch = this.db.batch();
+    snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+    return snapshot.size;
+  }
 }

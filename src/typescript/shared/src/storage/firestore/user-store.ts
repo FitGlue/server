@@ -97,6 +97,15 @@ export class UserStore {
   }
 
   /**
+   * Delete an integration from a user (removes the field entirely, not just disables).
+   */
+  async deleteIntegration(userId: string, provider: string): Promise<void> {
+    await this.collection().doc(userId).update({
+      [`integrations.${provider}`]: admin.firestore.FieldValue.delete()
+    });
+  }
+
+  /**
    * Set an integration configuration for a user.
    * This handles the nested update path strictly.
    */

@@ -34,6 +34,14 @@ resource "google_pubsub_topic" "job_upload_mock" {
   project = var.project_id
 }
 
+# Showcase topic for public shareable activity URLs (all environments)
+resource "google_pubsub_topic" "job_upload_showcase" {
+  name    = "topic-job-upload-showcase"
+  project = var.project_id
+
+  message_retention_duration = "3600s"
+}
+
 
 resource "google_pubsub_subscription" "enrichment_lag_sub" {
   name    = "sub-enrichment-lag"

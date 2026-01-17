@@ -51,6 +51,7 @@ export enum CloudEventSource {
 export enum Destination {
   DESTINATION_UNSPECIFIED = 0,
   DESTINATION_STRAVA = 1,
+  DESTINATION_SHOWCASE = 2,
   DESTINATION_MOCK = 99,
   UNRECOGNIZED = -1,
 }

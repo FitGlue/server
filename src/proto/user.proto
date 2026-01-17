@@ -3,6 +3,7 @@ package fitglue;
 
 import "google/protobuf/timestamp.proto";
 import "standardized_activity.proto";
+import "activity.proto";
 import "events.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb";
@@ -189,3 +190,31 @@ enum ParkrunResultsState {
   PARKRUN_RESULTS_STATE_IMMEDIATE = 4;      // Results found during initial enrichment (no pending input)
 }
 
+// ShowcasedActivity represents a publicly shareable activity snapshot.
+// Stored in top-level showcased_activities/{showcase_id} collection.
+message ShowcasedActivity {
+  string showcase_id = 1;              // Human-readable ID (e.g., "morning-run-2026-01-17")
+  string activity_id = 2;              // Original FitGlue activity ID
+  string user_id = 3;                  // Owner (for tier lookup, not displayed publicly)
+
+  // Activity metadata
+  string title = 4;
+  string description = 5;
+  ActivityType activity_type = 6;
+  ActivitySource source = 7;
+  google.protobuf.Timestamp start_time = 8;
+
+  // Full activity data for rendering
+  StandardizedActivity activity_data = 9;
+  string fit_file_uri = 10;            // GCS URI for FIT file
+
+  // Enrichment info
+  repeated string applied_enrichments = 11;
+  map<string, string> enrichment_metadata = 12;
+  repeated string tags = 13;
+  optional string pipeline_execution_id = 14;
+
+  // Lifecycle
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp expires_at = 16;  // null = never expires (Athlete tier)
+}
