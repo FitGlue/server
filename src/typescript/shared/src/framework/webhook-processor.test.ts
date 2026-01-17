@@ -79,7 +79,8 @@ describe('createWebhookProcessor', () => {
 
     mockExtractId.mockReturnValue('evt-123');
     mockGet.mockResolvedValue({
-      integrations: { 'test-connector': { enabled: true } }
+      integrations: { 'test-connector': { enabled: true } },
+      pipelines: [{ id: 'pipe-1', source: 'SOURCE_HEVY', enrichers: [], destinations: [1] }]
     });
     mockHasProcessedActivity.mockResolvedValue(false);
     mockCheckDestinationExists.mockResolvedValue(false);
@@ -132,13 +133,28 @@ describe('createWebhookProcessor', () => {
 
   it('should error if config is disabled', async () => {
     mockGet.mockResolvedValue({
-      integrations: { 'test-connector': { enabled: false } }
+      integrations: { 'test-connector': { enabled: false } },
+      pipelines: [{ id: 'pipe-1', source: 'SOURCE_HEVY', enrichers: [], destinations: [1] }]
     });
 
     await handler(req, res, ctx);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Integration disabled'));
+  });
+
+  it('should skip if no pipeline configured for source', async () => {
+    mockGet.mockResolvedValue({
+      integrations: { 'test-connector': { enabled: true } },
+      pipelines: [{ id: 'pipe-1', source: 'SOURCE_FITBIT', enrichers: [], destinations: [1] }] // Different source!
+    });
+
+    const result = await handler(req, res, ctx);
+
+    expect(result.status).toBe('Skipped');
+    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('No pipeline configured'));
+    expect(mockFetchAndMap).not.toHaveBeenCalled();
+    expect(mockPublish).not.toHaveBeenCalled();
   });
 
   it('should error if validateConfig fails', async () => {

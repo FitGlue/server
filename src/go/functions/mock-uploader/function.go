@@ -99,6 +99,11 @@ func mockHandler() framework.HandlerFunc {
 			return nil, fmt.Errorf("failed to persist synchronized activity: %w", err)
 		}
 
+		// Increment sync count for billing (per successful destination sync)
+		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
+			fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
+		}
+
 		fwCtx.Logger.Info("Mock upload complete",
 			"activity_id", eventPayload.ActivityId,
 			"mock_external_id", mockExternalID,

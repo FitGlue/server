@@ -202,6 +202,11 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		} else {
 			fwCtx.Logger.Info("Persisted synchronized activity", "activity_id", eventPayload.ActivityId)
 		}
+
+		// Increment sync count for billing (per successful destination sync)
+		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
+			fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
+		}
 	}
 
 	status := "SUCCESS"
@@ -349,6 +354,11 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		"description": mergedDescription,
 	}); err != nil {
 		fwCtx.Logger.Warn("Failed to update synchronized activity description", "error", err)
+	}
+
+	// Increment sync count for billing (per successful destination sync)
+	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
+		fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
 	}
 
 	return map[string]interface{}{

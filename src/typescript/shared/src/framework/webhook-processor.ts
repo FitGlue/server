@@ -1,6 +1,6 @@
 import { FrameworkContext } from './index';
 import { Connector, ConnectorConfig } from './connector';
-import { ActivityPayload } from '../types/pb/activity';
+import { ActivityPayload, ActivitySource } from '../types/pb/activity';
 import { StandardizedActivity } from '../types/pb/standardized_activity';
 import { CloudEventPublisher } from '../infrastructure/pubsub/cloud-event-publisher';
 import { CloudEventType } from '../types/pb/events';
@@ -85,7 +85,18 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       return { status: 'Failed', reason: 'Configuration Error' };
     }
 
-    // 5. Loop Prevention Check
+    // 5. Pipeline Check
+    // Bail early if user has no pipeline configured for this source.
+    // This prevents phantom pipeline executions and the legacy fallback in the enricher.
+    const sourceEnumName = ActivitySource[connector.activitySource]; // e.g., "SOURCE_HEVY"
+    const hasPipelineForSource = user.pipelines?.some(p => p.source === sourceEnumName) ?? false;
+    if (!hasPipelineForSource) {
+      logger.info(`User ${userId} has no pipeline configured for source ${sourceEnumName}. Skipping.`);
+      res.status(200).send('No pipeline configured for this source');
+      return { status: 'Skipped', reason: `No pipeline for source ${sourceEnumName}` };
+    }
+
+    // 6. Loop Prevention Check
     // Check if the incoming external ID exists as a destination in any synchronized activity.
     // This prevents infinite loops (e.g., Hevy → Strava → Hevy → ...)
     const isLoopActivity = await ctx.services.user.checkDestinationExists(userId, connector.name, externalId);
@@ -95,7 +106,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       return { status: 'Skipped', reason: 'Loop prevention - activity was already posted as destination' };
     }
 
-    // 6. Deduplication Check
+    // 7. Deduplication Check
     const alreadyProcessed = await ctx.services.user.hasProcessedActivity(userId, connector.name, externalId);
     if (alreadyProcessed) {
       logger.info(`Activity ${externalId} already processed for user ${userId}`);
@@ -103,7 +114,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       return { status: 'Skipped', reason: 'Already processed' };
     }
 
-    // 7. Fetch & Map Activities
+    // 8. Fetch & Map Activities
     let standardizedActivities: StandardizedActivity[];
     try {
       standardizedActivities = await connector.fetchAndMap(externalId, fullConfig);
@@ -116,7 +127,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
 
     logger.info(`Processing ${standardizedActivities.length} activities`);
 
-    // 8. Publishing (loop for batch support)
+    // 9. Publishing (loop for batch support)
     const publishedIds: string[] = [];
 
     for (const standardizedActivity of standardizedActivities) {

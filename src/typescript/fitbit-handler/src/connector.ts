@@ -17,52 +17,187 @@ export interface FitbitConnectorConfig extends ConnectorConfig {
 /**
  * Map Fitbit activityParentName to ActivityType enum.
  * Fitbit has 500+ activity types, but we map common ones to Strava-compatible types.
+ * This mapping covers the most common activity categories from Fitbit.
  */
 function mapFitbitActivityType(activityParentName: string | undefined): ActivityType {
   const name = (activityParentName || '').toLowerCase().trim();
 
-  // Running variations
-  if (name.includes('run') || name === 'treadmill') {
+  // Running variations (including trail, virtual)
+  if (name.includes('run') || name === 'treadmill' || name === 'jogging' || name === 'jog') {
+    // Check for trail run specifically
+    if (name.includes('trail')) {
+      return ActivityType.ACTIVITY_TYPE_TRAIL_RUN;
+    }
+    // Check for virtual run
+    if (name.includes('virtual')) {
+      return ActivityType.ACTIVITY_TYPE_VIRTUAL_RUN;
+    }
     return ActivityType.ACTIVITY_TYPE_RUN;
   }
+
   // Walking
   if (name.includes('walk')) {
     return ActivityType.ACTIVITY_TYPE_WALK;
   }
-  // Cycling variations
-  if (name.includes('bike') || name.includes('cycling') || name.includes('biking')) {
+
+  // Cycling variations (including spinning, indoor cycling)
+  if (name.includes('bike') || name.includes('cycling') || name.includes('biking') ||
+    name.includes('spinning') || name.includes('spin class') || name.includes('indoor cycle') ||
+    name === 'spin' || name === 'cycle') {
+    // Check for virtual ride
+    if (name.includes('virtual')) {
+      return ActivityType.ACTIVITY_TYPE_VIRTUAL_RIDE;
+    }
     return ActivityType.ACTIVITY_TYPE_RIDE;
   }
+
   // Swimming
   if (name.includes('swim')) {
     return ActivityType.ACTIVITY_TYPE_SWIM;
   }
+
   // Weight Training
-  if (name.includes('weight') || name === 'weights') {
+  if (name.includes('weight') || name === 'weights' || name.includes('strength') ||
+    name.includes('resistance') || name.includes('lifting') || name.includes('dumbell') ||
+    name.includes('barbell') || name.includes('kettlebell')) {
     return ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING;
   }
+
   // Yoga
   if (name.includes('yoga')) {
     return ActivityType.ACTIVITY_TYPE_YOGA;
   }
+
+  // Pilates
+  if (name.includes('pilates')) {
+    return ActivityType.ACTIVITY_TYPE_PILATES;
+  }
+
   // Hiking
   if (name.includes('hike') || name.includes('hiking')) {
     return ActivityType.ACTIVITY_TYPE_HIKE;
   }
-  // Elliptical
-  if (name.includes('elliptical')) {
+
+  // Elliptical / Cross Trainer
+  if (name.includes('elliptical') || name.includes('cross trainer') || name.includes('cross-trainer')) {
     return ActivityType.ACTIVITY_TYPE_ELLIPTICAL;
   }
+
   // Rowing
-  if (name.includes('row')) {
+  if (name.includes('row') || name.includes('rowing') || name.includes('erg')) {
     return ActivityType.ACTIVITY_TYPE_ROWING;
   }
-  // Crossfit
-  if (name.includes('crossfit')) {
+
+  // CrossFit
+  if (name.includes('crossfit') || name.includes('cross fit')) {
     return ActivityType.ACTIVITY_TYPE_CROSSFIT;
   }
 
-  // Default fallback
+  // HIIT / High Intensity Interval Training
+  if (name.includes('hiit') || name.includes('high intensity') || name.includes('interval training') ||
+    name.includes('tabata') || name.includes('circuit') || name.includes('bootcamp') ||
+    name.includes('boot camp') || name.includes('functional training')) {
+    return ActivityType.ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING;
+  }
+
+  // Tennis / Racquet Sports
+  if (name.includes('tennis') || name.includes('racquetball') || name.includes('squash') ||
+    name.includes('badminton') || name.includes('pickleball') || name.includes('paddle')) {
+    return ActivityType.ACTIVITY_TYPE_TENNIS;
+  }
+
+  // Soccer / Football
+  if (name.includes('soccer') || name.includes('football') || name.includes('futsal')) {
+    return ActivityType.ACTIVITY_TYPE_SOCCER;
+  }
+
+  // Golf
+  if (name.includes('golf')) {
+    return ActivityType.ACTIVITY_TYPE_GOLF;
+  }
+
+  // Skiing
+  if (name.includes('ski') && !name.includes('water ski')) {
+    if (name.includes('cross country') || name.includes('nordic')) {
+      return ActivityType.ACTIVITY_TYPE_NORDIC_SKI;
+    }
+    if (name.includes('backcountry')) {
+      return ActivityType.ACTIVITY_TYPE_BACKCOUNTRY_SKI;
+    }
+    return ActivityType.ACTIVITY_TYPE_ALPINE_SKI;
+  }
+
+  // Snowboarding
+  if (name.includes('snowboard')) {
+    return ActivityType.ACTIVITY_TYPE_SNOWBOARD;
+  }
+
+  // Skateboarding
+  if (name.includes('skateboard')) {
+    return ActivityType.ACTIVITY_TYPE_SKATEBOARD;
+  }
+
+  // Surfing / Water Sports
+  if (name.includes('surf') || name.includes('standup paddle') || name.includes('sup') ||
+    name.includes('paddleboard') || name === 'paddle') {
+    return ActivityType.ACTIVITY_TYPE_SURFING;
+  }
+
+  // Stair Climbing / Stair Stepper
+  if (name.includes('stair') || name.includes('step machine') || name.includes('stepper')) {
+    return ActivityType.ACTIVITY_TYPE_STAIR_STEPPER;
+  }
+
+  // Martial Arts / Combat Sports
+  if (name.includes('martial art') || name.includes('boxing') || name.includes('kickbox') ||
+    name.includes('karate') || name.includes('judo') || name.includes('taekwondo') ||
+    name.includes('mma') || name.includes('wrestling') || name.includes('jiu jitsu') ||
+    name.includes('muay thai') || name.includes('fencing')) {
+    return ActivityType.ACTIVITY_TYPE_WORKOUT; // No specific type, use workout
+  }
+
+  // Dance / Aerobics
+  if (name.includes('dance') || name.includes('zumba') || name.includes('aerobic') ||
+    name.includes('jazzercise') || name.includes('barre')) {
+    return ActivityType.ACTIVITY_TYPE_WORKOUT;
+  }
+
+  // Rock Climbing
+  if (name.includes('climb') && (name.includes('rock') || name.includes('boulder') || name.includes('wall'))) {
+    return ActivityType.ACTIVITY_TYPE_ROCK_CLIMBING;
+  }
+
+  // Kayaking / Canoeing
+  if (name.includes('kayak') || name.includes('canoe') || name.includes('paddling')) {
+    return ActivityType.ACTIVITY_TYPE_KAYAKING;
+  }
+
+  // Wheelchair
+  if (name.includes('wheelchair')) {
+    return ActivityType.ACTIVITY_TYPE_WHEELCHAIR;
+  }
+
+  // Handcycle
+  if (name.includes('handcycle') || name.includes('hand cycle')) {
+    return ActivityType.ACTIVITY_TYPE_HANDCYCLE;
+  }
+
+  // Ice Skating
+  if (name.includes('ice skat') || name.includes('hockey')) {
+    return ActivityType.ACTIVITY_TYPE_ICE_SKATE;
+  }
+
+  // Inline Skating / Rollerblading
+  if (name.includes('inline') || name.includes('rollerblade') || name.includes('roller skat')) {
+    return ActivityType.ACTIVITY_TYPE_INLINE_SKATE;
+  }
+
+  // E-Bike
+  if (name.includes('e-bike') || name.includes('ebike') || name.includes('electric bike')) {
+    return ActivityType.ACTIVITY_TYPE_EBIKE_RIDE;
+  }
+
+  // Default fallback for unrecognized activities
   return ActivityType.ACTIVITY_TYPE_WORKOUT;
 }
 

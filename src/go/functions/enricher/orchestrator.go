@@ -448,11 +448,6 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		allEvents = append(allEvents, finalEvent)
 	}
 
-	// Increment sync count on success
-	if err := o.database.IncrementSyncCount(ctx, payload.UserId); err != nil {
-		slog.Warn("Failed to increment sync count", "error", err, "userId", payload.UserId)
-	}
-
 	return &ProcessResult{
 		Events:             allEvents,
 		ProviderExecutions: allProviderExecutions,
@@ -489,29 +484,6 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 				ID:           p.Id,
 				Enrichers:    enrichers,
 				Destinations: p.Destinations,
-			})
-		}
-	}
-
-	// Default/Fallback logic: If no pipelines found, create a default "Pass-through" pipeline
-	// This ensures backward compatibility or "at least save it" behavior.
-	if len(pipelines) == 0 {
-		// Check legacy "Routes" or just default to Router handling it?
-		// Router now expects destinations in the event.
-		// So we MUST produce at least one event if we want anything to happen.
-		// Let's create a default pipeline that has NO enrichers, but checks legacy destinations.
-
-		// Legacy check: Strava
-		var dests []pb.Destination
-		if userRec.Integrations != nil && userRec.Integrations.Strava != nil && userRec.Integrations.Strava.Enabled {
-			dests = append(dests, pb.Destination_DESTINATION_STRAVA)
-		}
-
-		if len(dests) > 0 {
-			pipelines = append(pipelines, configuredPipeline{
-				ID:           "default-legacy",
-				Destinations: dests,
-				Enrichers:    []configuredEnricher{}, // No enrichers
 			})
 		}
 	}

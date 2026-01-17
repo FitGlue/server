@@ -201,7 +201,10 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 	})
 
-	t.Run("Falls back to default if no pipelines match", func(t *testing.T) {
+	t.Run("Returns empty events if no pipelines match", func(t *testing.T) {
+		// After removing legacy fallback, the orchestrator should return 0 events
+		// when no pipelines are configured for the source.
+		// The webhook handler now prevents this situation by checking pipelines first.
 		mockDB := &MockDatabase{
 			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
 				return &pb.UserRecord{
@@ -211,6 +214,7 @@ func TestOrchestrator_Process(t *testing.T) {
 							Enabled: true,
 						},
 					},
+					// No pipelines configured
 				}, nil
 			},
 		}
@@ -232,18 +236,17 @@ func TestOrchestrator_Process(t *testing.T) {
 			Timestamp: timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 		}
 
-		// Update calls
-		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", "test-pipeline-id", false) // false = doNotRetry
+		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", "test-pipeline-id", false)
 
 		if err != nil {
-			t.Fatalf("Process failed: %v", err)
+			t.Fatalf("Process should not error on no pipelines, got: %v", err)
 		}
 
-		if len(result.Events) != 1 {
-			t.Fatalf("Expected 1 default event, got %d", len(result.Events))
+		if len(result.Events) != 0 {
+			t.Fatalf("Expected 0 events when no pipelines match, got %d", len(result.Events))
 		}
-		if result.Events[0].PipelineId != "default-legacy" {
-			t.Errorf("Expected default-legacy pipeline, got %s", result.Events[0].PipelineId)
+		if result.Status != pb.ExecutionStatus_STATUS_SKIPPED {
+			t.Errorf("Expected STATUS_SKIPPED, got %v", result.Status)
 		}
 	})
 
