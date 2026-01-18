@@ -114,8 +114,9 @@ describe('showcase-handler', () => {
       mockDocGet.mockResolvedValue({
         exists: true,
         data: () => ({
-          showcaseId: 'test-id',
-          expiresAt: { toDate: () => pastDate },
+          // Firestore stores as snake_case
+          showcase_id: 'test-id',
+          expires_at: pastDate,
         }),
       });
       await showcaseHandler(req, res);
@@ -129,20 +130,21 @@ describe('showcase-handler', () => {
       mockDocGet.mockResolvedValue({
         exists: true,
         data: () => ({
-          showcaseId: 'test-id',
+          // Firestore stores as snake_case
+          showcase_id: 'test-id',
           title: 'Morning Run',
           description: 'A nice run',
-          activityType: 27, // RUN
-          source: 1, // FITBIT
-          startTime: { toDate: () => now },
-          createdAt: { toDate: () => now },
-          expiresAt: { toDate: () => futureDate },
-          appliedEnrichments: ['fitbit-heart-rate'],
-          enrichmentMetadata: { hr: 'true' },
+          activity_type: 27, // RUN
+          source: 1, // HEVY
+          start_time: now,
+          created_at: now,
+          expires_at: futureDate,
+          applied_enrichments: ['fitbit-heart-rate'],
+          enrichment_metadata: { hr: 'true' },
           tags: ['running'],
           // These should be stripped
-          userId: 'should-not-appear',
-          activityId: 'should-not-appear',
+          user_id: 'should-not-appear',
+          activity_id: 'should-not-appear',
         }),
       });
 
@@ -152,6 +154,8 @@ describe('showcase-handler', () => {
       const responseData = res.json.mock.calls[0][0];
       expect(responseData.showcaseId).toBe('test-id');
       expect(responseData.title).toBe('Morning Run');
+      expect(responseData.activityType).toBe(27);
+      expect(responseData.source).toBe(1);
       expect(responseData).not.toHaveProperty('userId');
       expect(responseData).not.toHaveProperty('activityId');
     });
@@ -160,10 +164,10 @@ describe('showcase-handler', () => {
       mockDocGet.mockResolvedValue({
         exists: true,
         data: () => ({
-          showcaseId: 'test-id',
+          showcase_id: 'test-id',
           title: 'Test',
           description: '',
-          activityType: 0,
+          activity_type: 0,
           source: 0,
         }),
       });
@@ -183,7 +187,7 @@ describe('showcase-handler', () => {
       mockDocGet.mockResolvedValue({
         exists: true,
         data: () => ({
-          showcaseId: 'my-activity',
+          showcase_id: 'my-activity',
           title: 'Test',
         }),
       });

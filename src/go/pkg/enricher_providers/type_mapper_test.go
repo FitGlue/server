@@ -72,10 +72,10 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 			expectMetadata: false,
 		},
 		{
-			name:           "Multiple rules - first match wins",
-			activityName:   "Indoor Treadmill Session",
+			name:           "Multiple rules - only one matches",
+			activityName:   "Outdoor Treadmill Session",
 			activityType:   pb.ActivityType_ACTIVITY_TYPE_RUN,
-			typeRules:      `{"indoor": "VirtualRun", "treadmill": "VirtualRide"}`,
+			typeRules:      `{"zwift": "VirtualRide", "treadmill": "VirtualRun"}`,
 			expectedType:   pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
 			expectMetadata: true,
 		},
