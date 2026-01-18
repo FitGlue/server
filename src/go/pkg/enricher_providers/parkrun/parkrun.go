@@ -131,11 +131,14 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 		return nil, fmt.Errorf("invalid start time: zero")
 	}
 
-	// 5. Find nearest Parkrun location (200m threshold)
-	matchedLocation := p.locationService.FindNearest(lat, long, 200.0)
+	// 5. Find nearest Parkrun location (1.5km threshold)
+	matchedLocation := p.locationService.FindNearest(lat, long, 1500.0)
 	if matchedLocation == nil {
 		return &enricher_providers.EnrichmentResult{
-			Metadata: map[string]string{"status": "skipped", "reason": "not_near_parkrun"},
+			Metadata: map[string]string{
+				"status": "skipped",
+				"reason": "not_near_parkrun",
+			},
 		}, nil
 	}
 
@@ -158,13 +161,13 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 		}, nil
 	}
 
-	// 8. Time Window Check (07:30 to 11:00 local time)
+	// 8. Time Window Check (08:45 to 09:15 local time)
 	hour := estimatedLocalTime.Hour()
 	minute := estimatedLocalTime.Minute()
 	totalMinutes := hour*60 + minute
 
-	startWindow := 7*60 + 30 // 07:30
-	endWindow := 11*60 + 0   // 11:00
+	startWindow := 8*60 + 45 // 08:45
+	endWindow := 9*60 + 15   // 09:15
 
 	if totalMinutes < startWindow || totalMinutes > endWindow {
 		return &enricher_providers.EnrichmentResult{

@@ -92,9 +92,9 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 			wantTags:  []string{"Parkrun"},
 		},
 		{
-			name:      "Saturday Morning at Bushy Park (Too Far - 1km)",
+			name:      "Saturday Morning at Bushy Park (Too Far - 2.5km)",
 			time:      "2025-12-20T09:00:00Z",
-			lat:       51.4206,
+			lat:       51.4306, // Approx 2.2km North (0.02 deg)
 			long:      -0.3421,
 			wantMatch: false,
 		},
@@ -127,8 +127,10 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 			name: "Australian Parkrun (Timezone check - Albert Park)",
 			// Albert Park: -37.8427, 144.9654
 			// UTC+10 (Dec is Summer, so +11 actually)
-			// 9am Melbourne = 10pm Previous Day (Friday) UTC
-			time:      "2025-12-19T22:00:00Z", // Friday 10pm UTC
+			// Logic uses Longitude/15 for offset (approx 9.66h).
+			// We need to land in 08:45-09:15 local "simulated" time.
+			// 23:20 UTC + 9h40m = 09:00 local approx
+			time:      "2025-12-19T23:20:00Z",
 			lat:       -37.8427,
 			long:      144.9654,
 			wantMatch: true,

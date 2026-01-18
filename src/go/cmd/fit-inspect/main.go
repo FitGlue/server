@@ -129,6 +129,7 @@ func main() {
 
 	fmt.Println("Analyzing FIT file...")
 	for _, msg := range fitData.Messages {
+
 		if msg.Num == typedef.MesgNumRecord {
 			recordCount++
 			for _, field := range msg.Fields {
