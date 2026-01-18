@@ -220,4 +220,7 @@ message ShowcasedActivity {
   // Lifecycle
   google.protobuf.Timestamp created_at = 15;
   google.protobuf.Timestamp expires_at = 16;  // null = never expires (Athlete tier)
+
+  // Public attribution
+  string owner_display_name = 17;  // User's display name for public attribution
 }

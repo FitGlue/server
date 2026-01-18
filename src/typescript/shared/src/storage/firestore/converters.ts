@@ -485,5 +485,6 @@ export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): imp
     pipelineExecutionId: data.pipeline_execution_id as string,
     createdAt: toDate(data.created_at),
     expiresAt: toDate(data.expires_at),
+    ownerDisplayName: data.owner_display_name as string || '',
   };
 };

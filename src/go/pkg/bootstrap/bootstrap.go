@@ -18,6 +18,7 @@ import (
 	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 
 	firebase "firebase.google.com/go/v4"
+	"firebase.google.com/go/v4/auth"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/notifications"
 )
 
@@ -35,6 +36,7 @@ type Service struct {
 	Pub           shared.Publisher
 	Secrets       shared.SecretStore
 	Notifications shared.NotificationService
+	Auth          *auth.Client
 	Config        *Config
 }
 
@@ -205,12 +207,19 @@ func NewService(ctx context.Context) (*Service, error) {
 		slog.Warn("FCM initialization failed (notifications will be disabled)", "error", err)
 	}
 
+	// Firebase Auth (for user display name lookup)
+	authClient, err := fbApp.Auth(ctx)
+	if err != nil {
+		slog.Warn("Firebase Auth initialization failed", "error", err)
+	}
+
 	return &Service{
 		DB:            database.NewFirestoreAdapter(fsClient),
 		Pub:           pubAdapter,
 		Store:         &infrastorage.StorageAdapter{Client: gcsClient},
 		Secrets:       &secrets.SecretsAdapter{},
 		Notifications: fcmAdapter,
+		Auth:          authClient,
 		Config:        cfg,
 	}, nil
 }

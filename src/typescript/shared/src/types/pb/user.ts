@@ -283,7 +283,11 @@ export interface ShowcasedActivity {
     | Date
     | undefined;
   /** null = never expires (Athlete tier) */
-  expiresAt?: Date | undefined;
+  expiresAt?:
+    | Date
+    | undefined;
+  /** Public attribution */
+  ownerDisplayName: string;
 }
 
 export interface ShowcasedActivity_EnrichmentMetadataEntry {

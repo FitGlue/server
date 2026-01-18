@@ -1449,10 +1449,12 @@ type ShowcasedActivity struct {
 	Tags                []string          `protobuf:"bytes,13,rep,name=tags,proto3" json:"tags,omitempty"`
 	PipelineExecutionId *string           `protobuf:"bytes,14,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
 	// Lifecycle
-	CreatedAt     *timestamp.Timestamp `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	ExpiresAt     *timestamp.Timestamp `protobuf:"bytes,16,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // null = never expires (Athlete tier)
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	CreatedAt *timestamp.Timestamp `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ExpiresAt *timestamp.Timestamp `protobuf:"bytes,16,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"` // null = never expires (Athlete tier)
+	// Public attribution
+	OwnerDisplayName string `protobuf:"bytes,17,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"` // User's display name for public attribution
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *ShowcasedActivity) Reset() {
@@ -1597,6 +1599,13 @@ func (x *ShowcasedActivity) GetExpiresAt() *timestamp.Timestamp {
 	return nil
 }
 
+func (x *ShowcasedActivity) GetOwnerDisplayName() string {
+	if x != nil {
+		return x.OwnerDisplayName
+	}
+	return ""
+}
+
 var File_user_proto protoreflect.FileDescriptor
 
 const file_user_proto_rawDesc = "" +
@@ -1717,7 +1726,7 @@ const file_user_proto_rawDesc = "" +
 	"\x18parkrun_polling_deadline\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\x16parkrunPollingDeadline\x1a?\n" +
 	"\x11DestinationsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xee\x06\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x9c\a\n" +
 	"\x11ShowcasedActivity\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x1f\n" +
@@ -1741,7 +1750,8 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
-	"expires_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x1aE\n" +
+	"expires_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12,\n" +
+	"\x12owner_display_name\x18\x11 \x01(\tR\x10ownerDisplayName\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +

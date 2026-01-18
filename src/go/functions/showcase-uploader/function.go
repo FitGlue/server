@@ -221,6 +221,16 @@ func showcaseHandler() framework.HandlerFunc {
 			CreatedAt:           timestamppb.New(createdAt),
 		}
 
+		// Fetch user display name from Firebase Auth for public attribution
+		if svc.Auth != nil {
+			authUser, err := svc.Auth.GetUser(ctx, eventPayload.UserId)
+			if err != nil {
+				fwCtx.Logger.Warn("Failed to fetch user from Firebase Auth for display name", "error", err, "userId", eventPayload.UserId)
+			} else if authUser != nil && authUser.DisplayName != "" {
+				showcasedActivity.OwnerDisplayName = authUser.DisplayName
+			}
+		}
+
 		if expiration != nil {
 			showcasedActivity.ExpiresAt = timestamppb.New(*expiration)
 		}

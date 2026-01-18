@@ -81,6 +81,16 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 				"athlete_id":    u.Integrations.Strava.AthleteId,
 			}
 		}
+		if u.Integrations.Parkrun != nil {
+			integrations["parkrun"] = map[string]interface{}{
+				"enabled":       u.Integrations.Parkrun.Enabled,
+				"athlete_id":    u.Integrations.Parkrun.AthleteId,
+				"country_url":   u.Integrations.Parkrun.CountryUrl,
+				"consent_given": u.Integrations.Parkrun.ConsentGiven,
+				"created_at":    u.Integrations.Parkrun.CreatedAt.AsTime(),
+				"last_used_at":  u.Integrations.Parkrun.LastUsedAt.AsTime(),
+			}
+		}
 		m["integrations"] = integrations
 	}
 
@@ -153,6 +163,16 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 				case float64:
 					u.Integrations.Strava.AthleteId = int64(n)
 				}
+			}
+		}
+		if pMap, ok := iMap["parkrun"].(map[string]interface{}); ok {
+			u.Integrations.Parkrun = &pb.ParkrunIntegration{
+				Enabled:      getBool(pMap, "enabled"),
+				AthleteId:    getString(pMap, "athlete_id"),
+				CountryUrl:   getString(pMap, "country_url"),
+				ConsentGiven: getBool(pMap, "consent_given"),
+				CreatedAt:    getTime(pMap, "created_at"),
+				LastUsedAt:   getTime(pMap, "last_used_at"),
 			}
 		}
 	}
@@ -518,6 +538,7 @@ func ShowcasedActivityToFirestore(s *pb.ShowcasedActivity) map[string]interface{
 		"enrichment_metadata": s.EnrichmentMetadata,
 		"tags":                s.Tags,
 		"fit_file_uri":        s.FitFileUri,
+		"owner_display_name":  s.OwnerDisplayName,
 	}
 
 	if s.StartTime != nil {
@@ -556,6 +577,7 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 		CreatedAt:           getTime(m, "created_at"),
 		ExpiresAt:           getTime(m, "expires_at"),
 		PipelineExecutionId: stringPtrOrNil(getString(m, "pipeline_execution_id")),
+		OwnerDisplayName:    getString(m, "owner_display_name"),
 	}
 
 	// ActivityType
