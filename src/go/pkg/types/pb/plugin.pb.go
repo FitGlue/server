@@ -77,13 +77,14 @@ func (PluginType) EnumDescriptor() ([]byte, []int) {
 type ConfigFieldType int32
 
 const (
-	ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED   ConfigFieldType = 0
-	ConfigFieldType_CONFIG_FIELD_TYPE_STRING        ConfigFieldType = 1
-	ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER        ConfigFieldType = 2
-	ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN       ConfigFieldType = 3
-	ConfigFieldType_CONFIG_FIELD_TYPE_SELECT        ConfigFieldType = 4 // Dropdown
-	ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT  ConfigFieldType = 5 // Multiple selection
-	ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP ConfigFieldType = 6 // Record<string, string> map - stored as JSON
+	ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED    ConfigFieldType = 0
+	ConfigFieldType_CONFIG_FIELD_TYPE_STRING         ConfigFieldType = 1
+	ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER         ConfigFieldType = 2
+	ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN        ConfigFieldType = 3
+	ConfigFieldType_CONFIG_FIELD_TYPE_SELECT         ConfigFieldType = 4 // Dropdown
+	ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT   ConfigFieldType = 5 // Multiple selection
+	ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP  ConfigFieldType = 6 // Record<string, string> map - stored as JSON
+	ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT ConfigFieldType = 7 // Dropdown with options fetched from API + allows new entry
 )
 
 // Enum value maps for ConfigFieldType.
@@ -96,15 +97,17 @@ var (
 		4: "CONFIG_FIELD_TYPE_SELECT",
 		5: "CONFIG_FIELD_TYPE_MULTI_SELECT",
 		6: "CONFIG_FIELD_TYPE_KEY_VALUE_MAP",
+		7: "CONFIG_FIELD_TYPE_DYNAMIC_SELECT",
 	}
 	ConfigFieldType_value = map[string]int32{
-		"CONFIG_FIELD_TYPE_UNSPECIFIED":   0,
-		"CONFIG_FIELD_TYPE_STRING":        1,
-		"CONFIG_FIELD_TYPE_NUMBER":        2,
-		"CONFIG_FIELD_TYPE_BOOLEAN":       3,
-		"CONFIG_FIELD_TYPE_SELECT":        4,
-		"CONFIG_FIELD_TYPE_MULTI_SELECT":  5,
-		"CONFIG_FIELD_TYPE_KEY_VALUE_MAP": 6,
+		"CONFIG_FIELD_TYPE_UNSPECIFIED":    0,
+		"CONFIG_FIELD_TYPE_STRING":         1,
+		"CONFIG_FIELD_TYPE_NUMBER":         2,
+		"CONFIG_FIELD_TYPE_BOOLEAN":        3,
+		"CONFIG_FIELD_TYPE_SELECT":         4,
+		"CONFIG_FIELD_TYPE_MULTI_SELECT":   5,
+		"CONFIG_FIELD_TYPE_KEY_VALUE_MAP":  6,
+		"CONFIG_FIELD_TYPE_DYNAMIC_SELECT": 7,
 	}
 )
 
@@ -442,8 +445,10 @@ type ConfigFieldSchema struct {
 	DependsOn    *ConfigFieldDependency `protobuf:"bytes,9,opt,name=depends_on,json=dependsOn,proto3,oneof" json:"depends_on,omitempty"`                         // Show only when dependency is met
 	// For KEY_VALUE_MAP: independent options for left (key) and right (value) sides
 	// If set, renders a dropdown instead of text input for that side
-	KeyOptions    []*ConfigFieldOption `protobuf:"bytes,10,rep,name=key_options,json=keyOptions,proto3" json:"key_options,omitempty"`       // Options for the left side (key)
-	ValueOptions  []*ConfigFieldOption `protobuf:"bytes,11,rep,name=value_options,json=valueOptions,proto3" json:"value_options,omitempty"` // Options for the right side (value)
+	KeyOptions   []*ConfigFieldOption `protobuf:"bytes,10,rep,name=key_options,json=keyOptions,proto3" json:"key_options,omitempty"`       // Options for the left side (key)
+	ValueOptions []*ConfigFieldOption `protobuf:"bytes,11,rep,name=value_options,json=valueOptions,proto3" json:"value_options,omitempty"` // Options for the right side (value)
+	// For DYNAMIC_SELECT: identifier for which endpoint to fetch options from
+	DynamicSource *string `protobuf:"bytes,12,opt,name=dynamic_source,json=dynamicSource,proto3,oneof" json:"dynamic_source,omitempty"` // e.g., "user_counters" - UI fetches from /users/me/{dynamic_source}
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -553,6 +558,13 @@ func (x *ConfigFieldSchema) GetValueOptions() []*ConfigFieldOption {
 		return x.ValueOptions
 	}
 	return nil
+}
+
+func (x *ConfigFieldSchema) GetDynamicSource() string {
+	if x != nil && x.DynamicSource != nil {
+		return *x.DynamicSource
+	}
+	return ""
 }
 
 // ConfigFieldDependency defines when a field should be visible
@@ -979,7 +991,7 @@ const file_plugin_proto_rawDesc = "" +
 	"\vvisual_type\x18\x05 \x01(\tR\n" +
 	"visualType\x12\x1d\n" +
 	"\n" +
-	"after_html\x18\x06 \x01(\tR\tafterHtml\"\x9e\x04\n" +
+	"after_html\x18\x06 \x01(\tR\tafterHtml\"\xdd\x04\n" +
 	"\x11ConfigFieldSchema\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12 \n" +
@@ -997,8 +1009,10 @@ const file_plugin_proto_rawDesc = "" +
 	"\vkey_options\x18\n" +
 	" \x03(\v2\x1a.fitglue.ConfigFieldOptionR\n" +
 	"keyOptions\x12?\n" +
-	"\rvalue_options\x18\v \x03(\v2\x1a.fitglue.ConfigFieldOptionR\fvalueOptionsB\r\n" +
-	"\v_depends_on\"L\n" +
+	"\rvalue_options\x18\v \x03(\v2\x1a.fitglue.ConfigFieldOptionR\fvalueOptions\x12*\n" +
+	"\x0edynamic_source\x18\f \x01(\tH\x01R\rdynamicSource\x88\x01\x01B\r\n" +
+	"\v_depends_onB\x11\n" +
+	"\x0f_dynamic_source\"L\n" +
 	"\x15ConfigFieldDependency\x12\x1b\n" +
 	"\tfield_key\x18\x01 \x01(\tR\bfieldKey\x12\x16\n" +
 	"\x06values\x18\x02 \x03(\tR\x06values\"?\n" +
@@ -1047,7 +1061,7 @@ const file_plugin_proto_rawDesc = "" +
 	"\x17PLUGIN_TYPE_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12PLUGIN_TYPE_SOURCE\x10\x01\x12\x18\n" +
 	"\x14PLUGIN_TYPE_ENRICHER\x10\x02\x12\x1b\n" +
-	"\x17PLUGIN_TYPE_DESTINATION\x10\x03*\xf6\x01\n" +
+	"\x17PLUGIN_TYPE_DESTINATION\x10\x03*\x9c\x02\n" +
 	"\x0fConfigFieldType\x12!\n" +
 	"\x1dCONFIG_FIELD_TYPE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18CONFIG_FIELD_TYPE_STRING\x10\x01\x12\x1c\n" +
@@ -1055,7 +1069,8 @@ const file_plugin_proto_rawDesc = "" +
 	"\x19CONFIG_FIELD_TYPE_BOOLEAN\x10\x03\x12\x1c\n" +
 	"\x18CONFIG_FIELD_TYPE_SELECT\x10\x04\x12\"\n" +
 	"\x1eCONFIG_FIELD_TYPE_MULTI_SELECT\x10\x05\x12#\n" +
-	"\x1fCONFIG_FIELD_TYPE_KEY_VALUE_MAP\x10\x06*\xc9\x01\n" +
+	"\x1fCONFIG_FIELD_TYPE_KEY_VALUE_MAP\x10\x06\x12$\n" +
+	" CONFIG_FIELD_TYPE_DYNAMIC_SELECT\x10\a*\xc9\x01\n" +
 	"\x13IntegrationAuthType\x12%\n" +
 	"!INTEGRATION_AUTH_TYPE_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bINTEGRATION_AUTH_TYPE_OAUTH\x10\x01\x12!\n" +

@@ -22,6 +22,7 @@ type MockDatabase struct {
 
 	GetCounterFunc              func(ctx context.Context, userId string, id string) (*pb.Counter, error)
 	SetCounterFunc              func(ctx context.Context, userId string, counter *pb.Counter) error
+	ListCountersFunc            func(ctx context.Context, userId string) ([]*pb.Counter, error)
 	SetSynchronizedActivityFunc func(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
 }
 
@@ -90,6 +91,13 @@ func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *p
 		return m.SetCounterFunc(ctx, userId, counter)
 	}
 	return nil
+}
+
+func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
+	if m.ListCountersFunc != nil {
+		return m.ListCountersFunc(ctx, userId)
+	}
+	return nil, nil
 }
 
 func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {

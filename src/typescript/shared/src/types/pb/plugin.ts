@@ -28,6 +28,8 @@ export enum ConfigFieldType {
   CONFIG_FIELD_TYPE_MULTI_SELECT = 5,
   /** CONFIG_FIELD_TYPE_KEY_VALUE_MAP - Record<string, string> map - stored as JSON */
   CONFIG_FIELD_TYPE_KEY_VALUE_MAP = 6,
+  /** CONFIG_FIELD_TYPE_DYNAMIC_SELECT - Dropdown with options fetched from API + allows new entry */
+  CONFIG_FIELD_TYPE_DYNAMIC_SELECT = 7,
   UNRECOGNIZED = -1,
 }
 
@@ -126,6 +128,8 @@ export interface ConfigFieldSchema {
   keyOptions: ConfigFieldOption[];
   /** Options for the right side (value) */
   valueOptions: ConfigFieldOption[];
+  /** For DYNAMIC_SELECT: identifier for which endpoint to fetch options from */
+  dynamicSource?: string | undefined;
 }
 
 /** ConfigFieldDependency defines when a field should be visible */

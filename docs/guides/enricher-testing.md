@@ -23,6 +23,7 @@ Enrichers transform and enhance standardized activities before they are sent to 
 | **Fitbit Heart Rate** | HR data from Fitbit | Fitbit integration enabled | Heart rate stream |
 | **Type Mapper** | Remaps activity types | Title keyword match | Activity type |
 | **Parkrun** | Detects Parkrun events | Location/time match | Title, tags |
+| **Logic Gate** | Rule-based pipeline control | Configurable rules | Continue/Halt |
 
 ---
 
@@ -318,6 +319,38 @@ Validate that multiple pipelines can be configured for the same source.
 - Quadriceps, Chest, Lats: 1.0
 - Shoulders, Biceps, Triceps: 0.7
 - Calves, Forearms: 0.5
+
+### Logic Gate
+**Input Config Options**:
+```json
+{
+  "match_mode": "all",      // "all", "any", or "none"
+  "rules": "[...]",          // JSON array of rule objects
+  "on_match": "continue",    // "continue" or "halt"
+  "on_no_match": "halt"      // "continue" or "halt"
+}
+```
+
+**Rule Format**:
+```json
+{
+  "field": "activity_type",  // Field to match
+  "op": "eq",                // Operator (eq, in, gt, lt, contains, near)
+  "values": ["Run"],         // Values to match against
+  "negate": false            // Invert match result
+}
+```
+
+**Supported Fields**:
+| Field | Operators | Values Example |
+|-------|-----------|----------------|
+| `activity_type` | `eq` | `["Run"]` |
+| `days` | `in` | `["Mon", "Wed", "Sat"]` |
+| `time_start` | `gt`, `lt`, `eq` | `["09:00"]` |
+| `time_end` | `gt`, `lt`, `eq` | `["17:00"]` |
+| `location` | `near` | `["51.5074", "-0.1278", "500"]` |
+| `title_contains` | `contains` | `["Zwift"]` |
+| `description_contains` | `contains` | `["test"]` |
 
 ---
 

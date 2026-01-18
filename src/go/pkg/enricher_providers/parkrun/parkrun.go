@@ -209,9 +209,10 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 	}
 
 	// 12. Results Enrichment: Create auto-populated pending input if enabled
-	enableResultsEnrichment := inputs["enable_results_enrichment"] == "true"
+	// Default to true unless explicitly set to "false"
+	fetchResults := inputs["fetch_results"] != "false"
 
-	if enableResultsEnrichment && p.service != nil {
+	if fetchResults && p.service != nil {
 		// Check if user has Parkrun integration configured
 		if user.Integrations != nil && user.Integrations.Parkrun != nil && user.Integrations.Parkrun.Enabled {
 			// Create an auto-populated pending input to be resolved later by parkrun-results-source

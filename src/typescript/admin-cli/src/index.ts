@@ -364,6 +364,7 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT]: 'Auto Increment',
         [EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT]: 'User Input',
         [EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER]: 'Activity Filter',
+        [EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE]: 'Logic Gate',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };
@@ -384,6 +385,7 @@ const getAvailableEnricherChoices = (selectedProviderTypes: EnricherProviderType
         { name: 'Auto Increment', value: EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT },
         { name: 'User Input', value: EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT },
         { name: 'Activity Filter', value: EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER },
+        { name: 'Logic Gate', value: EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE },
         { name: 'Mock', value: EnricherProviderType.ENRICHER_PROVIDER_MOCK }
     ];
 

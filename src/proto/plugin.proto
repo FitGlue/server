@@ -60,6 +60,8 @@ message ConfigFieldSchema {
   // If set, renders a dropdown instead of text input for that side
   repeated ConfigFieldOption key_options = 10;    // Options for the left side (key)
   repeated ConfigFieldOption value_options = 11;  // Options for the right side (value)
+  // For DYNAMIC_SELECT: identifier for which endpoint to fetch options from
+  optional string dynamic_source = 12;            // e.g., "user_counters" - UI fetches from /users/me/{dynamic_source}
 }
 
 // ConfigFieldDependency defines when a field should be visible
@@ -76,6 +78,7 @@ enum ConfigFieldType {
   CONFIG_FIELD_TYPE_SELECT = 4;               // Dropdown
   CONFIG_FIELD_TYPE_MULTI_SELECT = 5;         // Multiple selection
   CONFIG_FIELD_TYPE_KEY_VALUE_MAP = 6;        // Record<string, string> map - stored as JSON
+  CONFIG_FIELD_TYPE_DYNAMIC_SELECT = 7;       // Dropdown with options fetched from API + allows new entry
 }
 
 message ConfigFieldOption {

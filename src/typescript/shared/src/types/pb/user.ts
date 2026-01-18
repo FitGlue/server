@@ -27,6 +27,8 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_USER_INPUT = 11,
   /** ENRICHER_PROVIDER_ACTIVITY_FILTER - Config inputs: "exclude_activity_types" (comma-separated), "exclude_title_contains" (string) */
   ENRICHER_PROVIDER_ACTIVITY_FILTER = 12,
+  /** ENRICHER_PROVIDER_LOGIC_GATE - Config inputs: "logic_config" (JSON string with rules, match_mode, on_match, on_no_match) */
+  ENRICHER_PROVIDER_LOGIC_GATE = 13,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

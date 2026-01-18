@@ -127,6 +127,26 @@ func (a *FirestoreAdapter) SetCounter(ctx context.Context, userId string, counte
 	return a.storage.Counters(userId).Doc(counter.Id).Set(ctx, counter)
 }
 
+// ListCounters returns all counters for a user
+func (a *FirestoreAdapter) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
+	iter := a.Client.Collection("users").Doc(userId).Collection("counters").Documents(ctx)
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var counters []*pb.Counter
+	for _, d := range docs {
+		m := d.Data()
+		counter := storage.FirestoreToCounter(m)
+		if counter.Id == "" {
+			counter.Id = d.Ref.ID
+		}
+		counters = append(counters, counter)
+	}
+	return counters, nil
+}
+
 // --- Activities ---
 
 func (a *FirestoreAdapter) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {

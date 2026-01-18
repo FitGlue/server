@@ -48,6 +48,9 @@ func (m *MockDatabase) GetCounter(ctx context.Context, userId string, id string)
 func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
 	return nil
 }
+func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
+	return nil, nil
+}
 
 func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
 	return nil

@@ -40,7 +40,9 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT        EnricherProviderType = 11
 	// Config inputs: "exclude_activity_types" (comma-separated), "exclude_title_contains" (string)
 	EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER EnricherProviderType = 12
-	EnricherProviderType_ENRICHER_PROVIDER_MOCK            EnricherProviderType = 99
+	// Config inputs: "logic_config" (JSON string with rules, match_mode, on_match, on_no_match)
+	EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE EnricherProviderType = 13
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK       EnricherProviderType = 99
 )
 
 // Enum value maps for EnricherProviderType.
@@ -58,6 +60,7 @@ var (
 		10: "ENRICHER_PROVIDER_AUTO_INCREMENT",
 		11: "ENRICHER_PROVIDER_USER_INPUT",
 		12: "ENRICHER_PROVIDER_ACTIVITY_FILTER",
+		13: "ENRICHER_PROVIDER_LOGIC_GATE",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -73,6 +76,7 @@ var (
 		"ENRICHER_PROVIDER_AUTO_INCREMENT":    10,
 		"ENRICHER_PROVIDER_USER_INPUT":        11,
 		"ENRICHER_PROVIDER_ACTIVITY_FILTER":   12,
+		"ENRICHER_PROVIDER_LOGIC_GATE":        13,
 		"ENRICHER_PROVIDER_MOCK":              99,
 	}
 )
@@ -1741,7 +1745,7 @@ const file_user_proto_rawDesc = "" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_pipeline_execution_id*\xeb\x03\n" +
+	"\x16_pipeline_execution_id*\x8d\x04\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -1755,7 +1759,8 @@ const file_user_proto_rawDesc = "" +
 	" ENRICHER_PROVIDER_AUTO_INCREMENT\x10\n" +
 	"\x12 \n" +
 	"\x1cENRICHER_PROVIDER_USER_INPUT\x10\v\x12%\n" +
-	"!ENRICHER_PROVIDER_ACTIVITY_FILTER\x10\f\x12\x1a\n" +
+	"!ENRICHER_PROVIDER_ACTIVITY_FILTER\x10\f\x12 \n" +
+	"\x1cENRICHER_PROVIDER_LOGIC_GATE\x10\r\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

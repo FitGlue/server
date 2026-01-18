@@ -472,6 +472,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP, {
       defaultValue: '5',
       options: [],
       validation: { minValue: 3, maxValue: 10 },
+      dependsOn: { fieldKey: 'style', values: ['emoji'] },
     },
     {
       key: 'preset',
@@ -783,20 +784,22 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
     {
       key: 'title_pattern',
       label: 'Title Pattern',
-      description: 'Template for activity title. Use {event} for event name.',
+      description: 'Template for activity title. Use {location} for event name, {date} for date, {special} for holiday name.',
       fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
       required: false,
-      defaultValue: 'Parkrun @ {event}',
+      defaultValue: 'Parkrun @ {location}',
       options: [],
+      dependsOn: { fieldKey: 'enable_titling', values: ['true'] },
     },
     {
       key: 'special_title_pattern',
       label: 'Special Event Title',
-      description: 'Title pattern for Christmas/New Year events (e.g., 🎄 {event})',
+      description: 'Title pattern for Christmas/New Year. Use {location}, {date}, {special}.',
       fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
       required: false,
-      defaultValue: '🎄 {event} Parkrun',
+      defaultValue: '🎄 {location} Parkrun',
       options: [],
+      dependsOn: { fieldKey: 'enable_titling', values: ['true'] },
     },
     {
       key: 'fetch_results',
@@ -860,15 +863,54 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER, {
   enabled: true,
   requiredIntegrations: [],
   configSchema: [
-    { key: 'activity_type', label: 'Activity Type', description: 'Match specific activity type', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'days_of_week', label: 'Days of Week', description: 'Comma-separated days (Mon,Wed,Sat)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'start_time', label: 'Start Time', description: 'Earliest time (HH:MM)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'end_time', label: 'End Time', description: 'Latest time (HH:MM)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'location_lat', label: 'Location Latitude', description: 'Target latitude', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'location_long', label: 'Location Longitude', description: 'Target longitude', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'radius_m', label: 'Radius (meters)', description: 'Match radius', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '200', options: [] },
-    { key: 'title_template', label: 'Title Template', description: 'Title when matched', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'description_template', label: 'Description Template', description: 'Description when matched', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    {
+      key: 'activity_type',
+      label: 'Activity Type',
+      description: 'Match specific activity type (optional)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: '',
+      options: [
+        { value: '', label: '(Any)' },
+        { value: 'ACTIVITY_TYPE_RUN', label: 'Run' },
+        { value: 'ACTIVITY_TYPE_TRAIL_RUN', label: 'Trail Run' },
+        { value: 'ACTIVITY_TYPE_WALK', label: 'Walk' },
+        { value: 'ACTIVITY_TYPE_HIKE', label: 'Hike' },
+        { value: 'ACTIVITY_TYPE_RIDE', label: 'Ride' },
+        { value: 'ACTIVITY_TYPE_VIRTUAL_RIDE', label: 'Virtual Ride' },
+        { value: 'ACTIVITY_TYPE_WEIGHT_TRAINING', label: 'Weight Training' },
+        { value: 'ACTIVITY_TYPE_WORKOUT', label: 'Workout' },
+        { value: 'ACTIVITY_TYPE_YOGA', label: 'Yoga' },
+        { value: 'ACTIVITY_TYPE_SWIM', label: 'Swim' },
+        { value: 'ACTIVITY_TYPE_CROSSFIT', label: 'Crossfit' },
+        { value: 'ACTIVITY_TYPE_ELLIPTICAL', label: 'Elliptical' },
+        { value: 'ACTIVITY_TYPE_ROWING', label: 'Rowing' },
+      ],
+    },
+    {
+      key: 'days_of_week',
+      label: 'Days of Week',
+      description: 'Match activities on these days (optional)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+      required: false,
+      defaultValue: '',
+      options: [
+        { value: 'Mon', label: 'Monday' },
+        { value: 'Tue', label: 'Tuesday' },
+        { value: 'Wed', label: 'Wednesday' },
+        { value: 'Thu', label: 'Thursday' },
+        { value: 'Fri', label: 'Friday' },
+        { value: 'Sat', label: 'Saturday' },
+        { value: 'Sun', label: 'Sunday' },
+      ],
+    },
+    { key: 'start_time', label: 'Start Time', description: 'Earliest time, 24-hour format e.g. 09:00 (optional)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    { key: 'end_time', label: 'End Time', description: 'Latest time, 24-hour format e.g. 17:00 (optional)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    { key: 'location_lat', label: 'Location Latitude', description: 'Target latitude (optional)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER, required: false, defaultValue: '', options: [] },
+    { key: 'location_long', label: 'Location Longitude', description: 'Target longitude (optional)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER, required: false, defaultValue: '', options: [] },
+    { key: 'radius_m', label: 'Radius (meters)', description: 'Match radius around location (optional)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER, required: false, defaultValue: '200', options: [] },
+    { key: 'title_template', label: 'Title Template', description: 'New title when conditions match, e.g. "Morning Gym Session"', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    { key: 'description_template', label: 'Description Template', description: 'New description when conditions match', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
   ],
   marketingDescription: `
 ### Smart Conditional Templates
@@ -902,9 +944,18 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT, {
   enabled: true,
   requiredIntegrations: [],
   configSchema: [
-    { key: 'counter_key', label: 'Counter Key', description: 'Unique identifier for this counter', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: true, defaultValue: '', options: [] },
-    { key: 'title_contains', label: 'Title Filter', description: 'Only increment if title contains this', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'initial_value', label: 'Initial Value', description: 'Starting number', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '1', options: [] },
+    {
+      key: 'counter_key',
+      label: 'Counter Key',
+      description: 'Select existing counter or create new one',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+      required: true,
+      defaultValue: '',
+      options: [],
+      dynamicSource: 'counters', // Fetches from /users/me/counters
+    },
+    { key: 'title_contains', label: 'Title Filter', description: 'Only increment if title contains this (optional)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    { key: 'initial_value', label: 'Initial Value', description: 'Starting number (optional, defaults to 1)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER, required: false, defaultValue: '1', options: [] },
   ],
   marketingDescription: `
 ### Numbered Activity Series
@@ -938,7 +989,18 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT, {
   enabled: true,
   requiredIntegrations: [],
   configSchema: [
-    { key: 'fields', label: 'Required Fields', description: 'Comma-separated fields (title,description)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: 'description', options: [] },
+    {
+      key: 'fields',
+      label: 'Required Fields',
+      description: 'Which fields you want to provide (optional, defaults to description)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+      required: false,
+      defaultValue: 'description',
+      options: [
+        { value: 'title', label: 'Title' },
+        { value: 'description', label: 'Description' },
+      ],
+    },
   ],
   marketingDescription: `
 ### Manual Intervention Point
@@ -973,10 +1035,56 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER, {
   enabled: true,
   requiredIntegrations: [],
   configSchema: [
-    { key: 'exclude_activity_types', label: 'Exclude Activity Types', description: 'Comma-separated types to exclude', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'exclude_title_contains', label: 'Exclude Titles Containing', description: 'Patterns to exclude', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'include_activity_types', label: 'Include Only Activity Types', description: 'Only include these types', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'include_title_contains', label: 'Include Only Titles Containing', description: 'Must contain one of these', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    {
+      key: 'exclude_activity_types',
+      label: 'Exclude Activity Types',
+      description: 'Skip activities of these types',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+      required: false,
+      defaultValue: '',
+      options: [
+        { value: 'ACTIVITY_TYPE_RUN', label: 'Run' },
+        { value: 'ACTIVITY_TYPE_TRAIL_RUN', label: 'Trail Run' },
+        { value: 'ACTIVITY_TYPE_WALK', label: 'Walk' },
+        { value: 'ACTIVITY_TYPE_HIKE', label: 'Hike' },
+        { value: 'ACTIVITY_TYPE_RIDE', label: 'Ride' },
+        { value: 'ACTIVITY_TYPE_VIRTUAL_RIDE', label: 'Virtual Ride' },
+        { value: 'ACTIVITY_TYPE_WEIGHT_TRAINING', label: 'Weight Training' },
+        { value: 'ACTIVITY_TYPE_WORKOUT', label: 'Workout' },
+        { value: 'ACTIVITY_TYPE_YOGA', label: 'Yoga' },
+        { value: 'ACTIVITY_TYPE_SWIM', label: 'Swim' },
+        { value: 'ACTIVITY_TYPE_CROSSFIT', label: 'Crossfit' },
+        { value: 'ACTIVITY_TYPE_ELLIPTICAL', label: 'Elliptical' },
+        { value: 'ACTIVITY_TYPE_ROWING', label: 'Rowing' },
+      ],
+    },
+    { key: 'exclude_title_contains', label: 'Exclude Titles Containing', description: 'Skip if title contains these patterns (comma-separated)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    { key: 'exclude_description_contains', label: 'Exclude Descriptions Containing', description: 'Skip if description contains these patterns (comma-separated)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    {
+      key: 'include_activity_types',
+      label: 'Include Only Activity Types',
+      description: 'Only allow activities of these types',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+      required: false,
+      defaultValue: '',
+      options: [
+        { value: 'ACTIVITY_TYPE_RUN', label: 'Run' },
+        { value: 'ACTIVITY_TYPE_TRAIL_RUN', label: 'Trail Run' },
+        { value: 'ACTIVITY_TYPE_WALK', label: 'Walk' },
+        { value: 'ACTIVITY_TYPE_HIKE', label: 'Hike' },
+        { value: 'ACTIVITY_TYPE_RIDE', label: 'Ride' },
+        { value: 'ACTIVITY_TYPE_VIRTUAL_RIDE', label: 'Virtual Ride' },
+        { value: 'ACTIVITY_TYPE_WEIGHT_TRAINING', label: 'Weight Training' },
+        { value: 'ACTIVITY_TYPE_WORKOUT', label: 'Workout' },
+        { value: 'ACTIVITY_TYPE_YOGA', label: 'Yoga' },
+        { value: 'ACTIVITY_TYPE_SWIM', label: 'Swim' },
+        { value: 'ACTIVITY_TYPE_CROSSFIT', label: 'Crossfit' },
+        { value: 'ACTIVITY_TYPE_ELLIPTICAL', label: 'Elliptical' },
+        { value: 'ACTIVITY_TYPE_ROWING', label: 'Rowing' },
+      ],
+    },
+    { key: 'include_title_contains', label: 'Include Only Titles Containing', description: 'Only allow if title contains one of these (comma-separated)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
+    { key: 'include_description_contains', label: 'Include Only Descriptions Containing', description: 'Only allow if description contains one of these (comma-separated)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
   ],
   marketingDescription: `
 ### Filter Unwanted Activities
@@ -996,6 +1104,92 @@ Define include or exclude rules by activity type or title keywords. Activities m
     'Skip test workouts',
     'Filter by activity type',
     'Only sync strength sessions',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE, {
+  id: 'logic-gate',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Logic Gate',
+  description: 'Evaluate rules to conditionally continue or halt the pipeline',
+  icon: '🚦',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'match_mode',
+      label: 'Match Mode',
+      description: 'How rules are combined',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'all',
+      options: [
+        { value: 'all', label: 'All rules must match (AND)' },
+        { value: 'any', label: 'Any rule matches (OR)' },
+        { value: 'none', label: 'No rules match (NOR)' },
+      ],
+    },
+    {
+      key: 'rules',
+      label: 'Rules',
+      description: 'JSON array of rules: [{field, op, values, negate}]',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: true,
+      defaultValue: '[]',
+      options: [],
+    },
+    {
+      key: 'on_match',
+      label: 'On Match',
+      description: 'Action when rules match',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'continue',
+      options: [
+        { value: 'continue', label: 'Continue pipeline' },
+        { value: 'halt', label: 'Halt pipeline (skip destinations)' },
+      ],
+    },
+    {
+      key: 'on_no_match',
+      label: 'On No Match',
+      description: 'Action when rules do not match',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'continue',
+      options: [
+        { value: 'continue', label: 'Continue pipeline' },
+        { value: 'halt', label: 'Halt pipeline (skip destinations)' },
+      ],
+    },
+  ],
+  marketingDescription: `
+### Conditional Pipeline Control
+Logic Gate lets you create powerful rules to filter, route, or halt activities based on any combination of conditions.
+
+### How it works
+Define rules using fields like activity type, day of week, time, location, or title/description content. Combine them with AND/ANY/NONE logic and choose whether to continue or halt the pipeline.
+
+### Supported Rule Fields
+- **activity_type**: Match by activity type (Run, Ride, etc.)
+- **days**: Match by day of week (Mon, Tue, etc.)
+- **time_start / time_end**: Match by time of day (HH:MM)
+- **location**: Match by GPS coordinates within radius
+- **title_contains / description_contains**: Match text content
+  `,
+  features: [
+    '✅ Match by activity type, day, time, location',
+    '✅ Title and description content matching',
+    '✅ Flexible AND/OR/NOR logic modes',
+    '✅ Continue or halt pipeline on match',
+    '✅ Negate individual rules for inverse matching',
+  ],
+  transformations: [],
+  useCases: [
+    'Filter out test workouts',
+    'Only sync activities from specific locations',
+    'Route morning runs to different destinations',
+    'Block activities on certain days',
   ],
 });
 

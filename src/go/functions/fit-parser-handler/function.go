@@ -50,8 +50,6 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 type ParseFitFileRequest struct {
 	// Base64-encoded FIT file data
 	FitFileBase64 string `json:"fitFileBase64"`
-	// Firebase Auth token (for authorization)
-	IdToken string `json:"idToken"`
 	// Optional user-provided overrides
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
@@ -113,17 +111,31 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if req.IdToken == "" {
+	// Extract token from Authorization header
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
-			Error:   "idToken is required",
+			Error:   "Authorization header is required",
 		})
 		return
 	}
 
+	// Parse Bearer token
+	const bearerPrefix = "Bearer "
+	if len(authHeader) < len(bearerPrefix) || authHeader[:len(bearerPrefix)] != bearerPrefix {
+		w.WriteHeader(http.StatusUnauthorized)
+		json.NewEncoder(w).Encode(ParseFitFileResponse{
+			Success: false,
+			Error:   "Invalid Authorization header format",
+		})
+		return
+	}
+	idToken := authHeader[len(bearerPrefix):]
+
 	// Verify Firebase token and get user ID
-	userId, err := verifyFirebaseToken(ctx, req.IdToken)
+	userId, err := verifyFirebaseToken(ctx, idToken)
 	if err != nil {
 		slog.Warn("Token verification failed", "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
