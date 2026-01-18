@@ -1,14 +1,7 @@
 import { UserIntegrations } from './pb/user';
+import { IntegrationAuthType } from './pb/plugin';
 
-// Base definition
-export interface BaseIntegrationDefinition {
-  key: keyof UserIntegrations;
-  displayName: string;
-  type: 'basic' | 'oauth';
-  // Fields that can be configured via CLI/API manually
-  configurableFields: ConfigurableField[];
-}
-
+// Field that can be configured via CLI/API manually
 export interface ConfigurableField {
   field: string;
   name: string;
@@ -16,52 +9,53 @@ export interface ConfigurableField {
   required: boolean;
 }
 
-export interface OAuthIntegrationDefinition extends BaseIntegrationDefinition {
-  type: 'oauth';
-  // Map specific proto fields (athleteId, fitbitUserId) to a common 'externalUserId'
-  // for generic display/handling
-  externalUserIdField: string;
+// Integration definition that aligns with protobuf auth types
+export interface IntegrationDefinition {
+  key: keyof UserIntegrations;
+  displayName: string;
+  authType: IntegrationAuthType;
+  // For OAuth integrations: which proto field contains the external user ID
+  externalUserIdField?: string;
+  // Fields that can be configured via CLI
+  configurableFields: ConfigurableField[];
 }
 
-export interface BasicIntegrationDefinition extends BaseIntegrationDefinition {
-  type: 'basic';
-}
+// Helper type guard
+export const isOAuthIntegration = (def: IntegrationDefinition): boolean =>
+  def.authType === IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH;
 
-export type IntegrationDefinition = BasicIntegrationDefinition | OAuthIntegrationDefinition;
-
-// Registry with strict typing
+// Registry - single source derives from UserIntegrations proto keys
 export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition> = {
-  // Only real integrations, not auxiliary object methods
   hevy: {
     key: 'hevy',
     displayName: 'Hevy',
-    type: 'basic',
-    configurableFields: [{ field: 'apiKey', name: 'API Key', type: 'password', required: true }]
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    configurableFields: [{ field: 'apiKey', name: 'API Key', type: 'password', required: true }],
   },
   mock: {
     key: 'mock',
     displayName: 'Mock',
-    type: 'basic',
-    configurableFields: [{ field: 'enabled', name: 'Enabled', type: 'boolean', required: true }]
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    configurableFields: [{ field: 'enabled', name: 'Enabled', type: 'boolean', required: true }],
   },
   strava: {
     key: 'strava',
     displayName: 'Strava',
-    type: 'oauth',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
     externalUserIdField: 'athleteId',
-    configurableFields: [] // OAuth usually configured via flow
+    configurableFields: [], // OAuth configured via flow
   },
   fitbit: {
     key: 'fitbit',
     displayName: 'Fitbit',
-    type: 'oauth',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
     externalUserIdField: 'fitbitUserId',
-    configurableFields: []
+    configurableFields: [], // OAuth configured via flow
   },
   parkrun: {
     key: 'parkrun',
     displayName: 'Parkrun',
-    type: 'basic',
-    configurableFields: [{ field: 'athleteId', name: 'Barcode Number', type: 'string', required: true }]
-  }
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+    configurableFields: [{ field: 'athleteId', name: 'Barcode Number', type: 'string', required: true }],
+  },
 };

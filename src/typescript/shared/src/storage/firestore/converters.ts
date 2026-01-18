@@ -5,7 +5,7 @@ import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
 import { PendingInput, PendingInput_Status } from '../../types/pb/pending_input';
 import { Destination } from '../../types/pb/events';
-import { INTEGRATIONS, OAuthIntegrationDefinition } from '../../types/integrations';
+import { INTEGRATIONS, isOAuthIntegration } from '../../types/integrations';
 
 
 
@@ -163,32 +163,27 @@ export const mapGenericIntegrationToFirestore = (i: Record<string, unknown>, key
   if ('lastUsedAt' in i) out.last_used_at = i.lastUsedAt;
 
   // Handle OAuth specific fields
-  if (def.type === 'oauth') {
-    const oauthDef = def as OAuthIntegrationDefinition;
+  if (isOAuthIntegration(def)) {
     out.access_token = i.accessToken;
     out.refresh_token = i.refreshToken;
 
     out.expires_at = i.expiresAt;
 
-    // Map generic externalUserId internal field to the database field (snake_case)
-    // Actually our Proto defines them as athleteId / fitbitUserId.
-    // We need to map from the Proto keys to the DB keys (snake_case).
-    // The definition has externalUserIdField like 'athleteId' -> snake would be 'athlete_id'
-
-    // Simple heuristic: if the object has the property, map it to snake_case
-    // Or check the specific definition field
-    const extId = i[oauthDef.externalUserIdField];
-    if (extId) {
+    // Map the externalUserIdField from proto key to snake_case DB key
+    const extId = def.externalUserIdField ? i[def.externalUserIdField] : undefined;
+    if (extId && def.externalUserIdField) {
       // Convention: camelCase -> snake_case
-      const dbKey = oauthDef.externalUserIdField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+      const dbKey = def.externalUserIdField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       out[dbKey] = extId;
     }
   } else {
-    // API Key based or others
-    // Check specific fields from registry? Or just hardcode common ones like apiKey/userId?
-    // Current usage for Hevy: apiKey, userId
+    // API Key based (Hevy) or Public ID (Parkrun)
     if ('apiKey' in i) out.api_key = i.apiKey;
     if ('userId' in i) out.user_id = i.userId;
+    // Parkrun fields
+    if ('athleteId' in i) out.athlete_id = i.athleteId;
+    if ('countryUrl' in i) out.country_url = i.countryUrl;
+    if ('consentGiven' in i) out.consent_given = i.consentGiven;
   }
 
   return out;
@@ -223,35 +218,35 @@ const mapGenericIntegrationFromFirestore = (data: GenericIntegrationData, key: s
   out.createdAt = toDate(data.created_at || data.createdAt);
   out.lastUsedAt = toDate(data.last_used_at || data.lastUsedAt);
 
-  if (def.type === 'oauth') {
+  if (isOAuthIntegration(def)) {
     out.accessToken = data.access_token || data.accessToken || '';
     out.refreshToken = data.refresh_token || data.refreshToken || '';
 
     out.expiresAt = toDate(data.expires_at || data.expiresAt);
 
-    const extField = (def as OAuthIntegrationDefinition).externalUserIdField;
-    // camel -> snake for lookup
-    const dbKey = extField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+    const extField = def.externalUserIdField;
+    if (extField) {
+      // camel -> snake for lookup
+      const dbKey = extField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
 
-    // Special handling for number mapping (Strava athleteId)
-    // Current logic was: parseInt(data.athlete_id || '0', 10)
-    // We need to know if the target field expects a number.
-    // Typescript reflection isn't perfect here.
-    // For now we can stick to string for externalIds unless verified.
-    // Strava athleteId is indeed a number in Proto (int64 -> number/long).
-
-    const val = data[dbKey] || data[extField];
-    if (key === 'strava' && val) {
-      out[extField] = parseInt(String(val), 10);
-    } else {
-      out[extField] = val || '';
+      // Special handling for number mapping (Strava athleteId)
+      // Strava athleteId is a number in Proto (int64 -> number/long).
+      const val = data[dbKey] || data[extField];
+      if (key === 'strava' && val) {
+        out[extField] = parseInt(String(val), 10);
+      } else {
+        out[extField] = val || '';
+      }
     }
   } else {
-    // API Key / User ID
-    // Hevy logic: apiKey, userId
+    // API Key (Hevy) or Public ID (Parkrun)
     if (key === 'hevy') {
       out.apiKey = data.api_key || data.apiKey || '';
       out.userId = data.user_id || data.userId || '';
+    } else if (key === 'parkrun') {
+      out.athleteId = data.athlete_id || data.athleteId || '';
+      out.countryUrl = data.country_url || data.countryUrl || '';
+      out.consentGiven = data.consent_given || data.consentGiven || false;
     }
   }
 

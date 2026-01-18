@@ -270,12 +270,12 @@ func fetchParkrunResultsForAthlete(ctx context.Context, client *http.Client, int
 	// Extract numeric athlete ID from barcode (A12345 -> 12345)
 	athleteID := strings.TrimPrefix(integration.AthleteId, "A")
 
-	// Build URL: https://www.parkrun.org.uk/parkrunner/{athlete_id}/
+	// Build URL: https://www.parkrun.org.uk/parkrunner/{athlete_id}/all/
 	baseURL := integration.CountryUrl
 	if baseURL == "" {
 		baseURL = "www.parkrun.org.uk"
 	}
-	url := fmt.Sprintf("https://%s/parkrunner/%s/", baseURL, athleteID)
+	url := fmt.Sprintf("https://%s/parkrunner/%s/all/", baseURL, athleteID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -304,39 +304,48 @@ func fetchParkrunResultsForAthlete(ctx context.Context, client *http.Client, int
 }
 
 // parseAthleteResultsBySlug parses the athlete's results page HTML to find result by event slug
+// The /all/ page has a table with columns: Event, Run Date, Run Number, Pos, Time, Age Grade, PB?
 func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, error) {
-	// Similar to parseAthleteResults but matches by event slug instead of name/date
-	// The athlete page has a table with recent results
-	// Each row contains: Event, Run No., Date, Time, Pos, Age Grade, PB?
+	// Find rows in the "All Results" table (look for tbody rows to skip header)
+	// Using (?s) for dot-all mode to match across newlines
+	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
+	rows := rowPattern.FindAllStringSubmatch(html, -1)
 
-	// Find rows in the results table
-	rowPattern := regexp.MustCompile(`<tr[^>]*>.*?</tr>`)
-	rows := rowPattern.FindAllString(html, -1)
+	for _, rowMatch := range rows {
+		row := rowMatch[1]
 
-	for _, row := range rows {
-		// Check if this row contains the event slug
+		// Check if this row contains the event slug in an href
+		// Event links look like: href="https://www.parkrun.org.uk/newark/results/"
 		if !strings.Contains(strings.ToLower(row), strings.ToLower(eventSlug)) {
 			continue
 		}
 
-		// Extract position, time, age grade
-		cellPattern := regexp.MustCompile(`<td[^>]*>(.*?)</td>`)
+		// Skip header rows (they contain <th> elements)
+		if strings.Contains(row, "<th") {
+			continue
+		}
+
+		// Extract table cells
+		// Using (?s) for dot-all mode since cell content may span lines
+		cellPattern := regexp.MustCompile(`(?s)<td[^>]*>(.*?)</td>`)
 		cells := cellPattern.FindAllStringSubmatch(row, -1)
 
-		if len(cells) >= 6 {
-			event := stripTags(cells[0][1])
+		// Expect 7 columns: Event (0), Run Date (1), Run Number (2), Pos (3), Time (4), Age Grade (5), PB? (6)
+		if len(cells) >= 7 {
+			eventCell := stripTags(cells[0][1])
 			position := 0
-			fmt.Sscanf(stripTags(cells[4][1]), "%d", &position)
-			time := stripTags(cells[3][1])
+			fmt.Sscanf(stripTags(cells[3][1]), "%d", &position)
+			time := stripTags(cells[4][1])
 			ageGrade := stripTags(cells[5][1])
-			isPB := strings.Contains(row, "PB") || strings.Contains(row, "pb")
+			pbCell := stripTags(cells[6][1])
+			isPB := strings.Contains(strings.ToUpper(pbCell), "PB")
 
 			return &ParkrunResult{
 				Position:  position,
 				Time:      time,
 				AgeGrade:  ageGrade,
 				IsPB:      isPB,
-				EventName: event,
+				EventName: eventCell,
 			}, nil
 		}
 	}
@@ -349,12 +358,12 @@ func fetchParkrunResults(ctx context.Context, client *http.Client, integration *
 	// Extract numeric athlete ID from barcode (A12345 -> 12345)
 	athleteID := strings.TrimPrefix(integration.AthleteId, "A")
 
-	// Build URL: https://www.parkrun.org.uk/parkrunner/{athlete_id}/
+	// Build URL: https://www.parkrun.org.uk/parkrunner/{athlete_id}/all/
 	baseURL := integration.CountryUrl
 	if baseURL == "" {
 		baseURL = "www.parkrun.org.uk"
 	}
-	url := fmt.Sprintf("https://%s/parkrunner/%s/", baseURL, athleteID)
+	url := fmt.Sprintf("https://%s/parkrunner/%s/all/", baseURL, athleteID)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
@@ -383,58 +392,56 @@ func fetchParkrunResults(ctx context.Context, client *http.Client, integration *
 }
 
 // parseAthleteResults parses the athlete's results page HTML to find matching result
+// The /all/ page has columns: Event, Run Date, Run Number, Pos, Time, Age Grade, PB?
 func parseAthleteResults(html string, eventName string, activityDate time.Time) (*ParkrunResult, error) {
-	// The athlete page has a table with recent results
-	// Each row contains: Event, Run No., Date, Time, Pos, Age Grade, PB?
-	// We need to find the row matching eventName + date
-
 	// Format the date for matching (DD/MM/YYYY format used by Parkrun)
 	dateStr := activityDate.Format("02/01/2006")
 
-	// Find all result rows - looking for the pattern in the table
-	// Match rows containing the event name and date
-	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>.*?` + regexp.QuoteMeta(eventName) + `.*?` + regexp.QuoteMeta(dateStr) + `.*?</tr>`)
-	rowMatch := rowPattern.FindString(html)
+	// Find all rows in the table
+	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
+	rows := rowPattern.FindAllStringSubmatch(html, -1)
 
-	if rowMatch == "" {
-		// Try alternative: search for event slug in lowercase
+	for _, rowMatch := range rows {
+		row := rowMatch[1]
+
+		// Skip header rows
+		if strings.Contains(row, "<th") {
+			continue
+		}
+
+		// Check if row contains both event name (or slug) and date
 		eventSlug := strings.ToLower(strings.ReplaceAll(eventName, " ", ""))
-		rowPattern = regexp.MustCompile(`(?s)<tr[^>]*>.*?` + eventSlug + `.*?` + regexp.QuoteMeta(dateStr) + `.*?</tr>`)
-		rowMatch = rowPattern.FindString(html)
+		rowLower := strings.ToLower(row)
+
+		hasEvent := strings.Contains(row, eventName) || strings.Contains(rowLower, eventSlug)
+		hasDate := strings.Contains(row, dateStr)
+
+		if !hasEvent || !hasDate {
+			continue
+		}
+
+		// Extract table cells
+		cellPattern := regexp.MustCompile(`(?s)<td[^>]*>(.*?)</td>`)
+		cells := cellPattern.FindAllStringSubmatch(row, -1)
+
+		// Expect 7 columns: Event (0), Run Date (1), Run Number (2), Pos (3), Time (4), Age Grade (5), PB? (6)
+		if len(cells) >= 7 {
+			result := &ParkrunResult{
+				EventName: eventName,
+				EventDate: dateStr,
+			}
+
+			fmt.Sscanf(stripTags(cells[3][1]), "%d", &result.Position)
+			result.Time = stripTags(cells[4][1])
+			result.AgeGrade = stripTags(cells[5][1])
+			pbCell := stripTags(cells[6][1])
+			result.IsPB = strings.Contains(strings.ToUpper(pbCell), "PB")
+
+			return result, nil
+		}
 	}
 
-	if rowMatch == "" {
-		return nil, nil // No matching result found yet
-	}
-
-	// Extract position, time, age grade from the matched row
-	result := &ParkrunResult{
-		EventName: eventName,
-		EventDate: dateStr,
-	}
-
-	// Extract time (MM:SS format)
-	timeMatch := timeRegex.FindStringSubmatch(rowMatch)
-	if len(timeMatch) >= 2 {
-		result.Time = timeMatch[1]
-	}
-
-	// Extract position (number)
-	posMatch := positionRegex.FindStringSubmatch(rowMatch)
-	if len(posMatch) >= 2 {
-		fmt.Sscanf(posMatch[1], "%d", &result.Position)
-	}
-
-	// Extract age grade (XX.XX% format)
-	ageMatch := ageGradeRegex.FindStringSubmatch(rowMatch)
-	if len(ageMatch) >= 2 {
-		result.AgeGrade = ageMatch[1]
-	}
-
-	// Check for PB indicator
-	result.IsPB = strings.Contains(rowMatch, "PB") || strings.Contains(rowMatch, "New PB")
-
-	return result, nil
+	return nil, nil // No matching result found yet
 }
 
 // formatResultsDescription formats results into a nice description

@@ -91,6 +91,14 @@ async function handleListIntegrations(userId: string, res: Response, ctx: Framew
     };
   }
 
+  if (integrations.parkrun) {
+    summary.parkrun = {
+      connected: !!integrations.parkrun.enabled,
+      externalUserId: integrations.parkrun.athleteId,
+      lastUsedAt: integrations.parkrun.lastUsedAt
+    };
+  }
+
   res.status(200).json(summary);
 }
 
@@ -157,11 +165,12 @@ async function handleConnect(userId: string, provider: string, res: Response, ct
 async function handleDisconnect(userId: string, provider: string, res: Response, ctx: FrameworkContext) {
   const { logger } = ctx;
 
-  // Import integration definitions dynamically to validate provider
-  const { INTEGRATIONS } = await import('@fitglue/shared');
-  const integrationDef = INTEGRATIONS[provider as keyof typeof INTEGRATIONS];
+  // Import registry dynamically to validate provider
+  const { getRegistry } = await import('@fitglue/shared');
+  const registry = getRegistry();
+  const integrationManifest = registry.integrations.find((i: { id: string }) => i.id === provider);
 
-  if (!integrationDef) {
+  if (!integrationManifest) {
     res.status(400).json({ error: `Invalid provider: ${provider}` });
     return;
   }
@@ -178,7 +187,7 @@ async function handleDisconnect(userId: string, provider: string, res: Response,
     await ctx.stores.users.deleteIntegration(userId, provider);
 
     // Try to delete any associated ingress keys (matches label pattern from handleConfigure)
-    const label = `${integrationDef.displayName} Webhook`;
+    const label = `${integrationManifest.name} Webhook`;
     const deletedKeys = await ctx.stores.apiKeys.deleteByUserAndLabel(userId, label);
     if (deletedKeys > 0) {
       logger.info('Deleted ingress key', { userId, provider, label, count: deletedKeys });
@@ -202,29 +211,50 @@ async function handleConfigure(
 ) {
   const { logger } = ctx;
 
-  // Only API key integrations can be configured this way
-  if (provider !== 'hevy') {
+  // Import registry and auth types
+  const { getRegistry, IntegrationAuthType } = await import('@fitglue/shared');
+  const registry = getRegistry();
+
+  // Look up integration from registry
+  const integrationManifest = registry.integrations.find((i: { id: string }) => i.id === provider);
+  if (!integrationManifest) {
+    res.status(400).json({ error: `Unknown integration: ${provider}` });
+    return;
+  }
+
+  // Only API_KEY and PUBLIC_ID can be configured via PUT
+  if (integrationManifest.authType === IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH) {
     res.status(400).json({
       error: `${provider} uses OAuth authentication. Use the Connect flow instead.`
     });
     return;
   }
-
-  const apiKey = body?.apiKey?.trim();
-  if (!apiKey) {
-    res.status(400).json({ error: 'API key is required' });
+  if (integrationManifest.authType === IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC) {
+    res.status(400).json({
+      error: `${provider} requires the mobile app. Download FitGlue from your app store.`
+    });
     return;
   }
 
-  // Check connection limit for free tier users
+  const inputValue = body?.apiKey?.trim();
+  if (!inputValue) {
+    const fieldName = integrationManifest.apiKeyLabel || 'Value';
+    res.status(400).json({ error: `${fieldName} is required` });
+    return;
+  }
+
+  // Check connection limit
   const user = await ctx.services.user.get(userId);
   if (!user) {
     res.status(404).json({ error: 'User not found' });
     return;
   }
-  // Only check limit if Hevy is not already connected (this is a new connection)
-  const hevyAlreadyConnected = user.integrations?.hevy?.enabled;
-  if (!hevyAlreadyConnected) {
+
+  // Check if this provider is already connected
+  const existingIntegration = user.integrations?.[provider as keyof typeof user.integrations];
+  const alreadyConnected = existingIntegration && 'enabled' in existingIntegration && existingIntegration.enabled;
+
+  if (!alreadyConnected) {
     const currentCount = countActiveConnections(user);
     const { allowed, reason } = canAddConnection(user, currentCount);
     if (!allowed) {
@@ -234,45 +264,65 @@ async function handleConfigure(
   }
 
   try {
+    // Handle based on provider
+    if (provider === 'hevy') {
+      // Hevy: Validate API key, save integration, generate ingress key for webhook
+      const isValid = await validateHevyApiKey(inputValue);
+      if (!isValid) {
+        res.status(400).json({ error: 'Invalid API key. Please check and try again.' });
+        return;
+      }
 
-    // Validate the API key by making a test call to Hevy
-    const isValid = await validateHevyApiKey(apiKey);
-    if (!isValid) {
-      res.status(400).json({ error: 'Invalid API key. Please check and try again.' });
-      return;
+      await ctx.stores.users.setIntegration(userId, 'hevy', {
+        enabled: true,
+        apiKey: inputValue,
+        userId: '', // Will be populated on first webhook
+        createdAt: new Date(),
+      });
+
+      // Generate ingress key for webhook configuration
+      const crypto = await import('crypto');
+      const rawIngressKey = crypto.randomBytes(32).toString('hex');
+      const keyHash = crypto.createHash('sha256').update(rawIngressKey).digest('hex');
+      const label = `${integrationManifest.name} Webhook`;
+
+      await ctx.stores.apiKeys.create(keyHash, {
+        userId,
+        label,
+        scopes: ['ingress'],
+        createdAt: new Date(),
+      });
+
+      logger.info('Configured Hevy integration and generated ingress key', { userId, provider, label });
+      res.status(200).json({
+        message: `${integrationManifest.name} connected successfully`,
+        ingressApiKey: rawIngressKey,
+        ingressKeyLabel: label,
+      });
+
+    } else if (provider === 'parkrun') {
+      // Parkrun: Just save the barcode number, no validation or ingress key needed
+      await ctx.stores.users.setIntegration(userId, 'parkrun', {
+        enabled: true,
+        athleteId: inputValue,
+        countryUrl: 'www.parkrun.org.uk', // Default, could be made configurable later
+        consentGiven: true,
+        createdAt: new Date(),
+      });
+
+      logger.info('Configured Parkrun integration', { userId, athleteId: inputValue });
+      res.status(200).json({
+        message: `${integrationManifest.name} connected successfully`,
+        // No ingress key for Parkrun - it uses pull-based results fetching
+      });
+
+    } else {
+      // Unsupported provider for PUT configuration
+      res.status(400).json({ error: `${provider} cannot be configured this way.` });
     }
 
-    // Save the integration
-    await ctx.stores.users.setIntegration(userId, 'hevy', {
-      enabled: true,
-      apiKey: apiKey,
-      userId: '', // Will be populated on first webhook
-      createdAt: new Date(),
-    });
-
-    // Generate a new Ingress API Key for this provider
-    // The user needs this to configure the provider's webhook
-    const crypto = await import('crypto');
-    const rawIngressKey = crypto.randomBytes(32).toString('hex');
-    const keyHash = crypto.createHash('sha256').update(rawIngressKey).digest('hex');
-    const label = `${provider.charAt(0).toUpperCase() + provider.slice(1)} Webhook`;
-
-    await ctx.stores.apiKeys.create(keyHash, {
-      userId,
-      label,
-      scopes: ['ingress'],
-      createdAt: new Date(),
-    });
-
-    logger.info('Configured integration and generated ingress key', { userId, provider, label });
-    res.status(200).json({
-      message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} connected successfully`,
-      ingressApiKey: rawIngressKey,
-      ingressKeyLabel: label,
-    });
-
   } catch (err) {
-    logger.error('Failed to configure Hevy integration', { error: err });
+    logger.error('Failed to configure integration', { error: err, provider });
     res.status(500).json({ error: 'Failed to configure integration' });
   }
 }

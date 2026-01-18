@@ -1183,15 +1183,15 @@ registerIntegration({
   name: 'Parkrun',
   description: 'Enhanced Parkrun detection with official results',
   icon: '🏃',
-  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID,
   enabled: true,
   docsUrl: 'https://www.parkrun.com',
   setupTitle: 'Connect Parkrun',
   setupInstructions: `To connect Parkrun, you'll need your athlete barcode number:
 
-1. Find your **Parkrun barcode** — it starts with **A** followed by numbers (e.g. A12345678)
-2. This is printed on your barcode card or available on the Parkrun website
-3. Enter your barcode number below
+1. **Find your barcode** — Your Parkrun barcode starts with "A" followed by numbers (e.g. A12345678)
+2. **Check your barcode card** — This is printed on your physical barcode card, or find it on the Parkrun website in your profile
+3. **Enter your barcode** — Enter your barcode number (including the A) in the form below
 
 Once connected, FitGlue can fetch your official results and update your activities automatically.`,
   apiKeyLabel: 'Barcode Number',
