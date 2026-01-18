@@ -83,7 +83,5 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
 };
 
 export const stravaOAuthHandler = createCloudFunction(handler, {
-  auth: {
-    strategies: [], // Public endpoint
-  },
+  allowUnauthenticated: true, // Public OAuth callback endpoint
 });
