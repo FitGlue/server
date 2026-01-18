@@ -219,10 +219,23 @@ export class UserService {
         });
     }
 
-    private mapDestinations(dests: string[]): Destination[] {
+    private mapDestinations(dests: (string | number)[]): Destination[] {
         return dests.map(d => {
-            if (d === 'strava' || d === 'DESTINATION_STRAVA') return Destination.DESTINATION_STRAVA;
-            if (d === 'mock' || d === 'DESTINATION_MOCK') return Destination.DESTINATION_MOCK;
+            // If already a number, validate and return as Destination
+            if (typeof d === 'number') {
+                return Object.values(Destination).includes(d) ? d : Destination.DESTINATION_UNSPECIFIED;
+            }
+
+            // String lookup: check against proto enum names (e.g., 'DESTINATION_STRAVA' or just 'strava')
+            const normalized = d.toUpperCase();
+            const enumKey = normalized.startsWith('DESTINATION_') ? normalized : `DESTINATION_${normalized}`;
+
+            // Find matching enum value from Destination enum
+            const enumValue = Destination[enumKey as keyof typeof Destination];
+            if (typeof enumValue === 'number') {
+                return enumValue;
+            }
+
             return Destination.DESTINATION_UNSPECIFIED;
         });
     }
