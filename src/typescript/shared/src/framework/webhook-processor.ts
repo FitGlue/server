@@ -4,6 +4,7 @@ import { ActivityPayload, ActivitySource } from '../types/pb/activity';
 import { StandardizedActivity } from '../types/pb/standardized_activity';
 import { CloudEventPublisher } from '../infrastructure/pubsub/cloud-event-publisher';
 import { CloudEventType } from '../types/pb/events';
+import { ExecutionStatus } from '../types/pb/execution';
 import { getCloudEventSource, getCloudEventType } from '../types/events-helper';
 import { TOPICS } from '../config';
 
@@ -143,6 +144,30 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       // Generate unique pipelineExecutionId for each activity
       // This ensures separate trace grouping even when multiple activities come from one webhook
       const activityPipelineExecutionId = `${ctx.executionId}-${activityExternalId}`;
+
+      // Log virtual source execution so it appears in the trace
+      // Since the root execution is attached to ctx.executionId, it won't show up in the trace for activityPipelineExecutionId
+      // We manually create a record here to bridge that gap.
+      const sourceExecutionId = `${ctx.executionId}-${activityExternalId}-source`;
+
+      try {
+        await ctx.services.execution.create(sourceExecutionId, {
+          executionId: sourceExecutionId,
+          pipelineExecutionId: activityPipelineExecutionId,
+          service: connector.name,
+          status: ExecutionStatus.STATUS_SUCCESS,
+          triggerType: 'webhook',
+          timestamp: timestamp,
+          startTime: timestamp,
+          endTime: new Date(),
+          userId: userId,
+          inputsJson: JSON.stringify({ id: externalId, activityId: activityExternalId }),
+          outputsJson: JSON.stringify({ published: true, activityId: activityExternalId })
+        });
+      } catch (err) {
+        logger.warn(`Failed to log source execution for ${activityExternalId}`, { error: err });
+        // Proceed anyway, this is just for tracing visibility
+      }
 
       const messagePayload: ActivityPayload = {
         source: connector.activitySource,

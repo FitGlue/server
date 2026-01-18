@@ -70,7 +70,10 @@ describe('createWebhookProcessor', () => {
     // Proper context mocking with services
     ctx = {
       services: {
-        user: mockUserService
+        user: mockUserService,
+        execution: {
+          create: jest.fn().mockResolvedValue(true)
+        }
       },
       logger: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
       userId: 'user-1',
