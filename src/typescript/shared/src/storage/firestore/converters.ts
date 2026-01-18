@@ -272,6 +272,7 @@ const mapUserIntegrationsFromFirestore = (data: Record<string, unknown> | undefi
 
 export const mapPipelineToFirestore = (p: PipelineConfig): Record<string, unknown> => ({
   id: p.id,
+  name: p.name || '',
   source: p.source,
   destinations: p.destinations, // Stored as numbers (enum values)
   enrichers: p.enrichers?.map(e => ({
@@ -282,6 +283,7 @@ export const mapPipelineToFirestore = (p: PipelineConfig): Record<string, unknow
 
 export const mapPipelineFromFirestore = (p: Record<string, unknown>): PipelineConfig => ({
   id: p.id as string,
+  name: (p.name as string) || '',
   source: p.source as string,
   destinations: ((p.destinations as unknown[]) || []).map(d => {
     if (typeof d === 'number') return d as Destination;

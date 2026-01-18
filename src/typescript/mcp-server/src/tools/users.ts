@@ -363,7 +363,7 @@ export function registerUserTools(registerTool: (tool: any, handler: (args: any)
       }
     },
     async ({ userId, source, enrichers, destinations }: any) => {
-      const id = await userService.addPipeline(userId, source, enrichers, destinations);
+      const id = await userService.addPipeline(userId, '', source, enrichers, destinations);
       return { pipelineId: id, message: "Pipeline added" };
     }
   );

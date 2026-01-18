@@ -124,6 +124,8 @@ export interface PipelineConfig {
   source: string;
   enrichers: EnricherConfig[];
   destinations: Destination[];
+  /** Optional user-friendly name (e.g., "Morning Gym Sessions") */
+  name: string;
 }
 
 export interface UserIntegrations {

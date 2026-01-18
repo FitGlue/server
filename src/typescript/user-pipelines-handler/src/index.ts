@@ -106,15 +106,17 @@ async function handleCreatePipeline(userId: string, req: Request, res: Response,
 
   const pipeline = {
     id: pipelineId,
+    name: body.name || '', // Optional name field
     source: body.source,
     enrichers: body.enrichers || [],
     destinations: body.destinations
   };
 
   try {
-    // addPipeline(userId, source, enrichers, destinations) returns generated ID
+    // addPipeline(userId, name, source, enrichers, destinations) returns generated ID
     const generatedId = await ctx.services.user.addPipeline(
       userId,
+      pipeline.name,
       pipeline.source,
       pipeline.enrichers,
       pipeline.destinations
@@ -132,10 +134,11 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: Req
   const body = req.body;
 
   try {
-    // replacePipeline(userId, pipelineId, source, enrichers, destinations)
+    // replacePipeline(userId, pipelineId, name, source, enrichers, destinations)
     await ctx.services.user.replacePipeline(
       userId,
       pipelineId,
+      body.name || '',
       body.source,
       body.enrichers || [],
       body.destinations || []

@@ -989,19 +989,25 @@ resource "google_cloud_run_service_iam_member" "showcase_handler_invoker" {
   member   = "allUsers"
 }
 
-# ----------------- File Upload Handler -----------------
-resource "google_cloudfunctions2_function" "file_upload_handler" {
-  name        = "file-upload-handler"
+# ----------------- FIT Parser Handler (Go) -----------------
+resource "google_storage_bucket_object" "fit_parser_handler_zip" {
+  name   = "fit-parser-handler-${filemd5("/tmp/fitglue-function-zips/fit-parser-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/fit-parser-handler.zip"
+}
+
+resource "google_cloudfunctions2_function" "fit_parser_handler" {
+  name        = "fit-parser-handler"
   location    = var.region
-  description = "Handles direct FIT file uploads"
+  description = "Parses FIT files and publishes to pipeline"
 
   build_config {
-    runtime     = "nodejs20"
-    entry_point = "fileUploadHandler"
+    runtime     = "go125"
+    entry_point = "ParseFitFile"
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.fit_parser_handler_zip.name
       }
     }
     environment_variables = {}
@@ -1013,15 +1019,17 @@ resource "google_cloudfunctions2_function" "file_upload_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      ENABLE_PUBLISH       = "true"
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
 }
 
-resource "google_cloud_run_service_iam_member" "file_upload_handler_invoker" {
-  project  = google_cloudfunctions2_function.file_upload_handler.project
-  location = google_cloudfunctions2_function.file_upload_handler.location
-  service  = google_cloudfunctions2_function.file_upload_handler.name
+resource "google_cloud_run_service_iam_member" "fit_parser_handler_invoker" {
+  project  = google_cloudfunctions2_function.fit_parser_handler.project
+  location = google_cloudfunctions2_function.fit_parser_handler.location
+  service  = google_cloudfunctions2_function.fit_parser_handler.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+

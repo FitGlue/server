@@ -35,6 +35,7 @@ message PipelineConfig {
   string source = 2; // e.g. "SOURCE_HEVY"
   repeated EnricherConfig enrichers = 3;
   repeated fitglue.events.Destination destinations = 4;
+  string name = 5; // Optional user-friendly name (e.g., "Morning Gym Sessions")
 }
 
 message UserIntegrations {

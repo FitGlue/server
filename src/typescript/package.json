@@ -20,8 +20,7 @@
     "integration-request-handler",
     "mobile-sync-handler",
     "billing-handler",
-    "showcase-handler",
-    "file-upload-handler"
+    "showcase-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

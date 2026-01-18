@@ -727,7 +727,7 @@ program.command('users:add-pipeline')
             ]);
 
             console.log('\nAdding pipeline...');
-            const id = await userService.addPipeline(userId, sourceAnswers.source, enrichers, destAnswers.destinations);
+            const id = await userService.addPipeline(userId, '', sourceAnswers.source, enrichers, destAnswers.destinations);
             console.log(`Pipeline added successfully! ID: ${id}`);
 
         } catch (error: unknown) {
@@ -883,7 +883,7 @@ program.command('users:replace-pipeline')
                 }
             ]);
 
-            await userService.replacePipeline(userId, pipelineId, sourceAnswers.source, enrichers, destAnswers.destinations);
+            await userService.replacePipeline(userId, pipelineId, '', sourceAnswers.source, enrichers, destAnswers.destinations);
             console.log(`Pipeline ${pipelineId} replaced successfully.`);
 
         } catch (error: unknown) {
@@ -1163,7 +1163,7 @@ const configureTestPipeline = async (pipelineId: string, behavior: 'success' | '
 
     const destinations = ['mock'];
 
-    await userService.replacePipeline(user.userId, pipelineId, 'SOURCE_TEST', enrichers, destinations);
+    await userService.replacePipeline(user.userId, pipelineId, '', 'SOURCE_TEST', enrichers, destinations);
     console.log(`✅ Pipeline ${pipelineId} reconfigured successfully.`);
 
     // 2. Create/Get Ingress Key

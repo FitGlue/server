@@ -108,9 +108,10 @@ describe('user-pipelines-handler', () => {
     it('creates pipeline with generated ID', async () => {
       await handler(req, res, ctx);
 
-      // addPipeline(userId, source, enrichers, destinations)
+      // addPipeline(userId, name, source, enrichers, destinations)
       expect(mockUserService.addPipeline).toHaveBeenCalledWith(
         'user-1',
+        '',
         'hevy',
         [],
         ['strava']
@@ -122,9 +123,10 @@ describe('user-pipelines-handler', () => {
       req.body.id = 'custom-id';
       await handler(req, res, ctx);
 
-      // Still uses source, enrichers, destinations (id is managed internally)
+      // Still uses name, source, enrichers, destinations (id is managed internally)
       expect(mockUserService.addPipeline).toHaveBeenCalledWith(
         'user-1',
+        '',
         'hevy',
         [],
         ['strava']
@@ -159,10 +161,11 @@ describe('user-pipelines-handler', () => {
     it('updates pipeline successfully', async () => {
       await handler(req, res, ctx);
 
-      // replacePipeline(userId, pipelineId, source, enrichers, destinations)
+      // replacePipeline(userId, pipelineId, name, source, enrichers, destinations)
       expect(mockUserService.replacePipeline).toHaveBeenCalledWith(
         'user-1',
         'pipeline-123',
+        '',
         'fitbit',
         [],
         ['strava', 'mock']

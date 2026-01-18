@@ -193,12 +193,12 @@ export class UserService {
     }
 
     // Pipeline methods (legacy support)
-    async addPipeline(userId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<string> {
+    async addPipeline(userId: string, name: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<string> {
         const id = `pipe_${Date.now()}`;
         const normalizedSource = this.normalizeSource(source);
         const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id, source: normalizedSource, enrichers, destinations: destEnums
+            id, name, source: normalizedSource, enrichers, destinations: destEnums
         });
         return id;
     }
@@ -210,12 +210,12 @@ export class UserService {
         await this.userStore.updatePipelines(userId, newPipelines);
     }
 
-    async replacePipeline(userId: string, pipelineId: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<void> {
+    async replacePipeline(userId: string, pipelineId: string, name: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<void> {
         await this.removePipeline(userId, pipelineId);
         const normalizedSource = this.normalizeSource(source);
         const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id: pipelineId, source: normalizedSource, enrichers, destinations: destEnums
+            id: pipelineId, name, source: normalizedSource, enrichers, destinations: destEnums
         });
     }
 

@@ -87,8 +87,3 @@ exports.showcaseHandler = (req, res) => {
   const showcase = require('./showcase-handler/build/index');
   return showcase.showcaseHandler(req, res);
 };
-
-exports.fileUploadHandler = (req, res) => {
-  const fileUpload = require('./file-upload-handler/build/index');
-  return fileUpload.fileUploadHandler(req, res);
-};
