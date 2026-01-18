@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.4.0](https://github.com/FitGlue/server/compare/v1.3.0...v1.4.0) (2026-01-18)
+
+
+### Features
+
+* improve Fitbit activity type mapping by fetching detailed activity data, enhance webhook processing with per-activity traceability, and add unit tests for activity type mapping. ([7d4a35e](https://github.com/FitGlue/server/commit/7d4a35e83d8108b135c905204f9f969067614822))
+* introduce Logic Gate enricher provider for conditional pipeline halting based on activity rules. ([bd9de86](https://github.com/FitGlue/server/commit/bd9de86212ff6b1f0bdb8bfb870f7911841e49e4))
+* Log virtual source executions for each processed activity to enhance tracing visibility. ([6814c86](https://github.com/FitGlue/server/commit/6814c86931ae26163724c63dabb89ef93ca39df4))
+* Map "structured workout" to run activity type and add related tests. ([3b75aec](https://github.com/FitGlue/server/commit/3b75aecd049eceb01516a7d2b6c7097254530d4c))
+* Replace the TypeScript file upload handler with a new Go-based FIT parser function, updating pipeline configuration and protobuf definitions. ([b752fe6](https://github.com/FitGlue/server/commit/b752fe6ce7985cfc11504760fcac4c8192d11f8c))
+
 ## [1.3.0](https://github.com/FitGlue/server/compare/v1.2.1...v1.3.0) (2026-01-18)
 
 
