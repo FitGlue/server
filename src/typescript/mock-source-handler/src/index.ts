@@ -6,7 +6,7 @@ export const mockSourceHandler = createCloudFunction(
   {
     auth: {
       strategies: [new ApiKeyStrategy()],
-      requiredScopes: ['read:activity'] // Reusing existing scope
+      requiredScopes: ['ingress'] // Ingress scope for API key authentication
     }
   }
 );

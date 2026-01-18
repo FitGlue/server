@@ -10,7 +10,7 @@ export const hevyWebhookHandler = createCloudFunction(
     {
         auth: {
             strategies: [new ApiKeyStrategy()],
-            requiredScopes: ['read:activity']
+            requiredScopes: ['ingress']
         }
     }
 );
