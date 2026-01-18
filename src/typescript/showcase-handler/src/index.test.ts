@@ -33,7 +33,7 @@ describe('showcase-handler', () => {
 
   beforeEach(() => {
     // Get the mocked firestore
-    mockFirestore = (admin.firestore as jest.Mock)();
+    mockFirestore = (admin.firestore as unknown as jest.Mock)();
     mockDocGet = mockFirestore.collection().doc().get;
 
     req = {

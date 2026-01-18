@@ -1,6 +1,5 @@
+const baseConfig = require("../shared/jest.config.base.js");
+
 module.exports = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  testMatch: ['**/*.test.ts'],
-  moduleFileExtensions: ['ts', 'js'],
+  ...baseConfig,
 };
