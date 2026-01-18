@@ -131,13 +131,30 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 		return nil, fmt.Errorf("invalid start time: zero")
 	}
 
-	// 5. Find nearest Parkrun location (1.5km threshold)
-	matchedLocation := p.locationService.FindNearest(lat, long, 1500.0)
+	// 5. Find nearest Parkrun location (5km search for debug visibility)
+	matchedLocation := p.locationService.FindNearest(lat, long, 5000.0)
+
 	if matchedLocation == nil {
 		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{
-				"status": "skipped",
-				"reason": "not_near_parkrun",
+				"status":        "skipped",
+				"reason":        "no_parkrun_within_5km",
+				"activity_lat":  fmt.Sprintf("%f", lat),
+				"activity_long": fmt.Sprintf("%f", long),
+			},
+		}, nil
+	}
+
+	dist := distanceMeters(lat, long, matchedLocation.Latitude, matchedLocation.Longitude)
+	if dist > 1500.0 {
+		return &enricher_providers.EnrichmentResult{
+			Metadata: map[string]string{
+				"status":          "skipped",
+				"reason":          "not_near_parkrun",
+				"nearest_parkrun": matchedLocation.Name,
+				"distance_meters": fmt.Sprintf("%.0f", dist),
+				"activity_lat":    fmt.Sprintf("%f", lat),
+				"activity_long":   fmt.Sprintf("%f", long),
 			},
 		}, nil
 	}
