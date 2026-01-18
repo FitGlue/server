@@ -13,6 +13,7 @@ enum ActivitySource {
   SOURCE_HEVY = 1;
   SOURCE_FITBIT = 3;
   SOURCE_PARKRUN_RESULTS = 4; // Parkrun official results (CREATE mode)
+  SOURCE_FILE_UPLOAD = 5;     // Direct FIT file upload
   SOURCE_TEST = 99;
 }
 

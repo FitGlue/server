@@ -16,6 +16,8 @@ export enum ActivitySource {
   SOURCE_FITBIT = 3,
   /** SOURCE_PARKRUN_RESULTS - Parkrun official results (CREATE mode) */
   SOURCE_PARKRUN_RESULTS = 4,
+  /** SOURCE_FILE_UPLOAD - Direct FIT file upload */
+  SOURCE_FILE_UPLOAD = 5,
   SOURCE_TEST = 99,
   UNRECOGNIZED = -1,
 }

@@ -30,6 +30,7 @@ const (
 	ActivitySource_SOURCE_HEVY            ActivitySource = 1
 	ActivitySource_SOURCE_FITBIT          ActivitySource = 3
 	ActivitySource_SOURCE_PARKRUN_RESULTS ActivitySource = 4 // Parkrun official results (CREATE mode)
+	ActivitySource_SOURCE_FILE_UPLOAD     ActivitySource = 5 // Direct FIT file upload
 	ActivitySource_SOURCE_TEST            ActivitySource = 99
 )
 
@@ -40,6 +41,7 @@ var (
 		1:  "SOURCE_HEVY",
 		3:  "SOURCE_FITBIT",
 		4:  "SOURCE_PARKRUN_RESULTS",
+		5:  "SOURCE_FILE_UPLOAD",
 		99: "SOURCE_TEST",
 	}
 	ActivitySource_value = map[string]int32{
@@ -47,6 +49,7 @@ var (
 		"SOURCE_HEVY":            1,
 		"SOURCE_FITBIT":          3,
 		"SOURCE_PARKRUN_RESULTS": 4,
+		"SOURCE_FILE_UPLOAD":     5,
 		"SOURCE_TEST":            99,
 	}
 )
@@ -249,12 +252,13 @@ const file_activity_proto_rawDesc = "" +
 	"\x16_pipeline_execution_idB\x0e\n" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
-	"\x18_resume_pending_input_id*u\n" +
+	"\x18_resume_pending_input_id*\x8d\x01\n" +
 	"\x0eActivitySource\x12\x12\n" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +
 	"\rSOURCE_FITBIT\x10\x03\x12\x1a\n" +
-	"\x16SOURCE_PARKRUN_RESULTS\x10\x04\x12\x0f\n" +
+	"\x16SOURCE_PARKRUN_RESULTS\x10\x04\x12\x16\n" +
+	"\x12SOURCE_FILE_UPLOAD\x10\x05\x12\x0f\n" +
 	"\vSOURCE_TEST\x10cB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (

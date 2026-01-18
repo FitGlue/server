@@ -989,3 +989,39 @@ resource "google_cloud_run_service_iam_member" "showcase_handler_invoker" {
   member   = "allUsers"
 }
 
+# ----------------- File Upload Handler -----------------
+resource "google_cloudfunctions2_function" "file_upload_handler" {
+  name        = "file-upload-handler"
+  location    = var.region
+  description = "Handles direct FIT file uploads"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "fileUploadHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 120
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "file_upload_handler_invoker" {
+  project  = google_cloudfunctions2_function.file_upload_handler.project
+  location = google_cloudfunctions2_function.file_upload_handler.location
+  service  = google_cloudfunctions2_function.file_upload_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}

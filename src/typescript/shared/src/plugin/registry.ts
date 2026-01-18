@@ -271,6 +271,36 @@ When you complete a Parkrun but don't have a GPS watch, FitGlue can still track 
   useCases: [],
 });
 
+registerSource({
+  id: 'file_upload',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'File Upload',
+  description: 'Upload FIT files directly from your device',
+  icon: '📤',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Direct FIT File Upload
+Upload activity files directly from your device. Perfect for importing data from fitness devices or recovering workouts not captured by connected services.
+
+### How it works
+Select a FIT file, optionally add title/description, then upload. The activity enters your pipeline for enrichment and distribution.
+  `,
+  features: [
+    '✅ Upload FIT files from any device',
+    '✅ Set custom title and description',
+    '✅ Works with all FitGlue boosters',
+    '✅ No external service connection required',
+  ],
+  transformations: [],
+  useCases: [
+    'Import workouts from Garmin or other standalone GPS devices',
+    'Bring in activities from platforms FitGlue doesn\'t integrate with yet',
+    'Recover activities from device backups',
+  ],
+});
+
 // ============================================================================
 // Register all known destination manifests
 // ============================================================================

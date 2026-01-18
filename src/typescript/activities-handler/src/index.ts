@@ -2,6 +2,7 @@ import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy } from '@fi
 import { Request, Response } from 'express';
 import { SynchronizedActivity } from '@fitglue/shared/dist/types/pb/user';
 import { ActivityType } from '@fitglue/shared/dist/types/pb/standardized_activity';
+import { ActivitySource } from '@fitglue/shared/dist/types/pb/activity';
 import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
 
 // Helper to convert ActivityType enum to readable string
@@ -73,15 +74,28 @@ const executionStatusToString = (status: number | undefined): string => {
   return name ? name.replace('STATUS_', '') : 'UNKNOWN';
 };
 
-// Helper to convert ActivitySource to readable string
+// Helper to convert ActivitySource to readable string (dynamic lookup)
 const activitySourceToString = (source: string | undefined): string => {
   if (!source) return 'Unknown';
 
   const sourceStr = source.toString().toUpperCase();
 
-  if (sourceStr === 'SOURCE_FITBIT' || sourceStr === '3') return 'Fitbit';
-  if (sourceStr === 'SOURCE_HEVY' || sourceStr === '1') return 'Hevy';
-  if (sourceStr === 'SOURCE_TEST' || sourceStr === '99') return 'Test';
+  // Handle SOURCE_X format: SOURCE_FILE_UPLOAD -> "File Upload"
+  if (sourceStr.startsWith('SOURCE_')) {
+    const name = sourceStr.replace('SOURCE_', '').replace(/_/g, ' ');
+    // Title case: "FILE UPLOAD" -> "File Upload"
+    return name.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+  }
+
+  // Fallback for numeric values - lookup in ActivitySource enum
+  const numericValue = parseInt(sourceStr, 10);
+  if (!isNaN(numericValue)) {
+    const enumName = ActivitySource[numericValue as ActivitySource];
+    if (enumName && enumName.startsWith('SOURCE_')) {
+      const name = enumName.replace('SOURCE_', '').replace(/_/g, ' ');
+      return name.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
 
   return source;
 };

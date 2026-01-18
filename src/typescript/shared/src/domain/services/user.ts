@@ -253,6 +253,7 @@ export class UserService {
             'mock': 'SOURCE_TEST',
             'apple-health': 'SOURCE_APPLE_HEALTH',
             'health-connect': 'SOURCE_HEALTH_CONNECT',
+            'file_upload': 'SOURCE_FILE_UPLOAD',
         };
 
         // If already in protobuf format, return as-is

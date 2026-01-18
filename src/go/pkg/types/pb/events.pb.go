@@ -107,6 +107,7 @@ const (
 	CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER          CloudEventSource = 5
 	CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER  CloudEventSource = 6
 	CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS CloudEventSource = 7
+	CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD     CloudEventSource = 8
 	CloudEventSource_CLOUD_EVENT_SOURCE_MOCK            CloudEventSource = 99
 )
 
@@ -121,6 +122,7 @@ var (
 		5:  "CLOUD_EVENT_SOURCE_ROUTER",
 		6:  "CLOUD_EVENT_SOURCE_INPUTS_HANDLER",
 		7:  "CLOUD_EVENT_SOURCE_PARKRUN_RESULTS",
+		8:  "CLOUD_EVENT_SOURCE_FILE_UPLOAD",
 		99: "CLOUD_EVENT_SOURCE_MOCK",
 	}
 	CloudEventSource_value = map[string]int32{
@@ -132,6 +134,7 @@ var (
 		"CLOUD_EVENT_SOURCE_ROUTER":          5,
 		"CLOUD_EVENT_SOURCE_INPUTS_HANDLER":  6,
 		"CLOUD_EVENT_SOURCE_PARKRUN_RESULTS": 7,
+		"CLOUD_EVENT_SOURCE_FILE_UPLOAD":     8,
 		"CLOUD_EVENT_SOURCE_MOCK":            99,
 	}
 )
@@ -531,7 +534,7 @@ const file_events_proto_rawDesc = "" +
 	"$CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION\x10\x04\x1a#\x82\xb5\x18\x1fcom.fitglue.fitbit.notification\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_ENRICHMENT_LAG\x10\x05\x1a\x1e\x82\xb5\x18\x1acom.fitglue.enrichment.lag\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_INPUT_RESOLVED\x10\x06\x1a\x1e\x82\xb5\x18\x1acom.fitglue.input.resolved\x12E\n" +
-	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\xa2\x04\n" +
+	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\xe5\x04\n" +
 	"\x10CloudEventSource\x12\"\n" +
 	"\x1eCLOUD_EVENT_SOURCE_UNSPECIFIED\x10\x00\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_HEVY\x10\x01\x1a\x16\x8a\xb5\x18\x12/integrations/hevy\x12G\n" +
@@ -540,7 +543,8 @@ const file_events_proto_rawDesc = "" +
 	"\x1bCLOUD_EVENT_SOURCE_ENRICHER\x10\x04\x1a\x12\x8a\xb5\x18\x0e/core/enricher\x12/\n" +
 	"\x19CLOUD_EVENT_SOURCE_ROUTER\x10\x05\x1a\x10\x8a\xb5\x18\f/core/router\x12?\n" +
 	"!CLOUD_EVENT_SOURCE_INPUTS_HANDLER\x10\x06\x1a\x18\x8a\xb5\x18\x14/core/inputs-handler\x12I\n" +
-	"\"CLOUD_EVENT_SOURCE_PARKRUN_RESULTS\x10\a\x1a!\x8a\xb5\x18\x1d/integrations/parkrun/results\x123\n" +
+	"\"CLOUD_EVENT_SOURCE_PARKRUN_RESULTS\x10\a\x1a!\x8a\xb5\x18\x1d/integrations/parkrun/results\x12A\n" +
+	"\x1eCLOUD_EVENT_SOURCE_FILE_UPLOAD\x10\b\x1a\x1d\x8a\xb5\x18\x19/integrations/file-upload\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\xc9\x01\n" +
 	"\vDestination\x12\x1b\n" +
 	"\x17DESTINATION_UNSPECIFIED\x10\x00\x123\n" +
