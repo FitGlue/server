@@ -82,3 +82,8 @@ exports.billingHandler = (req, res) => {
   const billing = require('./billing-handler/dist/index');
   return billing.billingHandler(req, res);
 };
+
+exports.showcaseHandler = (req, res) => {
+  const showcase = require('./showcase-handler/build/index');
+  return showcase.showcaseHandler(req, res);
+};
