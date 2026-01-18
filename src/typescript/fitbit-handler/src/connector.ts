@@ -19,7 +19,7 @@ export interface FitbitConnectorConfig extends ConnectorConfig {
  * Fitbit has 500+ activity types, but we map common ones to Strava-compatible types.
  * This mapping covers the most common activity categories from Fitbit.
  */
-function mapFitbitActivityType(activityParentName: string | undefined): ActivityType {
+export function mapFitbitActivityType(activityParentName: string | undefined): ActivityType {
   const name = (activityParentName || '').toLowerCase().trim();
 
   // Running variations (including trail, virtual)
@@ -374,6 +374,8 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       throw new Error(`Fitbit API Error: ${listError}`);
     }
 
+    this.context.logger.debug(`Activity List Response for ${date}`, { activityList });
+
     const activities = activityList.activities;
     const standardizedActivities: StandardizedActivity[] = [];
 
@@ -405,14 +407,43 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
         continue;
       }
 
+      // Fetch detailed activity data to get the correct type (TCX doesn't have it, and daily summary is insufficient)
+      // See: https://dev.fitbit.com/build/reference/web-api/activity/get-activity-log/
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: activityDetail, error: detailError } = await client.GET("/1/user/-/activities/{log-id}.json" as any, {
+        params: { path: { 'log-id': logIdStr } }
+      });
+
+      if (detailError) {
+        this.context.logger.warn(`Failed to fetch activity detail for ${logIdStr}`, { error: detailError });
+        // We will continue with best-effort mapping from the summary data
+      } else {
+        this.context.logger.debug(`Activity Detail Response for ${logIdStr}`, { activityDetail });
+      }
+
       // Map TCX to StandardizedActivity
       try {
         const standardized = mapTCXToStandardized(tcxData as string, act, userId, 'FITBIT');
-        // Override type with Fitbit's activity name (prefer `name` which is more specific, fallback to `activityParentName`)
-        standardized.type = mapFitbitActivityType(act.name || act.activityParentName);
+
+        // Override type using detailed activity data if available, otherwise fall back to summary data
+        // The detailed response has `activityLog` property
+        const detailedActivity = activityDetail?.activityLog;
+
+        const nameToUse = detailedActivity?.name || detailedActivity?.activityParentName || act.name || act.activityParentName;
+        const mappedType = mapFitbitActivityType(nameToUse);
+
+        this.context.logger.debug(`Activity type mapping: id=${logIdStr}`, {
+          nameToUse,
+          mappedType,
+          mappedTypeString: ActivityType[mappedType],
+          originalName: act.name,
+          originalParentName: act.activityParentName
+        });
+
+        standardized.type = mappedType;
         standardizedActivities.push(standardized);
       } catch (mapErr) {
-        console.error(`Failed to map activity ${logIdStr}:`, mapErr);
+        this.context.logger.error(`Failed to map activity ${logIdStr}`, { error: mapErr });
         // Continue processing other activities
       }
     }

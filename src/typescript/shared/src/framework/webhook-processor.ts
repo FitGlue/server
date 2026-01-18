@@ -140,6 +140,10 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
         continue;
       }
 
+      // Generate unique pipelineExecutionId for each activity
+      // This ensures separate trace grouping even when multiple activities come from one webhook
+      const activityPipelineExecutionId = `${ctx.executionId}-${activityExternalId}`;
+
       const messagePayload: ActivityPayload = {
         source: connector.activitySource,
         userId: userId,
@@ -152,7 +156,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
           'connector': connector.name
         },
         standardizedActivity: standardizedActivity,
-        pipelineExecutionId: ctx.executionId, // Root execution ID
+        pipelineExecutionId: activityPipelineExecutionId, // Unique per activity
         // Resume mode fields (false for initial processing)
         isResume: false,
         resumeOnlyEnrichers: [],
