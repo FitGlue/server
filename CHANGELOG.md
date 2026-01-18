@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/FitGlue/server/compare/v1.1.1...v1.2.0) (2026-01-18)
+
+
+### Features
+
+* Enhance `mapDestinations` to accept numeric and more flexible string inputs for destinations. ([a8fb836](https://github.com/FitGlue/server/commit/a8fb836a8553ba6063db5006e548ae48e102a0ff))
+* introduce `PUBLIC_ID` integration authentication type and refactor configuration handler for generic auth support. ([ee25784](https://github.com/FitGlue/server/commit/ee257843ce5eedcd973af964347fca6955e45197))
+
 ### [1.1.1](https://github.com/FitGlue/server/compare/v1.1.0...v1.1.1) (2026-01-17)
 
 
