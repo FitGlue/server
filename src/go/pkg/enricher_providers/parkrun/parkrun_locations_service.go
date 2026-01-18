@@ -199,10 +199,23 @@ type eventsJSONGeometry struct {
 }
 
 // parseEventsJSON parses the Parkrun events.json format.
+// The events.json has the FeatureCollection nested under an "events" key.
 func parseEventsJSON(data []byte) ([]ParkrunLocation, error) {
-	var fc eventsJSONFeatureCollection
-	if err := json.Unmarshal(data, &fc); err != nil {
+	// Try nested structure first (current API structure)
+	var wrapper struct {
+		Events eventsJSONFeatureCollection `json:"events"`
+	}
+	if err := json.Unmarshal(data, &wrapper); err != nil {
 		return nil, fmt.Errorf("unmarshalling JSON: %w", err)
+	}
+
+	fc := wrapper.Events
+	if len(fc.Features) == 0 {
+		// Fallback: try direct FeatureCollection (in case API changes)
+		var directFC eventsJSONFeatureCollection
+		if err := json.Unmarshal(data, &directFC); err == nil && len(directFC.Features) > 0 {
+			fc = directFC
+		}
 	}
 
 	locations := make([]ParkrunLocation, 0, len(fc.Features))
