@@ -23,7 +23,8 @@ export function mapFitbitActivityType(activityParentName: string | undefined): A
   const name = (activityParentName || '').toLowerCase().trim();
 
   // Running variations (including trail, virtual)
-  if (name.includes('run') || name === 'treadmill' || name === 'jogging' || name === 'jog') {
+  if (name.includes('run') || name === 'treadmill' || name === 'jogging' || name === 'jog' ||
+    name.includes('structured workout')) {
     // Check for trail run specifically
     if (name.includes('trail')) {
       return ActivityType.ACTIVITY_TYPE_TRAIL_RUN;

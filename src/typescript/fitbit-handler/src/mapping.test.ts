@@ -44,6 +44,11 @@ describe('mapFitbitActivityType', () => {
     ['', ActivityType.ACTIVITY_TYPE_WORKOUT, 'Empty String'],
     ['   Run   ', ActivityType.ACTIVITY_TYPE_RUN, 'Whitespace Trimming'],
     ['RUN', ActivityType.ACTIVITY_TYPE_RUN, 'Case Insensitivity'],
+
+    // Specific User Request
+    ['Structured Workout', ActivityType.ACTIVITY_TYPE_RUN, 'Structured Workout -> Run'],
+    ['structured workout', ActivityType.ACTIVITY_TYPE_RUN, 'structured workout -> Run'],
+    ['My Structured Workout', ActivityType.ACTIVITY_TYPE_RUN, 'Containing structured workout -> Run'],
   ];
 
   test.each(testCases)('maps "%s" to %s (%s)', (input, expected, _desc) => {
