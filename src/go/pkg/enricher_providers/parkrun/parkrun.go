@@ -278,6 +278,14 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 		} else {
 			result.Metadata["parkrun_results_state"] = "DISABLED"
 			result.Metadata["results_enrichment_skipped"] = "no_parkrun_integration"
+			// Debug: Show what's missing
+			if user.Integrations == nil {
+				result.Metadata["debug_integration_nil"] = "true"
+			} else if user.Integrations.Parkrun == nil {
+				result.Metadata["debug_parkrun_nil"] = "true"
+			} else {
+				result.Metadata["debug_parkrun_enabled"] = fmt.Sprintf("%v", user.Integrations.Parkrun.Enabled)
+			}
 		}
 	} else {
 		// Results enrichment not enabled or no service - mark as immediate (no pending results)
