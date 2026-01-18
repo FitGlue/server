@@ -1,6 +1,6 @@
 import * as functions from '@google-cloud/functions-framework';
 import * as admin from 'firebase-admin';
-import type { ShowcasedActivity, StandardizedActivity, ActivityType, ActivitySource } from '@fitglue/shared';
+import { ShowcaseStore, type StandardizedActivity, type ActivityType, type ActivitySource } from '@fitglue/shared';
 
 // Initialize Firebase Admin (only once)
 if (!admin.apps.length) {
@@ -8,6 +8,7 @@ if (!admin.apps.length) {
 }
 
 const db = admin.firestore();
+const showcaseStore = new ShowcaseStore(db);
 
 /**
  * Public showcase handler - serves activity data for shareable URLs.
@@ -49,19 +50,16 @@ export const showcaseHandler = async (req: functions.Request, res: functions.Res
   }
 
   try {
-    // Fetch from Firestore
-    const docRef = db.collection('showcased_activities').doc(showcaseId);
-    const doc = await docRef.get();
+    // Fetch from Firestore using ShowcaseStore
+    const data = await showcaseStore.get(showcaseId);
 
-    if (!doc.exists) {
+    if (!data) {
       res.status(404).json({ error: 'Showcase not found' });
       return;
     }
 
-    const data = doc.data() as ShowcasedActivityFirestore;
-
     // Check expiration
-    if (data.expiresAt && data.expiresAt.toDate() < new Date()) {
+    if (data.expiresAt && data.expiresAt < new Date()) {
       res.status(410).json({ error: 'This showcase has expired' });
       return;
     }
@@ -78,19 +76,19 @@ export const showcaseHandler = async (req: functions.Request, res: functions.Res
     // Apply heavy caching (showcased activities are immutable)
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
 
-    // Convert Firestore timestamps and strip sensitive data
+    // Build the public API response, stripping sensitive fields
     const response: ShowcaseResponse = {
       showcaseId: data.showcaseId,
       title: data.title,
       description: data.description,
       activityType: data.activityType,
       source: data.source,
-      startTime: data.startTime?.toDate().toISOString(),
+      startTime: data.startTime?.toISOString(),
       activityData: data.activityData,
       appliedEnrichments: data.appliedEnrichments || [],
       enrichmentMetadata: data.enrichmentMetadata || {},
       tags: data.tags || [],
-      createdAt: data.createdAt?.toDate().toISOString(),
+      createdAt: data.createdAt?.toISOString(),
       // Don't expose: userId, activityId, fitFileUri, pipelineExecutionId, expiresAt
     };
 
@@ -103,26 +101,6 @@ export const showcaseHandler = async (req: functions.Request, res: functions.Res
 
 // Register the function
 functions.http('showcaseHandler', showcaseHandler);
-
-// Types for Firestore data (with Timestamps)
-interface ShowcasedActivityFirestore {
-  showcaseId: string;
-  activityId: string;
-  userId: string;
-  title: string;
-  description: string;
-  activityType: ActivityType;
-  source: ActivitySource;
-  startTime?: admin.firestore.Timestamp;
-  activityData?: StandardizedActivity;
-  fitFileUri: string;
-  appliedEnrichments: string[];
-  enrichmentMetadata: { [key: string]: string };
-  tags: string[];
-  pipelineExecutionId?: string;
-  createdAt?: admin.firestore.Timestamp;
-  expiresAt?: admin.firestore.Timestamp;
-}
 
 // Public API response (sanitized, no sensitive data)
 interface ShowcaseResponse {

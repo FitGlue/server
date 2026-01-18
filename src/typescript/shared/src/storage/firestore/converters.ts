@@ -462,3 +462,26 @@ export const synchronizedActivityConverter: FirestoreDataConverter<import('../..
     };
   }
 };
+
+// --- ShowcasedActivity Converter (for public showcase pages) ---
+
+export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): import('../../types/pb/user').ShowcasedActivity => {
+  return {
+    showcaseId: data.showcase_id as string || '',
+    activityId: data.activity_id as string || '',
+    userId: data.user_id as string || '',
+    title: data.title as string || '',
+    description: data.description as string || '',
+    activityType: (data.activity_type as number) || 0,
+    source: (data.source as number) || 0,
+    startTime: toDate(data.start_time),
+    activityData: data.activity_data ? JSON.parse(data.activity_data as string) : undefined,
+    fitFileUri: data.fit_file_uri as string || '',
+    appliedEnrichments: (data.applied_enrichments as string[]) || [],
+    enrichmentMetadata: (data.enrichment_metadata as Record<string, string>) || {},
+    tags: (data.tags as string[]) || [],
+    pipelineExecutionId: data.pipeline_execution_id as string,
+    createdAt: toDate(data.created_at),
+    expiresAt: toDate(data.expires_at),
+  };
+};

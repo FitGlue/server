@@ -39,7 +39,7 @@ export * from './infrastructure/oauth';
 // Infrastructure
 export * from './infrastructure/pubsub/cloud-event-publisher';
 export * as storage from './storage/firestore';
-export { UserStore, ActivityStore, ApiKeyStore, ExecutionStore, IntegrationIdentityStore, InputStore } from './storage/firestore';
+export { UserStore, ActivityStore, ApiKeyStore, ExecutionStore, IntegrationIdentityStore, InputStore, ShowcaseStore } from './storage/firestore';
 export { mapTCXToStandardized } from './domain/file-parsers/tcx';
 export * from './execution/logger';
 
