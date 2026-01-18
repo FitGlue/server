@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/FitGlue/server/compare/v1.2.1...v1.3.0) (2026-01-18)
+
+
+### Features
+
+* Add a new showcase handler cloud function to serve public activity data and viewer redirects. ([970f350](https://github.com/FitGlue/server/commit/970f350ddffbde2eea604094855de019db49e515))
+* Add ShowcaseStore for typed access to showcased activities and integrate it into the showcase handler. ([1ef538d](https://github.com/FitGlue/server/commit/1ef538d5ab330f794ac830e9a693adbe1b28847c))
+* Implement a new file upload handler service for direct FIT file uploads. ([a1f84e1](https://github.com/FitGlue/server/commit/a1f84e141ee86a7f03dd4069fb37969d4d6f99a4))
+
+
+### Bug Fixes
+
+* failing tests ([bfea8d5](https://github.com/FitGlue/server/commit/bfea8d51c9866521bdff57bb3a3f87229a07e7ee))
+
 ### [1.2.1](https://github.com/FitGlue/server/compare/v1.2.0...v1.2.1) (2026-01-18)
 
 ## [1.2.0](https://github.com/FitGlue/server/compare/v1.1.1...v1.2.0) (2026-01-18)
