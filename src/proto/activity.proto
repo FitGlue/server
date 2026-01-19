@@ -37,4 +37,7 @@ message ActivityPayload {
   repeated string resume_only_enrichers = 11;   // Only run these enrichers (others skipped)
   bool use_update_method = 12;                  // Destinations use UPDATE not CREATE
   optional string resume_pending_input_id = 13; // The pending input that triggered this resume
+
+  // Loop prevention for destination-originated activities
+  optional string origin_destination = 14;      // If set (e.g., "hevy"), prevents re-upload to same destination
 }

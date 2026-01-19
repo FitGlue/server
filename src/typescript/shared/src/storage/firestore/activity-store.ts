@@ -128,4 +128,24 @@ export class ActivityStore {
     }
     return ids;
   }
+
+  /**
+   * Update a destination in a synchronized activity.
+   * Used after a successful re-post to add or update the external ID for a destination.
+   *
+   * @param userId - User ID
+   * @param activityId - Activity ID
+   * @param destination - Destination key (e.g., 'strava', 'showcase')
+   * @param externalId - External ID from the destination platform
+   */
+  async updateDestination(
+    userId: string,
+    activityId: string,
+    destination: string,
+    externalId: string
+  ): Promise<void> {
+    await this.synchronizedCollection(userId)
+      .doc(activityId)
+      .update({ [`destinations.${destination}`]: externalId });
+  }
 }

@@ -690,6 +690,361 @@ function checkFirebaseRouting(): CheckResult {
 }
 
 // ============================================================================
+// Check 8: Destination Topic Mapping Sync
+// ============================================================================
+
+/**
+ * Validates that the DestinationTopics mapping in events-helper.ts stays in
+ * sync with the dest_topic extensions defined in events.proto.
+ */
+function checkDestinationTopicSync(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // 1. Extract dest_topic extensions from events.proto
+  const protoPath = path.join(PROTO_DIR, 'events.proto');
+  if (!fs.existsSync(protoPath)) {
+    errors.push('events.proto not found');
+    return { name: 'Destination Topic Mapping Sync', passed: false, errors, warnings };
+  }
+
+  const protoContent = fs.readFileSync(protoPath, 'utf-8');
+
+  // Pattern: DESTINATION_STRAVA = 1 [(fitglue.events.dest_topic) = "topic-job-upload-strava"];
+  const destTopicRegex = /(DESTINATION_\w+)\s*=\s*\d+\s*\[.*dest_topic\)\s*=\s*"([^"]+)"/g;
+  const protoMappings: Map<string, string> = new Map();
+
+  let match;
+  while ((match = destTopicRegex.exec(protoContent)) !== null) {
+    protoMappings.set(match[1], match[2]);
+  }
+
+  if (protoMappings.size === 0) {
+    warnings.push('No dest_topic extensions found in events.proto (expected for destinations)');
+    return { name: 'Destination Topic Mapping Sync', passed: true, errors, warnings };
+  }
+
+  // 2. Extract mapping from events-helper.ts
+  const helperPath = path.join(TS_SRC_DIR, 'shared/src/types/events-helper.ts');
+  if (!fs.existsSync(helperPath)) {
+    errors.push('events-helper.ts not found - destination topic mapping required');
+    return { name: 'Destination Topic Mapping Sync', passed: false, errors, warnings };
+  }
+
+  const helperContent = fs.readFileSync(helperPath, 'utf-8');
+
+  // Pattern: [Destination.DESTINATION_STRAVA]: "topic-job-upload-strava"
+  const tsMappingRegex = /\[Destination\.(DESTINATION_\w+)\]:\s*['"]([^'"]+)['"]/g;
+  const tsMappings: Map<string, string> = new Map();
+
+  while ((match = tsMappingRegex.exec(helperContent)) !== null) {
+    tsMappings.set(match[1], match[2]);
+  }
+
+  // 3. Compare mappings
+  for (const [dest, topic] of protoMappings) {
+    if (!tsMappings.has(dest)) {
+      errors.push(`Missing destination in events-helper.ts: ${dest} -> ${topic}`);
+    } else if (tsMappings.get(dest) !== topic) {
+      errors.push(
+        `Topic mismatch for ${dest}: proto has "${topic}", TS has "${tsMappings.get(dest)}"`
+      );
+    }
+  }
+
+  // Check for extra TS mappings not in proto
+  for (const [dest] of tsMappings) {
+    if (!protoMappings.has(dest) && dest !== 'DESTINATION_UNSPECIFIED') {
+      warnings.push(`Extra destination in events-helper.ts not in proto: ${dest}`);
+    }
+  }
+
+  return {
+    name: 'Destination Topic Mapping Sync',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 9: Events Helper Completeness
+// ============================================================================
+
+/**
+ * Validates that events-helper.ts exports all required helper functions
+ * for event types, sources, and destinations.
+ */
+function checkEventsHelperCompleteness(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const helperPath = path.join(TS_SRC_DIR, 'shared/src/types/events-helper.ts');
+  if (!fs.existsSync(helperPath)) {
+    errors.push('events-helper.ts not found');
+    return { name: 'Events Helper Completeness', passed: false, errors, warnings };
+  }
+
+  const helperContent = fs.readFileSync(helperPath, 'utf-8');
+
+  // Required exports for full functionality
+  const requiredExports = [
+    'CloudEventTypeURN',
+    'CloudEventSourceURN',
+    'DestinationTopics',
+    'getCloudEventType',
+    'getCloudEventSource',
+    'getDestinationTopic',
+    'getDestinationName',
+    'parseDestination'
+  ];
+
+  for (const exportName of requiredExports) {
+    const exportPattern = new RegExp(`export\\s+(const|function)\\s+${exportName}\\b`);
+    if (!exportPattern.test(helperContent)) {
+      errors.push(`Missing required export in events-helper.ts: ${exportName}`);
+    }
+  }
+
+  return {
+    name: 'Events Helper Completeness',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 10: Destination Uploader Pattern
+// ============================================================================
+
+/**
+ * Validates that Go destination uploaders follow required patterns:
+ * - Loop prevention (isLoopOrigin or similar)
+ * - UPDATE support (handleXxxUpdate function)
+ * - SynchronizedActivity persistence
+ * - Billing (IncrementSyncCount)
+ */
+function checkDestinationUploaderPattern(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Uploaders that are excluded from certain checks
+  const EXEMPT_FROM_LOOP_PREVENTION = ['mock-uploader', 'showcase-uploader']; // No external webhooks
+  const EXEMPT_FROM_UPDATE = ['mock-uploader', 'showcase-uploader']; // One-shot destinations
+
+  // Get all Go uploader function directories
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  const uploaderDirs = getDirectories(goFunctionsDir)
+    .filter(d => d.endsWith('-uploader'))
+    .filter(d => d !== 'mock-uploader'); // Exclude mock from all checks
+
+  for (const dir of uploaderDirs) {
+    const functionPath = path.join(goFunctionsDir, dir, 'function.go');
+    if (!fs.existsSync(functionPath)) {
+      warnings.push(`Uploader '${dir}' missing function.go`);
+      continue;
+    }
+
+    const content = fs.readFileSync(functionPath, 'utf-8');
+    const uploaderName = dir.replace('-uploader', '');
+
+    // Check for loop prevention (exempt showcase - no external webhooks)
+    if (!EXEMPT_FROM_LOOP_PREVENTION.includes(dir)) {
+      const hasLoopPrevention =
+        content.includes('isLoopOrigin') ||
+        content.includes('loop_prevention') ||
+        content.includes('origin_destination') ||
+        content.includes('OriginDestination') ||
+        content.includes('SOURCE_STRAVA'); // Strava has implicit loop prevention
+
+      if (!hasLoopPrevention) {
+        // Grandfather existing uploaders with warnings, new ones get errors
+        const isGrandfathered = ['strava-uploader'].includes(dir);
+        if (isGrandfathered) {
+          warnings.push(`Uploader '${dir}' should add explicit loop prevention`);
+        } else {
+          errors.push(`Uploader '${dir}' missing loop prevention check`);
+        }
+      }
+    }
+
+    // Check for UPDATE support (exempt mock and showcase)
+    if (!EXEMPT_FROM_UPDATE.includes(dir)) {
+      const hasUpdateHandler =
+        content.includes('handleUpdate') ||
+        content.includes('Handle' + capitalize(uploaderName) + 'Update') ||
+        content.includes('handle' + capitalize(uploaderName) + 'Update');
+
+      if (!hasUpdateHandler) {
+        errors.push(`Uploader '${dir}' missing UPDATE handler`);
+      }
+    }
+
+    // Check for SynchronizedActivity persistence
+    const hasSyncPersistence =
+      content.includes('SetSynchronizedActivity') ||
+      content.includes('SynchronizedActivity');
+
+    if (!hasSyncPersistence) {
+      warnings.push(`Uploader '${dir}' may not persist SynchronizedActivity`);
+    }
+
+    // Check for billing increment
+    const hasBilling = content.includes('IncrementSyncCount');
+    if (!hasBilling) {
+      warnings.push(`Uploader '${dir}' may not increment sync count for billing`);
+    }
+  }
+
+  return {
+    name: 'Destination Uploader Pattern',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// Helper to capitalize first letter
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+// ============================================================================
+// Check 11: Destination Enum Coverage
+// ============================================================================
+
+/**
+ * Validates that every DESTINATION_* enum in events.proto has:
+ * - A corresponding *-uploader Go function
+ * - A Pub/Sub topic in pubsub.tf
+ * - A registry entry in registry.ts
+ */
+function checkDestinationEnumCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // 1. Extract all destination enum values from events.proto
+  const protoPath = path.join(PROTO_DIR, 'events.proto');
+  if (!fs.existsSync(protoPath)) {
+    errors.push('events.proto not found');
+    return { name: 'Destination Enum Coverage', passed: false, errors, warnings };
+  }
+
+  const protoContent = fs.readFileSync(protoPath, 'utf-8');
+  const destEnumPattern = /DESTINATION_(\w+)\s*=\s*\d+/g;
+  const destinations: string[] = [];
+
+  let match;
+  while ((match = destEnumPattern.exec(protoContent)) !== null) {
+    const dest = match[1];
+    // Skip UNSPECIFIED and MOCK
+    if (dest !== 'UNSPECIFIED' && dest !== 'MOCK') {
+      destinations.push(dest.toLowerCase());
+    }
+  }
+
+  // 2. Check for Go uploader
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  const uploaderDirs = getDirectories(goFunctionsDir)
+    .filter(d => d.endsWith('-uploader'))
+    .map(d => d.replace('-uploader', ''));
+
+  for (const dest of destinations) {
+    if (!uploaderDirs.includes(dest)) {
+      errors.push(`DESTINATION_${dest.toUpperCase()} missing Go uploader (expected '${dest}-uploader')`);
+    }
+  }
+
+  // 3. Check for Pub/Sub topic
+  const pubsubPath = path.join(TERRAFORM_DIR, 'pubsub.tf');
+  if (fs.existsSync(pubsubPath)) {
+    const pubsubContent = fs.readFileSync(pubsubPath, 'utf-8');
+
+    for (const dest of destinations) {
+      const topicName = `topic-job-upload-${dest}`;
+      if (!pubsubContent.includes(topicName)) {
+        errors.push(`DESTINATION_${dest.toUpperCase()} missing Pub/Sub topic '${topicName}'`);
+      }
+    }
+  }
+
+  // 4. Check for registry entry
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+  if (fs.existsSync(registryPath)) {
+    const registryContent = fs.readFileSync(registryPath, 'utf-8');
+
+    for (const dest of destinations) {
+      // Look for registerDestination with id: 'strava' etc
+      const idPattern = new RegExp(`registerDestination\\s*\\(\\s*\\{[^}]*id:\\s*['"]${dest}['"]`, 's');
+      if (!idPattern.test(registryContent)) {
+        errors.push(`DESTINATION_${dest.toUpperCase()} not registered in registry.ts`);
+      }
+    }
+  }
+
+  return {
+    name: 'Destination Enum Coverage',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 12: Loop Prevention in Destinations
+// ============================================================================
+
+/**
+ * Validates that destination uploaders properly check for loop scenarios:
+ * - Check if activity source matches the destination (self-loop)
+ * - Check origin_destination metadata
+ */
+function checkLoopPrevention(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  const uploaderDirs = getDirectories(goFunctionsDir)
+    .filter(d => d.endsWith('-uploader') && !d.includes('mock'));
+
+  for (const dir of uploaderDirs) {
+    const functionPath = path.join(goFunctionsDir, dir, 'function.go');
+    if (!fs.existsSync(functionPath)) continue;
+
+    const content = fs.readFileSync(functionPath, 'utf-8');
+    const uploaderName = dir.replace('-uploader', '');
+
+    // Check for source-based loop prevention (e.g., SOURCE_HEVY check)
+    const sourceEnumName = `SOURCE_${uploaderName.toUpperCase()}`;
+    const hasSourceCheck = content.includes(sourceEnumName) ||
+      content.includes(`ActivitySource_${sourceEnumName}`);
+
+    // Check for origin_destination check
+    const hasOriginCheck =
+      content.includes('origin_destination') ||
+      content.includes('OriginDestination') ||
+      content.includes('EnrichmentMetadata');
+
+    // At least one form of loop prevention should exist
+    if (!hasSourceCheck && !hasOriginCheck) {
+      errors.push(`Uploader '${dir}' lacks loop prevention (no ${sourceEnumName} or origin_destination check)`);
+    } else if (!hasSourceCheck) {
+      warnings.push(`Uploader '${dir}' may not check source for self-loop prevention`);
+    } else if (!hasOriginCheck) {
+      warnings.push(`Uploader '${dir}' may not check origin_destination metadata`);
+    }
+  }
+
+  return {
+    name: 'Loop Prevention in Destinations',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Main Runner
 // ============================================================================
 
@@ -725,7 +1080,11 @@ function main(): void {
     checkWorkspaceMembership,
     checkProtobufAlignment,
     checkFirebaseRouting,
-
+    checkDestinationTopicSync,
+    checkEventsHelperCompleteness,
+    checkDestinationUploaderPattern,
+    checkDestinationEnumCoverage,
+    checkLoopPrevention,
   ];
 
   const results: CheckResult[] = [];

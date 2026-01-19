@@ -290,6 +290,47 @@ resource "google_cloudfunctions2_function" "showcase_uploader" {
   }
 }
 
+# ----------------- Hevy Uploader (Upload activities to Hevy) -----------------
+resource "google_storage_bucket_object" "hevy_uploader_zip" {
+  name   = "hevy-uploader-${filemd5("/tmp/fitglue-function-zips/hevy-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/hevy-uploader.zip"
+}
+
+resource "google_cloudfunctions2_function" "hevy_uploader" {
+  name     = "hevy-uploader"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "UploadToHevy"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.hevy_uploader_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.job_upload_hevy.id
+    retry_policy   = var.retry_policy
+  }
+}
+
 # ----------------- Mock Source Handler (Dev Only) -----------------
 resource "google_cloudfunctions2_function" "mock_source_handler" {
   // Needs to be deployed to test and prod otherwise firebase.json will fail with "can't find function"
@@ -1033,3 +1074,39 @@ resource "google_cloud_run_service_iam_member" "fit_parser_handler_invoker" {
   member   = "allUsers"
 }
 
+# ----------------- Repost Handler -----------------
+resource "google_cloudfunctions2_function" "repost_handler" {
+  name        = "repost-handler"
+  location    = var.region
+  description = "Handles re-post mechanisms for synchronized activities"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "repostHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "repost_handler_invoker" {
+  project  = google_cloudfunctions2_function.repost_handler.project
+  location = google_cloudfunctions2_function.repost_handler.location
+  service  = google_cloudfunctions2_function.repost_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}

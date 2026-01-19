@@ -56,7 +56,11 @@ export interface ActivityPayload {
   /** Destinations use UPDATE not CREATE */
   useUpdateMethod: boolean;
   /** The pending input that triggered this resume */
-  resumePendingInputId?: string | undefined;
+  resumePendingInputId?:
+    | string
+    | undefined;
+  /** Loop prevention for destination-originated activities */
+  originDestination?: string | undefined;
 }
 
 export interface ActivityPayload_MetadataEntry {

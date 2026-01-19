@@ -83,7 +83,7 @@ def main():
     output_dir.mkdir(parents=True)
 
     # Create zips for each function
-    for function_name in ["router", "enricher", "strava-uploader", "mock-uploader", "parkrun-results-source", "showcase-uploader", "fit-parser-handler"]:
+    for function_name in ["router", "enricher", "strava-uploader", "mock-uploader", "parkrun-results-source", "showcase-uploader", "fit-parser-handler", "hevy-uploader"]:
         create_function_zip(function_name, src_dir, output_dir)
 
 

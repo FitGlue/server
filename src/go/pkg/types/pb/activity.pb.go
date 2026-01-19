@@ -99,8 +99,10 @@ type ActivityPayload struct {
 	ResumeOnlyEnrichers  []string `protobuf:"bytes,11,rep,name=resume_only_enrichers,json=resumeOnlyEnrichers,proto3" json:"resume_only_enrichers,omitempty"`            // Only run these enrichers (others skipped)
 	UseUpdateMethod      bool     `protobuf:"varint,12,opt,name=use_update_method,json=useUpdateMethod,proto3" json:"use_update_method,omitempty"`                       // Destinations use UPDATE not CREATE
 	ResumePendingInputId *string  `protobuf:"bytes,13,opt,name=resume_pending_input_id,json=resumePendingInputId,proto3,oneof" json:"resume_pending_input_id,omitempty"` // The pending input that triggered this resume
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// Loop prevention for destination-originated activities
+	OriginDestination *string `protobuf:"bytes,14,opt,name=origin_destination,json=originDestination,proto3,oneof" json:"origin_destination,omitempty"` // If set (e.g., "hevy"), prevents re-upload to same destination
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ActivityPayload) Reset() {
@@ -224,11 +226,18 @@ func (x *ActivityPayload) GetResumePendingInputId() string {
 	return ""
 }
 
+func (x *ActivityPayload) GetOriginDestination() string {
+	if x != nil && x.OriginDestination != nil {
+		return *x.OriginDestination
+	}
+	return ""
+}
+
 var File_activity_proto protoreflect.FileDescriptor
 
 const file_activity_proto_rawDesc = "" +
 	"\n" +
-	"\x0eactivity.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\"\xb2\x06\n" +
+	"\x0eactivity.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\"\xfd\x06\n" +
 	"\x0fActivityPayload\x12/\n" +
 	"\x06source\x18\x01 \x01(\x0e2\x17.fitglue.ActivitySourceR\x06source\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x128\n" +
@@ -245,14 +254,16 @@ const file_activity_proto_rawDesc = "" +
 	" \x01(\bR\bisResume\x122\n" +
 	"\x15resume_only_enrichers\x18\v \x03(\tR\x13resumeOnlyEnrichers\x12*\n" +
 	"\x11use_update_method\x18\f \x01(\bR\x0fuseUpdateMethod\x12:\n" +
-	"\x17resume_pending_input_id\x18\r \x01(\tH\x03R\x14resumePendingInputId\x88\x01\x01\x1a;\n" +
+	"\x17resume_pending_input_id\x18\r \x01(\tH\x03R\x14resumePendingInputId\x88\x01\x01\x122\n" +
+	"\x12origin_destination\x18\x0e \x01(\tH\x04R\x11originDestination\x88\x01\x01\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
 	"\x16_pipeline_execution_idB\x0e\n" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
-	"\x18_resume_pending_input_id*\x8d\x01\n" +
+	"\x18_resume_pending_input_idB\x15\n" +
+	"\x13_origin_destination*\x8d\x01\n" +
 	"\x0eActivitySource\x12\x12\n" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +

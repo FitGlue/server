@@ -78,6 +78,26 @@ export class ExecutionStore {
   }
 
   /**
+   * Get the router execution record for a pipeline.
+   * Used by re-post handler to retrieve the EnrichedActivityEvent from inputsJson.
+   */
+  async getRouterExecution(pipelineExecutionId: string): Promise<{ id: string, data: ExecutionRecord } | null> {
+    const executions = await this.listByPipeline(pipelineExecutionId);
+    const routerExec = executions.find(e => e.data.service === 'router');
+    return routerExec || null;
+  }
+
+  /**
+   * Get the enricher execution record for a pipeline.
+   * Used by re-post handler for full pipeline re-execution.
+   */
+  async getEnricherExecution(pipelineExecutionId: string): Promise<{ id: string, data: ExecutionRecord } | null> {
+    const executions = await this.listByPipeline(pipelineExecutionId);
+    const enricherExec = executions.find(e => e.data.service === 'enricher');
+    return enricherExec || null;
+  }
+
+  /**
    * List distinct pipeline executions for a user.
    * Returns the most recent execution record per unique pipeline_execution_id.
    * Used for finding unsynchronized executions (those that don't have a matching synced activity).

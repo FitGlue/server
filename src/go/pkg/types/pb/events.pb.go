@@ -174,6 +174,7 @@ const (
 	Destination_DESTINATION_UNSPECIFIED Destination = 0
 	Destination_DESTINATION_STRAVA      Destination = 1
 	Destination_DESTINATION_SHOWCASE    Destination = 2
+	Destination_DESTINATION_HEVY        Destination = 3
 	Destination_DESTINATION_MOCK        Destination = 99
 )
 
@@ -183,12 +184,14 @@ var (
 		0:  "DESTINATION_UNSPECIFIED",
 		1:  "DESTINATION_STRAVA",
 		2:  "DESTINATION_SHOWCASE",
+		3:  "DESTINATION_HEVY",
 		99: "DESTINATION_MOCK",
 	}
 	Destination_value = map[string]int32{
 		"DESTINATION_UNSPECIFIED": 0,
 		"DESTINATION_STRAVA":      1,
 		"DESTINATION_SHOWCASE":    2,
+		"DESTINATION_HEVY":        3,
 		"DESTINATION_MOCK":        99,
 	}
 )
@@ -545,11 +548,12 @@ const file_events_proto_rawDesc = "" +
 	"!CLOUD_EVENT_SOURCE_INPUTS_HANDLER\x10\x06\x1a\x18\x8a\xb5\x18\x14/core/inputs-handler\x12I\n" +
 	"\"CLOUD_EVENT_SOURCE_PARKRUN_RESULTS\x10\a\x1a!\x8a\xb5\x18\x1d/integrations/parkrun/results\x12A\n" +
 	"\x1eCLOUD_EVENT_SOURCE_FILE_UPLOAD\x10\b\x1a\x1d\x8a\xb5\x18\x19/integrations/file-upload\x123\n" +
-	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\xc9\x01\n" +
+	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\xfa\x01\n" +
 	"\vDestination\x12\x1b\n" +
 	"\x17DESTINATION_UNSPECIFIED\x10\x00\x123\n" +
 	"\x12DESTINATION_STRAVA\x10\x01\x1a\x1b\x92\xb5\x18\x17topic-job-upload-strava\x127\n" +
 	"\x14DESTINATION_SHOWCASE\x10\x02\x1a\x1d\x92\xb5\x18\x19topic-job-upload-showcase\x12/\n" +
+	"\x10DESTINATION_HEVY\x10\x03\x1a\x19\x92\xb5\x18\x15topic-job-upload-hevy\x12/\n" +
 	"\x10DESTINATION_MOCK\x10c\x1a\x19\x92\xb5\x18\x15topic-job-upload-mock:<\n" +
 	"\ace_type\x12!.google.protobuf.EnumValueOptions\x18І\x03 \x01(\tR\x06ceType:@\n" +
 	"\tce_source\x12!.google.protobuf.EnumValueOptions\x18ц\x03 \x01(\tR\bceSource:B\n" +

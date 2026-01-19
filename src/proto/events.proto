@@ -54,6 +54,7 @@ enum Destination {
   DESTINATION_UNSPECIFIED = 0;
   DESTINATION_STRAVA = 1 [(dest_topic) = "topic-job-upload-strava"];
   DESTINATION_SHOWCASE = 2 [(dest_topic) = "topic-job-upload-showcase"];
+  DESTINATION_HEVY = 3 [(dest_topic) = "topic-job-upload-hevy"];
   DESTINATION_MOCK = 99 [(dest_topic) = "topic-job-upload-mock"];
 }
 

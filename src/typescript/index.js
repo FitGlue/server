@@ -87,3 +87,9 @@ exports.showcaseHandler = (req, res) => {
   const showcase = require('./showcase-handler/build/index');
   return showcase.showcaseHandler(req, res);
 };
+
+exports.repostHandler = (req, res) => {
+  const repost = require('./repost-handler/build/index');
+  return repost.repostHandler(req, res);
+};
+

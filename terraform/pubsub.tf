@@ -42,6 +42,14 @@ resource "google_pubsub_topic" "job_upload_showcase" {
   message_retention_duration = "3600s"
 }
 
+# Hevy topic for uploading activities to Hevy (all environments)
+resource "google_pubsub_topic" "job_upload_hevy" {
+  name    = "topic-job-upload-hevy"
+  project = var.project_id
+
+  message_retention_duration = "3600s"
+}
+
 
 resource "google_pubsub_subscription" "enrichment_lag_sub" {
   name    = "sub-enrichment-lag"

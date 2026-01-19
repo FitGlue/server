@@ -365,6 +365,40 @@ Create beautiful, public links to your enriched activities. Share your workout d
   ],
 });
 
+registerDestination({
+  id: 'hevy',
+  type: PluginType.PLUGIN_TYPE_DESTINATION,
+  name: 'Hevy',
+  description: 'Upload enriched activities to Hevy',
+  icon: '🏋️',
+  enabled: true,
+  requiredIntegrations: ['hevy'],
+  configSchema: [],
+  destinationType: 3, // DestinationType.DESTINATION_HEVY
+  marketingDescription: `
+### Complete Workout Destination
+Upload all your activities to Hevy - from strength training to cardio. Perfect for centralizing your complete fitness history.
+
+### How it works
+Activities pass through your enrichment pipeline and are uploaded to Hevy via the official API. Strength sets, reps, and weights are preserved. Cardio activities (runs, rides, walks) are mapped to Hevy's distance-based exercise templates.
+
+### Smart Template Matching
+Exercise names are fuzzy-matched to Hevy's library. Unknown exercises automatically create custom templates.
+  `,
+  features: [
+    '✅ Upload all activity types to Hevy',
+    '✅ Strength sets, reps, and weights preserved',
+    '✅ Cardio mapped to distance-based templates',
+    '✅ Smart exercise template matching',
+  ],
+  transformations: [],
+  useCases: [
+    'Log Strava runs in Hevy for complete history',
+    'Centralize gym workouts from multiple sources',
+    'Track Fitbit activities in Hevy',
+  ],
+});
+
 // ============================================================================
 
 
