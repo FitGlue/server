@@ -10,11 +10,26 @@
 import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy } from '@fitglue/shared';
 import { TOPICS } from '@fitglue/shared/dist/config';
 import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
-import { EnrichedActivityEvent } from '@fitglue/shared/dist/types/pb/events';
 import { Request, Response } from 'express';
 import { PubSub } from '@google-cloud/pubsub';
+import { v4 as uuidv4 } from 'uuid';
 
 const pubsub = new PubSub();
+
+/**
+ * Create a CloudEvent envelope matching the Go enricher format.
+ * The router expects: { specversion, id, source, type, data, datacontenttype }
+ */
+function createCloudEvent(data: Record<string, unknown>): Record<string, unknown> {
+  return {
+    specversion: '1.0',
+    id: uuidv4(),
+    source: '/repost-handler',
+    type: 'com.fitglue.activity.enriched',
+    datacontenttype: 'application/json',
+    data,
+  };
+}
 
 // Response types
 interface RepostResponse {
@@ -35,15 +50,15 @@ interface RepostRequest {
  * Format: {timestamp}-{activityId}
  */
 function generateRepostExecutionId(activityId: string): string {
-  return `${Date.now()}-${activityId}`;
+  return `repost-${Date.now()}-${activityId}`;
 }
 
 /**
- * Extract EnrichedActivityEvent from router execution inputsJson.
- * Handles both camelCase (activityId) and snake_case (activity_id) field names
- * since the Go framework may store either format depending on the serialization path.
+ * Parse and retrieve the original router inputsJson data.
+ * Returns the ORIGINAL data object (snake_case or camelCase) without modification.
+ * The caller is responsible for ensuring the correct format when publishing.
  */
-function parseEnrichedActivityEvent(inputsJson: string): EnrichedActivityEvent | null {
+function parseEnrichedActivityEvent(inputsJson: string): Record<string, unknown> | null {
   try {
     const parsed = JSON.parse(inputsJson);
 
@@ -53,35 +68,14 @@ function parseEnrichedActivityEvent(inputsJson: string): EnrichedActivityEvent |
     const hasUserId = (obj: Record<string, unknown>): boolean =>
       !!(obj.userId || obj.user_id);
 
-    // Normalize snake_case to camelCase for consistent downstream handling
-    const normalizeEvent = (obj: Record<string, unknown>): EnrichedActivityEvent => {
-      return {
-        activityId: (obj.activityId || obj.activity_id) as string,
-        userId: (obj.userId || obj.user_id) as string,
-        pipelineId: (obj.pipelineId || obj.pipeline_id) as string | undefined,
-        fitFileUri: (obj.fitFileUri || obj.fit_file_uri) as string | undefined,
-        name: obj.name as string | undefined,
-        description: obj.description as string | undefined,
-        activityType: (obj.activityType || obj.activity_type) as number | undefined,
-        startTime: (obj.startTime || obj.start_time) as string | undefined,
-        source: obj.source as number | undefined,
-        activityData: (obj.activityData || obj.activity_data) as unknown,
-        appliedEnrichments: (obj.appliedEnrichments || obj.applied_enrichments) as string[] | undefined,
-        enrichmentMetadata: (obj.enrichmentMetadata || obj.enrichment_metadata) as Record<string, string> | undefined,
-        destinations: obj.destinations as number[] | undefined,
-        tags: obj.tags as string[] | undefined,
-        pipelineExecutionId: (obj.pipelineExecutionId || obj.pipeline_execution_id) as string | undefined,
-      } as EnrichedActivityEvent;
-    };
-
     // The inputsJson might be the raw event or wrapped
     if (hasActivityId(parsed) && hasUserId(parsed)) {
-      return normalizeEvent(parsed);
+      return parsed;
     }
 
     // Try unwrapping from data field (CloudEvent format)
     if (parsed.data && hasActivityId(parsed.data)) {
-      return normalizeEvent(parsed.data);
+      return parsed.data;
     }
 
     return null;
@@ -204,16 +198,16 @@ async function handleMissedDestination(req: Request, res: Response, ctx: Framewo
   // Generate new execution ID
   const newPipelineExecutionId = generateRepostExecutionId(activityId);
 
-  // Update the event with new destination and execution ID
-  const repostEvent: EnrichedActivityEvent = {
+  // Update the event with new destination and execution ID (snake_case for proto JSON)
+  const repostData: Record<string, unknown> = {
     ...enrichedEvent,
     destinations: [destEnum],
-    pipelineExecutionId: newPipelineExecutionId,
+    pipeline_execution_id: newPipelineExecutionId,
   };
 
-  // Publish to ROUTER topic (not directly to destination)
-  // The router will handle routing to the appropriate destination uploader
-  const messageData = Buffer.from(JSON.stringify(repostEvent));
+  // Wrap in CloudEvent envelope matching Go enricher format
+  const cloudEvent = createCloudEvent(repostData);
+  const messageData = Buffer.from(JSON.stringify(cloudEvent));
   await pubsub.topic(TOPICS.ENRICHED_ACTIVITY).publishMessage({
     data: messageData,
     attributes: {
@@ -289,16 +283,16 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
   // Check if destination already has an external ID (use update method)
   const hasExistingId = activity.destinations && activity.destinations[destKey];
 
-  // Update the event with destination and execution ID
-  const repostEvent: EnrichedActivityEvent = {
+  // Update the event with destination and execution ID (snake_case for proto JSON)
+  const repostData: Record<string, unknown> = {
     ...enrichedEvent,
     destinations: [destEnum],
-    pipelineExecutionId: newPipelineExecutionId,
+    pipeline_execution_id: newPipelineExecutionId,
   };
 
-  // Publish to ROUTER topic (not directly to destination)
-  // The router will handle routing to the appropriate destination uploader
-  const messageData = Buffer.from(JSON.stringify(repostEvent));
+  // Wrap in CloudEvent envelope matching Go enricher format
+  const cloudEvent = createCloudEvent(repostData);
+  const messageData = Buffer.from(JSON.stringify(cloudEvent));
   await pubsub.topic(TOPICS.ENRICHED_ACTIVITY).publishMessage({
     data: messageData,
     attributes: {
