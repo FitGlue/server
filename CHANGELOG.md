@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.5.0](https://github.com/FitGlue/server/compare/v1.4.0...v1.5.0) (2026-01-19)
+
+
+### Features
+
+* change parkrun location detection logic ([871a6c0](https://github.com/FitGlue/server/commit/871a6c0ce8c81763f37d92fe05ceaf2c8ce41442))
+* Introduce Hevy uploader, add a repost handler, and enhance linting for destination topic and uploader consistency. ([3c65b11](https://github.com/FitGlue/server/commit/3c65b114952e09e3481b802f0b08a7bad67f6598))
+* Introduce Hevy uploader, add a repost handler, and enhance linting for destination topic and uploader consistency. ([812d4b6](https://github.com/FitGlue/server/commit/812d4b6b8c55b705e93f466cfa4fba32cab81849))
+* Introduce owner display name for showcased activities, populate it via Firebase Auth, and add new Parkrun integration fields. ([d919f02](https://github.com/FitGlue/server/commit/d919f02632d5681886b77f6029da8e9037f07efc))
+
+
+### Bug Fixes
+
+* increase parkrun detection distance ([ef8d299](https://github.com/FitGlue/server/commit/ef8d299674af6d92c33895bc87538f9d1fc66881))
+* parkrun locations service not unwrapping JSON correctly ([77ef6c7](https://github.com/FitGlue/server/commit/77ef6c791156f5407113f90fdc1fd53aeeb1ff47))
+
 ## [1.4.0](https://github.com/FitGlue/server/compare/v1.3.0...v1.4.0) (2026-01-18)
 
 
