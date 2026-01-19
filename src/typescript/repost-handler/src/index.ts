@@ -40,18 +40,50 @@ function generateRepostExecutionId(activityId: string): string {
 
 /**
  * Extract EnrichedActivityEvent from router execution inputsJson.
+ * Handles both camelCase (activityId) and snake_case (activity_id) field names
+ * since the Go framework may store either format depending on the serialization path.
  */
 function parseEnrichedActivityEvent(inputsJson: string): EnrichedActivityEvent | null {
   try {
     const parsed = JSON.parse(inputsJson);
+
+    // Helper to check for activity identifier in either case
+    const hasActivityId = (obj: Record<string, unknown>): boolean =>
+      !!(obj.activityId || obj.activity_id);
+    const hasUserId = (obj: Record<string, unknown>): boolean =>
+      !!(obj.userId || obj.user_id);
+
+    // Normalize snake_case to camelCase for consistent downstream handling
+    const normalizeEvent = (obj: Record<string, unknown>): EnrichedActivityEvent => {
+      return {
+        activityId: (obj.activityId || obj.activity_id) as string,
+        userId: (obj.userId || obj.user_id) as string,
+        pipelineId: (obj.pipelineId || obj.pipeline_id) as string | undefined,
+        fitFileUri: (obj.fitFileUri || obj.fit_file_uri) as string | undefined,
+        name: obj.name as string | undefined,
+        description: obj.description as string | undefined,
+        activityType: (obj.activityType || obj.activity_type) as number | undefined,
+        startTime: (obj.startTime || obj.start_time) as string | undefined,
+        source: obj.source as number | undefined,
+        activityData: (obj.activityData || obj.activity_data) as unknown,
+        appliedEnrichments: (obj.appliedEnrichments || obj.applied_enrichments) as string[] | undefined,
+        enrichmentMetadata: (obj.enrichmentMetadata || obj.enrichment_metadata) as Record<string, string> | undefined,
+        destinations: obj.destinations as number[] | undefined,
+        tags: obj.tags as string[] | undefined,
+        pipelineExecutionId: (obj.pipelineExecutionId || obj.pipeline_execution_id) as string | undefined,
+      } as EnrichedActivityEvent;
+    };
+
     // The inputsJson might be the raw event or wrapped
-    if (parsed.activityId && parsed.userId) {
-      return parsed as EnrichedActivityEvent;
+    if (hasActivityId(parsed) && hasUserId(parsed)) {
+      return normalizeEvent(parsed);
     }
+
     // Try unwrapping from data field (CloudEvent format)
-    if (parsed.data?.activityId) {
-      return parsed.data as EnrichedActivityEvent;
+    if (parsed.data && hasActivityId(parsed.data)) {
+      return normalizeEvent(parsed.data);
     }
+
     return null;
   } catch {
     return null;

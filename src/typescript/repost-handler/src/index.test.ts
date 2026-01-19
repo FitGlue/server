@@ -258,6 +258,39 @@ describe('repost-handler', () => {
       expect(response.promptUpdatePipeline).toBe(true);
       expect(response.newPipelineExecutionId).toBeDefined();
     });
+
+    it('handles snake_case field names from Go framework (activity_id/user_id)', async () => {
+      // The Go framework stores CloudEvent data with snake_case field names
+      ctx.stores.activities.getSynchronized.mockResolvedValue({
+        activityId: 'a1',
+        pipelineExecutionId: 'pipe-1',
+        destinations: {},
+      });
+      ctx.stores.executions.getRouterExecution.mockResolvedValue({
+        id: 'exec-1',
+        data: {
+          // Snake_case format from Go's json.Marshal of proto
+          inputsJson: JSON.stringify({
+            activity_id: 'a1',
+            user_id: 'user-pro',
+            pipeline_id: 'pipeline-1',
+            pipeline_execution_id: 'pipe-1',
+            destinations: [1],
+          }),
+        },
+      });
+
+      await handler({
+        method: 'POST',
+        path: '/missed-destination',
+        body: { activityId: 'a1', destination: 'showcase' },
+      } as any, res, ctx);
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(mockPublishMessage).toHaveBeenCalled();
+      const response = res.json.mock.calls[0][0];
+      expect(response.success).toBe(true);
+    });
   });
 
   describe('POST /retry-destination', () => {
