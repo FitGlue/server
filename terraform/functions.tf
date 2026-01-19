@@ -380,7 +380,7 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
 
   build_config {
     runtime     = "nodejs20"
-    entry_point = "hevyWebhookHandler"
+    entry_point = "hevyHandler"
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name

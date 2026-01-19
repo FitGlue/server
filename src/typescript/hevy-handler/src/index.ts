@@ -5,7 +5,7 @@ import { HevyConnector } from './connector';
 // The createWebhookProcessor encapsulation standardizes the flow:
 // Auth -> Extract ID -> Load Config -> Dedup -> Fetch/Map -> Publish -> Mark Processed.
 
-export const hevyWebhookHandler = createCloudFunction(
+export const hevyHandler = createCloudFunction(
     createWebhookProcessor(HevyConnector),
     {
         auth: {

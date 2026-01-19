@@ -8,8 +8,8 @@
     "gcp-build": "npm run build",
     "test": "jest",
     "lint": "eslint src --ext .ts",
-    "start": "functions-framework --target=hevyWebhookHandler",
-    "dev": "concurrently \"tsc -w\" \"functions-framework --target=hevyWebhookHandler\""
+    "start": "functions-framework --target=hevyHandler",
+    "dev": "concurrently \"tsc -w\" \"functions-framework --target=hevyHandler\""
   },
   "dependencies": {
     "@bufbuild/protobuf": "^2.10.2",

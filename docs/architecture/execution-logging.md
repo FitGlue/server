@@ -241,7 +241,7 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   return { pubsubMessageId: messageId };
 };
 
-export const hevyWebhookHandler = createCloudFunction(handler);
+export const hevyHandler = createCloudFunction(handler);
 ```
 
 ## Testing with Test Run IDs
