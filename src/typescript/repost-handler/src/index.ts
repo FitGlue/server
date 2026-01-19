@@ -9,7 +9,7 @@
 
 import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy } from '@fitglue/shared';
 import { TOPICS } from '@fitglue/shared/dist/config';
-import { getDestinationTopic, parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
+import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
 import { EnrichedActivityEvent } from '@fitglue/shared/dist/types/pb/events';
 import { Request, Response } from 'express';
 import { PubSub } from '@google-cloud/pubsub';
@@ -164,16 +164,10 @@ async function handleMissedDestination(req: Request, res: Response, ctx: Framewo
     return;
   }
 
-  // Validate destination
+  // Validate destination enum
   const destEnum = parseDestination(destination);
   if (destEnum === undefined) {
     res.status(400).json({ error: `Invalid destination: ${destination}` });
-    return;
-  }
-
-  const topic = getDestinationTopic(destEnum);
-  if (!topic) {
-    res.status(400).json({ error: `No topic configured for destination: ${destination}` });
     return;
   }
 
@@ -217,9 +211,10 @@ async function handleMissedDestination(req: Request, res: Response, ctx: Framewo
     pipelineExecutionId: newPipelineExecutionId,
   };
 
-  // Publish to destination topic
+  // Publish to ROUTER topic (not directly to destination)
+  // The router will handle routing to the appropriate destination uploader
   const messageData = Buffer.from(JSON.stringify(repostEvent));
-  await pubsub.topic(topic).publishMessage({
+  await pubsub.topic(TOPICS.ENRICHED_ACTIVITY).publishMessage({
     data: messageData,
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
@@ -228,10 +223,9 @@ async function handleMissedDestination(req: Request, res: Response, ctx: Framewo
     },
   });
 
-  ctx.logger.info('Published re-post to missed destination', {
+  ctx.logger.info('Published re-post to router for missed destination', {
     activityId,
     destination: destKey,
-    topic,
     newPipelineExecutionId,
   });
 
@@ -258,16 +252,10 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
     return;
   }
 
-  // Validate destination
+  // Validate destination enum
   const destEnum = parseDestination(destination);
   if (destEnum === undefined) {
     res.status(400).json({ error: `Invalid destination: ${destination}` });
-    return;
-  }
-
-  const topic = getDestinationTopic(destEnum);
-  if (!topic) {
-    res.status(400).json({ error: `No topic configured for destination: ${destination}` });
     return;
   }
 
@@ -308,9 +296,10 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
     pipelineExecutionId: newPipelineExecutionId,
   };
 
-  // Publish to destination topic
+  // Publish to ROUTER topic (not directly to destination)
+  // The router will handle routing to the appropriate destination uploader
   const messageData = Buffer.from(JSON.stringify(repostEvent));
-  await pubsub.topic(topic).publishMessage({
+  await pubsub.topic(TOPICS.ENRICHED_ACTIVITY).publishMessage({
     data: messageData,
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
@@ -321,10 +310,9 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
     },
   });
 
-  ctx.logger.info('Published re-post retry to destination', {
+  ctx.logger.info('Published re-post retry to router', {
     activityId,
     destination: destKey,
-    topic,
     newPipelineExecutionId,
     useUpdateMethod: !!hasExistingId,
   });

@@ -212,6 +212,10 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	status := "SUCCESS"
 	if uploadResp.Error != "" {
 		status = "FAILED_STRAVA_PROCESSING"
+	} else if uploadResp.ActivityID == 0 {
+		// ActivityID is still 0 after soft polling - Strava is still processing async
+		// Return PENDING status so this shows up in failed/stalled list
+		status = "PENDING_STRAVA_PROCESSING"
 	}
 
 	result := map[string]interface{}{
@@ -229,7 +233,11 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	}
 
 	if status != "SUCCESS" {
-		return result, fmt.Errorf("strava upload failed: %s", uploadResp.Error)
+		errMsg := uploadResp.Error
+		if errMsg == "" {
+			errMsg = fmt.Sprintf("status=%s, activity_id=%d", status, uploadResp.ActivityID)
+		}
+		return result, fmt.Errorf("strava upload incomplete: %s", errMsg)
 	}
 
 	return result, nil

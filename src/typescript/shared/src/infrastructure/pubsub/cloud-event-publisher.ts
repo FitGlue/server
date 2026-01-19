@@ -19,15 +19,17 @@ export class CloudEventPublisher<T> {
    * Publishes a message wrapped in a CloudEvent envelope.
    * @param data The payload data of type T
    * @param subject Optional subject (e.g. resource ID)
+   * @param extensions Optional CloudEvent extensions (e.g. pipeline_execution_id)
    * @returns The Pub/Sub message ID
    */
-  async publish(data: T, subject?: string): Promise<string> {
+  async publish(data: T, subject?: string, extensions?: Record<string, string>): Promise<string> {
     const ce = new CloudEvent({
       type: this.type,
       source: this.source,
       subject,
       data,
       datacontenttype: 'application/json',
+      ...extensions, // CloudEvent extensions are spread directly into the event
     });
 
     try {
@@ -43,7 +45,8 @@ export class CloudEventPublisher<T> {
           messageId,
           ceType: this.type,
           ceSource: this.source,
-          ceId: ce.id
+          ceId: ce.id,
+          extensions
         });
       }
 

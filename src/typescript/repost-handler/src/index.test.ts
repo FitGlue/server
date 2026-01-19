@@ -3,18 +3,20 @@ import { handler } from './index';
 // Mock PubSub - must be before import
 jest.mock('@google-cloud/pubsub', () => {
   const mockPublishMessage = jest.fn().mockResolvedValue('msg-123');
+  const mockTopic = jest.fn().mockReturnValue({
+    publishMessage: mockPublishMessage,
+  });
   return {
     PubSub: jest.fn().mockImplementation(() => ({
-      topic: jest.fn().mockReturnValue({
-        publishMessage: mockPublishMessage,
-      }),
+      topic: mockTopic,
     })),
     __mockPublishMessage: mockPublishMessage,
+    __mockTopic: mockTopic,
   };
 });
 
-// Get reference to mock for assertions
-const { __mockPublishMessage: mockPublishMessage } = jest.requireMock('@google-cloud/pubsub');
+// Get reference to mocks for assertions
+const { __mockPublishMessage: mockPublishMessage, __mockTopic: mockTopic } = jest.requireMock('@google-cloud/pubsub');
 
 describe('repost-handler', () => {
   let res: any;
@@ -22,6 +24,7 @@ describe('repost-handler', () => {
 
   beforeEach(() => {
     mockPublishMessage.mockClear();
+    mockTopic.mockClear();
 
     res = {
       status: jest.fn().mockReturnThis(),
