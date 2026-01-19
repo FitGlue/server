@@ -93,3 +93,7 @@ exports.repostHandler = (req, res) => {
   return repost.repostHandler(req, res);
 };
 
+exports.adminHandler = (req, res) => {
+  const admin = require('./admin-handler/build/index');
+  return admin.adminHandler(req, res);
+};

@@ -21,7 +21,8 @@
     "mobile-sync-handler",
     "billing-handler",
     "showcase-handler",
-    "repost-handler"
+    "repost-handler",
+    "admin-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

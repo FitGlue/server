@@ -221,4 +221,26 @@ export class ExecutionStore {
     }
     return deletedCount;
   }
+
+  /**
+   * List recent executions (for admin stats).
+   */
+  async listRecent(limit: number = 100): Promise<{ id: string, data: ExecutionRecord }[]> {
+    return this.list({ limit });
+  }
+
+  /**
+   * Get distinct service names from recent executions (for admin filtering).
+   */
+  async listDistinctServices(): Promise<string[]> {
+    // Fetch recent executions and extract unique services
+    const executions = await this.list({ limit: 500 });
+    const services = new Set<string>();
+    for (const exec of executions) {
+      if (exec.data.service) {
+        services.add(exec.data.service);
+      }
+    }
+    return Array.from(services).sort();
+  }
 }

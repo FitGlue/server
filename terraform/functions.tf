@@ -1110,3 +1110,40 @@ resource "google_cloud_run_service_iam_member" "repost_handler_invoker" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# ----------------- Admin Handler -----------------
+resource "google_cloudfunctions2_function" "admin_handler" {
+  name        = "admin-handler"
+  location    = var.region
+  description = "Consolidated admin operations handler"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "adminHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.typescript_source_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "admin_handler_invoker" {
+  project  = google_cloudfunctions2_function.admin_handler.project
+  location = google_cloudfunctions2_function.admin_handler.location
+  service  = google_cloudfunctions2_function.admin_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
