@@ -1,4 +1,5 @@
 import { CloudEventType, CloudEventSource, Destination } from './pb/events';
+import { formatDestination } from './pb/enum-formatters';
 
 // Map CloudEventType enum to string URN
 export const CloudEventTypeURN: Record<number, string> = {
@@ -65,12 +66,12 @@ export function getDestinationTopic(destination: Destination | string): string |
 
 /**
  * Get the destination key name from enum value.
+ * Uses generated formatter for display-friendly names.
  * @param destination - Destination enum value
  * @returns Lowercase destination name (e.g., "strava", "showcase")
  */
 export function getDestinationName(destination: Destination): string {
-  const name = Destination[destination];
-  return name?.replace('DESTINATION_', '').toLowerCase() || 'unknown';
+  return formatDestination(destination).toLowerCase();
 }
 
 /**

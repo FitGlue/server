@@ -5,6 +5,7 @@
   "scripts": {
     "build": "tsc",
     "lint": "eslint 'src/**/*.ts'",
+    "test": "jest",
     "pack": "npm run build && cp package.json dist/"
   },
   "dependencies": {

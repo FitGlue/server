@@ -4,7 +4,7 @@
   "main": "build/index.js",
   "scripts": {
     "build": "tsc",
-    "test": "jest --passWithNoTests"
+    "test": "jest"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^3.3.0",

@@ -17,9 +17,10 @@ import {
     EnricherConfig,
     PipelineConfig,
     ExecutionRecord,
-    Destination,
     INTEGRATIONS,
     UserIntegrations,
+    formatActivityType,
+    formatDestination,
 } from '@fitglue/shared';
 
 
@@ -392,32 +393,10 @@ const getAvailableEnricherChoices = (selectedProviderTypes: EnricherProviderType
     return allChoices.filter(choice => !selectedProviderTypes.includes(choice.value));
 };
 
-// Helper to format ActivityType enum string to human-readable format
-const formatActivityType = (type: string | number | undefined): string => {
-    if (type === undefined || type === null) return 'N/A';
-
-    // If number, try to resolve to enum string key
-    if (typeof type === 'number') {
-        const resolved = ActivityType[type];
-        if (resolved) {
-            type = resolved;
-        }
-    }
-
-    const typeStr = String(type);
-    if (typeStr.startsWith('ACTIVITY_TYPE_')) {
-        return typeStr.replace('ACTIVITY_TYPE_', '').split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-    }
-    return typeStr;
-};
-
+// Use generated formatters from enum-formatters.ts
 const getDestinationName = (dest: number | string): string => {
     if (typeof dest === 'string') return dest;
-    const name = Destination[dest];
-    if (name) {
-        return name.replace('DESTINATION_', '').split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
-    }
-    return `Unknown(${dest})`;
+    return formatDestination(dest);
 };
 
 // Helper to format user output
