@@ -55,6 +55,18 @@ generate:
 				$$dir/swagger.json; \
 		fi \
 	done
+	# Generate enum formatters (TS + Go)
+	@echo "Generating enum formatters..."
+	@npx ts-node scripts/generate-enum-formatters.ts
+	# Copy all generated types to web (if exists)
+	@if [ -d "../web" ]; then \
+		echo "Copying generated types to web..."; \
+		mkdir -p ../web/src/types/pb; \
+		cp src/typescript/shared/src/types/pb/*.ts ../web/src/types/pb/; \
+		echo "Web types updated at ../web/src/types/pb/"; \
+	else \
+		echo "Skipping web types (../web not found)"; \
+	fi
 
 # --- Go Targets ---
 build-go: clean-go

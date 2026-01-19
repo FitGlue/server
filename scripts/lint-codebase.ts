@@ -1045,6 +1045,1849 @@ function checkLoopPrevention(): CheckResult {
 }
 
 // ============================================================================
+// Check 14: Environment Variable Access (T8)
+// ============================================================================
+
+/**
+ * Validates that environment variables are accessed through config.ts,
+ * not directly via process.env.
+ */
+function checkEnvVarAccess(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const configPath = path.join(TS_SRC_DIR, 'shared/src/config.ts');
+  const allowedFiles = [configPath, 'config.ts', 'config.test.ts', 'framework/index.ts'];
+
+  // Find all TypeScript files
+  const findTsFiles = (dir: string): string[] => {
+    if (!fs.existsSync(dir)) return [];
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('dist')) {
+        files.push(...findTsFiles(fullPath));
+      } else if (item.isFile() && item.name.endsWith('.ts') && !item.name.endsWith('.test.ts')) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  const tsFiles = findTsFiles(TS_SRC_DIR);
+
+  for (const file of tsFiles) {
+    const isConfigFile = allowedFiles.some(allowed => file.includes(allowed));
+    if (isConfigFile) continue;
+
+    const content = fs.readFileSync(file, 'utf-8');
+    const envVarPattern = /process\.env\.(\w+)/g;
+    let match;
+
+    while ((match = envVarPattern.exec(content)) !== null) {
+      const varName = match[1];
+      // Warning instead of error to allow migration time
+      warnings.push(`${path.relative(SERVER_ROOT, file)}: Move \`process.env.${varName}\` to \`shared/src/config.ts\``);
+    }
+  }
+
+  return {
+    name: 'Environment Variable Access (T8)',
+    passed: true, // Warnings only - allow time for migration
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 15: Protobuf Generation Freshness (E1)
+// ============================================================================
+
+/**
+ * Validates that generated proto files are newer than source .proto files.
+ */
+function checkProtoFreshness(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const protoFiles = getFiles(PROTO_DIR, '.proto');
+  const tsPbDir = path.join(TS_SRC_DIR, 'shared/src/types/pb');
+  const goPbDir = path.join(GO_SRC_DIR, 'pkg/types/pb');
+
+  for (const proto of protoFiles) {
+    const protoPath = path.join(PROTO_DIR, proto);
+    const protoStat = fs.statSync(protoPath);
+    const baseName = proto.replace('.proto', '');
+
+    // Check TypeScript generated file
+    const tsGenPath = path.join(tsPbDir, `${baseName}.ts`);
+    if (fs.existsSync(tsGenPath)) {
+      const tsStat = fs.statSync(tsGenPath);
+      if (protoStat.mtime > tsStat.mtime) {
+        errors.push(`${proto}: TypeScript types are stale (run \`make generate\`)`);
+      }
+    }
+
+    // Check Go generated file
+    const goGenPath = path.join(goPbDir, `${baseName}.pb.go`);
+    if (fs.existsSync(goGenPath)) {
+      const goStat = fs.statSync(goGenPath);
+      if (protoStat.mtime > goStat.mtime) {
+        errors.push(`${proto}: Go types are stale (run \`make generate\`)`);
+      }
+    }
+  }
+
+  return {
+    name: 'Protobuf Generation Freshness (E1)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 16: No Manual Enum Re-definitions (E2)
+// ============================================================================
+
+/**
+ * Detects manual enum definitions that should use generated proto types.
+ */
+function checkNoManualEnums(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const PROTO_ENUMS = ['ActivityType', 'Destination', 'ActivitySource', 'MuscleGroup', 'CloudEventType', 'CloudEventSource'];
+  const ALLOWED_PATHS = ['types/pb/', 'enum-formatters.ts'];
+
+  const findTsFiles = (dir: string): string[] => {
+    if (!fs.existsSync(dir)) return [];
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('dist')) {
+        files.push(...findTsFiles(fullPath));
+      } else if (item.isFile() && (item.name.endsWith('.ts') || item.name.endsWith('.tsx'))) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  // Check server
+  const serverFiles = findTsFiles(TS_SRC_DIR);
+  for (const file of serverFiles) {
+    const isAllowed = ALLOWED_PATHS.some(p => file.includes(p));
+    if (isAllowed) continue;
+
+    const content = fs.readFileSync(file, 'utf-8');
+    for (const enumName of PROTO_ENUMS) {
+      const enumDefPattern = new RegExp(`enum\\s+${enumName}\\s*\\{`, 'g');
+      if (enumDefPattern.test(content)) {
+        errors.push(`${path.relative(SERVER_ROOT, file)}: Manual \`enum ${enumName}\` definition - use import from \`types/pb/\``);
+      }
+    }
+  }
+
+  // Check web if exists
+  const webSrcDir = path.join(SERVER_ROOT, '..', 'web', 'src');
+  if (fs.existsSync(webSrcDir)) {
+    const webFiles = findTsFiles(webSrcDir);
+    for (const file of webFiles) {
+      const isAllowed = ALLOWED_PATHS.some(p => file.includes(p));
+      if (isAllowed) continue;
+
+      const content = fs.readFileSync(file, 'utf-8');
+      for (const enumName of PROTO_ENUMS) {
+        const enumDefPattern = new RegExp(`enum\\s+${enumName}\\s*\\{`, 'g');
+        if (enumDefPattern.test(content)) {
+          errors.push(`web/${path.relative(webSrcDir, file)}: Manual \`enum ${enumName}\` definition - use import from \`types/pb/\``);
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'No Manual Enum Re-definitions (E2)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 17: Formatter Coverage (E7)
+// ============================================================================
+
+/**
+ * Ensures all proto enums have corresponding formatters in enum-formatters.ts.
+ */
+function checkFormatterCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const formatterPath = path.join(TS_SRC_DIR, 'shared/src/types/pb/enum-formatters.ts');
+  const generatorPath = path.join(SERVER_ROOT, 'scripts/generate-enum-formatters.ts');
+
+  if (!fs.existsSync(formatterPath)) {
+    errors.push('enum-formatters.ts not found (run `make generate`)');
+    return { name: 'Formatter Coverage (E7)', passed: false, errors, warnings };
+  }
+
+  // Extract enums from proto-generated files
+  const tsPbDir = path.join(TS_SRC_DIR, 'shared/src/types/pb');
+  const protoEnums: string[] = [];
+
+  const pbFiles = getFiles(tsPbDir, '.ts').filter(f => !f.includes('enum-formatters'));
+  for (const file of pbFiles) {
+    const content = fs.readFileSync(path.join(tsPbDir, file), 'utf-8');
+    const enumPattern = /export enum (\w+)/g;
+    let match;
+    while ((match = enumPattern.exec(content)) !== null) {
+      protoEnums.push(match[1]);
+    }
+  }
+
+  // Check which have formatters
+  const formatterContent = fs.readFileSync(formatterPath, 'utf-8');
+  const formatterPattern = /export function format(\w+)\(/g;
+  const formatters = new Set<string>();
+  let fmatch;
+  while ((fmatch = formatterPattern.exec(formatterContent)) !== null) {
+    formatters.add(fmatch[1]);
+  }
+
+  // Check which are configured in generator
+  if (fs.existsSync(generatorPath)) {
+    const genContent = fs.readFileSync(generatorPath, 'utf-8');
+    for (const enumName of protoEnums) {
+      if (!formatters.has(enumName) && !genContent.includes(`enumName: '${enumName}'`)) {
+        warnings.push(`Proto enum '${enumName}' has no formatter - add to ENUM_CONFIGS in generate-enum-formatters.ts`);
+      }
+    }
+  }
+
+  return {
+    name: 'Formatter Coverage (E7)',
+    passed: true, // Warnings only for now
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 18: Jest Config Inheritance (T3)
+// ============================================================================
+
+/**
+ * Validates all handler jest.config.js files extend shared/jest.config.base.js.
+ */
+function checkJestConfigInheritance(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const handlersDir = TS_SRC_DIR;
+  const handlerDirs = getDirectories(handlersDir)
+    .filter(d => d.endsWith('-handler'))
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const jestConfigPath = path.join(handlersDir, dir, 'jest.config.js');
+    if (!fs.existsSync(jestConfigPath)) {
+      warnings.push(`Handler '${dir}' missing jest.config.js`);
+      continue;
+    }
+
+    const content = fs.readFileSync(jestConfigPath, 'utf-8');
+    if (!content.includes('jest.config.base') && !content.includes('../shared/')) {
+      errors.push(`Handler '${dir}' jest.config.js should extend '../shared/jest.config.base.js'`);
+    }
+  }
+
+  return {
+    name: 'Jest Config Inheritance (T3)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 19: Handler Package Scripts (T4)
+// ============================================================================
+
+/**
+ * Validates all handlers have required npm scripts.
+ */
+function checkHandlerPackageScripts(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const REQUIRED_SCRIPTS = ['build', 'test'];
+  const handlersDir = TS_SRC_DIR;
+  const handlerDirs = getDirectories(handlersDir)
+    .filter(d => d.endsWith('-handler'))
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const pkgPath = path.join(handlersDir, dir, 'package.json');
+    if (!fs.existsSync(pkgPath)) {
+      errors.push(`Handler '${dir}' missing package.json`);
+      continue;
+    }
+
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+    const scripts = pkg.scripts || {};
+
+    for (const script of REQUIRED_SCRIPTS) {
+      if (!scripts[script]) {
+        warnings.push(`Handler '${dir}' missing '${script}' script in package.json`);
+      }
+    }
+  }
+
+  return {
+    name: 'Handler Package Scripts (T4)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 20: Web Types Alignment (W7/W13)
+// ============================================================================
+
+/**
+ * Validates web uses generated types from types/pb/, not local definitions.
+ * Only runs if ../web exists.
+ */
+function checkWebTypesAlignment(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Web Types Alignment (W7/W13)', passed: true, errors, warnings: ['../web not found, skipping'] };
+  }
+
+  const webPbDir = path.join(webDir, 'src', 'types', 'pb');
+  const serverPbDir = path.join(TS_SRC_DIR, 'shared/src/types/pb');
+
+  if (!fs.existsSync(webPbDir)) {
+    errors.push('web/src/types/pb/ not found - run `make generate` from server');
+    return { name: 'Web Types Alignment (W7/W13)', passed: false, errors, warnings };
+  }
+
+  // Check that web has all the server generated types
+  const serverFiles = getFiles(serverPbDir, '.ts');
+  const webFiles = new Set(getFiles(webPbDir, '.ts'));
+
+  for (const file of serverFiles) {
+    if (!webFiles.has(file)) {
+      errors.push(`web/src/types/pb/ missing '${file}' - run \`make generate\` from server`);
+    }
+  }
+
+  // Compare timestamps to ensure web types are fresh
+  for (const file of serverFiles) {
+    const serverPath = path.join(serverPbDir, file);
+    const webPath = path.join(webPbDir, file);
+    if (fs.existsSync(webPath)) {
+      const serverStat = fs.statSync(serverPath);
+      const webStat = fs.statSync(webPath);
+      if (serverStat.mtime > webStat.mtime) {
+        warnings.push(`web/src/types/pb/${file} is stale - run \`make generate\` from server`);
+      }
+    }
+  }
+
+  return {
+    name: 'Web Types Alignment (W7/W13)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 21: Firestore Converter Completeness (T1)
+// ============================================================================
+
+/**
+ * Validates Firestore converters handle both snake_case and camelCase field names.
+ */
+function checkConverterCompleteness(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const converterPaths = [
+    path.join(TS_SRC_DIR, 'shared/src/firestore/converters.ts'),
+  ];
+
+  for (const converterPath of converterPaths) {
+    if (!fs.existsSync(converterPath)) continue;
+
+    const content = fs.readFileSync(converterPath, 'utf-8');
+
+    // Check for common snake_case fields that should have camelCase fallback
+    const fieldsToCheck = [
+      { snake: 'activity_type', camel: 'activityType' },
+      { snake: 'user_id', camel: 'userId' },
+      { snake: 'external_id', camel: 'externalId' },
+      { snake: 'created_at', camel: 'createdAt' },
+      { snake: 'updated_at', camel: 'updatedAt' },
+      { snake: 'start_time', camel: 'startTime' },
+      { snake: 'pipeline_id', camel: 'pipelineId' },
+    ];
+
+    for (const field of fieldsToCheck) {
+      // Check if snake_case is used without camelCase fallback
+      const snakePattern = new RegExp(`data\\.${field.snake}(?![\\w])`, 'g');
+      const camelPattern = new RegExp(`data\\.${field.camel}(?![\\w])`, 'g');
+      const fallbackPattern = new RegExp(`data\\.${field.snake}\\s*\\|\\|\\s*data\\.${field.camel}|data\\.${field.camel}\\s*\\|\\|\\s*data\\.${field.snake}`, 'g');
+
+      const hasSnake = snakePattern.test(content);
+      const hasCamel = camelPattern.test(content);
+      const hasFallback = fallbackPattern.test(content);
+
+      if (hasSnake && !hasFallback && !hasCamel) {
+        warnings.push(`${path.basename(converterPath)}: Field '${field.snake}' should include fallback for '${field.camel}'`);
+      }
+      if (hasCamel && !hasFallback && !hasSnake) {
+        warnings.push(`${path.basename(converterPath)}: Field '${field.camel}' should include fallback for '${field.snake}'`);
+      }
+    }
+  }
+
+  return {
+    name: 'Firestore Converter Completeness (T1)',
+    passed: true, // Warnings only
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 22: Proto Import Path (T5)
+// ============================================================================
+
+/**
+ * Validates TypeScript handlers import proto types from shared/src/types/pb/.
+ */
+function checkProtoImportPath(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const findTsFiles = (dir: string): string[] => {
+    if (!fs.existsSync(dir)) return [];
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('dist') && !item.name.includes('types')) {
+        files.push(...findTsFiles(fullPath));
+      } else if (item.isFile() && item.name.endsWith('.ts') && !item.name.endsWith('.test.ts')) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  const handlerDirs = getDirectories(TS_SRC_DIR).filter(d => d.endsWith('-handler'));
+
+  for (const dir of handlerDirs) {
+    const files = findTsFiles(path.join(TS_SRC_DIR, dir));
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf-8');
+
+      // Check for proto type imports not from shared
+      const badImportPatterns = [
+        /from\s+['"]\.\.?\/.*\/pb['"]/g, // Relative pb imports
+        /from\s+['"]@fitglue\/shared\/types\/pb/g, // Should be from shared/src/types/pb
+      ];
+
+      // Good pattern: from '@fitglue/shared' or from '../shared/src/types/pb'
+      const protoTypeNames = ['ActivityType', 'Destination', 'ActivitySource', 'StandardizedActivity'];
+
+      for (const typeName of protoTypeNames) {
+        const usesType = content.includes(typeName);
+        if (!usesType) continue;
+
+        const hasGoodImport = content.includes(`from '@fitglue/shared'`) ||
+          content.includes(`from '../shared'`) ||
+          content.includes(`types/pb`);
+
+        if (usesType && !hasGoodImport) {
+          warnings.push(`${path.relative(SERVER_ROOT, file)}: Uses '${typeName}' but may not import from shared/types/pb`);
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'Proto Import Path (T5)',
+    passed: true, // Warnings only
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 23: useApi over useAuth (W1) - Web Only
+// ============================================================================
+
+/**
+ * Validates web components use useApi() for API calls, not direct fetch with useAuth().
+ */
+function checkUseApiPattern(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'useApi over useAuth (W1)', passed: true, errors, warnings: ['../web not found, skipping'] };
+  }
+
+  const webAppDir = path.join(webDir, 'src', 'app');
+  if (!fs.existsSync(webAppDir)) {
+    return { name: 'useApi over useAuth (W1)', passed: true, errors, warnings };
+  }
+
+  const findTsxFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory() && !item.name.includes('node_modules')) {
+        files.push(...findTsxFiles(fullPath));
+      } else if (item.isFile() && (item.name.endsWith('.tsx') || item.name.endsWith('.ts')) && !item.name.endsWith('.test.tsx')) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  const webFiles = findTsxFiles(webAppDir);
+
+  for (const file of webFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(webDir, file);
+
+    // Skip the useApi hook itself and services
+    if (file.includes('hooks/useApi') || file.includes('services/')) continue;
+
+    // Check for direct fetch calls in components
+    const hasFetch = /[^a-zA-Z]fetch\s*\(/g.test(content);
+    const hasUseAuth = /useAuth\s*\(\s*\)/g.test(content);
+
+    if (hasFetch && !file.includes('useApi')) {
+      warnings.push(`${fileName}: Uses direct fetch() - consider using useApi() hook`);
+    }
+
+    // Check for useAuth followed by API-like patterns (token usage for fetch)
+    if (hasUseAuth && content.includes('token') && hasFetch) {
+      errors.push(`${fileName}: Uses useAuth() + fetch() - use useApi() instead for authenticated requests`);
+    }
+  }
+
+  return {
+    name: 'useApi over useAuth (W1)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 24: Protobuf JSON Serialization (G1)
+// ============================================================================
+
+/**
+ * Validates Go code uses protojson instead of encoding/json for proto types.
+ * This wraps the existing lint-proto-json.sh script output.
+ */
+function checkProtoJsonSerialization(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'Protobuf JSON Serialization (G1)', passed: true, errors, warnings };
+  }
+
+  const findGoFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory()) {
+        files.push(...findGoFiles(fullPath));
+      } else if (item.isFile() && item.name.endsWith('.go') && !item.name.endsWith('_test.go')) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  const goFiles = findGoFiles(goFunctionsDir);
+
+  for (const file of goFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(SERVER_ROOT, file);
+
+    // Check if file imports pb package
+    const importsPb = /import\s+.*".*\/pb"/.test(content) || /pb\./.test(content);
+
+    // Check if file uses encoding/json
+    const usesEncodingJson = /import\s+.*"encoding\/json"/.test(content);
+
+    // Check for json.Marshal or json.Unmarshal
+    const usesJsonMarshal = /json\.(Marshal|Unmarshal)/.test(content);
+
+    if (importsPb && usesEncodingJson && usesJsonMarshal) {
+      warnings.push(`${fileName}: Uses encoding/json with proto types - verify using protojson for pb.* types`);
+    }
+  }
+
+  return {
+    name: 'Protobuf JSON Serialization (G1)',
+    passed: true, // Warnings only - manual verification needed
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 25: Go Context Propagation (G2)
+// ============================================================================
+
+function checkGoContextPropagation(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'Go Context Propagation (G2)', passed: true, errors, warnings };
+  }
+
+  const findGoFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory()) {
+          files.push(...findGoFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.go') && !item.name.endsWith('_test.go')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const goFiles = findGoFiles(goFunctionsDir);
+
+  for (const file of goFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(SERVER_ROOT, file);
+
+    // Check for context.Background() or context.TODO() which should be ctx from caller
+    const backgroundCtx = /context\.(Background|TODO)\(\)/.test(content);
+    if (backgroundCtx && !file.includes('main.go') && !file.includes('_test.go')) {
+      warnings.push(`${fileName}: Uses context.Background()/TODO() - prefer passing ctx from caller`);
+    }
+  }
+
+  return {
+    name: 'Go Context Propagation (G2)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 26: Go Error Wrapping (G3)
+// ============================================================================
+
+function checkGoErrorWrapping(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'Go Error Wrapping (G3)', passed: true, errors, warnings };
+  }
+
+  const findGoFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory()) {
+          files.push(...findGoFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.go') && !item.name.endsWith('_test.go')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const goFiles = findGoFiles(goFunctionsDir);
+
+  for (const file of goFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(SERVER_ROOT, file);
+
+    // Check for fmt.Errorf without %w (should wrap errors)
+    const errorfWithoutWrap = /fmt\.Errorf\([^)]+\)/.test(content) && !content.includes('%w');
+    const hasErrorReturn = /return.*err/.test(content);
+
+    if (errorfWithoutWrap && hasErrorReturn) {
+      warnings.push(`${fileName}: Uses fmt.Errorf without %w - consider wrapping errors`);
+    }
+  }
+
+  return {
+    name: 'Go Error Wrapping (G3)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 27: Go Logger Usage (G4)
+// ============================================================================
+
+function checkGoLoggerUsage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'Go Logger Usage (G4)', passed: true, errors, warnings };
+  }
+
+  const findGoFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory()) {
+          files.push(...findGoFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.go') && !item.name.endsWith('_test.go')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const goFiles = findGoFiles(goFunctionsDir);
+
+  for (const file of goFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(SERVER_ROOT, file);
+
+    // Check for log.Print/Printf/Println instead of structured logging
+    const usesStdLog = /\blog\.(Print|Printf|Println|Fatal|Fatalf)\b/.test(content);
+    if (usesStdLog) {
+      warnings.push(`${fileName}: Uses log.Print* - consider using structured logging (ctx.Logger)`);
+    }
+  }
+
+  return {
+    name: 'Go Logger Usage (G4)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 28: Go Test File Coverage (G8)
+// ============================================================================
+
+function checkGoTestCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'Go Test File Coverage (G8)', passed: true, errors, warnings };
+  }
+
+  const uploaderDirs = getDirectories(goFunctionsDir).filter(d => d.includes('uploader'));
+
+  for (const dir of uploaderDirs) {
+    const fullDir = path.join(goFunctionsDir, dir);
+    const files = fs.readdirSync(fullDir);
+    const hasTestFile = files.some(f => f.endsWith('_test.go'));
+
+    if (!hasTestFile) {
+      warnings.push(`Uploader '${dir}' has no test file (*_test.go)`);
+    }
+  }
+
+  return {
+    name: 'Go Test File Coverage (G8)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 29: Shared Exports (T2)
+// ============================================================================
+
+function checkSharedExports(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const sharedIndexPath = path.join(TS_SRC_DIR, 'shared/src/index.ts');
+  if (!fs.existsSync(sharedIndexPath)) {
+    return { name: 'Shared Exports (T2)', passed: true, errors, warnings: ['shared/src/index.ts not found'] };
+  }
+
+  const indexContent = fs.readFileSync(sharedIndexPath, 'utf-8');
+
+  // Key exports that should be in index.ts
+  const requiredExports = [
+    'converters',
+    'types/pb',
+    'framework',
+    'config',
+  ];
+
+  for (const exp of requiredExports) {
+    if (!indexContent.includes(exp)) {
+      warnings.push(`shared/src/index.ts should export '${exp}'`);
+    }
+  }
+
+  return {
+    name: 'Shared Exports (T2)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 30: Date Handling (T6)
+// ============================================================================
+
+function checkDateHandling(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const converterPath = path.join(TS_SRC_DIR, 'shared/src/firestore/converters.ts');
+  if (!fs.existsSync(converterPath)) {
+    return { name: 'Date Handling (T6)', passed: true, errors, warnings };
+  }
+
+  const content = fs.readFileSync(converterPath, 'utf-8');
+
+  // Check for Date parsing patterns that don't use toDate helper
+  const manualDateParsing = /new Date\(data\./.test(content);
+  const hasToDateHelper = content.includes('toDate') || content.includes('Timestamp');
+
+  if (manualDateParsing && !hasToDateHelper) {
+    warnings.push('converters.ts: Manual Date parsing detected - use toDate() helper for Firestore Timestamps');
+  }
+
+  return {
+    name: 'Date Handling (T6)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 31: Error Response Format (T7)
+// ============================================================================
+
+function checkErrorResponseFormat(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const handlerDirs = getDirectories(TS_SRC_DIR).filter(d => d.endsWith('-handler'));
+
+  for (const dir of handlerDirs) {
+    const indexPath = path.join(TS_SRC_DIR, dir, 'src/index.ts');
+    if (!fs.existsSync(indexPath)) continue;
+
+    const content = fs.readFileSync(indexPath, 'utf-8');
+
+    // Check for non-standard error responses
+    const hasStatusSend = /res\.status\(\d+\)\.send\(/.test(content);
+    const hasJsonError = /\.json\(\s*\{\s*error:/.test(content);
+    const hasStringError = /\.send\(\s*['"`]/.test(content);
+
+    if (hasStringError && !hasJsonError) {
+      warnings.push(`${dir}: Uses string error responses - prefer { error: string } format`);
+    }
+  }
+
+  return {
+    name: 'Error Response Format (T7)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 32: Integration Field Parity (X3)
+// ============================================================================
+
+function checkIntegrationFieldParity(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const tsConverterPath = path.join(TS_SRC_DIR, 'shared/src/firestore/converters.ts');
+  const goConverterPath = path.join(GO_SRC_DIR, 'pkg/firestore/user_converter.go');
+
+  if (!fs.existsSync(tsConverterPath) || !fs.existsSync(goConverterPath)) {
+    return { name: 'Integration Field Parity (X3)', passed: true, errors, warnings };
+  }
+
+  const tsContent = fs.readFileSync(tsConverterPath, 'utf-8');
+  const goContent = fs.readFileSync(goConverterPath, 'utf-8');
+
+  // Check for integration fields that exist in one but not the other
+  const integrationFields = ['strava', 'fitbit', 'hevy', 'parkrun'];
+
+  for (const field of integrationFields) {
+    const inTs = tsContent.toLowerCase().includes(field);
+    const inGo = goContent.toLowerCase().includes(field);
+
+    if (inTs && !inGo) {
+      warnings.push(`Integration '${field}' in TS converter but not Go converter`);
+    }
+    if (inGo && !inTs) {
+      warnings.push(`Integration '${field}' in Go converter but not TS converter`);
+    }
+  }
+
+  return {
+    name: 'Integration Field Parity (X3)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 33: ActivitySource Handler Coverage (X4)
+// ============================================================================
+
+function checkSourceHandlerCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Get ActivitySource enum values from generated types
+  const activitySourcePath = path.join(TS_SRC_DIR, 'shared/src/types/pb/activity.ts');
+  if (!fs.existsSync(activitySourcePath)) {
+    return { name: 'ActivitySource Handler Coverage (X4)', passed: true, errors, warnings };
+  }
+
+  const content = fs.readFileSync(activitySourcePath, 'utf-8');
+  const enumPattern = /SOURCE_(\w+)\s*=/g;
+  const sources: string[] = [];
+  let match;
+  while ((match = enumPattern.exec(content)) !== null) {
+    const sourceName = match[1];
+    if (!['UNKNOWN', 'UNSPECIFIED', 'TEST'].includes(sourceName)) {
+      sources.push(sourceName);
+    }
+  }
+
+  // Check for corresponding handlers
+  const handlerDirs = getDirectories(TS_SRC_DIR).filter(d => d.endsWith('-handler'));
+  const handlerNames = handlerDirs.map(d => d.toLowerCase());
+
+  // Exemptions (sources that don't need dedicated handlers)
+  const exemptions = ['PARKRUN_RESULTS']; // Uses inputs-handler
+
+  for (const source of sources) {
+    if (exemptions.includes(source)) continue;
+
+    const expectedHandler = source.toLowerCase().replace(/_/g, '-');
+    const hasHandler = handlerNames.some(h => h.includes(expectedHandler) || h.includes(source.toLowerCase()));
+
+    if (!hasHandler) {
+      warnings.push(`Source '${source}' may not have a dedicated handler`);
+    }
+  }
+
+  return {
+    name: 'ActivitySource Handler Coverage (X4)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 34: Numeric Enum Usage (E3)
+// ============================================================================
+
+function checkNumericEnumUsage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const findTsFiles = (dir: string): string[] => {
+    if (!fs.existsSync(dir)) return [];
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('dist') && !item.name.includes('types')) {
+          files.push(...findTsFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.ts') && !item.name.endsWith('.test.ts')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  // Check converters for numeric comparisons with enum-like context
+  const converterPath = path.join(TS_SRC_DIR, 'shared/src/firestore/converters.ts');
+  if (fs.existsSync(converterPath)) {
+    const content = fs.readFileSync(converterPath, 'utf-8');
+
+    // Check for patterns like "=== 27" or "!== 0" that might be enum comparisons
+    const numericPattern = /(?:type|source|activityType|destination)\s*[=!]==\s*\d+/gi;
+    const matches = content.match(numericPattern);
+    if (matches) {
+      for (const m of matches) {
+        warnings.push(`converters.ts: Numeric enum comparison '${m}' - use enum constant`);
+      }
+    }
+  }
+
+  return {
+    name: 'Numeric Enum Usage (E3)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 35: Mandatory Formatter Usage (E6)
+// ============================================================================
+
+function checkMandatoryFormatterUsage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const findTsFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('dist')) {
+          files.push(...findTsFiles(fullPath));
+        } else if (item.isFile() && (item.name.endsWith('.tsx') || item.name.endsWith('.ts'))) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  // Check server TypeScript
+  const serverFiles = findTsFiles(TS_SRC_DIR);
+  for (const file of serverFiles) {
+    // Skip the generated formatter file itself
+    if (file.includes('enum-formatters')) continue;
+
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(SERVER_ROOT, file);
+
+    // Check for case statements with enum types (manual mapping)
+    const casePatterns = [
+      /case\s+ActivityType\./g,
+      /case\s+Destination\./g,
+      /case\s+ActivitySource\./g,
+      /case\s+MuscleGroup\./g,
+    ];
+
+    for (const pattern of casePatterns) {
+      if (pattern.test(content)) {
+        const enumName = pattern.source.match(/case\s+(\w+)/)?.[1];
+        warnings.push(`${fileName}: Manual enum-to-string mapping for ${enumName} - use format${enumName}()`);
+      }
+    }
+
+    // Check for manual formatter function definitions (duplicating generated formatters)
+    const manualFormatterPatterns = [
+      { pattern: /const\s+formatActivityType\s*=|function\s+formatActivityType\s*\(/g, name: 'formatActivityType' },
+      { pattern: /const\s+getDestinationName\s*=|function\s+getDestinationName\s*\(/g, name: 'formatDestination' },
+      { pattern: /const\s+formatDestination\s*=|function\s+formatDestination\s*\(/g, name: 'formatDestination' },
+      { pattern: /const\s+formatActivitySource\s*=|function\s+formatActivitySource\s*\(/g, name: 'formatActivitySource' },
+    ];
+
+    for (const { pattern, name } of manualFormatterPatterns) {
+      if (pattern.test(content)) {
+        warnings.push(`${fileName}: Manual ${name} function - import from 'enum-formatters' instead`);
+      }
+    }
+
+    // Check for EnumType[value] pattern (reverse enum lookup for display)
+    const reverseLookupPatterns = [
+      { pattern: /ActivityType\[\w+\]/g, name: 'ActivityType' },
+      { pattern: /Destination\[\w+\]/g, name: 'Destination' },
+    ];
+
+    for (const { pattern, name } of reverseLookupPatterns) {
+      if (pattern.test(content)) {
+        warnings.push(`${fileName}: ${name}[value] reverse lookup - use format${name}() instead`);
+      }
+    }
+  }
+
+  // Check web if exists
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (fs.existsSync(webDir)) {
+    const webAppDir = path.join(webDir, 'src', 'app');
+    if (fs.existsSync(webAppDir)) {
+      const webFiles = findTsFiles(webAppDir);
+      for (const file of webFiles) {
+        if (file.includes('enum-formatters')) continue;
+
+        const content = fs.readFileSync(file, 'utf-8');
+        const fileName = path.relative(webDir, file);
+
+        const casePatterns = [
+          /case\s+ActivityType\./g,
+          /case\s+Destination\./g,
+          /case\s+ActivitySource\./g,
+        ];
+
+        for (const pattern of casePatterns) {
+          if (pattern.test(content)) {
+            const enumName = pattern.source.match(/case\s+(\w+)/)?.[1];
+            warnings.push(`web/${fileName}: Manual enum-to-string mapping for ${enumName} - use format${enumName}()`);
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'Mandatory Formatter Usage (E6)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 36: API Endpoint Alignment (W12)
+// ============================================================================
+
+function checkApiEndpointAlignment(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  const firebaseJsonPath = path.join(webDir, 'firebase.json');
+
+  if (!fs.existsSync(firebaseJsonPath)) {
+    return { name: 'API Endpoint Alignment (W12)', passed: true, errors, warnings };
+  }
+
+  const firebaseConfig = JSON.parse(fs.readFileSync(firebaseJsonPath, 'utf-8'));
+  const rewrites = firebaseConfig.hosting?.rewrites || [];
+  const apiRewrites = rewrites
+    .filter((r: { source?: string }) => r.source?.startsWith('/api/'))
+    .map((r: { source: string }) => r.source.replace('/api/', '').replace('/**', ''));
+
+  // Check web services for API calls
+  const servicesDir = path.join(webDir, 'src', 'app', 'services');
+  if (!fs.existsSync(servicesDir)) {
+    return { name: 'API Endpoint Alignment (W12)', passed: true, errors, warnings };
+  }
+
+  const serviceFiles = fs.readdirSync(servicesDir).filter(f => f.endsWith('.ts'));
+
+  for (const file of serviceFiles) {
+    const content = fs.readFileSync(path.join(servicesDir, file), 'utf-8');
+
+    // Find API calls
+    const apiPattern = /api\.(?:get|post|put|delete|patch)\(['"`]\/([^'"`]+)/g;
+    let match;
+    while ((match = apiPattern.exec(content)) !== null) {
+      const endpoint = match[1].split('/')[0];
+      if (!apiRewrites.some((r: string) => endpoint.includes(r) || r.includes(endpoint))) {
+        warnings.push(`${file}: API endpoint '${endpoint}' may not be in firebase.json rewrites`);
+      }
+    }
+  }
+
+  return {
+    name: 'API Endpoint Alignment (W12)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 40: Uploader External ID Tracking (G5)
+// ============================================================================
+
+function checkUploaderExternalIdTracking(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'Uploader External ID Tracking (G5)', passed: true, errors, warnings };
+  }
+
+  const uploaderDirs = getDirectories(goFunctionsDir).filter(d => d.includes('uploader'));
+
+  for (const dir of uploaderDirs) {
+    const functionPath = path.join(goFunctionsDir, dir, 'function.go');
+    if (!fs.existsSync(functionPath)) continue;
+
+    const content = fs.readFileSync(functionPath, 'utf-8');
+
+    // Check for external ID handling in uploaders
+    const hasExternalIdField = /ExternalId|externalId|external_id/.test(content);
+    const storesExternalId = /SetExternalId|setExternalId|\.ExternalId\s*=/.test(content);
+
+    if (!hasExternalIdField || !storesExternalId) {
+      warnings.push(`Uploader '${dir}' may not track external IDs for updates`);
+    }
+  }
+
+  return {
+    name: 'Uploader External ID Tracking (G5)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 41: OAuth Token Refresh Pattern (G6)
+// ============================================================================
+
+function checkOAuthTokenRefresh(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'OAuth Token Refresh Pattern (G6)', passed: true, errors, warnings };
+  }
+
+  const oauthHandlers = getDirectories(goFunctionsDir).filter(d =>
+    d.includes('oauth') || d.includes('strava') || d.includes('fitbit')
+  );
+
+  for (const dir of oauthHandlers) {
+    const functionPath = path.join(goFunctionsDir, dir, 'function.go');
+    if (!fs.existsSync(functionPath)) continue;
+
+    const content = fs.readFileSync(functionPath, 'utf-8');
+
+    // Check for token refresh pattern
+    const hasRefreshToken = /refreshToken|refresh_token/.test(content);
+    const hasTokenExpiry = /expiresAt|expires_at|ExpiresIn/.test(content);
+    const hasRefreshLogic = /TokenRefresh|refreshAccessToken|oauth.*refresh/.test(content);
+
+    if (hasRefreshToken && !hasTokenExpiry) {
+      warnings.push(`Handler '${dir}' has refresh token but may not track expiry`);
+    }
+  }
+
+  return {
+    name: 'OAuth Token Refresh Pattern (G6)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 42: Go Struct Field Naming (G7)
+// ============================================================================
+
+function checkGoStructFieldNaming(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  if (!fs.existsSync(goFunctionsDir)) {
+    return { name: 'Go Struct Field Naming (G7)', passed: true, errors, warnings };
+  }
+
+  const findGoFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory()) {
+          files.push(...findGoFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.go') && !item.name.endsWith('_test.go') && !item.name.endsWith('.pb.go')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const goFiles = findGoFiles(goFunctionsDir);
+
+  for (const file of goFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(SERVER_ROOT, file);
+
+    // Check for snake_case in struct field names (should use CamelCase in Go)
+    const structPattern = /type\s+\w+\s+struct\s*\{([^}]+)\}/g;
+    let match;
+    while ((match = structPattern.exec(content)) !== null) {
+      const structBody = match[1];
+      // Check for snake_case field names (not json tags)
+      const fieldPattern = /^\s*([a-z][a-z_]*[a-z])\s+\w+/gm;
+      let fieldMatch;
+      while ((fieldMatch = fieldPattern.exec(structBody)) !== null) {
+        if (fieldMatch[1].includes('_')) {
+          warnings.push(`${fileName}: Struct field '${fieldMatch[1]}' uses snake_case - use CamelCase`);
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'Go Struct Field Naming (G7)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 43: String-to-Enum Mapping Completeness (E4)
+// ============================================================================
+
+function checkStringToEnumMapping(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Check for string-to-enum mapping functions that may be incomplete
+  const findTsFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('dist')) {
+          files.push(...findTsFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.ts') && !item.name.endsWith('.test.ts')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const serverFiles = findTsFiles(TS_SRC_DIR);
+
+  for (const file of serverFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(SERVER_ROOT, file);
+
+    // Check for parseActivityType or similar functions
+    const parsePatterns = [
+      /function\s+parse\w*ActivityType|const\s+parse\w*ActivityType\s*=/g,
+      /function\s+stringTo\w*ActivityType|const\s+stringTo\w*ActivityType\s*=/g,
+    ];
+
+    for (const pattern of parsePatterns) {
+      if (pattern.test(content)) {
+        // Check if it has a default case or handles unknowns
+        const hasDefaultCase = content.includes('default:') || content.includes('UNSPECIFIED');
+        if (!hasDefaultCase) {
+          warnings.push(`${fileName}: String-to-enum mapping may not handle unknown values`);
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'String-to-Enum Mapping Completeness (E4)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 44: Registry Display Name Coverage (E5)
+// ============================================================================
+
+function checkRegistryDisplayNameCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/registry.ts');
+  if (!fs.existsSync(registryPath)) {
+    return { name: 'Registry Display Name Coverage (E5)', passed: true, errors, warnings };
+  }
+
+  const content = fs.readFileSync(registryPath, 'utf-8');
+
+  // Check that all registered items have displayName
+  const registrationPattern = /{\s*(?:id|type|providerType)\s*:/g;
+  const displayNamePattern = /displayName\s*:/g;
+
+  const registrations = (content.match(registrationPattern) || []).length;
+  const displayNames = (content.match(displayNamePattern) || []).length;
+
+  if (registrations > displayNames) {
+    warnings.push(`registry.ts: ${registrations - displayNames} registration(s) may be missing displayName`);
+  }
+
+  return {
+    name: 'Registry Display Name Coverage (E5)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 37: Auth Guard on Protected Routes (W3)
+// ============================================================================
+
+function checkAuthGuard(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Auth Guard on Protected Routes (W3)', passed: true, errors, warnings };
+  }
+
+  const pagesDir = path.join(webDir, 'src', 'app', 'pages');
+  if (!fs.existsSync(pagesDir)) {
+    return { name: 'Auth Guard on Protected Routes (W3)', passed: true, errors, warnings };
+  }
+
+  const pageFiles = fs.readdirSync(pagesDir).filter(f => f.endsWith('.tsx'));
+  const publicPages = ['LandingPage', 'LoginPage', 'SignupPage', 'NotFoundPage', 'PublicShowcase'];
+
+  for (const file of pageFiles) {
+    const baseName = file.replace('.tsx', '');
+    const isPublic = publicPages.some(p => baseName.includes(p));
+    if (isPublic) continue;
+
+    const content = fs.readFileSync(path.join(pagesDir, file), 'utf-8');
+
+    // Check for auth check pattern
+    const hasAuthCheck = content.includes('useAuth') ||
+      content.includes('AuthGuard') ||
+      content.includes('isAuthenticated') ||
+      content.includes('ProtectedRoute');
+
+    if (!hasAuthCheck) {
+      warnings.push(`${file}: Protected page may not have auth guard`);
+    }
+  }
+
+  return {
+    name: 'Auth Guard on Protected Routes (W3)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 38: Enum Display Mapping (W8)
+// ============================================================================
+
+function checkEnumDisplayMapping(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Enum Display Mapping (W8)', passed: true, errors, warnings };
+  }
+
+  const formatterPath = path.join(webDir, 'src', 'types', 'pb', 'enum-formatters.ts');
+  if (!fs.existsSync(formatterPath)) {
+    return { name: 'Enum Display Mapping (W8)', passed: true, errors, warnings: ['enum-formatters.ts not found in web'] };
+  }
+
+  const content = fs.readFileSync(formatterPath, 'utf-8');
+
+  // Check for UNSPECIFIED handling
+  const hasUnspecifiedHandling = content.includes('UNSPECIFIED') && content.includes('return');
+  if (!hasUnspecifiedHandling) {
+    warnings.push('enum-formatters.ts should handle UNSPECIFIED enum values');
+  }
+
+  return {
+    name: 'Enum Display Mapping (W8)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 39: Null Safety (W9)
+// ============================================================================
+
+function checkNullSafety(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Null Safety (W9)', passed: true, errors, warnings };
+  }
+
+  const servicesDir = path.join(webDir, 'src', 'app', 'services');
+  if (!fs.existsSync(servicesDir)) {
+    return { name: 'Null Safety (W9)', passed: true, errors, warnings };
+  }
+
+  const serviceFiles = fs.readdirSync(servicesDir).filter(f => f.endsWith('.ts'));
+
+  for (const file of serviceFiles) {
+    const content = fs.readFileSync(path.join(servicesDir, file), 'utf-8');
+
+    // Check for API responses that might need null checks
+    const hasApiCall = /api\.(get|post|put|delete)/.test(content);
+    const hasNullCheck = content.includes('|| []') ||
+      content.includes('|| {}') ||
+      content.includes('?? ') ||
+      content.includes('?.') ||
+      content.includes('if (!');
+
+    if (hasApiCall && !hasNullCheck) {
+      warnings.push(`${file}: API response may need null safety checks`);
+    }
+  }
+
+  return {
+    name: 'Null Safety (W9)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 45: useState with Complex Objects (W4)
+// ============================================================================
+
+function checkUseStateComplexObjects(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'useState with Complex Objects (W4)', passed: true, errors, warnings };
+  }
+
+  const findTsxFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules')) {
+          files.push(...findTsxFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.tsx')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const webAppDir = path.join(webDir, 'src', 'app');
+  if (!fs.existsSync(webAppDir)) {
+    return { name: 'useState with Complex Objects (W4)', passed: true, errors, warnings };
+  }
+
+  const webFiles = findTsxFiles(webAppDir);
+
+  for (const file of webFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(webDir, file);
+
+    // Check for useState with object/array initializers that might benefit from useReducer
+    const complexStatePattern = /useState<[^>]*\[\]>|useState<{[^}]+}>|useState\(\{[^}]+\}\)/g;
+    const setStateSpread = /set\w+\(\s*\(?\s*prev\s*=>/g;
+
+    const hasComplexState = complexStatePattern.test(content);
+    const usesSpreadUpdate = setStateSpread.test(content);
+
+    // Multiple complex states with spread updates might benefit from useReducer
+    const stateCount = (content.match(/useState</g) || []).length;
+    if (stateCount > 5 && hasComplexState) {
+      warnings.push(`${fileName}: ${stateCount} useState hooks - consider useReducer for complex state`);
+    }
+  }
+
+  return {
+    name: 'useState with Complex Objects (W4)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 46: useEffect Dependency Array (W5)
+// ============================================================================
+
+function checkUseEffectDependencies(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'useEffect Dependency Array (W5)', passed: true, errors, warnings };
+  }
+
+  const findTsxFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules')) {
+          files.push(...findTsxFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.tsx')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const webAppDir = path.join(webDir, 'src', 'app');
+  if (!fs.existsSync(webAppDir)) {
+    return { name: 'useEffect Dependency Array (W5)', passed: true, errors, warnings };
+  }
+
+  const webFiles = findTsxFiles(webAppDir);
+
+  for (const file of webFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(webDir, file);
+
+    // Check for useEffect without dependency array (runs on every render)
+    const useEffectNoDeps = /useEffect\(\s*\(\)\s*=>\s*{[^}]+}\s*\)/g;
+    const effectCount = (content.match(useEffectNoDeps) || []).length;
+
+    if (effectCount > 0) {
+      warnings.push(`${fileName}: ${effectCount} useEffect without dependency array`);
+    }
+  }
+
+  return {
+    name: 'useEffect Dependency Array (W5)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 47: Context vs Props Drilling (W6)
+// ============================================================================
+
+function checkContextUsage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Context vs Props Drilling (W6)', passed: true, errors, warnings };
+  }
+
+  const findTsxFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules')) {
+          files.push(...findTsxFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.tsx')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const webAppDir = path.join(webDir, 'src', 'app');
+  if (!fs.existsSync(webAppDir)) {
+    return { name: 'Context vs Props Drilling (W6)', passed: true, errors, warnings };
+  }
+
+  const webFiles = findTsxFiles(webAppDir);
+
+  for (const file of webFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(webDir, file);
+
+    // Check for components passing many props that might be candidates for context
+    const propsDrillPattern = /\w+={(\w+)}\s+\w+={(\w+)}\s+\w+={(\w+)}\s+\w+={(\w+)}\s+\w+={(\w+)}/g;
+    if (propsDrillPattern.test(content)) {
+      warnings.push(`${fileName}: Deep props drilling detected - consider using Context`);
+    }
+  }
+
+  return {
+    name: 'Context vs Props Drilling (W6)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 48: CSS Custom Properties Usage (W10)
+// ============================================================================
+
+function checkCssCustomProperties(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'CSS Custom Properties Usage (W10)', passed: true, errors, warnings };
+  }
+
+  const cssDir = path.join(webDir, 'src');
+  const findCssFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules')) {
+          files.push(...findCssFiles(fullPath));
+        } else if (item.isFile() && (item.name.endsWith('.css') || item.name.endsWith('.scss'))) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const cssFiles = findCssFiles(cssDir);
+
+  for (const file of cssFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+    const fileName = path.relative(webDir, file);
+
+    // Check for hardcoded colors instead of CSS custom properties
+    const hardcodedColors = content.match(/#[0-9a-fA-F]{3,8}|rgb\([^)]+\)|rgba\([^)]+\)/g) || [];
+    const varUsage = content.match(/var\(--/g) || [];
+
+    if (hardcodedColors.length > 10 && varUsage.length < hardcodedColors.length) {
+      warnings.push(`${fileName}: ${hardcodedColors.length} hardcoded colors - consider using CSS custom properties`);
+    }
+  }
+
+  return {
+    name: 'CSS Custom Properties Usage (W10)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 49: Responsive Media Queries (W11)
+// ============================================================================
+
+function checkResponsiveMediaQueries(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Responsive Media Queries (W11)', passed: true, errors, warnings };
+  }
+
+  const cssDir = path.join(webDir, 'src');
+  const findCssFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules')) {
+          files.push(...findCssFiles(fullPath));
+        } else if (item.isFile() && (item.name.endsWith('.css') || item.name.endsWith('.scss'))) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  const cssFiles = findCssFiles(cssDir);
+  let totalMediaQueries = 0;
+  let filesWithoutResponsive = 0;
+
+  for (const file of cssFiles) {
+    const content = fs.readFileSync(file, 'utf-8');
+
+    const mediaQueries = (content.match(/@media/g) || []).length;
+    totalMediaQueries += mediaQueries;
+
+    // Skip small files
+    if (content.length > 500 && mediaQueries === 0) {
+      filesWithoutResponsive++;
+    }
+  }
+
+  if (filesWithoutResponsive > 5) {
+    warnings.push(`${filesWithoutResponsive} CSS files over 500 chars without @media queries - consider responsive design`);
+  }
+
+  return {
+    name: 'Responsive Media Queries (W11)',
+    passed: true,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Main Runner
 // ============================================================================
 
@@ -1085,6 +2928,44 @@ function main(): void {
     checkDestinationUploaderPattern,
     checkDestinationEnumCoverage,
     checkLoopPrevention,
+    // Phase 2-6 New Checks
+    checkEnvVarAccess,
+    checkProtoFreshness,
+    checkNoManualEnums,
+    checkFormatterCoverage,
+    checkJestConfigInheritance,
+    checkHandlerPackageScripts,
+    checkWebTypesAlignment,
+    checkConverterCompleteness,
+    checkProtoImportPath,
+    checkUseApiPattern,
+    checkProtoJsonSerialization,
+    // Additional checks
+    checkGoContextPropagation,
+    checkGoErrorWrapping,
+    checkGoLoggerUsage,
+    checkGoTestCoverage,
+    checkSharedExports,
+    checkDateHandling,
+    checkErrorResponseFormat,
+    checkIntegrationFieldParity,
+    checkSourceHandlerCoverage,
+    checkNumericEnumUsage,
+    checkMandatoryFormatterUsage,
+    checkApiEndpointAlignment,
+    checkAuthGuard,
+    checkEnumDisplayMapping,
+    checkNullSafety,
+    checkUploaderExternalIdTracking,
+    checkOAuthTokenRefresh,
+    checkGoStructFieldNaming,
+    checkStringToEnumMapping,
+    checkRegistryDisplayNameCoverage,
+    checkUseStateComplexObjects,
+    checkUseEffectDependencies,
+    checkContextUsage,
+    checkCssCustomProperties,
+    checkResponsiveMediaQueries,
   ];
 
   const results: CheckResult[] = [];
