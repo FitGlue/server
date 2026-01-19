@@ -79,24 +79,40 @@ func mockHandler() framework.HandlerFunc {
 		mockExternalID := fmt.Sprintf("mock-%s", eventPayload.ActivityId)
 
 		// Persist SynchronizedActivity
-		syncedActivity := &pb.SynchronizedActivity{
-			ActivityId:          eventPayload.ActivityId,
-			Title:               eventPayload.Name,
-			Description:         eventPayload.Description,
-			Type:                eventPayload.ActivityType,
-			Source:              eventPayload.Source.String(),
-			StartTime:           eventPayload.StartTime,
-			SyncedAt:            timestamppb.Now(),
-			PipelineId:          eventPayload.PipelineId,
-			PipelineExecutionId: fwCtx.PipelineExecutionId, // Use framework context (guaranteed populated)
-			Destinations: map[string]string{
-				"mock": mockExternalID,
-			},
-		}
+		// Check if activity already exists (e.g., repost scenario)
+		// If it does, only update destinations to preserve original pipelineExecutionId
+		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
+		if existingActivity != nil {
+			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
+			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
+				"destinations.mock": mockExternalID,
+				"synced_at":         timestamppb.Now().AsTime(),
+			}); err != nil {
+				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
+				return nil, fmt.Errorf("failed to update synchronized activity: %w", err)
+			}
+			fwCtx.Logger.Info("Updated synchronized activity destinations (preserved execution ID)", "activity_id", eventPayload.ActivityId)
+		} else {
+			// New activity - create full record including pipelineExecutionId
+			syncedActivity := &pb.SynchronizedActivity{
+				ActivityId:          eventPayload.ActivityId,
+				Title:               eventPayload.Name,
+				Description:         eventPayload.Description,
+				Type:                eventPayload.ActivityType,
+				Source:              eventPayload.Source.String(),
+				StartTime:           eventPayload.StartTime,
+				SyncedAt:            timestamppb.Now(),
+				PipelineId:          eventPayload.PipelineId,
+				PipelineExecutionId: fwCtx.PipelineExecutionId, // Use framework context (guaranteed populated)
+				Destinations: map[string]string{
+					"mock": mockExternalID,
+				},
+			}
 
-		if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-			fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-			return nil, fmt.Errorf("failed to persist synchronized activity: %w", err)
+			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
+				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
+				return nil, fmt.Errorf("failed to persist synchronized activity: %w", err)
+			}
 		}
 
 		// Increment sync count for billing (per successful destination sync)

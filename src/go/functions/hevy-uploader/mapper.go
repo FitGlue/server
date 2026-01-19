@@ -19,7 +19,7 @@ type HevyWorkoutData struct {
 	Description string         `json:"description,omitempty"`
 	StartTime   string         `json:"start_time"`
 	EndTime     string         `json:"end_time"`
-	IsPrivate   bool           `json:"is_private,omitempty"`
+	IsPrivate   bool           `json:"is_private"`
 	Exercises   []HevyExercise `json:"exercises"`
 }
 
@@ -70,6 +70,7 @@ func mapToHevyWorkout(ctx context.Context, event *pb.EnrichedActivityEvent, apiK
 			Description: event.Description,
 			StartTime:   startTime.Format(time.RFC3339),
 			EndTime:     endTime.Format(time.RFC3339),
+			IsPrivate:   false, // Activities synced via FitGlue are public by default
 			Exercises:   []HevyExercise{},
 		},
 	}

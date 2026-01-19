@@ -270,5 +270,6 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 export const userProfileHandler = createCloudFunction(handler, {
   auth: {
     strategies: [new FirebaseAuthStrategy()]
-  }
+  },
+  skipExecutionLogging: true
 });

@@ -89,8 +89,21 @@ def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path) ->
         root_pkg = json.load(f)
 
     # Create ZIP-specific package.json
+    # Determine output dir (build or dist) by checking handler's tsconfig
+    handler_tsconfig = handler_dir / 'tsconfig.json'
+    output_dir = 'build'  # default
+    if handler_tsconfig.exists():
+        with open(handler_tsconfig, 'r') as f:
+            try:
+                tsconfig = json.load(f)
+                out_dir = tsconfig.get('compilerOptions', {}).get('outDir', 'build')
+                output_dir = out_dir.replace('./', '').strip('/')
+            except:
+                pass
+    
     zip_pkg = {
         "private": True,
+        "main": "index.js",  # Root entry point for Cloud Functions
         "workspaces": ["shared", handler_name],
         "scripts": {
             "build": "npm run build --workspace=@fitglue/shared && npm run build --workspace=" + handler_name,
@@ -108,6 +121,14 @@ def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path) ->
     lock_file = ts_src_dir / 'package-lock.json'
     if lock_file.exists():
         shutil.copy2(lock_file, temp_dir / 'package-lock.json')
+    
+    # Generate index.js that re-exports all handler exports (Cloud Functions entry point)
+    index_js = f"""// Auto-generated entry point for {handler_name}
+const handler = require('./{handler_name}/{output_dir}/index');
+module.exports = handler;
+"""
+    with open(temp_dir / 'index.js', 'w') as f:
+        f.write(index_js)
 
     # Create deterministic zip
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:

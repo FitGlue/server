@@ -182,25 +182,43 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 
 	// Persist SynchronizedActivity if successful
 	if uploadResp.ActivityID != 0 {
-		syncedActivity := &pb.SynchronizedActivity{
-			ActivityId:          eventPayload.ActivityId,
-			Title:               eventPayload.Name,
-			Description:         eventPayload.Description,
-			Type:                eventPayload.ActivityType,
-			Source:              eventPayload.Source.String(), // Use original event source (FROM webhook trigger)
-			StartTime:           eventPayload.StartTime,
-			SyncedAt:            timestamppb.Now(),
-			PipelineId:          eventPayload.PipelineId,
-			PipelineExecutionId: fwCtx.PipelineExecutionId, // Link to execution trace
-			Destinations: map[string]string{
-				"strava": fmt.Sprintf("%d", uploadResp.ActivityID),
-			},
-		}
-		if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-			fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-			// Don't fail the function, this is just recording history
+		stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)
+
+		// Check if activity already exists (e.g., repost scenario)
+		// If it does, only update destinations to preserve original pipelineExecutionId
+		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
+		if existingActivity != nil {
+			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
+			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
+				"destinations.strava": stravaDestID,
+				"synced_at":           timestamppb.Now().AsTime(),
+			}); err != nil {
+				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
+			} else {
+				fwCtx.Logger.Info("Updated synchronized activity destinations (preserved execution ID)", "activity_id", eventPayload.ActivityId)
+			}
 		} else {
-			fwCtx.Logger.Info("Persisted synchronized activity", "activity_id", eventPayload.ActivityId)
+			// New activity - create full record including pipelineExecutionId
+			syncedActivity := &pb.SynchronizedActivity{
+				ActivityId:          eventPayload.ActivityId,
+				Title:               eventPayload.Name,
+				Description:         eventPayload.Description,
+				Type:                eventPayload.ActivityType,
+				Source:              eventPayload.Source.String(), // Use original event source (FROM webhook trigger)
+				StartTime:           eventPayload.StartTime,
+				SyncedAt:            timestamppb.Now(),
+				PipelineId:          eventPayload.PipelineId,
+				PipelineExecutionId: fwCtx.PipelineExecutionId, // Link to execution trace
+				Destinations: map[string]string{
+					"strava": stravaDestID,
+				},
+			}
+			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
+				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
+				// Don't fail the function, this is just recording history
+			} else {
+				fwCtx.Logger.Info("Persisted synchronized activity", "activity_id", eventPayload.ActivityId)
+			}
 		}
 
 		// Increment sync count for billing (per successful destination sync)
