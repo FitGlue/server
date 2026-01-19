@@ -52,6 +52,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
 // Export the wrapped function - no auth required (public endpoint)
 export const registryHandler = createCloudFunction(handler, {
-  allowUnauthenticated: true
+  allowUnauthenticated: true,
+  skipExecutionLogging: true
 });
 

@@ -226,9 +226,24 @@ func showcaseHandler() framework.HandlerFunc {
 			authUser, err := svc.Auth.GetUser(ctx, eventPayload.UserId)
 			if err != nil {
 				fwCtx.Logger.Warn("Failed to fetch user from Firebase Auth for display name", "error", err, "userId", eventPayload.UserId)
-			} else if authUser != nil && authUser.DisplayName != "" {
-				showcasedActivity.OwnerDisplayName = authUser.DisplayName
+			} else if authUser != nil {
+				if authUser.DisplayName != "" {
+					showcasedActivity.OwnerDisplayName = authUser.DisplayName
+					fwCtx.Logger.Info("Set owner display name from Firebase Auth DisplayName", "displayName", authUser.DisplayName, "userId", eventPayload.UserId)
+				} else if authUser.Email != "" {
+					// Fallback: use email prefix (part before @) as display name
+					emailPrefix := authUser.Email
+					if atIdx := strings.Index(authUser.Email, "@"); atIdx > 0 {
+						emailPrefix = authUser.Email[:atIdx]
+					}
+					showcasedActivity.OwnerDisplayName = emailPrefix
+					fwCtx.Logger.Info("Set owner display name from email prefix", "displayName", emailPrefix, "userId", eventPayload.UserId)
+				} else {
+					fwCtx.Logger.Warn("Firebase Auth user has no DisplayName or Email set", "userId", eventPayload.UserId)
+				}
 			}
+		} else {
+			fwCtx.Logger.Warn("svc.Auth is nil, cannot fetch display name from Firebase Auth", "userId", eventPayload.UserId)
 		}
 
 		if expiration != nil {

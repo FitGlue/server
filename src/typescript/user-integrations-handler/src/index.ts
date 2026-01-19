@@ -346,5 +346,6 @@ async function validateHevyApiKey(apiKey: string): Promise<boolean> {
 export const userIntegrationsHandler = createCloudFunction(handler, {
   auth: {
     strategies: [new FirebaseAuthStrategy()]
-  }
+  },
+  skipExecutionLogging: true
 });

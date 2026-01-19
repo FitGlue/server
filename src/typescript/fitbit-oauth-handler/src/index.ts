@@ -92,4 +92,5 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
 
 export const fitbitOAuthHandler = createCloudFunction(handler, {
   allowUnauthenticated: true, // Public OAuth callback endpoint
+  skipExecutionLogging: true
 });

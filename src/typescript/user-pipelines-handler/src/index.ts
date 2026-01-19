@@ -167,5 +167,6 @@ async function handleDeletePipeline(userId: string, pipelineId: string, res: Res
 export const userPipelinesHandler = createCloudFunction(handler, {
   auth: {
     strategies: [new FirebaseAuthStrategy()]
-  }
+  },
+  skipExecutionLogging: true
 });

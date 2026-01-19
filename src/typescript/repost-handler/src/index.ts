@@ -405,5 +405,6 @@ export const repostHandler = createCloudFunction(handler, {
     strategies: [
       new FirebaseAuthStrategy()
     ]
-  }
+  },
+  skipExecutionLogging: true
 });

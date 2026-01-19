@@ -181,5 +181,6 @@ export const inputsHandler = createCloudFunction(handler, {
     strategies: [
       new FirebaseAuthStrategy()
     ]
-  }
+  },
+  skipExecutionLogging: true
 });
