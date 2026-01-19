@@ -256,8 +256,8 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
                 endTime: e.data.endTime ? new Date(e.data.endTime as unknown as string).toISOString() : null,
                 errorMessage: e.data.errorMessage,
                 triggerType: e.data.triggerType,
-                inputsJson: JSON.stringify({ excluded: true, reason: 'activities-handler does not store inputs/outputs JSON due to ballooning storage' }),
-                outputsJson: JSON.stringify({ excluded: true, reason: 'activities-handler does not store inputs/outputs JSON due to ballooning storage' })
+                inputsJson: e.data.inputsJson,
+                outputsJson: e.data.outputsJson
               }));
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               (activity as any).pipelineExecutionId = originalActivity.pipelineExecutionId;
@@ -302,8 +302,8 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
             endTime: e.data.endTime ? new Date(e.data.endTime as unknown as string).toISOString() : null,
             errorMessage: e.data.errorMessage,
             triggerType: e.data.triggerType,
-            inputsJson: JSON.stringify({ excluded: true, reason: 'activities-handler does not store inputs/outputs JSON due to ballooning storage' }),
-            outputsJson: JSON.stringify({ excluded: true, reason: 'activities-handler does not store inputs/outputs JSON due to ballooning storage' })
+            inputsJson: e.data.inputsJson,
+            outputsJson: e.data.outputsJson
           }));
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           (transformed as any).pipelineExecutionId = activity.pipelineExecutionId;
