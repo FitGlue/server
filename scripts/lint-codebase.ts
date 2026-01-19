@@ -868,6 +868,53 @@ function checkEventsHelperCompleteness(): CheckResult {
 }
 
 // ============================================================================
+// Check 13: Pipeline Execution Logging
+// ============================================================================
+
+/**
+ * Validates that pipeline handlers (sources, enricher, router, destinations)
+ * do NOT use skipExecutionLogging: true, as they require execution traces
+ * for observability and debugging.
+ *
+ * API handlers (activities-handler, user-profile-handler, etc.) SHOULD use
+ * skipExecutionLogging: true to reduce Firestore writes.
+ */
+function checkPipelineExecutionLogging(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Pipeline handlers that MUST log executions (sources and destinations use TypeScript framework)
+  const PIPELINE_HANDLERS = [
+    'fitbit-handler',      // Source
+    'hevy-handler',        // Source
+    'mock-source-handler', // Source
+    'mobile-sync-handler', // Source
+  ];
+
+  for (const handler of PIPELINE_HANDLERS) {
+    const indexPath = path.join(TS_SRC_DIR, handler, 'src/index.ts');
+    if (!fs.existsSync(indexPath)) continue;
+
+    const content = fs.readFileSync(indexPath, 'utf-8');
+
+    // Check if handler uses skipExecutionLogging: true (which it shouldn't)
+    if (content.includes('skipExecutionLogging: true') || content.includes('skipExecutionLogging:true')) {
+      errors.push(`Pipeline handler '${handler}' must NOT use skipExecutionLogging: true (needs execution traces)`);
+    }
+  }
+
+  // Note: API handlers (activities-handler, user-profile-handler, etc.) SHOULD use
+  // skipExecutionLogging: true but this is not enforced as an error - just best practice.
+
+  return {
+    name: 'Pipeline Execution Logging',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Check 10: Destination Uploader Pattern
 // ============================================================================
 
@@ -3082,6 +3129,7 @@ function main(): void {
         { id: 'T10', fn: () => ({ ...checkConnectorPattern(), name: 'T10: Connector Pattern' }) },
         { id: 'T11', fn: () => ({ ...checkEventsHelperCompleteness(), name: 'T11: Events Helper Completeness' }) },
         { id: 'T12', fn: () => ({ ...checkDestinationTopicSync(), name: 'T12: Destination Topic Mapping Sync' }) },
+        { id: 'T13', fn: () => ({ ...checkPipelineExecutionLogging(), name: 'T13: Pipeline Execution Logging' }) },
       ]
     },
     {

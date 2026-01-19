@@ -74,6 +74,10 @@ export class ExecutionService {
   async deleteAllExecutions(): Promise<number> {
     return this.executionStore.deleteAll();
   }
+
+  async deleteExecutionsByService(service: string): Promise<number> {
+    return this.executionStore.deleteByService(service);
+  }
 }
 
 

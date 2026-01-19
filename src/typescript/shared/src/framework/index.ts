@@ -120,6 +120,12 @@ export interface CloudFunctionOptions {
    * Cannot have auth strategies *and* allowUnauthenticated.
    */
   allowUnauthenticated?: boolean;
+  /**
+   * Set to true to skip writing execution records to Firestore.
+   * Use for user-facing API handlers where execution traces aren't needed.
+   * Pipeline handlers (sources, enricher, router, destinations) should NOT set this.
+   */
+  skipExecutionLogging?: boolean;
 }
 
 /**
@@ -180,6 +186,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
   // SECURITY: Require auth by default - handlers must explicitly opt out
   const hasAuth = options?.auth?.strategies && options.auth.strategies.length > 0;
   const isPublic = options?.allowUnauthenticated === true;
+  const shouldLogExecution = options?.skipExecutionLogging !== true;
 
   if (!hasAuth && !isPublic) {
     throw new Error(
@@ -296,11 +303,13 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       logger: preambleLogger
     };
 
-    try {
-      await logExecutionPending(loggingCtx, executionId, serviceName, triggerType);
-    } catch (e) {
-      preambleLogger.error('Failed to log execution pending', { error: e });
-      // Proceeding anyway, though visibility is compromised
+    if (shouldLogExecution) {
+      try {
+        await logExecutionPending(loggingCtx, executionId, serviceName, triggerType);
+      } catch (e) {
+        preambleLogger.error('Failed to log execution pending', { error: e });
+        // Proceeding anyway, though visibility is compromised
+      }
     }
 
     // --- AUTHENTICATION MIDDLEWARE ---
@@ -365,7 +374,9 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
           preambleLogger.warn(msg);
 
           // Log execution failure for Auth rejection
-          await logExecutionFailure(loggingCtx, executionId, new Error(msg));
+          if (shouldLogExecution) {
+            await logExecutionFailure(loggingCtx, executionId, new Error(msg));
+          }
 
           res.status(401).send('Unauthorized');
           return;
@@ -379,7 +390,9 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
             preambleLogger.warn(msg);
 
             // Log execution failure for Scope rejection
-            await logExecutionFailure(loggingCtx, executionId, new Error(msg));
+            if (shouldLogExecution) {
+              await logExecutionFailure(loggingCtx, executionId, new Error(msg));
+            }
 
             res.status(403).send('Forbidden: Insufficient Scopes');
             return;
@@ -408,7 +421,9 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       const originalPayload = isHttp ? req.body : (req.body?.message?.data ? JSON.parse(Buffer.from(req.body.message.data, 'base64').toString()) : req.body);
 
       // Log execution start (update to running + payload)
-      await logExecutionStart(loggingCtx, executionId, triggerType, originalPayload, currentPipelineExecutionId);
+      if (shouldLogExecution) {
+        await logExecutionStart(loggingCtx, executionId, triggerType, originalPayload, currentPipelineExecutionId);
+      }
 
       // Attach execution ID to response header early (so it's present even if handler sends response)
       if (isHttp) {
@@ -430,7 +445,9 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
           finalResult = { ...result, ...capturedResponse };
         }
 
-        await logExecutionFailure(loggingCtx, executionId, new Error(errorMsg), finalResult);
+        if (shouldLogExecution) {
+          await logExecutionFailure(loggingCtx, executionId, new Error(errorMsg), finalResult);
+        }
       } else {
         // Log execution success
         // Combine capturedResponse and result if both exist and are objects, to maximize visibility
@@ -439,7 +456,9 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
           finalResult = { ...result, ...capturedResponse };
         }
 
-        await logExecutionSuccess(ctx, executionId, finalResult);
+        if (shouldLogExecution) {
+          await logExecutionSuccess(ctx, executionId, finalResult);
+        }
       }
 
       preambleLogger.info('Function completed successfully');
@@ -449,10 +468,12 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Log execution failure
       preambleLogger.error('Function failed', { error: err.message, stack: err.stack });
 
-      if (capturedResponse && typeof capturedResponse === 'object') {
-        await logExecutionFailure(loggingCtx, executionId, err, capturedResponse);
-      } else {
-        await logExecutionFailure(loggingCtx, executionId, err);
+      if (shouldLogExecution) {
+        if (capturedResponse && typeof capturedResponse === 'object') {
+          await logExecutionFailure(loggingCtx, executionId, err, capturedResponse);
+        } else {
+          await logExecutionFailure(loggingCtx, executionId, err);
+        }
       }
 
       // Attach execution ID to response header (safety check)

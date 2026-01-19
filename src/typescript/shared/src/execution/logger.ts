@@ -2,6 +2,30 @@ import * as winston from 'winston';
 import { ExecutionService } from '../domain/services';
 import { ExecutionStatus } from '../types/pb/execution';
 
+// Maximum size for outputsJson (Firestore field limit is ~1MB, use 512KB for safety margin)
+const MAX_OUTPUTS_JSON_SIZE = 512 * 1024; // 512KB
+
+/**
+ * Safely stringify result with size limit.
+ * If result is too large, returns a truncated summary with metadata.
+ */
+function safeStringifyOutput(result: unknown): string | undefined {
+  if (!result) return undefined;
+
+  const json = JSON.stringify(result);
+  if (json.length > MAX_OUTPUTS_JSON_SIZE) {
+    // Return a truncated summary with metadata about what was omitted
+    const summary = {
+      _truncated: true,
+      _originalSize: json.length,
+      _limit: MAX_OUTPUTS_JSON_SIZE,
+      _message: 'Output too large for logging, truncated for storage'
+    };
+    return JSON.stringify(summary);
+  }
+  return json;
+}
+
 /**
  * Logs the pending state of a function execution.
  */
@@ -56,7 +80,7 @@ export async function logExecutionSuccess(
   await ctx.services.execution.update(executionId, {
     endTime: new Date(),
     status: ExecutionStatus.STATUS_SUCCESS,
-    outputsJson: result ? JSON.stringify(result) : undefined
+    outputsJson: safeStringifyOutput(result)
   });
 }
 
@@ -75,6 +99,6 @@ export async function logExecutionFailure(
     endTime: new Date(),
     status: ExecutionStatus.STATUS_FAILED,
     errorMessage: error.message,
-    outputsJson: result ? JSON.stringify(result) : undefined
+    outputsJson: safeStringifyOutput(result)
   });
 }

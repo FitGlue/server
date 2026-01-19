@@ -1502,6 +1502,64 @@ program
         }
     });
 
+program
+    .command('executions:clean-by-service <service>')
+    .description('Delete all execution logs for a specific service (e.g., activities-handler)')
+    .option('-f, --force', 'Force deletion without prompt')
+    .action(async (service, options) => {
+        try {
+            console.log(`\nTarget service: ${service}`);
+
+            // First, show how many executions exist for this service
+            const executions = await executionService.listExecutions({ service, limit: 1 });
+            console.log(`Note: At least ${executions.length > 0 ? 'some' : 'no'} executions found for service "${service}".`);
+
+            if (!options.force) {
+                const { confirm1 } = await inquirer.prompt([
+                    {
+                        type: 'confirm',
+                        name: 'confirm1',
+                        message: `WARNING: This will delete ALL "${service}" execution logs. Are you sure?`,
+                        default: false
+                    }
+                ]);
+
+                if (!confirm1) {
+                    console.log('Operation cancelled.');
+                    return;
+                }
+            }
+
+            if (!options.force) {
+                const { confirm2 } = await inquirer.prompt([
+                    {
+                        type: 'input',
+                        name: 'confirm2',
+                        message: `Type "DELETE ${service.toUpperCase()}" to confirm:`
+                    }
+                ]);
+
+                if (confirm2 !== `DELETE ${service.toUpperCase()}`) {
+                    console.log('Confirmation failed. Operation cancelled.');
+                    return;
+                }
+            }
+
+            console.log(`Deleting all "${service}" executions...`);
+            const deletedCount = await executionService.deleteExecutionsByService(service);
+            console.log(`\n✅ Successfully deleted ${deletedCount} executions for service "${service}".`);
+
+        } catch (error: unknown) {
+            if (error instanceof Error) {
+                console.error(`❌ Error cleaning executions: ${error.message}`);
+                console.error('Stack:', error.stack);
+            } else {
+                console.error(`❌ An unknown error occurred`);
+            }
+            process.exit(1);
+        }
+    });
+
 // --- Bucket Commands ---
 
 const formatBucket = (bucket: { name: string; metadata: BucketMetadata; }): void => {

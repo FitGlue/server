@@ -190,4 +190,35 @@ export class ExecutionStore {
     }
     return deletedCount;
   }
+
+  /**
+   * Delete all executions for a specific service (batched).
+   */
+  async deleteByService(service: string): Promise<number> {
+    let deletedCount = 0;
+    // Small batch size because execution docs can be very large (MB of outputsJson)
+    const batchSize = 50;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      const snapshot = await this.collection()
+        .where('service', '==', service)
+        .limit(batchSize)
+        .get();
+
+      if (snapshot.empty) {
+        break;
+      }
+
+      const batch = this.db.batch();
+      snapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      await batch.commit();
+      deletedCount += snapshot.size;
+      console.log(`  Deleted batch of ${snapshot.size} executions (total: ${deletedCount})...`);
+    }
+    return deletedCount;
+  }
 }
