@@ -721,7 +721,7 @@ function checkFirebaseRouting(): CheckResult {
   // Check each handler is routed
   for (const dir of handlerDirs) {
     // Convert directory name to expected serviceId (same format, kebab-case)
-    // e.g., 'hevy-handler' -> could be 'hevy-handler' or 'hevy-webhook-handler'
+    // e.g., 'hevy-handler' -> could be 'hevy-handler' or 'hevy-handler'
     const possibleServiceIds = [
       dir,
       dir.replace('-handler', '-webhook-handler'),

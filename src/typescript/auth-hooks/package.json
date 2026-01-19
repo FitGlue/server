@@ -1,5 +1,5 @@
 {
-  "name": "@fitglue/auth-hooks",
+  "name": "auth-hooks",
   "version": "1.0.0",
   "main": "build/index.js",
   "scripts": {

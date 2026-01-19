@@ -62,7 +62,7 @@ This document outlines the architectural patterns, coding standards, and princip
 - **Build Configuration**: Set `GOOGLE_BUILDABLE` environment variable for Go functions to specify the package path in monorepo.
 
 ### Naming
-- **Resource Naming**: `[function-name]` (e.g., `enricher`, `hevy-webhook-handler`).
+- **Resource Naming**: `[function-name]` (e.g., `enricher`, `hevy-handler`).
 - **Service Accounts**: Use least-privilege IAM for each function.
 
 ## 5. Build & CI/CD

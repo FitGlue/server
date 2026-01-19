@@ -3,7 +3,7 @@ import { createHmac } from 'crypto';
 
 // Testing hypothesis: The function uses the PATH string as the secret key because TF injected it as a plain env var.
 const HEVY_SECRET = process.env.HEVY_SECRET || 'verifier-secret-value';
-const TARGET_URL = process.env.TARGET_URL || 'https://hevy-webhook-handler-56cqxmt5jq-uc.a.run.app';
+const TARGET_URL = process.env.TARGET_URL || 'https://hevy-handler-56cqxmt5jq-uc.a.run.app';
 
 async function main() {
     console.log(`Verifying Cloud Deployment: ${TARGET_URL}`);

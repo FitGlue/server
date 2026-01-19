@@ -75,7 +75,7 @@ Tests deployed Cloud Functions in GCP environments (dev, test, prod).
 
 - **Purpose**: Validate deployed infrastructure and end-to-end flows
 - **Triggers**:
-  - HTTP calls to public endpoints (`hevy-webhook-handler`)
+  - HTTP calls to public endpoints (`hevy-handler`)
   - Pub/Sub message publishing for event-triggered functions (`enricher`, `router`, `strava-uploader`)
 - **Requirements**:
   - GCP authentication configured (`gcloud auth application-default login`)

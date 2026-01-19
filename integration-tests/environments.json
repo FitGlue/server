@@ -15,7 +15,7 @@
     "region": "us-central1",
     "gcsBucket": "fitglue-server-dev-artifacts",
     "endpoints": {
-      "hevyWebhook": "https://us-central1-fitglue-server-dev.cloudfunctions.net/hevy-webhook-handler",
+      "hevyWebhook": "https://us-central1-fitglue-server-dev.cloudfunctions.net/hevy-handler",
       "fitbitWebhook": "https://us-central1-fitglue-server-dev.cloudfunctions.net/fitbit-webhook-handler"
     },
     "topics": {
@@ -29,7 +29,7 @@
     "region": "us-central1",
     "gcsBucket": "fitglue-server-test-artifacts",
     "endpoints": {
-      "hevyWebhook": "https://us-central1-fitglue-server-test.cloudfunctions.net/hevy-webhook-handler",
+      "hevyWebhook": "https://us-central1-fitglue-server-test.cloudfunctions.net/hevy-handler",
       "fitbitWebhook": "https://us-central1-fitglue-server-test.cloudfunctions.net/fitbit-webhook-handler"
     },
     "topics": {
@@ -43,7 +43,7 @@
     "region": "us-central1",
     "gcsBucket": "fitglue-server-prod-artifacts",
     "endpoints": {
-      "hevyWebhook": "https://us-central1-fitglue-server-prod.cloudfunctions.net/hevy-webhook-handler",
+      "hevyWebhook": "https://us-central1-fitglue-server-prod.cloudfunctions.net/hevy-handler",
       "fitbitWebhook": "https://us-central1-fitglue-server-prod.cloudfunctions.net/fitbit-webhook-handler"
     },
     "topics": {

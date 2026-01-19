@@ -13,7 +13,7 @@ TS_SRC_DIR=src/typescript
 # --- Phony Targets ---
 .PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase
 
-all: generate build test lint
+all: generate lint build test
 
 
 setup:
@@ -104,22 +104,38 @@ clean-go:
 
 TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules)
 
-# Note: We enforce building 'shared' first because other packages depend on it
-# and standard npm workspaces don't guarantee topological build order for scripts.
+# Note: We enforce building 'shared' first because other packages depend on it.
+# Then we build all other workspaces in parallel for speed.
+TS_HANDLER_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules -not -name shared -not -name mcp-server -not -name admin-cli)
+
 build-ts: clean-ts
-	@echo "Building TypeScript services (via Workspaces)..."
-	@echo "Building shared library..."
+	@echo "Building TypeScript services..."
+	@echo "Step 1: Building shared library (dependency for all handlers)..."
 	@cd $(TS_SRC_DIR) && npm run build --workspace=@fitglue/shared
-	@echo "Building all workspaces..."
-	@cd $(TS_SRC_DIR) && npm run build --workspaces --if-present
+	@echo "Step 2: Building all handlers in parallel..."
+	@cd $(TS_SRC_DIR) && for dir in $(TS_HANDLER_DIRS); do \
+		name=$$(basename $$dir); \
+		npm run build --workspace=$$name --if-present & \
+	done; wait
+	@echo "TypeScript build complete."
 
 test-ts:
-	@echo "Testing TypeScript services..."
-	@cd $(TS_SRC_DIR) && npm test --workspaces --if-present
+	@echo "Testing TypeScript services in parallel..."
+	@cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
+		if [ -d "$$dir" ] && [ -f "$$dir/package.json" ]; then \
+			name=$$(basename $$dir); \
+			npm test --workspace=$$name --if-present & \
+		fi; \
+	done; wait
 
 lint-ts:
-	@echo "Linting TypeScript..."
-	@cd $(TS_SRC_DIR) && npm run lint --workspaces --if-present
+	@echo "Linting TypeScript services in parallel..."
+	@cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
+		if [ -d "$$dir" ] && [ -f "$$dir/package.json" ]; then \
+			name=$$(basename $$dir); \
+			npm run lint --workspace=$$name --if-present & \
+		fi; \
+	done; wait
 
 typecheck-ts:
 	@echo "Typechecking TypeScript..."
@@ -140,11 +156,22 @@ clean-ts:
 	done
 
 # --- Combined Targets ---
-build: build-go build-ts
-test: test-go test-ts
-lint: lint-go lint-ts lint-codebase
+# P1: Parallel builds - Go and TS can build concurrently
+build:
+	@$(MAKE) -j2 build-go build-ts
+
+# P2: Parallel tests - Go and TS tests can run concurrently
+test:
+	@$(MAKE) -j2 test-go test-ts
+
+# P3: Parallel lint - Go, TS, and codebase checks can run concurrently
+lint:
+	@$(MAKE) -j3 lint-go lint-ts lint-codebase
+
 prepare: prepare-go
-clean: clean-go clean-ts
+# P4: Parallel clean
+clean:
+	@$(MAKE) -j2 clean-go clean-ts
 	rm -rf bin/
 
 # --- Codebase Consistency Check ---

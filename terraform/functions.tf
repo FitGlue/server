@@ -374,7 +374,7 @@ resource "google_cloud_run_service_iam_member" "mock_source_handler_invoker" {
 # ----------------- Hevy Webhook Handler -----------------
 
 resource "google_cloudfunctions2_function" "hevy_handler" {
-  name        = "hevy-webhook-handler"
+  name        = "hevy-handler"
   location    = var.region
   description = "Ingests Hevy webhooks"
 

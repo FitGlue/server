@@ -215,7 +215,7 @@ Destinations:
 
 Pipeline Execution Trace:
 --------------------------------------------------
-[hevy-webhook-handler] STATUS_2 (125ms)
+[hevy-handler] STATUS_2 (125ms)
   Execution ID: exec_789
   Time: 2026-01-07T10:29:55Z
 --------------------------------------------------
@@ -233,7 +233,7 @@ List recent function executions for debugging and auditing.
 
 **Options:**
 - `-l, --limit <number>`: Limit results (default: 20).
-- `-s, --service <name>`: Filter by service name (e.g., `hevy-webhook-handler`, `enricher`).
+- `-s, --service <name>`: Filter by service name (e.g., `hevy-handler`, `enricher`).
 - `-st, --status <status>`: Filter by status (`STATUS_STARTED`, `STATUS_SUCCESS`, `STATUS_FAILED`).
 - `-u, --user <userId>`: Filter by user ID.
 
@@ -242,7 +242,7 @@ List recent function executions for debugging and auditing.
 ./fitglue-admin executions:list
 
 # Filter by service
-./fitglue-admin executions:list --service hevy-webhook-handler
+./fitglue-admin executions:list --service hevy-handler
 
 # Find failed executions
 ./fitglue-admin executions:list --status STATUS_FAILED
@@ -415,22 +415,22 @@ Replay an HTTP webhook execution by re-POSTing the original payload to the webho
 **Usage:**
 ```bash
 # Find failed webhook
-./fitglue-admin executions:list --service hevy-webhook-handler --status STATUS_FAILED --limit 1
+./fitglue-admin executions:list --service hevy-handler --status STATUS_FAILED --limit 1
 
 # Replay to dev environment
-./fitglue-admin replay:webhook hevy-webhook-handler-1234567890 --env dev
+./fitglue-admin replay:webhook hevy-handler-1234567890 --env dev
 
 # Replay to prod
-./fitglue-admin replay:webhook hevy-webhook-handler-1234567890 --env prod --yes
+./fitglue-admin replay:webhook hevy-handler-1234567890 --env prod --yes
 ```
 
 **Output:**
 ```
 📋 Replay Details:
-   Execution ID: hevy-webhook-handler-1234567890
-   Service: hevy-webhook-handler
+   Execution ID: hevy-handler-1234567890
+   Service: hevy-handler
    Environment: dev
-   URL: https://us-central1-fitglue-dev.cloudfunctions.net/hevy-webhook-handler
+   URL: https://us-central1-fitglue-dev.cloudfunctions.net/hevy-handler
    Status: STATUS_FAILED
    Payload preview: {"id":"abc123","type":"workout_created"}...
 
