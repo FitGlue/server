@@ -11,7 +11,7 @@ resource "google_cloudfunctions2_function" "strava_oauth_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.strava_oauth_handler_zip.name
       }
     }
     environment_variables = {}
@@ -68,7 +68,7 @@ resource "google_cloudfunctions2_function" "fitbit_oauth_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.fitbit_oauth_handler_zip.name
       }
     }
     environment_variables = {}

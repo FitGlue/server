@@ -27,18 +27,122 @@ resource "google_storage_bucket_object" "strava_uploader_zip" {
 }
 
 
-# -------------- TypeScript Source Archive --------------
-data "archive_file" "typescript_source_zip" {
-  type        = "zip"
-  source_dir  = "../src/typescript"
-  output_path = "/tmp/typescript-source.zip"
-  excludes    = ["**/node_modules", "**/dist", "**/build", "**/coverage", "**/.DS_Store", "**/mcp-server"]
+# -------------- TypeScript Per-Handler ZIPs --------------
+# Each handler gets its own ZIP with filemd5() for change detection
+# This means only handlers that changed will trigger Cloud Build
+
+resource "google_storage_bucket_object" "activities_handler_zip" {
+  name   = "activities-handler-${filemd5("/tmp/fitglue-function-zips/activities-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/activities-handler.zip"
 }
 
-resource "google_storage_bucket_object" "typescript_source_zip" {
-  name   = "typescript-source-${data.archive_file.typescript_source_zip.output_md5}.zip"
+resource "google_storage_bucket_object" "admin_handler_zip" {
+  name   = "admin-handler-${filemd5("/tmp/fitglue-function-zips/admin-handler.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
-  source = data.archive_file.typescript_source_zip.output_path
+  source = "/tmp/fitglue-function-zips/admin-handler.zip"
+}
+
+resource "google_storage_bucket_object" "auth_hooks_zip" {
+  name   = "auth-hooks-${filemd5("/tmp/fitglue-function-zips/auth-hooks.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/auth-hooks.zip"
+}
+
+resource "google_storage_bucket_object" "billing_handler_zip" {
+  name   = "billing-handler-${filemd5("/tmp/fitglue-function-zips/billing-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/billing-handler.zip"
+}
+
+resource "google_storage_bucket_object" "fitbit_handler_zip" {
+  name   = "fitbit-handler-${filemd5("/tmp/fitglue-function-zips/fitbit-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/fitbit-handler.zip"
+}
+
+resource "google_storage_bucket_object" "fitbit_oauth_handler_zip" {
+  name   = "fitbit-oauth-handler-${filemd5("/tmp/fitglue-function-zips/fitbit-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/fitbit-oauth-handler.zip"
+}
+
+resource "google_storage_bucket_object" "hevy_handler_zip" {
+  name   = "hevy-handler-${filemd5("/tmp/fitglue-function-zips/hevy-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/hevy-handler.zip"
+}
+
+resource "google_storage_bucket_object" "inputs_handler_zip" {
+  name   = "inputs-handler-${filemd5("/tmp/fitglue-function-zips/inputs-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/inputs-handler.zip"
+}
+
+resource "google_storage_bucket_object" "integration_request_handler_zip" {
+  name   = "integration-request-handler-${filemd5("/tmp/fitglue-function-zips/integration-request-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/integration-request-handler.zip"
+}
+
+resource "google_storage_bucket_object" "mobile_sync_handler_zip" {
+  name   = "mobile-sync-handler-${filemd5("/tmp/fitglue-function-zips/mobile-sync-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/mobile-sync-handler.zip"
+}
+
+resource "google_storage_bucket_object" "mock_source_handler_zip" {
+  name   = "mock-source-handler-${filemd5("/tmp/fitglue-function-zips/mock-source-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/mock-source-handler.zip"
+}
+
+resource "google_storage_bucket_object" "registry_handler_zip" {
+  name   = "registry-handler-${filemd5("/tmp/fitglue-function-zips/registry-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/registry-handler.zip"
+}
+
+resource "google_storage_bucket_object" "repost_handler_zip" {
+  name   = "repost-handler-${filemd5("/tmp/fitglue-function-zips/repost-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/repost-handler.zip"
+}
+
+resource "google_storage_bucket_object" "showcase_handler_zip" {
+  name   = "showcase-handler-${filemd5("/tmp/fitglue-function-zips/showcase-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/showcase-handler.zip"
+}
+
+resource "google_storage_bucket_object" "strava_oauth_handler_zip" {
+  name   = "strava-oauth-handler-${filemd5("/tmp/fitglue-function-zips/strava-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/strava-oauth-handler.zip"
+}
+
+resource "google_storage_bucket_object" "user_integrations_handler_zip" {
+  name   = "user-integrations-handler-${filemd5("/tmp/fitglue-function-zips/user-integrations-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/user-integrations-handler.zip"
+}
+
+resource "google_storage_bucket_object" "user_pipelines_handler_zip" {
+  name   = "user-pipelines-handler-${filemd5("/tmp/fitglue-function-zips/user-pipelines-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/user-pipelines-handler.zip"
+}
+
+resource "google_storage_bucket_object" "user_profile_handler_zip" {
+  name   = "user-profile-handler-${filemd5("/tmp/fitglue-function-zips/user-profile-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/user-profile-handler.zip"
+}
+
+resource "google_storage_bucket_object" "waitlist_handler_zip" {
+  name   = "waitlist-handler-${filemd5("/tmp/fitglue-function-zips/waitlist-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/waitlist-handler.zip"
 }
 
 
@@ -345,7 +449,7 @@ resource "google_cloudfunctions2_function" "mock_source_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.mock_source_handler_zip.name
       }
     }
     environment_variables = {}
@@ -384,7 +488,7 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.hevy_handler_zip.name
       }
     }
     environment_variables = {}
@@ -420,7 +524,7 @@ resource "google_cloudfunctions2_function" "fitbit_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.fitbit_handler_zip.name
       }
     }
     environment_variables = {}
@@ -478,7 +582,7 @@ resource "google_cloudfunctions_function" "auth_on_create" {
 
   available_memory_mb   = 256
   source_archive_bucket = google_storage_bucket.source_bucket.name
-  source_archive_object = google_storage_bucket_object.typescript_source_zip.name
+  source_archive_object = google_storage_bucket_object.auth_hooks_zip.name
   entry_point           = "authOnCreate"
 
   event_trigger {
@@ -509,7 +613,7 @@ resource "google_cloudfunctions2_function" "waitlist_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.waitlist_handler_zip.name
       }
     }
     environment_variables = {}
@@ -547,7 +651,7 @@ resource "google_cloudfunctions2_function" "inputs_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.inputs_handler_zip.name
       }
     }
     environment_variables = {}
@@ -585,7 +689,7 @@ resource "google_cloudfunctions2_function" "activities_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.activities_handler_zip.name
       }
     }
     environment_variables = {}
@@ -622,7 +726,7 @@ resource "google_cloudfunctions2_function" "user_profile_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.user_profile_handler_zip.name
       }
     }
     environment_variables = {}
@@ -659,7 +763,7 @@ resource "google_cloudfunctions2_function" "user_integrations_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.user_integrations_handler_zip.name
       }
     }
     environment_variables = {}
@@ -712,7 +816,7 @@ resource "google_cloudfunctions2_function" "billing_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.billing_handler_zip.name
       }
     }
     environment_variables = {}
@@ -751,7 +855,7 @@ resource "google_cloudfunctions2_function" "mobile_sync_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.mobile_sync_handler_zip.name
       }
     }
     environment_variables = {}
@@ -790,7 +894,7 @@ resource "google_cloudfunctions2_function" "user_pipelines_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.user_pipelines_handler_zip.name
       }
     }
     environment_variables = {}
@@ -827,7 +931,7 @@ resource "google_cloudfunctions2_function" "registry_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.registry_handler_zip.name
       }
     }
     environment_variables = {}
@@ -864,7 +968,7 @@ resource "google_cloudfunctions2_function" "integration_request_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.integration_request_handler_zip.name
       }
     }
     environment_variables = {}
@@ -1004,7 +1108,7 @@ resource "google_cloudfunctions2_function" "showcase_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.showcase_handler_zip.name
       }
     }
     environment_variables = {}
@@ -1086,7 +1190,7 @@ resource "google_cloudfunctions2_function" "repost_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.repost_handler_zip.name
       }
     }
     environment_variables = {}
@@ -1123,7 +1227,7 @@ resource "google_cloudfunctions2_function" "admin_handler" {
     source {
       storage_source {
         bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.typescript_source_zip.name
+        object = google_storage_bucket_object.admin_handler_zip.name
       }
     }
     environment_variables = {}

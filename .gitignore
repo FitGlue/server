@@ -39,3 +39,6 @@ src/go/vendor
 # Downloads
 downloads/
 *.fit
+
+# Backups
+*.bak

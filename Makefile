@@ -91,8 +91,16 @@ lint-go:
 	@./scripts/lint-proto-json.sh
 
 prepare-go:
-	@echo "Preparing Go services..."
+	@echo "Preparing Go function ZIPs..."
 	python3 scripts/build_function_zips.py 2>&1
+
+prepare-ts:
+	@echo "Preparing TypeScript function ZIPs..."
+	python3 scripts/build_typescript_zips.py 2>&1
+
+# Parallel prepare - Go and TS ZIPs can be built concurrently
+prepare:
+	@$(MAKE) -j2 prepare-go prepare-ts
 
 clean-go:
 	@echo "Cleaning Go..."
