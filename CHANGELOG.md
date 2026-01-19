@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.6.0](https://github.com/FitGlue/server/compare/v1.5.0...v1.6.0) (2026-01-19)
+
+
+### Features
+
+* Add comprehensive linting checks for environment variable access, protobuf freshness, enum definitions, formatter coverage, and handler configurations, alongside new enum formatter generation. ([569bb3d](https://github.com/FitGlue/server/commit/569bb3d382861ce2847fc1fe49e0364f98d06705))
+* Introduce unit tests for mock and integration handlers, configure Jest, and refine linting rules with error configurations. ([bae9af8](https://github.com/FitGlue/server/commit/bae9af8df1ca2b9a79fe7fd8f5bb6a56908d15ce))
+
+
+### Bug Fixes
+
+* linting ([9045ad9](https://github.com/FitGlue/server/commit/9045ad9c56e6de30a6859a856e088b51fd39a04f))
+
 ## [1.5.0](https://github.com/FitGlue/server/compare/v1.4.0...v1.5.0) (2026-01-19)
 
 
