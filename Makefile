@@ -153,6 +153,11 @@ lint-codebase:
 	@npm install --silent
 	@npx ts-node scripts/lint-codebase.ts
 
+lint-verbose:
+	@echo "Running codebase consistency checks (verbose)..."
+	@npm install --silent
+	@npx ts-node scripts/lint-codebase.ts --verbose
+
 
 # --- Plugin Scaffolding ---
 # Usage: make plugin-source name=garmin

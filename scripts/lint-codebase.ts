@@ -2893,117 +2893,199 @@ function checkResponsiveMediaQueries(): CheckResult {
 
 function printResult(result: CheckResult, verbose: boolean): void {
   const status = result.passed ? '✅' : '❌';
-  console.log(`\n${status} ${result.name}`);
+  console.log(`  ${status} ${result.name}`);
 
   for (const error of result.errors) {
-    console.log(`   ❌ ${error}`);
+    console.log(`     ❌ ${error}`);
   }
 
   if (verbose || result.warnings.length <= 3) {
     for (const warning of result.warnings) {
-      console.log(`   ⚠️  ${warning}`);
+      console.log(`     ⚠️  ${warning}`);
     }
   } else if (result.warnings.length > 0) {
-    console.log(`   ⚠️  ${result.warnings.length} warnings (use --verbose to see all)`);
+    console.log(`     ⚠️  ${result.warnings.length} warnings (use --verbose to see all)`);
   }
+}
+
+function printCategoryHeader(title: string, emoji: string): void {
+  console.log('');
+  console.log(`${emoji} ${title}`);
+  console.log('─'.repeat(40));
+}
+
+interface CheckCategory {
+  name: string;
+  emoji: string;
+  checks: Array<{ id: string; fn: () => CheckResult }>;
 }
 
 function main(): void {
   const verbose = process.argv.includes('--verbose') || process.argv.includes('-v');
 
-  console.log('🔍 FitGlue Codebase Lint');
-  console.log('========================');
+  console.log('');
+  console.log('╔══════════════════════════════════════════════════════════╗');
+  console.log('║              🔍 FitGlue Codebase Lint                    ║');
+  console.log('╚══════════════════════════════════════════════════════════╝');
+  console.log('');
 
-  const checks = [
-    checkTerraformCoverage,
-    checkIndexJsExports,
-    checkConnectorPattern,
-    checkRegistryCoverage,
-    checkPluginRegistration,
-    checkWorkspaceMembership,
-    checkProtobufAlignment,
-    checkFirebaseRouting,
-    checkDestinationTopicSync,
-    checkEventsHelperCompleteness,
-    checkDestinationUploaderPattern,
-    checkDestinationEnumCoverage,
-    checkLoopPrevention,
-    // Phase 2-6 New Checks
-    checkEnvVarAccess,
-    checkProtoFreshness,
-    checkNoManualEnums,
-    checkFormatterCoverage,
-    checkJestConfigInheritance,
-    checkHandlerPackageScripts,
-    checkWebTypesAlignment,
-    checkConverterCompleteness,
-    checkProtoImportPath,
-    checkUseApiPattern,
-    checkProtoJsonSerialization,
-    // Additional checks
-    checkGoContextPropagation,
-    checkGoErrorWrapping,
-    checkGoLoggerUsage,
-    checkGoTestCoverage,
-    checkSharedExports,
-    checkDateHandling,
-    checkErrorResponseFormat,
-    checkIntegrationFieldParity,
-    checkSourceHandlerCoverage,
-    checkNumericEnumUsage,
-    checkMandatoryFormatterUsage,
-    checkApiEndpointAlignment,
-    checkAuthGuard,
-    checkEnumDisplayMapping,
-    checkNullSafety,
-    checkUploaderExternalIdTracking,
-    checkOAuthTokenRefresh,
-    checkGoStructFieldNaming,
-    checkStringToEnumMapping,
-    checkRegistryDisplayNameCoverage,
-    checkUseStateComplexObjects,
-    checkUseEffectDependencies,
-    checkContextUsage,
-    checkCssCustomProperties,
-    checkResponsiveMediaQueries,
+  const categories: CheckCategory[] = [
+    {
+      name: 'Infrastructure Checks',
+      emoji: '🏗️ ',
+      checks: [
+        { id: 'I1', fn: () => ({ ...checkTerraformCoverage(), name: 'I1: Terraform Coverage' }) },
+        { id: 'I2', fn: () => ({ ...checkFirebaseRouting(), name: 'I2: Firebase Routing' }) },
+        { id: 'I3', fn: () => ({ ...checkWorkspaceMembership(), name: 'I3: Workspace Membership' }) },
+        { id: 'I4', fn: () => ({ ...checkRegistryCoverage(), name: 'I4: Registry Coverage' }) },
+        { id: 'I5', fn: () => ({ ...checkPluginRegistration(), name: 'I5: Plugin Registration' }) },
+      ]
+    },
+    {
+      name: 'Server Go Rules',
+      emoji: '🐹',
+      checks: [
+        { id: 'G1', fn: () => ({ ...checkProtoJsonSerialization(), name: 'G1: Protobuf JSON Serialization' }) },
+        { id: 'G2', fn: () => ({ ...checkGoContextPropagation(), name: 'G2: Context Propagation' }) },
+        { id: 'G3', fn: () => ({ ...checkGoErrorWrapping(), name: 'G3: Error Wrapping' }) },
+        { id: 'G4', fn: () => ({ ...checkGoLoggerUsage(), name: 'G4: Logger Usage' }) },
+        { id: 'G5', fn: () => ({ ...checkUploaderExternalIdTracking(), name: 'G5: Uploader External ID Tracking' }) },
+        { id: 'G6', fn: () => ({ ...checkOAuthTokenRefresh(), name: 'G6: OAuth Token Refresh Pattern' }) },
+        { id: 'G7', fn: () => ({ ...checkGoStructFieldNaming(), name: 'G7: Struct Field Naming' }) },
+        { id: 'G8', fn: () => ({ ...checkGoTestCoverage(), name: 'G8: Test File Coverage' }) },
+        { id: 'G9', fn: () => ({ ...checkDestinationUploaderPattern(), name: 'G9: Destination Uploader Pattern' }) },
+        { id: 'G10', fn: () => ({ ...checkLoopPrevention(), name: 'G10: Loop Prevention' }) },
+      ]
+    },
+    {
+      name: 'Server TypeScript Rules',
+      emoji: '📘',
+      checks: [
+        { id: 'T1', fn: () => ({ ...checkConverterCompleteness(), name: 'T1: Firestore Converter Completeness' }) },
+        { id: 'T2', fn: () => ({ ...checkSharedExports(), name: 'T2: Shared Exports' }) },
+        { id: 'T3', fn: () => ({ ...checkJestConfigInheritance(), name: 'T3: Jest Config Inheritance' }) },
+        { id: 'T4', fn: () => ({ ...checkHandlerPackageScripts(), name: 'T4: Handler Package Scripts' }) },
+        { id: 'T5', fn: () => ({ ...checkProtoImportPath(), name: 'T5: Proto Import Path' }) },
+        { id: 'T6', fn: () => ({ ...checkDateHandling(), name: 'T6: Date Handling' }) },
+        { id: 'T7', fn: () => ({ ...checkErrorResponseFormat(), name: 'T7: Error Response Format' }) },
+        { id: 'T8', fn: () => ({ ...checkEnvVarAccess(), name: 'T8: Environment Variable Access' }) },
+        { id: 'T9', fn: () => ({ ...checkIndexJsExports(), name: 'T9: Root index.js Exports' }) },
+        { id: 'T10', fn: () => ({ ...checkConnectorPattern(), name: 'T10: Connector Pattern' }) },
+        { id: 'T11', fn: () => ({ ...checkEventsHelperCompleteness(), name: 'T11: Events Helper Completeness' }) },
+        { id: 'T12', fn: () => ({ ...checkDestinationTopicSync(), name: 'T12: Destination Topic Mapping Sync' }) },
+      ]
+    },
+    {
+      name: 'Cross-Language Rules',
+      emoji: '🔗',
+      checks: [
+        { id: 'X1', fn: () => ({ ...checkProtobufAlignment(), name: 'X1: Protobuf Alignment' }) },
+        { id: 'X2', fn: () => ({ ...checkIntegrationFieldParity(), name: 'X2: Integration Field Parity' }) },
+        { id: 'X3', fn: () => ({ ...checkSourceHandlerCoverage(), name: 'X3: ActivitySource Handler Coverage' }) },
+        { id: 'X4', fn: () => ({ ...checkDestinationEnumCoverage(), name: 'X4: Destination Enum Coverage' }) },
+      ]
+    },
+    {
+      name: 'Web Frontend Rules',
+      emoji: '🌐',
+      checks: [
+        { id: 'W1', fn: () => ({ ...checkUseApiPattern(), name: 'W1: useApi over useAuth' }) },
+        { id: 'W3', fn: () => ({ ...checkAuthGuard(), name: 'W3: Auth Guard on Protected Routes' }) },
+        { id: 'W4', fn: () => ({ ...checkUseStateComplexObjects(), name: 'W4: useState Complexity' }) },
+        { id: 'W5', fn: () => ({ ...checkUseEffectDependencies(), name: 'W5: useEffect Dependency Array' }) },
+        { id: 'W6', fn: () => ({ ...checkContextUsage(), name: 'W6: Context vs Props Drilling' }) },
+        { id: 'W7', fn: () => ({ ...checkWebTypesAlignment(), name: 'W7: Web Types Alignment' }) },
+        { id: 'W8', fn: () => ({ ...checkEnumDisplayMapping(), name: 'W8: Enum Display Mapping' }) },
+        { id: 'W9', fn: () => ({ ...checkNullSafety(), name: 'W9: Null Safety' }) },
+        { id: 'W10', fn: () => ({ ...checkCssCustomProperties(), name: 'W10: CSS Custom Properties' }) },
+        { id: 'W11', fn: () => ({ ...checkResponsiveMediaQueries(), name: 'W11: Responsive Media Queries' }) },
+        { id: 'W12', fn: () => ({ ...checkApiEndpointAlignment(), name: 'W12: API Endpoint Alignment' }) },
+      ]
+    },
+    {
+      name: 'Enum Consistency Rules',
+      emoji: '🔢',
+      checks: [
+        { id: 'E1', fn: () => ({ ...checkProtoFreshness(), name: 'E1: Protobuf Generation Freshness' }) },
+        { id: 'E2', fn: () => ({ ...checkNoManualEnums(), name: 'E2: No Manual Enum Re-definitions' }) },
+        { id: 'E3', fn: () => ({ ...checkNumericEnumUsage(), name: 'E3: Numeric Enum Usage' }) },
+        { id: 'E4', fn: () => ({ ...checkStringToEnumMapping(), name: 'E4: String-to-Enum Mapping' }) },
+        { id: 'E5', fn: () => ({ ...checkRegistryDisplayNameCoverage(), name: 'E5: Registry Display Name Coverage' }) },
+        { id: 'E6', fn: () => ({ ...checkMandatoryFormatterUsage(), name: 'E6: Mandatory Formatter Usage' }) },
+        { id: 'E7', fn: () => ({ ...checkFormatterCoverage(), name: 'E7: Formatter Coverage' }) },
+      ]
+    },
   ];
 
   const results: CheckResult[] = [];
+  let categoryResults: { name: string; passed: number; total: number }[] = [];
 
-  for (const check of checks) {
-    try {
-      const result = check();
-      results.push(result);
-      printResult(result, verbose);
-    } catch (error) {
-      console.error(`\n❌ Check failed with error: ${error}`);
-      results.push({
-        name: check.name,
-        passed: false,
-        errors: [`Check threw error: ${error}`],
-        warnings: []
-      });
+  for (const category of categories) {
+    printCategoryHeader(category.name, category.emoji);
+    let catPassed = 0;
+    let catTotal = 0;
+
+    for (const check of category.checks) {
+      try {
+        const result = check.fn();
+        results.push(result);
+        printResult(result, verbose);
+        catTotal++;
+        if (result.passed) catPassed++;
+      } catch (error) {
+        console.error(`  ❌ ${check.id}: Check failed with error: ${error}`);
+        results.push({
+          name: check.id,
+          passed: false,
+          errors: [`Check threw error: ${error}`],
+          warnings: []
+        });
+        catTotal++;
+      }
     }
+
+    categoryResults.push({ name: category.name, passed: catPassed, total: catTotal });
   }
 
   // Summary
-  console.log('\n========================');
+  console.log('');
+  console.log('╔══════════════════════════════════════════════════════════╗');
+  console.log('║                     📊 Summary                           ║');
+  console.log('╚══════════════════════════════════════════════════════════╝');
+  console.log('');
+
+  for (const cat of categoryResults) {
+    const status = cat.passed === cat.total ? '✅' : '❌';
+    console.log(`  ${status} ${cat.name}: ${cat.passed}/${cat.total}`);
+  }
+
   const passed = results.filter(r => r.passed).length;
   const total = results.length;
   const allPassed = passed === total;
+  const totalWarnings = results.reduce((acc, r) => acc + r.warnings.length, 0);
+
+  console.log('');
+  console.log('─'.repeat(50));
 
   if (allPassed) {
-    console.log(`✅ All ${total} checks passed!`);
+    console.log(`  ✅ All ${total} checks passed!`);
+    if (totalWarnings > 0) {
+      console.log(`  ⚠️  ${totalWarnings} total warnings`);
+    }
   } else {
-    console.log(`❌ ${passed}/${total} checks passed`);
-    console.log('\nFailed checks:');
+    console.log(`  ❌ ${passed}/${total} checks passed`);
+    console.log('');
+    console.log('  Failed checks:');
     for (const result of results.filter(r => !r.passed)) {
-      console.log(`  - ${result.name}`);
+      console.log(`    • ${result.name}`);
     }
   }
+
+  console.log('');
 
   // Exit with error code if any check failed
   process.exit(allPassed ? 0 : 1);
 }
 
 main();
+
