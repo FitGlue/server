@@ -194,11 +194,9 @@ describe('admin-handler', () => {
 
       (mockDb.collection as jest.Mock).mockReturnValue({
         count: mockCount,
-        orderBy: jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue({
           offset: jest.fn().mockReturnValue({
-            limit: jest.fn().mockReturnValue({
-              get: mockGet,
-            }),
+            get: mockGet,
           }),
         }),
       });
@@ -243,14 +241,11 @@ describe('admin-handler', () => {
         pipelines: [],
       });
 
-      // Mock pending inputs query (not completed)
+      // Mock pending inputs query (single where, filter in memory)
       (mockDb.collection as jest.Mock).mockReturnValue({
         where: jest.fn().mockReturnValue({
-          where: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue({
-              docs: [{ data: () => ({ activity_id: 'act-1', status: 1 }) }],
-              length: 1,
-            }),
+          get: jest.fn().mockResolvedValue({
+            docs: [{ data: () => ({ activity_id: 'act-1', status: 1 }) }],
           }),
         }),
       });

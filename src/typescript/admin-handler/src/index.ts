@@ -112,11 +112,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       const totalSnapshot = await db.collection('users').count().get();
       const total = totalSnapshot.data().count;
 
-      // Get paginated users
+      // Get paginated users (simple query without orderBy to avoid index)
       const snapshot = await db.collection('users')
-        .orderBy('createdAt', 'desc')
-        .offset(offset)
         .limit(limit)
+        .offset(offset)
         .get();
 
       const users = snapshot.docs.map(doc => {
@@ -178,22 +177,31 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       // Get activity count using store (correct 'activities' subcollection)
       const activityCount = await stores.activities.countSynchronized(targetUserId);
 
-      // Get pending inputs that are NOT completed (show both WAITING and UNSPECIFIED)
-      const pendingInputsSnapshot = await db.collection('pending_inputs')
-        .where('user_id', '==', targetUserId)
-        .where('status', '!=', PendingInput_Status.STATUS_COMPLETED)
-        .get();
+      // Get pending inputs that are NOT completed - filter in memory to avoid composite index
+      let pendingInputs: { activityId: string; status: string; enricherProviderId?: string; createdAt?: string }[] = [];
+      try {
+        const pendingInputsSnapshot = await db.collection('pending_inputs')
+          .where('user_id', '==', targetUserId)
+          .get();
 
-      // Build pending inputs list with status
-      const pendingInputs = pendingInputsSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          activityId: data.activity_id || doc.id,
-          status: data.status === PendingInput_Status.STATUS_WAITING ? 'waiting' : 'unspecified',
-          enricherProviderId: data.enricher_provider_id,
-          createdAt: data.created_at?.toDate?.()?.toISOString() || data.created_at,
-        };
-      });
+        pendingInputs = pendingInputsSnapshot.docs
+          .map(doc => {
+            const data = doc.data();
+            return {
+              activityId: data.activity_id || doc.id,
+              status: data.status,
+              enricherProviderId: data.enricher_provider_id,
+              createdAt: data.created_at?.toDate?.()?.toISOString() || data.created_at,
+            };
+          })
+          .filter(pi => pi.status !== PendingInput_Status.STATUS_COMPLETED)
+          .map(pi => ({
+            ...pi,
+            status: pi.status === PendingInput_Status.STATUS_WAITING ? 'waiting' : 'unspecified',
+          }));
+      } catch (pendingErr) {
+        logger.warn('Failed to fetch pending inputs', { targetUserId, error: pendingErr });
+      }
 
       // Fetch email/displayName from Firebase Auth (only for detail view)
       let email: string | undefined;
