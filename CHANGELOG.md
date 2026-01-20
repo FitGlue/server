@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.8.0](https://github.com/FitGlue/server/compare/v1.7.0...v1.8.0) (2026-01-20)
+
+
+### Features
+
+* Introduce activity counters, optimize execution fetching with projection queries, and add external URL templates for plugins. ([d10ab6b](https://github.com/FitGlue/server/commit/d10ab6b87f67f0651b264748798f8cad160df3e2))
+
+
+### Bug Fixes
+
+* emoji linter, remove unneeded firestore indexes ([91150b2](https://github.com/FitGlue/server/commit/91150b26113c77529c4fba7081401f69033b0785))
+
 ## [1.7.0](https://github.com/FitGlue/server/compare/v1.6.0...v1.7.0) (2026-01-20)
 
 
