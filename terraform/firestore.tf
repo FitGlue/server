@@ -148,32 +148,28 @@ resource "google_firestore_index" "executions_user_sync_timestamp" {
   }
 }
 
-# Collection group index for activities synced_at ordering
-# Enables efficient dashboard activity list with descending date order
-resource "google_firestore_index" "activities_synced_at" {
-  project          = var.project_id
-  database         = google_firestore_database.database.name
-  collection       = "activities"
-  query_scope      = "COLLECTION_GROUP"
-
-  fields {
-    field_path = "synced_at"
-    order      = "DESCENDING"
-  }
-}
-
-# Collection group index for activities by pipeline_execution_id
-# Enables efficient lookup of activities by their pipeline execution
-resource "google_firestore_index" "activities_pipeline_execution" {
-  project          = var.project_id
-  database         = google_firestore_database.database.name
-  collection       = "activities"
-  query_scope      = "COLLECTION_GROUP"
-
-  fields {
-    field_path = "pipeline_execution_id"
-    order      = "ASCENDING"
-  }
-}
+# Note: Single-field collection group indexes are NOT needed here.
+# Firestore automatically creates single-field indexes for all fields.
+# The previous `activities_synced_at` and `activities_pipeline_execution`
+# indexes were rejected by GCP with "this index is not necessary".
+#
+# If you need COMPOSITE collection group indexes (2+ fields), add them here.
+# Example:
+# resource "google_firestore_index" "activities_user_synced" {
+#   project          = var.project_id
+#   database         = google_firestore_database.database.name
+#   collection       = "activities"
+#   query_scope      = "COLLECTION_GROUP"
+#
+#   fields {
+#     field_path = "user_id"
+#     order      = "ASCENDING"
+#   }
+#
+#   fields {
+#     field_path = "synced_at"
+#     order      = "DESCENDING"
+#   }
+# }
 
 

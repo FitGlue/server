@@ -42,7 +42,7 @@ const ERROR_RULES = new Set([
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
-  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12',
+  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13',
   // Enum
   'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7',
 ]);
@@ -1580,6 +1580,91 @@ function checkHandlerPackageScripts(): CheckResult {
 
   return {
     name: 'Handler Package Scripts (T4)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 19b: Hardcoded Emoji Maps (W13)
+// ============================================================================
+
+/**
+ * Detects hardcoded emoji maps in web frontend code.
+ * Emojis for plugins/integrations should come from the centralized registry.
+ *
+ * Forbidden patterns:
+ * - const PLATFORM_ICONS: Record<string, string>
+ * - const DESTINATION_ICONS: Record<string, string>
+ * - const *_ICONS: Record<string, string> (any emoji map pattern)
+ */
+function checkHardcodedEmojiMaps(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    // Skip silently - web directory may not exist in server-only CI runs
+    return { name: 'Hardcoded Emoji Maps (W13)', passed: true, errors, warnings };
+  }
+
+  const webSrcDir = path.join(webDir, 'src');
+  if (!fs.existsSync(webSrcDir)) {
+    return { name: 'Hardcoded Emoji Maps (W13)', passed: true, errors, warnings };
+  }
+
+  // Files to exclude from this check (UI-specific icons are acceptable)
+  const excludePatterns = [
+    /LogicGateConfigForm/, // UI condition field icons
+    /WelcomeBanner/,       // Onboarding step icons
+  ];
+
+  // Find all TS/TSX files in web/src
+  const findFilesRecursive = (dir: string): string[] => {
+    if (!fs.existsSync(dir)) return [];
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory() && !item.name.includes('node_modules')) {
+        files.push(...findFilesRecursive(fullPath));
+      } else if (item.isFile() && (item.name.endsWith('.ts') || item.name.endsWith('.tsx'))) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  const tsFiles = findFilesRecursive(webSrcDir);
+
+  // Pattern: const SOMETHING_ICONS: Record<string, string> or similar emoji map patterns
+  const emojiMapPatterns = [
+    /const\s+\w*_?ICONS\s*:\s*Record<string,\s*string>/,
+    /const\s+PLATFORM_ICONS\b/,
+    /const\s+DESTINATION_ICONS\b/,
+    /const\s+SOURCE_ICONS\b/,
+    /const\s+ENRICHER_ICONS\b/,
+  ];
+
+  for (const file of tsFiles) {
+    const relativePath = path.relative(webDir, file);
+
+    // Skip excluded files
+    if (excludePatterns.some(p => p.test(file))) continue;
+
+    const content = fs.readFileSync(file, 'utf-8');
+
+    for (const pattern of emojiMapPatterns) {
+      if (pattern.test(content)) {
+        errors.push(`${relativePath}: Contains hardcoded emoji map - use registry.icon instead`);
+        break; // One error per file is enough
+      }
+    }
+  }
+
+  return {
+    name: 'Hardcoded Emoji Maps (W13)',
     passed: errors.length === 0,
     errors,
     warnings
@@ -3303,6 +3388,7 @@ function main(): void {
         { id: 'W10', fn: () => ({ ...checkCssCustomProperties(), name: 'W10: CSS Custom Properties' }) },
         { id: 'W11', fn: () => ({ ...checkResponsiveMediaQueries(), name: 'W11: Responsive Media Queries' }) },
         { id: 'W12', fn: () => ({ ...checkApiEndpointAlignment(), name: 'W12: API Endpoint Alignment' }) },
+        { id: 'W13', fn: () => ({ ...checkHardcodedEmojiMaps(), name: 'W13: Hardcoded Emoji Maps' }) },
       ]
     },
     {
