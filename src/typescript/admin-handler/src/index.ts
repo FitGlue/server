@@ -7,6 +7,9 @@ import {
 } from '@fitglue/shared';
 import { Request, Response } from 'express';
 import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
+import { Destination } from '@fitglue/shared/dist/types/pb/events';
+import { PendingInput_Status } from '@fitglue/shared/dist/types/pb/pending_input';
+import * as admin from 'firebase-admin';
 
 /**
  * Admin Handler - Consolidated admin operations
@@ -97,19 +100,38 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   }
 
   // ========================================
-  // GET /api/admin/users - Enhanced user list
+  // GET /api/admin/users - Enhanced user list with pagination
   // ========================================
   if (subPath === '/users' && req.method === 'GET') {
     try {
-      const snapshot = await db.collection('users').get();
+      const page = parseInt(req.query.page as string || '1', 10);
+      const limit = Math.min(parseInt(req.query.limit as string || '25', 10), 100);
+      const offset = (page - 1) * limit;
+
+      // Get total count
+      const totalSnapshot = await db.collection('users').count().get();
+      const total = totalSnapshot.data().count;
+
+      // Get paginated users
+      const snapshot = await db.collection('users')
+        .orderBy('createdAt', 'desc')
+        .offset(offset)
+        .limit(limit)
+        .get();
+
       const users = snapshot.docs.map(doc => {
         const data = doc.data();
 
-        // Count integrations
+        // Iterate through all integrations dynamically
         const integrations: string[] = [];
-        if (data.integrations?.hevy?.enabled || data.integrations?.hevy?.apiKey) integrations.push('hevy');
-        if (data.integrations?.strava?.enabled) integrations.push('strava');
-        if (data.integrations?.fitbit?.enabled) integrations.push('fitbit');
+        if (data.integrations && typeof data.integrations === 'object') {
+          for (const [provider, config] of Object.entries(data.integrations)) {
+            const cfg = config as Record<string, unknown>;
+            if (cfg?.enabled || cfg?.apiKey) {
+              integrations.push(provider);
+            }
+          }
+        }
 
         return {
           userId: doc.id,
@@ -123,7 +145,16 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
           pipelineCount: data.pipelines?.length || 0,
         };
       });
-      res.status(200).json(users);
+
+      res.status(200).json({
+        data: users,
+        pagination: {
+          page,
+          limit,
+          total,
+          hasMore: offset + users.length < total
+        }
+      });
     } catch (e) {
       logger.error('Failed to list admin users', { error: e });
       res.status(500).json({ error: 'Internal Server Error' });
@@ -144,40 +175,81 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         return;
       }
 
-      // Get counts for activities and pending inputs
-      const activitiesSnapshot = await db.collection('users').doc(targetUserId)
-        .collection('synchronized_activities').count().get();
-      const pendingInputsSnapshot = await db.collection('pending_inputs')
-        .where('user_id', '==', targetUserId).count().get();
+      // Get activity count using store (correct 'activities' subcollection)
+      const activityCount = await stores.activities.countSynchronized(targetUserId);
 
-      // Build integrations with masked tokens
+      // Get pending inputs that are NOT completed (show both WAITING and UNSPECIFIED)
+      const pendingInputsSnapshot = await db.collection('pending_inputs')
+        .where('user_id', '==', targetUserId)
+        .where('status', '!=', PendingInput_Status.STATUS_COMPLETED)
+        .get();
+
+      // Build pending inputs list with status
+      const pendingInputs = pendingInputsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          activityId: data.activity_id || doc.id,
+          status: data.status === PendingInput_Status.STATUS_WAITING ? 'waiting' : 'unspecified',
+          enricherProviderId: data.enricher_provider_id,
+          createdAt: data.created_at?.toDate?.()?.toISOString() || data.created_at,
+        };
+      });
+
+      // Fetch email/displayName from Firebase Auth (only for detail view)
+      let email: string | undefined;
+      let displayName: string | undefined;
+      try {
+        const authUser = await admin.auth().getUser(targetUserId);
+        email = authUser.email;
+        displayName = authUser.displayName;
+      } catch (authErr) {
+        // User may not have Firebase Auth record (e.g., API-only users)
+        logger.debug('Could not fetch Firebase Auth user', { targetUserId, error: authErr });
+      }
+
+      // Build integrations dynamically with masked tokens
       const integrations: Record<string, unknown> = {};
-      if (user.integrations) {
-        if (user.integrations.hevy) {
-          integrations.hevy = {
-            enabled: user.integrations.hevy.enabled || !!user.integrations.hevy.apiKey,
-            apiKey: maskToken(user.integrations.hevy.apiKey),
-            lastUsedAt: user.integrations.hevy.lastUsedAt?.toISOString?.() || user.integrations.hevy.lastUsedAt
-          };
-        }
-        if (user.integrations.strava) {
-          integrations.strava = {
-            enabled: user.integrations.strava.enabled,
-            athleteId: user.integrations.strava.athleteId,
-            lastUsedAt: user.integrations.strava.lastUsedAt?.toISOString?.() || user.integrations.strava.lastUsedAt
-          };
-        }
-        if (user.integrations.fitbit) {
-          integrations.fitbit = {
-            enabled: user.integrations.fitbit.enabled,
-            fitbitUserId: user.integrations.fitbit.fitbitUserId,
-            lastUsedAt: user.integrations.fitbit.lastUsedAt?.toISOString?.() || user.integrations.fitbit.lastUsedAt
-          };
+      if (user.integrations && typeof user.integrations === 'object') {
+        for (const [provider, config] of Object.entries(user.integrations)) {
+          const cfg = config as Record<string, unknown>;
+          if (cfg?.enabled || cfg?.apiKey) {
+            const integrationInfo: Record<string, unknown> = {
+              enabled: cfg.enabled || !!cfg.apiKey,
+            };
+            if (cfg.apiKey) integrationInfo.apiKey = maskToken(cfg.apiKey as string);
+            if (cfg.athleteId) integrationInfo.athleteId = cfg.athleteId;
+            if (cfg.fitbitUserId) integrationInfo.fitbitUserId = cfg.fitbitUserId;
+            if (cfg.lastUsedAt) {
+              const lastUsed = cfg.lastUsedAt as Date | string;
+              integrationInfo.lastUsedAt = typeof lastUsed === 'object' && 'toISOString' in lastUsed
+                ? lastUsed.toISOString()
+                : lastUsed;
+            }
+            integrations[provider] = integrationInfo;
+          }
         }
       }
 
+      // Map destination enum numbers to readable names
+      const destinationNames: Record<number, string> = {};
+      for (const [key, value] of Object.entries(Destination)) {
+        if (typeof value === 'number') {
+          destinationNames[value] = key.replace('DESTINATION_', '').toLowerCase();
+        }
+      }
+
+      // Build pipelines with names and destination names
+      const pipelines = (user.pipelines || []).map(p => ({
+        id: p.id,
+        name: p.name || 'Unnamed Pipeline',
+        source: p.source,
+        destinations: (p.destinations || []).map(d => destinationNames[d] || `unknown_${d}`),
+      }));
+
       res.status(200).json({
         userId: user.userId,
+        email,
+        displayName,
         createdAt: user.createdAt?.toISOString?.() || user.createdAt,
         tier: user.tier || 'free',
         trialEndsAt: user.trialEndsAt?.toISOString?.() || user.trialEndsAt,
@@ -186,9 +258,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         syncCountResetAt: user.syncCountResetAt?.toISOString?.() || user.syncCountResetAt,
         stripeCustomerId: user.stripeCustomerId || null,
         integrations,
-        pipelines: user.pipelines || [],
-        activityCount: activitiesSnapshot.data().count,
-        pendingInputCount: pendingInputsSnapshot.data().count,
+        pipelines,
+        activityCount,
+        pendingInputCount: pendingInputs.length,
+        pendingInputs,
       });
     } catch (e) {
       logger.error('Failed to get user details', { error: e, targetUserId });

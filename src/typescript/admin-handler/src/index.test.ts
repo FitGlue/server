@@ -12,6 +12,8 @@ jest.mock('@fitglue/shared', () => {
     count: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
+    offset: jest.fn().mockReturnThis(),
+    orderBy: jest.fn().mockReturnThis(),
     batch: jest.fn(),
   };
 
@@ -28,6 +30,13 @@ jest.mock('@fitglue/shared', () => {
     db: mockDb,
   };
 });
+
+// Mock firebase-admin
+jest.mock('firebase-admin', () => ({
+  auth: jest.fn(() => ({
+    getUser: jest.fn().mockResolvedValue({ email: 'test@example.com', displayName: 'Test User' })
+  }))
+}));
 
 // Get the mocked db
 import { db, ForbiddenError } from '@fitglue/shared';
@@ -61,6 +70,7 @@ function createMockContext(overrides: Partial<any> = {}): any {
       info: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
+      debug: jest.fn(),
     },
     services: {
       authorization: {
@@ -79,6 +89,9 @@ function createMockContext(overrides: Partial<any> = {}): any {
         listRecent: jest.fn().mockResolvedValue([]),
         listDistinctServices: jest.fn().mockResolvedValue([]),
         get: jest.fn(),
+      },
+      activities: {
+        countSynchronized: jest.fn().mockResolvedValue(5),
       },
     },
     ...overrides,
@@ -154,39 +167,62 @@ describe('admin-handler', () => {
   });
 
   describe('GET /api/admin/users', () => {
-    it('returns enhanced user list', async () => {
-      const req = createMockRequest({ path: '/api/admin/users', method: 'GET' });
+    it('returns enhanced user list with pagination', async () => {
+      const req = createMockRequest({ path: '/api/admin/users', method: 'GET', query: {} });
       const res = createMockResponse();
       const ctx = createMockContext();
 
+      // Mock count query
+      const mockCount = jest.fn().mockReturnValue({
+        get: jest.fn().mockResolvedValue({ data: () => ({ count: 1 }) }),
+      });
+      // Mock paginated query
+      const mockGet = jest.fn().mockResolvedValue({
+        docs: [
+          {
+            id: 'user-1',
+            data: () => ({
+              tier: 'pro',
+              isAdmin: false,
+              syncCountThisMonth: 5,
+              integrations: { strava: { enabled: true } },
+              pipelines: [{ id: 'p1' }],
+            }),
+          },
+        ],
+      });
+
       (mockDb.collection as jest.Mock).mockReturnValue({
-        get: jest.fn().mockResolvedValue({
-          docs: [
-            {
-              id: 'user-1',
-              data: () => ({
-                tier: 'pro',
-                isAdmin: false,
-                syncCountThisMonth: 5,
-                integrations: { strava: { enabled: true } },
-                pipelines: [{ id: 'p1' }],
-              }),
-            },
-          ],
+        count: mockCount,
+        orderBy: jest.fn().mockReturnValue({
+          offset: jest.fn().mockReturnValue({
+            limit: jest.fn().mockReturnValue({
+              get: mockGet,
+            }),
+          }),
         }),
       });
 
       await handler(req, res, ctx);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith([
+      expect(res.json).toHaveBeenCalledWith(
         expect.objectContaining({
-          userId: 'user-1',
-          tier: 'pro',
-          integrations: ['strava'],
-          pipelineCount: 1,
-        }),
-      ]);
+          data: expect.arrayContaining([
+            expect.objectContaining({
+              userId: 'user-1',
+              tier: 'pro',
+              integrations: ['strava'],
+              pipelineCount: 1,
+            }),
+          ]),
+          pagination: expect.objectContaining({
+            page: 1,
+            limit: 25,
+            total: 1,
+          }),
+        })
+      );
     });
   });
 
@@ -202,23 +238,19 @@ describe('admin-handler', () => {
         isAdmin: false,
         syncCountThisMonth: 10,
         integrations: {
-          hevy: { apiKey: 'super-secret-api-key-12345' },
+          hevy: { enabled: true, apiKey: 'super-secret-api-key-12345' },
         },
         pipelines: [],
       });
 
-      // Mock count queries
+      // Mock pending inputs query (not completed)
       (mockDb.collection as jest.Mock).mockReturnValue({
-        doc: jest.fn().mockReturnValue({
-          collection: jest.fn().mockReturnValue({
-            count: jest.fn().mockReturnValue({
-              get: jest.fn().mockResolvedValue({ data: () => ({ count: 5 }) }),
-            }),
-          }),
-        }),
         where: jest.fn().mockReturnValue({
-          count: jest.fn().mockReturnValue({
-            get: jest.fn().mockResolvedValue({ data: () => ({ count: 2 }) }),
+          where: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({
+              docs: [{ data: () => ({ activity_id: 'act-1', status: 1 }) }],
+              length: 1,
+            }),
           }),
         }),
       });
@@ -229,8 +261,10 @@ describe('admin-handler', () => {
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         userId: 'user-123',
         tier: 'pro',
+        email: 'test@example.com',
+        displayName: 'Test User',
         activityCount: 5,
-        pendingInputCount: 2,
+        pendingInputCount: 1,
       }));
       // Verify token is masked
       const response = (res.json as jest.Mock).mock.calls[0][0];
