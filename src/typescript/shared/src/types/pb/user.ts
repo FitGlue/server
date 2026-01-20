@@ -29,6 +29,10 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_ACTIVITY_FILTER = 12,
   /** ENRICHER_PROVIDER_LOGIC_GATE - Config inputs: "logic_config" (JSON string with rules, match_mode, on_match, on_no_match) */
   ENRICHER_PROVIDER_LOGIC_GATE = 13,
+  /** ENRICHER_PROVIDER_HEART_RATE_SUMMARY - Config inputs: none (calculates min/avg/max HR from existing heartrate data) */
+  ENRICHER_PROVIDER_HEART_RATE_SUMMARY = 14,
+  /** ENRICHER_PROVIDER_AI_DESCRIPTION - Config inputs: "mode" (title/description/both) - Athlete tier only */
+  ENRICHER_PROVIDER_AI_DESCRIPTION = 15,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }
@@ -117,6 +121,8 @@ export interface UserRecord {
     | undefined;
   /** Stripe customer ID for billing */
   stripeCustomerId: string;
+  /** Waitlist gate - false until admin enables access */
+  accessEnabled: boolean;
 }
 
 export interface PipelineConfig {

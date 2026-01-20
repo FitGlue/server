@@ -42,7 +42,11 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER EnricherProviderType = 12
 	// Config inputs: "logic_config" (JSON string with rules, match_mode, on_match, on_no_match)
 	EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE EnricherProviderType = 13
-	EnricherProviderType_ENRICHER_PROVIDER_MOCK       EnricherProviderType = 99
+	// Config inputs: none (calculates min/avg/max HR from existing heartrate data)
+	EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY EnricherProviderType = 14
+	// Config inputs: "mode" (title/description/both) - Athlete tier only
+	EnricherProviderType_ENRICHER_PROVIDER_AI_DESCRIPTION EnricherProviderType = 15
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK           EnricherProviderType = 99
 )
 
 // Enum value maps for EnricherProviderType.
@@ -61,23 +65,27 @@ var (
 		11: "ENRICHER_PROVIDER_USER_INPUT",
 		12: "ENRICHER_PROVIDER_ACTIVITY_FILTER",
 		13: "ENRICHER_PROVIDER_LOGIC_GATE",
+		14: "ENRICHER_PROVIDER_HEART_RATE_SUMMARY",
+		15: "ENRICHER_PROVIDER_AI_DESCRIPTION",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
-		"ENRICHER_PROVIDER_UNSPECIFIED":       0,
-		"ENRICHER_PROVIDER_FITBIT_HEART_RATE": 1,
-		"ENRICHER_PROVIDER_WORKOUT_SUMMARY":   2,
-		"ENRICHER_PROVIDER_MUSCLE_HEATMAP":    3,
-		"ENRICHER_PROVIDER_SOURCE_LINK":       4,
-		"ENRICHER_PROVIDER_VIRTUAL_GPS":       6,
-		"ENRICHER_PROVIDER_TYPE_MAPPER":       7,
-		"ENRICHER_PROVIDER_PARKRUN":           8,
-		"ENRICHER_PROVIDER_CONDITION_MATCHER": 9,
-		"ENRICHER_PROVIDER_AUTO_INCREMENT":    10,
-		"ENRICHER_PROVIDER_USER_INPUT":        11,
-		"ENRICHER_PROVIDER_ACTIVITY_FILTER":   12,
-		"ENRICHER_PROVIDER_LOGIC_GATE":        13,
-		"ENRICHER_PROVIDER_MOCK":              99,
+		"ENRICHER_PROVIDER_UNSPECIFIED":        0,
+		"ENRICHER_PROVIDER_FITBIT_HEART_RATE":  1,
+		"ENRICHER_PROVIDER_WORKOUT_SUMMARY":    2,
+		"ENRICHER_PROVIDER_MUSCLE_HEATMAP":     3,
+		"ENRICHER_PROVIDER_SOURCE_LINK":        4,
+		"ENRICHER_PROVIDER_VIRTUAL_GPS":        6,
+		"ENRICHER_PROVIDER_TYPE_MAPPER":        7,
+		"ENRICHER_PROVIDER_PARKRUN":            8,
+		"ENRICHER_PROVIDER_CONDITION_MATCHER":  9,
+		"ENRICHER_PROVIDER_AUTO_INCREMENT":     10,
+		"ENRICHER_PROVIDER_USER_INPUT":         11,
+		"ENRICHER_PROVIDER_ACTIVITY_FILTER":    12,
+		"ENRICHER_PROVIDER_LOGIC_GATE":         13,
+		"ENRICHER_PROVIDER_HEART_RATE_SUMMARY": 14,
+		"ENRICHER_PROVIDER_AI_DESCRIPTION":     15,
+		"ENRICHER_PROVIDER_MOCK":               99,
 	}
 )
 
@@ -392,8 +400,10 @@ type UserRecord struct {
 	SyncCountResetAt   *timestamp.Timestamp `protobuf:"bytes,10,opt,name=sync_count_reset_at,json=syncCountResetAt,proto3" json:"sync_count_reset_at,omitempty"`
 	// Stripe customer ID for billing
 	StripeCustomerId string `protobuf:"bytes,11,opt,name=stripe_customer_id,json=stripeCustomerId,proto3" json:"stripe_customer_id,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	// Waitlist gate - false until admin enables access
+	AccessEnabled bool `protobuf:"varint,12,opt,name=access_enabled,json=accessEnabled,proto3" json:"access_enabled,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UserRecord) Reset() {
@@ -501,6 +511,13 @@ func (x *UserRecord) GetStripeCustomerId() string {
 		return x.StripeCustomerId
 	}
 	return ""
+}
+
+func (x *UserRecord) GetAccessEnabled() bool {
+	if x != nil {
+		return x.AccessEnabled
+	}
+	return false
 }
 
 type PipelineConfig struct {
@@ -1611,7 +1628,7 @@ var File_user_proto protoreflect.FileDescriptor
 const file_user_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\x1a\fevents.proto\"\x90\x04\n" +
+	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\x1a\fevents.proto\"\xb7\x04\n" +
 	"\n" +
 	"UserRecord\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x129\n" +
@@ -1627,7 +1644,8 @@ const file_user_proto_rawDesc = "" +
 	"\x15sync_count_this_month\x18\t \x01(\x05R\x12syncCountThisMonth\x12I\n" +
 	"\x13sync_count_reset_at\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\x10syncCountResetAt\x12,\n" +
-	"\x12stripe_customer_id\x18\v \x01(\tR\x10stripeCustomerId\"\xc4\x01\n" +
+	"\x12stripe_customer_id\x18\v \x01(\tR\x10stripeCustomerId\x12%\n" +
+	"\x0eaccess_enabled\x18\f \x01(\bR\raccessEnabled\"\xc4\x01\n" +
 	"\x0ePipelineConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x125\n" +
@@ -1755,7 +1773,7 @@ const file_user_proto_rawDesc = "" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_pipeline_execution_id*\x8d\x04\n" +
+	"\x16_pipeline_execution_id*\xdd\x04\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -1770,7 +1788,9 @@ const file_user_proto_rawDesc = "" +
 	"\x12 \n" +
 	"\x1cENRICHER_PROVIDER_USER_INPUT\x10\v\x12%\n" +
 	"!ENRICHER_PROVIDER_ACTIVITY_FILTER\x10\f\x12 \n" +
-	"\x1cENRICHER_PROVIDER_LOGIC_GATE\x10\r\x12\x1a\n" +
+	"\x1cENRICHER_PROVIDER_LOGIC_GATE\x10\r\x12(\n" +
+	"$ENRICHER_PROVIDER_HEART_RATE_SUMMARY\x10\x0e\x12$\n" +
+	" ENRICHER_PROVIDER_AI_DESCRIPTION\x10\x0f\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

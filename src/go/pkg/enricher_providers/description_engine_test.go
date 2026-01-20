@@ -103,7 +103,7 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 		"Workout Summary:",
 		// Updated volume: 8355 + 960 (Farmers Walk) = 9315
 		// Total sets: 22 + 1 = 23
-		"📊 23 sets • 9315kg volume • 208 reps • 1.5km distance • Heaviest: 140kg (Squat)",
+		"23 sets • 9,315kg volume • 208 reps • 1.5km distance • Heaviest: 140kg (Squat)",
 		"(Exercises with matching numbers are supersets - performed back-to-back)",
 		"([W]=Warmup, [F]=Failure, [D]=Dropset)",
 
@@ -112,24 +112,24 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 		"[W] 10 × 60.0kg",
 		"[F] 6 × 100.0kg",
 		"1️⃣ Dumbbell Row:",
-		"3 x 12 × 40.0kg",
+		"3 × 12 × 40.0kg",
 
-		// Regular exercise
-		"- Squat: 3 x 5 × 140.0kg",
+		// Regular exercise (with placeholder since supersets exist)
+		"⬜ Squat: 3 × 5 × 140.0kg",
 
-		// Distance/duration exercises
-		"- Running: 1000m in 5m",
-		"- Rowing Machine: 500m in 2m",
+		// Distance/duration exercises (with placeholder since supersets exist)
+		"⬜ Running: 1000m in 5:00",
+		"⬜ Rowing Machine: 500m in 2:00",
 
 		// Superset 2
 		"2️⃣ Bicep Curl:",
 		"2️⃣ Tricep Extension:",
 
-		// Bodyweight
-		"- Burpee Box Jump: 20 reps",
+		// Bodyweight (with placeholder since supersets exist)
+		"⬜ Burpee Box Jump: 20 reps",
 
-		// Dropset
-		"- Shoulder Press:",
+		// Dropset (with placeholder since supersets exist)
+		"⬜ Shoulder Press:",
 		"[D] 8 × 25.0kg",
 		"[D] 6 × 20.0kg",
 
@@ -183,7 +183,7 @@ func TestDescriptionEngine_StatsDisabled(t *testing.T) {
 	config := map[string]string{"show_stats": "false"}
 	res, _ := pSummary.Enrich(context.Background(), activity, nil, config, false)
 
-	if strings.Contains(res.Description, "📊") {
+	if strings.Contains(res.Description, "sets •") {
 		t.Error("Expected stats to be hidden when show_stats=false")
 	}
 }

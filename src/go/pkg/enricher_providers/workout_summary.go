@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"golang.org/x/text/language"
+	"golang.org/x/text/message"
 )
 
 // WorkoutSummaryProvider generates a text summary of a strength workout.
@@ -122,7 +124,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 	}
 
 	var sb strings.Builder
-	sb.WriteString("Workout Summary:\n")
+	sb.WriteString("📋 Workout Summary:\n")
 
 	if showStats {
 		var statParts []string
@@ -130,7 +132,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 			statParts = append(statParts, fmt.Sprintf("%d sets", stats.totalSets))
 		}
 		if stats.totalVolume > 0 {
-			statParts = append(statParts, fmt.Sprintf("%.0fkg volume", stats.totalVolume))
+			statParts = append(statParts, fmt.Sprintf("%s volume", formatWithCommas(stats.totalVolume, "kg")))
 		}
 		if stats.totalReps > 0 {
 			statParts = append(statParts, fmt.Sprintf("%d reps", stats.totalReps))
@@ -144,7 +146,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 		}
 
 		if len(statParts) > 0 {
-			sb.WriteString("📊 " + strings.Join(statParts, " • ") + "\n\n")
+			sb.WriteString(strings.Join(statParts, " • ") + "\n\n")
 		}
 	}
 
@@ -207,6 +209,9 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 			if marker, exists := supersetNumbers[supersetId]; exists {
 				supersetMarker = marker + " "
 			}
+		} else if hasSupersets {
+			// Add placeholder for alignment when other exercises have superset markers
+			supersetMarker = "⬜ "
 		}
 
 		sb.WriteString(fmt.Sprintf("- %s%s: ", supersetMarker, b.Name))
@@ -308,47 +313,61 @@ func (p *WorkoutSummaryProvider) formatSet(set *pb.StrengthSet, style pb.Workout
 func (p *WorkoutSummaryProvider) formatDistanceDuration(set *pb.StrengthSet, style pb.WorkoutSummaryFormat) string {
 	hasDistance := set.DistanceMeters > 0
 	hasDuration := set.DurationSeconds > 0
+	hasWeight := set.WeightKg > 0
 
 	switch style {
 	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
-		if hasDistance && hasDuration {
-			return fmt.Sprintf("%.0fm in %s", set.DistanceMeters, formatDuration(set.DurationSeconds))
-		} else if hasDistance {
-			return fmt.Sprintf("%.0fm", set.DistanceMeters)
-		} else {
-			return formatDuration(set.DurationSeconds)
-		}
+		return formatDistanceDurationWeight(set.DistanceMeters, set.DurationSeconds, set.WeightKg, hasDistance, hasDuration, hasWeight, false)
 
 	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE:
-		if hasDistance && hasDuration {
-			return fmt.Sprintf("%.1f meters in %s", set.DistanceMeters, formatDuration(set.DurationSeconds))
-		} else if hasDistance {
-			return fmt.Sprintf("%.1f meters", set.DistanceMeters)
-		} else {
-			return formatDuration(set.DurationSeconds)
-		}
+		return formatDistanceDurationWeight(set.DistanceMeters, set.DurationSeconds, set.WeightKg, hasDistance, hasDuration, hasWeight, true)
 
 	default: // DETAILED
-		if hasDistance && hasDuration {
-			return fmt.Sprintf("%.0fm in %s", set.DistanceMeters, formatDuration(set.DurationSeconds))
-		} else if hasDistance {
-			return fmt.Sprintf("%.0fm", set.DistanceMeters)
-		} else {
-			return formatDuration(set.DurationSeconds)
-		}
+		return formatDistanceDurationWeight(set.DistanceMeters, set.DurationSeconds, set.WeightKg, hasDistance, hasDuration, hasWeight, false)
 	}
 }
 
-// formatDuration formats seconds into a readable duration string (e.g., "5:30")
+// formatDistanceDurationWeight formats distance/duration with optional weight
+func formatDistanceDurationWeight(distance float64, duration int32, weight float64, hasDistance, hasDuration, hasWeight, verbose bool) string {
+	var parts []string
+
+	// Distance part
+	if hasDistance {
+		if verbose {
+			parts = append(parts, fmt.Sprintf("%.1f meters", distance))
+		} else {
+			parts = append(parts, fmt.Sprintf("%.0fm", distance))
+		}
+	}
+
+	// Duration part
+	if hasDuration {
+		if hasDistance {
+			parts = append(parts, fmt.Sprintf("in %s", formatDuration(duration)))
+		} else {
+			parts = append(parts, formatDuration(duration))
+		}
+	}
+
+	// Weight part
+	if hasWeight {
+		if verbose {
+			parts = append(parts, fmt.Sprintf("× %.1fkg", weight))
+		} else {
+			parts = append(parts, fmt.Sprintf("× %.0fkg", weight))
+		}
+	}
+
+	return strings.Join(parts, " ")
+}
+
+// formatDuration formats seconds into a readable duration string (always MM:SS format)
 func formatDuration(seconds int32) string {
 	if seconds < 60 {
-		return fmt.Sprintf("%ds", seconds)
+		return fmt.Sprintf("0:%02d", seconds)
 	}
 	minutes := seconds / 60
 	secs := seconds % 60
-	if secs == 0 {
-		return fmt.Sprintf("%dm", minutes)
-	}
 	return fmt.Sprintf("%d:%02d", minutes, secs)
 }
 
@@ -364,7 +383,13 @@ func (p *WorkoutSummaryProvider) formatCollapsedSets(count int, singleSet string
 		return fmt.Sprintf("%d sets of %s", count, singleSet)
 
 	default: // DETAILED
-		// "3 x 10 × 100.0kg"
-		return fmt.Sprintf("%d x %s", count, singleSet)
+		// "3 × 10 × 100.0kg"
+		return fmt.Sprintf("%d × %s", count, singleSet)
 	}
+}
+
+// formatWithCommas formats a number with thousand separators and appends a unit
+func formatWithCommas(n float64, unit string) string {
+	p := message.NewPrinter(language.English)
+	return p.Sprintf("%.0f%s", n, unit)
 }

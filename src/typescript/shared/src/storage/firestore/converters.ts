@@ -337,6 +337,7 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
     if (model.syncCountThisMonth !== undefined) data.sync_count_this_month = model.syncCountThisMonth;
     if (model.syncCountResetAt !== undefined) data.sync_count_reset_at = model.syncCountResetAt;
     if (model.stripeCustomerId !== undefined) data.stripe_customer_id = model.stripeCustomerId;
+    if (model.accessEnabled !== undefined) data.access_enabled = model.accessEnabled;
     return data;
   },
   fromFirestore(snapshot: QueryDocumentSnapshot): UserRecord {
@@ -354,6 +355,7 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
       syncCountThisMonth: data.sync_count_this_month || 0,
       syncCountResetAt: toDate(data.sync_count_reset_at),
       stripeCustomerId: data.stripe_customer_id || undefined,
+      accessEnabled: data.access_enabled || false,
     };
   }
 };

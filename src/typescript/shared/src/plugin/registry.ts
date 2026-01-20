@@ -316,11 +316,11 @@ registerDestination({
   configSchema: [],
   destinationType: 1, // DestinationType.DESTINATION_STRAVA
   marketingDescription: `
-### Share Your Enhanced Activities
-Upload your enriched activities to Strava automatically. Your AI descriptions, muscle heatmaps, and merged heart rate data will appear on your Strava feed.
+### Share Your Boosted Activities
+Upload your boosted activities to Strava automatically. Your AI descriptions, muscle heatmaps, and merged heart rate data will appear on your Strava feed.
 
 ### How it works
-Once activities pass through your enrichment pipeline, FitGlue uploads them to Strava via the official API. They appear as native Strava activities, complete with all the enhancements you've configured.
+Once activities pass through your Pipeline, FitGlue uploads them to Strava via the official API. They appear as native Strava activities, complete with all the Boosters you've configured.
   `,
   features: [
     '✅ Upload activities to Strava automatically',
@@ -337,7 +337,7 @@ registerDestination({
   id: 'showcase',
   type: PluginType.PLUGIN_TYPE_DESTINATION,
   name: 'Showcase',
-  description: 'Generate a public, shareable link to your enriched activity',
+  description: 'Generate a public, shareable link to your boosted activity',
   icon: '🔗',
   enabled: true,
   requiredIntegrations: [],
@@ -345,7 +345,7 @@ registerDestination({
   destinationType: 2, // DestinationType.DESTINATION_SHOWCASE
   marketingDescription: `
 ### Share Your Magic
-Create beautiful, public links to your enriched activities. Share your workout data—HR graphs, GPS maps, boosters applied—with anyone, no login required.
+Create beautiful, public links to your boosted activities. Share your activity data—HR graphs, GPS maps, Boosters applied—with anyone, no login required.
 
 ### Tiered Retention
 - **Hobbyist**: Showcase links expire after 1 month
@@ -360,7 +360,7 @@ Create beautiful, public links to your enriched activities. Share your workout d
   ],
   transformations: [],
   useCases: [
-    'Share workouts with friends and coaches',
+    'Share activities with friends and coaches',
     'Embed activity summaries in blogs',
     'Create a public fitness portfolio',
   ],
@@ -372,18 +372,18 @@ registerDestination({
   id: 'hevy',
   type: PluginType.PLUGIN_TYPE_DESTINATION,
   name: 'Hevy',
-  description: 'Upload enriched activities to Hevy',
+  description: 'Upload boosted activities to Hevy',
   icon: '🏋️',
   enabled: true,
   requiredIntegrations: ['hevy'],
   configSchema: [],
   destinationType: 3, // DestinationType.DESTINATION_HEVY
   marketingDescription: `
-### Complete Workout Destination
+### Complete Activity Target
 Upload all your activities to Hevy - from strength training to cardio. Perfect for centralizing your complete fitness history.
 
 ### How it works
-Activities pass through your enrichment pipeline and are uploaded to Hevy via the official API. Strength sets, reps, and weights are preserved. Cardio activities (runs, rides, walks) are mapped to Hevy's distance-based exercise templates.
+Activities pass through your Pipeline and are uploaded to Hevy via the official API. Strength sets, reps, and weights are preserved. Cardio activities (runs, rides, walks) are mapped to Hevy's distance-based exercise templates.
 
 ### Smart Template Matching
 Exercise names are fuzzy-matched to Hevy's library. Unknown exercises automatically create custom templates.
@@ -460,14 +460,14 @@ FitGlue analyzes your sets, reps, and weight data, identifies your primary muscl
       field: 'description',
       label: 'Activity Description',
       before: '(empty)',
-      after: `Workout Summary:
-📊 20 sets • 8,240kg volume • 57 reps • Heaviest: 80kg (Bench Press)
+      after: `📋 Workout Summary:
+20 sets • 8,240kg volume • 57 reps • Heaviest: 80kg (Bench Press)
 
-- Bench Press: 4 x 8 × 80.0kg
-- Overhead Press: 4 x 10 × 40.0kg
-- Incline DB Press: 4 x 12 × 24.0kg
-- Lateral Raises: 4 x 15 × 10.0kg
-- Tricep Pushdowns: 4 x 12 × 25.0kg`,
+- Bench Press: 4 × 8 × 80.0kg
+- Overhead Press: 4 × 10 × 40.0kg
+- Incline DB Press: 4 × 12 × 24.0kg
+- Lateral Raises: 4 × 15 × 10.0kg
+- Tricep Pushdowns: 4 × 12 × 25.0kg`,
       visualType: '',
       afterHtml: '',
     },
@@ -567,10 +567,20 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, {
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Fitbit Heart Rate',
   description: 'Adds heart rate data from Fitbit to your activity with smart GPS alignment',
-  icon: '❤️',
+  icon: '🩵',
   enabled: true,
   requiredIntegrations: ['fitbit'],
-  configSchema: [],
+  configSchema: [
+    {
+      key: 'force',
+      label: 'Force Overwrite',
+      description: 'Overwrite existing heart rate data if present',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+  ],
   marketingDescription: `
 ### Unified Heart Data
 Sync your heart rate data from your Fitbit device and overlay it onto your imported activities. This is perfect for when you track a workout (like weightlifting) on one app but wear your Fitbit for health monitoring.
@@ -584,7 +594,7 @@ When your activity has GPS data (from a phone app or watch), FitGlue uses an "El
   features: [
     '✅ Merges heart rate from Fitbit to any activity',
     '✅ Smart GPS alignment handles clock drift between devices',
-    '✅ Perfect for gym workouts where you don\'t start a GPS watch',
+    '✅ Perfect for activities where you don\'t start a GPS watch',
     '✅ Accurate calorie data based on heart rate',
     '✅ Linear interpolation for precise timestamp matching',
     '✅ Seamless background synchronization',
@@ -659,6 +669,14 @@ When an activity is processed, Virtual GPS overlays a pre-defined GPS route onto
       before: 'Indoor workout\nNo location',
       after: '',
       visualType: 'gps-map',
+      afterHtml: '',
+    },
+    {
+      field: 'description',
+      label: 'Virtual Tour Message',
+      before: '(empty)',
+      after: '🗺️ Took a virtual tour of London Hyde Park (GPS generated for this indoor workout)',
+      visualType: '',
       afterHtml: '',
     },
   ],
@@ -825,7 +843,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
       description: 'Template for activity title. Use {location} for event name, {date} for date, {special} for holiday name.',
       fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
       required: false,
-      defaultValue: 'Parkrun @ {location}',
+      defaultValue: '{location}',
       options: [],
       dependsOn: { fieldKey: 'enable_titling', values: ['true'] },
     },
@@ -835,7 +853,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
       description: 'Title pattern for Christmas/New Year. Use {location}, {date}, {special}.',
       fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
       required: false,
-      defaultValue: '🎄 {location} Parkrun',
+      defaultValue: '{location} - {special} Edition',
       options: [],
       dependsOn: { fieldKey: 'enable_titling', values: ['true'] },
     },
@@ -860,7 +878,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
   ],
   marketingDescription: `
 ### Automatic Parkrun Detection & Results
-Automatically detects when your activity is a Parkrun event based on GPS location and time, then enriches it with your official results.
+Automatically detects when your activity is a Parkrun event based on GPS location and time, then boosts it with your official results.
 
 ### How it works
 1. **Detection**: If your Saturday morning run starts near any of 2,500+ Parkrun locations at the right time, FitGlue recognizes it
@@ -965,6 +983,7 @@ Define conditions like "Saturday morning run near the park" and specify a title 
   ],
   transformations: [
     { field: 'title', label: 'Activity Title', before: 'Workout', after: 'Morning Gym Session', visualType: '', afterHtml: '' },
+    { field: 'description', label: 'Custom Description', before: '(empty)', after: '(your template text)', visualType: '', afterHtml: '' },
   ],
   useCases: [
     'Auto-title recurring workouts',
@@ -1231,6 +1250,110 @@ Define rules using fields like activity type, day of week, time, location, or ti
   ],
 });
 
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY, {
+  id: 'heart-rate-summary',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Heart Rate Summary',
+  description: 'Adds min/avg/max heart rate stats to the activity description',
+  icon: '❤️',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Heart Rate Stats at a Glance
+Automatically calculates and appends heart rate statistics to your activity description. See your min, average, and max heart rate without diving into charts.
+
+### How it works
+When your activity has heart rate data (from Fitbit, Apple Watch, or any source), this enricher analyzes all the data points and adds a clean summary showing your minimum, average, and maximum heart rates during the workout.
+  `,
+  features: [
+    '✅ Calculates min/avg/max heart rate',
+    '✅ Appends clean summary to description',
+    '✅ Works with any heart rate source',
+    '✅ No configuration required',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: 'Morning Run\n\n❤️ Heart Rate: 95 bpm min • 145 bpm avg • 178 bpm max',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Quick HR overview on Strava',
+    'Track training zones summary',
+    'Share intensity without graphs',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_DESCRIPTION, {
+  id: 'ai-description',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'AI Description',
+  description: 'Generates AI-powered titles or descriptions for your activities (Athlete tier only)',
+  icon: '✨',
+  enabled: true,
+  requiredIntegrations: [],
+  requiredTier: 'pro',
+  configSchema: [
+    {
+      key: 'mode',
+      label: 'Mode',
+      description: 'What the AI should generate',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'description',
+      options: [
+        { value: 'title', label: 'Title only' },
+        { value: 'description', label: 'Description only' },
+        { value: 'both', label: 'Both title and description' },
+      ],
+    },
+  ],
+  marketingDescription: `
+### AI-Powered Activity Narratives
+Let AI craft engaging titles and descriptions for your workouts. Turn raw data into compelling stories.
+
+### How it works
+When enabled, this Booster uses a large language model to analyze your activity data—type, duration, distance, heart rate, exercises—and generates a human-like title and/or description. Perfect for making your Strava feed more interesting!
+
+### Athlete Tier Only
+This premium feature is exclusively available to Athlete tier subscribers.
+  `,
+  features: [
+    '✅ AI-generated titles and descriptions',
+    '✅ Analyzes activity context and data',
+    '✅ Creates engaging workout narratives',
+    '✅ Athlete tier exclusive',
+  ],
+  transformations: [
+    {
+      field: 'title',
+      label: 'Activity Title (mode: title or both)',
+      before: 'Weight Training',
+      after: 'Iron Therapy: Push Day Edition',
+      visualType: '',
+      afterHtml: '',
+    },
+    {
+      field: 'description',
+      label: 'Activity Description (mode: description or both)',
+      before: '45 min',
+      after: '💪 Crushed an intense upper body session today! Focused on compound movements with progressive overload. Feeling strong!',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Make Strava posts more engaging',
+    'Save time writing descriptions',
+    'Add personality to workout logs',
+  ],
+});
+
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   id: 'mock',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
@@ -1292,7 +1415,7 @@ registerIntegration({
 Hevy is a popular workout tracking app designed for strength training enthusiasts. It lets you log exercises, sets, reps, and weights with a clean, intuitive interface.
 
 ### What FitGlue Does
-FitGlue connects to your Hevy account via API key, allowing your logged workouts to flow into the FitGlue pipeline. From there, you can enhance them with AI summaries, muscle heatmaps, and more — then sync them to Strava or other destinations.
+FitGlue connects to your Hevy account via API key, allowing your logged activities to flow into the FitGlue Pipeline. From there, you can boost them with AI summaries, muscle heatmaps, and more — then sync them to your Targets.
   `,
   features: [
     '✅ Import all your strength workouts automatically',
@@ -1327,11 +1450,11 @@ FitGlue uses secure OAuth — your Fitbit password is never stored.`,
 Fitbit is a leading wearable fitness tracker that monitors your activity, heart rate, sleep, and more. Millions of users rely on Fitbit devices to track their daily health metrics.
 
 ### What FitGlue Does
-FitGlue connects to your Fitbit account via OAuth, enabling you to import activities and heart rate data. Use Fitbit as a source for activities, or overlay heart rate data onto workouts from other sources like Hevy.
+FitGlue connects to your Fitbit account via OAuth, enabling you to import activities and heart rate data. Use Fitbit as a Source for activities, or overlay heart rate data onto activities from other Sources like Hevy.
   `,
   features: [
     '✅ Import activities tracked by your Fitbit device',
-    '✅ Use heart rate data to enrich workouts from other sources',
+    '✅ Use heart rate data to boost activities from other Sources',
     '✅ Secure OAuth connection — no passwords stored',
     '✅ Automatic sync of new activities',
   ],
@@ -1352,7 +1475,7 @@ registerIntegration({
 2. Navigate to **Connections** and click **Connect** on Strava
 3. Sign in to your **Strava account** when redirected
 4. Review and **Accept Permissions** to allow FitGlue to upload activities
-5. You're connected! Enhanced activities will appear on your Strava feed
+5. You're connected! Boosted activities will appear on your Strava feed
 
 FitGlue uses secure OAuth — your Strava password is never stored.`,
   apiKeyLabel: '',
@@ -1362,10 +1485,10 @@ FitGlue uses secure OAuth — your Strava password is never stored.`,
 Strava is the social network for athletes. Share your activities with friends, compete on segments, and track your training progress over time.
 
 ### What FitGlue Does
-FitGlue connects to your Strava account via OAuth and can upload your enriched activities directly. Workouts from Hevy or Fitbit — enhanced with AI descriptions, muscle heatmaps, and heart rate data — appear on your Strava feed automatically.
+FitGlue connects to your Strava account via OAuth and can upload your boosted activities directly. Activities from Hevy or Fitbit — boosted with AI descriptions, muscle heatmaps, and heart rate data — appear on your Strava feed automatically.
   `,
   features: [
-    '✅ Upload enriched activities to Strava automatically',
+    '✅ Upload boosted activities to Strava automatically',
     '✅ AI-generated descriptions appear in your feed',
     '✅ Muscle heatmaps and stats included',
     '✅ Secure OAuth connection',

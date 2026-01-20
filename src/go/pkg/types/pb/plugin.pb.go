@@ -217,8 +217,10 @@ type PluginManifest struct {
 	// URL template for linking to external activities. Use {id} placeholder.
 	// For internal destinations like Showcase, server injects env-specific base URL.
 	ExternalUrlTemplate *string `protobuf:"bytes,15,opt,name=external_url_template,json=externalUrlTemplate,proto3,oneof" json:"external_url_template,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// Required tier to use this plugin (e.g., "pro" for Athlete-only features)
+	RequiredTier  *string `protobuf:"bytes,16,opt,name=required_tier,json=requiredTier,proto3,oneof" json:"required_tier,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PluginManifest) Reset() {
@@ -352,6 +354,13 @@ func (x *PluginManifest) GetUseCases() []string {
 func (x *PluginManifest) GetExternalUrlTemplate() string {
 	if x != nil && x.ExternalUrlTemplate != nil {
 		return *x.ExternalUrlTemplate
+	}
+	return ""
+}
+
+func (x *PluginManifest) GetRequiredTier() string {
+	if x != nil && x.RequiredTier != nil {
+		return *x.RequiredTier
 	}
 	return ""
 }
@@ -974,7 +983,7 @@ var File_plugin_proto protoreflect.FileDescriptor
 
 const file_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\fplugin.proto\x12\afitglue\"\xc2\x05\n" +
+	"\fplugin.proto\x12\afitglue\"\xfe\x05\n" +
 	"\x0ePluginManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x13.fitglue.PluginTypeR\x04type\x12\x12\n" +
@@ -991,10 +1000,12 @@ const file_plugin_proto_rawDesc = "" +
 	"\bfeatures\x18\f \x03(\tR\bfeatures\x12A\n" +
 	"\x0ftransformations\x18\r \x03(\v2\x17.fitglue.TransformationR\x0ftransformations\x12\x1b\n" +
 	"\tuse_cases\x18\x0e \x03(\tR\buseCases\x127\n" +
-	"\x15external_url_template\x18\x0f \x01(\tH\x02R\x13externalUrlTemplate\x88\x01\x01B\x19\n" +
+	"\x15external_url_template\x18\x0f \x01(\tH\x02R\x13externalUrlTemplate\x88\x01\x01\x12(\n" +
+	"\rrequired_tier\x18\x10 \x01(\tH\x03R\frequiredTier\x88\x01\x01B\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
 	"\x11_destination_typeB\x18\n" +
-	"\x16_external_url_template\"\xaa\x01\n" +
+	"\x16_external_url_templateB\x10\n" +
+	"\x0e_required_tier\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +

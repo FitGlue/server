@@ -36,6 +36,21 @@ export class AuthorizationService {
   }
 
   /**
+   * Check if a user has access enabled (not waitlisted).
+   * Admins always have access enabled.
+   */
+  async hasAccessEnabled(userId: string): Promise<boolean> {
+    const user = await this.userStore.get(userId);
+    if (!user) return false;
+
+    // Admins always have access
+    if (user.isAdmin === true) return true;
+
+    // Check explicit access_enabled flag
+    return user.accessEnabled === true;
+  }
+
+  /**
    * Check if the authenticated user can access the target user's resources.
    * Returns true if:
    * - authUserId === targetUserId (owner)

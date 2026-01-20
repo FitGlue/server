@@ -27,6 +27,8 @@ message UserRecord {
   google.protobuf.Timestamp sync_count_reset_at = 10;
   // Stripe customer ID for billing
   string stripe_customer_id = 11;
+  // Waitlist gate - false until admin enables access
+  bool access_enabled = 12;
 }
 
 
@@ -100,6 +102,10 @@ enum EnricherProviderType {
   ENRICHER_PROVIDER_ACTIVITY_FILTER = 12;
   // Config inputs: "logic_config" (JSON string with rules, match_mode, on_match, on_no_match)
   ENRICHER_PROVIDER_LOGIC_GATE = 13;
+  // Config inputs: none (calculates min/avg/max HR from existing heartrate data)
+  ENRICHER_PROVIDER_HEART_RATE_SUMMARY = 14;
+  // Config inputs: "mode" (title/description/both) - Athlete tier only
+  ENRICHER_PROVIDER_AI_DESCRIPTION = 15;
   ENRICHER_PROVIDER_MOCK = 99;
 }
 

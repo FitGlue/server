@@ -307,3 +307,111 @@ func TestFitBitHeartRate_Enrich_LagExhausted(t *testing.T) {
 	}
 
 }
+
+func TestFitBitHeartRate_Enrich_SkipIfExistingHRData(t *testing.T) {
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Create activity WITH existing heart rate data
+	startTime := time.Date(2025, 12, 25, 10, 0, 0, 0, time.UTC)
+	activity := &pb.StandardizedActivity{
+		StartTime: timestamppb.New(startTime),
+		Sessions: []*pb.Session{
+			{
+				TotalElapsedTime: 3600,
+				Laps: []*pb.Lap{
+					{
+						Records: []*pb.Record{
+							{HeartRate: 120}, // Existing HR data
+							{HeartRate: 130},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	user := &pb.UserRecord{
+		UserId: "test-user",
+		Integrations: &pb.UserIntegrations{
+			Fitbit: &pb.FitbitIntegration{
+				Enabled:     true,
+				AccessToken: "test-token",
+			},
+		},
+	}
+
+	// Without force=true, should skip
+	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	if err != nil {
+		t.Fatalf("Expected no error, got: %v", err)
+	}
+
+	if result.Metadata["hr_source"] != "skipped" {
+		t.Errorf("Expected hr_source=skipped, got %s", result.Metadata["hr_source"])
+	}
+	if result.Metadata["force"] != "false" {
+		t.Errorf("Expected force=false in metadata, got %s", result.Metadata["force"])
+	}
+}
+
+func TestFitBitHeartRate_Enrich_ForceOverwrite(t *testing.T) {
+	mockHTTPClient := &http.Client{
+		Transport: &mockTransport{
+			DoFunc: func(req *http.Request) (*http.Response, error) {
+				mockResponse := `{
+					"activities-heart-intraday": {
+						"dataset": [
+							{"time": "10:00:00", "value": 120}
+						]
+					}
+				}`
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(mockResponse)),
+				}, nil
+			},
+		},
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Create activity WITH existing heart rate data
+	startTime := time.Date(2025, 12, 25, 10, 0, 0, 0, time.UTC)
+	activity := &pb.StandardizedActivity{
+		StartTime: timestamppb.New(startTime),
+		Sessions: []*pb.Session{
+			{
+				TotalElapsedTime: 3600,
+				Laps: []*pb.Lap{
+					{
+						Records: []*pb.Record{
+							{HeartRate: 120}, // Existing HR data
+						},
+					},
+				},
+			},
+		},
+	}
+
+	user := &pb.UserRecord{
+		UserId: "test-user",
+		Integrations: &pb.UserIntegrations{
+			Fitbit: &pb.FitbitIntegration{
+				Enabled:     true,
+				AccessToken: "test-token",
+			},
+		},
+	}
+
+	// With force=true, should proceed to fetch from Fitbit
+	result, err := provider.EnrichWithClient(context.Background(), activity, user, map[string]string{"force": "true"}, mockHTTPClient, false)
+	if err != nil {
+		t.Fatalf("Expected no error with force=true, got: %v", err)
+	}
+
+	if result.Metadata["hr_source"] != "fitbit" {
+		t.Errorf("Expected hr_source=fitbit with force=true, got %s", result.Metadata["hr_source"])
+	}
+}

@@ -97,6 +97,7 @@ export class UserService {
             syncCountThisMonth: 0,
             syncCountResetAt: now,
             stripeCustomerId: '', // Will be set when user subscribes
+            accessEnabled: false, // Waitlisted until admin enables
         });
     }
 

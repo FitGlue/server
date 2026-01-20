@@ -47,14 +47,29 @@ type Config struct {
 }
 
 func (p *LogicGateProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
-	cfgStr, ok := inputs["logic_config"]
-	if !ok || strings.TrimSpace(cfgStr) == "" {
-		return nil, fmt.Errorf("logic_gate: missing logic_config input")
-	}
 	var cfg Config
-	if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {
-		return nil, fmt.Errorf("logic_gate: invalid JSON config: %w", err)
+
+	// Check for legacy single-JSON config
+	cfgStr, hasLegacy := inputs["logic_config"]
+	if hasLegacy && strings.TrimSpace(cfgStr) != "" {
+		if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {
+			return nil, fmt.Errorf("logic_gate: invalid JSON config: %w", err)
+		}
+	} else {
+		// Build config from individual fields (registry UI)
+		cfg.MatchMode = inputs["match_mode"]
+		cfg.OnMatch = inputs["on_match"]
+		cfg.OnNoMatch = inputs["on_no_match"]
+
+		// Parse rules JSON array
+		rulesStr := inputs["rules"]
+		if rulesStr != "" && rulesStr != "[]" {
+			if err := json.Unmarshal([]byte(rulesStr), &cfg.Rules); err != nil {
+				return nil, fmt.Errorf("logic_gate: invalid rules JSON: %w", err)
+			}
+		}
 	}
+
 	// Default match mode is "all"
 	if cfg.MatchMode == "" {
 		cfg.MatchMode = "all"

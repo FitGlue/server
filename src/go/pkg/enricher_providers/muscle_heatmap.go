@@ -174,7 +174,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 	})
 
 	var sb strings.Builder
-	sb.WriteString("Muscle Heatmap:\n")
+	sb.WriteString("🔥 Muscle Heatmap:\n")
 
 	for _, k := range keys {
 		score := volumeScores[k]

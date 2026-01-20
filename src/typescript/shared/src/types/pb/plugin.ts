@@ -83,7 +83,11 @@ export interface PluginManifest {
    * URL template for linking to external activities. Use {id} placeholder.
    * For internal destinations like Showcase, server injects env-specific base URL.
    */
-  externalUrlTemplate?: string | undefined;
+  externalUrlTemplate?:
+    | string
+    | undefined;
+  /** Required tier to use this plugin (e.g., "pro" for Athlete-only features) */
+  requiredTier?: string | undefined;
 }
 
 /** Transformation shows a before/after example of what a plugin does to a field */

@@ -45,6 +45,19 @@ func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedA
 
 // EnrichWithClient allows HTTP client injection for testing
 func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client, doNotRetry bool) (*EnrichmentResult, error) {
+	// 0. Check force option - skip if activity already has heartrate data and force is not set
+	forceOverwrite := inputs["force"] == "true"
+	if !forceOverwrite && hasExistingHeartRateData(activity) {
+		slog.Info("Skipping Fitbit HR enrichment: activity already has heartrate data and force=false")
+		return &EnrichmentResult{
+			Metadata: map[string]string{
+				"hr_source":     "skipped",
+				"status_detail": "Activity already has heartrate data",
+				"force":         "false",
+			},
+		}, nil
+	}
+
 	// 1. Check Credentials
 	if user.Integrations == nil || user.Integrations.Fitbit == nil || !user.Integrations.Fitbit.Enabled {
 		return nil, fmt.Errorf("fitbit integration not enabled")
@@ -273,6 +286,20 @@ func buildStreamIndexBased(dataset []struct {
 	}
 
 	return stream
+}
+
+// hasExistingHeartRateData checks if the activity already has heart rate data in its records
+func hasExistingHeartRateData(activity *pb.StandardizedActivity) bool {
+	for _, session := range activity.Sessions {
+		for _, lap := range session.Laps {
+			for _, record := range lap.Records {
+				if record.HeartRate > 0 {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 // mergeMetadata combines two metadata maps, with second map taking precedence

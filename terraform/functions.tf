@@ -139,12 +139,6 @@ resource "google_storage_bucket_object" "user_profile_handler_zip" {
   source = "/tmp/fitglue-function-zips/user-profile-handler.zip"
 }
 
-resource "google_storage_bucket_object" "waitlist_handler_zip" {
-  name   = "waitlist-handler-${filemd5("/tmp/fitglue-function-zips/waitlist-handler.zip")}.zip"
-  bucket = google_storage_bucket.source_bucket.name
-  source = "/tmp/fitglue-function-zips/waitlist-handler.zip"
-}
-
 
 # ----------------- Enricher Service -----------------
 resource "google_cloudfunctions2_function" "enricher" {
@@ -172,6 +166,14 @@ resource "google_cloudfunctions2_function" "enricher" {
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
     }
+
+    secret_environment_variables {
+      key        = "GEMINI_API_KEY"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.gemini_api_key.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 
@@ -220,6 +222,14 @@ resource "google_cloudfunctions2_function" "enricher_lag" {
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
     }
+
+    secret_environment_variables {
+      key        = "GEMINI_API_KEY"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.gemini_api_key.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 
@@ -599,44 +609,6 @@ resource "google_cloudfunctions_function" "auth_on_create" {
   }
 
   service_account_email = google_service_account.cloud_function_sa.email
-}
-
-# ----------------- Waitlist Handler -----------------
-resource "google_cloudfunctions2_function" "waitlist_handler" {
-  name        = "waitlist-handler"
-  location    = var.region
-  description = "Public waitlist submission handler"
-
-  build_config {
-    runtime     = "nodejs20"
-    entry_point = "waitlistHandler"
-    source {
-      storage_source {
-        bucket = google_storage_bucket.source_bucket.name
-        object = google_storage_bucket_object.waitlist_handler_zip.name
-      }
-    }
-    environment_variables = {}
-  }
-
-  service_config {
-    available_memory = "256Mi"
-    timeout_seconds  = 60
-    environment_variables = {
-      LOG_LEVEL            = var.log_level
-      GOOGLE_CLOUD_PROJECT = var.project_id
-    }
-    service_account_email = google_service_account.cloud_function_sa.email
-  }
-}
-
-# Public access for waitlist
-resource "google_cloud_run_service_iam_member" "waitlist_handler_invoker" {
-  project  = google_cloudfunctions2_function.waitlist_handler.project
-  location = google_cloudfunctions2_function.waitlist_handler.location
-  service  = google_cloudfunctions2_function.waitlist_handler.name
-  role     = "roles/run.invoker"
-  member   = "allUsers"
 }
 
 # ----------------- Inputs Handler -----------------

@@ -36,6 +36,8 @@ message PluginManifest {
   // URL template for linking to external activities. Use {id} placeholder.
   // For internal destinations like Showcase, server injects env-specific base URL.
   optional string external_url_template = 15;
+  // Required tier to use this plugin (e.g., "pro" for Athlete-only features)
+  optional string required_tier = 16;
 }
 
 // Transformation shows a before/after example of what a plugin does to a field

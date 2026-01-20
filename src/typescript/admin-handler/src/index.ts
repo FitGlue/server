@@ -138,6 +138,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
           tier: data.tier || 'free',
           trialEndsAt: data.trialEndsAt?.toDate?.()?.toISOString() || data.trialEndsAt,
           isAdmin: data.isAdmin || false,
+          accessEnabled: data.access_enabled || false,
           syncCountThisMonth: data.syncCountThisMonth || 0,
           stripeCustomerId: data.stripeCustomerId || null,
           integrations,
@@ -262,6 +263,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         tier: user.tier || 'free',
         trialEndsAt: user.trialEndsAt?.toISOString?.() || user.trialEndsAt,
         isAdmin: user.isAdmin || false,
+        accessEnabled: user.accessEnabled || false,
         syncCountThisMonth: user.syncCountThisMonth || 0,
         syncCountResetAt: user.syncCountResetAt?.toISOString?.() || user.syncCountResetAt,
         stripeCustomerId: user.stripeCustomerId || null,
@@ -284,12 +286,13 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   const userUpdateMatch = subPath.match(/^\/users\/([^/]+)$/);
   if (userUpdateMatch && req.method === 'PATCH') {
     const targetUserId = userUpdateMatch[1];
-    const { tier, isAdmin, trialEndsAt, syncCountThisMonth } = req.body;
+    const { tier, isAdmin, trialEndsAt, syncCountThisMonth, accessEnabled } = req.body;
 
     try {
       const updates: Record<string, unknown> = {};
       if (tier !== undefined) updates.tier = tier;
       if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+      if (accessEnabled !== undefined) updates.access_enabled = accessEnabled;
       if (trialEndsAt !== undefined) {
         updates.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null;
       }

@@ -35,3 +35,10 @@ variable "base_url" {
   description = "Base URL for the application (used for OAuth redirects)"
   type        = string
 }
+
+variable "gemini_api_key" {
+  description = "Google Gemini API key for AI description enricher"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

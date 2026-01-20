@@ -8,7 +8,6 @@
     "fitbit-oauth-handler",
     "fitbit-handler",
     "auth-hooks",
-    "waitlist-handler",
     "mcp-server",
     "inputs-handler",
     "activities-handler",
