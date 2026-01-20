@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.7.0](https://github.com/FitGlue/server/compare/v1.6.0...v1.7.0) (2026-01-20)
+
+
+### Features
+
+* Add execution logging controls including service-specific disabling, output truncation, and a CLI command to clean logs by service. ([4ceea0b](https://github.com/FitGlue/server/commit/4ceea0bcfa942df3c3bd4659d5414b5d2e1dcb9e))
+* add new admin API handler for user management and platform statistics. ([2a0c047](https://github.com/FitGlue/server/commit/2a0c047bb50472f8bd43e4951544ca137c3b567a))
+* admin capability updates ([185a89b](https://github.com/FitGlue/server/commit/185a89ba8f2c1da916cd6b47679b4a364d24a17d))
+* Enhance CloudEvent publisher with extensions, add PENDING_STRAVA_PROCESSING status, and refactor repost-handler to publish to a central router topic. ([a17b69b](https://github.com/FitGlue/server/commit/a17b69b097e04a23cc6c703cc5a017fbcbf02fa2))
+* Implement activity repost logic for Go uploaders and standardize TypeScript Cloud Function build entry points. ([8562e0d](https://github.com/FitGlue/server/commit/8562e0dc40fcd51ece6384b6b8ff237bebbe2430))
+* Implement email prefix fallback for showcase owner display names and disable execution logging for several handlers. ([98d8978](https://github.com/FitGlue/server/commit/98d897864dcf3d4b7402b94f06be7e7445ac2ce3))
+* Implement per-handler TypeScript Cloud Function deployments by adding a new build script and updating the Makefile and Terraform configurations to use individual function ZIPs. ([d16cd3f](https://github.com/FitGlue/server/commit/d16cd3f2fa65586eae435c4481bea61e4e8e6742))
+* Implement standardized HTTP error logging with response body capture for Go and TypeScript HTTP clients. ([126dcf1](https://github.com/FitGlue/server/commit/126dcf12475bd5125d2eec86659e2ceb0d023424))
+
+
+### Bug Fixes
+
+* make activities-handler return ([429861b](https://github.com/FitGlue/server/commit/429861b8148a838c8cb95c76258727c953e3bf3a))
+* repost-handler cloud event format publish ([0fb4a9f](https://github.com/FitGlue/server/commit/0fb4a9f98591c18a2e8de26309fff74599a9bd79))
+* repost-handler not parsing previous events correctly ([7d01a48](https://github.com/FitGlue/server/commit/7d01a483c42543e7eecc2b7e5e11694f4cf327d7))
+
 ## [1.6.0](https://github.com/FitGlue/server/compare/v1.5.0...v1.6.0) (2026-01-19)
 
 
