@@ -36,9 +36,3 @@ variable "base_url" {
   type        = string
 }
 
-variable "gemini_api_key" {
-  description = "Google Gemini API key for AI description enricher"
-  type        = string
-  sensitive   = true
-  default     = ""
-}

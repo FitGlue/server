@@ -40,3 +40,10 @@ resource "google_project_iam_member" "web_deployer_run_viewer" {
   role    = "roles/run.viewer"
   member  = "serviceAccount:circleci-web-deployer@${var.project_id}.iam.gserviceaccount.com"
 }
+
+# Service Usage Consumer - allows Firebase CLI to check API enablement status during deploy
+resource "google_project_iam_member" "web_deployer_service_usage_consumer" {
+  project = var.project_id
+  role    = "roles/serviceusage.serviceUsageConsumer"
+  member  = "serviceAccount:circleci-web-deployer@${var.project_id}.iam.gserviceaccount.com"
+}

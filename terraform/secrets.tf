@@ -83,8 +83,4 @@ resource "google_secret_manager_secret" "gemini_api_key" {
   }
 }
 
-resource "google_secret_manager_secret_version" "gemini_api_key" {
-  count       = var.gemini_api_key != "" ? 1 : 0
-  secret      = google_secret_manager_secret.gemini_api_key.id
-  secret_data = var.gemini_api_key
-}
+# Note: Secret version is created via scripts/configure_gemini_secret.sh
