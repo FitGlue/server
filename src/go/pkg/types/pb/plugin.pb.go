@@ -214,8 +214,11 @@ type PluginManifest struct {
 	Features             []string          `protobuf:"bytes,12,rep,name=features,proto3" json:"features,omitempty"`                                                     // List of features/capabilities to display
 	Transformations      []*Transformation `protobuf:"bytes,13,rep,name=transformations,proto3" json:"transformations,omitempty"`                                       // Before/after examples showing what the plugin does
 	UseCases             []string          `protobuf:"bytes,14,rep,name=use_cases,json=useCases,proto3" json:"use_cases,omitempty"`                                     // List of use cases (e.g., "Share detailed workout logs")
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// URL template for linking to external activities. Use {id} placeholder.
+	// For internal destinations like Showcase, server injects env-specific base URL.
+	ExternalUrlTemplate *string `protobuf:"bytes,15,opt,name=external_url_template,json=externalUrlTemplate,proto3,oneof" json:"external_url_template,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *PluginManifest) Reset() {
@@ -344,6 +347,13 @@ func (x *PluginManifest) GetUseCases() []string {
 		return x.UseCases
 	}
 	return nil
+}
+
+func (x *PluginManifest) GetExternalUrlTemplate() string {
+	if x != nil && x.ExternalUrlTemplate != nil {
+		return *x.ExternalUrlTemplate
+	}
+	return ""
 }
 
 // Transformation shows a before/after example of what a plugin does to a field
@@ -964,7 +974,7 @@ var File_plugin_proto protoreflect.FileDescriptor
 
 const file_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\fplugin.proto\x12\afitglue\"\xef\x04\n" +
+	"\fplugin.proto\x12\afitglue\"\xc2\x05\n" +
 	"\x0ePluginManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x13.fitglue.PluginTypeR\x04type\x12\x12\n" +
@@ -980,9 +990,11 @@ const file_plugin_proto_rawDesc = "" +
 	"\x15marketing_description\x18\v \x01(\tR\x14marketingDescription\x12\x1a\n" +
 	"\bfeatures\x18\f \x03(\tR\bfeatures\x12A\n" +
 	"\x0ftransformations\x18\r \x03(\v2\x17.fitglue.TransformationR\x0ftransformations\x12\x1b\n" +
-	"\tuse_cases\x18\x0e \x03(\tR\buseCasesB\x19\n" +
+	"\tuse_cases\x18\x0e \x03(\tR\buseCases\x127\n" +
+	"\x15external_url_template\x18\x0f \x01(\tH\x02R\x13externalUrlTemplate\x88\x01\x01B\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
-	"\x11_destination_type\"\xaa\x01\n" +
+	"\x11_destination_typeB\x18\n" +
+	"\x16_external_url_template\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +

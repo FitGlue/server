@@ -330,6 +330,7 @@ Once activities pass through your enrichment pipeline, FitGlue uploads them to S
   ],
   transformations: [],
   useCases: [],
+  externalUrlTemplate: 'https://www.strava.com/activities/{id}',
 });
 
 registerDestination({
@@ -363,6 +364,8 @@ Create beautiful, public links to your enriched activities. Share your workout d
     'Embed activity summaries in blogs',
     'Create a public fitness portfolio',
   ],
+  // Note: externalUrlTemplate is injected by registry-handler based on environment
+  externalUrlTemplate: '',
 });
 
 registerDestination({
@@ -397,6 +400,7 @@ Exercise names are fuzzy-matched to Hevy's library. Unknown exercises automatica
     'Centralize gym workouts from multiple sources',
     'Track Fitbit activities in Hevy',
   ],
+  externalUrlTemplate: 'https://hevy.com/workouts/{id}',
 });
 
 // ============================================================================

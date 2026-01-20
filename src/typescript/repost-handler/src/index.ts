@@ -198,12 +198,23 @@ async function handleMissedDestination(req: Request, res: Response, ctx: Framewo
   // Generate new execution ID
   const newPipelineExecutionId = generateRepostExecutionId(activityId);
 
-  // Update the event with new destination and execution ID (snake_case for proto JSON)
+  // CRITICAL: Explicitly remove original destinations to prevent leakage
+  // The spread operator should overwrite, but we're being defensive here
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { destinations: _originalDests, Destinations: _originalDestsAlt, ...eventWithoutDests } = enrichedEvent as Record<string, unknown>;
+
+  // Update the event with ONLY the new destination (snake_case for proto JSON)
   const repostData: Record<string, unknown> = {
-    ...enrichedEvent,
-    destinations: [destEnum],
+    ...eventWithoutDests,
+    destinations: [destEnum],  // ONLY the missed destination
     pipeline_execution_id: newPipelineExecutionId,
   };
+
+  ctx.logger.info('Constructed repost data', {
+    originalDestinations: enrichedEvent.destinations,
+    newDestinations: [destEnum],
+    activityId,
+  });
 
   // Wrap in CloudEvent envelope matching Go enricher format
   const cloudEvent = createCloudEvent(repostData);
@@ -283,10 +294,14 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
   // Check if destination already has an external ID (use update method)
   const hasExistingId = activity.destinations && activity.destinations[destKey];
 
-  // Update the event with destination and execution ID (snake_case for proto JSON)
+  // CRITICAL: Explicitly remove original destinations to prevent leakage
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { destinations: _originalDests, Destinations: _originalDestsAlt, ...eventWithoutDests } = enrichedEvent as Record<string, unknown>;
+
+  // Update the event with ONLY the retry destination (snake_case for proto JSON)
   const repostData: Record<string, unknown> = {
-    ...enrichedEvent,
-    destinations: [destEnum],
+    ...eventWithoutDests,
+    destinations: [destEnum],  // ONLY the retry destination
     pipeline_execution_id: newPipelineExecutionId,
   };
 

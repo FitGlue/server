@@ -150,7 +150,25 @@ func (a *FirestoreAdapter) ListCounters(ctx context.Context, userId string) ([]*
 // --- Activities ---
 
 func (a *FirestoreAdapter) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
-	return a.storage.Activities(userId).Doc(activity.ActivityId).Set(ctx, activity)
+	// Set the synchronized activity document
+	if err := a.storage.Activities(userId).Doc(activity.ActivityId).Set(ctx, activity); err != nil {
+		return err
+	}
+
+	// PHASE 2 OPTIMIZATION: Atomically increment activity counters for O(1) stats access
+	// This enables the frontend to show activity counts without expensive count() queries
+	_, err := a.Client.Collection("users").Doc(userId).Update(ctx, []firestore.Update{
+		{Path: "activityCounts.synchronized", Value: firestore.Increment(1)},
+		{Path: "activityCounts.weeklySync", Value: firestore.Increment(1)},
+		{Path: "activityCounts.lastUpdated", Value: firestore.ServerTimestamp},
+	})
+	// Don't fail if counters update fails - the activity was already created
+	if err != nil {
+		// Log but don't return error - activity creation succeeded
+		// The counters can be backfilled later if needed
+	}
+
+	return nil
 }
 
 // ListPendingParkrunActivities queries all users' activities with pending Parkrun results

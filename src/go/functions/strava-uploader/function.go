@@ -82,6 +82,17 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 
 		fwCtx.Logger.Info("Starting upload", "activity_id", eventPayload.ActivityId, "pipeline_id", eventPayload.PipelineId)
 
+		// 1. Loop Prevention Check
+		// Skip if this activity originated from Strava (would create a loop)
+		if isLoopOrigin(&eventPayload) {
+			fwCtx.Logger.Info("Skipping Strava upload - activity originated from Strava",
+				"activity_id", eventPayload.ActivityId)
+			return map[string]interface{}{
+				"status": "SKIPPED",
+				"reason": "loop_prevention",
+			}, nil
+		}
+
 		// Initialize OAuth HTTP Client if not provided (for testing)
 		if httpClient == nil {
 			tokenSource := oauth.NewFirestoreTokenSource(fwCtx.Service, eventPayload.UserId, "strava")
@@ -97,6 +108,25 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// --- CREATE MODE ---
 		return handleStravaCreate(ctx, httpClient, &eventPayload, fwCtx)
 	}
+}
+
+// isLoopOrigin checks if the activity originated from Strava (as destination)
+// Note: Strava is currently destination-only in FitGlue (no SOURCE_STRAVA webhook handler),
+// so we only check origin_destination metadata. When Strava becomes a source, add SOURCE_STRAVA check.
+func isLoopOrigin(event *pb.EnrichedActivityEvent) bool {
+	// Check enrichment_metadata for origin_destination marker
+	if event.EnrichmentMetadata != nil {
+		if origin, ok := event.EnrichmentMetadata["origin_destination"]; ok && origin == "strava" {
+			return true
+		}
+	}
+
+	// Future: Add SOURCE_STRAVA check when Strava webhook handler is implemented
+	// if event.Source == pb.ActivitySource_SOURCE_STRAVA {
+	//     return true
+	// }
+
+	return false
 }
 
 // handleStravaCreate uploads a new activity to Strava (POST /uploads)
@@ -341,6 +371,9 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"strava_activity_id": stravaIDStr,
 			"update_skipped":     true,
 			"reason":             "no_changes",
+			"activity_name":      eventPayload.Name,
+			"activity_type":      eventPayload.ActivityType.String(),
+			"description":        eventPayload.Description,
 		}, nil
 	}
 
@@ -396,6 +429,9 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		"strava_activity_id": stravaIDStr,
 		"updated_fields":     updateBody,
 		"mode":               "UPDATE",
+		"activity_name":      eventPayload.Name,
+		"activity_type":      eventPayload.ActivityType.String(),
+		"description":        mergedDescription,
 	}, nil
 }
 

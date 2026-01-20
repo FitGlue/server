@@ -36,7 +36,7 @@ const ERROR_RULES = new Set([
   // Infrastructure
   'I1', 'I2', 'I3', 'I4', 'I5',
   // Go
-  'G3', 'G4', 'G6', 'G8', 'G9', 'G10',
+  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11',
   // TypeScript
   'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12',
   // Cross-Language
@@ -1104,9 +1104,27 @@ function checkLoopPrevention(): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  // Uploaders exempt from loop prevention (internal only, no external webhooks)
+  const EXEMPT_UPLOADERS = ['showcase-uploader'];
+
+  // Read activity.proto to know which sources actually exist
+  const activityProtoPath = path.join(PROTO_DIR, 'activity.proto');
+  let existingSources: string[] = [];
+  if (fs.existsSync(activityProtoPath)) {
+    const protoContent = fs.readFileSync(activityProtoPath, 'utf-8');
+    const sourcePattern = /SOURCE_(\w+)\s*=/g;
+    let match;
+    while ((match = sourcePattern.exec(protoContent)) !== null) {
+      if (match[1] !== 'UNKNOWN' && match[1] !== 'TEST') {
+        existingSources.push(match[1].toLowerCase());
+      }
+    }
+  }
+
   const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
   const uploaderDirs = getDirectories(goFunctionsDir)
-    .filter(d => d.endsWith('-uploader') && !d.includes('mock'));
+    .filter(d => d.endsWith('-uploader') && !d.includes('mock'))
+    .filter(d => !EXEMPT_UPLOADERS.includes(d));
 
   for (const dir of uploaderDirs) {
     const functionPath = path.join(goFunctionsDir, dir, 'function.go');
@@ -1115,8 +1133,11 @@ function checkLoopPrevention(): CheckResult {
     const content = fs.readFileSync(functionPath, 'utf-8');
     const uploaderName = dir.replace('-uploader', '');
 
-    // Check for source-based loop prevention (e.g., SOURCE_HEVY check)
+    // Check if this destination also has a SOURCE enum (bidirectional like Hevy)
     const sourceEnumName = `SOURCE_${uploaderName.toUpperCase()}`;
+    const hasSourceInProto = existingSources.includes(uploaderName);
+
+    // Check for source-based loop prevention (e.g., SOURCE_HEVY check)
     const hasSourceCheck = content.includes(sourceEnumName) ||
       content.includes(`ActivitySource_${sourceEnumName}`);
 
@@ -1124,15 +1145,19 @@ function checkLoopPrevention(): CheckResult {
     const hasOriginCheck =
       content.includes('origin_destination') ||
       content.includes('OriginDestination') ||
-      content.includes('EnrichmentMetadata');
+      content.includes('isLoopOrigin'); // Common helper function pattern
 
-    // At least one form of loop prevention should exist
-    if (!hasSourceCheck && !hasOriginCheck) {
-      errors.push(`Uploader '${dir}' lacks loop prevention (no ${sourceEnumName} or origin_destination check)`);
-    } else if (!hasSourceCheck) {
-      warnings.push(`Uploader '${dir}' may not check source for self-loop prevention`);
-    } else if (!hasOriginCheck) {
-      warnings.push(`Uploader '${dir}' may not check origin_destination metadata`);
+    // origin_destination check is ALWAYS required
+    if (!hasOriginCheck) {
+      errors.push(`Uploader '${dir}' missing origin_destination check for loop prevention`);
+    }
+
+    // SOURCE check is required ONLY if the source enum exists in proto
+    if (hasSourceInProto && !hasSourceCheck) {
+      errors.push(`Uploader '${dir}' missing ${sourceEnumName} check for loop prevention (source exists in proto)`);
+    } else if (!hasSourceInProto && !hasSourceCheck) {
+      // Source doesn't exist - this is expected, just note it
+      // (no error, destination-only platform)
     }
   }
 
@@ -1143,6 +1168,106 @@ function checkLoopPrevention(): CheckResult {
     warnings
   };
 }
+
+// ============================================================================
+// Check 13: Destination Return Fields (G11)
+// ============================================================================
+
+/**
+ * Validates that Go destination uploaders return required fields in their
+ * success responses for proper UI display:
+ * - activity_name (for execution trace display)
+ * - activity_type (for activity type badge)
+ * - description (optional but recommended)
+ */
+function checkDestinationReturnFields(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const REQUIRED_FIELDS = ['activity_id', 'activity_name', 'activity_type'];
+  const RECOMMENDED_FIELDS = ['description'];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  const uploaderDirs = getDirectories(goFunctionsDir)
+    .filter(d => d.endsWith('-uploader') && !d.includes('mock'));
+
+  for (const dir of uploaderDirs) {
+    const functionPath = path.join(goFunctionsDir, dir, 'function.go');
+    if (!fs.existsSync(functionPath)) continue;
+
+    const content = fs.readFileSync(functionPath, 'utf-8');
+
+    // Find all return map[string]interface{} blocks with "status": "SUCCESS"
+    // A simplified approach: check if file contains the required field keys at all
+    const hasStatus = content.includes('"status"') && content.includes('"SUCCESS"');
+    if (!hasStatus) continue; // Skip if no success return
+
+    for (const field of REQUIRED_FIELDS) {
+      // Check for field in return statement (quoted key)
+      if (!content.includes(`"${field}"`)) {
+        errors.push(`Uploader '${dir}' missing required return field '${field}' for UI display`);
+      }
+    }
+
+    for (const field of RECOMMENDED_FIELDS) {
+      if (!content.includes(`"${field}"`)) {
+        warnings.push(`Uploader '${dir}' missing recommended return field '${field}'`);
+      }
+    }
+  }
+
+  return {
+    name: 'Destination Return Fields (G11)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check: Destination URL Template Coverage (G12)
+// ============================================================================
+
+/**
+ * Validates that all enabled destination registrations have externalUrlTemplate defined.
+ * This ensures the frontend can construct external activity URLs for all destinations.
+ */
+function checkDestinationUrlTemplates(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+  if (!fs.existsSync(registryPath)) {
+    return { name: 'Destination URL Templates (G12)', passed: true, errors: [], warnings: ['Registry file not found'] };
+  }
+
+  const content = fs.readFileSync(registryPath, 'utf-8');
+
+  // Find all registerDestination calls
+  const destRegex = /registerDestination\(\{[\s\S]*?id:\s*['"](\w+)['"][\s\S]*?enabled:\s*(true|false)[\s\S]*?\}\);/g;
+  let match;
+
+  while ((match = destRegex.exec(content)) !== null) {
+    const destId = match[1];
+    const enabled = match[2] === 'true';
+    const block = match[0];
+
+    if (enabled) {
+      // Check if externalUrlTemplate is defined (even if empty for env-specific injection)
+      if (!block.includes('externalUrlTemplate')) {
+        errors.push(`Destination '${destId}' is enabled but missing externalUrlTemplate - add URL template for external activity links`);
+      }
+    }
+  }
+
+  return {
+    name: 'Destination URL Templates (G12)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
 
 // ============================================================================
 // Check 14: Environment Variable Access (T8)
@@ -2364,12 +2489,17 @@ function checkUploaderExternalIdTracking(): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  // Uploaders exempt from this check
+  const EXEMPT_UPLOADERS = ['mock-uploader', 'showcase-uploader']; // showcase is one-shot destination
+
   const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
   if (!fs.existsSync(goFunctionsDir)) {
     return { name: 'Uploader External ID Tracking (G5)', passed: true, errors, warnings };
   }
 
-  const uploaderDirs = getDirectories(goFunctionsDir).filter(d => d.includes('uploader'));
+  const uploaderDirs = getDirectories(goFunctionsDir)
+    .filter(d => d.includes('uploader'))
+    .filter(d => !EXEMPT_UPLOADERS.includes(d));
 
   for (const dir of uploaderDirs) {
     const functionPath = path.join(goFunctionsDir, dir, 'function.go');
@@ -2377,12 +2507,26 @@ function checkUploaderExternalIdTracking(): CheckResult {
 
     const content = fs.readFileSync(functionPath, 'utf-8');
 
-    // Check for external ID handling in uploaders
-    const hasExternalIdField = /ExternalId|externalId|external_id/.test(content);
-    const storesExternalId = /SetExternalId|setExternalId|\.ExternalId\s*=/.test(content);
+    // Check for external ID handling via Destinations map pattern:
+    // 1. Stores external ID in SynchronizedActivity.Destinations (or UpdateSynchronizedActivity)
+    // 2. Retrieves external ID for update checks (syncActivity.Destinations or existing check)
+    const storesInDestinations =
+      /Destinations:\s*map\[string\]string\{/.test(content) ||
+      /destinations.*:\s*\{/.test(content) ||
+      /SetSynchronizedActivity/.test(content) ||
+      /UpdateSynchronizedActivity/.test(content);
 
-    if (!hasExternalIdField || !storesExternalId) {
-      warnings.push(`Uploader '${dir}' may not track external IDs for updates`);
+    const retrievesForUpdates =
+      /syncActivity\.Destinations/.test(content) ||
+      /\.Destinations\[/.test(content) ||
+      /checkExisting/.test(content);
+
+    if (!storesInDestinations) {
+      warnings.push(`Uploader '${dir}' may not store external ID in SynchronizedActivity.Destinations`);
+    }
+
+    if (!retrievesForUpdates) {
+      warnings.push(`Uploader '${dir}' may not check for existing external ID for updates`);
     }
   }
 
@@ -3111,6 +3255,8 @@ function main(): void {
         { id: 'G8', fn: () => ({ ...checkGoTestCoverage(), name: 'G8: Test File Coverage' }) },
         { id: 'G9', fn: () => ({ ...checkDestinationUploaderPattern(), name: 'G9: Destination Uploader Pattern' }) },
         { id: 'G10', fn: () => ({ ...checkLoopPrevention(), name: 'G10: Loop Prevention' }) },
+        { id: 'G11', fn: () => ({ ...checkDestinationReturnFields(), name: 'G11: Destination Return Fields' }) },
+        { id: 'G12', fn: () => ({ ...checkDestinationUrlTemplates(), name: 'G12: Destination URL Templates' }) },
       ]
     },
     {

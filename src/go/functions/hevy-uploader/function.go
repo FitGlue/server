@@ -177,10 +177,13 @@ func uploadHandler() framework.HandlerFunc {
 		}
 
 		return map[string]interface{}{
-			"status":      "SUCCESS",
-			"hevy_id":     workoutID,
-			"activity_id": eventPayload.ActivityId,
-			"pipeline_id": eventPayload.PipelineId,
+			"status":        "SUCCESS",
+			"hevy_id":       workoutID,
+			"activity_id":   eventPayload.ActivityId,
+			"pipeline_id":   eventPayload.PipelineId,
+			"activity_name": eventPayload.Name,
+			"activity_type": eventPayload.ActivityType.String(),
+			"description":   eventPayload.Description,
 		}, nil
 	}
 }
@@ -292,6 +295,9 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 			"mode":           "UPDATE",
 			"update_skipped": true,
 			"reason":         "no_changes",
+			"activity_name":  event.Name,
+			"activity_type":  event.ActivityType.String(),
+			"description":    event.Description,
 		}, nil
 	}
 
@@ -344,6 +350,8 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		"activity_id":    event.ActivityId,
 		"mode":           "UPDATE",
 		"updated_fields": updateBody,
+		"activity_name":  event.Name,
+		"activity_type":  event.ActivityType.String(),
 	}, nil
 }
 

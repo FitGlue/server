@@ -32,6 +32,10 @@ message PluginManifest {
   repeated string features = 12;              // List of features/capabilities to display
   repeated Transformation transformations = 13; // Before/after examples showing what the plugin does
   repeated string use_cases = 14;             // List of use cases (e.g., "Share detailed workout logs")
+
+  // URL template for linking to external activities. Use {id} placeholder.
+  // For internal destinations like Showcase, server injects env-specific base URL.
+  optional string external_url_template = 15;
 }
 
 // Transformation shows a before/after example of what a plugin does to a field

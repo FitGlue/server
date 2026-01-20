@@ -1,4 +1,4 @@
-import { createCloudFunction, getRegistry, FrameworkContext } from '@fitglue/shared';
+import { createCloudFunction, getRegistry, FrameworkContext, PROJECT_ID } from '@fitglue/shared';
 import { Request, Response } from 'express';
 
 /**
@@ -10,6 +10,23 @@ import { Request, Response } from 'express';
  * This endpoint is public (no auth required) to allow the frontend to fetch
  * registry metadata for page rendering before user authentication.
  */
+
+/**
+ * Get the Showcase base URL based on environment.
+ * - dev: dev.fitglue.tech
+ * - test: test.fitglue.tech
+ * - prod: fitglue.tech
+ */
+function getShowcaseBaseUrl(): string {
+  if (PROJECT_ID.includes('-dev')) {
+    return 'https://dev.fitglue.tech';
+  }
+  if (PROJECT_ID.includes('-test')) {
+    return 'https://test.fitglue.tech';
+  }
+  // Production (no suffix or unknown)
+  return 'https://fitglue.tech';
+}
 
 export const handler = async (req: Request, res: Response, ctx: FrameworkContext) => {
   const { logger } = ctx;
@@ -27,10 +44,21 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     // Filter out disabled plugins unless ?showAll=true
     const showAll = req.query.showAll === 'true';
 
+    // Inject env-specific Showcase URL template
+    const showcaseBaseUrl = getShowcaseBaseUrl();
+    const destinations = registry.destinations
+      .filter(p => showAll || p.enabled)
+      .map(d => {
+        if (d.id === 'showcase') {
+          return { ...d, externalUrlTemplate: `${showcaseBaseUrl}/showcase/{id}` };
+        }
+        return d;
+      });
+
     const response = {
       sources: registry.sources.filter(p => showAll || p.enabled),
       enrichers: registry.enrichers.filter(p => showAll || p.enabled),
-      destinations: registry.destinations.filter(p => showAll || p.enabled),
+      destinations,
       integrations: registry.integrations, // Already filtered in getRegistry()
     };
 
@@ -55,4 +83,3 @@ export const registryHandler = createCloudFunction(handler, {
   allowUnauthenticated: true,
   skipExecutionLogging: true
 });
-

@@ -79,6 +79,11 @@ export interface PluginManifest {
   transformations: Transformation[];
   /** List of use cases (e.g., "Share detailed workout logs") */
   useCases: string[];
+  /**
+   * URL template for linking to external activities. Use {id} placeholder.
+   * For internal destinations like Showcase, server injects env-specific base URL.
+   */
+  externalUrlTemplate?: string | undefined;
 }
 
 /** Transformation shows a before/after example of what a plugin does to a field */

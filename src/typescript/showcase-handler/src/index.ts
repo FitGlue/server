@@ -89,6 +89,7 @@ export const showcaseHandler = async (req: functions.Request, res: functions.Res
       enrichmentMetadata: data.enrichmentMetadata || {},
       tags: data.tags || [],
       createdAt: data.createdAt?.toISOString(),
+      ownerDisplayName: data.ownerDisplayName,
       // Don't expose: userId, activityId, fitFileUri, pipelineExecutionId, expiresAt
     };
 
@@ -115,4 +116,5 @@ interface ShowcaseResponse {
   enrichmentMetadata: { [key: string]: string };
   tags: string[];
   createdAt?: string;
+  ownerDisplayName?: string;  // Public attribution - owner's display name or email prefix
 }

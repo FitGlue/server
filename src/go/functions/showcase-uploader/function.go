@@ -308,10 +308,13 @@ func showcaseHandler() framework.HandlerFunc {
 		)
 
 		return map[string]interface{}{
-			"status":      "SUCCESS",
-			"showcase_id": showcaseID,
-			"activity_id": eventPayload.ActivityId,
-			"pipeline_id": eventPayload.PipelineId,
+			"status":        "SUCCESS",
+			"showcase_id":   showcaseID,
+			"activity_id":   eventPayload.ActivityId,
+			"pipeline_id":   eventPayload.PipelineId,
+			"activity_name": eventPayload.Name,
+			"activity_type": eventPayload.ActivityType.String(),
+			"description":   eventPayload.Description,
 		}, nil
 	}
 }

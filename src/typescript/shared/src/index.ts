@@ -48,3 +48,7 @@ export * from './storage/firestore/converters';
 
 // Enum Formatters
 export * from './types/pb/enum-formatters';
+
+// Activity Counters (Phase 2 performance optimization)
+export * from './services/activity-counter-service';
+export * from './types/activity-counters';
