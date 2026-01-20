@@ -47,3 +47,10 @@ resource "google_project_iam_member" "web_deployer_service_usage_consumer" {
   role    = "roles/serviceusage.serviceUsageConsumer"
   member  = "serviceAccount:circleci-web-deployer@${var.project_id}.iam.gserviceaccount.com"
 }
+
+# Firebase Rules Admin - allows Firebase CLI to validate and deploy Firestore rules
+resource "google_project_iam_member" "web_deployer_firebase_rules_admin" {
+  project = var.project_id
+  role    = "roles/firebaserules.admin"
+  member  = "serviceAccount:circleci-web-deployer@${var.project_id}.iam.gserviceaccount.com"
+}
