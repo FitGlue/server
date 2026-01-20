@@ -1,5 +1,6 @@
 import createClient from 'openapi-fetch';
 import { UserService } from '../domain/services/user';
+import { MAX_ERROR_BODY_SIZE } from '../infrastructure/http/errors';
 
 // Define a generic type for the client since we might not have the generated schema types imported here universally
 // But actually createAuthenticatedClient needs to be generic or strict.
@@ -7,6 +8,14 @@ import { UserService } from '../domain/services/user';
 
 export interface AuthenticatedClientOptions {
   usageTracking?: boolean;
+}
+
+/**
+ * Truncate a string to maxLen, adding "..." if truncated.
+ */
+function truncate(s: string, maxLen: number): string {
+  if (s.length <= maxLen) return s;
+  return s.substring(0, maxLen) + '...';
 }
 
 export function createAuthenticatedClient<Paths extends object>(
@@ -27,6 +36,13 @@ export function createAuthenticatedClient<Paths extends object>(
 
     const response = await fetch(input, newInit);
 
+    // Log error response bodies for debugging
+    if (!response.ok) {
+      const errorBody = await response.clone().text();
+      const truncatedBody = truncate(errorBody, MAX_ERROR_BODY_SIZE);
+      console.error(`[${provider}] HTTP ${response.status}: ${truncatedBody}`);
+    }
+
     // Track usage if enabled and request was successful
     if (options?.usageTracking && response.ok) {
       userService.updateLastUsed(userId, provider).catch(err => {
@@ -43,6 +59,13 @@ export function createAuthenticatedClient<Paths extends object>(
       const retryInit = { ...init, headers };
 
       const retryResponse = await fetch(input, retryInit);
+
+      // Log error response bodies on retry too
+      if (!retryResponse.ok) {
+        const errorBody = await retryResponse.clone().text();
+        const truncatedBody = truncate(errorBody, MAX_ERROR_BODY_SIZE);
+        console.error(`[${provider}] HTTP ${retryResponse.status} (retry): ${truncatedBody}`);
+      }
 
       // Track usage on retry success too
       if (options?.usageTracking && retryResponse.ok) {
@@ -62,3 +85,4 @@ export function createAuthenticatedClient<Paths extends object>(
     fetch: retryFetch, // Inject our wrapper
   });
 }
+

@@ -84,9 +84,12 @@ func mockHandler() framework.HandlerFunc {
 		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
 		if existingActivity != nil {
 			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
+			// Use nested map structure so MergeAll properly merges into destinations
 			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-				"destinations.mock": mockExternalID,
-				"synced_at":         timestamppb.Now().AsTime(),
+				"destinations": map[string]interface{}{
+					"mock": mockExternalID,
+				},
+				"synced_at": timestamppb.Now().AsTime(),
 			}); err != nil {
 				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
 				return nil, fmt.Errorf("failed to update synchronized activity: %w", err)

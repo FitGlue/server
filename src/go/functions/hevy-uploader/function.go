@@ -18,6 +18,8 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/framework"
+	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -110,13 +112,16 @@ func uploadHandler() framework.HandlerFunc {
 			return handleHevyUpdate(ctx, apiKey, &eventPayload, existingWorkoutID, fwCtx)
 		}
 
-		// 4. Map to Hevy workout format
-		workout, err := mapToHevyWorkout(ctx, &eventPayload, apiKey, fwCtx)
+		// 4. Create template resolver for exercise ID lookups
+		resolver := NewTemplateResolver(apiKey, fwCtx.Logger)
+
+		// 5. Map to Hevy workout format
+		workout, err := mapToHevyWorkout(ctx, &eventPayload, resolver, fwCtx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to map activity to Hevy format: %w", err)
 		}
 
-		// 5. POST to Hevy API
+		// 6. POST to Hevy API
 		workoutID, err := createHevyWorkout(ctx, apiKey, workout, fwCtx)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create Hevy workout: %w", err)
@@ -126,15 +131,18 @@ func uploadHandler() framework.HandlerFunc {
 			"workoutId", workoutID,
 			"activityId", eventPayload.ActivityId)
 
-		// 6. Persist SynchronizedActivity
+		// 7. Persist SynchronizedActivity
 		// Check if activity already exists (e.g., repost scenario)
 		// If it does, only update destinations to preserve original pipelineExecutionId
 		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
 		if existingActivity != nil {
 			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
+			// Use nested map structure so MergeAll properly merges into destinations
 			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-				"destinations.hevy": workoutID,
-				"synced_at":         timestamppb.Now().AsTime(),
+				"destinations": map[string]interface{}{
+					"hevy": workoutID,
+				},
+				"synced_at": timestamppb.Now().AsTime(),
 			}); err != nil {
 				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
 			} else {
@@ -163,7 +171,7 @@ func uploadHandler() framework.HandlerFunc {
 			}
 		}
 
-		// Increment sync count for billing
+		// 8. Increment sync count for billing
 		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
 			fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
 		}
@@ -219,7 +227,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		"workoutId", workoutID,
 		"activityId", event.ActivityId)
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := oauth.NewClientWithErrorLogging(fwCtx.Logger, "hevy", 30*time.Second)
 
 	// 1. GET current workout from Hevy to get existing description
 	getURL := fmt.Sprintf("https://api.hevyapp.com/v1/workouts/%s", workoutID)
@@ -313,10 +321,9 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	defer putResp.Body.Close()
 
 	if putResp.StatusCode >= 400 {
-		var errorBody bytes.Buffer
-		errorBody.ReadFrom(putResp.Body)
-		fwCtx.Logger.Error("Hevy PUT failed", "status", putResp.StatusCode, "body", errorBody.String())
-		return nil, fmt.Errorf("hevy PUT failed: status %d", putResp.StatusCode)
+		err := httputil.WrapResponseError(putResp, "Hevy PUT failed")
+		fwCtx.Logger.Error("Hevy PUT failed", "status", putResp.StatusCode, "error", err)
+		return nil, err
 	}
 
 	fwCtx.Logger.Info("Successfully updated Hevy workout",
@@ -347,7 +354,7 @@ func createHevyWorkout(ctx context.Context, apiKey string, workout *HevyWorkoutR
 		return "", fmt.Errorf("failed to marshal workout: %w", err)
 	}
 
-	client := &http.Client{Timeout: 30 * time.Second}
+	client := oauth.NewClientWithErrorLogging(fwCtx.Logger, "hevy", 30*time.Second)
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.hevyapp.com/v1/workouts", bytes.NewReader(bodyJSON))
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
@@ -366,12 +373,9 @@ func createHevyWorkout(ctx context.Context, apiKey string, workout *HevyWorkoutR
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		var errorBody bytes.Buffer
-		errorBody.ReadFrom(resp.Body)
-		fwCtx.Logger.Error("Hevy API error",
-			"status", resp.StatusCode,
-			"body", errorBody.String())
-		return "", fmt.Errorf("Hevy API error: status %d", resp.StatusCode)
+		err := httputil.WrapResponseError(resp, "Hevy API error")
+		fwCtx.Logger.Error("Hevy API error", "status", resp.StatusCode, "error", err)
+		return "", err
 	}
 
 	// Parse response to get workout ID

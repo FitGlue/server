@@ -1,8 +1,10 @@
 package oauth
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"time"
@@ -121,10 +123,76 @@ func (t *UsageTrackingTransport) RoundTrip(req *http.Request) (*http.Response, e
 	return resp, err
 }
 
-// NewClientWithUsageTracking creates an HTTP client that automatically handles OAuth
-// and tracks usage stats in Firestore.
+// MaxErrorBodySize is the maximum size of error body to capture for logging
+const MaxErrorBodySize = 500
+
+// ErrorLoggingTransport wraps a RoundTripper and logs HTTP error responses
+// with their response bodies for better debugging and error messages.
+type ErrorLoggingTransport struct {
+	Base   http.RoundTripper
+	Logger *slog.Logger
+}
+
+func (t *ErrorLoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	base := t.Base
+	if base == nil {
+		base = http.DefaultTransport
+	}
+
+	resp, err := base.RoundTrip(req)
+	if err != nil {
+		return resp, err
+	}
+
+	// Only capture body for error responses
+	if resp.StatusCode >= 400 {
+		bodyBytes, readErr := io.ReadAll(resp.Body)
+		resp.Body.Close()
+
+		if readErr == nil {
+			bodyStr := string(bodyBytes)
+			if len(bodyStr) > MaxErrorBodySize {
+				bodyStr = bodyStr[:MaxErrorBodySize] + "..."
+			}
+
+			logger := t.Logger
+			if logger == nil {
+				logger = slog.Default()
+			}
+
+			logger.Error("HTTP error response",
+				"url", req.URL.String(),
+				"method", req.Method,
+				"status", resp.StatusCode,
+				"body", bodyStr)
+		}
+
+		// Re-wrap body so the caller can still read it
+		resp.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+	}
+
+	return resp, nil
+}
+
+// NewClientWithErrorLogging creates an HTTP client with automatic error response logging.
+// Use this for non-OAuth clients (like Hevy API key auth) that still need error body capture.
+func NewClientWithErrorLogging(logger *slog.Logger, provider string, timeout time.Duration) *http.Client {
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+
+	return &http.Client{
+		Timeout: timeout,
+		Transport: &ErrorLoggingTransport{
+			Logger: logger.With("component", "http-client", "provider", provider),
+		},
+	}
+}
+
+// NewClientWithUsageTracking creates an HTTP client that automatically handles OAuth,
+// tracks usage stats in Firestore, and logs HTTP error responses with their bodies.
 func NewClientWithUsageTracking(source TokenSource, service *bootstrap.Service, userID, provider string) *http.Client {
-	// Stack: Client -> UsageTracking -> OAuth -> Network
+	// Stack: Client → ErrorLogging → UsageTracking → OAuth → Network
 	oauthTransport := &Transport{Source: source}
 
 	usageTransport := &UsageTrackingTransport{
@@ -134,7 +202,12 @@ func NewClientWithUsageTracking(source TokenSource, service *bootstrap.Service, 
 		Provider: provider,
 	}
 
+	errorLoggingTransport := &ErrorLoggingTransport{
+		Base:   usageTransport,
+		Logger: slog.Default().With("component", "http-client", "provider", provider, "user_id", userID),
+	}
+
 	return &http.Client{
-		Transport: usageTransport,
+		Transport: errorLoggingTransport,
 	}
 }

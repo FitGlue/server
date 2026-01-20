@@ -2,6 +2,7 @@ package hevyuploader
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/framework"
@@ -43,7 +44,7 @@ type HevySet struct {
 }
 
 // mapToHevyWorkout converts an EnrichedActivityEvent to Hevy's workout format
-func mapToHevyWorkout(ctx context.Context, event *pb.EnrichedActivityEvent, apiKey string, fwCtx *framework.FrameworkContext) (*HevyWorkoutRequest, error) {
+func mapToHevyWorkout(ctx context.Context, event *pb.EnrichedActivityEvent, resolver *TemplateResolver, fwCtx *framework.FrameworkContext) (*HevyWorkoutRequest, error) {
 	startTime := time.Now()
 	if event.StartTime != nil {
 		startTime = event.StartTime.AsTime()
@@ -78,8 +79,11 @@ func mapToHevyWorkout(ctx context.Context, event *pb.EnrichedActivityEvent, apiK
 	if event.ActivityData == nil || len(event.ActivityData.Sessions) == 0 {
 		fwCtx.Logger.Warn("No activity data available for mapping")
 		// Create a placeholder exercise for cardio activities
-		workout.Workout.Exercises = append(workout.Workout.Exercises,
-			mapCardioActivityToExercise(event, totalDuration))
+		exercise, err := mapCardioActivityToExercise(ctx, event, totalDuration, resolver)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map cardio activity: %w", err)
+		}
+		workout.Workout.Exercises = append(workout.Workout.Exercises, exercise)
 		return workout, nil
 	}
 
@@ -87,21 +91,30 @@ func mapToHevyWorkout(ctx context.Context, event *pb.EnrichedActivityEvent, apiK
 	for _, session := range event.ActivityData.Sessions {
 		// Handle strength sets
 		if len(session.StrengthSets) > 0 {
-			exercises := mapStrengthSetsToExercises(session.StrengthSets, fwCtx)
+			exercises, err := mapStrengthSetsToExercises(ctx, session.StrengthSets, resolver, fwCtx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to map strength sets: %w", err)
+			}
 			workout.Workout.Exercises = append(workout.Workout.Exercises, exercises...)
 		}
 
 		// Handle cardio activities (runs, rides, etc.) that don't have strength sets
 		if len(session.StrengthSets) == 0 && (session.TotalDistance > 0 || session.TotalElapsedTime > 0) {
-			cardioExercise := mapCardioSessionToExercise(event.ActivityType, session)
+			cardioExercise, err := mapCardioSessionToExercise(ctx, event.ActivityType, session, resolver)
+			if err != nil {
+				return nil, fmt.Errorf("failed to map cardio session: %w", err)
+			}
 			workout.Workout.Exercises = append(workout.Workout.Exercises, cardioExercise)
 		}
 	}
 
 	// If no exercises were created, create a generic workout exercise
 	if len(workout.Workout.Exercises) == 0 {
-		workout.Workout.Exercises = append(workout.Workout.Exercises,
-			mapCardioActivityToExercise(event, totalDuration))
+		exercise, err := mapCardioActivityToExercise(ctx, event, totalDuration, resolver)
+		if err != nil {
+			return nil, fmt.Errorf("failed to map fallback activity: %w", err)
+		}
+		workout.Workout.Exercises = append(workout.Workout.Exercises, exercise)
 	}
 
 	fwCtx.Logger.Debug("Mapped workout",
@@ -112,7 +125,7 @@ func mapToHevyWorkout(ctx context.Context, event *pb.EnrichedActivityEvent, apiK
 }
 
 // mapStrengthSetsToExercises groups strength sets by exercise name and converts them
-func mapStrengthSetsToExercises(sets []*pb.StrengthSet, fwCtx *framework.FrameworkContext) []HevyExercise {
+func mapStrengthSetsToExercises(ctx context.Context, sets []*pb.StrengthSet, resolver *TemplateResolver, fwCtx *framework.FrameworkContext) ([]HevyExercise, error) {
 	// Group sets by exercise name
 	exerciseMap := make(map[string][]HevySet)
 	exerciseOrder := []string{}
@@ -137,14 +150,23 @@ func mapStrengthSetsToExercises(sets []*pb.StrengthSet, fwCtx *framework.Framewo
 	// Build exercises in order
 	exercises := []HevyExercise{}
 	for _, name := range exerciseOrder {
+		// Resolve template ID via API
+		templateID, err := resolver.ResolveTemplateID(ctx, name)
+		if err != nil {
+			fwCtx.Logger.Error("Failed to resolve template ID",
+				"exerciseName", name,
+				"error", err)
+			return nil, fmt.Errorf("failed to resolve template for %q: %w", name, err)
+		}
+
 		exercise := HevyExercise{
-			ExerciseTemplateID: getExerciseTemplateID(name), // TODO: Implement proper template lookup
+			ExerciseTemplateID: templateID,
 			Sets:               exerciseMap[name],
 		}
 		exercises = append(exercises, exercise)
 	}
 
-	return exercises
+	return exercises, nil
 }
 
 // convertStrengthSet converts a pb.StrengthSet to HevySet
@@ -195,8 +217,15 @@ func mapSetType(setType string) string {
 }
 
 // mapCardioSessionToExercise maps a cardio session to a Hevy exercise
-func mapCardioSessionToExercise(activityType pb.ActivityType, session *pb.Session) HevyExercise {
-	templateID := getCardioTemplateID(activityType)
+func mapCardioSessionToExercise(ctx context.Context, activityType pb.ActivityType, session *pb.Session, resolver *TemplateResolver) (HevyExercise, error) {
+	// Get the cardio exercise name for this activity type
+	exerciseName := getCardioExerciseName(activityType)
+
+	// Resolve to a real template ID
+	templateID, err := resolver.ResolveTemplateID(ctx, exerciseName)
+	if err != nil {
+		return HevyExercise{}, fmt.Errorf("failed to resolve cardio template: %w", err)
+	}
 
 	distance := int(session.TotalDistance)
 	duration := int(session.TotalElapsedTime)
@@ -208,12 +237,18 @@ func mapCardioSessionToExercise(activityType pb.ActivityType, session *pb.Sessio
 			DistanceMeters:  &distance,
 			DurationSeconds: &duration,
 		}},
-	}
+	}, nil
 }
 
 // mapCardioActivityToExercise creates a placeholder exercise for activities without session data
-func mapCardioActivityToExercise(event *pb.EnrichedActivityEvent, durationSeconds float64) HevyExercise {
-	templateID := getCardioTemplateID(event.ActivityType)
+func mapCardioActivityToExercise(ctx context.Context, event *pb.EnrichedActivityEvent, durationSeconds float64, resolver *TemplateResolver) (HevyExercise, error) {
+	exerciseName := getCardioExerciseName(event.ActivityType)
+
+	// Resolve to a real template ID
+	templateID, err := resolver.ResolveTemplateID(ctx, exerciseName)
+	if err != nil {
+		return HevyExercise{}, fmt.Errorf("failed to resolve cardio template: %w", err)
+	}
 
 	duration := int(durationSeconds)
 	if duration == 0 {
@@ -227,38 +262,25 @@ func mapCardioActivityToExercise(event *pb.EnrichedActivityEvent, durationSecond
 			Type:            "normal",
 			DurationSeconds: &duration,
 		}},
-	}
+	}, nil
 }
 
-// getExerciseTemplateID returns the Hevy template ID for an exercise name
-// TODO: Implement proper fuzzy matching and template caching
-func getExerciseTemplateID(exerciseName string) string {
-	// For now, return a placeholder
-	// In production, this should:
-	// 1. Check a cache of user's exercise templates
-	// 2. Fuzzy match against Hevy's standard library
-	// 3. Create a custom template if no match found
-	return "placeholder-needs-mapping"
-}
-
-// getCardioTemplateID returns the Hevy template ID for cardio activity types
-func getCardioTemplateID(activityType pb.ActivityType) string {
-	// Map FitGlue activity types to Hevy's cardio exercise templates
-	// These IDs need to be verified against actual Hevy template library
+// getCardioExerciseName returns the exercise name to search for the given activity type
+func getCardioExerciseName(activityType pb.ActivityType) string {
 	switch activityType {
 	case pb.ActivityType_ACTIVITY_TYPE_RUN:
-		return "running" // Placeholder - need actual Hevy template ID
+		return "Running (Outdoor)"
 	case pb.ActivityType_ACTIVITY_TYPE_WALK:
-		return "walking"
+		return "Walking"
 	case pb.ActivityType_ACTIVITY_TYPE_RIDE:
-		return "cycling"
+		return "Cycling (Outdoor)"
 	case pb.ActivityType_ACTIVITY_TYPE_SWIM:
-		return "swimming"
+		return "Swimming"
 	case pb.ActivityType_ACTIVITY_TYPE_WORKOUT:
-		return "other"
+		return "Workout"
 	case pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
-		return "other"
+		return "Weight Training"
 	default:
-		return "other"
+		return "Workout"
 	}
 }

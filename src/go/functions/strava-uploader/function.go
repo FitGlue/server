@@ -22,6 +22,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
+	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
@@ -156,9 +157,9 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	defer httpResp.Body.Close()
 
 	if httpResp.StatusCode >= 400 {
-		bodyBytes, _ := io.ReadAll(httpResp.Body)
-		fwCtx.Logger.Error("Strava upload failed", "status", httpResp.StatusCode, "body", string(bodyBytes))
-		return nil, fmt.Errorf("strava upload failed: status %d", httpResp.StatusCode)
+		err := httputil.WrapResponseError(httpResp, "Strava upload failed")
+		fwCtx.Logger.Error("Strava upload failed", "status", httpResp.StatusCode, "error", err)
+		return nil, err
 	}
 
 	var uploadResp stravaUploadResponse
@@ -189,9 +190,12 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
 		if existingActivity != nil {
 			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
+			// Use nested map structure so MergeAll properly merges into destinations
 			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-				"destinations.strava": stravaDestID,
-				"synced_at":           timestamppb.Now().AsTime(),
+				"destinations": map[string]interface{}{
+					"strava": stravaDestID,
+				},
+				"synced_at": timestamppb.Now().AsTime(),
 			}); err != nil {
 				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
 			} else {
@@ -366,9 +370,9 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 	defer putResp.Body.Close()
 
 	if putResp.StatusCode >= 400 {
-		bodyBytes, _ := io.ReadAll(putResp.Body)
-		fwCtx.Logger.Error("Strava PUT failed", "status", putResp.StatusCode, "body", string(bodyBytes))
-		return nil, fmt.Errorf("strava PUT failed: status %d", putResp.StatusCode)
+		err := httputil.WrapResponseError(putResp, "Strava PUT failed")
+		fwCtx.Logger.Error("Strava PUT failed", "status", putResp.StatusCode, "error", err)
+		return nil, err
 	}
 
 	fwCtx.Logger.Info("Successfully updated Strava activity",

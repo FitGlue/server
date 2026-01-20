@@ -18,6 +18,7 @@ import (
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/framework"
+	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
@@ -57,9 +58,9 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 	return func(ctx context.Context, e cloudevents.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
 		fwCtx.Logger.Info("Starting Parkrun results poll")
 
-		// Default HTTP client for fetching results
+		// Default HTTP client with error logging for fetching results
 		if httpClient == nil {
-			httpClient = &http.Client{Timeout: 30 * time.Second}
+			httpClient = oauth.NewClientWithErrorLogging(fwCtx.Logger, "parkrun", 30*time.Second)
 		}
 
 		// Query for auto-populated pending inputs from the Parkrun enricher

@@ -1,39 +1,219 @@
 package hevyuploader
 
 // Exercise template handling for Hevy
-// This file provides fuzzy matching and caching for exercise templates
+// This file provides template resolution via the Hevy API with fuzzy matching and caching
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log/slog"
+	"net/http"
 	"strings"
-	"sync"
+	"time"
+
+	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 )
 
-// TemplateCache caches exercise template IDs to avoid repeated API calls
-type TemplateCache struct {
-	mu        sync.RWMutex
-	templates map[string]string // exerciseName -> templateID
+// HevyExerciseTemplate represents an exercise template from the Hevy API
+type HevyExerciseTemplate struct {
+	ID            string `json:"id"`
+	Title         string `json:"title"`
+	Type          string `json:"type"`           // strength, cardio, etc.
+	PrimaryMuscle string `json:"primary_muscle"` // optional
+	IsCustom      bool   `json:"is_custom"`
 }
 
-// NewTemplateCache creates a new template cache
-func NewTemplateCache() *TemplateCache {
-	return &TemplateCache{
-		templates: make(map[string]string),
+// TemplateResolver fetches, caches, and resolves exercise template IDs from Hevy
+type TemplateResolver struct {
+	apiKey    string
+	templates []HevyExerciseTemplate
+	cache     map[string]string // normalized name -> template ID
+	fetched   bool
+	logger    *slog.Logger
+}
+
+// NewTemplateResolver creates a resolver with the user's Hevy API key
+func NewTemplateResolver(apiKey string, logger *slog.Logger) *TemplateResolver {
+	return &TemplateResolver{
+		apiKey: apiKey,
+		cache:  make(map[string]string),
+		logger: logger,
 	}
 }
 
-// Get retrieves a template ID from the cache
-func (tc *TemplateCache) Get(exerciseName string) (string, bool) {
-	tc.mu.RLock()
-	defer tc.mu.RUnlock()
-	id, ok := tc.templates[normalizeExerciseName(exerciseName)]
-	return id, ok
+// ResolveTemplateID resolves an exercise name to a valid Hevy template ID
+// It will:
+// 1. Check local cache first
+// 2. Fetch templates from API if not yet fetched
+// 3. Fuzzy match against fetched templates
+// 4. Create a custom template if no match found
+func (r *TemplateResolver) ResolveTemplateID(ctx context.Context, exerciseName string) (string, error) {
+	normalized := normalizeExerciseName(exerciseName)
+
+	// Check cache first
+	if id, ok := r.cache[normalized]; ok {
+		r.logger.Debug("Template cache hit",
+			"exerciseName", exerciseName,
+			"templateID", id)
+		return id, nil
+	}
+
+	// Fetch templates from API if not yet done
+	if !r.fetched {
+		if err := r.fetchAllTemplates(ctx); err != nil {
+			r.logger.Warn("Failed to fetch templates, will create custom",
+				"error", err)
+			// Continue to create custom template
+		}
+	}
+
+	// Fuzzy match against fetched templates
+	if templateID := r.fuzzyMatch(normalized); templateID != "" {
+		r.cache[normalized] = templateID
+		r.logger.Info("Template matched",
+			"exerciseName", exerciseName,
+			"templateID", templateID)
+		return templateID, nil
+	}
+
+	// No match found - create custom template
+	r.logger.Info("No template match, creating custom",
+		"exerciseName", exerciseName)
+	templateID, err := r.createCustomTemplate(ctx, exerciseName)
+	if err != nil {
+		return "", fmt.Errorf("failed to create custom template for %q: %w", exerciseName, err)
+	}
+
+	r.cache[normalized] = templateID
+	r.logger.Info("Created custom template",
+		"exerciseName", exerciseName,
+		"templateID", templateID)
+
+	return templateID, nil
 }
 
-// Set stores a template ID in the cache
-func (tc *TemplateCache) Set(exerciseName, templateID string) {
-	tc.mu.Lock()
-	defer tc.mu.Unlock()
-	tc.templates[normalizeExerciseName(exerciseName)] = templateID
+// fetchAllTemplates retrieves all exercise templates from Hevy API (paginated)
+func (r *TemplateResolver) fetchAllTemplates(ctx context.Context) error {
+	r.templates = []HevyExerciseTemplate{}
+	page := 1
+	pageSize := 100
+
+	client := oauth.NewClientWithErrorLogging(r.logger, "hevy", 30*time.Second)
+
+	for {
+		url := fmt.Sprintf("https://api.hevyapp.com/v1/exercise_templates?page=%d&page_size=%d", page, pageSize)
+		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+		if err != nil {
+			return fmt.Errorf("create request: %w", err)
+		}
+		req.Header.Set("api-key", r.apiKey)
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("API request failed: %w", err)
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode >= 400 {
+			var errorBody bytes.Buffer
+			errorBody.ReadFrom(resp.Body)
+			return fmt.Errorf("API error (status %d): %s", resp.StatusCode, errorBody.String())
+		}
+
+		var result struct {
+			ExerciseTemplates []HevyExerciseTemplate `json:"exercise_templates"`
+			Page              int                    `json:"page"`
+			PageCount         int                    `json:"page_count"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+			return fmt.Errorf("decode response: %w", err)
+		}
+
+		r.templates = append(r.templates, result.ExerciseTemplates...)
+		r.logger.Debug("Fetched exercise templates page",
+			"page", page,
+			"count", len(result.ExerciseTemplates),
+			"totalSoFar", len(r.templates))
+
+		if page >= result.PageCount || len(result.ExerciseTemplates) == 0 {
+			break
+		}
+		page++
+	}
+
+	r.fetched = true
+	r.logger.Info("Fetched all exercise templates",
+		"totalCount", len(r.templates))
+
+	return nil
+}
+
+// fuzzyMatch finds a template ID by matching against fetched templates
+func (r *TemplateResolver) fuzzyMatch(normalizedName string) string {
+	// Exact match first
+	for _, t := range r.templates {
+		if normalizeExerciseName(t.Title) == normalizedName {
+			return t.ID
+		}
+	}
+
+	// Partial/contains match
+	for _, t := range r.templates {
+		normalizedTitle := normalizeExerciseName(t.Title)
+		if strings.Contains(normalizedTitle, normalizedName) ||
+			strings.Contains(normalizedName, normalizedTitle) {
+			return t.ID
+		}
+	}
+
+	return ""
+}
+
+// createCustomTemplate creates a new custom exercise template in Hevy
+func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseName string) (string, error) {
+	client := oauth.NewClientWithErrorLogging(r.logger, "hevy", 30*time.Second)
+
+	payload := map[string]interface{}{
+		"title": exerciseName,
+		"type":  "weight_reps", // default to weight/reps for strength
+	}
+	body, err := json.Marshal(payload)
+	if err != nil {
+		return "", fmt.Errorf("marshal payload: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.hevyapp.com/v1/exercise_templates", bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("api-key", r.apiKey)
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("API request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		var errorBody bytes.Buffer
+		errorBody.ReadFrom(resp.Body)
+		return "", fmt.Errorf("create template failed (status %d): %s", resp.StatusCode, errorBody.String())
+	}
+
+	var result struct {
+		ExerciseTemplate HevyExerciseTemplate `json:"exercise_template"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("decode response: %w", err)
+	}
+
+	// Add to local cache
+	r.templates = append(r.templates, result.ExerciseTemplate)
+
+	return result.ExerciseTemplate.ID, nil
 }
 
 // normalizeExerciseName normalizes an exercise name for comparison
@@ -46,7 +226,7 @@ func normalizeExerciseName(name string) string {
 	name = strings.ReplaceAll(name, "_", " ")
 
 	// Remove common suffixes that vary between platforms
-	suffixes := []string{"(barbell)", "(dumbbell)", "(machine)", "(cable)", "(smith)"}
+	suffixes := []string{"(barbell)", "(dumbbell)", "(machine)", "(cable)", "(smith)", "(outdoor)", "(treadmill)"}
 	for _, suffix := range suffixes {
 		name = strings.TrimSuffix(name, suffix)
 	}
@@ -54,87 +234,11 @@ func normalizeExerciseName(name string) string {
 	return strings.TrimSpace(name)
 }
 
-// CommonExerciseTemplates maps common exercise names to their Hevy template IDs
-// These IDs should be verified against the actual Hevy API
-var CommonExerciseTemplates = map[string]string{
-	// Chest
-	"bench press":         "D04AC939", // Example ID - needs verification
-	"incline bench press": "incline-bench",
-	"decline bench press": "decline-bench",
-	"dumbbell press":      "dumbbell-press",
-	"chest fly":           "chest-fly",
-	"push up":             "push-up",
-
-	// Back
-	"lat pulldown":      "lat-pulldown",
-	"pull up":           "pull-up",
-	"chin up":           "chin-up",
-	"barbell row":       "barbell-row",
-	"dumbbell row":      "dumbbell-row",
-	"cable row":         "cable-row",
-	"deadlift":          "deadlift",
-	"romanian deadlift": "romanian-deadlift",
-
-	// Shoulders
-	"overhead press": "overhead-press",
-	"shoulder press": "shoulder-press",
-	"lateral raise":  "lateral-raise",
-	"front raise":    "front-raise",
-	"face pull":      "face-pull",
-	"shrug":          "shrug",
-
-	// Arms
-	"bicep curl":       "bicep-curl",
-	"hammer curl":      "hammer-curl",
-	"tricep extension": "tricep-extension",
-	"tricep pushdown":  "tricep-pushdown",
-	"skull crusher":    "skull-crusher",
-
-	// Legs
-	"squat":         "squat",
-	"back squat":    "back-squat",
-	"front squat":   "front-squat",
-	"leg press":     "leg-press",
-	"leg extension": "leg-extension",
-	"leg curl":      "leg-curl",
-	"lunge":         "lunge",
-	"calf raise":    "calf-raise",
-	"hip thrust":    "hip-thrust",
-
-	// Core
-	"plank":         "plank",
-	"crunch":        "crunch",
-	"russian twist": "russian-twist",
-	"leg raise":     "leg-raise",
-	"ab wheel":      "ab-wheel",
-
-	// Cardio (distance-based)
-	"running":         "running",
-	"treadmill":       "treadmill",
-	"cycling":         "cycling",
-	"stationary bike": "stationary-bike",
-	"rowing":          "rowing",
-	"elliptical":      "elliptical",
-	"stair climber":   "stair-climber",
-	"walking":         "walking",
-	"swimming":        "swimming",
-}
-
-// FuzzyMatchTemplate attempts to find a template ID for an exercise name
-func FuzzyMatchTemplate(exerciseName string) (string, bool) {
-	normalized := normalizeExerciseName(exerciseName)
-
-	// Direct match
-	if id, ok := CommonExerciseTemplates[normalized]; ok {
-		return id, true
-	}
-
-	// Partial match - check if normalized name contains any known exercise
-	for name, id := range CommonExerciseTemplates {
-		if strings.Contains(normalized, name) || strings.Contains(name, normalized) {
-			return id, true
-		}
-	}
-
-	return "", false
+// CardioTemplateNames maps FitGlue activity types to Hevy exercise search terms
+var CardioTemplateNames = map[string][]string{
+	"run":  {"Running (Outdoor)", "Running", "Running (Treadmill)"},
+	"walk": {"Walking", "Walk"},
+	"ride": {"Cycling (Outdoor)", "Cycling", "Cycling (Stationary)"},
+	"swim": {"Swimming", "Swim"},
+	"row":  {"Rowing", "Rowing Machine"},
 }
