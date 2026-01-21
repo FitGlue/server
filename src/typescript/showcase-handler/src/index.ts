@@ -1,6 +1,7 @@
 import * as functions from '@google-cloud/functions-framework';
 import * as admin from 'firebase-admin';
-import { ShowcaseStore, type StandardizedActivity, type ActivityType, type ActivitySource } from '@fitglue/shared';
+import { ShowcaseStore, type StandardizedActivity, type ActivityType, type ActivitySource, getEnricherManifest } from '@fitglue/shared';
+import { EnricherProviderType } from '@fitglue/shared/dist/types/pb/user';
 
 // Initialize Firebase Admin (only once)
 if (!admin.apps.length) {
@@ -87,6 +88,21 @@ export const showcaseHandler = async (req: functions.Request, res: functions.Res
       activityData: data.activityData,
       appliedEnrichments: data.appliedEnrichments || [],
       enrichmentMetadata: data.enrichmentMetadata || {},
+      registry: (data.appliedEnrichments || []).reduce((acc, e) => {
+        // Try to find in registry
+        if (e in EnricherProviderType) {
+          const providerType = EnricherProviderType[e as keyof typeof EnricherProviderType] as EnricherProviderType;
+          const manifest = getEnricherManifest(providerType);
+          if (manifest) {
+            acc[e] = {
+              name: manifest.name,
+              icon: manifest.icon,
+              description: manifest.description
+            };
+          }
+        }
+        return acc;
+      }, {} as { [key: string]: { name: string; icon: string; description: string } }),
       tags: data.tags || [],
       createdAt: data.createdAt?.toISOString(),
       ownerDisplayName: data.ownerDisplayName,
@@ -114,6 +130,7 @@ interface ShowcaseResponse {
   activityData?: StandardizedActivity;
   appliedEnrichments: string[];
   enrichmentMetadata: { [key: string]: string };
+  registry: { [key: string]: { name: string; icon: string; description: string } };
   tags: string[];
   createdAt?: string;
   ownerDisplayName?: string;  // Public attribution - owner's display name or email prefix
