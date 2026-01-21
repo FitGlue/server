@@ -87,7 +87,31 @@ export interface PluginManifest {
     | string
     | undefined;
   /** Required tier to use this plugin (e.g., "pro" for Athlete-only features) */
-  requiredTier?: string | undefined;
+  requiredTier?:
+    | string
+    | undefined;
+  /** UX Organization fields */
+  category?:
+    | string
+    | undefined;
+  /** Ordering within category (lower = first) */
+  sortOrder?:
+    | number
+    | undefined;
+  /** Display premium badge (Athlete-tier) */
+  isPremium?:
+    | boolean
+    | undefined;
+  /** For "recommended" sorting in wizard */
+  popularityScore?:
+    | number
+    | undefined;
+  /** SVG Icon support (for products with real logos) */
+  iconType?:
+    | string
+    | undefined;
+  /** Path to SVG asset (e.g., "/assets/icons/strava.svg") */
+  iconPath?: string | undefined;
 }
 
 /** Transformation shows a before/after example of what a plugin does to a field */

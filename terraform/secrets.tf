@@ -8,7 +8,9 @@ resource "google_project_iam_member" "secret_accessor" {
   member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
 }
 
+# =============================================================================
 # OAuth State Secret (for CSRF protection)
+# =============================================================================
 resource "google_secret_manager_secret" "oauth_state_secret" {
   secret_id = "oauth-state-secret"
   replication {
@@ -16,11 +18,31 @@ resource "google_secret_manager_secret" "oauth_state_secret" {
   }
 }
 
+resource "google_secret_manager_secret_version" "oauth_state_secret_initial" {
+  secret      = google_secret_manager_secret.oauth_state_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
 # Strava OAuth Credentials
+# =============================================================================
 resource "google_secret_manager_secret" "strava_client_id" {
   secret_id = "strava-client-id"
   replication {
     auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "strava_client_id_initial" {
+  secret      = google_secret_manager_secret.strava_client_id.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
   }
 }
 
@@ -31,6 +53,15 @@ resource "google_secret_manager_secret" "strava_client_secret" {
   }
 }
 
+resource "google_secret_manager_secret_version" "strava_client_secret_initial" {
+  secret      = google_secret_manager_secret.strava_client_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
 resource "google_secret_manager_secret" "strava_verify_token" {
   secret_id = "strava-verify-token"
   replication {
@@ -38,11 +69,31 @@ resource "google_secret_manager_secret" "strava_verify_token" {
   }
 }
 
+resource "google_secret_manager_secret_version" "strava_verify_token_initial" {
+  secret      = google_secret_manager_secret.strava_verify_token.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
 # Fitbit OAuth Credentials
+# =============================================================================
 resource "google_secret_manager_secret" "fitbit_client_id" {
   secret_id = "fitbit-client-id"
   replication {
     auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "fitbit_client_id_initial" {
+  secret      = google_secret_manager_secret.fitbit_client_id.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
   }
 }
 
@@ -53,6 +104,15 @@ resource "google_secret_manager_secret" "fitbit_client_secret" {
   }
 }
 
+resource "google_secret_manager_secret_version" "fitbit_client_secret_initial" {
+  secret      = google_secret_manager_secret.fitbit_client_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
 resource "google_secret_manager_secret" "fitbit_verification_code" {
   secret_id = "fitbit-verification-code"
   replication {
@@ -60,11 +120,31 @@ resource "google_secret_manager_secret" "fitbit_verification_code" {
   }
 }
 
+resource "google_secret_manager_secret_version" "fitbit_verification_code_initial" {
+  secret      = google_secret_manager_secret.fitbit_verification_code.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
 # Spotify OAuth Credentials
+# =============================================================================
 resource "google_secret_manager_secret" "spotify_client_id" {
   secret_id = "spotify-client-id"
   replication {
     auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "spotify_client_id_initial" {
+  secret      = google_secret_manager_secret.spotify_client_id.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
   }
 }
 
@@ -75,11 +155,31 @@ resource "google_secret_manager_secret" "spotify_client_secret" {
   }
 }
 
+resource "google_secret_manager_secret_version" "spotify_client_secret_initial" {
+  secret      = google_secret_manager_secret.spotify_client_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
 # TrainingPeaks OAuth Credentials
+# =============================================================================
 resource "google_secret_manager_secret" "trainingpeaks_client_id" {
   secret_id = "trainingpeaks-client-id"
   replication {
     auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "trainingpeaks_client_id_initial" {
+  secret      = google_secret_manager_secret.trainingpeaks_client_id.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
   }
 }
 
@@ -90,11 +190,31 @@ resource "google_secret_manager_secret" "trainingpeaks_client_secret" {
   }
 }
 
+resource "google_secret_manager_secret_version" "trainingpeaks_client_secret_initial" {
+  secret      = google_secret_manager_secret.trainingpeaks_client_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
 # Stripe Billing Secrets
+# =============================================================================
 resource "google_secret_manager_secret" "stripe_secret_key" {
   secret_id = "stripe-secret-key"
   replication {
     auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "stripe_secret_key_initial" {
+  secret      = google_secret_manager_secret.stripe_secret_key.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
   }
 }
 
@@ -105,6 +225,15 @@ resource "google_secret_manager_secret" "stripe_webhook_secret" {
   }
 }
 
+resource "google_secret_manager_secret_version" "stripe_webhook_secret_initial" {
+  secret      = google_secret_manager_secret.stripe_webhook_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
 resource "google_secret_manager_secret" "stripe_price_id" {
   secret_id = "stripe-price-id"
   replication {
@@ -112,7 +241,18 @@ resource "google_secret_manager_secret" "stripe_price_id" {
   }
 }
 
+resource "google_secret_manager_secret_version" "stripe_price_id_initial" {
+  secret      = google_secret_manager_secret.stripe_price_id.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
 # Gemini API key for AI description enricher
+# =============================================================================
 resource "google_secret_manager_secret" "gemini_api_key" {
   secret_id = "gemini-api-key"
   replication {
@@ -120,4 +260,14 @@ resource "google_secret_manager_secret" "gemini_api_key" {
   }
 }
 
-# Note: Secret version is created via scripts/configure_gemini_secret.sh
+resource "google_secret_manager_secret_version" "gemini_api_key_initial" {
+  secret      = google_secret_manager_secret.gemini_api_key.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# Note: To update a secret value after initial creation, use:
+# gcloud secrets versions add <secret-id> --data-file=- <<< "your-actual-secret-value"

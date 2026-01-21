@@ -151,6 +151,13 @@ When you complete a workout in Hevy, FitGlue receives a webhook notification and
   ],
   transformations: [],
   useCases: [],
+  // UX Organization
+  category: 'apps',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 80,
+  iconType: 'svg',
+  iconPath: '/assets/icons/hevy.svg',
 });
 
 registerSource({
@@ -177,6 +184,13 @@ FitGlue connects to the Fitbit API and receives notifications when you complete 
   ],
   transformations: [],
   useCases: [],
+  // UX Organization
+  category: 'wearables',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 85,
+  iconType: 'svg',
+  iconPath: '/assets/icons/fitbit.svg',
 });
 
 registerSource({
@@ -192,6 +206,11 @@ registerSource({
   features: [],
   transformations: [],
   useCases: [],
+  // UX Organization (internal - not shown to users)
+  category: 'manual',
+  sortOrder: 99,
+  isPremium: false,
+  popularityScore: 0,
 });
 
 registerSource({
@@ -218,6 +237,11 @@ Install the FitGlue mobile app on your iOS device and grant access to Apple Heal
   ],
   transformations: [],
   useCases: [],
+  // UX Organization
+  category: 'wearables',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 90,
 });
 
 registerSource({
@@ -244,6 +268,11 @@ Install the FitGlue mobile app on your Android device and grant access to Health
   ],
   transformations: [],
   useCases: [],
+  // UX Organization
+  category: 'wearables',
+  sortOrder: 4,
+  isPremium: false,
+  popularityScore: 75,
 });
 
 registerSource({
@@ -269,6 +298,11 @@ When you complete a Parkrun but don't have a GPS watch, FitGlue can still track 
   ],
   transformations: [],
   useCases: [],
+  // UX Organization (internal source - low visibility)
+  category: 'manual',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 30,
 });
 
 registerSource({
@@ -299,6 +333,11 @@ Select a FIT file, optionally add title/description, then upload. The activity e
     'Bring in activities from platforms FitGlue doesn\'t integrate with yet',
     'Recover activities from device backups',
   ],
+  // UX Organization
+  category: 'manual',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 60,
 });
 
 registerSource({
@@ -333,6 +372,13 @@ FitGlue's intelligent loop prevention ensures that activities uploaded TO Strava
     'Cross-post Strava activities to other platforms like Hevy',
     'Generate public Showcase links for your Strava activities',
   ],
+  // UX Organization
+  category: 'apps',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 95,
+  iconType: 'svg',
+  iconPath: '/assets/icons/strava.svg',
 });
 
 registerSource({
@@ -353,6 +399,13 @@ Standard Garmin Connect integration for importing activities.
   ],
   transformations: [],
   useCases: [],
+  // UX Organization
+  category: 'wearables',
+  sortOrder: 3,
+  isPremium: false,
+  popularityScore: 88,
+  iconType: 'svg',
+  iconPath: '/assets/icons/garmin.svg',
 });
 
 // ============================================================================
@@ -385,6 +438,13 @@ Once activities pass through your Pipeline, FitGlue uploads them to Strava via t
   transformations: [],
   useCases: [],
   externalUrlTemplate: 'https://www.strava.com/activities/{id}',
+  // UX Organization
+  category: 'social',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 95,
+  iconType: 'svg',
+  iconPath: '/assets/icons/strava.svg',
 });
 
 registerDestination({
@@ -420,6 +480,11 @@ Create beautiful, public links to your boosted activities. Share your activity d
   ],
   // Note: externalUrlTemplate is injected by registry-handler based on environment
   externalUrlTemplate: '',
+  // UX Organization
+  category: 'social',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 85,
 });
 
 registerDestination({
@@ -455,6 +520,13 @@ Exercise names are fuzzy-matched to Hevy's library. Unknown exercises automatica
     'Track Fitbit activities in Hevy',
   ],
   externalUrlTemplate: 'https://hevy.com/workouts/{id}',
+  // UX Organization
+  category: 'logging',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 75,
+  iconType: 'svg',
+  iconPath: '/assets/icons/hevy.svg',
 });
 
 registerDestination({
@@ -490,6 +562,13 @@ Activity types are automatically mapped to TrainingPeaks workout types (Run, Bik
     'Analyze training load across sources',
   ],
   externalUrlTemplate: 'https://app.trainingpeaks.com/workout/{id}',
+  // UX Organization
+  category: 'analytics',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 70,
+  iconType: 'svg',
+  iconPath: '/assets/icons/trainingpeaks.svg',
 });
 
 // ============================================================================
@@ -566,6 +645,11 @@ FitGlue analyzes your sets, reps, and weight data, identifies your primary muscl
     'Track progressive overload with volume stats',
     'Celebrate personal records automatically',
   ],
+  // UX Organization
+  category: 'transformation',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 90,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP, {
@@ -649,6 +733,11 @@ Our database includes 100+ canonical exercises with fuzzy matching, so even cust
     'Identify lagging muscle groups',
     'Track custom exercises with automatic muscle mapping',
   ],
+  // UX Organization
+  category: 'transformation',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 85,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, {
@@ -704,6 +793,11 @@ When your activity has GPS data (from a phone app or watch), FitGlue uses an "El
     'Complete activity data on Strava',
     'Track training intensity across all activities',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 80,
 });
 
 
@@ -774,6 +868,11 @@ When an activity is processed, Virtual GPS overlays a pre-defined GPS route onto
     'Add visual interest to home gym sessions',
     'Virtual touring while on the treadmill',
   ],
+  // UX Organization
+  category: 'location',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 70,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK, {
@@ -812,6 +911,11 @@ When activities are imported from sources like Hevy or Fitbit, Source Link adds 
     'Keep links to detailed exercise data',
     'Cross-reference between platforms',
   ],
+  // UX Organization
+  category: 'references',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 65,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER, {
@@ -906,6 +1010,11 @@ Define matching rules like "title contains 'Zwift'" → "Virtual Ride" or "title
     'Mark treadmill runs correctly',
     'Fix incorrect activity types from source apps',
   ],
+  // UX Organization
+  category: 'logic',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 55,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
@@ -996,6 +1105,11 @@ Christmas Day and New Year's Day Parkruns get festive titles automatically!
     'Celebrate PBs with automatic highlighting',
     'Special event detection for Christmas & New Year',
   ],
+  // UX Organization
+  category: 'detection',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 75,
 });
 
 
@@ -1079,6 +1193,11 @@ Define conditions like "Saturday morning run near the park" and specify a title 
     'Name activities by location',
     'Set titles by day or time',
   ],
+  // UX Organization
+  category: 'detection',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 60,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT, {
@@ -1124,6 +1243,11 @@ Define a counter key and optional title filter. Activities matching the filter g
     'Track session counts',
     'Create numbered runs',
   ],
+  // UX Organization
+  category: 'logic',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 45,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT, {
@@ -1170,6 +1294,11 @@ When an activity reaches this booster, it’s held pending your input. You recei
     'Review before publishing',
     'Custom titles per workout',
   ],
+  // UX Organization
+  category: 'logic',
+  sortOrder: 3,
+  isPremium: false,
+  popularityScore: 50,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER, {
@@ -1251,6 +1380,11 @@ Define include or exclude rules by activity type or title keywords. Activities m
     'Filter by activity type',
     'Only sync strength sessions',
   ],
+  // UX Organization
+  category: 'logic',
+  sortOrder: 4,
+  isPremium: false,
+  popularityScore: 50,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE, {
@@ -1337,6 +1471,11 @@ Define rules using fields like activity type, day of week, time, location, or ti
     'Route morning runs to different destinations',
     'Block activities on certain days',
   ],
+  // UX Organization
+  category: 'logic',
+  sortOrder: 5,
+  isPremium: false,
+  popularityScore: 55,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY, {
@@ -1376,6 +1515,11 @@ When your activity has heart rate data (from Fitbit, Apple Watch, or any source)
     'Track training zones summary',
     'Share intensity without graphs',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 82,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION, {
@@ -1454,6 +1598,11 @@ This premium feature is exclusively available to Athlete tier subscribers.
     'Save time writing descriptions',
     'Add personality to workout logs',
   ],
+  // UX Organization
+  category: 'ai_content',
+  sortOrder: 1,
+  isPremium: true,
+  popularityScore: 95,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY, {
@@ -1493,6 +1642,11 @@ When your activity has speed data (from GPS or sensors), this enricher converts 
     'Track running performance',
     'Share pace without complex stats',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 3,
+  isPremium: false,
+  popularityScore: 75,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY, {
@@ -1532,6 +1686,11 @@ When your activity has cadence data (from sensors), this enricher calculates avg
     'Monitor cycling cadence',
     'Analyze stride consistency',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 4,
+  isPremium: false,
+  popularityScore: 55,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY, {
@@ -1571,6 +1730,11 @@ When your activity has power data (from a power meter), this enricher calculates
     'Track cycling power output',
     'Share power stats easily',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 5,
+  isPremium: false,
+  popularityScore: 60,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY, {
@@ -1610,6 +1774,11 @@ When your activity has speed data (from GPS or sensors), this enricher calculate
     'Track cycling speed',
     'Monitor activity performance',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 6,
+  isPremium: false,
+  popularityScore: 50,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD, {
@@ -1685,6 +1854,11 @@ TRIMP is cumulative, meaning a long easy session can have the same load as a sho
     'Monitor recovery needs based on load',
     'Celebrate your hardest training sessions',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 7,
+  isPremium: false,
+  popularityScore: 65,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS, {
@@ -1765,6 +1939,11 @@ All records are stored in Firestore, so your PRs persist across time.
     'Share PR achievements on Strava',
     'Know immediately when you hit a new max',
   ],
+  // UX Organization
+  category: 'detection',
+  sortOrder: 3,
+  isPremium: false,
+  popularityScore: 78,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY, {
@@ -1808,6 +1987,11 @@ Filters out zero or negative altitude records to ensure accurate calculations ev
     'Mountain hiking and climbing',
     'Track total effort on vertical terrain',
   ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 8,
+  isPremium: false,
+  popularityScore: 68,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_WEATHER, {
@@ -1858,6 +2042,11 @@ When your activity has GPS data, this enricher fetches historical weather data f
     'Remember what the weather was like',
     'Share outdoor conditions on Strava',
   ],
+  // UX Organization
+  category: 'location',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 72,
 });
 
 
@@ -1898,6 +2087,13 @@ When you complete an activity, FitGlue checks your Spotify listening history for
     'Share your activity soundtrack on Strava',
     'Discover which playlists motivate you most',
   ],
+  // UX Organization
+  category: 'references',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 58,
+  iconType: 'svg',
+  iconPath: '/assets/icons/spotify.svg',
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING, {
@@ -1970,6 +2166,11 @@ When your activity has GPS data, this enricher uses OpenStreetMap's Nominatim AP
     'Track which parks and venues you visit',
     'Share location context on Strava',
   ],
+  // UX Organization
+  category: 'location',
+  sortOrder: 3,
+  isPremium: false,
+  popularityScore: 68,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
@@ -2001,6 +2202,11 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   features: [],
   transformations: [],
   useCases: [],
+  // UX Organization (internal testing only)
+  category: 'logic',
+  sortOrder: 99,
+  isPremium: false,
+  popularityScore: 0,
 });
 
 // ============================================================================

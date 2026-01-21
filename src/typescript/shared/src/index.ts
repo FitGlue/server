@@ -19,6 +19,7 @@ export * from './types/integrations';
 
 // Plugin Registry
 export * from './plugin/registry';
+export * from './plugin/categories';
 export { PluginManifest, PluginRegistryResponse, PluginType, ConfigFieldType, ConfigFieldSchema, ConfigFieldOption, IntegrationAuthType, IntegrationManifest } from './types/pb/plugin';
 
 // Services

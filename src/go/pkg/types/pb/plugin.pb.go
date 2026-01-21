@@ -218,7 +218,15 @@ type PluginManifest struct {
 	// For internal destinations like Showcase, server injects env-specific base URL.
 	ExternalUrlTemplate *string `protobuf:"bytes,15,opt,name=external_url_template,json=externalUrlTemplate,proto3,oneof" json:"external_url_template,omitempty"`
 	// Required tier to use this plugin (e.g., "pro" for Athlete-only features)
-	RequiredTier  *string `protobuf:"bytes,16,opt,name=required_tier,json=requiredTier,proto3,oneof" json:"required_tier,omitempty"`
+	RequiredTier *string `protobuf:"bytes,16,opt,name=required_tier,json=requiredTier,proto3,oneof" json:"required_tier,omitempty"`
+	// UX Organization fields
+	Category        *string `protobuf:"bytes,17,opt,name=category,proto3,oneof" json:"category,omitempty"`                                       // For grouping (e.g., "wearables", "stats", "detection")
+	SortOrder       *int32  `protobuf:"varint,18,opt,name=sort_order,json=sortOrder,proto3,oneof" json:"sort_order,omitempty"`                   // Ordering within category (lower = first)
+	IsPremium       *bool   `protobuf:"varint,19,opt,name=is_premium,json=isPremium,proto3,oneof" json:"is_premium,omitempty"`                   // Display premium badge (Athlete-tier)
+	PopularityScore *int32  `protobuf:"varint,20,opt,name=popularity_score,json=popularityScore,proto3,oneof" json:"popularity_score,omitempty"` // For "recommended" sorting in wizard
+	// SVG Icon support (for products with real logos)
+	IconType      *string `protobuf:"bytes,21,opt,name=icon_type,json=iconType,proto3,oneof" json:"icon_type,omitempty"` // "emoji" (default) or "svg"
+	IconPath      *string `protobuf:"bytes,22,opt,name=icon_path,json=iconPath,proto3,oneof" json:"icon_path,omitempty"` // Path to SVG asset (e.g., "/assets/icons/strava.svg")
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -361,6 +369,48 @@ func (x *PluginManifest) GetExternalUrlTemplate() string {
 func (x *PluginManifest) GetRequiredTier() string {
 	if x != nil && x.RequiredTier != nil {
 		return *x.RequiredTier
+	}
+	return ""
+}
+
+func (x *PluginManifest) GetCategory() string {
+	if x != nil && x.Category != nil {
+		return *x.Category
+	}
+	return ""
+}
+
+func (x *PluginManifest) GetSortOrder() int32 {
+	if x != nil && x.SortOrder != nil {
+		return *x.SortOrder
+	}
+	return 0
+}
+
+func (x *PluginManifest) GetIsPremium() bool {
+	if x != nil && x.IsPremium != nil {
+		return *x.IsPremium
+	}
+	return false
+}
+
+func (x *PluginManifest) GetPopularityScore() int32 {
+	if x != nil && x.PopularityScore != nil {
+		return *x.PopularityScore
+	}
+	return 0
+}
+
+func (x *PluginManifest) GetIconType() string {
+	if x != nil && x.IconType != nil {
+		return *x.IconType
+	}
+	return ""
+}
+
+func (x *PluginManifest) GetIconPath() string {
+	if x != nil && x.IconPath != nil {
+		return *x.IconPath
 	}
 	return ""
 }
@@ -983,7 +1033,7 @@ var File_plugin_proto protoreflect.FileDescriptor
 
 const file_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\fplugin.proto\x12\afitglue\"\xfe\x05\n" +
+	"\fplugin.proto\x12\afitglue\"\xb7\b\n" +
 	"\x0ePluginManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x13.fitglue.PluginTypeR\x04type\x12\x12\n" +
@@ -1001,11 +1051,27 @@ const file_plugin_proto_rawDesc = "" +
 	"\x0ftransformations\x18\r \x03(\v2\x17.fitglue.TransformationR\x0ftransformations\x12\x1b\n" +
 	"\tuse_cases\x18\x0e \x03(\tR\buseCases\x127\n" +
 	"\x15external_url_template\x18\x0f \x01(\tH\x02R\x13externalUrlTemplate\x88\x01\x01\x12(\n" +
-	"\rrequired_tier\x18\x10 \x01(\tH\x03R\frequiredTier\x88\x01\x01B\x19\n" +
+	"\rrequired_tier\x18\x10 \x01(\tH\x03R\frequiredTier\x88\x01\x01\x12\x1f\n" +
+	"\bcategory\x18\x11 \x01(\tH\x04R\bcategory\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"sort_order\x18\x12 \x01(\x05H\x05R\tsortOrder\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"is_premium\x18\x13 \x01(\bH\x06R\tisPremium\x88\x01\x01\x12.\n" +
+	"\x10popularity_score\x18\x14 \x01(\x05H\aR\x0fpopularityScore\x88\x01\x01\x12 \n" +
+	"\ticon_type\x18\x15 \x01(\tH\bR\biconType\x88\x01\x01\x12 \n" +
+	"\ticon_path\x18\x16 \x01(\tH\tR\biconPath\x88\x01\x01B\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
 	"\x11_destination_typeB\x18\n" +
 	"\x16_external_url_templateB\x10\n" +
-	"\x0e_required_tier\"\xaa\x01\n" +
+	"\x0e_required_tierB\v\n" +
+	"\t_categoryB\r\n" +
+	"\v_sort_orderB\r\n" +
+	"\v_is_premiumB\x13\n" +
+	"\x11_popularity_scoreB\f\n" +
+	"\n" +
+	"_icon_typeB\f\n" +
+	"\n" +
+	"_icon_path\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +

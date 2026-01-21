@@ -38,6 +38,16 @@ message PluginManifest {
   optional string external_url_template = 15;
   // Required tier to use this plugin (e.g., "pro" for Athlete-only features)
   optional string required_tier = 16;
+
+  // UX Organization fields
+  optional string category = 17;              // For grouping (e.g., "wearables", "stats", "detection")
+  optional int32 sort_order = 18;             // Ordering within category (lower = first)
+  optional bool is_premium = 19;              // Display premium badge (Athlete-tier)
+  optional int32 popularity_score = 20;       // For "recommended" sorting in wizard
+
+  // SVG Icon support (for products with real logos)
+  optional string icon_type = 21;             // "emoji" (default) or "svg"
+  optional string icon_path = 22;             // Path to SVG asset (e.g., "/assets/icons/strava.svg")
 }
 
 // Transformation shows a before/after example of what a plugin does to a field
