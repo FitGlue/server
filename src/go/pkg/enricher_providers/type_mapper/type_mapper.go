@@ -1,4 +1,4 @@
-package enricher_providers
+package type_mapper
 
 import (
 	"context"
@@ -6,13 +6,14 @@ import (
 	"strings"
 
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type TypeMapperProvider struct{}
 
 func init() {
-	Register(NewTypeMapperProvider())
+	enricher_providers.Register(NewTypeMapperProvider())
 }
 
 func NewTypeMapperProvider() *TypeMapperProvider {
@@ -33,7 +34,7 @@ type TypeMapperRule struct {
 	TargetType string `json:"target_type"`
 }
 
-func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	var rules []TypeMapperRule
 
 	// Check for type_rules JSON map (from web UI: {"title substring": "ACTIVITY_TYPE_..."})
@@ -63,7 +64,7 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 
 	// No rules configured, nothing to do
 	if len(rules) == 0 {
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_rules_configured"},
 		}, nil
 	}
@@ -71,7 +72,7 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 	// Get the current activity title
 	activityTitle := act.Name
 	if activityTitle == "" {
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_activity_title"},
 		}, nil
 	}
@@ -91,7 +92,7 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 			newType := activity.ParseActivityTypeFromString(rule.TargetType)
 			if newType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
 				act.Type = newType
-				return &EnrichmentResult{
+				return &enricher_providers.EnrichmentResult{
 					Metadata: map[string]string{
 						"original_type":   originalTypeName,
 						"new_type":        activity.GetStravaActivityType(newType),
@@ -104,7 +105,7 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 	}
 
 	// No matching rule found
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Metadata: map[string]string{"status": "skipped", "reason": "no_matching_rule", "title": activityTitle},
 	}, nil
 }

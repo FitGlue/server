@@ -1,4 +1,4 @@
-package enricher_providers
+package ai_companion
 
 import (
 	"context"
@@ -9,45 +9,46 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"github.com/google/generative-ai-go/genai"
 	"google.golang.org/api/option"
 )
 
-// AIDescriptionProvider generates AI-powered activity descriptions using Google Gemini.
+// AICompanionProvider generates AI-powered activity descriptions using Google Gemini.
 // This is an Athlete-tier only feature.
-type AIDescriptionProvider struct {
+type AICompanionProvider struct {
 	Service *bootstrap.Service
 }
 
 func init() {
-	Register(NewAIDescriptionProvider())
+	enricher_providers.Register(NewAICompanionProvider())
 }
 
-func NewAIDescriptionProvider() *AIDescriptionProvider {
-	return &AIDescriptionProvider{}
+func NewAICompanionProvider() *AICompanionProvider {
+	return &AICompanionProvider{}
 }
 
-func (p *AIDescriptionProvider) SetService(service *bootstrap.Service) {
+func (p *AICompanionProvider) SetService(service *bootstrap.Service) {
 	p.Service = service
 }
 
-func (p *AIDescriptionProvider) Name() string {
-	return "ai-description"
+func (p *AICompanionProvider) Name() string {
+	return "ai-companion"
 }
 
-func (p *AIDescriptionProvider) ProviderType() pb.EnricherProviderType {
-	return pb.EnricherProviderType_ENRICHER_PROVIDER_AI_DESCRIPTION
+func (p *AICompanionProvider) ProviderType() pb.EnricherProviderType {
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION
 }
 
-func (p *AIDescriptionProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *AICompanionProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	// Tier check - Athlete (pro) tier only
 	if tier.GetEffectiveTier(user) != tier.TierPro {
-		slog.Info("AI Description skipped: user not on pro tier",
+		slog.Info("AI Companion skipped: user not on pro tier",
 			"user_id", user.UserId,
 			"tier", tier.GetEffectiveTier(user),
 		)
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "skipped",
 				"reason":        "tier_restricted",
@@ -62,14 +63,16 @@ func (p *AIDescriptionProvider) Enrich(ctx context.Context, activity *pb.Standar
 		mode = "description" // Default
 	}
 
+	showSectionHeader := inputs["section_header"] != "false" // Default to true
+
 	// Build context from activity
 	activityContext := buildActivityContext(activity)
 
 	// Get Gemini API key
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		slog.Warn("GEMINI_API_KEY not set, skipping AI description")
-		return &EnrichmentResult{
+		slog.Warn("GEMINI_API_KEY not set, skipping AI companion")
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "skipped",
 				"reason":        "api_key_not_configured",
@@ -81,8 +84,8 @@ func (p *AIDescriptionProvider) Enrich(ctx context.Context, activity *pb.Standar
 	// Generate content using Gemini
 	result, err := p.generateWithGemini(ctx, apiKey, mode, activityContext)
 	if err != nil {
-		slog.Error("Failed to generate AI description", "error", err)
-		return &EnrichmentResult{
+		slog.Error("Failed to generate AI companion content", "error", err)
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "error",
 				"reason":        "generation_failed",
@@ -91,13 +94,17 @@ func (p *AIDescriptionProvider) Enrich(ctx context.Context, activity *pb.Standar
 		}, nil // Don't return error to avoid pipeline failure
 	}
 
-	slog.Info("AI Description generated successfully",
+	if showSectionHeader && result.Description != "" {
+		result.Description = "✨ AI Summary:\n" + result.Description
+	}
+
+	slog.Info("AI Companion content generated successfully",
 		"mode", mode,
 		"has_title", result.Title != "",
 		"has_description", result.Description != "",
 	)
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Name:        result.Title,
 		Description: result.Description,
 		Metadata: map[string]string{
@@ -112,7 +119,7 @@ type aiResult struct {
 	Description string
 }
 
-func (p *AIDescriptionProvider) generateWithGemini(ctx context.Context, apiKey, mode, activityContext string) (*aiResult, error) {
+func (p *AICompanionProvider) generateWithGemini(ctx context.Context, apiKey, mode, activityContext string) (*aiResult, error) {
 	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
@@ -197,15 +204,33 @@ func buildActivityContext(activity *pb.StandardizedActivity) string {
 	var totalDuration float64
 	var totalDistance float64
 	var strengthSets []*pb.StrengthSet
+	var heartRates []float32
+	var cadences []uint32
+	var powers []uint32
+
 	for _, session := range activity.Sessions {
 		totalDuration += session.TotalElapsedTime
 		totalDistance += session.TotalDistance
 		strengthSets = append(strengthSets, session.StrengthSets...)
+
+		for _, lap := range session.Laps {
+			for _, record := range lap.Records {
+				if record.HeartRate > 0 {
+					heartRates = append(heartRates, float32(record.HeartRate))
+				}
+				if record.Cadence > 0 {
+					cadences = append(cadences, uint32(record.Cadence))
+				}
+				if record.Power > 0 {
+					powers = append(powers, uint32(record.Power))
+				}
+			}
+		}
 	}
 
 	if totalDuration > 0 {
 		mins := totalDuration / 60 // seconds to minutes
-		parts = append(parts, fmt.Sprintf("Duration: %.0f minutes", mins))
+		parts = append(parts, fmt.Sprintf("Duration: %.1f minutes", mins))
 	}
 
 	if totalDistance > 0 {
@@ -213,46 +238,113 @@ func buildActivityContext(activity *pb.StandardizedActivity) string {
 		parts = append(parts, fmt.Sprintf("Distance: %.2f km", km))
 	}
 
-	// Exercises (from strength sets)
-	if len(strengthSets) > 0 {
-		exerciseNames := make(map[string]bool)
-		for _, set := range strengthSets {
-			if set.ExerciseName != "" {
-				exerciseNames[set.ExerciseName] = true
+	// Heart Rate Summary
+	if len(heartRates) > 0 {
+		var sum float32
+		var max float32
+		min := heartRates[0]
+		for _, hr := range heartRates {
+			sum += hr
+			if hr > max {
+				max = hr
+			}
+			if hr < min {
+				min = hr
 			}
 		}
-		if len(exerciseNames) > 0 {
-			names := make([]string, 0, len(exerciseNames))
-			for name := range exerciseNames {
-				if len(names) < 5 {
-					names = append(names, name)
-				}
-			}
-			parts = append(parts, fmt.Sprintf("Exercises: %s", strings.Join(names, ", ")))
-		}
-		parts = append(parts, fmt.Sprintf("Total Sets: %d", len(strengthSets)))
+		avg := sum / float32(len(heartRates))
+		parts = append(parts, fmt.Sprintf("Heart Rate: Avg %.0f bpm, Max %.0f bpm, Min %.0f bpm", avg, max, min))
 	}
 
-	// Heart rate data presence
-	hasHR := false
-	for _, session := range activity.Sessions {
-		for _, lap := range session.Laps {
-			for _, record := range lap.Records {
-				if record.HeartRate > 0 {
-					hasHR = true
-					break
-				}
-			}
-			if hasHR {
-				break
+	// Cadence Summary
+	if len(cadences) > 0 {
+		var sum uint32
+		var max uint32
+		for _, c := range cadences {
+			sum += c
+			if c > max {
+				max = c
 			}
 		}
-		if hasHR {
-			break
-		}
+		avg := float64(sum) / float64(len(cadences))
+		parts = append(parts, fmt.Sprintf("Cadence: Avg %.0f rpm, Max %d rpm", avg, max))
 	}
-	if hasHR {
-		parts = append(parts, "Heart Rate Data: Available")
+
+	// Power Summary
+	if len(powers) > 0 {
+		var sum uint32
+		var max uint32
+		for _, p := range powers {
+			sum += p
+			if p > max {
+				max = p
+			}
+		}
+		avg := float64(sum) / float64(len(powers))
+		parts = append(parts, fmt.Sprintf("Power: Avg %.0f W, Max %d W", avg, max))
+	}
+
+	// Strength Exercises Summary
+	if len(strengthSets) > 0 {
+		type exerciseStats struct {
+			totalSets int
+			reps      []int32
+			weights   []float32
+		}
+		exercises := make(map[string]*exerciseStats)
+		var exerciseOrder []string
+
+		for _, set := range strengthSets {
+			if set.ExerciseName == "" {
+				continue
+			}
+			if _, ok := exercises[set.ExerciseName]; !ok {
+				exercises[set.ExerciseName] = &exerciseStats{}
+				exerciseOrder = append(exerciseOrder, set.ExerciseName)
+			}
+			stats := exercises[set.ExerciseName]
+			stats.totalSets++
+			stats.reps = append(stats.reps, set.Reps)
+			stats.weights = append(stats.weights, float32(set.WeightKg))
+		}
+
+		if len(exerciseOrder) > 0 {
+			parts = append(parts, "Strength Exercises:")
+			for _, name := range exerciseOrder {
+				stats := exercises[name]
+
+				// Group by reps/weight to be concise
+				type setGroup struct {
+					reps   int32
+					weight float32
+					count  int
+				}
+				var groups []setGroup
+				for i := 0; i < len(stats.reps); i++ {
+					found := false
+					for gIdx := range groups {
+						if groups[gIdx].reps == stats.reps[i] && groups[gIdx].weight == stats.weights[i] {
+							groups[gIdx].count++
+							found = true
+							break
+						}
+					}
+					if !found {
+						groups = append(groups, setGroup{reps: stats.reps[i], weight: stats.weights[i], count: 1})
+					}
+				}
+
+				var groupParts []string
+				for _, g := range groups {
+					if g.weight > 0 {
+						groupParts = append(groupParts, fmt.Sprintf("%d x %d @ %.1fkg", g.count, g.reps, g.weight))
+					} else {
+						groupParts = append(groupParts, fmt.Sprintf("%d x %d", g.count, g.reps))
+					}
+				}
+				parts = append(parts, fmt.Sprintf("- %s: %s", name, strings.Join(groupParts, ", ")))
+			}
+		}
 	}
 
 	return strings.Join(parts, "\n")

@@ -1,10 +1,11 @@
-package enricher_providers
+package source_link
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -12,7 +13,7 @@ import (
 type SourceLinkProvider struct{}
 
 func init() {
-	Register(NewSourceLinkProvider())
+	enricher_providers.Register(NewSourceLinkProvider())
 }
 
 func NewSourceLinkProvider() *SourceLinkProvider {
@@ -27,9 +28,9 @@ func (p *SourceLinkProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK
 }
 
-func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	if activity.ExternalId == "" {
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_external_id"},
 		}, nil
 	}
@@ -45,7 +46,7 @@ func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 		link = fmt.Sprintf("https://www.strava.com/activities/%s", activity.ExternalId)
 	default:
 		// If unknown source, don't generate a link
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "unknown_source", "source": sourceLower},
 		}, nil
 	}
@@ -55,7 +56,7 @@ func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 	sourceDisplay := strings.Title(strings.TrimPrefix(sourceLower, "source_"))
 	desc := fmt.Sprintf("View on %s: %s", sourceDisplay, link)
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Description: desc,
 		Metadata: map[string]string{
 			"source": sourceDisplay,

@@ -1,4 +1,4 @@
-package enricher_providers
+package muscle_heatmap
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/fitglue/server/src/go/pkg/enricher_providers/muscle_heatmap"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -25,7 +25,7 @@ type MuscleHeatmapProvider struct {
 }
 
 func init() {
-	Register(NewMuscleHeatmapProvider())
+	enricher_providers.Register(NewMuscleHeatmapProvider())
 }
 
 func NewMuscleHeatmapProvider() *MuscleHeatmapProvider {
@@ -75,7 +75,7 @@ func getMuscleCoefficient(coeffs map[pb.MuscleGroup]float64, muscle pb.MuscleGro
 	return 1.0
 }
 
-func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	// Aggregate sets
 	var allSets []*pb.StrengthSet
 	for _, s := range activity.Sessions {
@@ -83,7 +83,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 	}
 
 	if len(allSets) == 0 {
-		return &EnrichmentResult{}, nil
+		return &enricher_providers.EnrichmentResult{}, nil
 	}
 
 	// Parse config options
@@ -126,7 +126,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 
 		// Fallback: if muscle group is unspecified, use taxonomy lookup
 		if primary == pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED || primary == pb.MuscleGroup_MUSCLE_GROUP_OTHER {
-			result := muscle_heatmap.LookupExercise(set.ExerciseName)
+			result := LookupExercise(set.ExerciseName)
 			if result.Matched {
 				primary = result.Primary
 				secondary = result.Secondary
@@ -189,7 +189,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		sb.WriteString(p.formatMuscleRow(k, score, rating, maxScore, barLength, style))
 	}
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata: map[string]string{
 			"muscle_groups_displayed": fmt.Sprintf("%d", len(keys)),

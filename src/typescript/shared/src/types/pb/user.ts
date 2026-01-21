@@ -31,8 +31,8 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_LOGIC_GATE = 13,
   /** ENRICHER_PROVIDER_HEART_RATE_SUMMARY - Config inputs: none (calculates min/avg/max HR from existing heartrate data) */
   ENRICHER_PROVIDER_HEART_RATE_SUMMARY = 14,
-  /** ENRICHER_PROVIDER_AI_DESCRIPTION - Config inputs: "mode" (title/description/both) - Athlete tier only */
-  ENRICHER_PROVIDER_AI_DESCRIPTION = 15,
+  /** ENRICHER_PROVIDER_AI_COMPANION - Config inputs: "mode" (title/description/both) - Athlete tier only */
+  ENRICHER_PROVIDER_AI_COMPANION = 15,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

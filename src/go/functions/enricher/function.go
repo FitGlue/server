@@ -24,11 +24,21 @@ import (
 
 	// Register providers
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/activity_filter"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/ai_companion"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/auto_increment"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/branding"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/condition_matcher"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/fitbit_hr"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/heart_rate_summary"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/logic_gate"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/mock"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/muscle_heatmap"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/parkrun"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/source_link"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/type_mapper"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/user_input"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/virtual_gps"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/workout_summary"
 )
 
 var (

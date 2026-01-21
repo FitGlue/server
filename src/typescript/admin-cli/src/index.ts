@@ -367,7 +367,7 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER]: 'Activity Filter',
         [EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE]: 'Logic Gate',
         [EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY]: 'Heart Rate Summary',
-        [EnricherProviderType.ENRICHER_PROVIDER_AI_DESCRIPTION]: 'AI Description',
+        [EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION]: 'AI Activity Companion',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };
@@ -390,7 +390,7 @@ const getAvailableEnricherChoices = (selectedProviderTypes: EnricherProviderType
         { name: 'Activity Filter', value: EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER },
         { name: 'Logic Gate', value: EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE },
         { name: 'Heart Rate Summary', value: EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY },
-        { name: 'AI Description', value: EnricherProviderType.ENRICHER_PROVIDER_AI_DESCRIPTION },
+        { name: 'AI Activity Companion', value: EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION },
         { name: 'Mock', value: EnricherProviderType.ENRICHER_PROVIDER_MOCK }
     ];
 

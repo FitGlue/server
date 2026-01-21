@@ -1,4 +1,4 @@
-package enricher_providers
+package virtual_gps
 
 import "math"
 

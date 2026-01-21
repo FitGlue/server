@@ -4,18 +4,229 @@
 import { ActivityType, MuscleGroup } from './standardized_activity';
 import { Destination, CloudEventType, CloudEventSource } from './events';
 import { ActivitySource } from './activity';
+import { EnricherProviderType } from './user';
+
+const ActivityTypeNames: Record<string, string> = {
+    'ACTIVITY_TYPE_UNSPECIFIED': 'Workout',
+    'UNSPECIFIED': 'Workout',
+    'Workout': 'Workout',
+    '0': 'Workout',
+    'ACTIVITY_TYPE_ALPINE_SKI': 'Alpine Ski',
+    'ALPINE_SKI': 'Alpine Ski',
+    'Alpine Ski': 'Alpine Ski',
+    '1': 'Alpine Ski',
+    'ACTIVITY_TYPE_BACKCOUNTRY_SKI': 'Backcountry Ski',
+    'BACKCOUNTRY_SKI': 'Backcountry Ski',
+    'Backcountry Ski': 'Backcountry Ski',
+    '2': 'Backcountry Ski',
+    'ACTIVITY_TYPE_BADMINTON': 'Badminton',
+    'BADMINTON': 'Badminton',
+    'Badminton': 'Badminton',
+    '3': 'Badminton',
+    'ACTIVITY_TYPE_CANOEING': 'Canoeing',
+    'CANOEING': 'Canoeing',
+    'Canoeing': 'Canoeing',
+    '4': 'Canoeing',
+    'ACTIVITY_TYPE_CROSSFIT': 'Crossfit',
+    'CROSSFIT': 'Crossfit',
+    'Crossfit': 'Crossfit',
+    '5': 'Crossfit',
+    'ACTIVITY_TYPE_EBIKE_RIDE': 'E-Bike Ride',
+    'EBIKE_RIDE': 'E-Bike Ride',
+    'E-Bike Ride': 'E-Bike Ride',
+    '6': 'E-Bike Ride',
+    'ACTIVITY_TYPE_ELLIPTICAL': 'Elliptical',
+    'ELLIPTICAL': 'Elliptical',
+    'Elliptical': 'Elliptical',
+    '7': 'Elliptical',
+    'ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE': 'E-Mountain Bike Ride',
+    'EMOUNTAIN_BIKE_RIDE': 'E-Mountain Bike Ride',
+    'E-Mountain Bike Ride': 'E-Mountain Bike Ride',
+    '8': 'E-Mountain Bike Ride',
+    'ACTIVITY_TYPE_GOLF': 'Golf',
+    'GOLF': 'Golf',
+    'Golf': 'Golf',
+    '9': 'Golf',
+    'ACTIVITY_TYPE_GRAVEL_RIDE': 'Gravel Ride',
+    'GRAVEL_RIDE': 'Gravel Ride',
+    'Gravel Ride': 'Gravel Ride',
+    '10': 'Gravel Ride',
+    'ACTIVITY_TYPE_HANDCYCLE': 'Handcycle',
+    'HANDCYCLE': 'Handcycle',
+    'Handcycle': 'Handcycle',
+    '11': 'Handcycle',
+    'ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING': 'HIIT',
+    'HIGH_INTENSITY_INTERVAL_TRAINING': 'HIIT',
+    'HIIT': 'HIIT',
+    '12': 'HIIT',
+    'ACTIVITY_TYPE_HIKE': 'Hike',
+    'HIKE': 'Hike',
+    'Hike': 'Hike',
+    '13': 'Hike',
+    'ACTIVITY_TYPE_ICE_SKATE': 'Ice Skate',
+    'ICE_SKATE': 'Ice Skate',
+    'Ice Skate': 'Ice Skate',
+    '14': 'Ice Skate',
+    'ACTIVITY_TYPE_INLINE_SKATE': 'Inline Skate',
+    'INLINE_SKATE': 'Inline Skate',
+    'Inline Skate': 'Inline Skate',
+    '15': 'Inline Skate',
+    'ACTIVITY_TYPE_KAYAKING': 'Kayaking',
+    'KAYAKING': 'Kayaking',
+    'Kayaking': 'Kayaking',
+    '16': 'Kayaking',
+    'ACTIVITY_TYPE_KITESURF': 'Kitesurf',
+    'KITESURF': 'Kitesurf',
+    'Kitesurf': 'Kitesurf',
+    '17': 'Kitesurf',
+    'ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE': 'Mountain Bike Ride',
+    'MOUNTAIN_BIKE_RIDE': 'Mountain Bike Ride',
+    'Mountain Bike Ride': 'Mountain Bike Ride',
+    '18': 'Mountain Bike Ride',
+    'ACTIVITY_TYPE_NORDIC_SKI': 'Nordic Ski',
+    'NORDIC_SKI': 'Nordic Ski',
+    'Nordic Ski': 'Nordic Ski',
+    '19': 'Nordic Ski',
+    'ACTIVITY_TYPE_PICKLEBALL': 'Pickleball',
+    'PICKLEBALL': 'Pickleball',
+    'Pickleball': 'Pickleball',
+    '20': 'Pickleball',
+    'ACTIVITY_TYPE_PILATES': 'Pilates',
+    'PILATES': 'Pilates',
+    'Pilates': 'Pilates',
+    '21': 'Pilates',
+    'ACTIVITY_TYPE_RACQUETBALL': 'Racquetball',
+    'RACQUETBALL': 'Racquetball',
+    'Racquetball': 'Racquetball',
+    '22': 'Racquetball',
+    'ACTIVITY_TYPE_RIDE': 'Ride',
+    'RIDE': 'Ride',
+    'Ride': 'Ride',
+    '23': 'Ride',
+    'ACTIVITY_TYPE_ROCK_CLIMBING': 'Rock Climbing',
+    'ROCK_CLIMBING': 'Rock Climbing',
+    'Rock Climbing': 'Rock Climbing',
+    '24': 'Rock Climbing',
+    'ACTIVITY_TYPE_ROLLER_SKI': 'Roller Ski',
+    'ROLLER_SKI': 'Roller Ski',
+    'Roller Ski': 'Roller Ski',
+    '25': 'Roller Ski',
+    'ACTIVITY_TYPE_ROWING': 'Rowing',
+    'ROWING': 'Rowing',
+    'Rowing': 'Rowing',
+    '26': 'Rowing',
+    'ACTIVITY_TYPE_RUN': 'Run',
+    'RUN': 'Run',
+    'Run': 'Run',
+    '27': 'Run',
+    'ACTIVITY_TYPE_SAIL': 'Sail',
+    'SAIL': 'Sail',
+    'Sail': 'Sail',
+    '28': 'Sail',
+    'ACTIVITY_TYPE_SKATEBOARD': 'Skateboard',
+    'SKATEBOARD': 'Skateboard',
+    'Skateboard': 'Skateboard',
+    '29': 'Skateboard',
+    'ACTIVITY_TYPE_SNOWBOARD': 'Snowboard',
+    'SNOWBOARD': 'Snowboard',
+    'Snowboard': 'Snowboard',
+    '30': 'Snowboard',
+    'ACTIVITY_TYPE_SNOWSHOE': 'Snowshoe',
+    'SNOWSHOE': 'Snowshoe',
+    'Snowshoe': 'Snowshoe',
+    '31': 'Snowshoe',
+    'ACTIVITY_TYPE_SOCCER': 'Soccer',
+    'SOCCER': 'Soccer',
+    'Soccer': 'Soccer',
+    '32': 'Soccer',
+    'ACTIVITY_TYPE_SQUASH': 'Squash',
+    'SQUASH': 'Squash',
+    'Squash': 'Squash',
+    '33': 'Squash',
+    'ACTIVITY_TYPE_STAIR_STEPPER': 'Stair Stepper',
+    'STAIR_STEPPER': 'Stair Stepper',
+    'Stair Stepper': 'Stair Stepper',
+    '34': 'Stair Stepper',
+    'ACTIVITY_TYPE_STAND_UP_PADDLING': 'Stand Up Paddling',
+    'STAND_UP_PADDLING': 'Stand Up Paddling',
+    'Stand Up Paddling': 'Stand Up Paddling',
+    '35': 'Stand Up Paddling',
+    'ACTIVITY_TYPE_SURFING': 'Surfing',
+    'SURFING': 'Surfing',
+    'Surfing': 'Surfing',
+    '36': 'Surfing',
+    'ACTIVITY_TYPE_SWIM': 'Swim',
+    'SWIM': 'Swim',
+    'Swim': 'Swim',
+    '37': 'Swim',
+    'ACTIVITY_TYPE_TABLE_TENNIS': 'Table Tennis',
+    'TABLE_TENNIS': 'Table Tennis',
+    'Table Tennis': 'Table Tennis',
+    '38': 'Table Tennis',
+    'ACTIVITY_TYPE_TENNIS': 'Tennis',
+    'TENNIS': 'Tennis',
+    'Tennis': 'Tennis',
+    '39': 'Tennis',
+    'ACTIVITY_TYPE_TRAIL_RUN': 'Trail Run',
+    'TRAIL_RUN': 'Trail Run',
+    'Trail Run': 'Trail Run',
+    '40': 'Trail Run',
+    'ACTIVITY_TYPE_VELOMOBILE': 'Velomobile',
+    'VELOMOBILE': 'Velomobile',
+    'Velomobile': 'Velomobile',
+    '41': 'Velomobile',
+    'ACTIVITY_TYPE_VIRTUAL_RIDE': 'Virtual Ride',
+    'VIRTUAL_RIDE': 'Virtual Ride',
+    'Virtual Ride': 'Virtual Ride',
+    '42': 'Virtual Ride',
+    'ACTIVITY_TYPE_VIRTUAL_ROW': 'Virtual Row',
+    'VIRTUAL_ROW': 'Virtual Row',
+    'Virtual Row': 'Virtual Row',
+    '43': 'Virtual Row',
+    'ACTIVITY_TYPE_VIRTUAL_RUN': 'Virtual Run',
+    'VIRTUAL_RUN': 'Virtual Run',
+    'Virtual Run': 'Virtual Run',
+    '44': 'Virtual Run',
+    'ACTIVITY_TYPE_WALK': 'Walk',
+    'WALK': 'Walk',
+    'Walk': 'Walk',
+    '45': 'Walk',
+    'ACTIVITY_TYPE_WEIGHT_TRAINING': 'Weight Training',
+    'WEIGHT_TRAINING': 'Weight Training',
+    'Weight Training': 'Weight Training',
+    '46': 'Weight Training',
+    'ACTIVITY_TYPE_WHEELCHAIR': 'Wheelchair',
+    'WHEELCHAIR': 'Wheelchair',
+    'Wheelchair': 'Wheelchair',
+    '47': 'Wheelchair',
+    'ACTIVITY_TYPE_WINDSURF': 'Windsurf',
+    'WINDSURF': 'Windsurf',
+    'Windsurf': 'Windsurf',
+    '48': 'Windsurf',
+    'ACTIVITY_TYPE_WORKOUT': 'Workout',
+    'WORKOUT': 'Workout',
+    '49': 'Workout',
+    'ACTIVITY_TYPE_YOGA': 'Yoga',
+    'YOGA': 'Yoga',
+    'Yoga': 'Yoga',
+    '50': 'Yoga',
+};
 
 export function formatActivityType(value: ActivityType | number | string | undefined | null): string {
   if (value === undefined || value === null) return 'Workout';
 
-  // Handle string numeric values
   if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (ActivityTypeNames[value]) return ActivityTypeNames[value];
+
+    // 2. Handle numeric strings not found in mapping
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed)) {
       value = parsed;
     } else {
-      // Already a formatted string, return cleaned up
-      return value.replace(/([A-Z])/g, ' $1').trim();
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
 
@@ -75,17 +286,108 @@ export function formatActivityType(value: ActivityType | number | string | undef
   }
 }
 
+const MuscleGroupNames: Record<string, string> = {
+    'MUSCLE_GROUP_UNSPECIFIED': 'Unknown',
+    'UNSPECIFIED': 'Unknown',
+    'Unknown': 'Unknown',
+    '0': 'Unknown',
+    'MUSCLE_GROUP_ABDOMINALS': 'Abdominals',
+    'ABDOMINALS': 'Abdominals',
+    'Abdominals': 'Abdominals',
+    '1': 'Abdominals',
+    'MUSCLE_GROUP_SHOULDERS': 'Shoulders',
+    'SHOULDERS': 'Shoulders',
+    'Shoulders': 'Shoulders',
+    '2': 'Shoulders',
+    'MUSCLE_GROUP_BICEPS': 'Biceps',
+    'BICEPS': 'Biceps',
+    'Biceps': 'Biceps',
+    '3': 'Biceps',
+    'MUSCLE_GROUP_TRICEPS': 'Triceps',
+    'TRICEPS': 'Triceps',
+    'Triceps': 'Triceps',
+    '4': 'Triceps',
+    'MUSCLE_GROUP_FOREARMS': 'Forearms',
+    'FOREARMS': 'Forearms',
+    'Forearms': 'Forearms',
+    '5': 'Forearms',
+    'MUSCLE_GROUP_QUADRICEPS': 'Quadriceps',
+    'QUADRICEPS': 'Quadriceps',
+    'Quadriceps': 'Quadriceps',
+    '6': 'Quadriceps',
+    'MUSCLE_GROUP_HAMSTRINGS': 'Hamstrings',
+    'HAMSTRINGS': 'Hamstrings',
+    'Hamstrings': 'Hamstrings',
+    '7': 'Hamstrings',
+    'MUSCLE_GROUP_CALVES': 'Calves',
+    'CALVES': 'Calves',
+    'Calves': 'Calves',
+    '8': 'Calves',
+    'MUSCLE_GROUP_GLUTES': 'Glutes',
+    'GLUTES': 'Glutes',
+    'Glutes': 'Glutes',
+    '9': 'Glutes',
+    'MUSCLE_GROUP_ABDUCTORS': 'Abductors',
+    'ABDUCTORS': 'Abductors',
+    'Abductors': 'Abductors',
+    '10': 'Abductors',
+    'MUSCLE_GROUP_ADDUCTORS': 'Adductors',
+    'ADDUCTORS': 'Adductors',
+    'Adductors': 'Adductors',
+    '11': 'Adductors',
+    'MUSCLE_GROUP_LATS': 'Lats',
+    'LATS': 'Lats',
+    'Lats': 'Lats',
+    '12': 'Lats',
+    'MUSCLE_GROUP_UPPER_BACK': 'Upper Back',
+    'UPPER_BACK': 'Upper Back',
+    'Upper Back': 'Upper Back',
+    '13': 'Upper Back',
+    'MUSCLE_GROUP_TRAPS': 'Traps',
+    'TRAPS': 'Traps',
+    'Traps': 'Traps',
+    '14': 'Traps',
+    'MUSCLE_GROUP_LOWER_BACK': 'Lower Back',
+    'LOWER_BACK': 'Lower Back',
+    'Lower Back': 'Lower Back',
+    '15': 'Lower Back',
+    'MUSCLE_GROUP_CHEST': 'Chest',
+    'CHEST': 'Chest',
+    'Chest': 'Chest',
+    '16': 'Chest',
+    'MUSCLE_GROUP_CARDIO': 'Cardio',
+    'CARDIO': 'Cardio',
+    'Cardio': 'Cardio',
+    '17': 'Cardio',
+    'MUSCLE_GROUP_NECK': 'Neck',
+    'NECK': 'Neck',
+    'Neck': 'Neck',
+    '18': 'Neck',
+    'MUSCLE_GROUP_FULL_BODY': 'Full Body',
+    'FULL_BODY': 'Full Body',
+    'Full Body': 'Full Body',
+    '19': 'Full Body',
+    'MUSCLE_GROUP_OTHER': 'Other',
+    'OTHER': 'Other',
+    'Other': 'Other',
+    '20': 'Other',
+};
+
 export function formatMuscleGroup(value: MuscleGroup | number | string | undefined | null): string {
   if (value === undefined || value === null) return 'Unknown';
 
-  // Handle string numeric values
   if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (MuscleGroupNames[value]) return MuscleGroupNames[value];
+
+    // 2. Handle numeric strings not found in mapping
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed)) {
       value = parsed;
     } else {
-      // Already a formatted string, return cleaned up
-      return value.replace(/([A-Z])/g, ' $1').trim();
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
 
@@ -115,17 +417,44 @@ export function formatMuscleGroup(value: MuscleGroup | number | string | undefin
   }
 }
 
+const DestinationNames: Record<string, string> = {
+    'DESTINATION_UNSPECIFIED': 'Unknown',
+    'UNSPECIFIED': 'Unknown',
+    'Unknown': 'Unknown',
+    '0': 'Unknown',
+    'DESTINATION_STRAVA': 'Strava',
+    'STRAVA': 'Strava',
+    'Strava': 'Strava',
+    '1': 'Strava',
+    'DESTINATION_SHOWCASE': 'Showcase',
+    'SHOWCASE': 'Showcase',
+    'Showcase': 'Showcase',
+    '2': 'Showcase',
+    'DESTINATION_HEVY': 'Hevy',
+    'HEVY': 'Hevy',
+    'Hevy': 'Hevy',
+    '3': 'Hevy',
+    'DESTINATION_MOCK': 'Mock',
+    'MOCK': 'Mock',
+    'Mock': 'Mock',
+    '99': 'Mock',
+};
+
 export function formatDestination(value: Destination | number | string | undefined | null): string {
   if (value === undefined || value === null) return 'Unknown';
 
-  // Handle string numeric values
   if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (DestinationNames[value]) return DestinationNames[value];
+
+    // 2. Handle numeric strings not found in mapping
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed)) {
       value = parsed;
     } else {
-      // Already a formatted string, return cleaned up
-      return value.replace(/([A-Z])/g, ' $1').trim();
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
 
@@ -139,17 +468,56 @@ export function formatDestination(value: Destination | number | string | undefin
   }
 }
 
+const CloudEventTypeNames: Record<string, string> = {
+    'CLOUD_EVENT_TYPE_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'CLOUD_EVENT_TYPE_ACTIVITY_CREATED': 'Activity Created',
+    'ACTIVITY_CREATED': 'Activity Created',
+    'Activity Created': 'Activity Created',
+    '1': 'Activity Created',
+    'CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED': 'Activity Enriched',
+    'ACTIVITY_ENRICHED': 'Activity Enriched',
+    'Activity Enriched': 'Activity Enriched',
+    '2': 'Activity Enriched',
+    'CLOUD_EVENT_TYPE_JOB_ROUTED': 'Job Routed',
+    'JOB_ROUTED': 'Job Routed',
+    'Job Routed': 'Job Routed',
+    '3': 'Job Routed',
+    'CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION': 'Fitbit Notification',
+    'FITBIT_NOTIFICATION': 'Fitbit Notification',
+    'Fitbit Notification': 'Fitbit Notification',
+    '4': 'Fitbit Notification',
+    'CLOUD_EVENT_TYPE_ENRICHMENT_LAG': 'Enrichment Lag',
+    'ENRICHMENT_LAG': 'Enrichment Lag',
+    'Enrichment Lag': 'Enrichment Lag',
+    '5': 'Enrichment Lag',
+    'CLOUD_EVENT_TYPE_INPUT_RESOLVED': 'Input Resolved',
+    'INPUT_RESOLVED': 'Input Resolved',
+    'Input Resolved': 'Input Resolved',
+    '6': 'Input Resolved',
+    'CLOUD_EVENT_TYPE_PARKRUN_RESULTS': 'Parkrun Results',
+    'PARKRUN_RESULTS': 'Parkrun Results',
+    'Parkrun Results': 'Parkrun Results',
+    '7': 'Parkrun Results',
+};
+
 export function formatCloudEventType(value: CloudEventType | number | string | undefined | null): string {
   if (value === undefined || value === null) return 'Unknown';
 
-  // Handle string numeric values
   if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (CloudEventTypeNames[value]) return CloudEventTypeNames[value];
+
+    // 2. Handle numeric strings not found in mapping
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed)) {
       value = parsed;
     } else {
-      // Already a formatted string, return cleaned up
-      return value.replace(/([A-Z])/g, ' $1').trim();
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
 
@@ -166,17 +534,64 @@ export function formatCloudEventType(value: CloudEventType | number | string | u
   }
 }
 
+const CloudEventSourceNames: Record<string, string> = {
+    'CLOUD_EVENT_SOURCE_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'CLOUD_EVENT_SOURCE_HEVY': 'Hevy',
+    'HEVY': 'Hevy',
+    'Hevy': 'Hevy',
+    '1': 'Hevy',
+    'CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK': 'Fitbit Webhook',
+    'FITBIT_WEBHOOK': 'Fitbit Webhook',
+    'Fitbit Webhook': 'Fitbit Webhook',
+    '2': 'Fitbit Webhook',
+    'CLOUD_EVENT_SOURCE_FITBIT_INGEST': 'Fitbit Ingest',
+    'FITBIT_INGEST': 'Fitbit Ingest',
+    'Fitbit Ingest': 'Fitbit Ingest',
+    '3': 'Fitbit Ingest',
+    'CLOUD_EVENT_SOURCE_ENRICHER': 'Enricher',
+    'ENRICHER': 'Enricher',
+    'Enricher': 'Enricher',
+    '4': 'Enricher',
+    'CLOUD_EVENT_SOURCE_ROUTER': 'Router',
+    'ROUTER': 'Router',
+    'Router': 'Router',
+    '5': 'Router',
+    'CLOUD_EVENT_SOURCE_INPUTS_HANDLER': 'Inputs Handler',
+    'INPUTS_HANDLER': 'Inputs Handler',
+    'Inputs Handler': 'Inputs Handler',
+    '6': 'Inputs Handler',
+    'CLOUD_EVENT_SOURCE_PARKRUN_RESULTS': 'Parkrun Results',
+    'PARKRUN_RESULTS': 'Parkrun Results',
+    'Parkrun Results': 'Parkrun Results',
+    '7': 'Parkrun Results',
+    'CLOUD_EVENT_SOURCE_FILE_UPLOAD': 'File Upload',
+    'FILE_UPLOAD': 'File Upload',
+    'File Upload': 'File Upload',
+    '8': 'File Upload',
+    'CLOUD_EVENT_SOURCE_MOCK': 'Mock',
+    'MOCK': 'Mock',
+    'Mock': 'Mock',
+    '99': 'Mock',
+};
+
 export function formatCloudEventSource(value: CloudEventSource | number | string | undefined | null): string {
   if (value === undefined || value === null) return 'Unknown';
 
-  // Handle string numeric values
   if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (CloudEventSourceNames[value]) return CloudEventSourceNames[value];
+
+    // 2. Handle numeric strings not found in mapping
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed)) {
       value = parsed;
     } else {
-      // Already a formatted string, return cleaned up
-      return value.replace(/([A-Z])/g, ' $1').trim();
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
 
@@ -195,17 +610,64 @@ export function formatCloudEventSource(value: CloudEventSource | number | string
   }
 }
 
+const ActivitySourceNames: Record<string, string> = {
+    'SOURCE_UNKNOWN': 'Unknown',
+    'UNKNOWN': 'Unknown',
+    'Unknown': 'Unknown',
+    '0': 'Unknown',
+    'SOURCE_HEVY': 'Hevy',
+    'HEVY': 'Hevy',
+    'Hevy': 'Hevy',
+    '1': 'Hevy',
+    'SOURCE_FITBIT': 'Fitbit',
+    'FITBIT': 'Fitbit',
+    'Fitbit': 'Fitbit',
+    '3': 'Fitbit',
+    'SOURCE_PARKRUN_RESULTS': 'Parkrun Results',
+    'PARKRUN_RESULTS': 'Parkrun Results',
+    'Parkrun Results': 'Parkrun Results',
+    '4': 'Parkrun Results',
+    'SOURCE_FILE_UPLOAD': 'File Upload',
+    'FILE_UPLOAD': 'File Upload',
+    'File Upload': 'File Upload',
+    '5': 'File Upload',
+    'SOURCE_STRAVA': 'Strava',
+    'STRAVA': 'Strava',
+    'Strava': 'Strava',
+    '6': 'Strava',
+    'SOURCE_GARMIN': 'Garmin',
+    'GARMIN': 'Garmin',
+    'Garmin': 'Garmin',
+    '7': 'Garmin',
+    'SOURCE_APPLE_HEALTH': 'Apple Health',
+    'APPLE_HEALTH': 'Apple Health',
+    'Apple Health': 'Apple Health',
+    '8': 'Apple Health',
+    'SOURCE_HEALTH_CONNECT': 'Health Connect',
+    'HEALTH_CONNECT': 'Health Connect',
+    'Health Connect': 'Health Connect',
+    '9': 'Health Connect',
+    'SOURCE_TEST': 'Test',
+    'TEST': 'Test',
+    'Test': 'Test',
+    '99': 'Test',
+};
+
 export function formatActivitySource(value: ActivitySource | number | string | undefined | null): string {
   if (value === undefined || value === null) return 'Unknown';
 
-  // Handle string numeric values
   if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (ActivitySourceNames[value]) return ActivitySourceNames[value];
+
+    // 2. Handle numeric strings not found in mapping
     const parsed = parseInt(value, 10);
     if (!isNaN(parsed)) {
       value = parsed;
     } else {
-      // Already a formatted string, return cleaned up
-      return value.replace(/([A-Z])/g, ' $1').trim();
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
     }
   }
 
@@ -215,7 +677,117 @@ export function formatActivitySource(value: ActivitySource | number | string | u
     case ActivitySource.SOURCE_FITBIT: return 'Fitbit';
     case ActivitySource.SOURCE_PARKRUN_RESULTS: return 'Parkrun Results';
     case ActivitySource.SOURCE_FILE_UPLOAD: return 'File Upload';
+    case ActivitySource.SOURCE_STRAVA: return 'Strava';
+    case ActivitySource.SOURCE_GARMIN: return 'Garmin';
+    case ActivitySource.SOURCE_APPLE_HEALTH: return 'Apple Health';
+    case ActivitySource.SOURCE_HEALTH_CONNECT: return 'Health Connect';
     case ActivitySource.SOURCE_TEST: return 'Test';
+    default: return 'Unknown';
+  }
+}
+
+const EnricherProviderTypeNames: Record<string, string> = {
+    'ENRICHER_PROVIDER_UNSPECIFIED': 'Unknown',
+    'UNSPECIFIED': 'Unknown',
+    'Unknown': 'Unknown',
+    '0': 'Unknown',
+    'ENRICHER_PROVIDER_FITBIT_HEART_RATE': 'Fitbit Heart Rate',
+    'FITBIT_HEART_RATE': 'Fitbit Heart Rate',
+    'Fitbit Heart Rate': 'Fitbit Heart Rate',
+    '1': 'Fitbit Heart Rate',
+    'ENRICHER_PROVIDER_WORKOUT_SUMMARY': 'Workout Summary',
+    'WORKOUT_SUMMARY': 'Workout Summary',
+    'Workout Summary': 'Workout Summary',
+    '2': 'Workout Summary',
+    'ENRICHER_PROVIDER_MUSCLE_HEATMAP': 'Muscle Heatmap',
+    'MUSCLE_HEATMAP': 'Muscle Heatmap',
+    'Muscle Heatmap': 'Muscle Heatmap',
+    '3': 'Muscle Heatmap',
+    'ENRICHER_PROVIDER_SOURCE_LINK': 'Source Link',
+    'SOURCE_LINK': 'Source Link',
+    'Source Link': 'Source Link',
+    '4': 'Source Link',
+    'ENRICHER_PROVIDER_VIRTUAL_GPS': 'Virtual Gps',
+    'VIRTUAL_GPS': 'Virtual Gps',
+    'Virtual Gps': 'Virtual Gps',
+    '6': 'Virtual Gps',
+    'ENRICHER_PROVIDER_TYPE_MAPPER': 'Type Mapper',
+    'TYPE_MAPPER': 'Type Mapper',
+    'Type Mapper': 'Type Mapper',
+    '7': 'Type Mapper',
+    'ENRICHER_PROVIDER_PARKRUN': 'Parkrun',
+    'PARKRUN': 'Parkrun',
+    'Parkrun': 'Parkrun',
+    '8': 'Parkrun',
+    'ENRICHER_PROVIDER_CONDITION_MATCHER': 'Condition Matcher',
+    'CONDITION_MATCHER': 'Condition Matcher',
+    'Condition Matcher': 'Condition Matcher',
+    '9': 'Condition Matcher',
+    'ENRICHER_PROVIDER_AUTO_INCREMENT': 'Auto Increment',
+    'AUTO_INCREMENT': 'Auto Increment',
+    'Auto Increment': 'Auto Increment',
+    '10': 'Auto Increment',
+    'ENRICHER_PROVIDER_USER_INPUT': 'User Input',
+    'USER_INPUT': 'User Input',
+    'User Input': 'User Input',
+    '11': 'User Input',
+    'ENRICHER_PROVIDER_ACTIVITY_FILTER': 'Activity Filter',
+    'ACTIVITY_FILTER': 'Activity Filter',
+    'Activity Filter': 'Activity Filter',
+    '12': 'Activity Filter',
+    'ENRICHER_PROVIDER_LOGIC_GATE': 'Logic Gate',
+    'LOGIC_GATE': 'Logic Gate',
+    'Logic Gate': 'Logic Gate',
+    '13': 'Logic Gate',
+    'ENRICHER_PROVIDER_HEART_RATE_SUMMARY': 'Heart Rate Summary',
+    'HEART_RATE_SUMMARY': 'Heart Rate Summary',
+    'Heart Rate Summary': 'Heart Rate Summary',
+    '14': 'Heart Rate Summary',
+    'ENRICHER_PROVIDER_AI_COMPANION': 'Ai Companion',
+    'AI_COMPANION': 'Ai Companion',
+    'Ai Companion': 'Ai Companion',
+    '15': 'Ai Companion',
+    'ENRICHER_PROVIDER_MOCK': 'Mock',
+    'MOCK': 'Mock',
+    'Mock': 'Mock',
+    '99': 'Mock',
+};
+
+export function formatEnricherProviderType(value: EnricherProviderType | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Unknown';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (EnricherProviderTypeNames[value]) return EnricherProviderTypeNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case EnricherProviderType.ENRICHER_PROVIDER_UNSPECIFIED: return 'Unknown';
+    case EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE: return 'Fitbit Heart Rate';
+    case EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY: return 'Workout Summary';
+    case EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP: return 'Muscle Heatmap';
+    case EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK: return 'Source Link';
+    case EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS: return 'Virtual Gps';
+    case EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER: return 'Type Mapper';
+    case EnricherProviderType.ENRICHER_PROVIDER_PARKRUN: return 'Parkrun';
+    case EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER: return 'Condition Matcher';
+    case EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT: return 'Auto Increment';
+    case EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT: return 'User Input';
+    case EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER: return 'Activity Filter';
+    case EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE: return 'Logic Gate';
+    case EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY: return 'Heart Rate Summary';
+    case EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION: return 'Ai Companion';
+    case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }
 }

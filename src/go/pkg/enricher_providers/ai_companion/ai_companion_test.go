@@ -1,16 +1,15 @@
-package enricher_providers_test
+package ai_companion
 
 import (
 	"context"
 	"testing"
 
-	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func TestAIDescriptionProvider_TierCheck(t *testing.T) {
-	provider := enricher_providers.NewAIDescriptionProvider()
+func TestAICompanionProvider_TierCheck(t *testing.T) {
+	provider := NewAICompanionProvider()
 
 	activity := &pb.StandardizedActivity{
 		Name: "Morning Run",
@@ -73,8 +72,8 @@ func TestAIDescriptionProvider_TierCheck(t *testing.T) {
 	}
 }
 
-func TestAIDescriptionProvider_FreeTierSkipped(t *testing.T) {
-	provider := enricher_providers.NewAIDescriptionProvider()
+func TestAICompanionProvider_FreeTierSkipped(t *testing.T) {
+	provider := NewAICompanionProvider()
 
 	activity := &pb.StandardizedActivity{
 		Name: "Weight Training",
@@ -112,8 +111,8 @@ func TestAIDescriptionProvider_FreeTierSkipped(t *testing.T) {
 	}
 }
 
-func TestAIDescriptionProvider_ModeConfig(t *testing.T) {
-	provider := enricher_providers.NewAIDescriptionProvider()
+func TestAICompanionProvider_ModeConfig(t *testing.T) {
+	provider := NewAICompanionProvider()
 
 	activity := &pb.StandardizedActivity{
 		Name: "Morning Run",
@@ -149,18 +148,18 @@ func TestAIDescriptionProvider_ModeConfig(t *testing.T) {
 	}
 }
 
-func TestAIDescriptionProvider_Name(t *testing.T) {
-	provider := enricher_providers.NewAIDescriptionProvider()
+func TestAICompanionProvider_Name(t *testing.T) {
+	provider := NewAICompanionProvider()
 
-	if provider.Name() != "ai-description" {
-		t.Errorf("expected name 'ai-description', got %q", provider.Name())
+	if provider.Name() != "ai-companion" {
+		t.Errorf("expected name 'ai-companion', got %q", provider.Name())
 	}
 }
 
-func TestAIDescriptionProvider_ProviderType(t *testing.T) {
-	provider := enricher_providers.NewAIDescriptionProvider()
+func TestAICompanionProvider_ProviderType(t *testing.T) {
+	provider := NewAICompanionProvider()
 
-	expected := pb.EnricherProviderType_ENRICHER_PROVIDER_AI_DESCRIPTION
+	expected := pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION
 	if provider.ProviderType() != expected {
 		t.Errorf("expected provider type %v, got %v", expected, provider.ProviderType())
 	}

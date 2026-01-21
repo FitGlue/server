@@ -1,4 +1,4 @@
-package enricher_providers
+package fitbit_hr
 
 import (
 	"bytes"
@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -211,7 +212,7 @@ func TestFitBitHeartRate_Enrich_LagDetected(t *testing.T) {
 		t.Fatal("Expected error for recent missing data")
 	}
 
-	if retryErr, ok := err.(*RetryableError); !ok {
+	if retryErr, ok := err.(*enricher_providers.RetryableError); !ok {
 		t.Errorf("Expected RetryableError, got %T: %v", err, err)
 	} else {
 		if retryErr.RetryAfter == 0 {

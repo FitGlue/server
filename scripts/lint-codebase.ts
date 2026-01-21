@@ -36,7 +36,7 @@ const ERROR_RULES = new Set([
   // Infrastructure
   'I1', 'I2', 'I3', 'I4', 'I5',
   // Go
-  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11',
+  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13',
   // TypeScript
   'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12',
   // Cross-Language
@@ -55,8 +55,8 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'X1': [/enum-formatters\.ts/],
   // T10: mobile-sync-handler uses different architecture
   'T10': [/mobile-sync-handler/],
-  // X3: FILE_UPLOAD uses fit-parser-handler
-  'X3': [/FILE_UPLOAD/],
+  // X3: Sources that don't need dedicated handlers (handled by others or mobile)
+  'X3': [/FILE_UPLOAD/, /PARKRUN_RESULTS/, /APPLE_HEALTH/, /HEALTH_CONNECT/, /GARMIN/],
   // G3: Existing error wrapping patterns - legacy code
   'G3': [/router\/function\.go/],
   // G4: Many existing logger patterns - needs gradual migration
@@ -385,7 +385,7 @@ function checkRegistryCoverage(): CheckResult {
   }
 
   // Known sources that should be registered
-  const expectedSources = ['hevy', 'fitbit', 'mock', 'apple-health', 'health-connect'];
+  const expectedSources = ['hevy', 'fitbit', 'mock', 'apple_health', 'health_connect'];
   for (const source of expectedSources) {
     if (!registeredSources.has(source)) {
       warnings.push(`Source '${source}' may not be registered`);
@@ -1268,6 +1268,69 @@ function checkDestinationUrlTemplates(): CheckResult {
   };
 }
 
+// ============================================================================
+// Check 13b: Enricher Provider Architecture (G13)
+// ============================================================================
+
+/**
+ * Validates Go enricher provider architecture:
+ * 1. Each provider is in its own sub-package under src/go/pkg/enricher_providers/.
+ * 2. Each provider package is blank-imported in src/go/functions/enricher/function.go.
+ */
+function checkEnricherProviderArchitecture(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const providersRoot = path.join(GO_SRC_DIR, 'pkg/enricher_providers');
+  const functionGoPath = path.join(GO_SRC_DIR, 'functions/enricher/function.go');
+
+  if (!fs.existsSync(providersRoot)) {
+    return { name: 'Enricher Provider Architecture (G13)', passed: true, errors, warnings };
+  }
+
+  const subDirs = fs.readdirSync(providersRoot, { withFileTypes: true })
+    .filter(dirent => dirent.isDirectory())
+    .map(dirent => dirent.name);
+
+  const functionGoContent = fs.existsSync(functionGoPath) ? fs.readFileSync(functionGoPath, 'utf-8') : '';
+
+  for (const dir of subDirs) {
+    // Skip base files and internal dirs
+    if (dir === 'internal' || dir === 'mock') continue;
+
+    const dirPath = path.join(providersRoot, dir);
+    const goFiles = fs.readdirSync(dirPath).filter(f => f.endsWith('.go'));
+
+    if (goFiles.length === 0) continue;
+
+    // 1. Check for blank import in function.go
+    const importPath = `github.com/fitglue/server/src/go/pkg/enricher_providers/${dir}`;
+    // Support both tab and space indentation
+    const hasImport = functionGoContent.includes(`_ "${importPath}"`) ||
+      functionGoContent.includes(`_	"${importPath}"`);
+
+    if (functionGoContent !== '' && !hasImport) {
+      errors.push(`Enricher provider '${dir}' is not registered in enricher/function.go (missing blank import for ${importPath})`);
+    }
+
+    // 2. Check for package declaration matching directory name
+    const mainFile = goFiles.find(f => f === `${dir}.go` || f === 'provider.go') || goFiles[0];
+    if (mainFile) {
+      const content = fs.readFileSync(path.join(dirPath, mainFile), 'utf-8');
+      const pkgName = dir.replace(/-/g, '_');
+      if (!content.includes(`package ${pkgName}`)) {
+        warnings.push(`Enricher provider '${dir}' in ${mainFile} should have 'package ${pkgName}'`);
+      }
+    }
+  }
+
+  return {
+    name: 'Enricher Provider Architecture (G13)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
 
 // ============================================================================
 // Check 14: Environment Variable Access (T8)
@@ -2335,7 +2398,7 @@ function checkSourceHandlerCoverage(): CheckResult {
   const handlerNames = handlerDirs.map(d => d.toLowerCase());
 
   // Exemptions (sources that don't need dedicated handlers)
-  const exemptions = ['PARKRUN_RESULTS']; // Uses inputs-handler
+  const exemptions = ['PARKRUN_RESULTS', 'FILE_UPLOAD', 'APPLE_HEALTH', 'HEALTH_CONNECT', 'GARMIN', 'STRAVA'];
 
   for (const source of sources) {
     if (exemptions.includes(source)) continue;
@@ -3342,6 +3405,7 @@ function main(): void {
         { id: 'G10', fn: () => ({ ...checkLoopPrevention(), name: 'G10: Loop Prevention' }) },
         { id: 'G11', fn: () => ({ ...checkDestinationReturnFields(), name: 'G11: Destination Return Fields' }) },
         { id: 'G12', fn: () => ({ ...checkDestinationUrlTemplates(), name: 'G12: Destination URL Templates' }) },
+        { id: 'G13', fn: () => ({ ...checkEnricherProviderArchitecture(), name: 'G13: Enricher Provider Architecture' }) },
       ]
     },
     {

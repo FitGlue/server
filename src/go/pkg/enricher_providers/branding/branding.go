@@ -1,8 +1,9 @@
-package enricher_providers
+package branding
 
 import (
 	"context"
 
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -10,7 +11,7 @@ import (
 type BrandingProvider struct{}
 
 func init() {
-	Register(NewBrandingProvider())
+	enricher_providers.Register(NewBrandingProvider())
 }
 
 func NewBrandingProvider() *BrandingProvider {
@@ -25,14 +26,14 @@ func (p *BrandingProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
 }
 
-func (p *BrandingProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *BrandingProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	// Get custom message from config, or use default
 	message := inputConfig["message"]
 	if message == "" {
 		message = "Posted via FitGlue 💪"
 	}
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Description: "\n\n" + message,
 		Metadata: map[string]string{
 			"message": message,

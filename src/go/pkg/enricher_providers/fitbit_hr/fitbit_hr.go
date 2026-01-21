@@ -1,4 +1,4 @@
-package enricher_providers
+package fitbit_hr
 
 import (
 	"context"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	fitbit "github.com/fitglue/server/src/go/pkg/integrations/fitbit"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
@@ -20,7 +21,7 @@ type FitBitHeartRate struct {
 }
 
 func init() {
-	Register(NewFitBitHeartRate())
+	enricher_providers.Register(NewFitBitHeartRate())
 }
 
 func NewFitBitHeartRate() *FitBitHeartRate {
@@ -39,17 +40,17 @@ func (p *FitBitHeartRate) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE
 }
 
-func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	return p.EnrichWithClient(ctx, activity, user, inputs, nil, doNotRetry)
 }
 
 // EnrichWithClient allows HTTP client injection for testing
-func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	// 0. Check force option - skip if activity already has heartrate data and force is not set
 	forceOverwrite := inputs["force"] == "true"
 	if !forceOverwrite && hasExistingHeartRateData(activity) {
 		slog.Info("Skipping Fitbit HR enrichment: activity already has heartrate data and force=false")
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"hr_source":     "skipped",
 				"status_detail": "Activity already has heartrate data",
@@ -129,13 +130,13 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 		slog.Info("GPS data detected, applying elastic HR alignment")
 
 		// Convert HR response to timed samples
-		hrSamples := ConvertHRResponseToSamples(hrResponse.ActivitiesHeartIntraday.Dataset, startTime)
+		hrSamples := enricher_providers.ConvertHRResponseToSamples(hrResponse.ActivitiesHeartIntraday.Dataset, startTime)
 
 		// Extract GPS timestamps from activity records
 		gpsTimestamps := extractGPSTimestamps(activity)
 
 		if len(gpsTimestamps) > 0 && len(hrSamples) > 0 {
-			alignResult, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+			alignResult, err := enricher_providers.AlignTimeSeries(gpsTimestamps, hrSamples, enricher_providers.DefaultAlignmentConfig)
 			if err != nil {
 				slog.Warn("HR alignment failed, falling back to index-based mapping", "error", err)
 				stream = buildStreamIndexBased(hrResponse.ActivitiesHeartIntraday.Dataset, startTimeStr, durationSec)
@@ -204,7 +205,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 		} else {
 			slog.Warn("Incomplete data detected: " + reason)
 			// Return RetryableError to trigger lag mechanism
-			lagErr = NewRetryableError(fmt.Errorf("incomplete data"), 1*time.Minute, reason)
+			lagErr = enricher_providers.NewRetryableError(fmt.Errorf("incomplete data"), 1*time.Minute, reason)
 			// Logic: If it's a RetryableError, the system will discard this result anyway.
 			return nil, lagErr
 		}
@@ -213,7 +214,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 		slog.Warn(fmt.Sprintf("No heart rate data points found in Fitbit response start_time=%s end_time=%s", startTimeStr, endTimeStr))
 	}
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Name:            "", // Don't wipe name
 		HeartRateStream: stream,
 		Metadata: mergeMetadata(map[string]string{

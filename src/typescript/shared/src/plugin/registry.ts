@@ -195,7 +195,7 @@ registerSource({
 });
 
 registerSource({
-  id: 'apple-health',
+  id: 'apple_health',
   type: PluginType.PLUGIN_TYPE_SOURCE,
   name: 'Apple Health',
   description: 'Import workouts and health data from iOS devices',
@@ -221,7 +221,7 @@ Install the FitGlue mobile app on your iOS device and grant access to Apple Heal
 });
 
 registerSource({
-  id: 'health-connect',
+  id: 'health_connect',
   type: PluginType.PLUGIN_TYPE_SOURCE,
   name: 'Health Connect',
   description: 'Import workouts and health data from Android devices',
@@ -299,6 +299,47 @@ Select a FIT file, optionally add title/description, then upload. The activity e
     'Bring in activities from platforms FitGlue doesn\'t integrate with yet',
     'Recover activities from device backups',
   ],
+});
+
+registerSource({
+  id: 'strava',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'Strava',
+  description: 'Import activities from Strava',
+  icon: '🚴',
+  enabled: true,
+  requiredIntegrations: ['strava'],
+  configSchema: [],
+  marketingDescription: `
+### Popular Activity Source
+Import activities tracked by Strava into FitGlue. Runs, rides, and workouts are all supported.
+  `,
+  features: [
+    '✅ Import all Strava activities',
+    '✅ Heart rate and GPS data included',
+  ],
+  transformations: [],
+  useCases: [],
+});
+
+registerSource({
+  id: 'garmin',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'Garmin',
+  description: 'Import activities from Garmin Connect',
+  icon: '⌚',
+  enabled: true,
+  requiredIntegrations: ['garmin'],
+  configSchema: [],
+  marketingDescription: `
+### Garmin Connect Source
+Standard Garmin Connect integration for importing activities.
+  `,
+  features: [
+    '✅ Import activities from Garmin devices',
+  ],
+  transformations: [],
+  useCases: [],
 });
 
 // ============================================================================
@@ -1289,11 +1330,11 @@ When your activity has heart rate data (from Fitbit, Apple Watch, or any source)
   ],
 });
 
-registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_DESCRIPTION, {
-  id: 'ai-description',
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION, {
+  id: 'ai-companion',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
-  name: 'AI Description',
-  description: 'Generates AI-powered titles or descriptions for your activities (Athlete tier only)',
+  name: 'AI Activity Companion',
+  description: 'Generates AI-powered titles, descriptions, and summaries for your activities (Athlete tier only)',
   icon: '✨',
   enabled: true,
   requiredIntegrations: [],
@@ -1312,20 +1353,33 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_DESCRIPTION, {
         { value: 'both', label: 'Both title and description' },
       ],
     },
+    {
+      key: 'section_header',
+      label: 'Show Section Header',
+      description: 'Prepend "✨ AI Summary:" to the generated description',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
   ],
   marketingDescription: `
-### AI-Powered Activity Narratives
+### AI-Powered Activity Companion
 Let AI craft engaging titles and descriptions for your workouts. Turn raw data into compelling stories.
 
 ### How it works
 When enabled, this Booster uses a large language model to analyze your activity data—type, duration, distance, heart rate, exercises—and generates a human-like title and/or description. Perfect for making your Strava feed more interesting!
+
+### Configurable Summaries
+You can choose whether to include a "✨ AI Summary:" header. This is useful if you want to keep your own description and add the AI-generated one below it.
 
 ### Athlete Tier Only
 This premium feature is exclusively available to Athlete tier subscribers.
   `,
   features: [
     '✅ AI-generated titles and descriptions',
-    '✅ Analyzes activity context and data',
+    '✅ Analyzes activity context and data (HR, Cadence, Sets, etc.)',
+    '✅ Optional "✨ AI Summary:" section header',
     '✅ Creates engaging workout narratives',
     '✅ Athlete tier exclusive',
   ],
@@ -1341,8 +1395,8 @@ This premium feature is exclusively available to Athlete tier subscribers.
     {
       field: 'description',
       label: 'Activity Description (mode: description or both)',
-      before: '45 min',
-      after: '💪 Crushed an intense upper body session today! Focused on compound movements with progressive overload. Feeling strong!',
+      before: '45 min session',
+      after: '✨ AI Summary:\n💪 Crushed an intense upper body session today! Focused on compound movements with progressive overload. Feeling strong!',
       visualType: '',
       afterHtml: '',
     },

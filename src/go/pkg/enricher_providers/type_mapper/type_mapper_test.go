@@ -1,16 +1,15 @@
-package enricher_providers_test
+package type_mapper
 
 import (
 	"context"
 	"testing"
 
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
-	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 func TestTypeMapperProvider_Enrich(t *testing.T) {
-	provider := enricher_providers.NewTypeMapperProvider()
+	provider := NewTypeMapperProvider()
 	ctx := context.Background()
 
 	// The type mapper works by matching title substrings to target activity types.

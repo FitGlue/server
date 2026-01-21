@@ -1,4 +1,4 @@
-package enricher_providers
+package heart_rate_summary
 
 import (
 	"context"

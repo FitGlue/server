@@ -1,17 +1,18 @@
-package enricher_providers
+package virtual_gps
 
 import (
 	"context"
 	"fmt"
 	"math"
 
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type VirtualGPSProvider struct{}
 
 func init() {
-	Register(NewVirtualGPSProvider())
+	enricher_providers.Register(NewVirtualGPSProvider())
 }
 
 func NewVirtualGPSProvider() *VirtualGPSProvider {
@@ -26,10 +27,10 @@ func (p *VirtualGPSProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS
 }
 
-func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	// 1. Validation
 	if len(activity.Sessions) == 0 {
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_sessions"},
 		}, nil
 	}
@@ -39,7 +40,7 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 
 	// Only apply if distance > 0 and duration > 0
 	if distance <= 0 || duration <= 0 {
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_distance_or_duration"},
 		}, nil
 	}
@@ -58,7 +59,7 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 	// Allow override via inputConfig
 	force := inputConfig["force"] == "true"
 	if hasGPS && !force {
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "gps_already_exists", "force": "false"},
 		}, nil
 	}
@@ -128,7 +129,7 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 		longStream[t] = long
 	}
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		PositionLatStream:  latStream,
 		PositionLongStream: longStream,
 		Description:        fmt.Sprintf("🗺️ Took a virtual tour of %s (GPS generated for this indoor workout)\n", route.Name),

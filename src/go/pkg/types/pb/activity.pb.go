@@ -31,6 +31,10 @@ const (
 	ActivitySource_SOURCE_FITBIT          ActivitySource = 3
 	ActivitySource_SOURCE_PARKRUN_RESULTS ActivitySource = 4 // Parkrun official results (CREATE mode)
 	ActivitySource_SOURCE_FILE_UPLOAD     ActivitySource = 5 // Direct FIT file upload
+	ActivitySource_SOURCE_STRAVA          ActivitySource = 6
+	ActivitySource_SOURCE_GARMIN          ActivitySource = 7
+	ActivitySource_SOURCE_APPLE_HEALTH    ActivitySource = 8
+	ActivitySource_SOURCE_HEALTH_CONNECT  ActivitySource = 9
 	ActivitySource_SOURCE_TEST            ActivitySource = 99
 )
 
@@ -42,6 +46,10 @@ var (
 		3:  "SOURCE_FITBIT",
 		4:  "SOURCE_PARKRUN_RESULTS",
 		5:  "SOURCE_FILE_UPLOAD",
+		6:  "SOURCE_STRAVA",
+		7:  "SOURCE_GARMIN",
+		8:  "SOURCE_APPLE_HEALTH",
+		9:  "SOURCE_HEALTH_CONNECT",
 		99: "SOURCE_TEST",
 	}
 	ActivitySource_value = map[string]int32{
@@ -50,6 +58,10 @@ var (
 		"SOURCE_FITBIT":          3,
 		"SOURCE_PARKRUN_RESULTS": 4,
 		"SOURCE_FILE_UPLOAD":     5,
+		"SOURCE_STRAVA":          6,
+		"SOURCE_GARMIN":          7,
+		"SOURCE_APPLE_HEALTH":    8,
+		"SOURCE_HEALTH_CONNECT":  9,
 		"SOURCE_TEST":            99,
 	}
 )
@@ -263,13 +275,17 @@ const file_activity_proto_rawDesc = "" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
 	"\x18_resume_pending_input_idB\x15\n" +
-	"\x13_origin_destination*\x8d\x01\n" +
+	"\x13_origin_destination*\xe7\x01\n" +
 	"\x0eActivitySource\x12\x12\n" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +
 	"\rSOURCE_FITBIT\x10\x03\x12\x1a\n" +
 	"\x16SOURCE_PARKRUN_RESULTS\x10\x04\x12\x16\n" +
-	"\x12SOURCE_FILE_UPLOAD\x10\x05\x12\x0f\n" +
+	"\x12SOURCE_FILE_UPLOAD\x10\x05\x12\x11\n" +
+	"\rSOURCE_STRAVA\x10\x06\x12\x11\n" +
+	"\rSOURCE_GARMIN\x10\a\x12\x17\n" +
+	"\x13SOURCE_APPLE_HEALTH\x10\b\x12\x19\n" +
+	"\x15SOURCE_HEALTH_CONNECT\x10\t\x12\x0f\n" +
 	"\vSOURCE_TEST\x10cB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (

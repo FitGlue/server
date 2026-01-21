@@ -105,7 +105,7 @@ enum EnricherProviderType {
   // Config inputs: none (calculates min/avg/max HR from existing heartrate data)
   ENRICHER_PROVIDER_HEART_RATE_SUMMARY = 14;
   // Config inputs: "mode" (title/description/both) - Athlete tier only
-  ENRICHER_PROVIDER_AI_DESCRIPTION = 15;
+  ENRICHER_PROVIDER_AI_COMPANION = 15;
   ENRICHER_PROVIDER_MOCK = 99;
 }
 

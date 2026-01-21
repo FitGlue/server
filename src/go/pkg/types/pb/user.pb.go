@@ -45,8 +45,8 @@ const (
 	// Config inputs: none (calculates min/avg/max HR from existing heartrate data)
 	EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY EnricherProviderType = 14
 	// Config inputs: "mode" (title/description/both) - Athlete tier only
-	EnricherProviderType_ENRICHER_PROVIDER_AI_DESCRIPTION EnricherProviderType = 15
-	EnricherProviderType_ENRICHER_PROVIDER_MOCK           EnricherProviderType = 99
+	EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION EnricherProviderType = 15
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK         EnricherProviderType = 99
 )
 
 // Enum value maps for EnricherProviderType.
@@ -66,7 +66,7 @@ var (
 		12: "ENRICHER_PROVIDER_ACTIVITY_FILTER",
 		13: "ENRICHER_PROVIDER_LOGIC_GATE",
 		14: "ENRICHER_PROVIDER_HEART_RATE_SUMMARY",
-		15: "ENRICHER_PROVIDER_AI_DESCRIPTION",
+		15: "ENRICHER_PROVIDER_AI_COMPANION",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -84,7 +84,7 @@ var (
 		"ENRICHER_PROVIDER_ACTIVITY_FILTER":    12,
 		"ENRICHER_PROVIDER_LOGIC_GATE":         13,
 		"ENRICHER_PROVIDER_HEART_RATE_SUMMARY": 14,
-		"ENRICHER_PROVIDER_AI_DESCRIPTION":     15,
+		"ENRICHER_PROVIDER_AI_COMPANION":       15,
 		"ENRICHER_PROVIDER_MOCK":               99,
 	}
 )
@@ -1773,7 +1773,7 @@ const file_user_proto_rawDesc = "" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_pipeline_execution_id*\xdd\x04\n" +
+	"\x16_pipeline_execution_id*\xdb\x04\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -1789,8 +1789,8 @@ const file_user_proto_rawDesc = "" +
 	"\x1cENRICHER_PROVIDER_USER_INPUT\x10\v\x12%\n" +
 	"!ENRICHER_PROVIDER_ACTIVITY_FILTER\x10\f\x12 \n" +
 	"\x1cENRICHER_PROVIDER_LOGIC_GATE\x10\r\x12(\n" +
-	"$ENRICHER_PROVIDER_HEART_RATE_SUMMARY\x10\x0e\x12$\n" +
-	" ENRICHER_PROVIDER_AI_DESCRIPTION\x10\x0f\x12\x1a\n" +
+	"$ENRICHER_PROVIDER_HEART_RATE_SUMMARY\x10\x0e\x12\"\n" +
+	"\x1eENRICHER_PROVIDER_AI_COMPANION\x10\x0f\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

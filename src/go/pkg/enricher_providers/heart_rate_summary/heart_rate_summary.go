@@ -1,4 +1,4 @@
-package enricher_providers
+package heart_rate_summary
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"log/slog"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -14,7 +15,7 @@ type HeartRateSummary struct {
 }
 
 func init() {
-	Register(NewHeartRateSummary())
+	enricher_providers.Register(NewHeartRateSummary())
 }
 
 func NewHeartRateSummary() *HeartRateSummary {
@@ -33,7 +34,7 @@ func (p *HeartRateSummary) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY
 }
 
-func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	// Collect all heart rate values from the activity
 	var heartRates []int32
 
@@ -49,7 +50,7 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.Standardized
 
 	if len(heartRates) == 0 {
 		slog.Info("No heart rate data found for heart rate summary enricher")
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"hr_summary_status": "skipped",
 				"status_detail":     "No heart rate data found",
@@ -86,7 +87,7 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.Standardized
 	// Append to existing description
 	newDescription := activity.Description + summaryText
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Description: newDescription,
 		Metadata: map[string]string{
 			"hr_summary_status": "success",

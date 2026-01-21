@@ -240,8 +240,55 @@ func FormatActivitySource(value pb.ActivitySource) string {
 		return "Parkrun Results"
 	case pb.ActivitySource_SOURCE_FILE_UPLOAD:
 		return "File Upload"
+	case pb.ActivitySource_SOURCE_STRAVA:
+		return "Strava"
+	case pb.ActivitySource_SOURCE_GARMIN:
+		return "Garmin"
+	case pb.ActivitySource_SOURCE_APPLE_HEALTH:
+		return "Apple Health"
+	case pb.ActivitySource_SOURCE_HEALTH_CONNECT:
+		return "Health Connect"
 	case pb.ActivitySource_SOURCE_TEST:
 		return "Test"
+	default:
+		return "Unknown"
+	}
+}
+
+func FormatEnricherProviderType(value pb.EnricherProviderType) string {
+	switch value {
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED:
+		return "Unknown"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE:
+		return "Fitbit Heart Rate"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY:
+		return "Workout Summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP:
+		return "Muscle Heatmap"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK:
+		return "Source Link"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS:
+		return "Virtual Gps"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER:
+		return "Type Mapper"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_PARKRUN:
+		return "Parkrun"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER:
+		return "Condition Matcher"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT:
+		return "Auto Increment"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT:
+		return "User Input"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER:
+		return "Activity Filter"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE:
+		return "Logic Gate"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY:
+		return "Heart Rate Summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION:
+		return "Ai Companion"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
+		return "Mock"
 	default:
 		return "Unknown"
 	}

@@ -1,10 +1,11 @@
-package enricher_providers
+package workout_summary
 
 import (
 	"context"
 	"fmt"
 	"strings"
 
+	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
@@ -14,7 +15,7 @@ import (
 type WorkoutSummaryProvider struct{}
 
 func init() {
-	Register(NewWorkoutSummaryProvider())
+	enricher_providers.Register(NewWorkoutSummaryProvider())
 }
 
 func NewWorkoutSummaryProvider() *WorkoutSummaryProvider {
@@ -29,7 +30,7 @@ func (p *WorkoutSummaryProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY
 }
 
-func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error) {
+func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
 	// Aggregate all sets from all sessions
 	var allSets []*pb.StrengthSet
 	for _, s := range activity.Sessions {
@@ -37,7 +38,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 	}
 
 	if len(allSets) == 0 {
-		return &EnrichmentResult{
+		return &enricher_providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status": "skipped",
 				"reason": "no_strength_sets",
@@ -249,7 +250,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.Standa
 		sb.WriteString("\n")
 	}
 
-	return &EnrichmentResult{
+	return &enricher_providers.EnrichmentResult{
 		Description: sb.String(),
 		Metadata: map[string]string{
 			"exercise_count": fmt.Sprintf("%d", len(blocks)),

@@ -1,4 +1,4 @@
-package enricher_providers_test
+package ai_companion
 
 import (
 	"context"
@@ -6,6 +6,10 @@ import (
 	"testing"
 
 	"github.com/fitglue/server/src/go/pkg/enricher_providers"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers/branding"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers/muscle_heatmap"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers/source_link"
+	"github.com/fitglue/server/src/go/pkg/enricher_providers/workout_summary"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -64,10 +68,10 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 	}
 
 	// 2. Setup Providers
-	pLink := enricher_providers.NewSourceLinkProvider()
-	pSummary := enricher_providers.NewWorkoutSummaryProvider()
-	pHeatmap := enricher_providers.NewMuscleHeatmapProvider()
-	pBranding := enricher_providers.NewBrandingProvider()
+	pLink := source_link.NewSourceLinkProvider()
+	pSummary := workout_summary.NewWorkoutSummaryProvider()
+	pHeatmap := muscle_heatmap.NewMuscleHeatmapProvider()
+	pBranding := branding.NewBrandingProvider()
 
 	// 3. Execute Providers
 	ctx := context.Background()
@@ -177,7 +181,7 @@ func TestDescriptionEngine_StatsDisabled(t *testing.T) {
 			},
 		}},
 	}
-	pSummary := enricher_providers.NewWorkoutSummaryProvider()
+	pSummary := workout_summary.NewWorkoutSummaryProvider()
 
 	// Test with stats disabled
 	config := map[string]string{"show_stats": "false"}
