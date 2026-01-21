@@ -48,6 +48,17 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_POWER_SUMMARY = 18,
   /** ENRICHER_PROVIDER_SPEED_SUMMARY - Config inputs: none (calculates avg/max speed from speed data) */
   ENRICHER_PROVIDER_SPEED_SUMMARY = 19,
+  /** ENRICHER_PROVIDER_PERSONAL_RECORDS - Config inputs: "cardio_records" (boolean), "strength_records" (boolean), "celebrate_in_title" (boolean) */
+  ENRICHER_PROVIDER_PERSONAL_RECORDS = 20,
+  ENRICHER_PROVIDER_TRAINING_LOAD = 21,
+  /** ENRICHER_PROVIDER_SPOTIFY_TRACKS - Config inputs: none (fetches Spotify tracks played during activity time window) */
+  ENRICHER_PROVIDER_SPOTIFY_TRACKS = 22,
+  /** ENRICHER_PROVIDER_WEATHER - Config inputs: "include_wind" (boolean, default true) - adds weather conditions to outdoor activities */
+  ENRICHER_PROVIDER_WEATHER = 23,
+  /** ENRICHER_PROVIDER_ELEVATION_SUMMARY - Config inputs: none (calculates elevation gain/loss/max from altitude data) */
+  ENRICHER_PROVIDER_ELEVATION_SUMMARY = 24,
+  /** ENRICHER_PROVIDER_LOCATION_NAMING - Config inputs: "mode" (title/description), "title_template", "fallback_enabled" - generates location-based titles from GPS */
+  ENRICHER_PROVIDER_LOCATION_NAMING = 25,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }
@@ -159,6 +170,8 @@ export interface UserIntegrations {
   strava?: StravaIntegration | undefined;
   mock?: MockIntegration | undefined;
   parkrun?: ParkrunIntegration | undefined;
+  spotify?: SpotifyIntegration | undefined;
+  trainingpeaks?: TrainingPeaksIntegration | undefined;
 }
 
 export interface MockIntegration {
@@ -226,6 +239,29 @@ export interface ParkrunIntegration {
   lastUsedAt?: Date | undefined;
 }
 
+export interface SpotifyIntegration {
+  enabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?: Date | undefined;
+  spotifyUserId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface TrainingPeaksIntegration {
+  enabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?:
+    | Date
+    | undefined;
+  /** TrainingPeaks athlete ID */
+  athleteId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
 export interface ProcessedActivityRecord {
   source: string;
   /** Unique ID from provider */
@@ -238,6 +274,29 @@ export interface Counter {
   id: string;
   count: number;
   lastUpdated?: Date | undefined;
+}
+
+/**
+ * Personal Record for tracking PRs across cardio and strength activities
+ * Stored in users/{userId}/personal_records/{recordType}
+ */
+export interface PersonalRecord {
+  /** e.g. "fastest_5k", "bench_press_1rm" */
+  recordType: string;
+  /** The record value (seconds for time, kg for weight, meters for distance) */
+  value: number;
+  /** "seconds", "kg", "meters", "reps" */
+  unit: string;
+  /** Activity where this PR was achieved */
+  activityId: string;
+  achievedAt?: Date | undefined;
+  activityType: ActivityType;
+  /** Previous PR value (for improvement tracking) */
+  previousValue?:
+    | number
+    | undefined;
+  /** Percentage improvement */
+  improvement?: number | undefined;
 }
 
 export interface SynchronizedActivity {

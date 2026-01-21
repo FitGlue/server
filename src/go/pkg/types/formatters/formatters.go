@@ -171,6 +171,8 @@ func FormatDestination(value pb.Destination) string {
 		return "Showcase"
 	case pb.Destination_DESTINATION_HEVY:
 		return "Hevy"
+	case pb.Destination_DESTINATION_TRAININGPEAKS:
+		return "Trainingpeaks"
 	case pb.Destination_DESTINATION_MOCK:
 		return "Mock"
 	default:
@@ -297,6 +299,18 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Power Summary"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY:
 		return "Speed Summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS:
+		return "Personal Records"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD:
+		return "Training Load"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS:
+		return "Spotify Tracks"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER:
+		return "Weather"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY:
+		return "Elevation Summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING:
+		return "Location Naming"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:

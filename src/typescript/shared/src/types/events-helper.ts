@@ -28,6 +28,7 @@ export const DestinationTopics: Record<number, string> = {
   [Destination.DESTINATION_SHOWCASE]: "topic-job-upload-showcase",
   [Destination.DESTINATION_MOCK]: "topic-job-upload-mock",
   [Destination.DESTINATION_HEVY]: "topic-job-upload-hevy",
+  [Destination.DESTINATION_TRAININGPEAKS]: "topic-job-upload-trainingpeaks",
 };
 
 export function getCloudEventType(t: CloudEventType): string {

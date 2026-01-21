@@ -13,6 +13,11 @@ exports.stravaOAuthHandler = (req, res) => {
   return strava.stravaOAuthHandler(req, res);
 };
 
+exports.spotifyOAuthHandler = (req, res) => {
+  const spotify = require('./spotify-oauth-handler/build/index');
+  return spotify.spotifyOAuthHandler(req, res);
+};
+
 exports.fitbitOAuthHandler = (req, res) => {
   const fitbit = require('./fitbit-oauth-handler/build/index');
   return fitbit.fitbitOAuthHandler(req, res);
@@ -96,4 +101,9 @@ exports.adminHandler = (req, res) => {
 exports.stravaWebhookHandler = (req, res) => {
   const strava = require('./strava-handler/build/index');
   return strava.stravaWebhookHandler(req, res);
+};
+
+exports.trainingPeaksOAuthHandler = (req, res) => {
+  const tp = require('./trainingpeaks-oauth-handler/build/index');
+  return tp.trainingPeaksOAuthHandler(req, res);
 };

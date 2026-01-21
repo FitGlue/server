@@ -32,6 +32,10 @@ type Database interface {
 	SetCounter(ctx context.Context, userId string, counter *pb.Counter) error
 	ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error)
 
+	// Personal Records
+	GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error)
+	SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error
+
 	// Activities
 	SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
 	GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error)

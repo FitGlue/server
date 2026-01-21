@@ -60,6 +60,36 @@ resource "google_secret_manager_secret" "fitbit_verification_code" {
   }
 }
 
+# Spotify OAuth Credentials
+resource "google_secret_manager_secret" "spotify_client_id" {
+  secret_id = "spotify-client-id"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "spotify_client_secret" {
+  secret_id = "spotify-client-secret"
+  replication {
+    auto {}
+  }
+}
+
+# TrainingPeaks OAuth Credentials
+resource "google_secret_manager_secret" "trainingpeaks_client_id" {
+  secret_id = "trainingpeaks-client-id"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "trainingpeaks_client_secret" {
+  secret_id = "trainingpeaks-client-secret"
+  replication {
+    auto {}
+  }
+}
+
 # Stripe Billing Secrets
 resource "google_secret_manager_secret" "stripe_secret_key" {
   secret_id = "stripe-secret-key"

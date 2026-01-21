@@ -5,6 +5,7 @@
     "shared",
     "admin-cli",
     "strava-oauth-handler",
+    "spotify-oauth-handler",
     "fitbit-oauth-handler",
     "fitbit-handler",
     "auth-hooks",
@@ -22,7 +23,8 @@
     "showcase-handler",
     "repost-handler",
     "admin-handler",
-    "strava-handler"
+    "strava-handler",
+    "trainingpeaks-oauth-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

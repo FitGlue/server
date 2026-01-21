@@ -85,6 +85,12 @@ func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, activity *pb.Sh
 func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
 	return nil, nil
 }
+func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
+	return nil, nil
+}
+func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+	return nil
+}
 
 type MockBlobStore struct {
 	WriteFunc func(ctx context.Context, bucket, object string, data []byte) error

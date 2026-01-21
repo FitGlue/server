@@ -434,6 +434,10 @@ const DestinationNames: Record<string, string> = {
     'HEVY': 'Hevy',
     'Hevy': 'Hevy',
     '3': 'Hevy',
+    'DESTINATION_TRAININGPEAKS': 'Trainingpeaks',
+    'TRAININGPEAKS': 'Trainingpeaks',
+    'Trainingpeaks': 'Trainingpeaks',
+    '4': 'Trainingpeaks',
     'DESTINATION_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -463,6 +467,7 @@ export function formatDestination(value: Destination | number | string | undefin
     case Destination.DESTINATION_STRAVA: return 'Strava';
     case Destination.DESTINATION_SHOWCASE: return 'Showcase';
     case Destination.DESTINATION_HEVY: return 'Hevy';
+    case Destination.DESTINATION_TRAININGPEAKS: return 'Trainingpeaks';
     case Destination.DESTINATION_MOCK: return 'Mock';
     default: return 'Unknown';
   }
@@ -768,6 +773,30 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'SPEED_SUMMARY': 'Speed Summary',
     'Speed Summary': 'Speed Summary',
     '19': 'Speed Summary',
+    'ENRICHER_PROVIDER_PERSONAL_RECORDS': 'Personal Records',
+    'PERSONAL_RECORDS': 'Personal Records',
+    'Personal Records': 'Personal Records',
+    '20': 'Personal Records',
+    'ENRICHER_PROVIDER_TRAINING_LOAD': 'Training Load',
+    'TRAINING_LOAD': 'Training Load',
+    'Training Load': 'Training Load',
+    '21': 'Training Load',
+    'ENRICHER_PROVIDER_SPOTIFY_TRACKS': 'Spotify Tracks',
+    'SPOTIFY_TRACKS': 'Spotify Tracks',
+    'Spotify Tracks': 'Spotify Tracks',
+    '22': 'Spotify Tracks',
+    'ENRICHER_PROVIDER_WEATHER': 'Weather',
+    'WEATHER': 'Weather',
+    'Weather': 'Weather',
+    '23': 'Weather',
+    'ENRICHER_PROVIDER_ELEVATION_SUMMARY': 'Elevation Summary',
+    'ELEVATION_SUMMARY': 'Elevation Summary',
+    'Elevation Summary': 'Elevation Summary',
+    '24': 'Elevation Summary',
+    'ENRICHER_PROVIDER_LOCATION_NAMING': 'Location Naming',
+    'LOCATION_NAMING': 'Location Naming',
+    'Location Naming': 'Location Naming',
+    '25': 'Location Naming',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -812,6 +841,12 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY: return 'Cadence Summary';
     case EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY: return 'Power Summary';
     case EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY: return 'Speed Summary';
+    case EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS: return 'Personal Records';
+    case EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD: return 'Training Load';
+    case EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS: return 'Spotify Tracks';
+    case EnricherProviderType.ENRICHER_PROVIDER_WEATHER: return 'Weather';
+    case EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY: return 'Elevation Summary';
+    case EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING: return 'Location Naming';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }

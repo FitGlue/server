@@ -91,6 +91,12 @@ func (m *MockDB) SetShowcasedActivity(ctx context.Context, activity *pb.Showcase
 func (m *MockDB) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
 	return nil, nil
 }
+func (m *MockDB) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
+	return nil, nil
+}
+func (m *MockDB) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+	return nil
+}
 
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {

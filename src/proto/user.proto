@@ -54,6 +54,8 @@ message UserIntegrations {
   StravaIntegration strava = 3;
   MockIntegration mock = 4;
   ParkrunIntegration parkrun = 5;
+  SpotifyIntegration spotify = 6;
+  TrainingPeaksIntegration trainingpeaks = 7;
 }
 
 message MockIntegration {
@@ -122,6 +124,17 @@ enum EnricherProviderType {
   ENRICHER_PROVIDER_POWER_SUMMARY = 18;
   // Config inputs: none (calculates avg/max speed from speed data)
   ENRICHER_PROVIDER_SPEED_SUMMARY = 19;
+  // Config inputs: "cardio_records" (boolean), "strength_records" (boolean), "celebrate_in_title" (boolean)
+  ENRICHER_PROVIDER_PERSONAL_RECORDS = 20;
+  ENRICHER_PROVIDER_TRAINING_LOAD = 21;
+  // Config inputs: none (fetches Spotify tracks played during activity time window)
+  ENRICHER_PROVIDER_SPOTIFY_TRACKS = 22;
+  // Config inputs: "include_wind" (boolean, default true) - adds weather conditions to outdoor activities
+  ENRICHER_PROVIDER_WEATHER = 23;
+  // Config inputs: none (calculates elevation gain/loss/max from altitude data)
+  ENRICHER_PROVIDER_ELEVATION_SUMMARY = 24;
+  // Config inputs: "mode" (title/description), "title_template", "fallback_enabled" - generates location-based titles from GPS
+  ENRICHER_PROVIDER_LOCATION_NAMING = 25;
   ENRICHER_PROVIDER_MOCK = 99;
 }
 
@@ -175,6 +188,26 @@ message ParkrunIntegration {
     google.protobuf.Timestamp last_used_at = 6;
 }
 
+message SpotifyIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string spotify_user_id = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message TrainingPeaksIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string athlete_id = 5;                // TrainingPeaks athlete ID
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
 message ProcessedActivityRecord {
   string source = 1;
   string external_id = 2; // Unique ID from provider
@@ -185,6 +218,19 @@ message Counter {
   string id = 1; // Key, e.g. "parkrun_bushy"
   int64 count = 2;
   google.protobuf.Timestamp last_updated = 3;
+}
+
+// Personal Record for tracking PRs across cardio and strength activities
+// Stored in users/{userId}/personal_records/{recordType}
+message PersonalRecord {
+  string record_type = 1;  // e.g. "fastest_5k", "bench_press_1rm"
+  double value = 2;        // The record value (seconds for time, kg for weight, meters for distance)
+  string unit = 3;         // "seconds", "kg", "meters", "reps"
+  string activity_id = 4;  // Activity where this PR was achieved
+  google.protobuf.Timestamp achieved_at = 5;
+  ActivityType activity_type = 6;
+  optional double previous_value = 7;  // Previous PR value (for improvement tracking)
+  optional double improvement = 8;     // Percentage improvement
 }
 
 message SynchronizedActivity {

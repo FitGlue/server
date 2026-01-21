@@ -60,4 +60,18 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     externalUserIdField: 'athleteId',
     configurableFields: [{ field: 'athleteId', name: 'Barcode Number', type: 'string', required: true }],
   },
+  spotify: {
+    key: 'spotify',
+    displayName: 'Spotify',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    externalUserIdField: 'spotifyUserId',
+    configurableFields: [], // OAuth configured via flow
+  },
+  trainingpeaks: {
+    key: 'trainingpeaks',
+    displayName: 'TrainingPeaks',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    externalUserIdField: 'athleteId',
+    configurableFields: [], // OAuth configured via flow
+  },
 };

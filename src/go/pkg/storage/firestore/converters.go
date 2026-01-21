@@ -432,6 +432,89 @@ func FirestoreToCounter(m map[string]interface{}) *pb.Counter {
 	return c
 }
 
+// --- PersonalRecord Converters ---
+
+func PersonalRecordToFirestore(r *pb.PersonalRecord) map[string]interface{} {
+	m := map[string]interface{}{
+		"record_type":   r.RecordType,
+		"value":         r.Value,
+		"unit":          r.Unit,
+		"activity_id":   r.ActivityId,
+		"achieved_at":   r.AchievedAt.AsTime(),
+		"activity_type": int32(r.ActivityType),
+	}
+	if r.PreviousValue != nil {
+		m["previous_value"] = *r.PreviousValue
+	}
+	if r.Improvement != nil {
+		m["improvement"] = *r.Improvement
+	}
+	return m
+}
+
+func FirestoreToPersonalRecord(m map[string]interface{}) *pb.PersonalRecord {
+	r := &pb.PersonalRecord{
+		RecordType: getString(m, "record_type"),
+		Unit:       getString(m, "unit"),
+		ActivityId: getString(m, "activity_id"),
+		AchievedAt: getTime(m, "achieved_at"),
+	}
+
+	// Value
+	if v, ok := m["value"]; ok {
+		switch n := v.(type) {
+		case float64:
+			r.Value = n
+		case int64:
+			r.Value = float64(n)
+		case int:
+			r.Value = float64(n)
+		}
+	}
+
+	// Activity type
+	if v, ok := m["activity_type"]; ok {
+		switch val := v.(type) {
+		case int64:
+			r.ActivityType = pb.ActivityType(val)
+		case int:
+			r.ActivityType = pb.ActivityType(int32(val))
+		case float64:
+			r.ActivityType = pb.ActivityType(int32(val))
+		}
+	}
+
+	// Optional previous_value
+	if v, ok := m["previous_value"]; ok {
+		switch n := v.(type) {
+		case float64:
+			r.PreviousValue = &n
+		case int64:
+			f := float64(n)
+			r.PreviousValue = &f
+		case int:
+			f := float64(n)
+			r.PreviousValue = &f
+		}
+	}
+
+	// Optional improvement
+	if v, ok := m["improvement"]; ok {
+		switch n := v.(type) {
+		case float64:
+			r.Improvement = &n
+		case int64:
+			f := float64(n)
+			r.Improvement = &f
+		case int:
+			f := float64(n)
+			r.Improvement = &f
+		}
+	}
+
+	return r
+}
+
 // --- PendingInput Converters ---
 
 func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {

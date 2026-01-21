@@ -50,6 +50,14 @@ resource "google_pubsub_topic" "job_upload_hevy" {
   message_retention_duration = "3600s"
 }
 
+# TrainingPeaks topic for uploading activities to TrainingPeaks (all environments)
+resource "google_pubsub_topic" "job_upload_trainingpeaks" {
+  name    = "topic-job-upload-trainingpeaks"
+  project = var.project_id
+
+  message_retention_duration = "3600s"
+}
+
 
 resource "google_pubsub_subscription" "enrichment_lag_sub" {
   name    = "sub-enrichment-lag"

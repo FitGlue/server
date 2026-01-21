@@ -121,6 +121,18 @@ resource "google_storage_bucket_object" "strava_oauth_handler_zip" {
   source = "/tmp/fitglue-function-zips/strava-oauth-handler.zip"
 }
 
+resource "google_storage_bucket_object" "spotify_oauth_handler_zip" {
+  name   = "spotify-oauth-handler-${filemd5("/tmp/fitglue-function-zips/spotify-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/spotify-oauth-handler.zip"
+}
+
+resource "google_storage_bucket_object" "trainingpeaks_oauth_handler_zip" {
+  name   = "trainingpeaks-oauth-handler-${filemd5("/tmp/fitglue-function-zips/trainingpeaks-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/trainingpeaks-oauth-handler.zip"
+}
+
 resource "google_storage_bucket_object" "user_integrations_handler_zip" {
   name   = "user-integrations-handler-${filemd5("/tmp/fitglue-function-zips/user-integrations-handler.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
@@ -441,6 +453,47 @@ resource "google_cloudfunctions2_function" "hevy_uploader" {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.job_upload_hevy.id
+    retry_policy   = var.retry_policy
+  }
+}
+
+# ----------------- TrainingPeaks Uploader (Upload activities to TrainingPeaks) -----------------
+resource "google_storage_bucket_object" "trainingpeaks_uploader_zip" {
+  name   = "trainingpeaks-uploader-${filemd5("/tmp/fitglue-function-zips/trainingpeaks-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/trainingpeaks-uploader.zip"
+}
+
+resource "google_cloudfunctions2_function" "trainingpeaks_uploader" {
+  name     = "trainingpeaks-uploader"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "UploadToTrainingPeaks"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.trainingpeaks_uploader_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.job_upload_trainingpeaks.id
     retry_policy   = var.retry_policy
   }
 }

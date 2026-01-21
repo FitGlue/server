@@ -457,6 +457,41 @@ Exercise names are fuzzy-matched to Hevy's library. Unknown exercises automatica
   externalUrlTemplate: 'https://hevy.com/workouts/{id}',
 });
 
+registerDestination({
+  id: 'trainingpeaks',
+  type: PluginType.PLUGIN_TYPE_DESTINATION,
+  name: 'TrainingPeaks',
+  description: 'Upload activities to TrainingPeaks',
+  icon: '📈',
+  enabled: true,
+  requiredIntegrations: ['trainingpeaks'],
+  configSchema: [],
+  destinationType: 4, // DestinationType.DESTINATION_TRAININGPEAKS
+  marketingDescription: `
+### Professional Training Platform
+Upload your boosted activities to TrainingPeaks. Perfect for athletes who use TrainingPeaks for training planning and analysis.
+
+### How it works
+Activities pass through your Pipeline and are uploaded to TrainingPeaks via the official API. Duration, distance, heart rate data, and activity type are all preserved.
+
+### Smart Activity Mapping
+Activity types are automatically mapped to TrainingPeaks workout types (Run, Bike, Swim, Strength, Other).
+  `,
+  features: [
+    '✅ Upload activities to TrainingPeaks automatically',
+    '✅ Duration, distance, and heart rate data included',
+    '✅ Activity types mapped intelligently',
+    '✅ Secure OAuth connection',
+  ],
+  transformations: [],
+  useCases: [
+    'Sync gym workouts to your training calendar',
+    'Track all activities in one training platform',
+    'Analyze training load across sources',
+  ],
+  externalUrlTemplate: 'https://app.trainingpeaks.com/workout/{id}',
+});
+
 // ============================================================================
 
 
@@ -1577,6 +1612,366 @@ When your activity has speed data (from GPS or sensors), this enricher calculate
   ],
 });
 
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD, {
+  id: 'training-load',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Training Load',
+  description: 'Calculates Training Impulse (TRIMP) from heart rate data',
+  icon: '💪',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'max_hr',
+      label: 'Max Heart Rate',
+      description: 'Your maximum heart rate (default: 190)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: false,
+      defaultValue: '190',
+      options: [],
+    },
+    {
+      key: 'rest_hr',
+      label: 'Resting Heart Rate',
+      description: 'Your resting heart rate (default: 60)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: false,
+      defaultValue: '60',
+      options: [],
+    },
+    {
+      key: 'gender',
+      label: 'Gender',
+      description: 'Used for TRIMP coefficient calculation',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'male',
+      options: [
+        { value: 'male', label: 'Male' },
+        { value: 'female', label: 'Female' },
+      ],
+    },
+  ],
+  marketingDescription: `
+### Measure Your Training Intensity
+The Training Load booster calculates your Training Impulse (TRIMP) using the scientifically validated Banister Formula. This gives you a single number to represent the physiological load of your workout based on heart rate and duration.
+
+### How it works
+FitGlue analyzes your heart rate stream throughout the activity. It calculates your Heart Rate Reserve (HRR) and applies the Banister Formula (weighted for gender) to determine total TRIMP. This load is then categorized into Effort Zones from Recovery to Very Hard.
+
+### Know Your Hardest Sessions
+TRIMP is cumulative, meaning a long easy session can have the same load as a short intense one. This helps you track total training stimulus across different workout types.
+  `,
+  features: [
+    '✅ Calculates cumulative TRIMP (Training Impulse)',
+    '✅ Uses the Banister Formula (weighted for gender)',
+    '✅ categorizes effort into 5 zones',
+    '✅ Works with any heart rate data source',
+    '✅ Customizable max and resting heart rate',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: 'Morning Run\\n\\n💪 Training Load: 142 (Hard)',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Track total training stress on Strava',
+    'Compare intensity between different activities',
+    'Monitor recovery needs based on load',
+    'Celebrate your hardest training sessions',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS, {
+  id: 'personal-records',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Personal Records',
+  description: 'Detects and celebrates new PRs for cardio and strength activities',
+  icon: '🏆',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'cardio_records',
+      label: 'Track Cardio PRs',
+      description: 'Track PRs for running and cycling (5K, 10K, longest distance, etc.)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+    {
+      key: 'strength_records',
+      label: 'Track Strength PRs',
+      description: 'Track PRs for weightlifting (1RM, volume, max reps)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+    {
+      key: 'celebrate_in_title',
+      label: 'Celebrate in Title',
+      description: 'Add 🎉 emoji to activity title when a PR is achieved',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+  ],
+  marketingDescription: `
+### Automatic Personal Record Detection
+Never miss a PR again! FitGlue automatically detects when you've achieved a new personal record and adds a celebration to your activity.
+
+### Cardio Records Tracked
+- **Fastest 5K, 10K, Half Marathon**: Time-based records for running
+- **Longest Run**: Your greatest single-run distance
+- **Longest Ride**: Your greatest single-ride distance
+- **Highest Elevation Gain**: Most climbing in one activity
+
+### Strength Records Tracked (per exercise)
+- **1RM**: Uses the Epley formula to estimate your one-rep max
+- **Volume**: Most total volume (sets × reps × weight) in one session
+- **Reps**: Most reps in a single set
+
+All records are stored in Firestore, so your PRs persist across time.
+  `,
+  features: [
+    '✅ Automatic PR detection for cardio and strength',
+    '✅ Epley formula for estimated 1RM',
+    '✅ Smart exercise name normalization',
+    '✅ Percentage improvement shown',
+    '✅ Persistent storage in Firestore',
+    '✅ Optional title celebration emoji',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Weight Training',
+      after: 'Weight Training\\n\\n🏆 NEW PR! Deadlift 1RM: 140kg (previous: 135kg, +3.7%)',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Celebrate running PRs automatically',
+    'Track strength progression over time',
+    'Share PR achievements on Strava',
+    'Know immediately when you hit a new max',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY, {
+  id: 'elevation-summary',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Elevation Summary',
+  description: 'Calculates elevation gain, loss, and maximum altitude from activity records',
+  icon: '⛰️',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Total Ascent & Descent
+Automatically calculates and appends elevation statistics to your activity description. Perfect for hilly runs, mountain bike rides, or mountain hikes.
+
+### How it works
+When your activity contains altitude data (from GPS tracks or barometric sensors), this enricher calculates your total ascent (gain), total descent (loss), and the maximum altitude reached during the activity.
+
+### Clean Data Processing
+Filters out zero or negative altitude records to ensure accurate calculations even if your GPS occasionally loses altitude data.
+  `,
+  features: [
+    '✅ Calculates total elevation gain (ascent)',
+    '✅ Calculates total elevation loss (descent)',
+    '✅ Tracks maximum altitude seen during the activity',
+    '✅ Appends clean summary with emoji to description',
+    '✅ No configuration required',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Mountain Hike',
+      after: 'Mountain Hike\n\n⛰️ Elevation: +342m gain • -289m loss • 1,245m max',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Hilly runs and rides',
+    'Mountain hiking and climbing',
+    'Track total effort on vertical terrain',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_WEATHER, {
+  id: 'weather',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Weather',
+  description: 'Adds weather conditions to outdoor activities',
+  icon: '🌤️',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'include_wind',
+      label: 'Include Wind',
+      description: 'Show wind speed and direction in the summary',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+  ],
+  marketingDescription: `
+### Weather Context for Outdoor Activities
+Automatically adds weather conditions to your outdoor activities. See temperature, conditions, and wind at a glance.
+
+### How it works
+When your activity has GPS data, this enricher fetches historical weather data from Open-Meteo for the exact time and location of your workout. It adds a clean summary showing temperature, weather conditions, and optionally wind information.
+  `,
+  features: [
+    '✅ Fetches historical weather data',
+    '✅ Shows temperature and conditions',
+    '✅ Optional wind speed and direction',
+    '✅ Works with any GPS-enabled activity',
+    '✅ Free API, no authentication required',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: 'Morning Run\\n\\n🌤️ Weather: 18°C, Partly Cloudy • Wind: 12 km/h W',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Track weather conditions for training analysis',
+    'Remember what the weather was like',
+    'Share outdoor conditions on Strava',
+  ],
+});
+
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS, {
+  id: 'spotify-tracks',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Spotify Soundtrack',
+  description: 'Shows what music you listened to during your activity',
+  icon: '🎵',
+  enabled: true,
+  requiredIntegrations: ['spotify'],
+  configSchema: [],
+  marketingDescription: `
+### Your Activity Soundtrack
+Automatically track what music you listened to during your workouts. See your top played tracks and workout playlists.
+
+### How it works
+When you complete an activity, FitGlue checks your Spotify listening history for tracks played during that time window and adds a summary to your activity description.
+  `,
+  features: [
+    '✅ Track count and top played songs',
+    '✅ Playlist identification',
+    '✅ Automatic time-window matching',
+    '✅ Works with all activity types',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: 'Morning Run\\n\\n🎵 Soundtrack: 12 tracks • Top played: Blinding Lights - The Weeknd • From playlist: Running Hits 2026',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Track your workout music preferences',
+    'Share your activity soundtrack on Strava',
+    'Discover which playlists motivate you most',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING, {
+  id: 'location_naming',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Location Naming',
+  description: 'Auto-generates activity titles from GPS location',
+  icon: '📍',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'mode',
+      label: 'Mode',
+      description: 'How to apply the location name',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'title',
+      options: [
+        { value: 'title', label: 'Generate Title' },
+        { value: 'description', label: 'Add to Description' },
+      ],
+    },
+    {
+      key: 'title_template',
+      label: 'Title Template',
+      description: 'Template for title mode, e.g. "{activity_type} in {location}"',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: false,
+      defaultValue: '{activity_type} in {location}',
+      options: [],
+      dependsOn: { fieldKey: 'mode', values: ['title'] },
+    },
+    {
+      key: 'fallback_enabled',
+      label: 'Use City Fallback',
+      description: 'Use city name if no specific location (park, leisure) found',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+  ],
+  marketingDescription: `
+### Automatic Location-Based Titles
+Give your activities meaningful names based on where you exercised. Instead of generic "Morning Run", get "Morning Run in Hyde Park".
+
+### How it works
+When your activity has GPS data, this enricher uses OpenStreetMap's Nominatim API to reverse geocode your starting location. It prioritizes parks and leisure venues, falling back to suburb or city names when no specific location is found.
+  `,
+  features: [
+    '✅ Automatic location detection from GPS',
+    '✅ Prioritizes parks and leisure venues',
+    '✅ Customizable title templates',
+    '✅ City fallback for urban activities',
+    '✅ Free API, no authentication required',
+  ],
+  transformations: [
+    {
+      field: 'title',
+      label: 'Activity Title',
+      before: 'Morning Run',
+      after: 'Morning Run in Hyde Park',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Give runs and rides meaningful location names',
+    'Track which parks and venues you visit',
+    'Share location context on Strava',
+  ],
+});
+
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   id: 'mock',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
@@ -1821,3 +2216,71 @@ FitGlue automatically detects when your run is a Parkrun based on GPS location a
   ],
 });
 
+registerIntegration({
+  id: 'trainingpeaks',
+  name: 'TrainingPeaks',
+  description: 'Upload activities to TrainingPeaks',
+  icon: '📈',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  docsUrl: 'https://developer.trainingpeaks.com',
+  setupTitle: 'Connect TrainingPeaks',
+  setupInstructions: `Connect your TrainingPeaks account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on TrainingPeaks
+3. Sign in to your **TrainingPeaks account** when redirected
+4. Review and **Accept Permissions** to allow FitGlue to upload workouts
+5. You're connected! Boosted activities will appear in your TrainingPeaks calendar
+
+FitGlue uses secure OAuth — your TrainingPeaks password is never stored.`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is TrainingPeaks?
+TrainingPeaks is a professional training platform used by athletes and coaches worldwide. It provides structured training plans, workout analysis, and performance tracking.
+
+### What FitGlue Does
+FitGlue connects to your TrainingPeaks account via OAuth and uploads your boosted activities. Activities from your connected sources — enhanced with AI descriptions, muscle heatmaps, and heart rate data — appear in your TrainingPeaks calendar automatically.
+  `,
+  features: [
+    '✅ Upload boosted activities to TrainingPeaks automatically',
+    '✅ Duration, distance, and heart rate data included',
+    '✅ Activity types mapped to TrainingPeaks workout types',
+    '✅ Secure OAuth connection',
+  ],
+});
+
+registerIntegration({
+  id: 'spotify',
+  name: 'Spotify',
+  description: 'Connect your Spotify account to track music during activities',
+  icon: '🎵',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  docsUrl: 'https://www.spotify.com',
+  setupTitle: 'Connect Spotify',
+  setupInstructions: `To connect Spotify, you'll authorize FitGlue to access your listening history:
+
+1. **Click Connect** — You'll be redirected to Spotify's authorization page
+2. **Sign in to Spotify** — Use your Spotify account credentials
+3. **Authorize FitGlue** — Grant permission to read your recently played tracks
+4. **Done!** — You'll be redirected back to FitGlue
+
+Once connected, FitGlue can track what music you listened to during your activities.`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is Spotify?
+Spotify is the world's leading music streaming platform with millions of songs, podcasts, and playlists.
+
+### What FitGlue Does
+FitGlue connects to your Spotify account and tracks what music you listened to during your workouts. See your top played tracks, discover your workout playlists, and share your activity soundtrack.
+  `,
+  features: [
+    '✅ Track music played during activities',
+    '✅ See top played tracks',
+    '✅ Identify workout playlists',
+    '✅ Automatic time-window matching',
+  ],
+});

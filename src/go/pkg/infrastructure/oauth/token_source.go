@@ -70,6 +70,11 @@ func (s *FirestoreTokenSource) ForceRefresh(ctx context.Context) (*Token, error)
 			return nil, fmt.Errorf("fitbit not linked/enabled")
 		}
 		refreshToken = userData.Integrations.Fitbit.RefreshToken
+	case "trainingpeaks":
+		if userData.Integrations.Trainingpeaks == nil || !userData.Integrations.Trainingpeaks.Enabled {
+			return nil, fmt.Errorf("trainingpeaks not linked/enabled")
+		}
+		refreshToken = userData.Integrations.Trainingpeaks.RefreshToken
 	default:
 		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
@@ -118,6 +123,15 @@ func (s *FirestoreTokenSource) Token(ctx context.Context) (*Token, error) {
 		if userData.Integrations.Fitbit.ExpiresAt != nil {
 			expiry = userData.Integrations.Fitbit.ExpiresAt.AsTime()
 		}
+	case "trainingpeaks":
+		if userData.Integrations.Trainingpeaks == nil || !userData.Integrations.Trainingpeaks.Enabled {
+			return nil, fmt.Errorf("trainingpeaks not linked/enabled")
+		}
+		accessToken = userData.Integrations.Trainingpeaks.AccessToken
+		refreshToken = userData.Integrations.Trainingpeaks.RefreshToken
+		if userData.Integrations.Trainingpeaks.ExpiresAt != nil {
+			expiry = userData.Integrations.Trainingpeaks.ExpiresAt.AsTime()
+		}
 	default:
 		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
@@ -156,6 +170,8 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 		tokenURL = "https://www.strava.com/oauth/token"
 	case "fitbit":
 		tokenURL = "https://api.fitbit.com/oauth2/token"
+	case "trainingpeaks":
+		tokenURL = "https://oauth.trainingpeaks.com/token"
 	default:
 		return nil, fmt.Errorf("unsupported provider for refresh: %s", s.provider)
 	}

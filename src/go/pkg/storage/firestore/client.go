@@ -50,6 +50,15 @@ func (c *Client) Counters(userId string) *Collection[pb.Counter] {
 	}
 }
 
+// PersonalRecords are sub-collections of Users: users/{uid}/personal_records/{recordType}
+func (c *Client) PersonalRecords(userId string) *Collection[pb.PersonalRecord] {
+	return &Collection[pb.PersonalRecord]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("personal_records"),
+		ToFirestore:   PersonalRecordToFirestore,
+		FromFirestore: FirestoreToPersonalRecord,
+	}
+}
+
 // Activities are sub-collections of Users: users/{uid}/activities/{id}
 func (c *Client) Activities(userId string) *Collection[pb.SynchronizedActivity] {
 	return &Collection[pb.SynchronizedActivity]{

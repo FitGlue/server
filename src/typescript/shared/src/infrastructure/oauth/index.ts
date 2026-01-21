@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { UserStore, IntegrationIdentityStore } from '../../storage/firestore';
 import * as crypto from 'crypto';
-import { StravaIntegration, FitbitIntegration } from '../../types/pb/user';
+import { StravaIntegration, FitbitIntegration, TrainingPeaksIntegration, SpotifyIntegration } from '../../types/pb/user';
 
 /**
  * Store OAuth tokens for a user integration.
@@ -9,7 +9,7 @@ import { StravaIntegration, FitbitIntegration } from '../../types/pb/user';
  */
 export async function storeOAuthTokens(
   userId: string,
-  provider: 'strava' | 'fitbit',
+  provider: 'strava' | 'fitbit' | 'trainingpeaks' | 'spotify',
   tokens: {
     accessToken: string;
     refreshToken: string;
@@ -34,12 +34,15 @@ export async function storeOAuthTokens(
     lastUsedAt: new Date(),
     // Add provider-specific ID fields
     ...(provider === 'strava' ? { athleteId: Number(tokens.externalUserId) } : {}),
-    ...(provider === 'fitbit' ? { fitbitUserId: tokens.externalUserId } : {})
-  } as (typeof provider extends 'strava' ? StravaIntegration : FitbitIntegration));
+    ...(provider === 'fitbit' ? { fitbitUserId: tokens.externalUserId } : {}),
+    ...(provider === 'trainingpeaks' ? { athleteId: tokens.externalUserId } : {}),
+    ...(provider === 'spotify' ? { spotifyUserId: tokens.externalUserId } : {})
+  } as (typeof provider extends 'strava' ? StravaIntegration : typeof provider extends 'fitbit' ? FitbitIntegration : typeof provider extends 'trainingpeaks' ? TrainingPeaksIntegration : SpotifyIntegration));
 
   // Map external user ID to our user ID
   await identityStore.mapIdentity(provider, tokens.externalUserId, userId);
 }
+
 
 /**
  * Generate a random state token for OAuth.

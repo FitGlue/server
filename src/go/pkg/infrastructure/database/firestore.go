@@ -154,6 +154,23 @@ func (a *FirestoreAdapter) ListCounters(ctx context.Context, userId string) ([]*
 	return counters, nil
 }
 
+// --- Personal Records ---
+
+// GetPersonalRecord retrieves a personal record by type
+func (a *FirestoreAdapter) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
+	doc, err := a.storage.PersonalRecords(userId).Doc(recordType).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	doc.RecordType = recordType
+	return doc, nil
+}
+
+// SetPersonalRecord creates or updates a personal record
+func (a *FirestoreAdapter) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+	return a.storage.PersonalRecords(userId).Doc(record.RecordType).Set(ctx, record)
+}
+
 // --- Activities ---
 
 func (a *FirestoreAdapter) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {

@@ -161,6 +161,18 @@ func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId stri
 	return nil, nil
 }
 
+// --- Personal Records ---
+
+func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
+func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+	// No-op for tests by default
+	return nil
+}
+
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)
