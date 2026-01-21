@@ -43,7 +43,7 @@ export function registerUserTools(registerTool: (tool: any, handler: (args: any)
           },
           pipeline_count: data.pipelines?.length || 0,
           // Tier info
-          tier: data.tier || 'free',
+          tier: data.tier || 'hobbyist',
           trial_ends_at: data.trial_ends_at,
           is_admin: data.is_admin || false,
           sync_count_this_month: data.sync_count_this_month || 0,

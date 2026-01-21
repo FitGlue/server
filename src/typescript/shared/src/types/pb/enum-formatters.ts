@@ -752,6 +752,22 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'AI_COMPANION': 'Ai Companion',
     'Ai Companion': 'Ai Companion',
     '15': 'Ai Companion',
+    'ENRICHER_PROVIDER_PACE_SUMMARY': 'Pace Summary',
+    'PACE_SUMMARY': 'Pace Summary',
+    'Pace Summary': 'Pace Summary',
+    '16': 'Pace Summary',
+    'ENRICHER_PROVIDER_CADENCE_SUMMARY': 'Cadence Summary',
+    'CADENCE_SUMMARY': 'Cadence Summary',
+    'Cadence Summary': 'Cadence Summary',
+    '17': 'Cadence Summary',
+    'ENRICHER_PROVIDER_POWER_SUMMARY': 'Power Summary',
+    'POWER_SUMMARY': 'Power Summary',
+    'Power Summary': 'Power Summary',
+    '18': 'Power Summary',
+    'ENRICHER_PROVIDER_SPEED_SUMMARY': 'Speed Summary',
+    'SPEED_SUMMARY': 'Speed Summary',
+    'Speed Summary': 'Speed Summary',
+    '19': 'Speed Summary',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -792,6 +808,10 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE: return 'Logic Gate';
     case EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY: return 'Heart Rate Summary';
     case EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION: return 'Ai Companion';
+    case EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY: return 'Pace Summary';
+    case EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY: return 'Cadence Summary';
+    case EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY: return 'Power Summary';
+    case EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY: return 'Speed Summary';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }

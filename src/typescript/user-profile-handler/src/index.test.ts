@@ -133,8 +133,8 @@ describe('user-profile-handler', () => {
       const { db } = jest.requireMock('@fitglue/shared');
       db.get.mockResolvedValue({
         docs: [
-          { id: 'user-1', data: () => ({ tier: 'pro', isAdmin: true }) },
-          { id: 'user-2', data: () => ({ tier: 'free', isAdmin: false }) }
+          { id: 'user-1', data: () => ({ tier: 2, isAdmin: true }) }, // USER_TIER_ATHLETE
+          { id: 'user-2', data: () => ({ tier: 1, isAdmin: false }) } // USER_TIER_HOBBYIST
         ]
       });
 

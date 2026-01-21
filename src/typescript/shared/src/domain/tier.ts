@@ -1,6 +1,9 @@
 import { UserRecord, UserTier } from '../types/pb/user';
 
-export type EffectiveTier = 'hobbyist' | 'athlete';
+export const TIER_HOBBYIST = 'hobbyist' as const;
+export const TIER_ATHLETE = 'athlete' as const;
+
+export type EffectiveTier = typeof TIER_HOBBYIST | typeof TIER_ATHLETE;
 
 export const HOBBYIST_TIER_LIMITS = {
   SYNCS_PER_MONTH: 25,
@@ -14,20 +17,20 @@ export const HOBBYIST_TIER_LIMITS = {
 export function getEffectiveTier(user: UserRecord): EffectiveTier {
   // Admin override always grants Athlete
   if (user.isAdmin) {
-    return 'athlete';
+    return TIER_ATHLETE;
   }
 
   // Active trial grants Athlete
   if (user.trialEndsAt && new Date(user.trialEndsAt) > new Date()) {
-    return 'athlete';
+    return TIER_ATHLETE;
   }
 
   // Fall back to stored tier (default: hobbyist)
   if (user.tier === UserTier.USER_TIER_ATHLETE) {
-    return 'athlete';
+    return TIER_ATHLETE;
   }
 
-  return 'hobbyist';
+  return TIER_HOBBYIST;
 }
 
 /**
@@ -36,7 +39,7 @@ export function getEffectiveTier(user: UserRecord): EffectiveTier {
 export function canSync(user: UserRecord): { allowed: boolean; reason?: string } {
   const tier = getEffectiveTier(user);
 
-  if (tier === 'athlete') {
+  if (tier === TIER_ATHLETE) {
     return { allowed: true };
   }
 
@@ -58,7 +61,7 @@ export function canSync(user: UserRecord): { allowed: boolean; reason?: string }
 export function canAddConnection(user: UserRecord, currentConnectionCount: number): { allowed: boolean; reason?: string } {
   const tier = getEffectiveTier(user);
 
-  if (tier === 'athlete') {
+  if (tier === TIER_ATHLETE) {
     return { allowed: true };
   }
 

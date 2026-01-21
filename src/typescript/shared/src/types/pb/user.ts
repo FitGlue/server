@@ -40,6 +40,14 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_HEART_RATE_SUMMARY = 14,
   /** ENRICHER_PROVIDER_AI_COMPANION - Config inputs: "mode" (title/description/both) - Athlete tier only */
   ENRICHER_PROVIDER_AI_COMPANION = 15,
+  /** ENRICHER_PROVIDER_PACE_SUMMARY - Config inputs: none (calculates from speed data, formats as min/km for running) */
+  ENRICHER_PROVIDER_PACE_SUMMARY = 16,
+  /** ENRICHER_PROVIDER_CADENCE_SUMMARY - Config inputs: none (calculates avg/max cadence from cadence data) */
+  ENRICHER_PROVIDER_CADENCE_SUMMARY = 17,
+  /** ENRICHER_PROVIDER_POWER_SUMMARY - Config inputs: none (calculates avg/max power from power data) */
+  ENRICHER_PROVIDER_POWER_SUMMARY = 18,
+  /** ENRICHER_PROVIDER_SPEED_SUMMARY - Config inputs: none (calculates avg/max speed from speed data) */
+  ENRICHER_PROVIDER_SPEED_SUMMARY = 19,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

@@ -104,7 +104,7 @@ describe('user-integrations-handler', () => {
       // Mock user for connection limit checks
       mockUserService.get.mockResolvedValue({
         userId: 'user-1',
-        tier: 'free',
+        tier: 'hobbyist',
         integrations: {}
       });
     });

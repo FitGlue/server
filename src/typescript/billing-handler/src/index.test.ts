@@ -15,6 +15,11 @@ jest.mock('@fitglue/shared', () => {
         })),
       })),
     },
+    UserTier: {
+      USER_TIER_UNSPECIFIED: 0,
+      USER_TIER_HOBBYIST: 1,
+      USER_TIER_ATHLETE: 2,
+    },
   };
 });
 
@@ -126,7 +131,7 @@ describe('billing-handler', () => {
     });
 
     it('creates a new Stripe customer if user has no stripeCustomerId', async () => {
-      ctx.services.user.get.mockResolvedValue({ id: 'user-123', tier: 'free' });
+      ctx.services.user.get.mockResolvedValue({ id: 'user-123', tier: 1 }); // USER_TIER_HOBBYIST
       mockStripeCustomersCreate.mockResolvedValue({ id: 'cus_new_123' });
       mockStripeCheckoutSessionsCreate.mockResolvedValue({
         id: 'cs_test_123',
@@ -147,7 +152,7 @@ describe('billing-handler', () => {
     it('uses existing stripeCustomerId if user already has one', async () => {
       ctx.services.user.get.mockResolvedValue({
         id: 'user-123',
-        tier: 'free',
+        tier: 1, // USER_TIER_HOBBYIST
         stripeCustomerId: 'cus_existing_456',
       });
       mockStripeCheckoutSessionsCreate.mockResolvedValue({
@@ -308,10 +313,10 @@ describe('billing-handler', () => {
       );
       expect(db.collection).toHaveBeenCalledWith('users');
       expect(mockDbUpdate).toHaveBeenCalledWith({
-        tier: 'pro',
+        tier: 2, // USER_TIER_ATHLETE
         trial_ends_at: null,
       });
-      expect(ctx.logger.info).toHaveBeenCalledWith('User upgraded to Pro', {
+      expect(ctx.logger.info).toHaveBeenCalledWith('User upgraded to Athlete', {
         userId: 'user-abc',
         sessionId: 'cs_test_123',
       });
@@ -369,9 +374,9 @@ describe('billing-handler', () => {
       expect(mockStripeCustomersRetrieve).toHaveBeenCalledWith('cus_customer_123');
       expect(db.collection).toHaveBeenCalledWith('users');
       expect(mockDbUpdate).toHaveBeenCalledWith({
-        tier: 'free',
+        tier: 1, // USER_TIER_HOBBYIST
       });
-      expect(ctx.logger.info).toHaveBeenCalledWith('User downgraded to Free', {
+      expect(ctx.logger.info).toHaveBeenCalledWith('User downgraded to Hobbyist', {
         userId: 'user-xyz',
       });
       expect(res.json).toHaveBeenCalledWith({ received: true });

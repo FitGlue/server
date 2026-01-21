@@ -95,7 +95,15 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY EnricherProviderType = 14
 	// Config inputs: "mode" (title/description/both) - Athlete tier only
 	EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION EnricherProviderType = 15
-	EnricherProviderType_ENRICHER_PROVIDER_MOCK         EnricherProviderType = 99
+	// Config inputs: none (calculates from speed data, formats as min/km for running)
+	EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY EnricherProviderType = 16
+	// Config inputs: none (calculates avg/max cadence from cadence data)
+	EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY EnricherProviderType = 17
+	// Config inputs: none (calculates avg/max power from power data)
+	EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY EnricherProviderType = 18
+	// Config inputs: none (calculates avg/max speed from speed data)
+	EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY EnricherProviderType = 19
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK          EnricherProviderType = 99
 )
 
 // Enum value maps for EnricherProviderType.
@@ -116,6 +124,10 @@ var (
 		13: "ENRICHER_PROVIDER_LOGIC_GATE",
 		14: "ENRICHER_PROVIDER_HEART_RATE_SUMMARY",
 		15: "ENRICHER_PROVIDER_AI_COMPANION",
+		16: "ENRICHER_PROVIDER_PACE_SUMMARY",
+		17: "ENRICHER_PROVIDER_CADENCE_SUMMARY",
+		18: "ENRICHER_PROVIDER_POWER_SUMMARY",
+		19: "ENRICHER_PROVIDER_SPEED_SUMMARY",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -134,6 +146,10 @@ var (
 		"ENRICHER_PROVIDER_LOGIC_GATE":         13,
 		"ENRICHER_PROVIDER_HEART_RATE_SUMMARY": 14,
 		"ENRICHER_PROVIDER_AI_COMPANION":       15,
+		"ENRICHER_PROVIDER_PACE_SUMMARY":       16,
+		"ENRICHER_PROVIDER_CADENCE_SUMMARY":    17,
+		"ENRICHER_PROVIDER_POWER_SUMMARY":      18,
+		"ENRICHER_PROVIDER_SPEED_SUMMARY":      19,
 		"ENRICHER_PROVIDER_MOCK":               99,
 	}
 )
@@ -1836,7 +1852,7 @@ const file_user_proto_rawDesc = "" +
 	"\bUserTier\x12\x19\n" +
 	"\x15USER_TIER_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_TIER_HOBBYIST\x10\x01\x12\x15\n" +
-	"\x11USER_TIER_ATHLETE\x10\x02*\xdb\x04\n" +
+	"\x11USER_TIER_ATHLETE\x10\x02*\xf0\x05\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -1853,7 +1869,11 @@ const file_user_proto_rawDesc = "" +
 	"!ENRICHER_PROVIDER_ACTIVITY_FILTER\x10\f\x12 \n" +
 	"\x1cENRICHER_PROVIDER_LOGIC_GATE\x10\r\x12(\n" +
 	"$ENRICHER_PROVIDER_HEART_RATE_SUMMARY\x10\x0e\x12\"\n" +
-	"\x1eENRICHER_PROVIDER_AI_COMPANION\x10\x0f\x12\x1a\n" +
+	"\x1eENRICHER_PROVIDER_AI_COMPANION\x10\x0f\x12\"\n" +
+	"\x1eENRICHER_PROVIDER_PACE_SUMMARY\x10\x10\x12%\n" +
+	"!ENRICHER_PROVIDER_CADENCE_SUMMARY\x10\x11\x12#\n" +
+	"\x1fENRICHER_PROVIDER_POWER_SUMMARY\x10\x12\x12#\n" +
+	"\x1fENRICHER_PROVIDER_SPEED_SUMMARY\x10\x13\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

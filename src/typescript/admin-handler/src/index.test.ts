@@ -35,7 +35,7 @@ jest.mock('@fitglue/shared', () => {
     },
     UserTier: {
       USER_TIER_UNSPECIFIED: 0,
-      USER_TIER_FREE: 1,
+      USER_TIER_HOBBYIST: 1,
       USER_TIER_ATHLETE: 2,
     },
   };
@@ -149,8 +149,8 @@ describe('admin-handler', () => {
         withConverter: jest.fn().mockReturnThis(),
         get: jest.fn().mockResolvedValue({
           docs: [
-            { data: () => ({ tier: 'pro', syncCountThisMonth: 10 }) },
-            { data: () => ({ tier: 'free', syncCountThisMonth: 5, isAdmin: true }) },
+            { data: () => ({ tier: 2, syncCountThisMonth: 10 }) }, // USER_TIER_ATHLETE
+            { data: () => ({ tier: 1, syncCountThisMonth: 5, isAdmin: true }) }, // USER_TIER_HOBBYIST
           ],
         }),
       });
@@ -193,7 +193,7 @@ describe('admin-handler', () => {
           {
             id: 'user-1',
             data: () => ({
-              tier: 'pro',
+              tier: 2, // USER_TIER_ATHLETE
               isAdmin: false,
               syncCountThisMonth: 5,
               integrations: { strava: { enabled: true } },
@@ -221,7 +221,7 @@ describe('admin-handler', () => {
           data: expect.arrayContaining([
             expect.objectContaining({
               userId: 'user-1',
-              tier: 'pro',
+              tier: 2, // USER_TIER_ATHLETE
               integrations: ['strava'],
               pipelineCount: 1,
             }),
@@ -244,7 +244,7 @@ describe('admin-handler', () => {
 
       ctx.services.user.get.mockResolvedValue({
         userId: 'user-123',
-        tier: 'pro',
+        tier: 2, // USER_TIER_ATHLETE
         isAdmin: false,
         syncCountThisMonth: 10,
         integrations: {
@@ -267,7 +267,7 @@ describe('admin-handler', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         userId: 'user-123',
-        tier: 'pro',
+        tier: 2, // USER_TIER_ATHLETE
         email: 'test@example.com',
         displayName: 'Test User',
         activityCount: 5,

@@ -289,6 +289,14 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Heart Rate Summary"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION:
 		return "Ai Companion"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY:
+		return "Pace Summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY:
+		return "Cadence Summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY:
+		return "Power Summary"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY:
+		return "Speed Summary"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:

@@ -119,7 +119,11 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 	}
 
 	// Tier management fields
-	m["tier"] = u.Tier
+	if u.Tier == pb.UserTier_USER_TIER_ATHLETE {
+		m["tier"] = "athlete"
+	} else {
+		m["tier"] = "hobbyist"
+	}
 	if u.TrialEndsAt != nil {
 		m["trial_ends_at"] = u.TrialEndsAt.AsTime()
 	}
@@ -196,17 +200,30 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 		switch val := v.(type) {
 		case string:
 			switch val {
-			case "athlete":
+			case "athlete", "pro":
 				u.Tier = pb.UserTier_USER_TIER_ATHLETE
 			default:
 				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
 			}
 		case int64:
-			u.Tier = pb.UserTier(int32(val))
+			// Handle legacy numeric values (1=Hobbyist, 2=Athlete)
+			if val == 2 {
+				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+			} else {
+				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+			}
 		case int:
-			u.Tier = pb.UserTier(int32(val))
+			if val == 2 {
+				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+			} else {
+				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+			}
 		case float64:
-			u.Tier = pb.UserTier(int32(val))
+			if val == 2 {
+				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+			} else {
+				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+			}
 		default:
 			u.Tier = pb.UserTier_USER_TIER_HOBBYIST
 		}

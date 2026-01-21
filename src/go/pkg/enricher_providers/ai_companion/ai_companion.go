@@ -156,17 +156,19 @@ func (p *AICompanionProvider) generateWithGemini(ctx context.Context, apiKey, mo
 }
 
 func buildPrompt(mode, activityContext string) string {
-	basePrompt := `You are a fitness app assistant. Generate engaging, motivational content for workout activities.
+	basePrompt := `You are an activity reviewer. Generate a casual, engaging summary of the fitness activity provided below.
 
 Activity Context:
 %s
 
 Guidelines:
-- Be encouraging and positive
-- Keep it concise and punchy
-- Use fitness terminology naturally
-- Don't be overly generic - reference specific details from the workout
-- Match the tone of a premium fitness app (like Strava or Peloton)
+- Provide a casual summary or review of the effort.
+- DO NOT talk to the user directly (avoid "you", "your", or addressing them as "runner", "athlete", etc.).
+- Maintain an objective yet positive tone.
+- Generic punchy reactions like "Nice one!" or "Solid session" are acceptable as part of the summary.
+- Avoid motivational "coach" cliches (e.g., "Keep pushing", "You've got this").
+- Use fitness terminology naturally.
+- Reference specific details from the workout.
 `
 
 	switch mode {

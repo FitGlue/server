@@ -109,7 +109,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       const profile = {
         userId: user.userId,
         createdAt: user.createdAt?.toISOString(),
-        tier: user.tier || 'free',
+        tier: user.tier || 'hobbyist',
         trialEndsAt: user.trialEndsAt?.toISOString(),
         isAdmin: user.isAdmin || false,
         syncCountThisMonth: user.syncCountThisMonth || 0,
@@ -136,7 +136,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         return {
           userId: doc.id,
           createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-          tier: data.tier || 'free',
+          tier: data.tier || 'hobbyist',
           trialEndsAt: data.trialEndsAt?.toDate?.()?.toISOString() || data.trialEndsAt,
           isAdmin: data.isAdmin || false,
           syncCountThisMonth: data.syncCountThisMonth || 0,

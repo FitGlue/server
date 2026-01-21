@@ -1,5 +1,5 @@
 import { FirestoreDataConverter, QueryDocumentSnapshot, Timestamp } from 'firebase-admin/firestore';
-import { UserRecord, UserIntegrations, PipelineConfig, ProcessedActivityRecord } from '../../types/pb/user';
+import { UserRecord, UserTier, UserIntegrations, PipelineConfig, ProcessedActivityRecord } from '../../types/pb/user';
 import { WaitlistEntry } from '../../types/pb/waitlist';
 import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
@@ -331,7 +331,13 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
     if (model.pipelines !== undefined) data.pipelines = model.pipelines?.map(mapPipelineToFirestore);
     if (model.fcmTokens !== undefined) data.fcm_tokens = model.fcmTokens;
     // Tier management fields
-    if (model.tier !== undefined) data.tier = model.tier;
+    if (model.tier !== undefined) {
+      if (model.tier === UserTier.USER_TIER_ATHLETE) {
+        data.tier = 'athlete';
+      } else {
+        data.tier = 'hobbyist';
+      }
+    }
     if (model.trialEndsAt !== undefined) data.trial_ends_at = model.trialEndsAt;
     if (model.isAdmin !== undefined) data.is_admin = model.isAdmin;
     if (model.syncCountThisMonth !== undefined) data.sync_count_this_month = model.syncCountThisMonth;
@@ -350,7 +356,13 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
       pipelines: (data.pipelines || []).map(mapPipelineFromFirestore),
       fcmTokens: data.fcm_tokens || data.fcmTokens || [],
       // Tier management fields (with backwards-compatible defaults)
-      tier: data.tier || 'free',
+      tier: ((): UserTier => {
+        const t = data.tier;
+        if (t === 'athlete' || t === 'pro' || t === 2 || t === '2') {
+          return UserTier.USER_TIER_ATHLETE;
+        }
+        return UserTier.USER_TIER_HOBBYIST;
+      })(),
       trialEndsAt: toDate(data.trial_ends_at),
       isAdmin: data.is_admin || false,
       syncCountThisMonth: data.sync_count_this_month || 0,

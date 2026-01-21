@@ -76,7 +76,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       const users = usersSnapshot.docs.map(doc => doc.data());
 
       const totalUsers = users.length;
-      const proUsersCount = users.filter((u: UserRecord) => u.tier === UserTier.USER_TIER_ATHLETE || (u.tier as unknown) === 'pro' || (u.tier as unknown) === 'athlete').length;
+      const proUsersCount = users.filter((u: UserRecord) => u.tier === UserTier.USER_TIER_ATHLETE).length;
       const adminUsersCount = users.filter((u: UserRecord) => u.isAdmin === true).length;
       const totalSyncsThisMonth = users.reduce((sum: number, u: UserRecord) => sum + (u.syncCountThisMonth || 0), 0);
 
@@ -139,7 +139,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         return {
           userId: doc.id,
           createdAt: data.createdAt?.toISOString() || data.createdAt,
-          tier: data.tier || 'free',
+          tier: data.tier || 'hobbyist',
           trialEndsAt: data.trialEndsAt?.toISOString() || data.trialEndsAt,
           isAdmin: data.isAdmin || false,
           accessEnabled: data.accessEnabled || false,
@@ -265,7 +265,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         email,
         displayName,
         createdAt: user.createdAt?.toISOString?.() || user.createdAt,
-        tier: user.tier || 'free',
+        tier: user.tier || 'hobbyist',
         trialEndsAt: user.trialEndsAt?.toISOString?.() || user.trialEndsAt,
         isAdmin: user.isAdmin || false,
         accessEnabled: user.accessEnabled || false,

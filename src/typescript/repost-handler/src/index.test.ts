@@ -42,7 +42,7 @@ describe('repost-handler', () => {
       stores: {
         users: {
           get: jest.fn().mockResolvedValue({
-            tier: 'pro',
+            tier: 2, // USER_TIER_ATHLETE
             isAdmin: false,
           }),
         },
@@ -76,8 +76,8 @@ describe('repost-handler', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
     });
 
-    it('returns 403 for free tier users', async () => {
-      ctx.stores.users.get.mockResolvedValue({ tier: 'free', isAdmin: false });
+    it('returns 403 for hobbyist tier users', async () => {
+      ctx.stores.users.get.mockResolvedValue({ tier: 1, isAdmin: false }); // USER_TIER_HOBBYIST
 
       await handler({
         method: 'POST',
@@ -86,11 +86,11 @@ describe('repost-handler', () => {
       } as any, res, ctx);
 
       expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Pro tier required for re-post features' });
+      expect(res.json).toHaveBeenCalledWith({ error: 'Athlete tier required for re-post features' });
     });
 
-    it('allows pro tier users', async () => {
-      ctx.stores.users.get.mockResolvedValue({ tier: 'pro' });
+    it('allows athlete tier users', async () => {
+      ctx.stores.users.get.mockResolvedValue({ tier: 2 }); // USER_TIER_ATHLETE
       ctx.stores.activities.getSynchronized.mockResolvedValue({
         activityId: 'a1',
         pipelineExecutionId: 'pipe-1',
@@ -113,7 +113,7 @@ describe('repost-handler', () => {
     });
 
     it('allows admin users regardless of tier', async () => {
-      ctx.stores.users.get.mockResolvedValue({ tier: 'free', isAdmin: true });
+      ctx.stores.users.get.mockResolvedValue({ tier: 1, isAdmin: true }); // USER_TIER_HOBBYIST but admin
       ctx.stores.activities.getSynchronized.mockResolvedValue({
         activityId: 'a1',
         pipelineExecutionId: 'pipe-1',
@@ -138,7 +138,7 @@ describe('repost-handler', () => {
     it('allows trial users', async () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 7);
-      ctx.stores.users.get.mockResolvedValue({ tier: 'free', trialEndsAt: futureDate });
+      ctx.stores.users.get.mockResolvedValue({ tier: 1, trialEndsAt: futureDate }); // USER_TIER_HOBBYIST with trial
       ctx.stores.activities.getSynchronized.mockResolvedValue({
         activityId: 'a1',
         pipelineExecutionId: 'pipe-1',

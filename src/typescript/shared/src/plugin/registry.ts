@@ -1421,6 +1421,162 @@ This premium feature is exclusively available to Athlete tier subscribers.
   ],
 });
 
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY, {
+  id: 'pace-summary',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Pace Summary',
+  description: 'Adds avg/best pace stats (min/km) to the activity description',
+  icon: '⚡',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Pace Stats at a Glance
+Automatically calculates and appends pace statistics to your activity description. See your average and best pace without diving into charts.
+
+### How it works
+When your activity has speed data (from GPS or sensors), this enricher converts speed to pace and adds a clean summary showing your average and best pace in min/km format.
+  `,
+  features: [
+    '✅ Calculates avg/best pace from speed data',
+    '✅ Formats pace as min/km',
+    '✅ Appends clean summary to description',
+    '✅ No configuration required',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: 'Morning Run\n\n⚡ Pace: 5:32/km avg • 4:45/km best',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Quick pace overview on Strava',
+    'Track running performance',
+    'Share pace without complex stats',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY, {
+  id: 'cadence-summary',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Cadence Summary',
+  description: 'Adds avg/max cadence stats to the activity description',
+  icon: '🦶',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Cadence Stats at a Glance
+Automatically calculates and appends cadence statistics to your activity description. See your average and max cadence at a glance.
+
+### How it works
+When your activity has cadence data (from sensors), this enricher calculates avg/max cadence and adds a clean summary. Uses spm (steps per minute) for running activities and rpm for cycling.
+  `,
+  features: [
+    '✅ Calculates avg/max cadence',
+    '✅ Appends clean summary to description',
+    '✅ Smart unit detection (spm vs rpm)',
+    '✅ No configuration required',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: 'Morning Run\n\n🦶 Cadence: 172 spm avg • 185 spm max',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Track running cadence efficiency',
+    'Monitor cycling cadence',
+    'Analyze stride consistency',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY, {
+  id: 'power-summary',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Power Summary',
+  description: 'Adds avg/max power stats (watts) to the activity description',
+  icon: '⚡',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Power Stats at a Glance
+Automatically calculates and appends power statistics to your activity description. Perfect for cyclists with power meters.
+
+### How it works
+When your activity has power data (from a power meter), this enricher calculates avg/max power and adds a clean summary in watts.
+  `,
+  features: [
+    '✅ Calculates avg/max power from power meter data',
+    '✅ Appends clean summary to description',
+    '✅ Works with any power source',
+    '✅ No configuration required',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Ride',
+      after: 'Morning Ride\n\n⚡ Power: 245W avg • 380W max',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Quick power overview on Strava',
+    'Track cycling power output',
+    'Share power stats easily',
+  ],
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY, {
+  id: 'speed-summary',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Speed Summary',
+  description: 'Adds avg/max speed stats (km/h) to the activity description',
+  icon: '🚀',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Speed Stats at a Glance
+Automatically calculates and appends speed statistics to your activity description. See your average and max speed in km/h.
+
+### How it works
+When your activity has speed data (from GPS or sensors), this enricher calculates avg/max speed and adds a clean summary in km/h format.
+  `,
+  features: [
+    '✅ Calculates avg/max speed from GPS or sensor data',
+    '✅ Formats speed as km/h',
+    '✅ Appends clean summary to description',
+    '✅ No configuration required',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Ride',
+      after: 'Morning Ride\n\n🚀 Speed: 28.5 km/h avg • 42.1 km/h max',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Quick speed overview on Strava',
+    'Track cycling speed',
+    'Monitor activity performance',
+  ],
+});
+
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   id: 'mock',
   type: PluginType.PLUGIN_TYPE_ENRICHER,

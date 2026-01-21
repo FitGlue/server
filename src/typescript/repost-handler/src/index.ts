@@ -119,7 +119,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       (user.trialEndsAt && user.trialEndsAt > new Date());
 
     if (!hasPro) {
-      res.status(403).json({ error: 'Pro tier required for re-post features' });
+      res.status(403).json({ error: 'Athlete tier required for re-post features' });
       return;
     }
   } catch (err) {

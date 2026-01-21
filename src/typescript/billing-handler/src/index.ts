@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getSecret, db } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getSecret, db, UserTier } from '@fitglue/shared';
 import Stripe from 'stripe';
 import { Request, Response } from 'express';
 
@@ -92,10 +92,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
           const fitglueUserId = session.metadata?.fitglue_user_id;
           if (fitglueUserId) {
             await db.collection('users').doc(fitglueUserId).update({
-              tier: 'pro',
+              tier: UserTier.USER_TIER_ATHLETE,
               trial_ends_at: null,
             });
-            logger.info('User upgraded to Pro', { userId: fitglueUserId, sessionId: session.id });
+            logger.info('User upgraded to Athlete', { userId: fitglueUserId, sessionId: session.id });
           }
           break;
         }
@@ -106,9 +106,9 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
           const fitglueUserId = (customer as Stripe.Customer).metadata?.fitglue_user_id;
           if (fitglueUserId) {
             await db.collection('users').doc(fitglueUserId).update({
-              tier: 'free',
+              tier: UserTier.USER_TIER_HOBBYIST,
             });
-            logger.info('User downgraded to Free', { userId: fitglueUserId });
+            logger.info('User downgraded to Hobbyist', { userId: fitglueUserId });
           }
           break;
         }
