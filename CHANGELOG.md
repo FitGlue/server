@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.9.0](https://github.com/FitGlue/server/compare/v1.8.0...v1.9.0) (2026-01-21)
+
+
+### Features
+
+* Add AI description and heart rate summary enrichers, and refactor Fitbit HR provider to support force/skip logic. ([5085f6d](https://github.com/FitGlue/server/commit/5085f6d8aaf9be9b7a42d77643f06c54997732c6))
+* improvements to enricher registration and enum usage ([f9340a2](https://github.com/FitGlue/server/commit/f9340a2c08e0aec7e5ebff30f5d506551bad2d74))
+* Introduce comprehensive user tier management fields and support 'athlete' tier as 'pro' in effective tier calculations, updating Firestore converters and admin handler. ([2d2fd3f](https://github.com/FitGlue/server/commit/2d2fd3fdd42519fcc659145442bdd1974e0cc49e))
+* Introduce separate `cleanTitle` and `cleanDescription` functions with distinct truncation logic and add corresponding tests. ([6ae561f](https://github.com/FitGlue/server/commit/6ae561f6e6000070eda4f9730a7b72fd945bdc53))
+* Wrap full-pipeline repost messages in a CloudEvent using an updated `createCloudEvent` function that accepts a custom type. ([b8ab5d3](https://github.com/FitGlue/server/commit/b8ab5d302baebb0c31a4ea6b13a60a3fde7ae821))
+
+
+### Bug Fixes
+
+* add registry manifest to showcase response ([f59594f](https://github.com/FitGlue/server/commit/f59594f8ec0214b55068fba58ee5aafb0f7090c6))
+* added firestore admin iam ([25d8506](https://github.com/FitGlue/server/commit/25d85068bf61d450f51409e726926e8f50b9ebab))
+* Standardize activity, user, and pipeline execution ID fields to snake_case in repost events to prevent Go duplicate field errors. ([e7ebdb7](https://github.com/FitGlue/server/commit/e7ebdb7549458ab9882ade254149a1bf346f96cd))
+* tf failures ([41b95f2](https://github.com/FitGlue/server/commit/41b95f2b2efc4c65b619662d143b6458049a36b4))
+
 ## [1.8.0](https://github.com/FitGlue/server/compare/v1.7.0...v1.8.0) (2026-01-20)
 
 
