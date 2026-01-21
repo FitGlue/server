@@ -416,7 +416,7 @@ describe('repost-handler', () => {
       });
     });
 
-    it('publishes message with bypass_dedup flag', async () => {
+    it('publishes message with bypass_dedup flag wrapped in CloudEvent', async () => {
       await handler({
         method: 'POST',
         path: '/full-pipeline',
@@ -427,6 +427,14 @@ describe('repost-handler', () => {
       expect(mockPublishMessage).toHaveBeenCalled();
 
       const publishCall = mockPublishMessage.mock.calls[0][0];
+      const publishedData = JSON.parse(publishCall.data.toString());
+
+      // Should be a CloudEvent
+      expect(publishedData.specversion).toBe('1.0');
+      expect(publishedData.type).toBe('com.fitglue.activity.created');
+      expect(publishedData.data.bypass_dedup).toBe(true);
+      expect(publishedData.data.activityId).toBe('a1');
+
       expect(publishCall.attributes.repost_type).toBe('full_pipeline');
       expect(publishCall.attributes.bypass_dedup).toBe('true');
     });

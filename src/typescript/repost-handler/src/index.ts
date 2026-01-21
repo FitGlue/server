@@ -20,12 +20,12 @@ const pubsub = new PubSub();
  * Create a CloudEvent envelope matching the Go enricher format.
  * The router expects: { specversion, id, source, type, data, datacontenttype }
  */
-function createCloudEvent(data: Record<string, unknown>): Record<string, unknown> {
+function createCloudEvent(data: Record<string, unknown>, type = 'com.fitglue.activity.enriched'): Record<string, unknown> {
   return {
     specversion: '1.0',
     id: uuidv4(),
     source: '/repost-handler',
-    type: 'com.fitglue.activity.enriched',
+    type,
     datacontenttype: 'application/json',
     data,
   };
@@ -383,7 +383,9 @@ async function handleFullPipeline(req: Request, res: Response, ctx: FrameworkCon
   };
 
   // Publish to raw activity topic (beginning of pipeline)
-  const messageData = Buffer.from(JSON.stringify(repostPayload));
+  // Wrap in CloudEvent envelope matching Go enricher format
+  const cloudEvent = createCloudEvent(repostPayload, 'com.fitglue.activity.created');
+  const messageData = Buffer.from(JSON.stringify(cloudEvent));
   await pubsub.topic(TOPICS.RAW_ACTIVITY).publishMessage({
     data: messageData,
     attributes: {
