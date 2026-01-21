@@ -7,7 +7,7 @@
  * - POST /api/repost/full-pipeline      - Full pipeline re-execution
  */
 
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getEffectiveTier } from '@fitglue/shared';
 import { TOPICS } from '@fitglue/shared/dist/config';
 import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
 import { Request, Response } from 'express';
@@ -114,7 +114,8 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       return;
     }
 
-    const hasPro = user.tier === 'pro' || user.isAdmin ||
+    const effectiveTier = getEffectiveTier(user);
+    const hasPro = effectiveTier === 'athlete' || user.isAdmin ||
       (user.trialEndsAt && user.trialEndsAt > new Date());
 
     if (!hasPro) {
