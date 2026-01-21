@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [2.0.0](https://github.com/FitGlue/server/compare/v1.9.1...v2.0.0) (2026-01-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* strava source and changes to user mappings
+
+### Features
+
+* strava source and changes to user mappings ([f0d2b3c](https://github.com/FitGlue/server/commit/f0d2b3ce0d1067389b89678c9fc20c2b1128565f))
+
+
+### Bug Fixes
+
+* register-strava-webhook script works ([30f6cea](https://github.com/FitGlue/server/commit/30f6ceaacc18a12fffb661077a13c9633753f52c))
+
 ### [1.9.1](https://github.com/FitGlue/server/compare/v1.9.0...v1.9.1) (2026-01-21)
 
 
