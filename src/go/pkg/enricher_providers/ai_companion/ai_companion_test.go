@@ -164,3 +164,28 @@ func TestAICompanionProvider_ProviderType(t *testing.T) {
 		t.Errorf("expected provider type %v, got %v", expected, provider.ProviderType())
 	}
 }
+
+func TestCleanDescription_NoTruncation(t *testing.T) {
+	longDescription := "Hybrid class crushed! Box step ups, RAM floor to skies with 15kg, sled pushes with 115kg...you brilliant people better be resting well tonight because that was an absolute masterclass in intensity and grit. See you all on the leaderboard!"
+
+	// Use the new cleanDescription function
+	result := cleanDescription(longDescription)
+
+	if len(result) == len(longDescription) {
+		t.Logf("Success: Full length preserved. Input/Output length: %d", len(result))
+	} else {
+		t.Errorf("Expected full length, but got: %d (original: %d)", len(result), len(longDescription))
+	}
+}
+
+func TestCleanTitle_Truncation(t *testing.T) {
+	longTitle := "This is an extremely long workout title that should definitely be truncated because it exceeds one hundred characters by a significant margin."
+
+	result := cleanTitle(longTitle)
+
+	if len(result) == 100 {
+		t.Logf("Success: Title truncated to 100 characters: %q", result)
+	} else {
+		t.Errorf("Expected title truncation to 100 characters, but got length: %d", len(result))
+	}
+}

@@ -356,27 +356,27 @@ func parseAIResponse(mode, rawOutput string) *aiResult {
 
 	switch mode {
 	case "title":
-		result.Title = cleanOutput(output)
+		result.Title = cleanTitle(output)
 	case "both":
 		lines := strings.Split(output, "\n")
 		for _, line := range lines {
 			line = strings.TrimSpace(line)
 			if strings.HasPrefix(strings.ToUpper(line), "TITLE:") {
-				result.Title = cleanOutput(strings.TrimPrefix(line, "TITLE:"))
-				result.Title = cleanOutput(strings.TrimPrefix(result.Title, "Title:"))
+				result.Title = cleanTitle(strings.TrimPrefix(line, "TITLE:"))
+				result.Title = cleanTitle(strings.TrimPrefix(result.Title, "Title:"))
 			} else if strings.HasPrefix(strings.ToUpper(line), "DESCRIPTION:") {
-				result.Description = cleanOutput(strings.TrimPrefix(line, "DESCRIPTION:"))
-				result.Description = cleanOutput(strings.TrimPrefix(result.Description, "Description:"))
+				result.Description = cleanDescription(strings.TrimPrefix(line, "DESCRIPTION:"))
+				result.Description = cleanDescription(strings.TrimPrefix(result.Description, "Description:"))
 			}
 		}
 	default: // "description"
-		result.Description = cleanOutput(output)
+		result.Description = cleanDescription(output)
 	}
 
 	return result
 }
 
-func cleanOutput(s string) string {
+func cleanTitle(s string) string {
 	s = strings.TrimSpace(s)
 	// Remove markdown formatting if present
 	s = strings.Trim(s, "*_`")
@@ -384,5 +384,14 @@ func cleanOutput(s string) string {
 	if len(s) > 100 {
 		s = s[:97] + "..."
 	}
+	return s
+}
+
+func cleanDescription(s string) string {
+	s = strings.TrimSpace(s)
+	// Remove markdown formatting if present
+	s = strings.Trim(s, "*_`")
+	// Note: No length limit for descriptions,
+	// LLM is prompted for 2-3 sentences.
 	return s
 }
