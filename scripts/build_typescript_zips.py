@@ -54,7 +54,10 @@ def copy_filtered(src: Path, dst: Path):
         dst_path = dst / item.name
         if item.is_file():
             dst_path.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(item, dst_path)
+            try:
+                shutil.copy2(item, dst_path)
+            except Exception as e:
+                raise RuntimeError(f"Failed to copy {item} -> {dst_path}: {e}")
         elif item.is_dir():
             copy_filtered(item, dst_path)
 
@@ -100,7 +103,7 @@ def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path) ->
                 output_dir = out_dir.replace('./', '').strip('/')
             except:
                 pass
-    
+
     zip_pkg = {
         "private": True,
         "main": "index.js",  # Root entry point for Cloud Functions
@@ -121,7 +124,7 @@ def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path) ->
     lock_file = ts_src_dir / 'package-lock.json'
     if lock_file.exists():
         shutil.copy2(lock_file, temp_dir / 'package-lock.json')
-    
+
     # Generate index.js that re-exports all handler exports (Cloud Functions entry point)
     index_js = f"""// Auto-generated entry point for {handler_name}
 const handler = require('./{handler_name}/{output_dir}/index');
