@@ -16,16 +16,17 @@
   },
   "devDependencies": {
     "@google-cloud/pubsub": "^4.10.0",
+    "@google-cloud/secret-manager": "^6.1.1",
     "@google-cloud/storage": "^7.18.0",
     "@types/jest": "^30.0.0",
     "axios": "^1.13.2",
     "firebase-admin": "^13.6.0",
     "jest": "^30.2.0",
+    "standard-version": "^9.5.0",
     "ts-jest": "^29.4.6",
     "ts-morph": "^27.0.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",
-    "uuid": "^13.0.0",
-    "standard-version": "^9.5.0"
+    "uuid": "^13.0.0"
   }
 }

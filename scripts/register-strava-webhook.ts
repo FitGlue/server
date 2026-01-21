@@ -33,7 +33,6 @@ async function main() {
   }
 
   const projectId = `fitglue-server-${env}`;
-  const region = 'europe-west2';
 
   console.log(`🚀 Registering Strava webhook for ${env} environment`);
   console.log(`📍 Project: ${projectId}`);
@@ -49,8 +48,14 @@ async function main() {
       process.exit(1);
     }
 
-    // Construct callback URL
-    const callbackUrl = `https://${region}-${projectId}.cloudfunctions.net/strava-handler`;
+    // Construct callback URL based on environment
+    // Routes through Firebase Hosting which proxies to Cloud Run
+    const domains: Record<string, string> = {
+      dev: 'https://dev.fitglue.tech/hooks/strava',
+      test: 'https://test.fitglue.tech/hooks/strava',
+      prod: 'https://fitglue.tech/hooks/strava'
+    };
+    const callbackUrl = domains[env];
 
     console.log(`📡 Callback URL: ${callbackUrl}`);
 
