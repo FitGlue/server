@@ -3,7 +3,9 @@ import {
   db,
   FrameworkContext,
   FirebaseAuthStrategy,
-  ForbiddenError
+  ForbiddenError,
+  INTEGRATIONS,
+  IntegrationAuthType
 } from '@fitglue/shared';
 import { Request, Response } from 'express';
 
@@ -26,38 +28,33 @@ function maskToken(token: string | undefined): string | undefined {
 }
 
 // Get integration status summary (with masked tokens)
-function getIntegrationsSummary(user: {
-  integrations?: {
-    hevy?: { enabled?: boolean; apiKey?: string; lastUsedAt?: Date };
-    strava?: { enabled?: boolean; athleteId?: number; lastUsedAt?: Date };
-    fitbit?: { enabled?: boolean; fitbitUserId?: string; lastUsedAt?: Date };
-  };
-}) {
-  const integrations = user.integrations || {};
+function getIntegrationsSummary(user: any) {
+  const userIntegrations = user.integrations || {};
+  const summary: Record<string, any> = {};
 
-  return {
-    hevy: integrations.hevy?.enabled
-      ? {
-        connected: true,
-        externalUserId: integrations.hevy.apiKey ? maskToken(integrations.hevy.apiKey) : undefined,
-        lastUsedAt: integrations.hevy.lastUsedAt?.toISOString()
+  for (const [key, def] of Object.entries(INTEGRATIONS)) {
+    const integration = (userIntegrations as any)[key];
+    if (integration?.enabled) {
+      let externalUserId = undefined;
+      if (def.externalUserIdField) {
+        const rawId = (integration as any)[def.externalUserIdField];
+        if (rawId) {
+          externalUserId = def.authType === IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY
+            ? maskToken(String(rawId))
+            : String(rawId);
+        }
       }
-      : { connected: false },
-    strava: integrations.strava?.enabled
-      ? {
+      summary[key] = {
         connected: true,
-        externalUserId: integrations.strava.athleteId?.toString(),
-        lastUsedAt: integrations.strava.lastUsedAt?.toISOString()
-      }
-      : { connected: false },
-    fitbit: integrations.fitbit?.enabled
-      ? {
-        connected: true,
-        externalUserId: integrations.fitbit.fitbitUserId,
-        lastUsedAt: integrations.fitbit.lastUsedAt?.toISOString()
-      }
-      : { connected: false }
-  };
+        externalUserId,
+        lastUsedAt: integration.lastUsedAt?.toISOString?.() || (integration.lastUsedAt instanceof Date ? integration.lastUsedAt.toISOString() : undefined)
+      };
+    } else {
+      summary[key] = { connected: false };
+    }
+  }
+
+  return summary;
 }
 
 // Map pipeline to response format

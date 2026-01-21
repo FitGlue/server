@@ -27,6 +27,7 @@ var (
 	svcOnce sync.Once
 	svcErr  error
 )
+
 const (
 	// Hobbyist retention: 30 days
 	HobbyistRetentionDays = 30
@@ -243,7 +244,6 @@ func showcaseHandler() framework.HandlerFunc {
 		} else {
 			fwCtx.Logger.Warn("svc.Auth is nil, cannot fetch display name from Firebase Auth", "userId", eventPayload.UserId)
 		}
-
 
 		// Persist to Firestore
 		if err := svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {

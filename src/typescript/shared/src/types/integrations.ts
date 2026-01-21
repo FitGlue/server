@@ -30,6 +30,7 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     key: 'hevy',
     displayName: 'Hevy',
     authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    externalUserIdField: 'apiKey',
     configurableFields: [{ field: 'apiKey', name: 'API Key', type: 'password', required: true }],
   },
   mock: {
@@ -56,6 +57,7 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     key: 'parkrun',
     displayName: 'Parkrun',
     authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+    externalUserIdField: 'athleteId',
     configurableFields: [{ field: 'athleteId', name: 'Barcode Number', type: 'string', required: true }],
   },
 };
