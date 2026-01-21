@@ -32,9 +32,10 @@ func GetEffectiveTier(user *pb.UserRecord) EffectiveTier {
 	}
 
 	// Fall back to stored tier (default: free)
-	if user.Tier == "pro" {
+	if user.Tier == "pro" || user.Tier == "athlete" {
 		return TierPro
 	}
+
 	return TierFree
 }
 

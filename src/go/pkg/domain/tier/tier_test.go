@@ -60,6 +60,18 @@ func TestGetEffectiveTier_ProSubscriber(t *testing.T) {
 	}
 }
 
+func TestGetEffectiveTier_AthleteSubscriber(t *testing.T) {
+	user := &pb.UserRecord{
+		IsAdmin: false,
+		Tier:    "athlete",
+	}
+
+	tier := GetEffectiveTier(user)
+	if tier != TierPro {
+		t.Errorf("Expected TierPro for athlete subscriber, got %v", tier)
+	}
+}
+
 func TestGetEffectiveTier_FreeUser(t *testing.T) {
 	user := &pb.UserRecord{
 		IsAdmin: false,

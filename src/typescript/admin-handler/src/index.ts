@@ -3,7 +3,8 @@ import {
   FrameworkContext,
   FirebaseAuthStrategy,
   ForbiddenError,
-  db
+  db,
+  userConverter
 } from '@fitglue/shared';
 import { Request, Response } from 'express';
 import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
@@ -69,7 +70,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   // ========================================
   if (subPath === '/stats' && req.method === 'GET') {
     try {
-      const usersSnapshot = await db.collection('users').get();
+      const usersSnapshot = await db.collection('users').withConverter(userConverter).get();
       const users = usersSnapshot.docs.map(doc => doc.data());
 
       const totalUsers = users.length;
@@ -114,6 +115,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
       // Get paginated users (simple query without orderBy to avoid index)
       const snapshot = await db.collection('users')
+        .withConverter(userConverter)
         .limit(limit)
         .offset(offset)
         .get();
@@ -134,11 +136,11 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
         return {
           userId: doc.id,
-          createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
+          createdAt: data.createdAt?.toISOString() || data.createdAt,
           tier: data.tier || 'free',
-          trialEndsAt: data.trialEndsAt?.toDate?.()?.toISOString() || data.trialEndsAt,
+          trialEndsAt: data.trialEndsAt?.toISOString() || data.trialEndsAt,
           isAdmin: data.isAdmin || false,
-          accessEnabled: data.access_enabled || false,
+          accessEnabled: data.accessEnabled || false,
           syncCountThisMonth: data.syncCountThisMonth || 0,
           stripeCustomerId: data.stripeCustomerId || null,
           integrations,

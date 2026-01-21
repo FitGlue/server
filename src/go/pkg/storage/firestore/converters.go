@@ -118,6 +118,19 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 		m["pipelines"] = pipelines
 	}
 
+	// Tier management fields
+	m["tier"] = u.Tier
+	if u.TrialEndsAt != nil {
+		m["trial_ends_at"] = u.TrialEndsAt.AsTime()
+	}
+	m["is_admin"] = u.IsAdmin
+	m["sync_count_this_month"] = u.SyncCountThisMonth
+	if u.SyncCountResetAt != nil {
+		m["sync_count_reset_at"] = u.SyncCountResetAt.AsTime()
+	}
+	m["stripe_customer_id"] = u.StripeCustomerId
+	m["access_enabled"] = u.AccessEnabled
+
 	return m
 }
 
@@ -174,6 +187,25 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 				CreatedAt:    getTime(pMap, "created_at"),
 				LastUsedAt:   getTime(pMap, "last_used_at"),
 			}
+		}
+	}
+
+	// Tier management fields
+	u.Tier = getString(m, "tier")
+	u.IsAdmin = getBool(m, "is_admin")
+	u.AccessEnabled = getBool(m, "access_enabled")
+	u.StripeCustomerId = getString(m, "stripe_customer_id")
+	u.TrialEndsAt = getTime(m, "trial_ends_at")
+	u.SyncCountResetAt = getTime(m, "sync_count_reset_at")
+
+	if v, ok := m["sync_count_this_month"]; ok {
+		switch n := v.(type) {
+		case int64:
+			u.SyncCountThisMonth = int32(n)
+		case int:
+			u.SyncCountThisMonth = int32(n)
+		case float64:
+			u.SyncCountThisMonth = int32(n)
 		}
 	}
 
