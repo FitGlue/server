@@ -58,6 +58,22 @@ resource "google_pubsub_topic" "job_upload_trainingpeaks" {
   message_retention_duration = "3600s"
 }
 
+# Intervals.icu topic for uploading activities to Intervals.icu (all environments)
+resource "google_pubsub_topic" "job_upload_intervals" {
+  name    = "topic-job-upload-intervals"
+  project = var.project_id
+
+  message_retention_duration = "3600s"
+}
+
+# Google Sheets topic for uploading activities to Google Sheets (all environments)
+resource "google_pubsub_topic" "job_upload_googlesheets" {
+  name    = "topic-job-upload-googlesheets"
+  project = var.project_id
+
+  message_retention_duration = "3600s"
+}
+
 
 resource "google_pubsub_subscription" "enrichment_lag_sub" {
   name    = "sub-enrichment-lag"

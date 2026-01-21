@@ -74,4 +74,39 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     externalUserIdField: 'athleteId',
     configurableFields: [], // OAuth configured via flow
   },
+  intervals: {
+    key: 'intervals',
+    displayName: 'Intervals.icu',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    externalUserIdField: 'athleteId',
+    configurableFields: [{ field: 'apiKey', name: 'API Key', type: 'password', required: true }],
+  },
+  google: {
+    key: 'google',
+    displayName: 'Google',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    externalUserIdField: 'googleUserId',
+    configurableFields: [], // OAuth configured via flow
+  },
+  oura: {
+    key: 'oura',
+    displayName: 'Oura',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    externalUserIdField: 'ouraUserId',
+    configurableFields: [], // OAuth configured via flow
+  },
+  polar: {
+    key: 'polar',
+    displayName: 'Polar Flow',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    externalUserIdField: 'polarUserId',
+    configurableFields: [], // OAuth configured via flow
+  },
+  wahoo: {
+    key: 'wahoo',
+    displayName: 'Wahoo',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    externalUserIdField: 'wahooUserId',
+    configurableFields: [], // OAuth configured via flow
+  },
 };

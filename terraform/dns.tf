@@ -95,3 +95,13 @@ resource "google_dns_record_set" "firebase_txt" {
   ttl          = 300
   rrdatas      = ["hosting-site=${var.project_id}"]
 }
+
+# Assets subdomain CNAME - points to GCS bucket for showcase assets (banners, thumbnails)
+# Format: assets.{env}.fitglue.tech -> c.storage.googleapis.com
+resource "google_dns_record_set" "assets_cname" {
+  managed_zone = google_dns_managed_zone.main.name
+  name         = "assets.${var.domain_name}."
+  type         = "CNAME"
+  ttl          = 300
+  rrdatas      = ["c.storage.googleapis.com."]
+}

@@ -192,3 +192,84 @@ type mockTransport struct {
 func (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	return m.client.Do(req)
 }
+
+func TestUploadPhotosToStrava(t *testing.T) {
+	photoUploadCalled := false
+	var capturedPhotoBody []byte
+
+	mockHTTPClient := &MockHTTPClient{
+		DoFunc: func(req *http.Request) (*http.Response, error) {
+			// Handle POST to photos API
+			if req.Method == "POST" && req.URL.Path == "/api/v3/activities/12345/photos" {
+				photoUploadCalled = true
+
+				// Capture the body for verification
+				capturedPhotoBody, _ = io.ReadAll(req.Body)
+
+				// Verify multipart form
+				if !bytes.Contains([]byte(req.Header.Get("Content-Type")), []byte("multipart/form-data")) {
+					t.Error("Expected multipart/form-data Content-Type")
+				}
+
+				return &http.Response{
+					StatusCode: 201,
+					Body:       io.NopCloser(bytes.NewBufferString(`{"id": 999}`)),
+				}, nil
+			}
+
+			t.Errorf("Unexpected request: %s %s", req.Method, req.URL.Path)
+			return nil, nil
+		},
+	}
+
+	mockStore := &mocks.MockBlobStore{
+		ReadFunc: func(ctx context.Context, bucket, object string) ([]byte, error) {
+			// Return mock PNG image data
+			return []byte("FAKE_PNG_IMAGE_DATA"), nil
+		},
+	}
+
+	// Setup service with mocks
+	svc = &bootstrap.Service{
+		DB:      &mocks.MockDatabase{},
+		Store:   mockStore,
+		Secrets: &mocks.MockSecretStore{},
+		Config: &bootstrap.Config{
+			ProjectID:         "test-project",
+			GCSArtifactBucket: "test-bucket",
+		},
+	}
+
+	// Create mock framework context
+	fwCtx := &framework.FrameworkContext{
+		Service: svc,
+		Logger:  bootstrap.NewLogger("test", true),
+	}
+
+	// Test metadata with asset_* key
+	metadata := map[string]string{
+		"asset_muscle_heatmap": "gs://test-bucket/enrichments/user123/heatmap.png",
+		"some_other_key":       "should be ignored",
+	}
+
+	mockClient := &http.Client{Transport: &mockTransport{mockHTTPClient}}
+	err := uploadPhotosToStrava(context.Background(), mockClient, 12345, metadata, fwCtx)
+
+	if err != nil {
+		t.Errorf("uploadPhotosToStrava failed: %v", err)
+	}
+
+	if !photoUploadCalled {
+		t.Error("Expected photo upload to be called for asset_muscle_heatmap")
+	}
+
+	// Verify the captured body contains the filename
+	if !bytes.Contains(capturedPhotoBody, []byte("heatmap.png")) {
+		t.Error("Expected body to contain filename 'heatmap.png'")
+	}
+
+	// Verify the captured body contains the image data
+	if !bytes.Contains(capturedPhotoBody, []byte("FAKE_PNG_IMAGE_DATA")) {
+		t.Error("Expected body to contain image data")
+	}
+}

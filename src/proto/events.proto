@@ -46,6 +46,9 @@ enum CloudEventSource {
   CLOUD_EVENT_SOURCE_PARKRUN_RESULTS = 7 [(ce_source) = "/integrations/parkrun/results"];
   CLOUD_EVENT_SOURCE_FILE_UPLOAD = 8 [(ce_source) = "/integrations/file-upload"];
   CLOUD_EVENT_SOURCE_STRAVA = 9 [(ce_source) = "/integrations/strava"];
+  CLOUD_EVENT_SOURCE_OURA = 10 [(ce_source) = "/integrations/oura"];
+  CLOUD_EVENT_SOURCE_POLAR_WEBHOOK = 11 [(ce_source) = "/integrations/polar/webhook"];
+  CLOUD_EVENT_SOURCE_WAHOO = 12 [(ce_source) = "/integrations/wahoo"];
   CLOUD_EVENT_SOURCE_MOCK = 99 [(ce_source) = "/integrations/mock"];
 }
 
@@ -57,6 +60,8 @@ enum Destination {
   DESTINATION_SHOWCASE = 2 [(dest_topic) = "topic-job-upload-showcase"];
   DESTINATION_HEVY = 3 [(dest_topic) = "topic-job-upload-hevy"];
   DESTINATION_TRAININGPEAKS = 4 [(dest_topic) = "topic-job-upload-trainingpeaks"];
+  DESTINATION_INTERVALS = 5 [(dest_topic) = "topic-job-upload-intervals"];
+  DESTINATION_GOOGLESHEETS = 6 [(dest_topic) = "topic-job-upload-googlesheets"];
   DESTINATION_MOCK = 99 [(dest_topic) = "topic-job-upload-mock"];
 }
 

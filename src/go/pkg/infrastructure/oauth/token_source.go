@@ -75,6 +75,11 @@ func (s *FirestoreTokenSource) ForceRefresh(ctx context.Context) (*Token, error)
 			return nil, fmt.Errorf("trainingpeaks not linked/enabled")
 		}
 		refreshToken = userData.Integrations.Trainingpeaks.RefreshToken
+	case "polar":
+		if userData.Integrations.Polar == nil || !userData.Integrations.Polar.Enabled {
+			return nil, fmt.Errorf("polar not linked/enabled")
+		}
+		refreshToken = userData.Integrations.Polar.RefreshToken
 	default:
 		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
@@ -132,6 +137,15 @@ func (s *FirestoreTokenSource) Token(ctx context.Context) (*Token, error) {
 		if userData.Integrations.Trainingpeaks.ExpiresAt != nil {
 			expiry = userData.Integrations.Trainingpeaks.ExpiresAt.AsTime()
 		}
+	case "polar":
+		if userData.Integrations.Polar == nil || !userData.Integrations.Polar.Enabled {
+			return nil, fmt.Errorf("polar not linked/enabled")
+		}
+		accessToken = userData.Integrations.Polar.AccessToken
+		refreshToken = userData.Integrations.Polar.RefreshToken
+		if userData.Integrations.Polar.ExpiresAt != nil {
+			expiry = userData.Integrations.Polar.ExpiresAt.AsTime()
+		}
 	default:
 		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
@@ -172,6 +186,8 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 		tokenURL = "https://api.fitbit.com/oauth2/token"
 	case "trainingpeaks":
 		tokenURL = "https://oauth.trainingpeaks.com/token"
+	case "polar":
+		tokenURL = "https://polarremote.com/v2/oauth2/token"
 	default:
 		return nil, fmt.Errorf("unsupported provider for refresh: %s", s.provider)
 	}

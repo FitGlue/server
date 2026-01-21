@@ -111,7 +111,11 @@ export interface PluginManifest {
     | string
     | undefined;
   /** Path to SVG asset (e.g., "/assets/icons/strava.svg") */
-  iconPath?: string | undefined;
+  iconPath?:
+    | string
+    | undefined;
+  /** When true, plugin is hidden from app but still shown on marketing site with "Coming Soon" indicator */
+  isTemporarilyUnavailable?: boolean | undefined;
 }
 
 /** Transformation shows a before/after example of what a plugin does to a field */
@@ -219,6 +223,8 @@ export interface IntegrationManifest {
   marketingDescription: string;
   /** List of features/capabilities */
   features: string[];
+  /** When true, integration is hidden from connections page but shown on marketing with "Coming Soon" */
+  isTemporarilyUnavailable?: boolean | undefined;
 }
 
 /** PluginRegistryResponse for API discovery */

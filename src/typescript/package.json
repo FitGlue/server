@@ -7,6 +7,7 @@
     "strava-oauth-handler",
     "spotify-oauth-handler",
     "fitbit-oauth-handler",
+    "google-oauth-handler",
     "fitbit-handler",
     "auth-hooks",
     "mcp-server",
@@ -24,7 +25,13 @@
     "repost-handler",
     "admin-handler",
     "strava-handler",
-    "trainingpeaks-oauth-handler"
+    "trainingpeaks-oauth-handler",
+    "wahoo-oauth-handler",
+    "wahoo-handler",
+    "oura-oauth-handler",
+    "oura-handler",
+    "polar-oauth-handler",
+    "polar-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

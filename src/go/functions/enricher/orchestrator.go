@@ -17,6 +17,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+// temporarilyUnavailableEnrichers is a skip-list for enrichers that are awaiting API access.
+// When an enricher is added here, it will be skipped during pipeline execution even if configured.
+// Remove entries from this map once API access is granted and the enricher is ready.
+var temporarilyUnavailableEnrichers = map[pb.EnricherProviderType]bool{
+	// Example: pb.EnricherProviderType_ENRICHER_PROVIDER_POLAR_TRACKS: true,
+}
+
 type Orchestrator struct {
 	database        shared.Database
 	storage         shared.BlobStore
@@ -173,6 +180,18 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 					ProviderName: fmt.Sprintf("TYPE:%s", cfg.ProviderType),
 					Status:       "SKIPPED",
 					Error:        "provider not registered",
+				})
+				continue
+			}
+
+			// Skip temporarily unavailable enrichers
+			if temporarilyUnavailableEnrichers[cfg.ProviderType] {
+				slog.Info("Skipping temporarily unavailable enricher", "type", cfg.ProviderType, "name", provider.Name())
+				providerExecs = append(providerExecs, ProviderExecution{
+					ProviderName: provider.Name(),
+					Status:       "SKIPPED",
+					Error:        "temporarily unavailable",
+					Metadata:     map[string]string{"skip_reason": "temporarily_unavailable"},
 				})
 				continue
 			}

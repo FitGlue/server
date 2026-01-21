@@ -259,6 +259,14 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
 			fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
 		}
+
+		// Upload enrichment assets as photos (Athlete tier feature)
+		if eventPayload.EnrichmentMetadata != nil {
+			if err := uploadPhotosToStrava(ctx, httpClient, uploadResp.ActivityID, eventPayload.EnrichmentMetadata, fwCtx); err != nil {
+				fwCtx.Logger.Warn("Failed to upload photos to Strava", "error", err)
+				// Don't fail the overall upload - photos are a nice-to-have enhancement
+			}
+		}
 	}
 
 	status := "SUCCESS"
@@ -495,4 +503,101 @@ func truncateString(s string, maxLen int) string {
 		return s
 	}
 	return s[:maxLen] + "..."
+}
+
+// uploadPhotosToStrava uploads enrichment assets (images) to a Strava activity
+// It iterates through enrichment_metadata looking for keys prefixed with "asset_"
+// and POSTs each image to Strava's photo API
+func uploadPhotosToStrava(ctx context.Context, httpClient *http.Client, activityID int64, metadata map[string]string, fwCtx *framework.FrameworkContext) error {
+	bucketName := fwCtx.Service.Config.GCSArtifactBucket
+	if bucketName == "" {
+		bucketName = "fitglue-artifacts"
+	}
+
+	var uploadErrors []string
+
+	for key, gcsURI := range metadata {
+		// Only process asset_* keys (e.g., asset_muscle_heatmap, asset_route_thumbnail)
+		if !strings.HasPrefix(key, "asset_") {
+			continue
+		}
+
+		fwCtx.Logger.Info("Uploading photo to Strava", "asset_key", key, "gcs_uri", gcsURI, "activity_id", activityID)
+
+		// Extract object name from GCS URI (gs://bucket/path/to/file.png)
+		objectName := strings.TrimPrefix(gcsURI, "gs://"+bucketName+"/")
+		if objectName == gcsURI {
+			// URI didn't match expected bucket format, try to extract path after any bucket
+			parts := strings.SplitN(gcsURI, "/", 4)
+			if len(parts) >= 4 {
+				objectName = parts[3]
+			} else {
+				fwCtx.Logger.Warn("Invalid GCS URI format", "uri", gcsURI)
+				uploadErrors = append(uploadErrors, fmt.Sprintf("%s: invalid URI", key))
+				continue
+			}
+		}
+
+		// Download image from GCS
+		imageData, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
+		if err != nil {
+			fwCtx.Logger.Warn("Failed to download image from GCS", "error", err, "object", objectName)
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: GCS read failed", key))
+			continue
+		}
+
+		// Determine filename and content type from object name
+		filename := objectName
+		if idx := strings.LastIndex(objectName, "/"); idx >= 0 {
+			filename = objectName[idx+1:]
+		}
+
+		// Build multipart form data
+		body := &bytes.Buffer{}
+		writer := multipart.NewWriter(body)
+		part, err := writer.CreateFormFile("file", filename)
+		if err != nil {
+			fwCtx.Logger.Warn("Failed to create form file", "error", err)
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: form creation failed", key))
+			continue
+		}
+		part.Write(imageData)
+		writer.Close()
+
+		// POST to Strava photos API
+		photoURL := fmt.Sprintf("https://www.strava.com/api/v3/activities/%d/photos", activityID)
+		req, err := http.NewRequestWithContext(ctx, "POST", photoURL, body)
+		if err != nil {
+			fwCtx.Logger.Warn("Failed to create photo upload request", "error", err)
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: request creation failed", key))
+			continue
+		}
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			fwCtx.Logger.Warn("Failed to upload photo to Strava", "error", err)
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: upload failed", key))
+			continue
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode >= 400 {
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			fwCtx.Logger.Warn("Strava photo upload failed",
+				"status", resp.StatusCode,
+				"response", string(bodyBytes),
+				"asset_key", key)
+			uploadErrors = append(uploadErrors, fmt.Sprintf("%s: status %d", key, resp.StatusCode))
+			continue
+		}
+
+		fwCtx.Logger.Info("Successfully uploaded photo to Strava", "asset_key", key, "activity_id", activityID)
+	}
+
+	if len(uploadErrors) > 0 {
+		return fmt.Errorf("photo uploads had errors: %s", strings.Join(uploadErrors, "; "))
+	}
+
+	return nil
 }

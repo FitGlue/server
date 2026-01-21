@@ -23,6 +23,12 @@ exports.fitbitOAuthHandler = (req, res) => {
   return fitbit.fitbitOAuthHandler(req, res);
 };
 
+exports.googleOAuthHandler = (req, res) => {
+  const google = require('./google-oauth-handler/build/index');
+  return google.googleOAuthHandler(req, res);
+};
+
+
 exports.fitbitWebhookHandler = (req, res) => {
   const fitbit = require('./fitbit-handler/build/index');
   return fitbit.fitbitWebhookHandler(req, res);
@@ -106,4 +112,34 @@ exports.stravaWebhookHandler = (req, res) => {
 exports.trainingPeaksOAuthHandler = (req, res) => {
   const tp = require('./trainingpeaks-oauth-handler/build/index');
   return tp.trainingPeaksOAuthHandler(req, res);
+};
+
+exports.ouraOAuthHandler = (req, res) => {
+  const oura = require('./oura-oauth-handler/build/index');
+  return oura.ouraOAuthHandler(req, res);
+};
+
+exports.wahooOAuthHandler = (req, res) => {
+  const wahoo = require('./wahoo-oauth-handler/build/index');
+  return wahoo.wahooOAuthHandler(req, res);
+};
+
+exports.wahooWebhookHandler = (req, res) => {
+  const wahoo = require('./wahoo-handler/build/index');
+  return wahoo.wahooWebhookHandler(req, res);
+};
+
+exports.ouraWebhookHandler = (req, res) => {
+  const oura = require('./oura-handler/build/index');
+  return oura.ouraWebhookHandler(req, res);
+};
+
+exports.polarOAuthHandler = (req, res) => {
+  const polar = require('./polar-oauth-handler/build/index');
+  return polar.polarOAuthHandler(req, res);
+};
+
+exports.polarWebhookHandler = (req, res) => {
+  const polar = require('./polar-handler/build/index');
+  return polar.polarWebhookHandler(req, res);
 };

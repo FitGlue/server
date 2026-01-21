@@ -35,6 +35,9 @@ const (
 	ActivitySource_SOURCE_GARMIN          ActivitySource = 7
 	ActivitySource_SOURCE_APPLE_HEALTH    ActivitySource = 8
 	ActivitySource_SOURCE_HEALTH_CONNECT  ActivitySource = 9
+	ActivitySource_SOURCE_OURA            ActivitySource = 10
+	ActivitySource_SOURCE_POLAR           ActivitySource = 11
+	ActivitySource_SOURCE_WAHOO           ActivitySource = 12
 	ActivitySource_SOURCE_TEST            ActivitySource = 99
 )
 
@@ -50,6 +53,9 @@ var (
 		7:  "SOURCE_GARMIN",
 		8:  "SOURCE_APPLE_HEALTH",
 		9:  "SOURCE_HEALTH_CONNECT",
+		10: "SOURCE_OURA",
+		11: "SOURCE_POLAR",
+		12: "SOURCE_WAHOO",
 		99: "SOURCE_TEST",
 	}
 	ActivitySource_value = map[string]int32{
@@ -62,6 +68,9 @@ var (
 		"SOURCE_GARMIN":          7,
 		"SOURCE_APPLE_HEALTH":    8,
 		"SOURCE_HEALTH_CONNECT":  9,
+		"SOURCE_OURA":            10,
+		"SOURCE_POLAR":           11,
+		"SOURCE_WAHOO":           12,
 		"SOURCE_TEST":            99,
 	}
 )
@@ -275,7 +284,7 @@ const file_activity_proto_rawDesc = "" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
 	"\x18_resume_pending_input_idB\x15\n" +
-	"\x13_origin_destination*\xe7\x01\n" +
+	"\x13_origin_destination*\x9c\x02\n" +
 	"\x0eActivitySource\x12\x12\n" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
 	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +
@@ -286,6 +295,10 @@ const file_activity_proto_rawDesc = "" +
 	"\rSOURCE_GARMIN\x10\a\x12\x17\n" +
 	"\x13SOURCE_APPLE_HEALTH\x10\b\x12\x19\n" +
 	"\x15SOURCE_HEALTH_CONNECT\x10\t\x12\x0f\n" +
+	"\vSOURCE_OURA\x10\n" +
+	"\x12\x10\n" +
+	"\fSOURCE_POLAR\x10\v\x12\x10\n" +
+	"\fSOURCE_WAHOO\x10\f\x12\x0f\n" +
 	"\vSOURCE_TEST\x10cB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (

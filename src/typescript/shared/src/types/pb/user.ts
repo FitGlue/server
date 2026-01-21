@@ -59,6 +59,12 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_ELEVATION_SUMMARY = 24,
   /** ENRICHER_PROVIDER_LOCATION_NAMING - Config inputs: "mode" (title/description), "title_template", "fallback_enabled" - generates location-based titles from GPS */
   ENRICHER_PROVIDER_LOCATION_NAMING = 25,
+  /** ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE - Config inputs: none (generates SVG muscle activation image) - Athlete tier only */
+  ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE = 26,
+  /** ENRICHER_PROVIDER_ROUTE_THUMBNAIL - Config inputs: "width", "height", "style", "line_color", "line_width" - generates static map image of GPS route - Athlete tier only */
+  ENRICHER_PROVIDER_ROUTE_THUMBNAIL = 27,
+  /** ENRICHER_PROVIDER_AI_BANNER - Config inputs: "style" (vibrant/minimal/dramatic) - generates AI banner image for Showcase - Athlete tier only */
+  ENRICHER_PROVIDER_AI_BANNER = 28,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }
@@ -172,6 +178,11 @@ export interface UserIntegrations {
   parkrun?: ParkrunIntegration | undefined;
   spotify?: SpotifyIntegration | undefined;
   trainingpeaks?: TrainingPeaksIntegration | undefined;
+  intervals?: IntervalsIntegration | undefined;
+  google?: GoogleIntegration | undefined;
+  oura?: OuraIntegration | undefined;
+  polar?: PolarIntegration | undefined;
+  wahoo?: WahooIntegration | undefined;
 }
 
 export interface MockIntegration {
@@ -258,6 +269,68 @@ export interface TrainingPeaksIntegration {
     | undefined;
   /** TrainingPeaks athlete ID */
   athleteId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface IntervalsIntegration {
+  enabled: boolean;
+  /** Intervals.icu API key (used as Basic Auth username) */
+  apiKey: string;
+  /** Intervals.icu athlete ID */
+  athleteId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface OuraIntegration {
+  enabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?:
+    | Date
+    | undefined;
+  /** Oura user ID */
+  ouraUserId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface GoogleIntegration {
+  enabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?:
+    | Date
+    | undefined;
+  /** Google user ID */
+  googleUserId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface PolarIntegration {
+  enabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?:
+    | Date
+    | undefined;
+  /** Polar AccessLink user ID */
+  polarUserId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface WahooIntegration {
+  enabled: boolean;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt?:
+    | Date
+    | undefined;
+  /** Wahoo Cloud user ID */
+  wahooUserId: string;
   createdAt?: Date | undefined;
   lastUsedAt?: Date | undefined;
 }

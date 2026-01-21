@@ -1243,18 +1243,30 @@ function checkDestinationUrlTemplates(): CheckResult {
 
   const content = fs.readFileSync(registryPath, 'utf-8');
 
-  // Find all registerDestination calls
-  const destRegex = /registerDestination\(\{[\s\S]*?id:\s*['"](\w+)['"][\s\S]*?enabled:\s*(true|false)[\s\S]*?\}\);/g;
-  let match;
+  // Split content at registerDestination calls and process each block
+  const destBlocks = content.split(/\nregisterDestination\(/);
 
-  while ((match = destRegex.exec(content)) !== null) {
-    const destId = match[1];
-    const enabled = match[2] === 'true';
-    const block = match[0];
+  for (let i = 1; i < destBlocks.length; i++) {
+    const block = destBlocks[i];
+    // Find the end of this registration block (closing `});`)
+    const endMatch = block.match(/^\{[^}]*\}\);/s);
+    if (!endMatch) continue;
+
+    const regBlock = endMatch[0];
+
+    // Extract id
+    const idMatch = regBlock.match(/id:\s*['"](\w+|-)+['"]/);
+    if (!idMatch) continue;
+    const destId = idMatch[1];
+
+    // Extract enabled status
+    const enabledMatch = regBlock.match(/enabled:\s*(true|false)/);
+    if (!enabledMatch) continue;
+    const enabled = enabledMatch[1] === 'true';
 
     if (enabled) {
-      // Check if externalUrlTemplate is defined (even if empty for env-specific injection)
-      if (!block.includes('externalUrlTemplate')) {
+      // Check if externalUrlTemplate is defined
+      if (!regBlock.includes('externalUrlTemplate')) {
         errors.push(`Destination '${destId}' is enabled but missing externalUrlTemplate - add URL template for external activity links`);
       }
     }

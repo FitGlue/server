@@ -56,6 +56,11 @@ message UserIntegrations {
   ParkrunIntegration parkrun = 5;
   SpotifyIntegration spotify = 6;
   TrainingPeaksIntegration trainingpeaks = 7;
+  IntervalsIntegration intervals = 8;
+  GoogleIntegration google = 9;
+  OuraIntegration oura = 10;
+  PolarIntegration polar = 11;
+  WahooIntegration wahoo = 12;
 }
 
 message MockIntegration {
@@ -135,6 +140,12 @@ enum EnricherProviderType {
   ENRICHER_PROVIDER_ELEVATION_SUMMARY = 24;
   // Config inputs: "mode" (title/description), "title_template", "fallback_enabled" - generates location-based titles from GPS
   ENRICHER_PROVIDER_LOCATION_NAMING = 25;
+  // Config inputs: none (generates SVG muscle activation image) - Athlete tier only
+  ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE = 26;
+  // Config inputs: "width", "height", "style", "line_color", "line_width" - generates static map image of GPS route - Athlete tier only
+  ENRICHER_PROVIDER_ROUTE_THUMBNAIL = 27;
+  // Config inputs: "style" (vibrant/minimal/dramatic) - generates AI banner image for Showcase - Athlete tier only
+  ENRICHER_PROVIDER_AI_BANNER = 28;
   ENRICHER_PROVIDER_MOCK = 99;
 }
 
@@ -207,6 +218,55 @@ message TrainingPeaksIntegration {
     google.protobuf.Timestamp created_at = 6;
     google.protobuf.Timestamp last_used_at = 7;
 }
+
+message IntervalsIntegration {
+    bool enabled = 1;
+    string api_key = 2;                   // Intervals.icu API key (used as Basic Auth username)
+    string athlete_id = 3;                // Intervals.icu athlete ID
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp last_used_at = 5;
+}
+
+message OuraIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string oura_user_id = 5;              // Oura user ID
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message GoogleIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string google_user_id = 5;            // Google user ID
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message PolarIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string polar_user_id = 5;             // Polar AccessLink user ID
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message WahooIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string wahoo_user_id = 5;             // Wahoo Cloud user ID
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
 
 message ProcessedActivityRecord {
   string source = 1;

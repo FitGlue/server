@@ -68,6 +68,23 @@ export class UserStore {
   }
 
   /**
+   * Find a user by their Polar User ID.
+   */
+  async findByPolarId(polarUserId: string): Promise<{ id: string; data: UserRecord } | null> {
+    const snapshot = await this.collection()
+      .where('integrations.polar.polar_user_id', '==', polarUserId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    return { id: doc.id, data: doc.data() };
+  }
+
+  /**
    * Get a user by ID.
    */
   async get(userId: string): Promise<UserRecord | null> {

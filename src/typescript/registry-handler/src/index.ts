@@ -42,12 +42,21 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     const registry = getRegistry();
 
     // Filter out disabled plugins unless ?showAll=true
+    // Marketing mode (?marketingMode=true) shows all enabled plugins including temporarily unavailable ones
     const showAll = req.query.showAll === 'true';
+    const marketingMode = req.query.marketingMode === 'true';
+
+    // Helper to determine if a plugin should be included
+    const shouldIncludePlugin = (p: { enabled?: boolean; isTemporarilyUnavailable?: boolean }) => {
+      if (showAll) return p.enabled;
+      if (marketingMode) return p.enabled; // Include temp unavailable in marketing
+      return p.enabled && !p.isTemporarilyUnavailable; // Exclude temp unavailable in app
+    };
 
     // Inject env-specific Showcase URL template
     const showcaseBaseUrl = getShowcaseBaseUrl();
     const destinations = registry.destinations
-      .filter(p => showAll || p.enabled)
+      .filter(shouldIncludePlugin)
       .map(d => {
         if (d.id === 'showcase') {
           return { ...d, externalUrlTemplate: `${showcaseBaseUrl}/showcase/{id}` };
@@ -56,10 +65,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       });
 
     const response = {
-      sources: registry.sources.filter(p => showAll || p.enabled),
-      enrichers: registry.enrichers.filter(p => showAll || p.enabled),
+      sources: registry.sources.filter(shouldIncludePlugin),
+      enrichers: registry.enrichers.filter(shouldIncludePlugin),
       destinations,
-      integrations: registry.integrations, // Already filtered in getRegistry()
+      integrations: registry.integrations.filter(shouldIncludePlugin), // Apply same logic to integrations
     };
 
     // Cache for 5 minutes (plugin list rarely changes)

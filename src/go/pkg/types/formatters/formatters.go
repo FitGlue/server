@@ -173,6 +173,10 @@ func FormatDestination(value pb.Destination) string {
 		return "Hevy"
 	case pb.Destination_DESTINATION_TRAININGPEAKS:
 		return "Trainingpeaks"
+	case pb.Destination_DESTINATION_INTERVALS:
+		return "Intervals"
+	case pb.Destination_DESTINATION_GOOGLESHEETS:
+		return "Googlesheets"
 	case pb.Destination_DESTINATION_MOCK:
 		return "Mock"
 	default:
@@ -225,6 +229,12 @@ func FormatCloudEventSource(value pb.CloudEventSource) string {
 		return "File Upload"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA:
 		return "Strava"
+	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_OURA:
+		return "Oura"
+	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK:
+		return "Polar Webhook"
+	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO:
+		return "Wahoo"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK:
 		return "Mock"
 	default:
@@ -252,6 +262,12 @@ func FormatActivitySource(value pb.ActivitySource) string {
 		return "Apple Health"
 	case pb.ActivitySource_SOURCE_HEALTH_CONNECT:
 		return "Health Connect"
+	case pb.ActivitySource_SOURCE_OURA:
+		return "Oura"
+	case pb.ActivitySource_SOURCE_POLAR:
+		return "Polar"
+	case pb.ActivitySource_SOURCE_WAHOO:
+		return "Wahoo"
 	case pb.ActivitySource_SOURCE_TEST:
 		return "Test"
 	default:
@@ -311,6 +327,12 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Elevation Summary"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING:
 		return "Location Naming"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE:
+		return "Muscle Heatmap Image"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL:
+		return "Route Thumbnail"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER:
+		return "Ai Banner"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:

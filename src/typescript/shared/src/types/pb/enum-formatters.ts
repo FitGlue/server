@@ -438,6 +438,14 @@ const DestinationNames: Record<string, string> = {
     'TRAININGPEAKS': 'Trainingpeaks',
     'Trainingpeaks': 'Trainingpeaks',
     '4': 'Trainingpeaks',
+    'DESTINATION_INTERVALS': 'Intervals',
+    'INTERVALS': 'Intervals',
+    'Intervals': 'Intervals',
+    '5': 'Intervals',
+    'DESTINATION_GOOGLESHEETS': 'Googlesheets',
+    'GOOGLESHEETS': 'Googlesheets',
+    'Googlesheets': 'Googlesheets',
+    '6': 'Googlesheets',
     'DESTINATION_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -468,6 +476,8 @@ export function formatDestination(value: Destination | number | string | undefin
     case Destination.DESTINATION_SHOWCASE: return 'Showcase';
     case Destination.DESTINATION_HEVY: return 'Hevy';
     case Destination.DESTINATION_TRAININGPEAKS: return 'Trainingpeaks';
+    case Destination.DESTINATION_INTERVALS: return 'Intervals';
+    case Destination.DESTINATION_GOOGLESHEETS: return 'Googlesheets';
     case Destination.DESTINATION_MOCK: return 'Mock';
     default: return 'Unknown';
   }
@@ -580,6 +590,18 @@ const CloudEventSourceNames: Record<string, string> = {
     'STRAVA': 'Strava',
     'Strava': 'Strava',
     '9': 'Strava',
+    'CLOUD_EVENT_SOURCE_OURA': 'Oura',
+    'OURA': 'Oura',
+    'Oura': 'Oura',
+    '10': 'Oura',
+    'CLOUD_EVENT_SOURCE_POLAR_WEBHOOK': 'Polar Webhook',
+    'POLAR_WEBHOOK': 'Polar Webhook',
+    'Polar Webhook': 'Polar Webhook',
+    '11': 'Polar Webhook',
+    'CLOUD_EVENT_SOURCE_WAHOO': 'Wahoo',
+    'WAHOO': 'Wahoo',
+    'Wahoo': 'Wahoo',
+    '12': 'Wahoo',
     'CLOUD_EVENT_SOURCE_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -615,6 +637,9 @@ export function formatCloudEventSource(value: CloudEventSource | number | string
     case CloudEventSource.CLOUD_EVENT_SOURCE_PARKRUN_RESULTS: return 'Parkrun Results';
     case CloudEventSource.CLOUD_EVENT_SOURCE_FILE_UPLOAD: return 'File Upload';
     case CloudEventSource.CLOUD_EVENT_SOURCE_STRAVA: return 'Strava';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_OURA: return 'Oura';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_POLAR_WEBHOOK: return 'Polar Webhook';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_WAHOO: return 'Wahoo';
     case CloudEventSource.CLOUD_EVENT_SOURCE_MOCK: return 'Mock';
     default: return 'Unknown';
   }
@@ -657,6 +682,18 @@ const ActivitySourceNames: Record<string, string> = {
     'HEALTH_CONNECT': 'Health Connect',
     'Health Connect': 'Health Connect',
     '9': 'Health Connect',
+    'SOURCE_OURA': 'Oura',
+    'OURA': 'Oura',
+    'Oura': 'Oura',
+    '10': 'Oura',
+    'SOURCE_POLAR': 'Polar',
+    'POLAR': 'Polar',
+    'Polar': 'Polar',
+    '11': 'Polar',
+    'SOURCE_WAHOO': 'Wahoo',
+    'WAHOO': 'Wahoo',
+    'Wahoo': 'Wahoo',
+    '12': 'Wahoo',
     'SOURCE_TEST': 'Test',
     'TEST': 'Test',
     'Test': 'Test',
@@ -691,6 +728,9 @@ export function formatActivitySource(value: ActivitySource | number | string | u
     case ActivitySource.SOURCE_GARMIN: return 'Garmin';
     case ActivitySource.SOURCE_APPLE_HEALTH: return 'Apple Health';
     case ActivitySource.SOURCE_HEALTH_CONNECT: return 'Health Connect';
+    case ActivitySource.SOURCE_OURA: return 'Oura';
+    case ActivitySource.SOURCE_POLAR: return 'Polar';
+    case ActivitySource.SOURCE_WAHOO: return 'Wahoo';
     case ActivitySource.SOURCE_TEST: return 'Test';
     default: return 'Unknown';
   }
@@ -797,6 +837,18 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'LOCATION_NAMING': 'Location Naming',
     'Location Naming': 'Location Naming',
     '25': 'Location Naming',
+    'ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE': 'Muscle Heatmap Image',
+    'MUSCLE_HEATMAP_IMAGE': 'Muscle Heatmap Image',
+    'Muscle Heatmap Image': 'Muscle Heatmap Image',
+    '26': 'Muscle Heatmap Image',
+    'ENRICHER_PROVIDER_ROUTE_THUMBNAIL': 'Route Thumbnail',
+    'ROUTE_THUMBNAIL': 'Route Thumbnail',
+    'Route Thumbnail': 'Route Thumbnail',
+    '27': 'Route Thumbnail',
+    'ENRICHER_PROVIDER_AI_BANNER': 'Ai Banner',
+    'AI_BANNER': 'Ai Banner',
+    'Ai Banner': 'Ai Banner',
+    '28': 'Ai Banner',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -847,6 +899,9 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_WEATHER: return 'Weather';
     case EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY: return 'Elevation Summary';
     case EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING: return 'Location Naming';
+    case EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE: return 'Muscle Heatmap Image';
+    case EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL: return 'Route Thumbnail';
+    case EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER: return 'Ai Banner';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }

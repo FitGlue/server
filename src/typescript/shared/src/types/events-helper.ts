@@ -29,6 +29,8 @@ export const DestinationTopics: Record<number, string> = {
   [Destination.DESTINATION_MOCK]: "topic-job-upload-mock",
   [Destination.DESTINATION_HEVY]: "topic-job-upload-hevy",
   [Destination.DESTINATION_TRAININGPEAKS]: "topic-job-upload-trainingpeaks",
+  [Destination.DESTINATION_INTERVALS]: "topic-job-upload-intervals",
+  [Destination.DESTINATION_GOOGLESHEETS]: "topic-job-upload-googlesheets",
 };
 
 export function getCloudEventType(t: CloudEventType): string {

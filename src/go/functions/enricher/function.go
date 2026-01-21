@@ -24,6 +24,7 @@ import (
 
 	// Register providers
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/activity_filter"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/ai_banner"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/ai_companion"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/auto_increment"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/branding"
@@ -36,10 +37,12 @@ import (
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/logic_gate"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/mock"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/muscle_heatmap"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/muscle_heatmap_image"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/pace_summary"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/parkrun"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/personal_records"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/power_summary"
+	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/route_thumbnail"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/source_link"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/speed_summary"
 	_ "github.com/fitglue/server/src/go/pkg/enricher_providers/spotify_tracks"

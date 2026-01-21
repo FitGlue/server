@@ -35,6 +35,13 @@ export class UserService {
     }
 
     /**
+     * Find a user by Polar User ID.
+     */
+    async findByPolarId(polarUserId: string): Promise<{ id: string; data: UserRecord } | null> {
+        return this.userStore.findByPolarId(polarUserId);
+    }
+
+    /**
      * Load connector configuration for a user.
      */
     async loadConnectorConfig(userId: string, connectorName: string): Promise<Record<string, unknown>> {

@@ -31,6 +31,39 @@ func GetStravaActivityType(t pb.ActivityType) string {
 	return "Workout" // Default fallback for UNSPECIFIED
 }
 
+// GetIntervalsActivityType returns the Intervals.icu API string for a given ActivityType enum.
+// Intervals.icu uses activity type strings like "Ride", "Run", "Swim", "WeightTraining".
+func GetIntervalsActivityType(t pb.ActivityType) string {
+	// Intervals.icu uses similar types to Strava but with some differences
+	intervalsTypes := map[pb.ActivityType]string{
+		pb.ActivityType_ACTIVITY_TYPE_RUN:                              "Run",
+		pb.ActivityType_ACTIVITY_TYPE_RIDE:                             "Ride",
+		pb.ActivityType_ACTIVITY_TYPE_SWIM:                             "Swim",
+		pb.ActivityType_ACTIVITY_TYPE_WALK:                             "Walk",
+		pb.ActivityType_ACTIVITY_TYPE_HIKE:                             "Hike",
+		pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:                  "WeightTraining",
+		pb.ActivityType_ACTIVITY_TYPE_YOGA:                             "Yoga",
+		pb.ActivityType_ACTIVITY_TYPE_WORKOUT:                          "Workout",
+		pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING: "HIIT",
+		pb.ActivityType_ACTIVITY_TYPE_CROSSFIT:                         "Crossfit",
+		pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL:                       "Elliptical",
+		pb.ActivityType_ACTIVITY_TYPE_ROWING:                           "Rowing",
+		pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:                        "TrailRun",
+		pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE:                     "VirtualRide",
+		pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:                      "VirtualRun",
+		pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE:               "MountainBikeRide",
+		pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE:                      "GravelRide",
+		pb.ActivityType_ACTIVITY_TYPE_PILATES:                          "Pilates",
+		pb.ActivityType_ACTIVITY_TYPE_TENNIS:                           "Tennis",
+		pb.ActivityType_ACTIVITY_TYPE_SOCCER:                           "Soccer",
+	}
+
+	if intervalsType, ok := intervalsTypes[t]; ok {
+		return intervalsType
+	}
+	return "Workout" // Default fallback
+}
+
 // ParseActivityTypeFromString parses a friendly string into an ActivityType enum.
 // Accepts both enum names (e.g., "ACTIVITY_TYPE_RUN") and friendly names (e.g., "RUNNING", "Run").
 func ParseActivityTypeFromString(input string) pb.ActivityType {

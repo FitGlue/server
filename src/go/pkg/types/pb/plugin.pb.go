@@ -225,10 +225,12 @@ type PluginManifest struct {
 	IsPremium       *bool   `protobuf:"varint,19,opt,name=is_premium,json=isPremium,proto3,oneof" json:"is_premium,omitempty"`                   // Display premium badge (Athlete-tier)
 	PopularityScore *int32  `protobuf:"varint,20,opt,name=popularity_score,json=popularityScore,proto3,oneof" json:"popularity_score,omitempty"` // For "recommended" sorting in wizard
 	// SVG Icon support (for products with real logos)
-	IconType      *string `protobuf:"bytes,21,opt,name=icon_type,json=iconType,proto3,oneof" json:"icon_type,omitempty"` // "emoji" (default) or "svg"
-	IconPath      *string `protobuf:"bytes,22,opt,name=icon_path,json=iconPath,proto3,oneof" json:"icon_path,omitempty"` // Path to SVG asset (e.g., "/assets/icons/strava.svg")
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	IconType *string `protobuf:"bytes,21,opt,name=icon_type,json=iconType,proto3,oneof" json:"icon_type,omitempty"` // "emoji" (default) or "svg"
+	IconPath *string `protobuf:"bytes,22,opt,name=icon_path,json=iconPath,proto3,oneof" json:"icon_path,omitempty"` // Path to SVG asset (e.g., "/assets/icons/strava.svg")
+	// When true, plugin is hidden from app but still shown on marketing site with "Coming Soon" indicator
+	IsTemporarilyUnavailable *bool `protobuf:"varint,23,opt,name=is_temporarily_unavailable,json=isTemporarilyUnavailable,proto3,oneof" json:"is_temporarily_unavailable,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *PluginManifest) Reset() {
@@ -413,6 +415,13 @@ func (x *PluginManifest) GetIconPath() string {
 		return *x.IconPath
 	}
 	return ""
+}
+
+func (x *PluginManifest) GetIsTemporarilyUnavailable() bool {
+	if x != nil && x.IsTemporarilyUnavailable != nil {
+		return *x.IsTemporarilyUnavailable
+	}
+	return false
 }
 
 // Transformation shows a before/after example of what a plugin does to a field
@@ -835,8 +844,10 @@ type IntegrationManifest struct {
 	// Marketing metadata
 	MarketingDescription string   `protobuf:"bytes,12,opt,name=marketing_description,json=marketingDescription,proto3" json:"marketing_description,omitempty"` // Extended description for marketing site (markdown)
 	Features             []string `protobuf:"bytes,13,rep,name=features,proto3" json:"features,omitempty"`                                                     // List of features/capabilities
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	// When true, integration is hidden from connections page but shown on marketing with "Coming Soon"
+	IsTemporarilyUnavailable *bool `protobuf:"varint,14,opt,name=is_temporarily_unavailable,json=isTemporarilyUnavailable,proto3,oneof" json:"is_temporarily_unavailable,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *IntegrationManifest) Reset() {
@@ -960,6 +971,13 @@ func (x *IntegrationManifest) GetFeatures() []string {
 	return nil
 }
 
+func (x *IntegrationManifest) GetIsTemporarilyUnavailable() bool {
+	if x != nil && x.IsTemporarilyUnavailable != nil {
+		return *x.IsTemporarilyUnavailable
+	}
+	return false
+}
+
 // PluginRegistryResponse for API discovery
 type PluginRegistryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1033,7 +1051,7 @@ var File_plugin_proto protoreflect.FileDescriptor
 
 const file_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\fplugin.proto\x12\afitglue\"\xb7\b\n" +
+	"\fplugin.proto\x12\afitglue\"\x99\t\n" +
 	"\x0ePluginManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x13.fitglue.PluginTypeR\x04type\x12\x12\n" +
@@ -1059,7 +1077,9 @@ const file_plugin_proto_rawDesc = "" +
 	"is_premium\x18\x13 \x01(\bH\x06R\tisPremium\x88\x01\x01\x12.\n" +
 	"\x10popularity_score\x18\x14 \x01(\x05H\aR\x0fpopularityScore\x88\x01\x01\x12 \n" +
 	"\ticon_type\x18\x15 \x01(\tH\bR\biconType\x88\x01\x01\x12 \n" +
-	"\ticon_path\x18\x16 \x01(\tH\tR\biconPath\x88\x01\x01B\x19\n" +
+	"\ticon_path\x18\x16 \x01(\tH\tR\biconPath\x88\x01\x01\x12A\n" +
+	"\x1ais_temporarily_unavailable\x18\x17 \x01(\bH\n" +
+	"R\x18isTemporarilyUnavailable\x88\x01\x01B\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
 	"\x11_destination_typeB\x18\n" +
 	"\x16_external_url_templateB\x10\n" +
@@ -1071,7 +1091,8 @@ const file_plugin_proto_rawDesc = "" +
 	"\n" +
 	"_icon_typeB\f\n" +
 	"\n" +
-	"_icon_path\"\xaa\x01\n" +
+	"_icon_pathB\x1d\n" +
+	"\x1b_is_temporarily_unavailable\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +
@@ -1123,7 +1144,7 @@ const file_plugin_proto_rawDesc = "" +
 	"\n" +
 	"_min_valueB\f\n" +
 	"\n" +
-	"_max_value\"\xcd\x03\n" +
+	"_max_value\"\xaf\x04\n" +
 	"\x13IntegrationManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1139,7 +1160,9 @@ const file_plugin_proto_rawDesc = "" +
 	" \x01(\tR\vapiKeyLabel\x12'\n" +
 	"\x10api_key_help_url\x18\v \x01(\tR\rapiKeyHelpUrl\x123\n" +
 	"\x15marketing_description\x18\f \x01(\tR\x14marketingDescription\x12\x1a\n" +
-	"\bfeatures\x18\r \x03(\tR\bfeatures\"\x81\x02\n" +
+	"\bfeatures\x18\r \x03(\tR\bfeatures\x12A\n" +
+	"\x1ais_temporarily_unavailable\x18\x0e \x01(\bH\x00R\x18isTemporarilyUnavailable\x88\x01\x01B\x1d\n" +
+	"\x1b_is_temporarily_unavailable\"\x81\x02\n" +
 	"\x16PluginRegistryResponse\x121\n" +
 	"\asources\x18\x01 \x03(\v2\x17.fitglue.PluginManifestR\asources\x125\n" +
 	"\tenrichers\x18\x02 \x03(\v2\x17.fitglue.PluginManifestR\tenrichers\x12;\n" +
@@ -1224,6 +1247,7 @@ func file_plugin_proto_init() {
 	file_plugin_proto_msgTypes[0].OneofWrappers = []any{}
 	file_plugin_proto_msgTypes[2].OneofWrappers = []any{}
 	file_plugin_proto_msgTypes[5].OneofWrappers = []any{}
+	file_plugin_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

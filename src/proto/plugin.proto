@@ -48,6 +48,9 @@ message PluginManifest {
   // SVG Icon support (for products with real logos)
   optional string icon_type = 21;             // "emoji" (default) or "svg"
   optional string icon_path = 22;             // Path to SVG asset (e.g., "/assets/icons/strava.svg")
+
+  // When true, plugin is hidden from app but still shown on marketing site with "Coming Soon" indicator
+  optional bool is_temporarily_unavailable = 23;
 }
 
 // Transformation shows a before/after example of what a plugin does to a field
@@ -136,6 +139,9 @@ message IntegrationManifest {
   // Marketing metadata
   string marketing_description = 12;          // Extended description for marketing site (markdown)
   repeated string features = 13;              // List of features/capabilities
+
+  // When true, integration is hidden from connections page but shown on marketing with "Coming Soon"
+  optional bool is_temporarily_unavailable = 14;
 }
 
 // PluginRegistryResponse for API discovery

@@ -133,6 +133,48 @@ resource "google_storage_bucket_object" "trainingpeaks_oauth_handler_zip" {
   source = "/tmp/fitglue-function-zips/trainingpeaks-oauth-handler.zip"
 }
 
+resource "google_storage_bucket_object" "wahoo_oauth_handler_zip" {
+  name   = "wahoo-oauth-handler-${filemd5("/tmp/fitglue-function-zips/wahoo-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/wahoo-oauth-handler.zip"
+}
+
+resource "google_storage_bucket_object" "wahoo_handler_zip" {
+  name   = "wahoo-handler-${filemd5("/tmp/fitglue-function-zips/wahoo-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/wahoo-handler.zip"
+}
+
+resource "google_storage_bucket_object" "polar_handler_zip" {
+  name   = "polar-handler-${filemd5("/tmp/fitglue-function-zips/polar-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/polar-handler.zip"
+}
+
+resource "google_storage_bucket_object" "polar_oauth_handler_zip" {
+  name   = "polar-oauth-handler-${filemd5("/tmp/fitglue-function-zips/polar-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/polar-oauth-handler.zip"
+}
+
+resource "google_storage_bucket_object" "oura_handler_zip" {
+  name   = "oura-handler-${filemd5("/tmp/fitglue-function-zips/oura-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/oura-handler.zip"
+}
+
+resource "google_storage_bucket_object" "oura_oauth_handler_zip" {
+  name   = "oura-oauth-handler-${filemd5("/tmp/fitglue-function-zips/oura-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/oura-oauth-handler.zip"
+}
+
+resource "google_storage_bucket_object" "google_oauth_handler_zip" {
+  name   = "google-oauth-handler-${filemd5("/tmp/fitglue-function-zips/google-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/google-oauth-handler.zip"
+}
+
 resource "google_storage_bucket_object" "user_integrations_handler_zip" {
   name   = "user-integrations-handler-${filemd5("/tmp/fitglue-function-zips/user-integrations-handler.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
@@ -150,6 +192,7 @@ resource "google_storage_bucket_object" "user_profile_handler_zip" {
   bucket = google_storage_bucket.source_bucket.name
   source = "/tmp/fitglue-function-zips/user-profile-handler.zip"
 }
+
 
 
 # ----------------- Enricher Service -----------------
@@ -177,6 +220,7 @@ resource "google_cloudfunctions2_function" "enricher" {
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
+      ASSETS_BASE_URL      = "https://assets.${var.domain_name}"
     }
 
     secret_environment_variables {
@@ -233,6 +277,7 @@ resource "google_cloudfunctions2_function" "enricher_lag" {
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
+      ASSETS_BASE_URL      = "https://assets.${var.domain_name}"
     }
 
     secret_environment_variables {
@@ -498,6 +543,89 @@ resource "google_cloudfunctions2_function" "trainingpeaks_uploader" {
   }
 }
 
+# ----------------- Intervals.icu Uploader (Upload activities to Intervals.icu) -----------------
+resource "google_storage_bucket_object" "intervals_uploader_zip" {
+  name   = "intervals-uploader-${filemd5("/tmp/fitglue-function-zips/intervals-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/intervals-uploader.zip"
+}
+
+resource "google_cloudfunctions2_function" "intervals_uploader" {
+  name     = "intervals-uploader"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "UploadToIntervals"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.intervals_uploader_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.job_upload_intervals.id
+    retry_policy   = var.retry_policy
+  }
+}
+
+# ----------------- Google Sheets Uploader (Upload activities to Google Sheets) -----------------
+resource "google_storage_bucket_object" "googlesheets_uploader_zip" {
+  name   = "googlesheets-uploader-${filemd5("/tmp/fitglue-function-zips/googlesheets-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/googlesheets-uploader.zip"
+}
+
+resource "google_cloudfunctions2_function" "googlesheets_uploader" {
+  name     = "googlesheets-uploader"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "UploadToGoogleSheets"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.googlesheets_uploader_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.job_upload_googlesheets.id
+    retry_policy   = var.retry_policy
+  }
+}
+
 # ----------------- Mock Source Handler (Dev Only) -----------------
 resource "google_cloudfunctions2_function" "mock_source_handler" {
   // Needs to be deployed to test and prod otherwise firebase.json will fail with "can't find function"
@@ -696,6 +824,58 @@ resource "google_cloud_run_service_iam_member" "strava_handler_invoker" {
   project  = google_cloudfunctions2_function.strava_handler.project
   location = google_cloudfunctions2_function.strava_handler.location
   service  = google_cloudfunctions2_function.strava_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ----------------- Wahoo Handler (Webhook Source) -----------------
+resource "google_cloudfunctions2_function" "wahoo_handler" {
+  name        = "wahoo-handler"
+  location    = var.region
+  description = "Ingests Wahoo webhooks for workout sync"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "wahooWebhookHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.wahoo_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+
+    secret_environment_variables {
+      key        = "WAHOO_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.wahoo_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "WAHOO_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.wahoo_client_secret.secret_id
+      version    = "latest"
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "wahoo_handler_invoker" {
+  project  = google_cloudfunctions2_function.wahoo_handler.project
+  location = google_cloudfunctions2_function.wahoo_handler.location
+  service  = google_cloudfunctions2_function.wahoo_handler.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
@@ -1338,6 +1518,110 @@ resource "google_cloud_run_service_iam_member" "admin_handler_invoker" {
   project  = google_cloudfunctions2_function.admin_handler.project
   location = google_cloudfunctions2_function.admin_handler.location
   service  = google_cloudfunctions2_function.admin_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ----------------- Polar Handler (Webhook Source) -----------------
+resource "google_cloudfunctions2_function" "polar_handler" {
+  name        = "polar-handler"
+  location    = var.region
+  description = "Ingests Polar webhooks for activity sync"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "polarWebhookHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.polar_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+
+    secret_environment_variables {
+      key        = "POLAR_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.polar_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "POLAR_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.polar_client_secret.secret_id
+      version    = "latest"
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "polar_handler_invoker" {
+  project  = google_cloudfunctions2_function.polar_handler.project
+  location = google_cloudfunctions2_function.polar_handler.location
+  service  = google_cloudfunctions2_function.polar_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ----------------- Oura Handler (Webhook Source) -----------------
+resource "google_cloudfunctions2_function" "oura_handler" {
+  name        = "oura-handler"
+  location    = var.region
+  description = "Ingests Oura webhooks for sleep/activity sync"
+
+  build_config {
+    runtime     = "nodejs20"
+    entry_point = "ouraWebhookHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.oura_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+
+    secret_environment_variables {
+      key        = "OURA_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.oura_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "OURA_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.oura_client_secret.secret_id
+      version    = "latest"
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "oura_handler_invoker" {
+  project  = google_cloudfunctions2_function.oura_handler.project
+  location = google_cloudfunctions2_function.oura_handler.location
+  service  = google_cloudfunctions2_function.oura_handler.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

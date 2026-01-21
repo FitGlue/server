@@ -408,6 +408,157 @@ Standard Garmin Connect integration for importing activities.
   iconPath: '/assets/icons/garmin.svg',
 });
 
+registerSource({
+  id: 'wahoo',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'Wahoo',
+  description: 'Import workouts from Wahoo Cloud with full FIT file support',
+  icon: '📱',
+  enabled: true,
+  requiredIntegrations: ['wahoo'],
+  configSchema: [],
+  marketingDescription: `
+### Wahoo Cloud Source
+Import workouts from your Wahoo ELEMNT bike computers, KICKR trainers, and other Wahoo devices. Activities are synced in real-time via webhooks with full FIT file data.
+
+### How it works
+Connect your Wahoo account to FitGlue via OAuth. When you complete a workout on your Wahoo device, FitGlue receives a webhook notification, downloads the full FIT file, and imports your activity with all sensor data.
+
+### Full Sensor Data
+Power meters, heart rate monitors, cadence sensors, and GPS data — all captured in the FIT file and available for your enrichment pipeline.
+  `,
+  features: [
+    '✅ Real-time sync via Wahoo Cloud webhooks',
+    '✅ Full FIT file download with complete sensor data',
+    '✅ Power, HR, cadence, and GPS data included',
+    '✅ Works with ELEMNT, KICKR, and all Wahoo devices',
+    '✅ Automatic sync when workouts complete',
+  ],
+  transformations: [],
+  useCases: [
+    'Enhance Wahoo rides with AI descriptions and stats summaries',
+    'Cross-post Wahoo activities to Strava or TrainingPeaks',
+    'Generate Showcase links for your cycling workouts',
+  ],
+  // UX Organization
+  category: 'wearables',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 82,
+});
+
+registerSource({
+  id: 'oura',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'Oura Ring',
+  description: 'Import workouts from Oura Ring',
+  icon: '💍',
+  enabled: true,
+  requiredIntegrations: ['oura'],
+  configSchema: [],
+  marketingDescription: `
+### Smart Ring Workout Source
+Import workouts tracked by your Oura Ring into FitGlue. Heart rate data, calories, and workout metrics are captured for enhancement and distribution.
+
+### How it works
+When you complete a workout tracked by your Oura Ring, FitGlue receives a webhook notification and imports the workout data. The activity enters your FitGlue pipeline where it can be enriched with AI descriptions and more.
+  `,
+  features: [
+    '✅ Import workouts from Oura Ring',
+    '✅ Heart rate data (average and max)',
+    '✅ Calories and duration tracking',
+    '✅ Real-time sync via webhooks',
+    '✅ Works seamlessly with all FitGlue boosters',
+  ],
+  transformations: [],
+  useCases: [
+    'Track workouts without GPS for indoor activities',
+    'Combine sleep/readiness context with workout data',
+    'Enhance Oura workouts with AI descriptions',
+  ],
+  // UX Organization
+  category: 'wearables',
+  sortOrder: 5,
+  isPremium: false,
+  popularityScore: 70,
+});
+
+registerSource({
+  id: 'polar',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'Polar Flow',
+  description: 'Import activities from Polar wearables',
+  icon: '❄️',
+  enabled: true,
+  requiredIntegrations: ['polar'],
+  configSchema: [],
+  marketingDescription: `
+### Polar Wearable Source
+Import your runs, rides, swims, and workouts from Polar devices. Activities are synced via webhooks when you complete them on your Polar watch or sync with Polar Flow.
+
+### How it works
+Connect your Polar Flow account to FitGlue via OAuth. When you complete an activity, FitGlue receives a webhook notification and imports the full activity data including heart rate, GPS tracks, and training load metrics.
+
+### Transaction-Based Sync
+Polar uses a unique transaction-based API that ensures reliable data delivery. FitGlue handles all the complexity automatically.
+  `,
+  features: [
+    '✅ Import all Polar-tracked activities',
+    '✅ Heart rate data with zones',
+    '✅ GPS routes for outdoor activities',
+    '✅ Training load metrics included',
+    '✅ Real-time sync via webhooks',
+  ],
+  transformations: [],
+  useCases: [
+    'Enhance Polar activities with AI descriptions',
+    'Cross-post Polar activities to Strava or Hevy',
+    'Generate public Showcase links for your Polar activities',
+  ],
+  // UX Organization
+  category: 'wearables',
+  sortOrder: 6,
+  isPremium: false,
+  popularityScore: 75,
+  iconType: 'svg',
+  iconPath: '/assets/icons/polar.svg',
+});
+
+registerSource({
+  id: 'intervals',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'Intervals.icu',
+  description: 'Import activities from Intervals.icu',
+  icon: '📊',
+  enabled: true,
+  requiredIntegrations: ['intervals'],
+  configSchema: [],
+  marketingDescription: `
+### Advanced Training Analytics Source
+Import your activities from Intervals.icu into FitGlue. Power data, heart rate, cadence, GPS, and all performance metrics are captured for enhancement and distribution.
+
+### How it works
+FitGlue polls your Intervals.icu account for new activities. When new activities are found, they're imported into your pipeline where they can be enriched with AI descriptions, training load calculations, and more.
+  `,
+  features: [
+    '✅ Import activities with full power data',
+    '✅ Heart rate, cadence, and GPS included',
+    '✅ Performance metrics and training load',
+    '✅ Works seamlessly with all FitGlue boosters',
+  ],
+  transformations: [],
+  useCases: [
+    'Enhance Intervals.icu activities with AI descriptions',
+    'Cross-post to Strava with enriched metadata',
+    'Generate public Showcase links for sharing',
+  ],
+  // UX Organization
+  category: 'analytics',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 70,
+});
+
 // ============================================================================
 // Register all known destination manifests
 // ============================================================================
@@ -570,6 +721,127 @@ Activity types are automatically mapped to TrainingPeaks workout types (Run, Bik
   iconType: 'svg',
   iconPath: '/assets/icons/trainingpeaks.svg',
 });
+
+registerDestination({
+  id: 'intervals',
+  type: PluginType.PLUGIN_TYPE_DESTINATION,
+  name: 'Intervals.icu',
+  description: 'Upload boosted activities to Intervals.icu',
+  icon: '📊',
+  enabled: true,
+  requiredIntegrations: ['intervals'],
+  configSchema: [],
+  destinationType: 5, // DESTINATION_INTERVALS
+  marketingDescription: `
+### Advanced Training Analytics Platform
+Upload your boosted activities to Intervals.icu for detailed power analysis, training load tracking, and fitness modeling. Perfect for cyclists and triathletes who want advanced analytics.
+
+### How it works
+Activities pass through your Pipeline and are uploaded to Intervals.icu via the official API. FIT files are uploaded with full data fidelity, preserving all power, heart rate, cadence, and GPS data. Your AI descriptions and enriched titles appear on your Intervals calendar.
+
+### Complete Data Fidelity
+Unlike some platforms, Intervals.icu accepts raw FIT files, meaning all your data—power curves, GPS tracks, metrics—are preserved exactly as recorded.
+  `,
+  features: [
+    '✅ Upload activities to Intervals.icu automatically',
+    '✅ FIT files uploaded for full data fidelity',
+    '✅ Power, heart rate, cadence, and GPS preserved',
+    '✅ AI descriptions and enriched titles included',
+    '✅ Simple API key connection',
+  ],
+  transformations: [],
+  useCases: [
+    'Analyze training load from multiple sources in Intervals.icu',
+    'Build fitness/fatigue (CTL/ATL/TSB) from all activities',
+    'Plan races with complete training history',
+  ],
+  externalUrlTemplate: 'https://intervals.icu/activities/{id}',
+  // UX Organization
+  category: 'analytics',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 70,
+});
+
+registerDestination({
+  id: 'googlesheets',
+  type: PluginType.PLUGIN_TYPE_DESTINATION,
+  name: 'Google Sheets',
+  description: 'Log activities to a Google Spreadsheet',
+  icon: '📊',
+  enabled: true,
+  externalUrlTemplate: 'https://docs.google.com/spreadsheets/d/${spreadsheet_id}/edit#gid=0&range=A${row_number}',
+  requiredIntegrations: ['google'],
+  configSchema: [
+    {
+      key: 'spreadsheet_id',
+      label: 'Spreadsheet ID',
+      description: 'The ID from your Google Sheets URL (docs.google.com/spreadsheets/d/{ID}/edit)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: true,
+      defaultValue: '',
+      options: [],
+    },
+    {
+      key: 'sheet_name',
+      label: 'Sheet Name',
+      description: 'Which tab to append activities to',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: false,
+      defaultValue: 'Activities',
+      options: [],
+    },
+    {
+      key: 'include_showcase_link',
+      label: 'Include Showcase Link',
+      description: 'Add a column with the Showcase URL for each activity',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+    {
+      key: 'include_visuals',
+      label: 'Include Visual Assets',
+      description: 'Add IMAGE formulas for muscle heatmaps and route thumbnails',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+  ],
+  destinationType: 6, // DESTINATION_GOOGLESHEETS
+  marketingDescription: `
+### Personal Activity Log
+Automatically log all your activities to a Google Sheet for personal tracking, analysis, and visualization. Perfect for creating custom dashboards and long-term fitness tracking.
+
+### How it works
+Once you connect your Google account and provide a Spreadsheet ID, FitGlue appends a new row for each activity. Columns include date, type, title, duration, distance, calories, heart rate, and more.
+
+### Visual Assets
+If enabled, muscle heatmaps and route thumbnails are embedded using Google Sheets IMAGE formulas, making your spreadsheet a rich visual log of your training.
+  `,
+  features: [
+    '✅ Automatic activity logging to your spreadsheet',
+    '✅ Customizable columns (date, type, stats, description)',
+    '✅ Visual assets via IMAGE formulas',
+    '✅ Showcase links for sharing',
+    '✅ Perfect for custom dashboards and analysis',
+  ],
+  transformations: [],
+  useCases: [
+    'Create custom fitness dashboards in Google Sheets',
+    'Track long-term training trends',
+    'Share activity logs with coaches',
+    'Build personal analytics with pivot tables',
+  ],
+  // UX Organization
+  category: 'logging',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 65,
+});
+
 
 // ============================================================================
 
@@ -735,9 +1007,174 @@ Our database includes 100+ canonical exercises with fuzzy matching, so even cust
   ],
   // UX Organization
   category: 'transformation',
-  sortOrder: 2,
+  sortOrder: 3,
   isPremium: false,
   popularityScore: 85,
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE, {
+  id: 'muscle_heatmap_image',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Muscle Heatmap Image',
+  description: 'Generates an anatomical SVG diagram with muscle activation highlighting',
+  icon: '🔥',
+  enabled: true,
+  requiredIntegrations: [],
+  requiredTier: 'athlete',
+  configSchema: [],
+  marketingDescription: `
+### Premium Visual Muscle Activation
+The Muscle Heatmap Image booster creates a stunning anatomical diagram showing exactly which muscles you trained and how hard. Unlike the text-based heatmap, this generates a shareable visual asset perfect for social media and the Showcase.
+
+### How it works
+Every exercise is analyzed to calculate volume per muscle group. We then generate an SVG image of the human body with muscles colored by intensity - from gray (no activation) through purple gradients to hot pink (maximum activation).
+
+### Athlete-Tier Exclusive
+This premium visual enricher is available exclusively to Athlete-tier users. The generated image is stored in Cloud Storage and automatically embedded in your Showcase page.
+  `,
+  features: [
+    '✅ Anatomical SVG diagram with muscle highlighting',
+    '✅ Color-coded intensity (gray → purple → hot pink)',
+    '✅ Stored as shareable image asset',
+    '✅ Automatically embedded in Showcase',
+    '✅ Perfect for social media sharing',
+    '✅ Athlete-tier exclusive',
+  ],
+  transformations: [
+    {
+      field: 'metadata',
+      label: 'Muscle Activation Image',
+      before: '(no image)',
+      after: '',
+      visualType: 'image',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Share visual muscle activation on social media',
+    'Track training balance with anatomical diagrams',
+    'Create professional-looking workout summaries',
+  ],
+  // UX Organization
+  category: 'transformation',
+  sortOrder: 4,
+  isPremium: true,
+  popularityScore: 95,
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL, {
+  id: 'route_thumbnail',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Route Thumbnail',
+  description: 'Generates a stunning SVG map image of your GPS route',
+  icon: '🗺️',
+  enabled: true,
+  requiredIntegrations: [],
+  requiredTier: 'athlete',
+  configSchema: [],
+  marketingDescription: `
+### Beautiful Route Visualization
+The Route Thumbnail booster creates a beautiful stylized SVG map of your GPS route. Perfect for sharing on social media and displaying in your Showcase.
+
+### How it works
+FitGlue extracts GPS coordinates from your activity, simplifies the route using the Douglas-Peucker algorithm for optimal rendering, and generates a stunning SVG visualization with FitGlue's signature gradient colors and animated start/finish markers.
+
+### Athlete-Tier Exclusive
+This premium visual enricher is available exclusively to Athlete-tier users. The generated SVG is stored in Cloud Storage and automatically embedded in your Showcase page.
+  `,
+  features: [
+    '✅ Stunning SVG route visualization',
+    '✅ FitGlue signature gradient colors (pink → purple → green)',
+    '✅ Animated start and finish markers',
+    '✅ Route simplification for clean rendering',
+    '✅ Stored as shareable image asset',
+    '✅ Automatically embedded in Showcase',
+    '✅ Athlete-tier exclusive',
+  ],
+  transformations: [
+    {
+      field: 'metadata',
+      label: 'Route Thumbnail URL',
+      before: '(no route image)',
+      after: 'showcase-assets/{activityId}/route-thumbnail.svg',
+      visualType: 'image',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Share beautiful route maps on social media',
+    'Display route visualization in Showcase header',
+    'Create visual summaries of running and cycling routes',
+  ],
+  // UX Organization
+  category: 'visual',
+  sortOrder: 1,
+  isPremium: true,
+  popularityScore: 85,
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER, {
+  id: 'ai_banner',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'AI Activity Banner',
+  description: 'Generates a custom AI header image for your activity',
+  icon: '🎨',
+  enabled: true,
+  requiredIntegrations: [],
+  requiredTier: 'athlete',
+  configSchema: [
+    {
+      key: 'style',
+      label: 'Image Style',
+      description: 'Visual style for the generated banner',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'vibrant',
+      options: [
+        { value: 'vibrant', label: 'Vibrant & Energetic' },
+        { value: 'minimal', label: 'Minimal & Clean' },
+        { value: 'dramatic', label: 'Dramatic & Bold' },
+      ],
+    },
+  ],
+  marketingDescription: `
+### AI-Generated Activity Banners
+Create stunning, custom header images for your activities using Google's Gemini AI. Each banner is uniquely generated based on your activity type, time of day, and conditions.
+
+### How it works
+When enabled, FitGlue analyzes your activity context and generates a custom banner image using Gemini 2.0 Flash. The image is stored in Cloud Storage and displayed as the hero background in your Showcase page.
+
+### Athlete-Tier Exclusive
+This premium visual enricher is available exclusively to Athlete-tier users. The generated image is also used for OpenGraph/Twitter social sharing cards.
+  `,
+  features: [
+    '✅ AI-generated custom banners for each activity',
+    '✅ Context-aware (activity type, time of day)',
+    '✅ Multiple style options (Vibrant, Minimal, Dramatic)',
+    '✅ Displayed as Showcase hero background',
+    '✅ Used for social sharing (OpenGraph/Twitter cards)',
+    '✅ Athlete-tier exclusive',
+  ],
+  transformations: [
+    {
+      field: 'metadata',
+      label: 'AI Banner URL',
+      before: '(no banner)',
+      after: 'showcase-assets/{activityId}/banner.png',
+      visualType: 'image',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Create eye-catching social media shares',
+    'Professional-looking activity showcases',
+    'Unique visual identity for each workout',
+  ],
+  // UX Organization
+  category: 'visual',
+  sortOrder: 2,
+  isPremium: true,
+  popularityScore: 75,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, {
@@ -2488,5 +2925,188 @@ FitGlue connects to your Spotify account and tracks what music you listened to d
     '✅ See top played tracks',
     '✅ Identify workout playlists',
     '✅ Automatic time-window matching',
+  ],
+});
+
+registerIntegration({
+  id: 'google',
+  name: 'Google',
+  description: 'Connect your Google account for Sheets integration',
+  icon: '🔵',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  docsUrl: 'https://developers.google.com/sheets',
+  setupTitle: 'Connect Google',
+  setupInstructions: `To connect Google, you'll authorize FitGlue to access your Google Sheets:
+
+1. **Click Connect** — You'll be redirected to Google's authorization page
+2. **Sign in to Google** — Use your Google account credentials
+3. **Authorize FitGlue** — Grant permission to read and write to your spreadsheets
+4. **Done!** — You'll be redirected back to FitGlue
+
+Once connected, FitGlue can log your activities to any Google Sheet you specify.`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is Google Sheets?
+Google Sheets is a powerful, cloud-based spreadsheet application that's part of Google Workspace. It's perfect for tracking, analyzing, and visualizing your fitness data.
+
+### What FitGlue Does
+FitGlue connects to your Google account and automatically logs your activities to a spreadsheet of your choice. Each activity becomes a row with customizable columns including stats, visual assets, and showcase links.
+  `,
+  features: [
+    '✅ Automatic activity logging to Google Sheets',
+    '✅ Customizable columns and data fields',
+    '✅ Visual assets via IMAGE formulas',
+    '✅ Secure OAuth connection',
+  ],
+});
+
+registerIntegration({
+  id: 'oura',
+  name: 'Oura Ring',
+  description: 'Import workouts from your Oura Ring',
+  icon: '💍',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  docsUrl: 'https://cloud.ouraring.com/docs',
+  setupTitle: 'Connect Oura Ring',
+  setupInstructions: `Connect your Oura account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on Oura Ring
+3. Sign in to your **Oura account** when redirected
+4. Review and **Accept Permissions** to allow FitGlue to access your workouts
+5. You're connected! Workouts will sync automatically
+
+FitGlue uses secure OAuth — your Oura password is never stored.`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is Oura Ring?
+Oura Ring is a smart ring that tracks sleep, readiness, and activity. It provides detailed insights into your recovery and overall health, with workout tracking capabilities.
+
+### What FitGlue Does
+FitGlue connects to your Oura account via OAuth and imports your tracked workouts. Heart rate data, calories, and workout duration flow through your FitGlue pipeline for enhancement and distribution to destinations like Strava.
+  `,
+  features: [
+    '✅ Import workouts tracked by your Oura Ring',
+    '✅ Heart rate data (average and max) included',
+    '✅ Automatic sync of new workouts',
+    '✅ Secure OAuth connection',
+  ],
+});
+
+registerIntegration({
+  id: 'polar',
+  name: 'Polar Flow',
+  description: 'Import activities from Polar wearables',
+  icon: '❄️',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  docsUrl: 'https://www.polar.com/accesslink-api',
+  setupTitle: 'Connect Polar Flow',
+  setupInstructions: `Connect your Polar Flow account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on Polar Flow
+3. Sign in to your **Polar account** when redirected
+4. Review and **Accept Permissions** to allow FitGlue to access your activities
+5. You're connected! Activities will sync automatically
+
+FitGlue uses secure OAuth — your Polar password is never stored.
+
+**Note:** App registration at admin.polaraccesslink.com is required.`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is Polar Flow?
+Polar Flow is the cloud platform for Polar wearables and sports watches. It stores your training data, provides analytics, and syncs across devices.
+
+### What FitGlue Does
+FitGlue connects to your Polar Flow account via OAuth and imports your activities via webhooks. Heart rate data, GPS routes, and training metrics flow through your FitGlue pipeline for enhancement and distribution to destinations like Strava.
+
+### Transaction-Based Reliability
+Polar uses a unique transaction-based API that ensures no activities are lost. FitGlue handles the transaction lifecycle automatically.
+  `,
+  features: [
+    '✅ Import activities from Polar watches',
+    '✅ Heart rate data with zones included',
+    '✅ GPS routes for outdoor activities',
+    '✅ Training load metrics',
+    '✅ Real-time sync via webhooks',
+    '✅ Secure OAuth connection',
+  ],
+});
+
+registerIntegration({
+  id: 'intervals',
+  name: 'Intervals.icu',
+  description: 'Advanced training analytics with power and performance metrics',
+  icon: '📊',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+  enabled: true,
+  docsUrl: 'https://intervals.icu/api',
+  setupTitle: 'Connect Intervals.icu',
+  setupInstructions: `To connect Intervals.icu, you'll need your **API Key** and **Athlete ID**:
+
+1. Go to **Intervals.icu** and log in
+2. Navigate to **Settings** → **Developer Settings**
+3. Click **Generate API Key** and copy the key
+4. Find your **Athlete ID** in the URL: intervals.icu/athlete/**{your-id}**/calendar
+5. Enter both values in your **FitGlue Dashboard**
+
+**Note:** The API key and athlete ID are unique to your account. Keep them secure.`,
+  apiKeyLabel: 'API Key',
+  apiKeyHelpUrl: 'https://intervals.icu/api',
+  marketingDescription: `
+### What is Intervals.icu?
+Intervals.icu is a free, advanced training analytics platform popular with cyclists and triathletes. It provides detailed power analysis, training load tracking, fitness modeling (CTL/ATL/TSB), and race planning tools.
+
+### What FitGlue Does
+FitGlue connects to your Intervals.icu account via API key and can upload your boosted activities. Your enriched workouts — with AI descriptions, heart rate summaries, and performance metrics — appear in your Intervals.icu calendar for detailed analysis.
+  `,
+  features: [
+    '✅ Upload boosted activities to Intervals.icu automatically',
+    '✅ Power, heart rate, and GPS data included',
+    '✅ FIT files uploaded for full data fidelity',
+    '✅ Simple API key setup — no OAuth required',
+    '✅ Works with all FitGlue boosters',
+  ],
+});
+
+registerIntegration({
+  id: 'wahoo',
+  name: 'Wahoo',
+  description: 'Import workouts from Wahoo Cloud',
+  icon: '📱',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  docsUrl: 'https://developers.wahooligan.com',
+  setupTitle: 'Connect Wahoo',
+  setupInstructions: `Connect your Wahoo account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on Wahoo
+3. Sign in to your **Wahoo account** when redirected
+4. Review and **Accept Permissions** to allow FitGlue to access your workouts
+5. You're connected! Activities will sync automatically
+
+FitGlue uses secure OAuth — your Wahoo password is never stored.`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is Wahoo?
+Wahoo is a leading cycling technology company known for ELEMNT bike computers, KICKR smart trainers, and TICKR heart rate monitors. Wahoo Cloud stores your workout data from all Wahoo devices.
+
+### What FitGlue Does
+FitGlue connects to your Wahoo account via OAuth and imports your workouts with full FIT file data. Power, heart rate, cadence, and GPS data flow through your FitGlue pipeline for enhancement and distribution to destinations like Strava or TrainingPeaks.
+  `,
+  features: [
+    '✅ Import workouts from ELEMNT, KICKR, and all Wahoo devices',
+    '✅ Full FIT file support with complete sensor data',
+    '✅ Power, HR, cadence, and GPS data included',
+    '✅ Real-time sync via webhooks',
+    '✅ Secure OAuth connection',
   ],
 });
