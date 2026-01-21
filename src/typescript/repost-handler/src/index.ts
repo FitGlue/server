@@ -198,14 +198,24 @@ async function handleMissedDestination(req: Request, res: Response, ctx: Framewo
   // Generate new execution ID
   const newPipelineExecutionId = generateRepostExecutionId(activityId);
 
-  // CRITICAL: Explicitly remove original destinations to prevent leakage
-  // The spread operator should overwrite, but we're being defensive here
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { destinations: _originalDests, Destinations: _originalDestsAlt, ...eventWithoutDests } = enrichedEvent as Record<string, unknown>;
+  // CRITICAL: Explicitly remove fields to prevent duplicate field errors in Go (camelCase vs snake_case)
+  const {
+    destinations: _originalDests,
+    Destinations: _originalDestsAlt,
+    pipeline_execution_id: _peid,
+    pipelineExecutionId: _peidAlt,
+    activity_id: _aid,
+    activityId: _aidAlt,
+    user_id: _uid,
+    userId: _uidAlt,
+    ...eventWithoutConflictingFields
+  } = enrichedEvent as Record<string, unknown>;
 
   // Update the event with ONLY the new destination (snake_case for proto JSON)
   const repostData: Record<string, unknown> = {
-    ...eventWithoutDests,
+    ...eventWithoutConflictingFields,
+    user_id: _uid || _uidAlt,
+    activity_id: _aid || _aidAlt,
     destinations: [destEnum],  // ONLY the missed destination
     pipeline_execution_id: newPipelineExecutionId,
   };
@@ -294,13 +304,24 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
   // Check if destination already has an external ID (use update method)
   const hasExistingId = activity.destinations && activity.destinations[destKey];
 
-  // CRITICAL: Explicitly remove original destinations to prevent leakage
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { destinations: _originalDests, Destinations: _originalDestsAlt, ...eventWithoutDests } = enrichedEvent as Record<string, unknown>;
+  // CRITICAL: Explicitly remove fields to prevent duplicate field errors in Go (camelCase vs snake_case)
+  const {
+    destinations: _originalDests,
+    Destinations: _originalDestsAlt,
+    pipeline_execution_id: _peid,
+    pipelineExecutionId: _peidAlt,
+    activity_id: _aid,
+    activityId: _aidAlt,
+    user_id: _uid,
+    userId: _uidAlt,
+    ...eventWithoutConflictingFields
+  } = enrichedEvent as Record<string, unknown>;
 
   // Update the event with ONLY the retry destination (snake_case for proto JSON)
   const repostData: Record<string, unknown> = {
-    ...eventWithoutDests,
+    ...eventWithoutConflictingFields,
+    user_id: _uid || _uidAlt,
+    activity_id: _aid || _aidAlt,
     destinations: [destEnum],  // ONLY the retry destination
     pipeline_execution_id: newPipelineExecutionId,
   };
@@ -375,9 +396,22 @@ async function handleFullPipeline(req: Request, res: Response, ctx: FrameworkCon
   // Generate new execution ID
   const newPipelineExecutionId = generateRepostExecutionId(activityId);
 
+  // CRITICAL: Explicitly remove fields to prevent duplicate field errors in Go (camelCase vs snake_case)
+  const {
+    pipeline_execution_id: _peid,
+    pipelineExecutionId: _peidAlt,
+    activity_id: _aid,
+    activityId: _aidAlt,
+    user_id: _uid,
+    userId: _uidAlt,
+    ...rest
+  } = originalPayload;
+
   // Add bypass_dedup flag and new execution ID
   const repostPayload = {
-    ...originalPayload,
+    ...rest,
+    user_id: _uid || _uidAlt,
+    activity_id: _aid || _aidAlt,
     bypass_dedup: true,
     pipeline_execution_id: newPipelineExecutionId,
   };

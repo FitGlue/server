@@ -433,7 +433,7 @@ describe('repost-handler', () => {
       expect(publishedData.specversion).toBe('1.0');
       expect(publishedData.type).toBe('com.fitglue.activity.created');
       expect(publishedData.data.bypass_dedup).toBe(true);
-      expect(publishedData.data.activityId).toBe('a1');
+      expect(publishedData.data.activity_id).toBe('a1');
 
       expect(publishCall.attributes.repost_type).toBe('full_pipeline');
       expect(publishCall.attributes.bypass_dedup).toBe('true');
