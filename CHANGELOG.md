@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [3.0.0](https://github.com/FitGlue/server/compare/v2.1.0...v3.0.0) (2026-01-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* Updated Database interface to include Personal Records methods and modified Protobuf definitions for integrations.
+
+- Added new Activity Enrichers:
+  - Personal Records (Cardio/Strength tracking)
+  - Training Load (TRIMP calculation)
+  - Spotify Tracks integration
+  - Weather (Open-Meteo)
+  - Elevation Summary
+  - Location Naming (Reverse Geocoding)
+- Implemented new Integrations:
+  - Spotify (OAuth and Auth monitoring)
+  - TrainingPeaks (Uploader and OAuth)
+- Updated core infrastructure:
+  - Extended Database interface with Firestore persistence for PRs
+  - Modified Protobuf schemas for User and Events
+  - Configured Terraform for new Cloud Functions and secrets
+- Improved shared TypeScript utilities and registry
+
+### Features
+
+* add sorting to plugins and stop secrets not being defined from failing terraform ([5aaec96](https://github.com/FitGlue/server/commit/5aaec961a900654d14a0011df73a7aad54e79e2c))
+* comprehensive 2026 feature expansion and core architecture updates ([6d318e3](https://github.com/FitGlue/server/commit/6d318e308c05b723fabf844078f341c12fadadea))
+
 ## [2.1.0](https://github.com/FitGlue/server/compare/v2.0.0...v2.1.0) (2026-01-21)
 
 
