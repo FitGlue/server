@@ -1,104 +1,12 @@
 import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy } from '@fitglue/shared';
 import { Request, Response } from 'express';
 import { SynchronizedActivity } from '@fitglue/shared/dist/types/pb/user';
-import { ActivityType } from '@fitglue/shared/dist/types/pb/standardized_activity';
-import { ActivitySource } from '@fitglue/shared/dist/types/pb/activity';
-import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
+import { ExecutionStatus, formatExecutionStatus, formatActivityType, formatActivitySource } from '@fitglue/shared';
 
-// Helper to convert ActivityType enum to readable string
-const activityTypeToString = (type: number | undefined): string => {
-  if (type === undefined) return 'Unknown';
-
-  const typeMap: Record<number, string> = {
-    [ActivityType.ACTIVITY_TYPE_UNSPECIFIED]: 'Unspecified',
-    [ActivityType.ACTIVITY_TYPE_ALPINE_SKI]: 'Alpine Ski',
-    [ActivityType.ACTIVITY_TYPE_BACKCOUNTRY_SKI]: 'Backcountry Ski',
-    [ActivityType.ACTIVITY_TYPE_BADMINTON]: 'Badminton',
-    [ActivityType.ACTIVITY_TYPE_CANOEING]: 'Canoeing',
-    [ActivityType.ACTIVITY_TYPE_CROSSFIT]: 'Crossfit',
-    [ActivityType.ACTIVITY_TYPE_EBIKE_RIDE]: 'E-Bike Ride',
-    [ActivityType.ACTIVITY_TYPE_ELLIPTICAL]: 'Elliptical',
-    [ActivityType.ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE]: 'E-Mountain Bike Ride',
-    [ActivityType.ACTIVITY_TYPE_GOLF]: 'Golf',
-    [ActivityType.ACTIVITY_TYPE_GRAVEL_RIDE]: 'Gravel Ride',
-    [ActivityType.ACTIVITY_TYPE_HANDCYCLE]: 'Handcycle',
-    [ActivityType.ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING]: 'HIIT',
-    [ActivityType.ACTIVITY_TYPE_HIKE]: 'Hike',
-    [ActivityType.ACTIVITY_TYPE_ICE_SKATE]: 'Ice Skate',
-    [ActivityType.ACTIVITY_TYPE_INLINE_SKATE]: 'Inline Skate',
-    [ActivityType.ACTIVITY_TYPE_KAYAKING]: 'Kayaking',
-    [ActivityType.ACTIVITY_TYPE_KITESURF]: 'Kitesurf',
-    [ActivityType.ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE]: 'Mountain Bike Ride',
-    [ActivityType.ACTIVITY_TYPE_NORDIC_SKI]: 'Nordic Ski',
-    [ActivityType.ACTIVITY_TYPE_PICKLEBALL]: 'Pickleball',
-    [ActivityType.ACTIVITY_TYPE_PILATES]: 'Pilates',
-    [ActivityType.ACTIVITY_TYPE_RACQUETBALL]: 'Racquetball',
-    [ActivityType.ACTIVITY_TYPE_RIDE]: 'Ride',
-    [ActivityType.ACTIVITY_TYPE_ROCK_CLIMBING]: 'Rock Climbing',
-    [ActivityType.ACTIVITY_TYPE_ROLLER_SKI]: 'Roller Ski',
-    [ActivityType.ACTIVITY_TYPE_ROWING]: 'Rowing',
-    [ActivityType.ACTIVITY_TYPE_RUN]: 'Run',
-    [ActivityType.ACTIVITY_TYPE_SAIL]: 'Sail',
-    [ActivityType.ACTIVITY_TYPE_SKATEBOARD]: 'Skateboard',
-    [ActivityType.ACTIVITY_TYPE_SNOWBOARD]: 'Snowboard',
-    [ActivityType.ACTIVITY_TYPE_SNOWSHOE]: 'Snowshoe',
-    [ActivityType.ACTIVITY_TYPE_SOCCER]: 'Soccer',
-    [ActivityType.ACTIVITY_TYPE_SQUASH]: 'Squash',
-    [ActivityType.ACTIVITY_TYPE_STAIR_STEPPER]: 'Stair Stepper',
-    [ActivityType.ACTIVITY_TYPE_STAND_UP_PADDLING]: 'Stand Up Paddling',
-    [ActivityType.ACTIVITY_TYPE_SURFING]: 'Surfing',
-    [ActivityType.ACTIVITY_TYPE_SWIM]: 'Swim',
-    [ActivityType.ACTIVITY_TYPE_TABLE_TENNIS]: 'Table Tennis',
-    [ActivityType.ACTIVITY_TYPE_TENNIS]: 'Tennis',
-    [ActivityType.ACTIVITY_TYPE_TRAIL_RUN]: 'Trail Run',
-    [ActivityType.ACTIVITY_TYPE_VELOMOBILE]: 'Velomobile',
-    [ActivityType.ACTIVITY_TYPE_VIRTUAL_RIDE]: 'Virtual Ride',
-    [ActivityType.ACTIVITY_TYPE_VIRTUAL_ROW]: 'Virtual Row',
-    [ActivityType.ACTIVITY_TYPE_VIRTUAL_RUN]: 'Virtual Run',
-    [ActivityType.ACTIVITY_TYPE_WALK]: 'Walk',
-    [ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING]: 'Weight Training',
-    [ActivityType.ACTIVITY_TYPE_WHEELCHAIR]: 'Wheelchair',
-    [ActivityType.ACTIVITY_TYPE_WINDSURF]: 'Windsurf',
-    [ActivityType.ACTIVITY_TYPE_WORKOUT]: 'Workout',
-    [ActivityType.ACTIVITY_TYPE_YOGA]: 'Yoga',
-  };
-
-  return typeMap[type] || `Unknown (${type})`;
-};
-
-// Helper to convert ExecutionStatus enum to readable string
-const executionStatusToString = (status: number | undefined): string => {
-  if (status === undefined) return 'UNKNOWN';
-  // ExecutionStatus is a numeric enum
-  const name = ExecutionStatus[status];
-  return name ? name.replace('STATUS_', '') : 'UNKNOWN';
-};
-
-// Helper to convert ActivitySource to readable string (dynamic lookup)
-const activitySourceToString = (source: string | undefined): string => {
-  if (!source) return 'Unknown';
-
-  const sourceStr = source.toString().toUpperCase();
-
-  // Handle SOURCE_X format: SOURCE_FILE_UPLOAD -> "File Upload"
-  if (sourceStr.startsWith('SOURCE_')) {
-    const name = sourceStr.replace('SOURCE_', '').replace(/_/g, ' ');
-    // Title case: "FILE UPLOAD" -> "File Upload"
-    return name.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
-  }
-
-  // Fallback for numeric values - lookup in ActivitySource enum
-  const numericValue = parseInt(sourceStr, 10);
-  if (!isNaN(numericValue)) {
-    const enumName = ActivitySource[numericValue as ActivitySource];
-    if (enumName && enumName.startsWith('SOURCE_')) {
-      const name = enumName.replace('SOURCE_', '').replace(/_/g, ' ');
-      return name.split(' ').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
-    }
-  }
-
-  return source;
-};
+// Helpers are now using generated formatters
+const activityTypeToString = (type: number | string | undefined | null) => formatActivityType(type);
+const executionStatusToString = (status: number | string | undefined | null) => formatExecutionStatus(status);
+const activitySourceToString = (source: number | string | undefined | null) => formatActivitySource(source);
 
 // Transform activity to include readable enum strings
 const transformActivity = (activity: SynchronizedActivity): Omit<SynchronizedActivity, 'type' | 'source'> & { type: string; source: string } => {

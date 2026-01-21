@@ -42,6 +42,14 @@ export class UserService {
     }
 
     /**
+     * Find a user by Oura User ID.
+     */
+    async findByOuraId(ouraUserId: string): Promise<{ id: string; data: UserRecord } | null> {
+        return this.userStore.findByOuraId(ouraUserId);
+    }
+
+
+    /**
      * Load connector configuration for a user.
      */
     async loadConnectorConfig(userId: string, connectorName: string): Promise<Record<string, unknown>> {
@@ -66,6 +74,17 @@ export class UserService {
         const token = await tokenSource.getToken(forceRefresh);
         return token.accessToken;
     }
+
+    /**
+     * Get OAuth tokens for a user integration (raw access).
+     */
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async getOAuthTokens(userId: string, provider: string): Promise<any> {
+        const user = await this.get(userId);
+        if (!user || !user.integrations) return null;
+        return (user.integrations as any)[provider];
+    }
+
 
     /**
      * Check if an activity has been processed for a user.

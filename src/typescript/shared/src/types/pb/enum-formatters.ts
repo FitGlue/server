@@ -4,7 +4,18 @@
 import { ActivityType, MuscleGroup } from './standardized_activity';
 import { Destination, CloudEventType, CloudEventSource } from './events';
 import { ActivitySource } from './activity';
-import { EnricherProviderType, UserTier } from './user';
+import {
+  EnricherProviderType,
+  UserTier,
+  MuscleHeatmapPreset,
+  MuscleHeatmapStyle,
+  ParkrunResultsState,
+  VirtualGPSRoute,
+  WorkoutSummaryFormat,
+} from './user';
+import { ExecutionStatus } from './execution';
+import { ConfigFieldType, IntegrationAuthType, PluginType } from './plugin';
+import { PendingInput_Status } from './pending_input';
 
 const ActivityTypeNames: Record<string, string> = {
     'ACTIVITY_TYPE_UNSPECIFIED': 'Workout',
@@ -944,5 +955,505 @@ export function formatUserTier(value: UserTier | number | string | undefined | n
     case UserTier.USER_TIER_HOBBYIST: return 'Hobbyist';
     case UserTier.USER_TIER_ATHLETE: return 'Athlete';
     default: return 'Hobbyist';
+  }
+}
+
+const ExecutionStatusNames: Record<string, string> = {
+    'STATUS_UNKNOWN': 'Unknown',
+    'UNKNOWN': 'Unknown',
+    'Unknown': 'Unknown',
+    '0': 'Unknown',
+    'STATUS_STARTED': 'Started',
+    'STARTED': 'Started',
+    'Started': 'Started',
+    '1': 'Started',
+    'STATUS_SUCCESS': 'Success',
+    'SUCCESS': 'Success',
+    'Success': 'Success',
+    '2': 'Success',
+    'STATUS_FAILED': 'Failed',
+    'FAILED': 'Failed',
+    'Failed': 'Failed',
+    '3': 'Failed',
+    'STATUS_PENDING': 'Pending',
+    'PENDING': 'Pending',
+    'Pending': 'Pending',
+    '4': 'Pending',
+    'STATUS_WAITING': 'Waiting',
+    'WAITING': 'Waiting',
+    'Waiting': 'Waiting',
+    '5': 'Waiting',
+    'STATUS_LAGGED_RETRY': 'Lagged Retry',
+    'LAGGED_RETRY': 'Lagged Retry',
+    'Lagged Retry': 'Lagged Retry',
+    '6': 'Lagged Retry',
+    'STATUS_SKIPPED': 'Skipped',
+    'SKIPPED': 'Skipped',
+    'Skipped': 'Skipped',
+    '7': 'Skipped',
+};
+
+export function formatExecutionStatus(value: ExecutionStatus | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Unknown';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (ExecutionStatusNames[value]) return ExecutionStatusNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case ExecutionStatus.STATUS_UNKNOWN: return 'Unknown';
+    case ExecutionStatus.STATUS_STARTED: return 'Started';
+    case ExecutionStatus.STATUS_SUCCESS: return 'Success';
+    case ExecutionStatus.STATUS_FAILED: return 'Failed';
+    case ExecutionStatus.STATUS_PENDING: return 'Pending';
+    case ExecutionStatus.STATUS_WAITING: return 'Waiting';
+    case ExecutionStatus.STATUS_LAGGED_RETRY: return 'Lagged Retry';
+    case ExecutionStatus.STATUS_SKIPPED: return 'Skipped';
+    default: return 'Unknown';
+  }
+}
+
+const ConfigFieldTypeNames: Record<string, string> = {
+    'CONFIG_FIELD_TYPE_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'CONFIG_FIELD_TYPE_STRING': 'String',
+    'STRING': 'String',
+    'String': 'String',
+    '1': 'String',
+    'CONFIG_FIELD_TYPE_NUMBER': 'Number',
+    'NUMBER': 'Number',
+    'Number': 'Number',
+    '2': 'Number',
+    'CONFIG_FIELD_TYPE_BOOLEAN': 'Boolean',
+    'BOOLEAN': 'Boolean',
+    'Boolean': 'Boolean',
+    '3': 'Boolean',
+    'CONFIG_FIELD_TYPE_SELECT': 'Select',
+    'SELECT': 'Select',
+    'Select': 'Select',
+    '4': 'Select',
+    'CONFIG_FIELD_TYPE_MULTI_SELECT': 'Multi Select',
+    'MULTI_SELECT': 'Multi Select',
+    'Multi Select': 'Multi Select',
+    '5': 'Multi Select',
+    'CONFIG_FIELD_TYPE_KEY_VALUE_MAP': 'Key Value Map',
+    'KEY_VALUE_MAP': 'Key Value Map',
+    'Key Value Map': 'Key Value Map',
+    '6': 'Key Value Map',
+    'CONFIG_FIELD_TYPE_DYNAMIC_SELECT': 'Dynamic Select',
+    'DYNAMIC_SELECT': 'Dynamic Select',
+    'Dynamic Select': 'Dynamic Select',
+    '7': 'Dynamic Select',
+};
+
+export function formatConfigFieldType(value: ConfigFieldType | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'String';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (ConfigFieldTypeNames[value]) return ConfigFieldTypeNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case ConfigFieldType.CONFIG_FIELD_TYPE_UNSPECIFIED: return 'Unspecified';
+    case ConfigFieldType.CONFIG_FIELD_TYPE_STRING: return 'String';
+    case ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER: return 'Number';
+    case ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN: return 'Boolean';
+    case ConfigFieldType.CONFIG_FIELD_TYPE_SELECT: return 'Select';
+    case ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT: return 'Multi Select';
+    case ConfigFieldType.CONFIG_FIELD_TYPE_KEY_VALUE_MAP: return 'Key Value Map';
+    case ConfigFieldType.CONFIG_FIELD_TYPE_DYNAMIC_SELECT: return 'Dynamic Select';
+    default: return 'String';
+  }
+}
+
+const IntegrationAuthTypeNames: Record<string, string> = {
+    'INTEGRATION_AUTH_TYPE_UNSPECIFIED': 'Manual',
+    'UNSPECIFIED': 'Manual',
+    'Manual': 'Manual',
+    '0': 'Manual',
+    'INTEGRATION_AUTH_TYPE_OAUTH': 'Oauth',
+    'OAUTH': 'Oauth',
+    'Oauth': 'Oauth',
+    '1': 'Oauth',
+    'INTEGRATION_AUTH_TYPE_API_KEY': 'API Key',
+    'API_KEY': 'API Key',
+    'API Key': 'API Key',
+    '2': 'API Key',
+    'INTEGRATION_AUTH_TYPE_APP_SYNC': 'App Sync',
+    'APP_SYNC': 'App Sync',
+    'App Sync': 'App Sync',
+    '3': 'App Sync',
+    'INTEGRATION_AUTH_TYPE_PUBLIC_ID': 'Public ID',
+    'PUBLIC_ID': 'Public ID',
+    'Public ID': 'Public ID',
+    '4': 'Public ID',
+};
+
+export function formatIntegrationAuthType(value: IntegrationAuthType | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Manual';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (IntegrationAuthTypeNames[value]) return IntegrationAuthTypeNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED: return 'Manual';
+    case IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH: return 'Oauth';
+    case IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY: return 'API Key';
+    case IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC: return 'App Sync';
+    case IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID: return 'Public ID';
+    default: return 'Manual';
+  }
+}
+
+const PluginTypeNames: Record<string, string> = {
+    'PLUGIN_TYPE_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'PLUGIN_TYPE_SOURCE': 'Source',
+    'SOURCE': 'Source',
+    'Source': 'Source',
+    '1': 'Source',
+    'PLUGIN_TYPE_ENRICHER': 'Enricher',
+    'ENRICHER': 'Enricher',
+    'Enricher': 'Enricher',
+    '2': 'Enricher',
+    'PLUGIN_TYPE_DESTINATION': 'Destination',
+    'DESTINATION': 'Destination',
+    'Destination': 'Destination',
+    '3': 'Destination',
+};
+
+export function formatPluginType(value: PluginType | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Unknown';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (PluginTypeNames[value]) return PluginTypeNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case PluginType.PLUGIN_TYPE_UNSPECIFIED: return 'Unspecified';
+    case PluginType.PLUGIN_TYPE_SOURCE: return 'Source';
+    case PluginType.PLUGIN_TYPE_ENRICHER: return 'Enricher';
+    case PluginType.PLUGIN_TYPE_DESTINATION: return 'Destination';
+    default: return 'Unknown';
+  }
+}
+
+const MuscleHeatmapPresetNames: Record<string, string> = {
+    'MUSCLE_HEATMAP_PRESET_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'MUSCLE_HEATMAP_PRESET_STANDARD': 'Standard',
+    'STANDARD': 'Standard',
+    'Standard': 'Standard',
+    '1': 'Standard',
+    'MUSCLE_HEATMAP_PRESET_POWERLIFTING': 'Powerlifting',
+    'POWERLIFTING': 'Powerlifting',
+    'Powerlifting': 'Powerlifting',
+    '2': 'Powerlifting',
+    'MUSCLE_HEATMAP_PRESET_BODYBUILDING': 'Bodybuilding',
+    'BODYBUILDING': 'Bodybuilding',
+    'Bodybuilding': 'Bodybuilding',
+    '3': 'Bodybuilding',
+};
+
+export function formatMuscleHeatmapPreset(value: MuscleHeatmapPreset | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Standard';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (MuscleHeatmapPresetNames[value]) return MuscleHeatmapPresetNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_UNSPECIFIED: return 'Unspecified';
+    case MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_STANDARD: return 'Standard';
+    case MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_POWERLIFTING: return 'Powerlifting';
+    case MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_BODYBUILDING: return 'Bodybuilding';
+    default: return 'Standard';
+  }
+}
+
+const MuscleHeatmapStyleNames: Record<string, string> = {
+    'MUSCLE_HEATMAP_STYLE_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'MUSCLE_HEATMAP_STYLE_EMOJI_BARS': 'Emoji Bars',
+    'EMOJI_BARS': 'Emoji Bars',
+    'Emoji Bars': 'Emoji Bars',
+    '1': 'Emoji Bars',
+    'MUSCLE_HEATMAP_STYLE_PERCENTAGE': 'Percentage',
+    'PERCENTAGE': 'Percentage',
+    'Percentage': 'Percentage',
+    '2': 'Percentage',
+    'MUSCLE_HEATMAP_STYLE_TEXT_ONLY': 'Text Only',
+    'TEXT_ONLY': 'Text Only',
+    'Text Only': 'Text Only',
+    '3': 'Text Only',
+};
+
+export function formatMuscleHeatmapStyle(value: MuscleHeatmapStyle | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Emoji Bars';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (MuscleHeatmapStyleNames[value]) return MuscleHeatmapStyleNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_UNSPECIFIED: return 'Unspecified';
+    case MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_EMOJI_BARS: return 'Emoji Bars';
+    case MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_PERCENTAGE: return 'Percentage';
+    case MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_TEXT_ONLY: return 'Text Only';
+    default: return 'Emoji Bars';
+  }
+}
+
+const ParkrunResultsStateNames: Record<string, string> = {
+    'PARKRUN_RESULTS_STATE_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'PARKRUN_RESULTS_STATE_PENDING': 'Pending',
+    'PENDING': 'Pending',
+    'Pending': 'Pending',
+    '1': 'Pending',
+    'PARKRUN_RESULTS_STATE_COMPLETE': 'Complete',
+    'COMPLETE': 'Complete',
+    'Complete': 'Complete',
+    '2': 'Complete',
+    'PARKRUN_RESULTS_STATE_EXPIRED': 'Expired',
+    'EXPIRED': 'Expired',
+    'Expired': 'Expired',
+    '3': 'Expired',
+    'PARKRUN_RESULTS_STATE_IMMEDIATE': 'Immediate',
+    'IMMEDIATE': 'Immediate',
+    'Immediate': 'Immediate',
+    '4': 'Immediate',
+};
+
+export function formatParkrunResultsState(value: ParkrunResultsState | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Pending';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (ParkrunResultsStateNames[value]) return ParkrunResultsStateNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case ParkrunResultsState.PARKRUN_RESULTS_STATE_UNSPECIFIED: return 'Unspecified';
+    case ParkrunResultsState.PARKRUN_RESULTS_STATE_PENDING: return 'Pending';
+    case ParkrunResultsState.PARKRUN_RESULTS_STATE_COMPLETE: return 'Complete';
+    case ParkrunResultsState.PARKRUN_RESULTS_STATE_EXPIRED: return 'Expired';
+    case ParkrunResultsState.PARKRUN_RESULTS_STATE_IMMEDIATE: return 'Immediate';
+    default: return 'Pending';
+  }
+}
+
+const VirtualGPSRouteNames: Record<string, string> = {
+    'VIRTUAL_GPS_ROUTE_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'VIRTUAL_GPS_ROUTE_LONDON': 'London',
+    'LONDON': 'London',
+    'London': 'London',
+    '1': 'London',
+    'VIRTUAL_GPS_ROUTE_NYC': 'Nyc',
+    'NYC': 'Nyc',
+    'Nyc': 'Nyc',
+    '2': 'Nyc',
+};
+
+export function formatVirtualGPSRoute(value: VirtualGPSRoute | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'None';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (VirtualGPSRouteNames[value]) return VirtualGPSRouteNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case VirtualGPSRoute.VIRTUAL_GPS_ROUTE_UNSPECIFIED: return 'Unspecified';
+    case VirtualGPSRoute.VIRTUAL_GPS_ROUTE_LONDON: return 'London';
+    case VirtualGPSRoute.VIRTUAL_GPS_ROUTE_NYC: return 'Nyc';
+    default: return 'None';
+  }
+}
+
+const WorkoutSummaryFormatNames: Record<string, string> = {
+    'WORKOUT_SUMMARY_FORMAT_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'WORKOUT_SUMMARY_FORMAT_COMPACT': 'Compact',
+    'COMPACT': 'Compact',
+    'Compact': 'Compact',
+    '1': 'Compact',
+    'WORKOUT_SUMMARY_FORMAT_DETAILED': 'Detailed',
+    'DETAILED': 'Detailed',
+    'Detailed': 'Detailed',
+    '2': 'Detailed',
+    'WORKOUT_SUMMARY_FORMAT_VERBOSE': 'Verbose',
+    'VERBOSE': 'Verbose',
+    'Verbose': 'Verbose',
+    '3': 'Verbose',
+};
+
+export function formatWorkoutSummaryFormat(value: WorkoutSummaryFormat | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Compact';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (WorkoutSummaryFormatNames[value]) return WorkoutSummaryFormatNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_UNSPECIFIED: return 'Unspecified';
+    case WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_COMPACT: return 'Compact';
+    case WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_DETAILED: return 'Detailed';
+    case WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_VERBOSE: return 'Verbose';
+    default: return 'Compact';
+  }
+}
+
+const PendingInput_StatusNames: Record<string, string> = {
+    'STATUS_UNSPECIFIED': 'Unspecified',
+    'UNSPECIFIED': 'Unspecified',
+    'Unspecified': 'Unspecified',
+    '0': 'Unspecified',
+    'STATUS_WAITING': 'Waiting',
+    'WAITING': 'Waiting',
+    'Waiting': 'Waiting',
+    '1': 'Waiting',
+    'STATUS_COMPLETED': 'Completed',
+    'COMPLETED': 'Completed',
+    'Completed': 'Completed',
+    '2': 'Completed',
+};
+
+export function formatPendingInput_Status(value: PendingInput_Status | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Waiting';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (PendingInput_StatusNames[value]) return PendingInput_StatusNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case PendingInput_Status.STATUS_UNSPECIFIED: return 'Unspecified';
+    case PendingInput_Status.STATUS_WAITING: return 'Waiting';
+    case PendingInput_Status.STATUS_COMPLETED: return 'Completed';
+    default: return 'Waiting';
   }
 }

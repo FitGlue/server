@@ -134,6 +134,9 @@ export interface Session {
   laps: Lap[];
   /** High-fidelity strength data (not just 1Hz streams) */
   strengthSets: StrengthSet[];
+  totalCalories?: number | undefined;
+  avgHeartRate?: number | undefined;
+  maxHeartRate?: number | undefined;
 }
 
 export interface Lap {

@@ -455,6 +455,9 @@ type Session struct {
 	Laps             []*Lap                 `protobuf:"bytes,4,rep,name=laps,proto3" json:"laps,omitempty"`
 	// High-fidelity strength data (not just 1Hz streams)
 	StrengthSets  []*StrengthSet `protobuf:"bytes,5,rep,name=strength_sets,json=strengthSets,proto3" json:"strength_sets,omitempty"`
+	TotalCalories *float64       `protobuf:"fixed64,6,opt,name=total_calories,json=totalCalories,proto3,oneof" json:"total_calories,omitempty"`
+	AvgHeartRate  *int32         `protobuf:"varint,7,opt,name=avg_heart_rate,json=avgHeartRate,proto3,oneof" json:"avg_heart_rate,omitempty"`
+	MaxHeartRate  *int32         `protobuf:"varint,8,opt,name=max_heart_rate,json=maxHeartRate,proto3,oneof" json:"max_heart_rate,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -522,6 +525,27 @@ func (x *Session) GetStrengthSets() []*StrengthSet {
 		return x.StrengthSets
 	}
 	return nil
+}
+
+func (x *Session) GetTotalCalories() float64 {
+	if x != nil && x.TotalCalories != nil {
+		return *x.TotalCalories
+	}
+	return 0
+}
+
+func (x *Session) GetAvgHeartRate() int32 {
+	if x != nil && x.AvgHeartRate != nil {
+		return *x.AvgHeartRate
+	}
+	return 0
+}
+
+func (x *Session) GetMaxHeartRate() int32 {
+	if x != nil && x.MaxHeartRate != nil {
+		return *x.MaxHeartRate
+	}
+	return 0
 }
 
 type Lap struct {
@@ -860,14 +884,20 @@ const file_standardized_activity_proto_rawDesc = "" +
 	"\vdescription\x18\b \x01(\tR\vdescription\x12\x12\n" +
 	"\x04tags\x18\t \x03(\tR\x04tags\x12\x14\n" +
 	"\x05notes\x18\n" +
-	" \x01(\tR\x05notes\"\xf6\x01\n" +
+	" \x01(\tR\x05notes\"\xb1\x03\n" +
 	"\aSession\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +
 	"\x12total_elapsed_time\x18\x02 \x01(\x01R\x10totalElapsedTime\x12%\n" +
 	"\x0etotal_distance\x18\x03 \x01(\x01R\rtotalDistance\x12 \n" +
 	"\x04laps\x18\x04 \x03(\v2\f.fitglue.LapR\x04laps\x129\n" +
-	"\rstrength_sets\x18\x05 \x03(\v2\x14.fitglue.StrengthSetR\fstrengthSets\"\xc0\x01\n" +
+	"\rstrength_sets\x18\x05 \x03(\v2\x14.fitglue.StrengthSetR\fstrengthSets\x12*\n" +
+	"\x0etotal_calories\x18\x06 \x01(\x01H\x00R\rtotalCalories\x88\x01\x01\x12)\n" +
+	"\x0eavg_heart_rate\x18\a \x01(\x05H\x01R\favgHeartRate\x88\x01\x01\x12)\n" +
+	"\x0emax_heart_rate\x18\b \x01(\x05H\x02R\fmaxHeartRate\x88\x01\x01B\x11\n" +
+	"\x0f_total_caloriesB\x11\n" +
+	"\x0f_avg_heart_rateB\x11\n" +
+	"\x0f_max_heart_rate\"\xc0\x01\n" +
 	"\x03Lap\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +
@@ -1041,6 +1071,7 @@ func file_standardized_activity_proto_init() {
 	if File_standardized_activity_proto != nil {
 		return
 	}
+	file_standardized_activity_proto_msgTypes[1].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

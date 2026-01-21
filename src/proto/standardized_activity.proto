@@ -102,7 +102,13 @@ message Session {
 
   // High-fidelity strength data (not just 1Hz streams)
   repeated StrengthSet strength_sets = 5;
+
+  optional double total_calories = 6;
+  optional int32 avg_heart_rate = 7;
+  optional int32 max_heart_rate = 8;
 }
+
+
 
 message Lap {
   google.protobuf.Timestamp start_time = 1;

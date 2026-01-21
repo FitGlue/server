@@ -24,6 +24,28 @@ const PROTO_DIR = path.join(SERVER_ROOT, 'src/proto');
 // Packages that are NOT cloud functions (excluded from function checks)
 const NON_FUNCTION_PACKAGES = ['shared', 'admin-cli', 'mcp-server', 'node_modules'];
 
+// Enums defined in protobuf that should have generated formatters and be used consistently
+const PROTO_ENUMS = [
+  'ActivitySource',
+  'ActivityType',
+  'CloudEventSource',
+  'CloudEventType',
+  'ConfigFieldType',
+  'Destination',
+  'EnricherProviderType',
+  'ExecutionStatus',
+  'IntegrationAuthType',
+  'MuscleGroup',
+  'MuscleHeatmapPreset',
+  'MuscleHeatmapStyle',
+  'ParkrunResultsState',
+  'PendingInput_Status',
+  'PluginType',
+  'UserTier',
+  'VirtualGPSRoute',
+  'WorkoutSummaryFormat',
+];
+
 // Handler directories that don't need Terraform (internal tools)
 const NO_TERRAFORM_REQUIRED = ['admin-cli', 'mcp-server'];
 
@@ -72,10 +94,8 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'T8': [/.*/], // Demote to warning-only - too many violations
   // W4: Complex pages - acceptable for wizard/edit pages
   'W4': [/PipelineEditPage/, /PipelineWizardPage/],
-  // E6: These files wrap generated formatters, not manual definitions
-  'E6': [/admin-cli/, /events-helper/, /fitbit-handler/],
-  // E7: Not all enums need display formatters
-  'E7': [/.*/], // Demote to warning-only - many internal enums
+  // E6: These files wrap generated formatters or use enums for UI control flow
+  'E6': [/admin-cli/, /events-helper/, /fitbit-handler/, /EnricherConfigForm/],
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   'W1': [/usePluginRegistry/],
 };
@@ -1458,7 +1478,6 @@ function checkNoManualEnums(): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
-  const PROTO_ENUMS = ['ActivityType', 'Destination', 'ActivitySource', 'MuscleGroup', 'CloudEventType', 'CloudEventSource'];
   const ALLOWED_PATHS = ['types/pb/', 'enum-formatters.ts'];
 
   const findTsFiles = (dir: string): string[] => {
@@ -2647,16 +2666,9 @@ function checkMandatoryFormatterUsage(): CheckResult {
     const fileName = path.relative(SERVER_ROOT, file);
 
     // Check for case statements with enum types (manual mapping)
-    const casePatterns = [
-      /case\s+ActivityType\./g,
-      /case\s+Destination\./g,
-      /case\s+ActivitySource\./g,
-      /case\s+MuscleGroup\./g,
-    ];
-
-    for (const pattern of casePatterns) {
+    for (const enumName of PROTO_ENUMS) {
+      const pattern = new RegExp(`case\\s+${enumName}\\.`, 'g');
       if (pattern.test(content)) {
-        const enumName = pattern.source.match(/case\s+(\w+)/)?.[1];
         warnings.push(`${fileName}: Manual enum-to-string mapping for ${enumName} - use format${enumName}()`);
       }
     }
@@ -2676,14 +2688,10 @@ function checkMandatoryFormatterUsage(): CheckResult {
     }
 
     // Check for EnumType[value] pattern (reverse enum lookup for display)
-    const reverseLookupPatterns = [
-      { pattern: /ActivityType\[\w+\]/g, name: 'ActivityType' },
-      { pattern: /Destination\[\w+\]/g, name: 'Destination' },
-    ];
-
-    for (const { pattern, name } of reverseLookupPatterns) {
+    for (const enumName of PROTO_ENUMS) {
+      const pattern = new RegExp(`${enumName}\\[\\w+\\]`, 'g');
       if (pattern.test(content)) {
-        warnings.push(`${fileName}: ${name}[value] reverse lookup - use format${name}() instead`);
+        warnings.push(`${fileName}: ${enumName}[value] reverse lookup - use format${enumName}() instead`);
       }
     }
   }
@@ -2700,15 +2708,9 @@ function checkMandatoryFormatterUsage(): CheckResult {
         const content = fs.readFileSync(file, 'utf-8');
         const fileName = path.relative(webDir, file);
 
-        const casePatterns = [
-          /case\s+ActivityType\./g,
-          /case\s+Destination\./g,
-          /case\s+ActivitySource\./g,
-        ];
-
-        for (const pattern of casePatterns) {
+        for (const enumName of PROTO_ENUMS) {
+          const pattern = new RegExp(`case\\s+${enumName}\\.`, 'g');
           if (pattern.test(content)) {
-            const enumName = pattern.source.match(/case\s+(\w+)/)?.[1];
             warnings.push(`web/${fileName}: Manual enum-to-string mapping for ${enumName} - use format${enumName}()`);
           }
         }

@@ -1,7 +1,8 @@
 import * as admin from 'firebase-admin';
 import { UserStore, IntegrationIdentityStore } from '../../storage/firestore';
 import * as crypto from 'crypto';
-import { StravaIntegration, FitbitIntegration, TrainingPeaksIntegration, SpotifyIntegration, GoogleIntegration, PolarIntegration, WahooIntegration } from '../../types/pb/user';
+import { StravaIntegration, FitbitIntegration, TrainingPeaksIntegration, SpotifyIntegration, GoogleIntegration, PolarIntegration, WahooIntegration, OuraIntegration } from '../../types/pb/user';
+
 
 /**
  * Store OAuth tokens for a user integration.
@@ -9,7 +10,8 @@ import { StravaIntegration, FitbitIntegration, TrainingPeaksIntegration, Spotify
  */
 export async function storeOAuthTokens(
   userId: string,
-  provider: 'strava' | 'fitbit' | 'trainingpeaks' | 'spotify' | 'google' | 'polar' | 'wahoo',
+  provider: 'strava' | 'fitbit' | 'trainingpeaks' | 'spotify' | 'google' | 'polar' | 'wahoo' | 'oura',
+
   tokens: {
     accessToken: string;
     refreshToken: string;
@@ -39,8 +41,10 @@ export async function storeOAuthTokens(
     ...(provider === 'spotify' ? { spotifyUserId: tokens.externalUserId } : {}),
     ...(provider === 'google' ? { googleUserId: tokens.externalUserId } : {}),
     ...(provider === 'polar' ? { polarUserId: tokens.externalUserId } : {}),
-    ...(provider === 'wahoo' ? { wahooUserId: tokens.externalUserId } : {})
-  } as (typeof provider extends 'strava' ? StravaIntegration : typeof provider extends 'fitbit' ? FitbitIntegration : typeof provider extends 'trainingpeaks' ? TrainingPeaksIntegration : typeof provider extends 'spotify' ? SpotifyIntegration : typeof provider extends 'google' ? GoogleIntegration : typeof provider extends 'polar' ? PolarIntegration : WahooIntegration));
+    ...(provider === 'wahoo' ? { wahooUserId: tokens.externalUserId } : {}),
+    ...(provider === 'oura' ? { ouraUserId: tokens.externalUserId } : {})
+  } as (typeof provider extends 'strava' ? StravaIntegration : typeof provider extends 'fitbit' ? FitbitIntegration : typeof provider extends 'trainingpeaks' ? TrainingPeaksIntegration : typeof provider extends 'spotify' ? SpotifyIntegration : typeof provider extends 'google' ? GoogleIntegration : typeof provider extends 'polar' ? PolarIntegration : typeof provider extends 'wahoo' ? WahooIntegration : OuraIntegration));
+
 
   // Map external user ID to our user ID
   await identityStore.mapIdentity(provider, tokens.externalUserId, userId);

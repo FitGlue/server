@@ -9,9 +9,12 @@ import {
   UserRecord
 } from '@fitglue/shared';
 import { Request, Response } from 'express';
-import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
-import { Destination } from '@fitglue/shared/dist/types/pb/events';
-import { PendingInput_Status } from '@fitglue/shared/dist/types/pb/pending_input';
+import {
+  ExecutionStatus,
+  formatExecutionStatus,
+  formatDestination,
+  PendingInput_Status,
+} from '@fitglue/shared';
 import * as admin from 'firebase-admin';
 
 /**
@@ -38,11 +41,7 @@ function maskToken(token: string | undefined): string | undefined {
 }
 
 // Helper to convert ExecutionStatus enum to readable string
-const executionStatusToString = (status: number | undefined): string => {
-  if (status === undefined) return 'UNKNOWN';
-  const name = ExecutionStatus[status];
-  return name ? name.replace('STATUS_', '') : 'UNKNOWN';
-};
+const executionStatusToString = (status: number | string | undefined | null): string => formatExecutionStatus(status);
 
 export const handler = async (req: Request, res: Response, ctx: FrameworkContext) => {
   const { logger, services, stores } = ctx;
@@ -244,20 +243,12 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         }
       }
 
-      // Map destination enum numbers to readable names
-      const destinationNames: Record<number, string> = {};
-      for (const [key, value] of Object.entries(Destination)) {
-        if (typeof value === 'number') {
-          destinationNames[value] = key.replace('DESTINATION_', '').toLowerCase();
-        }
-      }
-
       // Build pipelines with names and destination names
       const pipelines = (user.pipelines || []).map(p => ({
         id: p.id,
         name: p.name || 'Unnamed Pipeline',
         source: p.source,
-        destinations: (p.destinations || []).map(d => destinationNames[d] || `unknown_${d}`),
+        destinations: (p.destinations || []).map(d => formatDestination(d)),
       }));
 
       res.status(200).json({

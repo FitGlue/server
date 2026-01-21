@@ -368,9 +368,23 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE]: 'Logic Gate',
         [EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY]: 'Heart Rate Summary',
         [EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION]: 'AI Activity Companion',
+        [EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY]: 'Pace Summary',
+        [EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY]: 'Cadence Summary',
+        [EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY]: 'Power Summary',
+        [EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY]: 'Speed Summary',
+        [EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS]: 'Personal Records',
+        [EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD]: 'Training Load',
+        [EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS]: 'Spotify Tracks',
+        [EnricherProviderType.ENRICHER_PROVIDER_WEATHER]: 'Weather',
+        [EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY]: 'Elevation Summary',
+        [EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING]: 'Location Naming',
+        [EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE]: 'Muscle Heatmap Image',
+        [EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL]: 'Route Thumbnail',
+        [EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER]: 'AI Banner',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };
+
     return mapping[providerType] || `Unknown (${providerType})`;
 };
 

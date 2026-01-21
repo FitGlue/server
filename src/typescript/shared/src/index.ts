@@ -15,6 +15,7 @@ export * from './types/events-helper';
 export { ApiKeyRecord } from './types/pb/auth';
 export { UserRecord, UserTier, UserIntegrations, HevyIntegration, EnricherProviderType, EnricherConfig, ProcessedActivityRecord, PipelineConfig, SynchronizedActivity, ShowcasedActivity } from './types/pb/user';
 export { FitbitNotification } from './types/pb/fitbit';
+export { PendingInput, PendingInput_Status } from './types/pb/pending_input';
 export * from './types/integrations';
 
 // Plugin Registry

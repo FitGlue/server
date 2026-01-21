@@ -85,6 +85,24 @@ export class UserStore {
   }
 
   /**
+   * Find a user by their Oura User ID.
+   */
+  async findByOuraId(ouraUserId: string): Promise<{ id: string; data: UserRecord } | null> {
+    const snapshot = await this.collection()
+      .where('integrations.oura.oura_user_id', '==', ouraUserId)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    return { id: doc.id, data: doc.data() };
+  }
+
+
+  /**
    * Get a user by ID.
    */
   async get(userId: string): Promise<UserRecord | null> {

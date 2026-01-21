@@ -352,3 +352,169 @@ func FormatUserTier(value pb.UserTier) string {
 		return "Hobbyist"
 	}
 }
+
+func FormatExecutionStatus(value pb.ExecutionStatus) string {
+	switch value {
+	case pb.ExecutionStatus_STATUS_UNKNOWN:
+		return "Unknown"
+	case pb.ExecutionStatus_STATUS_STARTED:
+		return "Started"
+	case pb.ExecutionStatus_STATUS_SUCCESS:
+		return "Success"
+	case pb.ExecutionStatus_STATUS_FAILED:
+		return "Failed"
+	case pb.ExecutionStatus_STATUS_PENDING:
+		return "Pending"
+	case pb.ExecutionStatus_STATUS_WAITING:
+		return "Waiting"
+	case pb.ExecutionStatus_STATUS_LAGGED_RETRY:
+		return "Lagged Retry"
+	case pb.ExecutionStatus_STATUS_SKIPPED:
+		return "Skipped"
+	default:
+		return "Unknown"
+	}
+}
+
+func FormatConfigFieldType(value pb.ConfigFieldType) string {
+	switch value {
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED:
+		return "Unspecified"
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING:
+		return "String"
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER:
+		return "Number"
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN:
+		return "Boolean"
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT:
+		return "Select"
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT:
+		return "Multi Select"
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP:
+		return "Key Value Map"
+	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT:
+		return "Dynamic Select"
+	default:
+		return "String"
+	}
+}
+
+func FormatIntegrationAuthType(value pb.IntegrationAuthType) string {
+	switch value {
+	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED:
+		return "Manual"
+	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH:
+		return "Oauth"
+	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY:
+		return "API Key"
+	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC:
+		return "App Sync"
+	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID:
+		return "Public ID"
+	default:
+		return "Manual"
+	}
+}
+
+func FormatPluginType(value pb.PluginType) string {
+	switch value {
+	case pb.PluginType_PLUGIN_TYPE_UNSPECIFIED:
+		return "Unspecified"
+	case pb.PluginType_PLUGIN_TYPE_SOURCE:
+		return "Source"
+	case pb.PluginType_PLUGIN_TYPE_ENRICHER:
+		return "Enricher"
+	case pb.PluginType_PLUGIN_TYPE_DESTINATION:
+		return "Destination"
+	default:
+		return "Unknown"
+	}
+}
+
+func FormatMuscleHeatmapPreset(value pb.MuscleHeatmapPreset) string {
+	switch value {
+	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED:
+		return "Unspecified"
+	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD:
+		return "Standard"
+	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING:
+		return "Powerlifting"
+	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING:
+		return "Bodybuilding"
+	default:
+		return "Standard"
+	}
+}
+
+func FormatMuscleHeatmapStyle(value pb.MuscleHeatmapStyle) string {
+	switch value {
+	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED:
+		return "Unspecified"
+	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS:
+		return "Emoji Bars"
+	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE:
+		return "Percentage"
+	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY:
+		return "Text Only"
+	default:
+		return "Emoji Bars"
+	}
+}
+
+func FormatParkrunResultsState(value pb.ParkrunResultsState) string {
+	switch value {
+	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED:
+		return "Unspecified"
+	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING:
+		return "Pending"
+	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_COMPLETE:
+		return "Complete"
+	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_EXPIRED:
+		return "Expired"
+	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_IMMEDIATE:
+		return "Immediate"
+	default:
+		return "Pending"
+	}
+}
+
+func FormatVirtualGPSRoute(value pb.VirtualGPSRoute) string {
+	switch value {
+	case pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED:
+		return "Unspecified"
+	case pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON:
+		return "London"
+	case pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC:
+		return "Nyc"
+	default:
+		return "None"
+	}
+}
+
+func FormatWorkoutSummaryFormat(value pb.WorkoutSummaryFormat) string {
+	switch value {
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED:
+		return "Unspecified"
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
+		return "Compact"
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED:
+		return "Detailed"
+	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE:
+		return "Verbose"
+	default:
+		return "Compact"
+	}
+}
+
+func FormatPendingInputStatus(value pb.PendingInput_Status) string {
+	switch value {
+	case pb.PendingInput_STATUS_UNSPECIFIED:
+		return "Unspecified"
+	case pb.PendingInput_STATUS_WAITING:
+		return "Waiting"
+	case pb.PendingInput_STATUS_COMPLETED:
+		return "Completed"
+	default:
+		return "Waiting"
+	}
+}

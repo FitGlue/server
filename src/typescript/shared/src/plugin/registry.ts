@@ -434,6 +434,7 @@ Power meters, heart rate monitors, cadence sensors, and GPS data — all capture
     '✅ Works with ELEMNT, KICKR, and all Wahoo devices',
     '✅ Automatic sync when workouts complete',
   ],
+  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Enhance Wahoo rides with AI descriptions and stats summaries',
@@ -470,6 +471,7 @@ When you complete a workout tracked by your Oura Ring, FitGlue receives a webhoo
     '✅ Real-time sync via webhooks',
     '✅ Works seamlessly with all FitGlue boosters',
   ],
+  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Track workouts without GPS for indoor activities',
@@ -509,6 +511,7 @@ Polar uses a unique transaction-based API that ensures reliable data delivery. F
     '✅ Training load metrics included',
     '✅ Real-time sync via webhooks',
   ],
+  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Enhance Polar activities with AI descriptions',
@@ -546,6 +549,7 @@ FitGlue polls your Intervals.icu account for new activities. When new activities
     '✅ Performance metrics and training load',
     '✅ Works seamlessly with all FitGlue boosters',
   ],
+  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Enhance Intervals.icu activities with AI descriptions',
@@ -706,6 +710,7 @@ Activity types are automatically mapped to TrainingPeaks workout types (Run, Bik
     '✅ Activity types mapped intelligently',
     '✅ Secure OAuth connection',
   ],
+  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Sync gym workouts to your training calendar',
@@ -749,6 +754,7 @@ Unlike some platforms, Intervals.icu accepts raw FIT files, meaning all your dat
     '✅ AI descriptions and enriched titles included',
     '✅ Simple API key connection',
   ],
+  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Analyze training load from multiple sources in Intervals.icu',
@@ -828,6 +834,7 @@ If enabled, muscle heatmaps and route thumbnails are embedded using Google Sheet
     '✅ Showcase links for sharing',
     '✅ Perfect for custom dashboards and analysis',
   ],
+  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Create custom fitness dashboards in Google Sheets',
@@ -2495,6 +2502,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS, {
   icon: '🎵',
   enabled: true,
   requiredIntegrations: ['spotify'],
+  isTemporarilyUnavailable: true,
   configSchema: [],
   marketingDescription: `
 ### Your Activity Soundtrack
@@ -2866,6 +2874,7 @@ registerIntegration({
   icon: '📈',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
+  isTemporarilyUnavailable: true,
   docsUrl: 'https://developer.trainingpeaks.com',
   setupTitle: 'Connect TrainingPeaks',
   setupInstructions: `Connect your TrainingPeaks account to FitGlue with secure OAuth:
@@ -2901,6 +2910,7 @@ registerIntegration({
   icon: '🎵',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
+  isTemporarilyUnavailable: true,
   docsUrl: 'https://www.spotify.com',
   setupTitle: 'Connect Spotify',
   setupInstructions: `To connect Spotify, you'll authorize FitGlue to access your listening history:
@@ -2935,6 +2945,7 @@ registerIntegration({
   icon: '🔵',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
+  isTemporarilyUnavailable: true,
   docsUrl: 'https://developers.google.com/sheets',
   setupTitle: 'Connect Google',
   setupInstructions: `To connect Google, you'll authorize FitGlue to access your Google Sheets:
@@ -2969,6 +2980,7 @@ registerIntegration({
   icon: '💍',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
+  isTemporarilyUnavailable: true,
   docsUrl: 'https://cloud.ouraring.com/docs',
   setupTitle: 'Connect Oura Ring',
   setupInstructions: `Connect your Oura account to FitGlue with secure OAuth:
@@ -3004,6 +3016,7 @@ registerIntegration({
   icon: '❄️',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
+  isTemporarilyUnavailable: true,
   docsUrl: 'https://www.polar.com/accesslink-api',
   setupTitle: 'Connect Polar Flow',
   setupInstructions: `Connect your Polar Flow account to FitGlue with secure OAuth:
@@ -3046,6 +3059,7 @@ registerIntegration({
   icon: '📊',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
   enabled: true,
+  isTemporarilyUnavailable: true,
   docsUrl: 'https://intervals.icu/api',
   setupTitle: 'Connect Intervals.icu',
   setupInstructions: `To connect Intervals.icu, you'll need your **API Key** and **Athlete ID**:
@@ -3082,6 +3096,7 @@ registerIntegration({
   icon: '📱',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
+  isTemporarilyUnavailable: true,
   docsUrl: 'https://developers.wahooligan.com',
   setupTitle: 'Connect Wahoo',
   setupInstructions: `Connect your Wahoo account to FitGlue with secure OAuth:
