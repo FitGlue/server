@@ -305,21 +305,34 @@ registerSource({
   id: 'strava',
   type: PluginType.PLUGIN_TYPE_SOURCE,
   name: 'Strava',
-  description: 'Import activities from Strava',
+  description: 'Import activities from Strava via real-time webhooks',
   icon: '🚴',
   enabled: true,
   requiredIntegrations: ['strava'],
   configSchema: [],
   marketingDescription: `
-### Popular Activity Source
-Import activities tracked by Strava into FitGlue. Runs, rides, and workouts are all supported.
+### The World's Leading Fitness Platform
+Import your runs, rides, swims, and workouts from Strava into FitGlue. Activities are synced in real-time via webhooks the moment they're uploaded to Strava.
+
+### How it works
+Connect your Strava account to FitGlue via OAuth. When you complete an activity on Strava (or sync from your device), FitGlue receives a webhook notification and imports the full activity data. Your activity then flows through your pipeline for enrichment and distribution.
+
+### Seamless Loop Prevention
+FitGlue's intelligent loop prevention ensures that activities uploaded TO Strava aren't re-imported FROM Strava. No duplicates, no infinite loops.
   `,
   features: [
-    '✅ Import all Strava activities',
-    '✅ Heart rate and GPS data included',
+    '✅ Real-time sync via Strava webhooks',
+    '✅ Import all activity types (runs, rides, swims, workouts)',
+    '✅ Heart rate, GPS, and power data included',
+    '✅ Automatic sync when activities are uploaded',
+    '✅ Smart loop prevention prevents duplicates',
   ],
   transformations: [],
-  useCases: [],
+  useCases: [
+    'Enhance Strava activities with AI descriptions and muscle heatmaps',
+    'Cross-post Strava activities to other platforms like Hevy',
+    'Generate public Showcase links for your Strava activities',
+  ],
 });
 
 registerSource({

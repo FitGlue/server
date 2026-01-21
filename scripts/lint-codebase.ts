@@ -38,7 +38,7 @@ const ERROR_RULES = new Set([
   // Go
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13',
   // TypeScript
-  'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12',
+  'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14',
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
@@ -2266,6 +2266,140 @@ function checkSharedExports(): CheckResult {
 // Check 30: Date Handling (T6)
 // ============================================================================
 
+// ============================================================================
+// Check T14: Shared Import Resolution
+// ============================================================================
+
+/**
+ * Validates that all named imports from '@fitglue/shared' in handler packages
+ * are actually exported from the shared index.ts file.
+ *
+ * This prevents runtime errors where a symbol exists in shared but isn't exported.
+ */
+function checkSharedImportResolution(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const sharedIndexPath = path.join(TS_SRC_DIR, 'shared/src/index.ts');
+  if (!fs.existsSync(sharedIndexPath)) {
+    return { name: 'Shared Import Resolution (T14)', passed: true, errors, warnings: ['shared/src/index.ts not found'] };
+  }
+
+  // Parse all exports from shared/src/index.ts
+  const indexContent = fs.readFileSync(sharedIndexPath, 'utf-8');
+  const exportedSymbols = new Set<string>();
+  const sharedSrcDir = path.join(TS_SRC_DIR, 'shared/src');
+  const visited = new Set<string>();
+
+  /**
+   * Recursively collect all exported symbols from a file and its re-exports.
+   */
+  function collectExportsFromFile(filePath: string): void {
+    if (visited.has(filePath) || !fs.existsSync(filePath)) return;
+    visited.add(filePath);
+
+    const content = fs.readFileSync(filePath, 'utf-8');
+    const dirName = path.dirname(filePath);
+
+    // 1. Direct exports: export function/class/const/etc Foo (including async)
+    const directExportPattern = /export\s+(?:async\s+)?(?:function|class|const|let|var|type|interface|enum|abstract\s+class)\s+(\w+)/g;
+    let match;
+    while ((match = directExportPattern.exec(content)) !== null) {
+      exportedSymbols.add(match[1]);
+    }
+
+    // 2. Named exports: export { Foo, Bar } from './path' or export { Foo, Bar }
+    const namedExportPattern = /export\s*\{\s*([^}]+)\s*\}/g;
+    while ((match = namedExportPattern.exec(content)) !== null) {
+      const symbols = match[1].split(',').map(s => {
+        // Handle 'Foo as Bar' - the exported name is Bar, but we care about Foo for source
+        const parts = s.trim().split(/\s+as\s+/);
+        return parts.length > 1 ? parts[1].trim() : parts[0].trim();
+      });
+      symbols.filter(s => s).forEach(s => exportedSymbols.add(s));
+    }
+
+    // 3. Star re-exports: export * from './path' - recursively follow
+    const starExportPattern = /export\s*\*\s*from\s*['"]([^'"]+)['"]/g;
+    while ((match = starExportPattern.exec(content)) !== null) {
+      const relPath = match[1];
+      let targetPath = path.resolve(dirName, relPath);
+
+      // Try .ts extension
+      if (!fs.existsSync(targetPath) && fs.existsSync(targetPath + '.ts')) {
+        targetPath = targetPath + '.ts';
+      }
+      // Try index.ts in directory
+      if (fs.existsSync(targetPath) && fs.statSync(targetPath).isDirectory()) {
+        targetPath = path.join(targetPath, 'index.ts');
+      }
+
+      collectExportsFromFile(targetPath);
+    }
+  }
+
+  // Start collection from the root index.ts
+  collectExportsFromFile(sharedIndexPath);
+
+  // Now check all handler packages for imports from @fitglue/shared
+  const handlerDirs = getDirectories(TS_SRC_DIR).filter(d => d.endsWith('-handler'));
+
+  const findTsFiles = (dir: string): string[] => {
+    const files: string[] = [];
+    try {
+      const items = fs.readdirSync(dir, { withFileTypes: true });
+      for (const item of items) {
+        const fullPath = path.join(dir, item.name);
+        if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('build')) {
+          files.push(...findTsFiles(fullPath));
+        } else if (item.isFile() && item.name.endsWith('.ts') && !item.name.endsWith('.test.ts')) {
+          files.push(fullPath);
+        }
+      }
+    } catch { /* ignore */ }
+    return files;
+  };
+
+  for (const dir of handlerDirs) {
+    const files = findTsFiles(path.join(TS_SRC_DIR, dir));
+
+    for (const file of files) {
+      const content = fs.readFileSync(file, 'utf-8');
+      const fileName = path.relative(SERVER_ROOT, file);
+
+      // Match: import { Foo, Bar } from '@fitglue/shared'
+      const importPattern = /import\s*\{\s*([^}]+)\s*\}\s*from\s*['"]@fitglue\/shared['"]/g;
+      let match: RegExpExecArray | null;
+      while ((match = importPattern.exec(content)) !== null) {
+        const imports = match[1].split(',').map(s => {
+          // Handle 'Foo as Bar' - we care about 'Foo'
+          // Handle 'type Foo' - strip the type keyword
+          let name = s.trim();
+          if (name.startsWith('type ')) {
+            name = name.substring(5);
+          }
+          const parts = name.split(/\s+as\s+/);
+          return parts[0].trim();
+        });
+
+        for (const imp of imports) {
+          if (imp && !exportedSymbols.has(imp)) {
+            errors.push(`${fileName}: Import '${imp}' from @fitglue/shared is not exported from shared/src/index.ts`);
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'Shared Import Resolution (T14)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+
 function checkDateHandling(): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -3425,6 +3559,7 @@ function main(): void {
         { id: 'T11', fn: () => ({ ...checkEventsHelperCompleteness(), name: 'T11: Events Helper Completeness' }) },
         { id: 'T12', fn: () => ({ ...checkDestinationTopicSync(), name: 'T12: Destination Topic Mapping Sync' }) },
         { id: 'T13', fn: () => ({ ...checkPipelineExecutionLogging(), name: 'T13: Pipeline Execution Logging' }) },
+        { id: 'T14', fn: () => ({ ...checkSharedImportResolution(), name: 'T14: Shared Import Resolution' }) },
       ]
     },
     {

@@ -92,3 +92,8 @@ exports.adminHandler = (req, res) => {
   const admin = require('./admin-handler/build/index');
   return admin.adminHandler(req, res);
 };
+
+exports.stravaWebhookHandler = (req, res) => {
+  const strava = require('./strava-handler/build/index');
+  return strava.stravaWebhookHandler(req, res);
+};

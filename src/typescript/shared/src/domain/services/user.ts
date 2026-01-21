@@ -28,6 +28,13 @@ export class UserService {
     }
 
     /**
+     * Find a user by Strava Athlete ID.
+     */
+    async findByStravaId(athleteId: number): Promise<{ id: string; data: UserRecord } | null> {
+        return this.userStore.findByStravaId(athleteId);
+    }
+
+    /**
      * Load connector configuration for a user.
      */
     async loadConnectorConfig(userId: string, connectorName: string): Promise<Record<string, unknown>> {

@@ -34,6 +34,7 @@ export * from './domain/tier';
 // Integrations
 export * from './integrations/hevy/client';
 export * from './integrations/fitbit/client';
+export * from './integrations/strava/client';
 export * from './infrastructure/oauth';
 
 // Infrastructure

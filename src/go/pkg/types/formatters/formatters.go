@@ -221,6 +221,8 @@ func FormatCloudEventSource(value pb.CloudEventSource) string {
 		return "Parkrun Results"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD:
 		return "File Upload"
+	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA:
+		return "Strava"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK:
 		return "Mock"
 	default:

@@ -31,6 +31,13 @@ resource "google_secret_manager_secret" "strava_client_secret" {
   }
 }
 
+resource "google_secret_manager_secret" "strava_verify_token" {
+  secret_id = "strava-verify-token"
+  replication {
+    auto {}
+  }
+}
+
 # Fitbit OAuth Credentials
 resource "google_secret_manager_secret" "fitbit_client_id" {
   secret_id = "fitbit-client-id"

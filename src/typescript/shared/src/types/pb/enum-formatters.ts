@@ -571,6 +571,10 @@ const CloudEventSourceNames: Record<string, string> = {
     'FILE_UPLOAD': 'File Upload',
     'File Upload': 'File Upload',
     '8': 'File Upload',
+    'CLOUD_EVENT_SOURCE_STRAVA': 'Strava',
+    'STRAVA': 'Strava',
+    'Strava': 'Strava',
+    '9': 'Strava',
     'CLOUD_EVENT_SOURCE_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -605,6 +609,7 @@ export function formatCloudEventSource(value: CloudEventSource | number | string
     case CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER: return 'Inputs Handler';
     case CloudEventSource.CLOUD_EVENT_SOURCE_PARKRUN_RESULTS: return 'Parkrun Results';
     case CloudEventSource.CLOUD_EVENT_SOURCE_FILE_UPLOAD: return 'File Upload';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_STRAVA: return 'Strava';
     case CloudEventSource.CLOUD_EVENT_SOURCE_MOCK: return 'Mock';
     default: return 'Unknown';
   }

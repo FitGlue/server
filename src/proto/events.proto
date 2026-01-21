@@ -45,6 +45,7 @@ enum CloudEventSource {
   CLOUD_EVENT_SOURCE_INPUTS_HANDLER = 6 [(ce_source) = "/core/inputs-handler"];
   CLOUD_EVENT_SOURCE_PARKRUN_RESULTS = 7 [(ce_source) = "/integrations/parkrun/results"];
   CLOUD_EVENT_SOURCE_FILE_UPLOAD = 8 [(ce_source) = "/integrations/file-upload"];
+  CLOUD_EVENT_SOURCE_STRAVA = 9 [(ce_source) = "/integrations/strava"];
   CLOUD_EVENT_SOURCE_MOCK = 99 [(ce_source) = "/integrations/mock"];
 }
 

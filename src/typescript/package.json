@@ -21,7 +21,8 @@
     "billing-handler",
     "showcase-handler",
     "repost-handler",
-    "admin-handler"
+    "admin-handler",
+    "strava-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",
