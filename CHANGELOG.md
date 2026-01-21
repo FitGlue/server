@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [1.9.1](https://github.com/FitGlue/server/compare/v1.9.0...v1.9.1) (2026-01-21)
+
+
+### Bug Fixes
+
+* parkrun import and integrations endpoint ([940c6cb](https://github.com/FitGlue/server/commit/940c6cb8b22fccf15fb5ea1bd811287cbdafef51))
+
 ## [1.9.0](https://github.com/FitGlue/server/compare/v1.8.0...v1.9.0) (2026-01-21)
 
 
