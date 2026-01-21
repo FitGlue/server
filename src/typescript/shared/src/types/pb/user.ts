@@ -11,6 +11,13 @@ import type { ActivityType, StandardizedActivity } from "./standardized_activity
 
 export const protobufPackage = "fitglue";
 
+export enum UserTier {
+  USER_TIER_UNSPECIFIED = 0,
+  USER_TIER_HOBBYIST = 1,
+  USER_TIER_ATHLETE = 2,
+  UNRECOGNIZED = -1,
+}
+
 export enum EnricherProviderType {
   ENRICHER_PROVIDER_UNSPECIFIED = 0,
   ENRICHER_PROVIDER_FITBIT_HEART_RATE = 1,
@@ -106,9 +113,9 @@ export interface UserRecord {
   /** Pipelines define the data flow: Source -> Enrichers -> Routing */
   pipelines: PipelineConfig[];
   fcmTokens: string[];
-  /** Pricing tier: 'free' or 'pro' */
-  tier: string;
-  /** Pro trial end date (null = no trial, set to now+30d on signup) */
+  /** Pricing tier */
+  tier: UserTier;
+  /** Athlete trial end date (null = no trial, set to now+30d on signup) */
   trialEndsAt?:
     | Date
     | undefined;
@@ -119,6 +126,8 @@ export interface UserRecord {
   syncCountResetAt?:
     | Date
     | undefined;
+  /** Track prevented syncs for marketing/upsell */
+  preventedSyncCount: number;
   /** Stripe customer ID for billing */
   stripeCustomerId: string;
   /** Waitlist gate - false until admin enables access */

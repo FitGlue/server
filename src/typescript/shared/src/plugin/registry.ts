@@ -1338,7 +1338,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION, {
   icon: '✨',
   enabled: true,
   requiredIntegrations: [],
-  requiredTier: 'pro',
+  requiredTier: 'athlete',
   configSchema: [
     {
       key: 'mode',

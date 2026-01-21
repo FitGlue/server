@@ -1,5 +1,5 @@
 import { UserStore, ActivityStore } from '../../storage/firestore';
-import { UserRecord, UserIntegrations, EnricherConfig, ProcessedActivityRecord } from '../../types/pb/user';
+import { UserRecord, UserIntegrations, EnricherConfig, ProcessedActivityRecord, UserTier } from '../../types/pb/user';
 import { FirestoreTokenSource } from '../../infrastructure/oauth/token-source';
 import { Destination } from '../../types/pb/events';
 
@@ -91,10 +91,11 @@ export class UserService {
             pipelines: [],
             fcmTokens: [],
             // Initialize with 30-day Pro trial
-            tier: 'pro',
+            tier: UserTier.USER_TIER_ATHLETE,
             trialEndsAt: trialEndsAt,
             isAdmin: false,
             syncCountThisMonth: 0,
+            preventedSyncCount: 0,
             syncCountResetAt: now,
             stripeCustomerId: '', // Will be set when user subscribes
             accessEnabled: false, // Waitlisted until admin enables

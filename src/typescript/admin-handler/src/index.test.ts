@@ -15,6 +15,7 @@ jest.mock('@fitglue/shared', () => {
     offset: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     batch: jest.fn(),
+    withConverter: jest.fn().mockReturnThis(),
   };
 
   return {
@@ -28,6 +29,15 @@ jest.mock('@fitglue/shared', () => {
       }
     },
     db: mockDb,
+    userConverter: {
+      toFirestore: jest.fn(),
+      fromFirestore: jest.fn(),
+    },
+    UserTier: {
+      USER_TIER_UNSPECIFIED: 0,
+      USER_TIER_FREE: 1,
+      USER_TIER_ATHLETE: 2,
+    },
   };
 });
 
@@ -136,6 +146,7 @@ describe('admin-handler', () => {
 
       // Mock users collection
       (mockDb.collection as jest.Mock).mockReturnValue({
+        withConverter: jest.fn().mockReturnThis(),
         get: jest.fn().mockResolvedValue({
           docs: [
             { data: () => ({ tier: 'pro', syncCountThisMonth: 10 }) },
@@ -155,7 +166,7 @@ describe('admin-handler', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
         totalUsers: 2,
-        proUsers: 1,
+        athleteUsers: 1,
         adminUsers: 1,
         totalSyncsThisMonth: 15,
         recentExecutions: expect.objectContaining({
@@ -194,6 +205,7 @@ describe('admin-handler', () => {
 
       (mockDb.collection as jest.Mock).mockReturnValue({
         count: mockCount,
+        withConverter: jest.fn().mockReturnThis(),
         limit: jest.fn().mockReturnValue({
           offset: jest.fn().mockReturnValue({
             get: mockGet,
@@ -298,7 +310,7 @@ describe('admin-handler', () => {
 
       await handler(req, res, ctx);
 
-      expect(mockUpdate).toHaveBeenCalledWith({ tier: 'athlete', isAdmin: true });
+      expect(mockUpdate).toHaveBeenCalledWith({ tier: 'athlete', is_admin: true });
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({ success: true });
     });

@@ -22,18 +22,18 @@ func TestAICompanionProvider_TierCheck(t *testing.T) {
 		expectStatus string
 	}{
 		{
-			name: "free user is skipped",
+			name: "hobbyist user is skipped",
 			user: &pb.UserRecord{
-				UserId: "free-user",
-				Tier:   "free",
+				UserId: "hobbyist-user",
+				Tier:   pb.UserTier_USER_TIER_HOBBYIST,
 			},
 			expectStatus: "skipped",
 		},
 		{
-			name: "pro user proceeds (but no API key set)",
+			name: "athlete user proceeds (but no API key set)",
 			user: &pb.UserRecord{
-				UserId: "pro-user",
-				Tier:   "pro",
+				UserId: "athlete-user",
+				Tier:   pb.UserTier_USER_TIER_ATHLETE,
 			},
 			expectStatus: "skipped", // API key not configured
 		},
@@ -41,7 +41,7 @@ func TestAICompanionProvider_TierCheck(t *testing.T) {
 			name: "admin user proceeds (but no API key set)",
 			user: &pb.UserRecord{
 				UserId:  "admin-user",
-				Tier:    "free",
+				Tier:    pb.UserTier_USER_TIER_HOBBYIST,
 				IsAdmin: true,
 			},
 			expectStatus: "skipped", // API key not configured
@@ -50,7 +50,7 @@ func TestAICompanionProvider_TierCheck(t *testing.T) {
 			name: "user on trial proceeds (but no API key set)",
 			user: &pb.UserRecord{
 				UserId:      "trial-user",
-				Tier:        "free",
+				Tier:        pb.UserTier_USER_TIER_HOBBYIST,
 				TrialEndsAt: timestamppb.Now(), // Will be expired, but test structure
 			},
 			expectStatus: "skipped", // Either tier_restricted or api_key_not_configured
@@ -72,7 +72,7 @@ func TestAICompanionProvider_TierCheck(t *testing.T) {
 	}
 }
 
-func TestAICompanionProvider_FreeTierSkipped(t *testing.T) {
+func TestAICompanionProvider_HobbyistTierSkipped(t *testing.T) {
 	provider := NewAICompanionProvider()
 
 	activity := &pb.StandardizedActivity{
@@ -80,12 +80,12 @@ func TestAICompanionProvider_FreeTierSkipped(t *testing.T) {
 		Type: pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
 	}
 
-	freeUser := &pb.UserRecord{
-		UserId: "free-user-123",
-		Tier:   "free",
+	hobbyistUser := &pb.UserRecord{
+		UserId: "hobbyist-user-123",
+		Tier:   pb.UserTier_USER_TIER_HOBBYIST,
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, freeUser, nil, false)
+	result, err := provider.Enrich(context.Background(), activity, hobbyistUser, nil, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -98,8 +98,8 @@ func TestAICompanionProvider_FreeTierSkipped(t *testing.T) {
 		t.Errorf("expected reason 'tier_restricted', got %q", result.Metadata["reason"])
 	}
 
-	if result.Metadata["required_tier"] != "pro" {
-		t.Errorf("expected required_tier 'pro', got %q", result.Metadata["required_tier"])
+	if result.Metadata["required_tier"] != "athlete" {
+		t.Errorf("expected required_tier 'athlete', got %q", result.Metadata["required_tier"])
 	}
 
 	// Should not modify activity
@@ -119,9 +119,9 @@ func TestAICompanionProvider_ModeConfig(t *testing.T) {
 		Type: pb.ActivityType_ACTIVITY_TYPE_RUN,
 	}
 
-	proUser := &pb.UserRecord{
-		UserId: "pro-user",
-		Tier:   "pro",
+	athleteUser := &pb.UserRecord{
+		UserId: "athlete-user",
+		Tier:   pb.UserTier_USER_TIER_ATHLETE,
 	}
 
 	// Without API key, these will all be skipped with api_key_not_configured
@@ -135,7 +135,7 @@ func TestAICompanionProvider_ModeConfig(t *testing.T) {
 				config["mode"] = mode
 			}
 
-			result, err := provider.Enrich(context.Background(), activity, proUser, config, false)
+			result, err := provider.Enrich(context.Background(), activity, athleteUser, config, false)
 			if err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}

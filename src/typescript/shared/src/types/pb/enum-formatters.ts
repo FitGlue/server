@@ -4,7 +4,7 @@
 import { ActivityType, MuscleGroup } from './standardized_activity';
 import { Destination, CloudEventType, CloudEventSource } from './events';
 import { ActivitySource } from './activity';
-import { EnricherProviderType } from './user';
+import { EnricherProviderType, UserTier } from './user';
 
 const ActivityTypeNames: Record<string, string> = {
     'ACTIVITY_TYPE_UNSPECIFIED': 'Workout',
@@ -789,5 +789,45 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION: return 'Ai Companion';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
+  }
+}
+
+const UserTierNames: Record<string, string> = {
+    'USER_TIER_UNSPECIFIED': 'Hobbyist',
+    'UNSPECIFIED': 'Hobbyist',
+    'Hobbyist': 'Hobbyist',
+    '0': 'Hobbyist',
+    'USER_TIER_HOBBYIST': 'Hobbyist',
+    'HOBBYIST': 'Hobbyist',
+    '1': 'Hobbyist',
+    'USER_TIER_ATHLETE': 'Athlete',
+    'ATHLETE': 'Athlete',
+    'Athlete': 'Athlete',
+    '2': 'Athlete',
+};
+
+export function formatUserTier(value: UserTier | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Hobbyist';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (UserTierNames[value]) return UserTierNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case UserTier.USER_TIER_UNSPECIFIED: return 'Hobbyist';
+    case UserTier.USER_TIER_HOBBYIST: return 'Hobbyist';
+    case UserTier.USER_TIER_ATHLETE: return 'Athlete';
+    default: return 'Hobbyist';
   }
 }

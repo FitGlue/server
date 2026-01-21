@@ -114,6 +114,11 @@ func (m *MockDatabase) IncrementSyncCount(ctx context.Context, userID string) er
 	return nil
 }
 
+func (m *MockDatabase) IncrementPreventedSyncCount(ctx context.Context, userID string) error {
+	// No-op for tests by default
+	return nil
+}
+
 func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error {
 	// No-op for tests by default
 	return nil

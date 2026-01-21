@@ -81,6 +81,10 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 	allowed, reason := tier.CanSync(userRec)
 	if !allowed {
 		slog.Info("Sync blocked by tier limit", "userId", payload.UserId, "reason", reason)
+		// Track prevented sync
+		if err := o.database.IncrementPreventedSyncCount(ctx, payload.UserId); err != nil {
+			slog.Warn("Failed to increment prevented sync count", "error", err, "userId", payload.UserId)
+		}
 		return &ProcessResult{
 			Events:             []*pb.EnrichedActivityEvent{},
 			ProviderExecutions: []ProviderExecution{},
@@ -413,8 +417,8 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			}
 		}
 
-		// Always run branding provider last (unconditionally)
-		if brandingProvider, ok := o.providersByName["branding"]; ok {
+		// Run branding provider last (only for Hobbyist)
+		if brandingProvider, ok := o.providersByName["branding"]; ok && tier.GetEffectiveTier(userRec) == tier.TierHobbyist {
 			// Branding provider doesn't care about retries usually, but we match signature
 			brandingRes, err := brandingProvider.Enrich(ctx, payload.StandardizedActivity, userRec, map[string]string{}, doNotRetry)
 			if err != nil {

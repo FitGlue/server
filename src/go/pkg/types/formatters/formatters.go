@@ -293,3 +293,16 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Unknown"
 	}
 }
+
+func FormatUserTier(value pb.UserTier) string {
+	switch value {
+	case pb.UserTier_USER_TIER_UNSPECIFIED:
+		return "Hobbyist"
+	case pb.UserTier_USER_TIER_HOBBYIST:
+		return "Hobbyist"
+	case pb.UserTier_USER_TIER_ATHLETE:
+		return "Athlete"
+	default:
+		return "Hobbyist"
+	}
+}

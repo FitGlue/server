@@ -22,6 +22,55 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type UserTier int32
+
+const (
+	UserTier_USER_TIER_UNSPECIFIED UserTier = 0
+	UserTier_USER_TIER_HOBBYIST    UserTier = 1
+	UserTier_USER_TIER_ATHLETE     UserTier = 2
+)
+
+// Enum value maps for UserTier.
+var (
+	UserTier_name = map[int32]string{
+		0: "USER_TIER_UNSPECIFIED",
+		1: "USER_TIER_HOBBYIST",
+		2: "USER_TIER_ATHLETE",
+	}
+	UserTier_value = map[string]int32{
+		"USER_TIER_UNSPECIFIED": 0,
+		"USER_TIER_HOBBYIST":    1,
+		"USER_TIER_ATHLETE":     2,
+	}
+)
+
+func (x UserTier) Enum() *UserTier {
+	p := new(UserTier)
+	*p = x
+	return p
+}
+
+func (x UserTier) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (UserTier) Descriptor() protoreflect.EnumDescriptor {
+	return file_user_proto_enumTypes[0].Descriptor()
+}
+
+func (UserTier) Type() protoreflect.EnumType {
+	return &file_user_proto_enumTypes[0]
+}
+
+func (x UserTier) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use UserTier.Descriptor instead.
+func (UserTier) EnumDescriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{0}
+}
+
 type EnricherProviderType int32
 
 const (
@@ -100,11 +149,11 @@ func (x EnricherProviderType) String() string {
 }
 
 func (EnricherProviderType) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[0].Descriptor()
+	return file_user_proto_enumTypes[1].Descriptor()
 }
 
 func (EnricherProviderType) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[0]
+	return &file_user_proto_enumTypes[1]
 }
 
 func (x EnricherProviderType) Number() protoreflect.EnumNumber {
@@ -113,7 +162,7 @@ func (x EnricherProviderType) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use EnricherProviderType.Descriptor instead.
 func (EnricherProviderType) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{0}
+	return file_user_proto_rawDescGZIP(), []int{1}
 }
 
 // Workout Summary format styles
@@ -153,11 +202,11 @@ func (x WorkoutSummaryFormat) String() string {
 }
 
 func (WorkoutSummaryFormat) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[1].Descriptor()
+	return file_user_proto_enumTypes[2].Descriptor()
 }
 
 func (WorkoutSummaryFormat) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[1]
+	return &file_user_proto_enumTypes[2]
 }
 
 func (x WorkoutSummaryFormat) Number() protoreflect.EnumNumber {
@@ -166,7 +215,7 @@ func (x WorkoutSummaryFormat) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use WorkoutSummaryFormat.Descriptor instead.
 func (WorkoutSummaryFormat) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{1}
+	return file_user_proto_rawDescGZIP(), []int{2}
 }
 
 // Muscle Heatmap visualization styles
@@ -206,11 +255,11 @@ func (x MuscleHeatmapStyle) String() string {
 }
 
 func (MuscleHeatmapStyle) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[2].Descriptor()
+	return file_user_proto_enumTypes[3].Descriptor()
 }
 
 func (MuscleHeatmapStyle) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[2]
+	return &file_user_proto_enumTypes[3]
 }
 
 func (x MuscleHeatmapStyle) Number() protoreflect.EnumNumber {
@@ -219,7 +268,7 @@ func (x MuscleHeatmapStyle) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MuscleHeatmapStyle.Descriptor instead.
 func (MuscleHeatmapStyle) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{2}
+	return file_user_proto_rawDescGZIP(), []int{3}
 }
 
 // Muscle Heatmap coefficient presets
@@ -259,11 +308,11 @@ func (x MuscleHeatmapPreset) String() string {
 }
 
 func (MuscleHeatmapPreset) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[3].Descriptor()
+	return file_user_proto_enumTypes[4].Descriptor()
 }
 
 func (MuscleHeatmapPreset) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[3]
+	return &file_user_proto_enumTypes[4]
 }
 
 func (x MuscleHeatmapPreset) Number() protoreflect.EnumNumber {
@@ -272,7 +321,7 @@ func (x MuscleHeatmapPreset) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MuscleHeatmapPreset.Descriptor instead.
 func (MuscleHeatmapPreset) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{3}
+	return file_user_proto_rawDescGZIP(), []int{4}
 }
 
 // Virtual GPS route options
@@ -309,11 +358,11 @@ func (x VirtualGPSRoute) String() string {
 }
 
 func (VirtualGPSRoute) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[4].Descriptor()
+	return file_user_proto_enumTypes[5].Descriptor()
 }
 
 func (VirtualGPSRoute) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[4]
+	return &file_user_proto_enumTypes[5]
 }
 
 func (x VirtualGPSRoute) Number() protoreflect.EnumNumber {
@@ -322,7 +371,7 @@ func (x VirtualGPSRoute) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use VirtualGPSRoute.Descriptor instead.
 func (VirtualGPSRoute) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{4}
+	return file_user_proto_rawDescGZIP(), []int{5}
 }
 
 // ParkrunResultsState tracks the state of official results enrichment
@@ -365,11 +414,11 @@ func (x ParkrunResultsState) String() string {
 }
 
 func (ParkrunResultsState) Descriptor() protoreflect.EnumDescriptor {
-	return file_user_proto_enumTypes[5].Descriptor()
+	return file_user_proto_enumTypes[6].Descriptor()
 }
 
 func (ParkrunResultsState) Type() protoreflect.EnumType {
-	return &file_user_proto_enumTypes[5]
+	return &file_user_proto_enumTypes[6]
 }
 
 func (x ParkrunResultsState) Number() protoreflect.EnumNumber {
@@ -378,7 +427,7 @@ func (x ParkrunResultsState) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use ParkrunResultsState.Descriptor instead.
 func (ParkrunResultsState) EnumDescriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{5}
+	return file_user_proto_rawDescGZIP(), []int{6}
 }
 
 type UserRecord struct {
@@ -389,19 +438,21 @@ type UserRecord struct {
 	// Pipelines define the data flow: Source -> Enrichers -> Routing
 	Pipelines []*PipelineConfig `protobuf:"bytes,4,rep,name=pipelines,proto3" json:"pipelines,omitempty"`
 	FcmTokens []string          `protobuf:"bytes,5,rep,name=fcm_tokens,json=fcmTokens,proto3" json:"fcm_tokens,omitempty"`
-	// Pricing tier: 'free' or 'pro'
-	Tier string `protobuf:"bytes,6,opt,name=tier,proto3" json:"tier,omitempty"`
-	// Pro trial end date (null = no trial, set to now+30d on signup)
+	// Pricing tier
+	Tier UserTier `protobuf:"varint,6,opt,name=tier,proto3,enum=fitglue.UserTier" json:"tier,omitempty"`
+	// Athlete trial end date (null = no trial, set to now+30d on signup)
 	TrialEndsAt *timestamp.Timestamp `protobuf:"bytes,7,opt,name=trial_ends_at,json=trialEndsAt,proto3" json:"trial_ends_at,omitempty"`
 	// Admin override - grants Pro access without payment
 	IsAdmin bool `protobuf:"varint,8,opt,name=is_admin,json=isAdmin,proto3" json:"is_admin,omitempty"`
 	// Monthly sync tracking
 	SyncCountThisMonth int32                `protobuf:"varint,9,opt,name=sync_count_this_month,json=syncCountThisMonth,proto3" json:"sync_count_this_month,omitempty"`
 	SyncCountResetAt   *timestamp.Timestamp `protobuf:"bytes,10,opt,name=sync_count_reset_at,json=syncCountResetAt,proto3" json:"sync_count_reset_at,omitempty"`
+	// Track prevented syncs for marketing/upsell
+	PreventedSyncCount int32 `protobuf:"varint,11,opt,name=prevented_sync_count,json=preventedSyncCount,proto3" json:"prevented_sync_count,omitempty"`
 	// Stripe customer ID for billing
-	StripeCustomerId string `protobuf:"bytes,11,opt,name=stripe_customer_id,json=stripeCustomerId,proto3" json:"stripe_customer_id,omitempty"`
+	StripeCustomerId string `protobuf:"bytes,12,opt,name=stripe_customer_id,json=stripeCustomerId,proto3" json:"stripe_customer_id,omitempty"`
 	// Waitlist gate - false until admin enables access
-	AccessEnabled bool `protobuf:"varint,12,opt,name=access_enabled,json=accessEnabled,proto3" json:"access_enabled,omitempty"`
+	AccessEnabled bool `protobuf:"varint,13,opt,name=access_enabled,json=accessEnabled,proto3" json:"access_enabled,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -471,11 +522,11 @@ func (x *UserRecord) GetFcmTokens() []string {
 	return nil
 }
 
-func (x *UserRecord) GetTier() string {
+func (x *UserRecord) GetTier() UserTier {
 	if x != nil {
 		return x.Tier
 	}
-	return ""
+	return UserTier_USER_TIER_UNSPECIFIED
 }
 
 func (x *UserRecord) GetTrialEndsAt() *timestamp.Timestamp {
@@ -504,6 +555,13 @@ func (x *UserRecord) GetSyncCountResetAt() *timestamp.Timestamp {
 		return x.SyncCountResetAt
 	}
 	return nil
+}
+
+func (x *UserRecord) GetPreventedSyncCount() int32 {
+	if x != nil {
+		return x.PreventedSyncCount
+	}
+	return 0
 }
 
 func (x *UserRecord) GetStripeCustomerId() string {
@@ -1628,7 +1686,7 @@ var File_user_proto protoreflect.FileDescriptor
 const file_user_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\x1a\fevents.proto\"\xb7\x04\n" +
+	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\x1a\fevents.proto\"\xfc\x04\n" +
 	"\n" +
 	"UserRecord\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x129\n" +
@@ -1637,15 +1695,16 @@ const file_user_proto_rawDesc = "" +
 	"\fintegrations\x18\x03 \x01(\v2\x19.fitglue.UserIntegrationsR\fintegrations\x125\n" +
 	"\tpipelines\x18\x04 \x03(\v2\x17.fitglue.PipelineConfigR\tpipelines\x12\x1d\n" +
 	"\n" +
-	"fcm_tokens\x18\x05 \x03(\tR\tfcmTokens\x12\x12\n" +
-	"\x04tier\x18\x06 \x01(\tR\x04tier\x12>\n" +
+	"fcm_tokens\x18\x05 \x03(\tR\tfcmTokens\x12%\n" +
+	"\x04tier\x18\x06 \x01(\x0e2\x11.fitglue.UserTierR\x04tier\x12>\n" +
 	"\rtrial_ends_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\vtrialEndsAt\x12\x19\n" +
 	"\bis_admin\x18\b \x01(\bR\aisAdmin\x121\n" +
 	"\x15sync_count_this_month\x18\t \x01(\x05R\x12syncCountThisMonth\x12I\n" +
 	"\x13sync_count_reset_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\x10syncCountResetAt\x12,\n" +
-	"\x12stripe_customer_id\x18\v \x01(\tR\x10stripeCustomerId\x12%\n" +
-	"\x0eaccess_enabled\x18\f \x01(\bR\raccessEnabled\"\xc4\x01\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\x10syncCountResetAt\x120\n" +
+	"\x14prevented_sync_count\x18\v \x01(\x05R\x12preventedSyncCount\x12,\n" +
+	"\x12stripe_customer_id\x18\f \x01(\tR\x10stripeCustomerId\x12%\n" +
+	"\x0eaccess_enabled\x18\r \x01(\bR\raccessEnabled\"\xc4\x01\n" +
 	"\x0ePipelineConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x125\n" +
@@ -1773,7 +1832,11 @@ const file_user_proto_rawDesc = "" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_pipeline_execution_id*\xdb\x04\n" +
+	"\x16_pipeline_execution_id*T\n" +
+	"\bUserTier\x12\x19\n" +
+	"\x15USER_TIER_UNSPECIFIED\x10\x00\x12\x16\n" +
+	"\x12USER_TIER_HOBBYIST\x10\x01\x12\x15\n" +
+	"\x11USER_TIER_ATHLETE\x10\x02*\xdb\x04\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -1830,86 +1893,88 @@ func file_user_proto_rawDescGZIP() []byte {
 	return file_user_proto_rawDescData
 }
 
-var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_user_proto_goTypes = []any{
-	(EnricherProviderType)(0),       // 0: fitglue.EnricherProviderType
-	(WorkoutSummaryFormat)(0),       // 1: fitglue.WorkoutSummaryFormat
-	(MuscleHeatmapStyle)(0),         // 2: fitglue.MuscleHeatmapStyle
-	(MuscleHeatmapPreset)(0),        // 3: fitglue.MuscleHeatmapPreset
-	(VirtualGPSRoute)(0),            // 4: fitglue.VirtualGPSRoute
-	(ParkrunResultsState)(0),        // 5: fitglue.ParkrunResultsState
-	(*UserRecord)(nil),              // 6: fitglue.UserRecord
-	(*PipelineConfig)(nil),          // 7: fitglue.PipelineConfig
-	(*UserIntegrations)(nil),        // 8: fitglue.UserIntegrations
-	(*MockIntegration)(nil),         // 9: fitglue.MockIntegration
-	(*HevyIntegration)(nil),         // 10: fitglue.HevyIntegration
-	(*FitbitIntegration)(nil),       // 11: fitglue.FitbitIntegration
-	(*SourceEnrichmentConfig)(nil),  // 12: fitglue.SourceEnrichmentConfig
-	(*EnricherConfig)(nil),          // 13: fitglue.EnricherConfig
-	(*StravaIntegration)(nil),       // 14: fitglue.StravaIntegration
-	(*ParkrunIntegration)(nil),      // 15: fitglue.ParkrunIntegration
-	(*ProcessedActivityRecord)(nil), // 16: fitglue.ProcessedActivityRecord
-	(*Counter)(nil),                 // 17: fitglue.Counter
-	(*SynchronizedActivity)(nil),    // 18: fitglue.SynchronizedActivity
-	(*ShowcasedActivity)(nil),       // 19: fitglue.ShowcasedActivity
-	nil,                             // 20: fitglue.EnricherConfig.TypedConfigEntry
-	nil,                             // 21: fitglue.SynchronizedActivity.DestinationsEntry
-	nil,                             // 22: fitglue.ShowcasedActivity.EnrichmentMetadataEntry
-	(*timestamp.Timestamp)(nil),     // 23: google.protobuf.Timestamp
-	(Destination)(0),                // 24: fitglue.events.Destination
-	(ActivityType)(0),               // 25: fitglue.ActivityType
-	(ActivitySource)(0),             // 26: fitglue.ActivitySource
-	(*StandardizedActivity)(nil),    // 27: fitglue.StandardizedActivity
+	(UserTier)(0),                   // 0: fitglue.UserTier
+	(EnricherProviderType)(0),       // 1: fitglue.EnricherProviderType
+	(WorkoutSummaryFormat)(0),       // 2: fitglue.WorkoutSummaryFormat
+	(MuscleHeatmapStyle)(0),         // 3: fitglue.MuscleHeatmapStyle
+	(MuscleHeatmapPreset)(0),        // 4: fitglue.MuscleHeatmapPreset
+	(VirtualGPSRoute)(0),            // 5: fitglue.VirtualGPSRoute
+	(ParkrunResultsState)(0),        // 6: fitglue.ParkrunResultsState
+	(*UserRecord)(nil),              // 7: fitglue.UserRecord
+	(*PipelineConfig)(nil),          // 8: fitglue.PipelineConfig
+	(*UserIntegrations)(nil),        // 9: fitglue.UserIntegrations
+	(*MockIntegration)(nil),         // 10: fitglue.MockIntegration
+	(*HevyIntegration)(nil),         // 11: fitglue.HevyIntegration
+	(*FitbitIntegration)(nil),       // 12: fitglue.FitbitIntegration
+	(*SourceEnrichmentConfig)(nil),  // 13: fitglue.SourceEnrichmentConfig
+	(*EnricherConfig)(nil),          // 14: fitglue.EnricherConfig
+	(*StravaIntegration)(nil),       // 15: fitglue.StravaIntegration
+	(*ParkrunIntegration)(nil),      // 16: fitglue.ParkrunIntegration
+	(*ProcessedActivityRecord)(nil), // 17: fitglue.ProcessedActivityRecord
+	(*Counter)(nil),                 // 18: fitglue.Counter
+	(*SynchronizedActivity)(nil),    // 19: fitglue.SynchronizedActivity
+	(*ShowcasedActivity)(nil),       // 20: fitglue.ShowcasedActivity
+	nil,                             // 21: fitglue.EnricherConfig.TypedConfigEntry
+	nil,                             // 22: fitglue.SynchronizedActivity.DestinationsEntry
+	nil,                             // 23: fitglue.ShowcasedActivity.EnrichmentMetadataEntry
+	(*timestamp.Timestamp)(nil),     // 24: google.protobuf.Timestamp
+	(Destination)(0),                // 25: fitglue.events.Destination
+	(ActivityType)(0),               // 26: fitglue.ActivityType
+	(ActivitySource)(0),             // 27: fitglue.ActivitySource
+	(*StandardizedActivity)(nil),    // 28: fitglue.StandardizedActivity
 }
 var file_user_proto_depIdxs = []int32{
-	23, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
-	8,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
-	7,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
-	23, // 3: fitglue.UserRecord.trial_ends_at:type_name -> google.protobuf.Timestamp
-	23, // 4: fitglue.UserRecord.sync_count_reset_at:type_name -> google.protobuf.Timestamp
-	13, // 5: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
-	24, // 6: fitglue.PipelineConfig.destinations:type_name -> fitglue.events.Destination
-	10, // 7: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
-	11, // 8: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
-	14, // 9: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
-	9,  // 10: fitglue.UserIntegrations.mock:type_name -> fitglue.MockIntegration
-	15, // 11: fitglue.UserIntegrations.parkrun:type_name -> fitglue.ParkrunIntegration
-	23, // 12: fitglue.MockIntegration.created_at:type_name -> google.protobuf.Timestamp
-	23, // 13: fitglue.MockIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	23, // 14: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
-	23, // 15: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	23, // 16: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	23, // 17: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
-	23, // 18: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	13, // 19: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
-	0,  // 20: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
-	20, // 21: fitglue.EnricherConfig.typed_config:type_name -> fitglue.EnricherConfig.TypedConfigEntry
-	23, // 22: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	23, // 23: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
-	23, // 24: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	23, // 25: fitglue.ParkrunIntegration.created_at:type_name -> google.protobuf.Timestamp
-	23, // 26: fitglue.ParkrunIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	23, // 27: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
-	23, // 28: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
-	25, // 29: fitglue.SynchronizedActivity.type:type_name -> fitglue.ActivityType
-	23, // 30: fitglue.SynchronizedActivity.start_time:type_name -> google.protobuf.Timestamp
-	21, // 31: fitglue.SynchronizedActivity.destinations:type_name -> fitglue.SynchronizedActivity.DestinationsEntry
-	23, // 32: fitglue.SynchronizedActivity.synced_at:type_name -> google.protobuf.Timestamp
-	5,  // 33: fitglue.SynchronizedActivity.parkrun_results_state:type_name -> fitglue.ParkrunResultsState
-	23, // 34: fitglue.SynchronizedActivity.parkrun_polling_deadline:type_name -> google.protobuf.Timestamp
-	25, // 35: fitglue.ShowcasedActivity.activity_type:type_name -> fitglue.ActivityType
-	26, // 36: fitglue.ShowcasedActivity.source:type_name -> fitglue.ActivitySource
-	23, // 37: fitglue.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
-	27, // 38: fitglue.ShowcasedActivity.activity_data:type_name -> fitglue.StandardizedActivity
-	22, // 39: fitglue.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.ShowcasedActivity.EnrichmentMetadataEntry
-	23, // 40: fitglue.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
-	23, // 41: fitglue.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
-	42, // [42:42] is the sub-list for method output_type
-	42, // [42:42] is the sub-list for method input_type
-	42, // [42:42] is the sub-list for extension type_name
-	42, // [42:42] is the sub-list for extension extendee
-	0,  // [0:42] is the sub-list for field type_name
+	24, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
+	9,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
+	8,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
+	0,  // 3: fitglue.UserRecord.tier:type_name -> fitglue.UserTier
+	24, // 4: fitglue.UserRecord.trial_ends_at:type_name -> google.protobuf.Timestamp
+	24, // 5: fitglue.UserRecord.sync_count_reset_at:type_name -> google.protobuf.Timestamp
+	14, // 6: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
+	25, // 7: fitglue.PipelineConfig.destinations:type_name -> fitglue.events.Destination
+	11, // 8: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
+	12, // 9: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
+	15, // 10: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
+	10, // 11: fitglue.UserIntegrations.mock:type_name -> fitglue.MockIntegration
+	16, // 12: fitglue.UserIntegrations.parkrun:type_name -> fitglue.ParkrunIntegration
+	24, // 13: fitglue.MockIntegration.created_at:type_name -> google.protobuf.Timestamp
+	24, // 14: fitglue.MockIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	24, // 15: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
+	24, // 16: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	24, // 17: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	24, // 18: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
+	24, // 19: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	14, // 20: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
+	1,  // 21: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
+	21, // 22: fitglue.EnricherConfig.typed_config:type_name -> fitglue.EnricherConfig.TypedConfigEntry
+	24, // 23: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	24, // 24: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
+	24, // 25: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	24, // 26: fitglue.ParkrunIntegration.created_at:type_name -> google.protobuf.Timestamp
+	24, // 27: fitglue.ParkrunIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	24, // 28: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
+	24, // 29: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
+	26, // 30: fitglue.SynchronizedActivity.type:type_name -> fitglue.ActivityType
+	24, // 31: fitglue.SynchronizedActivity.start_time:type_name -> google.protobuf.Timestamp
+	22, // 32: fitglue.SynchronizedActivity.destinations:type_name -> fitglue.SynchronizedActivity.DestinationsEntry
+	24, // 33: fitglue.SynchronizedActivity.synced_at:type_name -> google.protobuf.Timestamp
+	6,  // 34: fitglue.SynchronizedActivity.parkrun_results_state:type_name -> fitglue.ParkrunResultsState
+	24, // 35: fitglue.SynchronizedActivity.parkrun_polling_deadline:type_name -> google.protobuf.Timestamp
+	26, // 36: fitglue.ShowcasedActivity.activity_type:type_name -> fitglue.ActivityType
+	27, // 37: fitglue.ShowcasedActivity.source:type_name -> fitglue.ActivitySource
+	24, // 38: fitglue.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
+	28, // 39: fitglue.ShowcasedActivity.activity_data:type_name -> fitglue.StandardizedActivity
+	23, // 40: fitglue.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.ShowcasedActivity.EnrichmentMetadataEntry
+	24, // 41: fitglue.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
+	24, // 42: fitglue.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
+	43, // [43:43] is the sub-list for method output_type
+	43, // [43:43] is the sub-list for method input_type
+	43, // [43:43] is the sub-list for extension type_name
+	43, // [43:43] is the sub-list for extension extendee
+	0,  // [0:43] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }
@@ -1926,7 +1991,7 @@ func file_user_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      7,
 			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   0,

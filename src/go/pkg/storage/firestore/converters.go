@@ -130,6 +130,7 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 	}
 	m["stripe_customer_id"] = u.StripeCustomerId
 	m["access_enabled"] = u.AccessEnabled
+	m["prevented_sync_count"] = u.PreventedSyncCount
 
 	return m
 }
@@ -191,7 +192,27 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 	}
 
 	// Tier management fields
-	u.Tier = getString(m, "tier")
+	if v, ok := m["tier"]; ok {
+		switch val := v.(type) {
+		case string:
+			switch val {
+			case "athlete":
+				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+			default:
+				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+			}
+		case int64:
+			u.Tier = pb.UserTier(int32(val))
+		case int:
+			u.Tier = pb.UserTier(int32(val))
+		case float64:
+			u.Tier = pb.UserTier(int32(val))
+		default:
+			u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+		}
+	} else {
+		u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+	}
 	u.IsAdmin = getBool(m, "is_admin")
 	u.AccessEnabled = getBool(m, "access_enabled")
 	u.StripeCustomerId = getString(m, "stripe_customer_id")
@@ -206,6 +227,17 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			u.SyncCountThisMonth = int32(n)
 		case float64:
 			u.SyncCountThisMonth = int32(n)
+		}
+	}
+
+	if v, ok := m["prevented_sync_count"]; ok {
+		switch n := v.(type) {
+		case int64:
+			u.PreventedSyncCount = int32(n)
+		case int:
+			u.PreventedSyncCount = int32(n)
+		case float64:
+			u.PreventedSyncCount = int32(n)
 		}
 	}
 

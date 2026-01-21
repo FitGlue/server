@@ -27,12 +27,7 @@ var (
 	svcOnce sync.Once
 	svcErr  error
 )
-
-// Tier constants for expiration calculation
 const (
-	TierFree = "free"
-	TierPro  = "pro"
-
 	// Hobbyist retention: 30 days
 	HobbyistRetentionDays = 30
 )
@@ -144,9 +139,8 @@ func generateShowcaseID(ctx context.Context, svc *bootstrap.Service, title strin
 	return "", fmt.Errorf("failed to generate unique showcase ID after 5 attempts")
 }
 
-// calculateExpiration determines when a showcase activity should expire based on user tier
-func calculateExpiration(tier string, createdAt time.Time) *time.Time {
-	if tier == TierPro {
+func calculateExpiration(tier pb.UserTier, createdAt time.Time) *time.Time {
+	if tier == pb.UserTier_USER_TIER_ATHLETE {
 		// Athlete tier: never expires
 		return nil
 	}
@@ -180,8 +174,8 @@ func showcaseHandler() framework.HandlerFunc {
 		// Get user to determine tier for expiration
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
-			fwCtx.Logger.Warn("Failed to get user for tier lookup, defaulting to free tier", "error", err, "userId", eventPayload.UserId)
-			user = &pb.UserRecord{Tier: TierFree}
+			fwCtx.Logger.Warn("Failed to get user for tier lookup, defaulting to hobbyist tier", "error", err, "userId", eventPayload.UserId)
+			user = &pb.UserRecord{Tier: pb.UserTier_USER_TIER_HOBBYIST}
 		}
 
 		// Determine start time
@@ -200,7 +194,7 @@ func showcaseHandler() framework.HandlerFunc {
 
 		// Calculate expiration
 		createdAt := time.Now()
-		expiration := calculateExpiration(user.Tier, createdAt)
+		expiresAt := calculateExpiration(user.Tier, createdAt)
 
 		// Create the showcased activity document
 		showcasedActivity := &pb.ShowcasedActivity{
@@ -219,8 +213,12 @@ func showcaseHandler() framework.HandlerFunc {
 			Tags:                eventPayload.Tags,
 			PipelineExecutionId: eventPayload.PipelineExecutionId,
 			CreatedAt:           timestamppb.New(createdAt),
+			ExpiresAt:           nil, // Will be set below
 		}
 
+		if expiresAt != nil {
+			showcasedActivity.ExpiresAt = timestamppb.New(*expiresAt)
+		}
 		// Fetch user display name from Firebase Auth for public attribution
 		if svc.Auth != nil {
 			authUser, err := svc.Auth.GetUser(ctx, eventPayload.UserId)
@@ -246,9 +244,6 @@ func showcaseHandler() framework.HandlerFunc {
 			fwCtx.Logger.Warn("svc.Auth is nil, cannot fetch display name from Firebase Auth", "userId", eventPayload.UserId)
 		}
 
-		if expiration != nil {
-			showcasedActivity.ExpiresAt = timestamppb.New(*expiration)
-		}
 
 		// Persist to Firestore
 		if err := svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
@@ -304,7 +299,7 @@ func showcaseHandler() framework.HandlerFunc {
 		fwCtx.Logger.Info("Showcase upload complete",
 			"activity_id", eventPayload.ActivityId,
 			"showcase_id", showcaseID,
-			"expires_at", expiration,
+			"expires_at", expiresAt,
 		)
 
 		return map[string]interface{}{

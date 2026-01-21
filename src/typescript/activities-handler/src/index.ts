@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, db } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy } from '@fitglue/shared';
 import { Request, Response } from 'express';
 import { SynchronizedActivity } from '@fitglue/shared/dist/types/pb/user';
 import { ActivityType } from '@fitglue/shared/dist/types/pb/standardized_activity';
@@ -122,47 +122,31 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     // GET /stats -> { synchronized_count: N }
     // Check if path ends with /stats (handling rewrites)
     if (req.path.endsWith('/stats') || req.query.mode === 'stats') {
-      // PHASE 2 OPTIMIZATION: Try to use cached counters first (O(1))
-      // Fallback to count() query if counters not available
-      const userDoc = await db.collection('users').doc(ctx.userId).get();
-      const userData = userDoc.data();
-      const cachedCounts = userData?.activityCounts;
-
-      if (cachedCounts?.weeklySync !== undefined) {
-        // Check if weekly reset is needed
-        const now = new Date();
-        const day = now.getDay();
-        const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-        const weekStart = new Date(now);
-        weekStart.setDate(diff);
-        weekStart.setHours(0, 0, 0, 0);
-
-        const lastReset = cachedCounts.weeklyResetAt?.toDate?.() || cachedCounts.weeklyResetAt;
-        if (lastReset && new Date(lastReset) < weekStart) {
-          // Week has rolled over, reset weekly count
-          // Return 0 and fire-and-forget update
-          db.collection('users').doc(ctx.userId).update({
-            'activityCounts.weeklySync': 0,
-            'activityCounts.weeklyResetAt': weekStart,
-          }).catch(() => { /* ignore */ });
-          res.status(200).json({ synchronizedCount: 0 });
-          return;
-        }
-
-        res.status(200).json({ synchronizedCount: cachedCounts.weeklySync });
-        return;
-      }
-
-      // Fallback: Legacy count() query for users without cached counters
       const now = new Date();
+      // Start of month
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      // Start of week (Monday)
       const day = now.getDay();
       const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-      const monday = new Date(now);
-      monday.setDate(diff);
-      monday.setHours(0, 0, 0, 0);
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
 
-      const count = await activityStore.countSynchronized(ctx.userId, monday);
-      res.status(200).json({ synchronizedCount: count });
+      // Fetch all stats in parallel
+      const [totalSynced, monthlySynced, weeklySynced] = await Promise.all([
+        activityStore.countSynchronized(ctx.userId),
+        activityStore.countSynchronized(ctx.userId, startOfMonth),
+        activityStore.countSynchronized(ctx.userId, startOfWeek),
+      ]);
+
+      res.status(200).json({
+        synchronizedCount: totalSynced, // Backward compatibility
+        totalSynced,
+        monthlySynced,
+        weeklySynced,
+      });
       return;
     }
 
@@ -206,10 +190,12 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     // GET /unsynchronized -> List pipeline executions without matching synchronized activities
     if (req.path.endsWith('/unsynchronized')) {
       const limit = parseInt(req.query.limit as string || '20', 10);
+      const offset = parseInt(req.query.offset as string || '0', 10);
 
       // OPTIMIZED: Use lightweight pipeline ID query (reduced from 3x to 2x multiplier)
       // and projection queries reduce data transfer by ~90%
-      const allPipelines = await ctx.stores.executions.listDistinctPipelines(ctx.userId, limit * 2);
+      // Note: We fetch more than limit + offset to account for deduplication
+      const allPipelines = await ctx.stores.executions.listDistinctPipelines(ctx.userId, (limit + offset) * 2);
 
       // Get synchronized pipeline IDs (already uses projection query)
       const syncedPipelineIds = await activityStore.getSynchronizedPipelineIds(ctx.userId);
@@ -219,7 +205,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         p => p.data.pipelineExecutionId &&
           !syncedPipelineIds.has(p.data.pipelineExecutionId) &&
           p.data.status !== ExecutionStatus.STATUS_SUCCESS
-      ).slice(0, limit);
+      ).slice(offset, offset + limit);
 
       // Synthesize meaningful entries from inputsJson
       const executions = unsyncedPipelines.map(e => {
@@ -263,12 +249,14 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     if (req.path === '' || req.path === '/' || req.path === '/activities' || req.path.endsWith('/activities')) {
       // GET / -> List
       const includeExecution = req.query.includeExecution === 'true';
-      // Limit to 10 when fetching executions for performance (more Firestore reads)
+      const offset = parseInt(req.query.offset as string || '0', 10);
+
+      // Limit to 50 when fetching executions for performance (more Firestore reads)
       const limit = includeExecution
-        ? Math.min(parseInt(req.query.limit as string || '10', 10), 10)
+        ? Math.min(parseInt(req.query.limit as string || '20', 10), 50)
         : parseInt(req.query.limit as string || '20', 10);
 
-      const activities = await activityStore.listSynchronized(ctx.userId, limit);
+      const activities = await activityStore.listSynchronized(ctx.userId, limit, offset);
       const transformedActivities = activities.map(transformActivity);
 
       // OPTIMIZED: Batch load all pipeline executions in ONE query instead of N+1 queries

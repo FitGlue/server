@@ -56,6 +56,13 @@ func (a *FirestoreAdapter) IncrementSyncCount(ctx context.Context, userID string
 	return err
 }
 
+func (a *FirestoreAdapter) IncrementPreventedSyncCount(ctx context.Context, userID string) error {
+	_, err := a.Client.Collection("users").Doc(userID).Update(ctx, []firestore.Update{
+		{Path: "prevented_sync_count", Value: firestore.Increment(1)},
+	})
+	return err
+}
+
 func (a *FirestoreAdapter) ResetSyncCount(ctx context.Context, userID string) error {
 	_, err := a.Client.Collection("users").Doc(userID).Update(ctx, []firestore.Update{
 		{Path: "sync_count_this_month", Value: 0},

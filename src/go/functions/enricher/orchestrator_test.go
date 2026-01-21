@@ -58,6 +58,9 @@ func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId strin
 func (m *MockDatabase) IncrementSyncCount(ctx context.Context, userID string) error {
 	return nil
 }
+func (m *MockDatabase) IncrementPreventedSyncCount(ctx context.Context, userID string) error {
+	return nil
+}
 func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error {
 	return nil
 }

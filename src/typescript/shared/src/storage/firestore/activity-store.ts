@@ -60,8 +60,7 @@ export class ActivityStore {
   }
 
   async countSynchronized(userId: string, since?: Date): Promise<number> {
-
-    let q: FirebaseFirestore.Query = this.synchronizedCollection(userId);
+    let q: admin.firestore.Query = this.synchronizedCollection(userId);
     if (since) {
       q = q.where('synced_at', '>=', since);
     }
@@ -69,10 +68,12 @@ export class ActivityStore {
     return snapshot.data().count;
   }
 
-  async listSynchronized(userId: string, limit: number = 20, startAfter?: unknown): Promise<import('../../types/pb/user').SynchronizedActivity[]> {
+  async listSynchronized(userId: string, limit: number = 20, offset: number = 0, startAfter?: unknown): Promise<import('../../types/pb/user').SynchronizedActivity[]> {
     let q = this.synchronizedCollection(userId).orderBy('synced_at', 'desc').limit(limit);
     if (startAfter) {
       q = q.startAfter(startAfter);
+    } else if (offset > 0) {
+      q = q.offset(offset);
     }
     const snapshot = await q.get();
     return snapshot.docs.map(doc => doc.data());

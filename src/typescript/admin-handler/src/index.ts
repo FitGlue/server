@@ -4,7 +4,9 @@ import {
   FirebaseAuthStrategy,
   ForbiddenError,
   db,
-  userConverter
+  userConverter,
+  UserTier,
+  UserRecord
 } from '@fitglue/shared';
 import { Request, Response } from 'express';
 import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
@@ -74,9 +76,9 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       const users = usersSnapshot.docs.map(doc => doc.data());
 
       const totalUsers = users.length;
-      const proUsers = users.filter(u => u.tier === 'pro' || u.tier === 'athlete').length;
-      const adminUsers = users.filter(u => u.isAdmin === true).length;
-      const totalSyncsThisMonth = users.reduce((sum, u) => sum + (u.syncCountThisMonth || 0), 0);
+      const proUsersCount = users.filter((u: UserRecord) => u.tier === UserTier.USER_TIER_ATHLETE || (u.tier as unknown) === 'pro' || (u.tier as unknown) === 'athlete').length;
+      const adminUsersCount = users.filter((u: UserRecord) => u.isAdmin === true).length;
+      const totalSyncsThisMonth = users.reduce((sum: number, u: UserRecord) => sum + (u.syncCountThisMonth || 0), 0);
 
       // Get recent execution stats (last 100)
       const recentExecs = await stores.executions.listRecent(100);
@@ -88,8 +90,8 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
       res.status(200).json({
         totalUsers,
-        proUsers,
-        adminUsers,
+        athleteUsers: proUsersCount,
+        adminUsers: adminUsersCount,
         totalSyncsThisMonth,
         recentExecutions: execStats
       });
@@ -143,6 +145,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
           accessEnabled: data.accessEnabled || false,
           syncCountThisMonth: data.syncCountThisMonth || 0,
           stripeCustomerId: data.stripeCustomerId || null,
+          preventedSyncCount: data.preventedSyncCount || 0,
           integrations,
           pipelineCount: data.pipelines?.length || 0,
         };
@@ -267,6 +270,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         isAdmin: user.isAdmin || false,
         accessEnabled: user.accessEnabled || false,
         syncCountThisMonth: user.syncCountThisMonth || 0,
+        preventedSyncCount: user.preventedSyncCount || 0,
         syncCountResetAt: user.syncCountResetAt?.toISOString?.() || user.syncCountResetAt,
         stripeCustomerId: user.stripeCustomerId || null,
         integrations,
@@ -293,12 +297,12 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     try {
       const updates: Record<string, unknown> = {};
       if (tier !== undefined) updates.tier = tier;
-      if (isAdmin !== undefined) updates.isAdmin = isAdmin;
+      if (isAdmin !== undefined) updates.is_admin = isAdmin;
       if (accessEnabled !== undefined) updates.access_enabled = accessEnabled;
       if (trialEndsAt !== undefined) {
-        updates.trialEndsAt = trialEndsAt ? new Date(trialEndsAt) : null;
+        updates.trial_ends_at = trialEndsAt ? new Date(trialEndsAt) : null;
       }
-      if (syncCountThisMonth !== undefined) updates.syncCountThisMonth = syncCountThisMonth;
+      if (syncCountThisMonth !== undefined) updates.sync_count_this_month = syncCountThisMonth;
 
       if (Object.keys(updates).length > 0) {
         await db.collection('users').doc(targetUserId).update(updates);

@@ -17,6 +17,7 @@ type Database interface {
 
 	// Sync Count (for tier limits)
 	IncrementSyncCount(ctx context.Context, userID string) error
+	IncrementPreventedSyncCount(ctx context.Context, userID string) error
 	ResetSyncCount(ctx context.Context, userID string) error
 
 	// Pending Inputs

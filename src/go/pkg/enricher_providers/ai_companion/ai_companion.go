@@ -42,9 +42,9 @@ func (p *AICompanionProvider) ProviderType() pb.EnricherProviderType {
 }
 
 func (p *AICompanionProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*enricher_providers.EnrichmentResult, error) {
-	// Tier check - Athlete (pro) tier only
-	if tier.GetEffectiveTier(user) != tier.TierPro {
-		slog.Info("AI Companion skipped: user not on pro tier",
+	// Tier check - Athlete tier only
+	if tier.GetEffectiveTier(user) != tier.TierAthlete {
+		slog.Info("AI Companion skipped: user not on athlete tier",
 			"user_id", user.UserId,
 			"tier", tier.GetEffectiveTier(user),
 		)
@@ -52,7 +52,7 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, activity *pb.Standardi
 			Metadata: map[string]string{
 				"status":        "skipped",
 				"reason":        "tier_restricted",
-				"required_tier": "pro",
+				"required_tier": "athlete",
 			},
 		}, nil
 	}

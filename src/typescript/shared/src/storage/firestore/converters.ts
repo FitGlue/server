@@ -335,6 +335,7 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
     if (model.trialEndsAt !== undefined) data.trial_ends_at = model.trialEndsAt;
     if (model.isAdmin !== undefined) data.is_admin = model.isAdmin;
     if (model.syncCountThisMonth !== undefined) data.sync_count_this_month = model.syncCountThisMonth;
+    if (model.preventedSyncCount !== undefined) data.prevented_sync_count = model.preventedSyncCount;
     if (model.syncCountResetAt !== undefined) data.sync_count_reset_at = model.syncCountResetAt;
     if (model.stripeCustomerId !== undefined) data.stripe_customer_id = model.stripeCustomerId;
     if (model.accessEnabled !== undefined) data.access_enabled = model.accessEnabled;
@@ -353,6 +354,7 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
       trialEndsAt: toDate(data.trial_ends_at),
       isAdmin: data.is_admin || false,
       syncCountThisMonth: data.sync_count_this_month || 0,
+      preventedSyncCount: data.prevented_sync_count || 0,
       syncCountResetAt: toDate(data.sync_count_reset_at),
       stripeCustomerId: data.stripe_customer_id || undefined,
       accessEnabled: data.access_enabled || false,

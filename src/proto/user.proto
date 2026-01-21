@@ -16,19 +16,27 @@ message UserRecord {
   repeated PipelineConfig pipelines = 4;
   repeated string fcm_tokens = 5;
 
-  // Pricing tier: 'free' or 'pro'
-  string tier = 6;
-  // Pro trial end date (null = no trial, set to now+30d on signup)
+  // Pricing tier
+  UserTier tier = 6;
+  // Athlete trial end date (null = no trial, set to now+30d on signup)
   google.protobuf.Timestamp trial_ends_at = 7;
   // Admin override - grants Pro access without payment
   bool is_admin = 8;
   // Monthly sync tracking
   int32 sync_count_this_month = 9;
   google.protobuf.Timestamp sync_count_reset_at = 10;
+  // Track prevented syncs for marketing/upsell
+  int32 prevented_sync_count = 11;
   // Stripe customer ID for billing
-  string stripe_customer_id = 11;
+  string stripe_customer_id = 12;
   // Waitlist gate - false until admin enables access
-  bool access_enabled = 12;
+  bool access_enabled = 13;
+}
+
+enum UserTier {
+  USER_TIER_UNSPECIFIED = 0;
+  USER_TIER_HOBBYIST = 1;
+  USER_TIER_ATHLETE = 2;
 }
 
 

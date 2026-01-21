@@ -1,8 +1,8 @@
-import { UserRecord } from '../types/pb/user';
+import { UserRecord, UserTier } from '../types/pb/user';
 
-export type EffectiveTier = 'free' | 'pro';
+export type EffectiveTier = 'hobbyist' | 'athlete';
 
-export const FREE_TIER_LIMITS = {
+export const HOBBYIST_TIER_LIMITS = {
   SYNCS_PER_MONTH: 25,
   MAX_CONNECTIONS: 2,
 } as const;
@@ -12,18 +12,22 @@ export const FREE_TIER_LIMITS = {
  * Priority: admin > active trial > stored tier
  */
 export function getEffectiveTier(user: UserRecord): EffectiveTier {
-  // Admin override always grants Pro
+  // Admin override always grants Athlete
   if (user.isAdmin) {
-    return 'pro';
+    return 'athlete';
   }
 
-  // Active trial grants Pro
+  // Active trial grants Athlete
   if (user.trialEndsAt && new Date(user.trialEndsAt) > new Date()) {
-    return 'pro';
+    return 'athlete';
   }
 
-  // Fall back to stored tier (default: free)
-  return (user.tier as EffectiveTier) || 'free';
+  // Fall back to stored tier (default: hobbyist)
+  if (user.tier === UserTier.USER_TIER_ATHLETE) {
+    return 'athlete';
+  }
+
+  return 'hobbyist';
 }
 
 /**
@@ -32,16 +36,16 @@ export function getEffectiveTier(user: UserRecord): EffectiveTier {
 export function canSync(user: UserRecord): { allowed: boolean; reason?: string } {
   const tier = getEffectiveTier(user);
 
-  if (tier === 'pro') {
+  if (tier === 'athlete') {
     return { allowed: true };
   }
 
   // Check monthly limit
   const count = user.syncCountThisMonth || 0;
-  if (count >= FREE_TIER_LIMITS.SYNCS_PER_MONTH) {
+  if (count >= HOBBYIST_TIER_LIMITS.SYNCS_PER_MONTH) {
     return {
       allowed: false,
-      reason: `Free tier limit reached (${FREE_TIER_LIMITS.SYNCS_PER_MONTH}/month). Upgrade to Pro for unlimited syncs.`,
+      reason: `Hobbyist tier limit reached (${HOBBYIST_TIER_LIMITS.SYNCS_PER_MONTH}/month). Upgrade to Athlete for unlimited syncs.`,
     };
   }
 
@@ -54,14 +58,14 @@ export function canSync(user: UserRecord): { allowed: boolean; reason?: string }
 export function canAddConnection(user: UserRecord, currentConnectionCount: number): { allowed: boolean; reason?: string } {
   const tier = getEffectiveTier(user);
 
-  if (tier === 'pro') {
+  if (tier === 'athlete') {
     return { allowed: true };
   }
 
-  if (currentConnectionCount >= FREE_TIER_LIMITS.MAX_CONNECTIONS) {
+  if (currentConnectionCount >= HOBBYIST_TIER_LIMITS.MAX_CONNECTIONS) {
     return {
       allowed: false,
-      reason: `Free tier limited to ${FREE_TIER_LIMITS.MAX_CONNECTIONS} connections. Upgrade to Pro for unlimited.`,
+      reason: `Hobbyist tier limited to ${HOBBYIST_TIER_LIMITS.MAX_CONNECTIONS} connections. Upgrade to Athlete for unlimited.`,
     };
   }
 

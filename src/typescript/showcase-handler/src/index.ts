@@ -1,7 +1,7 @@
 import * as functions from '@google-cloud/functions-framework';
 import * as admin from 'firebase-admin';
-import { ShowcaseStore, type StandardizedActivity, type ActivityType, type ActivitySource, getEnricherManifest } from '@fitglue/shared';
-import { EnricherProviderType } from '@fitglue/shared/dist/types/pb/user';
+import { ShowcaseStore, type StandardizedActivity, type ActivityType, type ActivitySource, getEnricherManifest, getEffectiveTier } from '@fitglue/shared';
+import { EnricherProviderType, UserRecord } from '@fitglue/shared/dist/types/pb/user';
 
 // Initialize Firebase Admin (only once)
 if (!admin.apps.length) {
@@ -77,8 +77,14 @@ export const showcaseHandler = async (req: functions.Request, res: functions.Res
     // Apply heavy caching (showcased activities are immutable)
     res.set('Cache-Control', 'public, max-age=31536000, immutable');
 
+    // Fetch user to determine tier
+    const user = await db.collection('users').doc(data.userId).get();
+    const userData = user.data() as UserRecord;
+    const effectiveTier = getEffectiveTier(userData);
+
     // Build the public API response, stripping sensitive fields
     const response: ShowcaseResponse = {
+      isAthlete: effectiveTier === 'athlete',
       showcaseId: data.showcaseId,
       title: data.title,
       description: data.description,
@@ -121,6 +127,7 @@ functions.http('showcaseHandler', showcaseHandler);
 
 // Public API response (sanitized, no sensitive data)
 interface ShowcaseResponse {
+  isAthlete: boolean;
   showcaseId: string;
   title: string;
   description: string;

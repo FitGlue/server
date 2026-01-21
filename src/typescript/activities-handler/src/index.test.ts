@@ -39,7 +39,12 @@ describe('activities-handler', () => {
           countSynchronized: jest.fn(),
           listSynchronized: jest.fn(),
           getSynchronized: jest.fn(),
+          getSynchronizedPipelineIds: jest.fn(),
         },
+        executions: {
+          listDistinctPipelines: jest.fn(),
+          batchListByPipelines: jest.fn(),
+        }
       }
     };
   });
@@ -97,17 +102,17 @@ describe('activities-handler', () => {
         pipelineExecutionId: 'pipeline-123',
       }]);
 
-      ctx.services.execution = {
-        listByPipeline: jest.fn().mockResolvedValue([{
-          id: 'exec-1',
-          data: {
-            service: 'enricher',
-            status: 2, // STATUS_SUCCESS
-            timestamp: new Date('2026-01-15T10:00:00Z'),
-            outputsJson: JSON.stringify({ provider_executions: [{ ProviderName: 'muscle-heatmap', Status: 'SUCCESS' }] }),
-          },
-        }]),
-      };
+      const executionsMap = new Map();
+      executionsMap.set('pipeline-123', [{
+        id: 'exec-1',
+        data: {
+          service: 'enricher',
+          status: 2, // STATUS_SUCCESS
+          timestamp: new Date('2026-01-15T10:00:00Z'),
+          outputsJson: JSON.stringify({ provider_executions: [{ ProviderName: 'muscle-heatmap', Status: 'SUCCESS' }] }),
+        },
+      }]);
+      ctx.stores.executions.batchListByPipelines.mockResolvedValue(executionsMap);
 
       await handler(({
         method: 'GET',
@@ -136,7 +141,12 @@ describe('activities-handler', () => {
       } as any), res, ctx);
 
       expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ synchronizedCount: 1 });
+      expect(res.json).toHaveBeenCalledWith({
+        synchronizedCount: 1,
+        totalSynced: 1,
+        monthlySynced: 1,
+        weeklySynced: 1,
+      });
     });
 
     it('/:id returns single activity', async () => {

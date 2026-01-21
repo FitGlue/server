@@ -7,49 +7,50 @@ import (
 )
 
 const (
-	FreeTierSyncsPerMonth  = 25
-	FreeTierMaxConnections = 2
+	HobbyistTierSyncsPerMonth  = 25
+	HobbyistTierMaxConnections = 2
 )
 
+// Effective tier is used for internal logic
 type EffectiveTier string
 
 const (
-	TierFree EffectiveTier = "free"
-	TierPro  EffectiveTier = "pro"
+	TierHobbyist EffectiveTier = "hobbyist"
+	TierAthlete  EffectiveTier = "athlete"
 )
 
 // GetEffectiveTier determines the user's effective tier based on admin status,
 // trial period, and stored tier.
 func GetEffectiveTier(user *pb.UserRecord) EffectiveTier {
-	// Admin override always grants Pro
+	// Admin override always grants Athlete
 	if user.IsAdmin {
-		return TierPro
+		return TierAthlete
 	}
 
-	// Active trial grants Pro
+	// Active trial grants Athlete
 	if user.TrialEndsAt != nil && user.TrialEndsAt.AsTime().After(time.Now()) {
-		return TierPro
+		return TierAthlete
 	}
 
-	// Fall back to stored tier (default: free)
-	if user.Tier == "pro" || user.Tier == "athlete" {
-		return TierPro
+	// Fall back to stored tier (default: hobbyist)
+	if user.Tier == pb.UserTier_USER_TIER_ATHLETE {
+		return TierAthlete
 	}
 
-	return TierFree
+	return TierHobbyist
 }
 
 // CanSync checks if user can perform a sync within their tier limits.
 func CanSync(user *pb.UserRecord) (allowed bool, reason string) {
 	tier := GetEffectiveTier(user)
 
-	if tier == TierPro {
+	if tier == TierAthlete {
 		return true, ""
 	}
 
-	// Check monthly limit for free tier
-	if user.SyncCountThisMonth >= FreeTierSyncsPerMonth {
-		return false, "Free tier limit reached (25/month). Upgrade to Pro for unlimited syncs."
+	// Check monthly limit for hobbyist tier
+	if user.SyncCountThisMonth >= HobbyistTierSyncsPerMonth {
+		return false, "Hobbyist tier limit reached (25/month). Upgrade to Athlete for unlimited syncs."
 	}
 
 	return true, ""
@@ -59,12 +60,12 @@ func CanSync(user *pb.UserRecord) (allowed bool, reason string) {
 func CanAddConnection(user *pb.UserRecord, currentCount int) (allowed bool, reason string) {
 	tier := GetEffectiveTier(user)
 
-	if tier == TierPro {
+	if tier == TierAthlete {
 		return true, ""
 	}
 
-	if currentCount >= FreeTierMaxConnections {
-		return false, "Free tier limited to 2 connections. Upgrade to Pro for unlimited."
+	if currentCount >= HobbyistTierMaxConnections {
+		return false, "Hobbyist tier limited to 2 connections. Upgrade to Athlete for unlimited."
 	}
 
 	return true, ""
