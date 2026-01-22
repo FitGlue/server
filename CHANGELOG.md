@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [4.0.0](https://github.com/FitGlue/server/compare/v3.0.0...v4.0.0) (2026-01-22)
+
+
+### ⚠ BREAKING CHANGES
+
+* **server:** Protobuf enum updates for EnricherProviderType and DestinationType require re-generation of clients and database migrations for existing records.
+
+### Features
+
+* add pipeline toggling and sentry integration ([8e0f470](https://github.com/FitGlue/server/commit/8e0f4700fba9db08ab98c6d42853e1ccde198365))
+* Implement Oura integration, temporarily disable various plugins, and add new deployment and secret management scripts. ([e19593c](https://github.com/FitGlue/server/commit/e19593c6db1e79186aca3d37935f62fcf323720b))
+* **server:** major integration expansion and rich asset overhaul ([0e16eba](https://github.com/FitGlue/server/commit/0e16ebabad81c4d54529d3a59bf1921ad7435018))
+
+
+### Bug Fixes
+
+* change assets bucket name to use project_id prefix ([88b9e7a](https://github.com/FitGlue/server/commit/88b9e7afa7ceabd1df59d2754ffc1f604d332953))
+* define variable for sentrY_dsn ([b8890c0](https://github.com/FitGlue/server/commit/b8890c02134c298447cc439aa1f8b88c5695b196))
+
 ## [3.0.0](https://github.com/FitGlue/server/compare/v2.1.0...v3.0.0) (2026-01-21)
 
 
