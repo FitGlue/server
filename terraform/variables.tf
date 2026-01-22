@@ -45,12 +45,18 @@ variable "release_version" {
 variable "sentry_org" {
   description = "Sentry organization slug"
   type        = string
-  default     = ""
+  default     = "fitglue"
 }
 
 variable "sentry_project" {
   description = "Sentry project slug for server functions"
   type        = string
-  default     = "fitglue-server"
+  default     = "server"
+}
+
+variable "sentry_dsn" {
+  description = "Sentry DSN for server functions"
+  type        = string
+  default     = "fitglue-server-dev"
 }
 
