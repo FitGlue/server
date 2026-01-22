@@ -1,6 +1,6 @@
 import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getSecret, db, UserTier } from '@fitglue/shared';
 import Stripe from 'stripe';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 
 let stripe: Stripe;
 
@@ -13,7 +13,8 @@ async function getStripe(): Promise<Stripe> {
   return stripe;
 }
 
-export const handler = async (req: Request, res: Response, ctx: FrameworkContext) => {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export const handler = async (req: Request, ctx: FrameworkContext) => {
   const { logger, services } = ctx;
   const userId = ctx.userId;
 
@@ -23,8 +24,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   // POST /api/billing/checkout - Create Stripe checkout session
   if (subPath === '/checkout' && req.method === 'POST') {
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
+      // res.status(401).json({ error: 'Unauthorized' });
+      const err: any = new Error('Unauthorized');
+      err.statusCode = 401;
+      throw err;
     }
 
     try {
@@ -34,8 +37,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
       const user = await services.user.get(userId);
       if (!user) {
-        res.status(404).json({ error: 'User not found' });
-        return;
+        // res.status(404).json({ error: 'User not found' });
+        const err: any = new Error('User not found');
+        err.statusCode = 404;
+        throw err;
       }
 
       let customerId = user.stripeCustomerId;
@@ -66,12 +71,14 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       });
 
       logger.info('Checkout session created', { userId, sessionId: session.id });
-      res.json({ url: session.url });
-    } catch (error) {
+      // res.json({ url: session.url });
+      return { url: session.url };
+    } catch (error: any) {
       logger.error('Checkout error', { error, userId });
-      res.status(500).json({ error: 'Failed to create checkout session' });
+      // res.status(500).json({ error: 'Failed to create checkout session' });
+      // Throwing error bubbles to SafeHandler which handles 500s
+      throw new Error('Failed to create checkout session');
     }
-    return;
   }
 
   // POST /api/billing/webhook - Handle Stripe webhook events
@@ -117,18 +124,23 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
           logger.info('Unhandled Stripe event', { type: event.type });
       }
 
-      res.json({ received: true });
-    } catch (error) {
+      // res.json({ received: true });
+      return { received: true };
+    } catch (error: any) {
       logger.error('Webhook error', { error });
-      res.status(400).json({ error: 'Webhook signature verification failed' });
+      // res.status(400).json({ error: 'Webhook signature verification failed' });
+      const err: any = new Error('Webhook signature verification failed');
+      err.statusCode = 400;
+      throw err;
     }
-    return;
   }
   // POST /api/billing/portal - Create Stripe billing portal session
   if (subPath === '/portal' && req.method === 'POST') {
     if (!userId) {
-      res.status(401).json({ error: 'Unauthorized' });
-      return;
+      // res.status(401).json({ error: 'Unauthorized' });
+      const err: any = new Error('Unauthorized');
+      err.statusCode = 401;
+      throw err;
     }
 
     try {
@@ -137,8 +149,10 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
 
       const user = await services.user.get(userId);
       if (!user?.stripeCustomerId) {
-        res.status(400).json({ error: 'No billing account found. Please subscribe first.' });
-        return;
+        // res.status(400).json({ error: 'No billing account found. Please subscribe first.' });
+        const err: any = new Error('No billing account found. Please subscribe first.');
+        err.statusCode = 400;
+        throw err;
       }
 
       // Determine environment URL
@@ -152,15 +166,20 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       });
 
       logger.info('Portal session created', { userId });
-      res.json({ url: session.url });
-    } catch (error) {
+      // res.json({ url: session.url });
+      return { url: session.url };
+    } catch (error: any) {
       logger.error('Portal error', { error, userId });
-      res.status(500).json({ error: 'Failed to create billing portal session' });
+      // res.status(500).json({ error: 'Failed to create billing portal session' });
+      throw new Error('Failed to create billing portal session');
     }
-    return;
   }
 
-  res.status(404).json({ error: 'Not Found' });
+  // res.status(404).json({ error: 'Not Found' });
+  // Or just throw 404
+  const err: any = new Error('Not Found');
+  err.statusCode = 404;
+  throw err;
 };
 
 export const billingHandler = createCloudFunction(handler, {

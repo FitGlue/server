@@ -11,7 +11,7 @@ jest.mock('@fitglue/shared', () => {
 });
 
 describe('activities-handler', () => {
-  let res: any;
+
   let ctx: any;
   let mockPublish: any;
 
@@ -21,11 +21,7 @@ describe('activities-handler', () => {
       publish: mockPublish
     }));
 
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      send: jest.fn(),
-    };
+
     ctx = {
       userId: 'user-1',
       logger: {
@@ -56,13 +52,13 @@ describe('activities-handler', () => {
   describe('GET', () => {
     it('/ returns 401 if no user', async () => {
       ctx.userId = undefined;
-      await handler(({
+      // Should throw HttpError
+      await expect(handler(({
         method: 'GET',
         body: {},
         query: {},
         path: '',
-      } as any), res, ctx);
-      expect(res.status).toHaveBeenCalledWith(401);
+      } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('/ returns list of synchronized activities', async () => {
@@ -74,15 +70,14 @@ describe('activities-handler', () => {
         source: 'SOURCE_HEVY',
       }]);
 
-      await handler(({
+      const result = await handler(({
         method: 'GET',
         body: {},
         query: {},
         path: '',
-      } as any), res, ctx);
+      } as any), ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
         activities: [{
           activityId: 'a1',
           title: 'Activity 1',
@@ -114,34 +109,31 @@ describe('activities-handler', () => {
       }]);
       ctx.stores.executions.batchListByPipelines.mockResolvedValue(executionsMap);
 
-      await handler(({
+      const result: any = await handler(({
         method: 'GET',
         body: {},
         query: { includeExecution: 'true' },
         path: '',
-      } as any), res, ctx);
+      } as any), ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const response = res.json.mock.calls[0][0];
-      expect(response.activities).toHaveLength(1);
-      expect(response.activities[0].pipelineExecution).toBeDefined();
-      expect(response.activities[0].pipelineExecution).toHaveLength(1);
-      expect(response.activities[0].pipelineExecution[0].service).toBe('enricher');
-      expect(response.activities[0].pipelineExecutionId).toBe('pipeline-123');
+      expect(result.activities).toHaveLength(1);
+      expect(result.activities[0].pipelineExecution).toBeDefined();
+      expect(result.activities[0].pipelineExecution).toHaveLength(1);
+      expect(result.activities[0].pipelineExecution[0].service).toBe('enricher');
+      expect(result.activities[0].pipelineExecutionId).toBe('pipeline-123');
     });
 
     it('/stats returns a count of', async () => {
       ctx.stores.activities.countSynchronized.mockResolvedValue(1);
 
-      await handler(({
+      const result = await handler(({
         method: 'GET',
         body: {},
         query: {},
         path: '/stats',
-      } as any), res, ctx);
+      } as any), ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
         synchronizedCount: 1,
         totalSynced: 1,
         monthlySynced: 1,
@@ -159,15 +151,14 @@ describe('activities-handler', () => {
       }
       ctx.stores.activities.getSynchronized.mockResolvedValue(activity);
 
-      await handler(({
+      const result = await handler(({
         method: 'GET',
         body: {},
         query: {},
         path: '/a1',
-      } as any), res, ctx);
+      } as any), ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
         activity: {
           activityId: 'a1',
           title: 'Activity 1',
@@ -180,13 +171,12 @@ describe('activities-handler', () => {
 
     it('handles errors', async () => {
       ctx.stores.activities.listSynchronized.mockRejectedValue(new Error('db error'));
-      await handler(({
+      await expect(handler(({
         method: 'GET',
         body: {},
         query: {},
         path: '',
-      } as any), res, ctx);
-      expect(res.status).toHaveBeenCalledWith(500);
+      } as any), ctx)).rejects.toThrow('db error');
     });
 
     describe('/unsynchronized', () => {
@@ -218,15 +208,14 @@ describe('activities-handler', () => {
         }]);
         ctx.stores.activities.getSynchronizedPipelineIds.mockResolvedValue(new Set());
 
-        await handler(({
+        const result = await handler(({
           method: 'GET',
           body: {},
           query: {},
           path: '/unsynchronized',
-        } as any), res, ctx);
+        } as any), ctx);
 
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith({
+        expect(result).toEqual({
           executions: [{
             pipelineExecutionId: 'pipeline-1',
             title: 'Morning Run',
@@ -252,15 +241,14 @@ describe('activities-handler', () => {
         // This pipeline is synchronized
         ctx.stores.activities.getSynchronizedPipelineIds.mockResolvedValue(new Set(['pipeline-synced']));
 
-        await handler(({
+        const result = await handler(({
           method: 'GET',
           body: {},
           query: {},
           path: '/unsynchronized',
-        } as any), res, ctx);
+        } as any), ctx);
 
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith({ executions: [] });
+        expect(result).toEqual({ executions: [] });
       });
 
       it('/unsynchronized/:id returns pipeline trace', async () => {
@@ -281,15 +269,14 @@ describe('activities-handler', () => {
           },
         }]);
 
-        await handler(({
+        const result = await handler(({
           method: 'GET',
           body: {},
           query: {},
           path: '/unsynchronized/pipeline-1',
-        } as any), res, ctx);
+        } as any), ctx);
 
-        expect(res.status).toHaveBeenCalledWith(200);
-        expect(res.json).toHaveBeenCalledWith({
+        expect(result).toEqual({
           pipelineExecutionId: 'pipeline-1',
           pipelineExecution: expect.arrayContaining([
             expect.objectContaining({ service: 'fitbit-handler', status: 'STARTED' }),
@@ -301,14 +288,12 @@ describe('activities-handler', () => {
       it('/unsynchronized/:id returns 404 if not found', async () => {
         ctx.services.execution.listByPipeline.mockResolvedValue([]);
 
-        await handler(({
+        await expect(handler(({
           method: 'GET',
           body: {},
           query: {},
           path: '/unsynchronized/unknown',
-        } as any), res, ctx);
-
-        expect(res.status).toHaveBeenCalledWith(404);
+        } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
       });
     });
   });

@@ -114,14 +114,19 @@ export class WahooConnector extends BaseConnector<WahooConnectorConfig> {
    * GET requests for webhook endpoint validation.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async verifyRequest(req: any, res: any, context: FrameworkContext): Promise<{ handled: boolean; response?: Record<string, unknown> } | undefined> {
+  async verifyRequest(req: any, context: FrameworkContext): Promise<{ handled: boolean; response?: any } | undefined> {
     const { logger } = context;
 
     // Handle GET verification requests
     if (req.method === 'GET') {
       logger.info('Wahoo verification request received');
-      res.status(200).send('OK');
-      return { handled: true, response: { action: 'verification', status: 'success' } };
+
+      const { FrameworkResponse } = await import('@fitglue/shared');
+      return {
+        handled: true,
+        // 200 OK + Text Body
+        response: new FrameworkResponse({ status: 200, body: 'OK' })
+      };
     }
 
     // Continue to normal webhook processing

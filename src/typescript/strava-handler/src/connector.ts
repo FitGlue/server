@@ -132,7 +132,7 @@ export class StravaConnector extends BaseConnector<StravaConnectorConfig> {
    * GET requests for webhook subscription validation.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async verifyRequest(req: any, res: any, context: FrameworkContext): Promise<{ handled: boolean; response?: Record<string, unknown> } | undefined> {
+  async verifyRequest(req: any, context: FrameworkContext): Promise<{ handled: boolean; response?: any } | undefined> {
     const { logger } = context;
 
     // Handle GET verification requests (Strava subscription validation)
@@ -142,21 +142,35 @@ export class StravaConnector extends BaseConnector<StravaConnectorConfig> {
 
       if (!hubChallenge) {
         logger.warn('Missing hub.challenge in GET request');
-        res.status(400).send('Missing hub.challenge');
-        return { handled: true, response: { action: 'verification', status: 'failed' } };
+        const { FrameworkResponse } = await import('@fitglue/shared');
+        return {
+          handled: true,
+          response: new FrameworkResponse({ status: 400, body: 'Missing hub.challenge' })
+        };
       }
 
       // Verify the token matches our expected value
       const expectedToken = process.env['STRAVA_VERIFY_TOKEN'];
       if (hubVerifyToken !== expectedToken) {
         logger.warn('Invalid verify_token');
-        res.status(403).send('Forbidden');
-        return { handled: true, response: { action: 'verification', status: 'invalid_token' } };
+        const { FrameworkResponse } = await import('@fitglue/shared');
+        return {
+          handled: true,
+          // 403 Forbidden
+          response: new FrameworkResponse({ status: 403, body: 'Forbidden' })
+        };
       }
 
       logger.info('Strava verification successful');
-      res.status(200).json({ 'hub.challenge': hubChallenge });
-      return { handled: true, response: { action: 'verification', status: 'success' } };
+      // Return 200 with JSON payload
+      // Standard return is assumed 200 OK JSON, so we can just return the object?
+      // But verifyRequest contract returns `{ handled: true, response: ... }`.
+      // The SafeHandler logic says if verificationResult.response exists, return it.
+      // So returning a plain object `{ 'hub.challenge': ... }` will be treated as 200 OK JSON.
+      return {
+        handled: true,
+        response: { 'hub.challenge': hubChallenge }
+      };
     }
 
     // Continue to normal webhook processing

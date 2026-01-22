@@ -12,7 +12,7 @@ jest.mock('@fitglue/shared', () => {
 
 describe('user-integrations-handler', () => {
   let req: any;
-  let res: any;
+
   let ctx: any;
   let mockUserService: any;
   let mockUserStore: any;
@@ -36,10 +36,7 @@ describe('user-integrations-handler', () => {
       query: {},
       path: '',
     };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+
     ctx = {
       userId: 'user-1',
       logger: {
@@ -67,14 +64,12 @@ describe('user-integrations-handler', () => {
   describe('GET / (list integrations)', () => {
     it('returns 401 if no user', async () => {
       ctx.userId = undefined;
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(401);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('returns 404 if user not found', async () => {
       mockUserService.get.mockResolvedValue(null);
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(404);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('returns integration summary', async () => {
@@ -86,10 +81,8 @@ describe('user-integrations-handler', () => {
         }
       });
 
-      await handler(req, res, ctx);
+      const result: any = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const result = res.json.mock.calls[0][0];
       expect(result.strava.connected).toBe(true);
       expect(result.strava.externalUserId).toBe('123456');
       expect(result.hevy.connected).toBe(true);
@@ -111,23 +104,19 @@ describe('user-integrations-handler', () => {
 
     it('returns 400 for invalid provider', async () => {
       req.path = '/invalid/connect';
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(400);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns OAuth URL for strava', async () => {
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(200);
-      const result = res.json.mock.calls[0][0];
+      const result: any = await handler(req, ctx);
+
       expect(result.url).toContain('strava.com/oauth/authorize');
       expect(result.url).toContain('mock-state-token');
     });
 
     it('returns OAuth URL for fitbit', async () => {
       req.path = '/fitbit/connect';
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(200);
-      const result = res.json.mock.calls[0][0];
+      const result: any = await handler(req, ctx);
       expect(result.url).toContain('fitbit.com/oauth2/authorize');
     });
   });
@@ -146,23 +135,20 @@ describe('user-integrations-handler', () => {
 
     it('returns 400 for invalid provider', async () => {
       req.path = '/invalid';
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(400);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 404 if user not found', async () => {
       mockUserService.get.mockResolvedValue(null);
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(404);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('disconnects integration successfully', async () => {
-      await handler(req, res, ctx);
+      await handler(req, ctx);
       expect(mockUserStore.deleteIntegration).toHaveBeenCalledWith(
         'user-1',
         'strava'
       );
-      expect(res.status).toHaveBeenCalledWith(200);
     });
 
     it('deletes associated ingress keys for hevy', async () => {
@@ -174,11 +160,10 @@ describe('user-integrations-handler', () => {
       });
       mockApiKeysStore.deleteByUserAndLabel.mockResolvedValue(1);
 
-      await handler(req, res, ctx);
+      await handler(req, ctx);
 
       expect(mockUserStore.deleteIntegration).toHaveBeenCalledWith('user-1', 'hevy');
       expect(mockApiKeysStore.deleteByUserAndLabel).toHaveBeenCalledWith('user-1', 'Hevy Webhook');
-      expect(res.status).toHaveBeenCalledWith(200);
     });
   });
 });

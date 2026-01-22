@@ -1,5 +1,5 @@
 import { handler } from './index';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { FrameworkContext } from '@fitglue/shared';
 
 // Mock shared dependencies
@@ -59,7 +59,7 @@ const createRequest = (overrides: Record<string, unknown> = {}): Request => ({
 } as unknown as Request);
 
 describe('billing-handler', () => {
-  let res: any;
+
   let ctx: any;
   let mockDbUpdate: jest.Mock;
 
@@ -82,11 +82,7 @@ describe('billing-handler', () => {
       return 'mock-secret';
     });
 
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      send: jest.fn(),
-    };
+
 
     ctx = {
       userId: 'user-123',
@@ -114,20 +110,14 @@ describe('billing-handler', () => {
       ctx.userId = undefined;
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      await expect(handler(req, ctx as FrameworkContext)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('returns 404 if user not found', async () => {
       ctx.services.user.get.mockResolvedValue(null);
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'User not found' });
+      await expect(handler(req, ctx as FrameworkContext)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('creates a new Stripe customer if user has no stripeCustomerId', async () => {
@@ -139,7 +129,7 @@ describe('billing-handler', () => {
       });
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      await handler(req, ctx as FrameworkContext);
 
       expect(mockStripeCustomersCreate).toHaveBeenCalledWith({
         metadata: { fitglue_user_id: 'user-123' },
@@ -161,7 +151,7 @@ describe('billing-handler', () => {
       });
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      await handler(req, ctx as FrameworkContext);
 
       expect(mockStripeCustomersCreate).not.toHaveBeenCalled();
       expect(ctx.stores.users.update).not.toHaveBeenCalled();
@@ -186,7 +176,7 @@ describe('billing-handler', () => {
       process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-server-dev';
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      await handler(req, ctx as FrameworkContext);
 
       expect(mockStripeCheckoutSessionsCreate).toHaveBeenCalledWith({
         customer: 'cus_existing_456',
@@ -210,9 +200,9 @@ describe('billing-handler', () => {
       });
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      const result = await handler(req, ctx as FrameworkContext);
 
-      expect(res.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
         url: 'https://checkout.stripe.com/session123',
       });
       expect(ctx.logger.info).toHaveBeenCalledWith('Checkout session created', {
@@ -234,7 +224,7 @@ describe('billing-handler', () => {
       process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-server-prod';
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      await handler(req, ctx as FrameworkContext);
 
       expect(mockStripeCheckoutSessionsCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -257,7 +247,7 @@ describe('billing-handler', () => {
       process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-server-test';
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      await handler(req, ctx as FrameworkContext);
 
       expect(mockStripeCheckoutSessionsCreate).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -275,10 +265,8 @@ describe('billing-handler', () => {
       mockStripeCheckoutSessionsCreate.mockRejectedValue(new Error('Stripe API error'));
       const req = createRequest({ path: '/api/billing/checkout', method: 'POST' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      await expect(handler(req, ctx as FrameworkContext)).rejects.toThrow('Failed to create checkout session');
 
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Failed to create checkout session' });
       expect(ctx.logger.error).toHaveBeenCalledWith('Checkout error', expect.objectContaining({
         userId: 'user-123',
       }));
@@ -304,7 +292,7 @@ describe('billing-handler', () => {
         body: 'raw_webhook_body',
       });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      const result = await handler(req, ctx as FrameworkContext);
 
       expect(mockStripeWebhooksConstructEvent).toHaveBeenCalledWith(
         'raw_webhook_body',
@@ -320,7 +308,7 @@ describe('billing-handler', () => {
         userId: 'user-abc',
         sessionId: 'cs_test_123',
       });
-      expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(result).toEqual({ received: true });
     });
 
     it('handles checkout.session.completed without fitglue_user_id', async () => {
@@ -341,10 +329,10 @@ describe('billing-handler', () => {
         body: 'raw_webhook_body',
       });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      const result = await handler(req, ctx as FrameworkContext);
 
       expect(mockDbUpdate).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(result).toEqual({ received: true });
     });
 
     it('handles customer.subscription.deleted event - downgrades user to Free', async () => {
@@ -369,7 +357,7 @@ describe('billing-handler', () => {
         body: 'raw_webhook_body',
       });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      const result = await handler(req, ctx as FrameworkContext);
 
       expect(mockStripeCustomersRetrieve).toHaveBeenCalledWith('cus_customer_123');
       expect(db.collection).toHaveBeenCalledWith('users');
@@ -379,7 +367,7 @@ describe('billing-handler', () => {
       expect(ctx.logger.info).toHaveBeenCalledWith('User downgraded to Hobbyist', {
         userId: 'user-xyz',
       });
-      expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(result).toEqual({ received: true });
     });
 
     it('handles customer.subscription.deleted without fitglue_user_id', async () => {
@@ -404,10 +392,10 @@ describe('billing-handler', () => {
         body: 'raw_webhook_body',
       });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      const result = await handler(req, ctx as FrameworkContext);
 
       expect(mockDbUpdate).not.toHaveBeenCalled();
-      expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(result).toEqual({ received: true });
     });
 
     it('handles unhandled event types gracefully', async () => {
@@ -423,12 +411,12 @@ describe('billing-handler', () => {
         body: 'raw_webhook_body',
       });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      const result = await handler(req, ctx as FrameworkContext);
 
       expect(ctx.logger.info).toHaveBeenCalledWith('Unhandled Stripe event', {
         type: 'invoice.payment_succeeded',
       });
-      expect(res.json).toHaveBeenCalledWith({ received: true });
+      expect(result).toEqual({ received: true });
     });
 
     it('returns 400 on webhook signature verification failure', async () => {
@@ -442,12 +430,8 @@ describe('billing-handler', () => {
         body: 'raw_webhook_body',
       });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
+      await expect(handler(req, ctx as FrameworkContext)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        error: 'Webhook signature verification failed',
-      });
       expect(ctx.logger.error).toHaveBeenCalledWith('Webhook error', expect.any(Object));
     });
   });
@@ -456,28 +440,19 @@ describe('billing-handler', () => {
     it('returns 404 for unknown GET routes', async () => {
       const req = createRequest({ method: 'GET', path: '/api/billing/unknown' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Not Found' });
+      await expect(handler(req, ctx as FrameworkContext)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('returns 404 for unknown POST routes', async () => {
       const req = createRequest({ method: 'POST', path: '/api/billing/unknown' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Not Found' });
+      await expect(handler(req, ctx as FrameworkContext)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('returns 404 for root billing path', async () => {
       const req = createRequest({ method: 'GET', path: '/api/billing' });
 
-      await handler(req, res as Response, ctx as FrameworkContext);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Not Found' });
+      await expect(handler(req, ctx as FrameworkContext)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
   });
 });

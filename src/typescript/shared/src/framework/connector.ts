@@ -112,7 +112,7 @@ export interface Connector<TConfig extends ConnectorConfig = ConnectorConfig, TR
    * @returns undefined to continue normal processing, or a response object to short-circuit
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  verifyRequest(req: any, res: any, context: any): Promise<{ handled: boolean; response?: any } | undefined>;
+  verifyRequest(req: any, context: import('./index').FrameworkContext): Promise<{ handled: boolean; response?: any } | undefined>;
 
   /**
    * Resolve user ID from webhook payload.

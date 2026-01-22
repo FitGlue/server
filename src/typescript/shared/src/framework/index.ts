@@ -184,11 +184,23 @@ export interface FrameworkContext {
 
 // ... (previous code)
 
+// ... (previous code)
+
+export class FrameworkResponse {
+  constructor(
+    public readonly options: {
+      status?: number;
+      body?: unknown;
+      headers?: Record<string, string>;
+    }
+  ) { }
+}
+
 export type SafeHandler = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   req: any,
   ctx: FrameworkContext
-) => Promise<unknown>;
+) => Promise<unknown | FrameworkResponse>;
 
 export interface CloudFunctionOptions {
   auth?: {
@@ -278,7 +290,9 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (reqOrEvent: any, resOrContext?: any) => {
     const serviceName = process.env.K_SERVICE || 'unknown-function';
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'unknown';
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const isProd = projectId.includes('-prod'); // Determine environment
 
     // DETECT TRIGGER TYPE
@@ -509,18 +523,56 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
       }
 
       // Execute Handler (SafeHandler expects return value)
-      const result = await handler(req, ctx);
+      // IMPORTANT: call handler(req, ctx) - NO res, NO next
+      let result = await handler(req, ctx);
 
-      // AUTOMATIC RESPONSE HANDLING
-      // If result is returned and headers not sent, send 200 OK
-      if (isHttp && !res.headersSent && result !== undefined) {
-        res.status(200).json(result);
-        capturedResponse = result;
-      } else if (isHttp && !res.headersSent) {
-        // If undefined returned, assume 204 No Content or similar?
-        // Or user forgot to return?
-        // For safety, if no response sent, send 200 OK empty
-        res.status(200).send();
+      // Handle FrameworkResponse wrapper
+      if (result instanceof FrameworkResponse) {
+        const fwRes = result as FrameworkResponse;
+
+        // Apply headers
+        if (fwRes.options.headers) {
+          for (const [key, value] of Object.entries(fwRes.options.headers)) {
+            res.set(key, value);
+          }
+        }
+
+        // Set status
+        if (fwRes.options.status) {
+          res.status(fwRes.options.status);
+        } else {
+          res.status(200);
+        }
+
+        // Send body
+        // If body is undefined but status is something like 204 or 302, send() empty
+        if (fwRes.options.body !== undefined) {
+          // If body is object/array, use json(), else send()
+          if (typeof fwRes.options.body === 'object') {
+            res.json(fwRes.options.body);
+          } else {
+            res.send(fwRes.options.body);
+          }
+        } else {
+          res.send();
+        }
+
+        // Update capturedResponse for logs
+        capturedResponse = fwRes.options.body;
+        // Unwrap result for logs (so we log the body, not the wrapper)
+        result = fwRes.options.body;
+      } else {
+        // STANDARD RETURN PATTERN
+        // If result is returned and headers not sent, send 200 OK
+        if (isHttp && !res.headersSent && result !== undefined) {
+          res.status(200).json(result);
+          capturedResponse = result;
+        } else if (isHttp && !res.headersSent) {
+          // If undefined returned, assume 204 No Content or similar?
+          // Or user forgot to return?
+          // For safety, if no response sent, send 200 OK empty
+          res.status(200).send();
+        }
       }
 
       // Log success

@@ -97,6 +97,13 @@ jobs:
             echo "export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json" >> $BASH_ENV
             echo "export PATH=\$PATH:$(pwd)/google-cloud-sdk/bin" >> $BASH_ENV
       - run:
+          name: Upload Source Maps to Sentry
+          command: |
+             # Install Sentry CLI
+             npm install -g @sentry/cli
+             # Run upload script using Git SHA as release
+             ./scripts/upload_sourcemaps.sh "$CIRCLE_SHA1"
+      - run:
           name: Prepare src for deployment
           command: make prepare
       - run:
@@ -108,7 +115,10 @@ jobs:
           name: Deploy to << parameters.target >>
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
-            terraform -chdir=terraform apply -auto-approve -lock-timeout=20m -var-file="envs/<< parameters.target >>.tfvars"
+            # Pass dynamic release version (Git SHA) to Terraform
+            terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
+              -var-file="envs/<< parameters.target >>.tfvars" \
+              -var="release_version=${CIRCLE_SHA1}"
 
   create-release:
     executor: unified-executor

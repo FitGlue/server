@@ -246,7 +246,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
    * - POST signature validation
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async verifyRequest(req: any, res: any, context: FrameworkContext): Promise<{ handled: boolean; response?: Record<string, unknown> } | undefined> {
+  async verifyRequest(req: any, context: FrameworkContext): Promise<{ handled: boolean; response?: any } | undefined> {
     const { logger } = context;
 
     // Handle GET verification requests
@@ -254,19 +254,31 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       const verifyCode = req.query.verify;
       if (!verifyCode) {
         logger.warn('Missing verify code in GET request');
-        res.status(404).send('Not Found');
-        return { handled: true, response: { action: 'verification', status: 'failed' } };
+        // Return 404 with body
+        const { FrameworkResponse } = await import('@fitglue/shared');
+        return {
+          handled: true,
+          response: new FrameworkResponse({ status: 404, body: 'Not Found' })
+        };
       }
 
       const expectedCode = process.env['FITBIT_VERIFICATION_CODE'];
       if (verifyCode === expectedCode) {
         logger.info('Fitbit verification successful');
-        res.status(204).send();
-        return { handled: true, response: { action: 'verification', status: 'success' } };
+        // Return 204 No Content
+        const { FrameworkResponse } = await import('@fitglue/shared');
+        return {
+          handled: true,
+          response: new FrameworkResponse({ status: 204 })
+        };
       } else {
         logger.warn('Invalid verification code');
-        res.status(404).send('Not Found');
-        return { handled: true, response: { action: 'verification', status: 'invalid' } };
+        // Return 404 with body
+        const { FrameworkResponse } = await import('@fitglue/shared');
+        return {
+          handled: true,
+          response: new FrameworkResponse({ status: 404, body: 'Not Found' })
+        };
       }
     }
 
@@ -275,14 +287,18 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       const signature = req.headers['x-fitbit-signature'];
       if (!signature) {
         logger.warn('Missing X-Fitbit-Signature header');
-        res.status(400).send('Missing Signature');
-        throw new Error('Missing X-Fitbit-Signature header');
+        const { FrameworkResponse } = await import('@fitglue/shared');
+        // Use FrameworkResponse for 400 error
+        return {
+          handled: true,
+          response: new FrameworkResponse({ status: 400, body: 'Missing Signature' })
+        };
       }
 
       const clientSecret = process.env['FITBIT_CLIENT_SECRET'];
       if (!clientSecret) {
         logger.error('Missing FITBIT_CLIENT_SECRET env var');
-        res.status(500).send('Configuration Error');
+        // Throwing error will be caught by SafeHandler and result in 500
         throw new Error('Missing FITBIT_CLIENT_SECRET env var');
       }
 
@@ -290,7 +306,6 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       const rawBody = req.rawBody;
       if (!rawBody) {
         logger.error('Raw body not available for verification');
-        res.status(500).send('Internal Server Error');
         throw new Error('Raw body not available');
       }
 
@@ -300,8 +315,12 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
 
       if (signature !== expectedSignature) {
         logger.warn('Invalid Fitbit signature');
-        res.status(404).send('Not Found');
-        throw new Error('Invalid Signature');
+        const { FrameworkResponse } = await import('@fitglue/shared');
+        // Use FrameworkResponse for 404 error
+        return {
+          handled: true,
+          response: new FrameworkResponse({ status: 404, body: 'Not Found' })
+        };
       }
 
       // Signature valid - continue to normal processing

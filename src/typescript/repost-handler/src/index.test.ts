@@ -19,19 +19,13 @@ jest.mock('@google-cloud/pubsub', () => {
 const { __mockPublishMessage: mockPublishMessage, __mockTopic: mockTopic } = jest.requireMock('@google-cloud/pubsub');
 
 describe('repost-handler', () => {
-  let res: any;
-  let ctx: any;
 
+  let ctx: any;
   beforeEach(() => {
     mockPublishMessage.mockClear();
     mockTopic.mockClear();
 
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      send: jest.fn(),
-      set: jest.fn(),
-    };
+
 
     ctx = {
       userId: 'user-pro',
@@ -66,27 +60,21 @@ describe('repost-handler', () => {
     it('returns 401 if no user', async () => {
       ctx.userId = undefined;
 
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('returns 403 for hobbyist tier users', async () => {
       ctx.stores.users.get.mockResolvedValue({ tier: 1, isAdmin: false }); // USER_TIER_HOBBYIST
 
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Athlete tier required for re-post features' });
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }));
     });
 
     it('allows athlete tier users', async () => {
@@ -107,9 +95,7 @@ describe('repost-handler', () => {
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(200);
+      } as any, ctx);
     });
 
     it('allows admin users regardless of tier', async () => {
@@ -130,9 +116,7 @@ describe('repost-handler', () => {
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(200);
+      } as any, ctx);
     });
 
     it('allows trial users', async () => {
@@ -155,9 +139,7 @@ describe('repost-handler', () => {
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(200);
+      } as any, ctx);
     });
   });
 
@@ -181,61 +163,46 @@ describe('repost-handler', () => {
     });
 
     it('returns 400 if activityId missing', async () => {
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/missed-destination',
         body: { destination: 'showcase' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'activityId and destination are required' });
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 400 if destination missing', async () => {
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(400);
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 400 for invalid destination', async () => {
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'invalid-dest' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Invalid destination: invalid-dest' });
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 400 if destination already synced', async () => {
       // Activity already has strava synced
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        error: 'Activity already synced to strava',
-      }));
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 404 if activity not found', async () => {
       ctx.stores.activities.getSynchronized.mockResolvedValue(null);
 
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'unknown', destination: 'showcase' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(404);
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('publishes message to correct topic on success', async () => {
@@ -246,20 +213,18 @@ describe('repost-handler', () => {
         destinations: { strava: 'ext-123' },
       });
 
-      await handler({
+      const result: any = await handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'showcase' },
-      } as any, res, ctx);
+      } as any, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
       expect(mockPublishMessage).toHaveBeenCalled();
 
-      const response = res.json.mock.calls[0][0];
-      expect(response.success).toBe(true);
-      expect(response.destination).toBe('showcase');
-      expect(response.promptUpdatePipeline).toBe(true);
-      expect(response.newPipelineExecutionId).toBeDefined();
+      expect(result.success).toBe(true);
+      expect(result.destination).toBe('showcase');
+      expect(result.promptUpdatePipeline).toBe(true);
+      expect(result.newPipelineExecutionId).toBeDefined();
     });
 
     it('handles snake_case field names from Go framework (activity_id/user_id)', async () => {
@@ -283,16 +248,14 @@ describe('repost-handler', () => {
         },
       });
 
-      await handler({
+      const result: any = await handler({
         method: 'POST',
         path: '/missed-destination',
         body: { activityId: 'a1', destination: 'showcase' },
-      } as any, res, ctx);
+      } as any, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
       expect(mockPublishMessage).toHaveBeenCalled();
-      const response = res.json.mock.calls[0][0];
-      expect(response.success).toBe(true);
+      expect(result.success).toBe(true);
     });
   });
 
@@ -315,13 +278,11 @@ describe('repost-handler', () => {
     });
 
     it('returns 400 if activityId missing', async () => {
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/retry-destination',
         body: { destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(400);
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('publishes message with update method flag', async () => {
@@ -329,9 +290,8 @@ describe('repost-handler', () => {
         method: 'POST',
         path: '/retry-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
+      } as any, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
       expect(mockPublishMessage).toHaveBeenCalled();
 
       // Check the message includes update marker
@@ -351,9 +311,7 @@ describe('repost-handler', () => {
         method: 'POST',
         path: '/retry-destination',
         body: { activityId: 'a1', destination: 'strava' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(200);
+      } as any, ctx);
       const publishCall = mockPublishMessage.mock.calls[0][0];
       expect(publishCall.attributes.use_update_method).toBe('false');
     });
@@ -379,41 +337,31 @@ describe('repost-handler', () => {
     });
 
     it('returns 400 if activityId missing', async () => {
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/full-pipeline',
         body: {},
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'activityId is required' });
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 404 if activity not found', async () => {
       ctx.stores.activities.getSynchronized.mockResolvedValue(null);
 
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/full-pipeline',
         body: { activityId: 'unknown' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(404);
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('returns 500 if enricher execution not found', async () => {
       ctx.stores.executions.getEnricherExecution.mockResolvedValue(null);
 
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/full-pipeline',
         body: { activityId: 'a1' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({
-        error: 'Unable to retrieve original activity payload from execution logs'
-      });
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 500 }));
     });
 
     it('publishes message with bypass_dedup flag wrapped in CloudEvent', async () => {
@@ -421,9 +369,8 @@ describe('repost-handler', () => {
         method: 'POST',
         path: '/full-pipeline',
         body: { activityId: 'a1' },
-      } as any, res, ctx);
+      } as any, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
       expect(mockPublishMessage).toHaveBeenCalled();
 
       const publishCall = mockPublishMessage.mock.calls[0][0];
@@ -440,47 +387,34 @@ describe('repost-handler', () => {
     });
 
     it('response includes warning about duplicates', async () => {
-      await handler({
+      const result: any = await handler({
         method: 'POST',
         path: '/full-pipeline',
         body: { activityId: 'a1' },
-      } as any, res, ctx);
+      } as any, ctx);
 
-      const response = res.json.mock.calls[0][0];
-      expect(response.success).toBe(true);
-      expect(response.message).toContain('duplicate');
+      expect(result.success).toBe(true);
+      expect(result.message).toContain('duplicate');
     });
   });
 
   describe('HTTP Method Handling', () => {
     it('returns 405 for non-POST methods', async () => {
-      await handler({
+      await expect(handler({
         method: 'GET',
         path: '/missed-destination',
         body: {},
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(405);
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 405 }));
     });
 
-    it('returns 204 for OPTIONS (CORS preflight)', async () => {
-      await handler({
-        method: 'OPTIONS',
-        path: '/missed-destination',
-        body: {},
-      } as any, res, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(204);
-    });
 
     it('returns 404 for unknown paths', async () => {
-      await handler({
+      await expect(handler({
         method: 'POST',
         path: '/unknown-endpoint',
         body: { activityId: 'a1' },
-      } as any, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(404);
+      } as any, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
   });
 });

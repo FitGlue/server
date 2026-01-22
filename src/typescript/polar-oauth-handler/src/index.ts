@@ -1,7 +1,7 @@
 import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const handler = async (req: any, res: any, ctx: FrameworkContext) => {
+const handler = async (req: any, ctx: FrameworkContext) => {
   const { stores, logger } = ctx;
 
   // Extract query parameters
@@ -10,23 +10,20 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
   // Handle authorization denial
   if (error) {
     logger.warn('User denied Polar authorization', { error });
-    res.redirect(`${process.env.BASE_URL}/app/connections/polar/error?reason=denied`);
-    return;
+    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/polar/error?reason=denied` } };
   }
 
   // Validate required parameters
   if (!code || !state) {
     logger.error('Missing required OAuth parameters');
-    res.redirect(`${process.env.BASE_URL}/app/connections/polar/error?reason=missing_params`);
-    return;
+    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/polar/error?reason=missing_params` } };
   }
 
   // Validate state token (CSRF protection)
   const validation = await validateOAuthState(state);
   if (!validation.valid || !validation.userId) {
     logger.error('Invalid or expired state token');
-    res.redirect(`${process.env.BASE_URL}/app/connections/polar/error?reason=invalid_state`);
-    return;
+    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/polar/error?reason=invalid_state` } };
   }
   const userId = validation.userId;
 
@@ -104,11 +101,12 @@ const handler = async (req: any, res: any, ctx: FrameworkContext) => {
     logger.info('Successfully connected Polar account', { userId, polarUserId: x_user_id });
 
     // Redirect to success page
-    res.redirect(`${process.env.BASE_URL}/app/connections/polar/success`);
+    // Redirect to success page
+    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/polar/success` } };
 
   } catch (error: unknown) {
     logger.error('Error processing Polar OAuth callback', { error });
-    res.redirect(`${process.env.BASE_URL}/app/connections/polar/error?reason=server_error`);
+    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/polar/error?reason=server_error` } };
   }
 };
 

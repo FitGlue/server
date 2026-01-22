@@ -13,7 +13,7 @@ TS_SRC_DIR=src/typescript
 # --- Phony Targets ---
 .PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase
 
-all: generate lint build test
+all: generate clean lint build test
 
 
 setup:
@@ -70,7 +70,7 @@ generate:
 	fi
 
 # --- Go Targets ---
-build-go: clean-go
+build-go:
 	@echo "Building Go services..."
 	cd $(GO_SRC_DIR) && $(GOBUILD) -v ./...
 	@echo "Building fit-gen tool..."
@@ -117,34 +117,34 @@ TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name
 # Then we build all other workspaces in parallel for speed.
 TS_HANDLER_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules -not -name shared -not -name mcp-server -not -name admin-cli)
 
-build-ts: clean-ts
+build-ts:
 	@echo "Building TypeScript services..."
 	@echo "Step 1: Building shared library (dependency for all handlers)..."
 	@cd $(TS_SRC_DIR) && npm run build --workspace=@fitglue/shared
 	@echo "Step 2: Building all handlers in parallel..."
-	@cd $(TS_SRC_DIR) && for dir in $(TS_HANDLER_DIRS); do \
+	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_HANDLER_DIRS); do \
 		name=$$(basename $$dir); \
 		npm run build --workspace=$$name --if-present & \
-	done; wait
+	done; wait || exit 1
 	@echo "TypeScript build complete."
 
 test-ts:
 	@echo "Testing TypeScript services in parallel..."
-	@cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
+	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
 		if [ -d "$$dir" ] && [ -f "$$dir/package.json" ]; then \
 			name=$$(basename $$dir); \
 			npm test --workspace=$$name --if-present & \
 		fi; \
-	done; wait
+	done; wait || exit 1
 
 lint-ts:
 	@echo "Linting TypeScript services in parallel..."
-	@cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
+	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
 		if [ -d "$$dir" ] && [ -f "$$dir/package.json" ]; then \
 			name=$$(basename $$dir); \
 			npm run lint --workspace=$$name --if-present & \
 		fi; \
-	done; wait
+	done; wait || exit 1
 
 typecheck-ts:
 	@echo "Typechecking TypeScript..."

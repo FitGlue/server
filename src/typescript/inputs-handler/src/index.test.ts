@@ -30,7 +30,7 @@ jest.mock('@fitglue/shared', () => {
 
 describe('inputs-handler', () => {
   let req: any;
-  let res: any;
+
   let ctx: any;
   let mockPublish: any;
   let mockInputService: any;
@@ -57,11 +57,7 @@ describe('inputs-handler', () => {
       query: {},
       path: '',
     };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      send: jest.fn(),
-    };
+
     ctx = {
       userId: 'user-1',
       logger: {
@@ -87,8 +83,9 @@ describe('inputs-handler', () => {
   describe('GET /', () => {
     it('returns 401 if no user', async () => {
       ctx.userId = undefined;
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(401);
+      // Should throw HttpError (or similar)
+
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('returns list of inputs', async () => {
@@ -104,10 +101,9 @@ describe('inputs-handler', () => {
         }
       ]);
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
         inputs: [{
           id: 'a1',
           activityId: 'a1',
@@ -122,8 +118,7 @@ describe('inputs-handler', () => {
 
     it('handles errors', async () => {
       mockInputService.listPendingInputs.mockRejectedValue(new Error('db error'));
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(500);
+      await expect(handler(req, ctx)).rejects.toThrow('db error');
     });
   });
 
@@ -138,14 +133,12 @@ describe('inputs-handler', () => {
 
     it('returns 400 if missing fields', async () => {
       req.body = {};
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(400);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 404 if input not found', async () => {
       mockInputService.getPendingInput.mockResolvedValue(null);
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(404);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('resolves and republishes successfully', async () => {
@@ -155,12 +148,11 @@ describe('inputs-handler', () => {
         originalPayload: mockPayload
       });
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
       expect(mockInputService.resolveInput).toHaveBeenCalledWith('act-1', 'user-1', { title: 'New Title' });
       expect(mockPublish).toHaveBeenCalledWith(mockPayload);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(result).toEqual({ success: true });
     });
 
     it('returns 500 if original payload missing', async () => {
@@ -169,19 +161,16 @@ describe('inputs-handler', () => {
         originalPayload: null
       });
 
-      await handler(req, res, ctx);
-
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 500 }));
       expect(mockInputService.resolveInput).toHaveBeenCalled();
       expect(mockPublish).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(500);
     });
 
     it('handles conflict errors', async () => {
       mockInputService.getPendingInput.mockResolvedValue({ activityId: 'act-1' });
       mockInputService.resolveInput.mockRejectedValue(new Error('Wait status required'));
 
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(409);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 409 }));
     });
 
     it('handles ForbiddenError from authorization', async () => {
@@ -189,9 +178,7 @@ describe('inputs-handler', () => {
       mockInputService.getPendingInput.mockResolvedValue({ activityId: 'act-1' });
       mockInputService.resolveInput.mockRejectedValue(new ForbiddenError('You do not have permission'));
 
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'You do not have permission' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }));
     });
   });
 
@@ -203,37 +190,32 @@ describe('inputs-handler', () => {
 
     it('returns 400 if missing activityId', async () => {
       req.path = '/';
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(400);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('calls dismissInput and returns success', async () => {
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
       expect(mockInputService.dismissInput).toHaveBeenCalledWith('act-1', 'user-1');
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(result).toEqual({ success: true });
     });
 
     it('handles generic errors', async () => {
       mockInputService.dismissInput.mockRejectedValue(new Error('Some error'));
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(500);
+      await expect(handler(req, ctx)).rejects.toThrow('Some error');
     });
 
     it('handles encoded IDs', async () => {
       req.path = '/api/inputs/FITBIT%3A123';
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
       expect(mockInputService.dismissInput).toHaveBeenCalledWith('FITBIT:123', 'user-1');
-      expect(res.status).toHaveBeenCalledWith(200);
+      expect(result).toEqual({ success: true });
     });
 
     it('handles ForbiddenError from authorization', async () => {
       const { ForbiddenError } = jest.requireMock('@fitglue/shared');
       mockInputService.dismissInput.mockRejectedValue(new ForbiddenError('Access denied'));
 
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Access denied' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }));
     });
   });
 });

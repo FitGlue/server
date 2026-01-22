@@ -13,7 +13,7 @@ jest.mock('@fitglue/shared', () => {
 });
 
 describe('mobile-sync-handler', () => {
-  let res: any;
+
   let ctx: any;
   let mockMobileActivitiesCollection: any;
   let mockDocRef: any;
@@ -28,11 +28,7 @@ describe('mobile-sync-handler', () => {
 
     (db.collection as jest.Mock).mockReturnValue(mockMobileActivitiesCollection);
 
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      send: jest.fn(),
-    };
+
 
     ctx = {
       userId: 'user-1',
@@ -54,35 +50,31 @@ describe('mobile-sync-handler', () => {
 
   it('returns 401 if no user', async () => {
     ctx.userId = undefined;
-    await handler(({
+    await expect(handler(({
       method: 'POST',
       body: { activities: [] },
-    } as any), res, ctx);
-    expect(res.status).toHaveBeenCalledWith(401);
+    } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
   });
 
   it('returns 405 if not POST', async () => {
-    await handler(({
+    await expect(handler(({
       method: 'GET',
-    } as any), res, ctx);
-    expect(res.status).toHaveBeenCalledWith(405);
+    } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 405 }));
   });
 
   it('returns 400 if activities missing', async () => {
-    await handler(({
+    await expect(handler(({
       method: 'POST',
       body: {},
-    } as any), res, ctx);
-    expect(res.status).toHaveBeenCalledWith(400);
+    } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
   });
 
   it('returns 404 if user not found', async () => {
     ctx.stores.users.get.mockResolvedValue(null);
-    await handler(({
+    await expect(handler(({
       method: 'POST',
       body: { activities: [] },
-    } as any), res, ctx);
-    expect(res.status).toHaveBeenCalledWith(404);
+    } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
   });
 
   it('processes activities successfully', async () => {
@@ -106,13 +98,12 @@ describe('mobile-sync-handler', () => {
       }
     ];
 
-    await handler(({
+    const result: any = await handler(({
       method: 'POST',
       body: { activities, device: { platform: 'ios' } },
-    } as any), res, ctx);
+    } as any), ctx);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       success: true,
       processedCount: 2,
       skippedCount: 0,
@@ -154,13 +145,12 @@ describe('mobile-sync-handler', () => {
       }
     ];
 
-    await handler(({
+    const result: any = await handler(({
       method: 'POST',
       body: { activities },
-    } as any), res, ctx);
+    } as any), ctx);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+    expect(result).toEqual(expect.objectContaining({
       success: true,
       processedCount: 1,
       skippedCount: 1,

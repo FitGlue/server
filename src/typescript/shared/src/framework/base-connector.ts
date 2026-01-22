@@ -67,7 +67,7 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
    * Override to add vendor-specific verification.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async verifyRequest(_req: any, _res: any, _context: any): Promise<{ handled: boolean; response?: any } | undefined> {
+  async verifyRequest(_req: any, _context: any): Promise<{ handled: boolean; response?: any } | undefined> {
     return undefined;
   }
 

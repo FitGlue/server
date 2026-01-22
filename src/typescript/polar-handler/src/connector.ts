@@ -170,14 +170,18 @@ export class PolarConnector extends BaseConnector<PolarConnectorConfig> {
    * Polar uses HMAC-SHA256 signatures in the Polar-Webhook-Signature header.
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  async verifyRequest(req: any, res: any, context: FrameworkContext): Promise<{ handled: boolean; response?: Record<string, unknown> } | undefined> {
+  async verifyRequest(req: any, context: FrameworkContext): Promise<{ handled: boolean; response?: any } | undefined> {
     const { logger } = context;
 
     // Handle GET verification requests (webhook setup)
     if (req.method === 'GET') {
       logger.info('Polar webhook verification GET request');
-      res.status(200).send('OK');
-      return { handled: true, response: { action: 'verification', status: 'success' } };
+
+      const { FrameworkResponse } = await import('@fitglue/shared');
+      return {
+        handled: true,
+        response: new FrameworkResponse({ status: 200, body: 'OK' })
+      };
     }
 
     // Verify POST webhook signature

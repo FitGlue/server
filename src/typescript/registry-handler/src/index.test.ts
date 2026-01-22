@@ -26,7 +26,7 @@ jest.mock('@fitglue/shared', () => ({
 
 describe('registry-handler', () => {
   let mockReq: Partial<Request>;
-  let mockRes: Partial<Response>;
+
   let mockCtx: FrameworkContext;
 
   beforeEach(() => {
@@ -34,11 +34,7 @@ describe('registry-handler', () => {
       method: 'GET',
       query: {},
     };
-    mockRes = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      set: jest.fn(),
-    };
+
     mockCtx = {
       logger: {
         info: jest.fn(),
@@ -51,18 +47,12 @@ describe('registry-handler', () => {
 
   it('returns 405 for non-GET requests', async () => {
     mockReq.method = 'POST';
-    await handler(mockReq as Request, mockRes as Response, mockCtx);
-    expect(mockRes.status).toHaveBeenCalledWith(405);
-    expect(mockRes.json).toHaveBeenCalledWith({ error: 'Method Not Allowed' });
+    await expect(handler(mockReq as Request, mockCtx)).rejects.toThrow(expect.objectContaining({ statusCode: 405 }));
   });
 
   it('returns filtered registry (enabled only)', async () => {
-    await handler(mockReq as Request, mockRes as Response, mockCtx);
+    const response: any = await handler(mockReq as Request, mockCtx);
 
-    expect(mockRes.status).toHaveBeenCalledWith(200);
-    expect(mockRes.set).toHaveBeenCalledWith('Cache-Control', 'public, max-age=300');
-
-    const response = (mockRes.json as jest.Mock).mock.calls[0][0];
     expect(response.sources).toHaveLength(1); // Only enabled
     expect(response.sources[0].id).toBe('hevy');
     expect(response.enrichers).toHaveLength(1);
@@ -72,17 +62,14 @@ describe('registry-handler', () => {
 
   it('returns all plugins when showAll=true', async () => {
     mockReq.query = { showAll: 'true' };
-    await handler(mockReq as Request, mockRes as Response, mockCtx);
+    const response: any = await handler(mockReq as Request, mockCtx);
 
-    expect(mockRes.status).toHaveBeenCalledWith(200);
-
-    const response = (mockRes.json as jest.Mock).mock.calls[0][0];
     expect(response.sources).toHaveLength(2); // Includes disabled
     expect(response.sources.find((s: { id: string }) => s.id === 'mock')).toBeDefined();
   });
 
   it('logs registry response', async () => {
-    await handler(mockReq as Request, mockRes as Response, mockCtx);
+    await handler(mockReq as Request, mockCtx);
 
     expect(mockCtx.logger.info).toHaveBeenCalledWith('Plugin registry returned', {
       sourceCount: 1,

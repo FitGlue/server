@@ -23,7 +23,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
   ConnectorClass: ConnectorConstructor<TConfig, TRaw>
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (req: any, res: any, ctx: FrameworkContext) => {
+  return async (req: any, ctx: FrameworkContext) => {
     const { logger, userId } = ctx;
     const timestamp = new Date();
 
@@ -34,15 +34,18 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     logger.info('Webhook processor received context', { userId, hasUserId: !!userId, ctxUserId: ctx.userId });
     if (!userId) {
       logger.error('Handler called without authenticated userId');
-      res.status(401).send('Unauthorized');
-      throw new Error('Unauthorized');
+      // res.status(401).send('Unauthorized'); // REPLACE
+      const err: any = new Error('Unauthorized');
+      err.statusCode = 401;
+      throw err;
     }
 
     logger.info(`Webhook Processor [${connector.name}] for user: ${userId}`);
 
     // 1.5. Custom Request Verification
-    const verificationResult = await connector.verifyRequest(req, res, ctx);
+    const verificationResult = await connector.verifyRequest(req, ctx);
     if (verificationResult?.handled) {
+      // Return the response object (FrameworkResponse or plain object) directly
       return verificationResult.response || { status: 'Handled by connector verification' };
     }
 
@@ -61,7 +64,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     const user = await ctx.services.user.get(userId);
     if (!user) {
       logger.error(`User ${userId} not found`);
-      res.status(500).send('User configuration error');
+      // res.status(500).send('User configuration error');
       throw new Error('User not found');
     }
 
@@ -70,7 +73,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
 
     if (!connectorConfig || !connectorConfig.enabled) {
       logger.warn(`User ${userId} has not enabled integration ${connector.name} or config missing`);
-      res.status(200).send('Integration disabled or unconfigured');
+      // res.status(200).send('Integration disabled or unconfigured');
       return { status: 'Skipped', reason: 'Integration disabled' };
     }
 
@@ -82,8 +85,8 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error(`Invalid configuration for user ${userId}`, { error: err.message });
-      res.status(200).send(`Configuration Error: ${err.message}`);
-      return { status: 'Failed', reason: 'Configuration Error' };
+      // res.status(200).send(`Configuration Error: ${err.message}`);
+      return { status: 'Failed', reason: 'Configuration Error', error: err.message };
     }
 
     // 5. Pipeline Check
@@ -93,7 +96,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     const hasPipelineForSource = user.pipelines?.some(p => p.source === sourceEnumName) ?? false;
     if (!hasPipelineForSource) {
       logger.info(`User ${userId} has no pipeline configured for source ${sourceEnumName}. Skipping.`);
-      res.status(200).send('No pipeline configured for this source');
+      // res.status(200).send('No pipeline configured for this source');
       return { status: 'Skipped', reason: `No pipeline for source ${sourceEnumName}` };
     }
 
@@ -103,7 +106,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     const isLoopActivity = await ctx.services.user.checkDestinationExists(userId, connector.name, externalId);
     if (isLoopActivity) {
       logger.info(`Loop detected: Activity ${externalId} was already posted by this system. Skipping.`);
-      res.status(200).send('Skipped: Loop prevention');
+      // res.status(200).send('Skipped: Loop prevention');
       return { status: 'Skipped', reason: 'Loop prevention - activity was already posted as destination' };
     }
 
@@ -111,7 +114,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     const alreadyProcessed = await ctx.services.user.hasProcessedActivity(userId, connector.name, externalId);
     if (alreadyProcessed) {
       logger.info(`Activity ${externalId} already processed for user ${userId}`);
-      res.status(200).send('Already processed');
+      // res.status(200).send('Already processed');
       return { status: 'Skipped', reason: 'Already processed' };
     }
 
@@ -122,7 +125,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
       logger.error(`Failed to fetch/map activity ${externalId}`, { error: err.message });
-      res.status(500).send('Failed to process activity');
+      // res.status(500).send('Failed to process activity');
       throw err;
     }
 
@@ -210,12 +213,12 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     }
 
     logger.info(`[${connector.name}] Successfully processed ${publishedIds.length}/${standardizedActivities.length} activities for ${externalId}`);
-    res.status(200).json({
+
+    // Return standard success response (200 OK)
+    return {
       status: 'Success',
       published: publishedIds.length,
       total: standardizedActivities.length
-    });
-
-    return { status: 'Processed', externalId, publishedCount: publishedIds.length, publishedIds };
+    };
   };
 }

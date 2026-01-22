@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { handler } from './index';
 import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
 
@@ -63,14 +63,7 @@ function createMockRequest(overrides: Partial<Request> = {}): Request {
   } as Request;
 }
 
-// Helper to create mock response
-function createMockResponse(): Response {
-  const res: Partial<Response> = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-  return res as Response;
-}
+
 
 // Helper to create mock context
 function createMockContext(overrides: Partial<any> = {}): any {
@@ -116,32 +109,23 @@ describe('admin-handler', () => {
   describe('Authentication & Authorization', () => {
     it('returns 401 if no userId', async () => {
       const req = createMockRequest();
-      const res = createMockResponse();
       const ctx = createMockContext({ userId: undefined });
 
-      await handler(req, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('returns 403 if not admin', async () => {
       const req = createMockRequest();
-      const res = createMockResponse();
       const ctx = createMockContext();
       ctx.services.authorization.requireAdmin.mockRejectedValue(new ForbiddenError('Not admin'));
 
-      await handler(req, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(403);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Admin access required' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }));
     });
   });
 
   describe('GET /api/admin/stats', () => {
     it('returns platform statistics', async () => {
       const req = createMockRequest({ path: '/api/admin/stats', method: 'GET' });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       // Mock users collection
@@ -161,10 +145,9 @@ describe('admin-handler', () => {
         { data: { status: ExecutionStatus.STATUS_FAILED } },
       ]);
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      expect(result).toEqual(expect.objectContaining({
         totalUsers: 2,
         athleteUsers: 1,
         adminUsers: 1,
@@ -180,7 +163,6 @@ describe('admin-handler', () => {
   describe('GET /api/admin/users', () => {
     it('returns enhanced user list with pagination', async () => {
       const req = createMockRequest({ path: '/api/admin/users', method: 'GET', query: {} });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       // Mock count query
@@ -213,10 +195,9 @@ describe('admin-handler', () => {
         }),
       });
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
+      expect(result).toEqual(
         expect.objectContaining({
           data: expect.arrayContaining([
             expect.objectContaining({
@@ -239,7 +220,6 @@ describe('admin-handler', () => {
   describe('GET /api/admin/users/:id', () => {
     it('returns full user details', async () => {
       const req = createMockRequest({ path: '/api/admin/users/user-123', method: 'GET' });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       ctx.services.user.get.mockResolvedValue({
@@ -262,10 +242,9 @@ describe('admin-handler', () => {
         }),
       });
 
-      await handler(req, res, ctx);
+      const result: any = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      expect(result).toEqual(expect.objectContaining({
         userId: 'user-123',
         tier: 2, // USER_TIER_ATHLETE
         email: 'test@example.com',
@@ -274,20 +253,15 @@ describe('admin-handler', () => {
         pendingInputCount: 1,
       }));
       // Verify token is masked
-      const response = (res.json as jest.Mock).mock.calls[0][0];
-      expect(response.integrations.hevy.apiKey).toMatch(/^\w{4}\*{4}\w{4}$/);
+      expect(result.integrations.hevy.apiKey).toMatch(/^\w{4}\*{4}\w{4}$/);
     });
 
     it('returns 404 if user not found', async () => {
       const req = createMockRequest({ path: '/api/admin/users/unknown', method: 'GET' });
-      const res = createMockResponse();
       const ctx = createMockContext();
       ctx.services.user.get.mockResolvedValue(null);
 
-      await handler(req, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'User not found' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
   });
 
@@ -298,7 +272,6 @@ describe('admin-handler', () => {
         method: 'PATCH',
         body: { tier: 'athlete', isAdmin: true },
       });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       const mockUpdate = jest.fn().mockResolvedValue(undefined);
@@ -308,11 +281,10 @@ describe('admin-handler', () => {
         }),
       });
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
       expect(mockUpdate).toHaveBeenCalledWith({ tier: 'athlete', is_admin: true });
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(result).toEqual({ success: true });
     });
   });
 
@@ -322,7 +294,6 @@ describe('admin-handler', () => {
         path: '/api/admin/users/user-123/integrations/strava',
         method: 'DELETE',
       });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       const mockUpdate = jest.fn().mockResolvedValue(undefined);
@@ -332,10 +303,10 @@ describe('admin-handler', () => {
         }),
       });
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
       expect(mockUpdate).toHaveBeenCalledWith({ 'integrations.strava': null });
-      expect(res.status).toHaveBeenCalledWith(200);
+      expect(result).toEqual({ success: true });
     });
   });
 
@@ -345,13 +316,12 @@ describe('admin-handler', () => {
         path: '/api/admin/users/user-123/pipelines/pipe-456',
         method: 'DELETE',
       });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
       expect(ctx.services.user.removePipeline).toHaveBeenCalledWith('user-123', 'pipe-456');
-      expect(res.status).toHaveBeenCalledWith(200);
+      expect(result).toEqual({ success: true });
     });
   });
 
@@ -361,7 +331,6 @@ describe('admin-handler', () => {
         path: '/api/admin/users/user-123/activities',
         method: 'DELETE',
       });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       const mockBatch = {
@@ -393,10 +362,9 @@ describe('admin-handler', () => {
 
       (mockDb.batch as jest.Mock).mockReturnValue(mockBatch);
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ success: true, deletedCount: 2 });
+      expect(result).toEqual({ success: true, deletedCount: 2 });
     });
   });
 
@@ -407,7 +375,6 @@ describe('admin-handler', () => {
         method: 'GET',
         query: { service: 'enricher', limit: '10' },
       });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       ctx.services.execution.listExecutions.mockResolvedValue([
@@ -423,13 +390,12 @@ describe('admin-handler', () => {
       ]);
       ctx.stores.executions.listDistinctServices.mockResolvedValue(['enricher', 'router']);
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
       expect(ctx.services.execution.listExecutions).toHaveBeenCalledWith(
         expect.objectContaining({ service: 'enricher', limit: 10 })
       );
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      expect(result).toEqual(expect.objectContaining({
         availableServices: ['enricher', 'router'],
       }));
     });
@@ -441,7 +407,6 @@ describe('admin-handler', () => {
         path: '/api/admin/executions/exec-123',
         method: 'GET',
       });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
       ctx.stores.executions.get.mockResolvedValue({
@@ -452,10 +417,9 @@ describe('admin-handler', () => {
         outputsJson: '{"result": "ok"}',
       });
 
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
+      expect(result).toEqual(expect.objectContaining({
         id: 'exec-123',
         service: 'enricher',
         status: 'SUCCESS',
@@ -467,27 +431,19 @@ describe('admin-handler', () => {
         path: '/api/admin/executions/unknown',
         method: 'GET',
       });
-      const res = createMockResponse();
       const ctx = createMockContext();
       ctx.stores.executions.get.mockResolvedValue(null);
 
-      await handler(req, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Execution not found' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
   });
 
   describe('Unknown paths', () => {
     it('returns 404 for unknown paths', async () => {
       const req = createMockRequest({ path: '/api/admin/unknown', method: 'GET' });
-      const res = createMockResponse();
       const ctx = createMockContext();
 
-      await handler(req, res, ctx);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Not Found' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
   });
 });

@@ -32,7 +32,7 @@ import { UserService } from '@fitglue/shared';
 
 describe('user-profile-handler', () => {
   let req: any;
-  let res: any;
+
   let ctx: any;
   let mockUserService: any;
   let mockAuthorizationService: any;
@@ -55,11 +55,7 @@ describe('user-profile-handler', () => {
       body: {},
       path: '/users/me'
     };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      send: jest.fn()
-    };
+
     ctx = {
       userId: 'user-1',
       logger: {
@@ -81,14 +77,12 @@ describe('user-profile-handler', () => {
   describe('GET /users/me', () => {
     it('returns 401 if no user', async () => {
       ctx.userId = undefined;
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(401);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('returns 404 if user not found', async () => {
       mockUserService.get.mockResolvedValue(null);
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(404);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
     it('returns user profile with integrations and pipelines', async () => {
@@ -105,10 +99,8 @@ describe('user-profile-handler', () => {
         ]
       });
 
-      await handler(req, res, ctx);
+      const result: any = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const result = res.json.mock.calls[0][0];
       expect(result.userId).toBe('user-1');
       expect(result.integrations.strava.connected).toBe(true);
       expect(result.integrations.hevy.connected).toBe(true);
@@ -124,8 +116,7 @@ describe('user-profile-handler', () => {
     it('returns 403 if not admin', async () => {
       const { ForbiddenError: FE } = jest.requireMock('@fitglue/shared');
       mockAuthorizationService.requireAdmin.mockRejectedValue(new FE('Admin access required'));
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(403);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }));
     });
 
     it('returns user list for admin', async () => {
@@ -138,11 +129,10 @@ describe('user-profile-handler', () => {
         ]
       });
 
-      await handler(req, res, ctx);
+      const result: any = await handler(req, ctx);
 
       expect(mockAuthorizationService.requireAdmin).toHaveBeenCalledWith('user-1');
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json.mock.calls[0][0]).toHaveLength(2);
+      expect(result).toHaveLength(2);
     });
   });
 
@@ -152,9 +142,8 @@ describe('user-profile-handler', () => {
     });
 
     it('returns success (currently no-op)', async () => {
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ success: true });
+      const result = await handler(req, ctx);
+      expect(result).toEqual({ success: true });
     });
   });
 
@@ -169,23 +158,20 @@ describe('user-profile-handler', () => {
 
     it('returns 401 if no user', async () => {
       ctx.userId = undefined;
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(401);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
     it('cascade deletes user and returns success', async () => {
-      await handler(req, res, ctx);
+      const result = await handler(req, ctx);
       expect(mockUserService.deleteUser).toHaveBeenCalledWith('user-1');
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ success: true });
+      expect(result).toEqual({ success: true });
     });
   });
 
   describe('Unsupported methods', () => {
     it('returns 405 for POST', async () => {
       req.method = 'POST';
-      await handler(req, res, ctx);
-      expect(res.status).toHaveBeenCalledWith(405);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 405 }));
     });
   });
 });
