@@ -31,7 +31,8 @@ generate:
 		--experimental_allow_proto3_optional \
 		--proto_path=src/proto src/proto/*.proto
 	# Generate TypeScript (requires ts-proto installed)
-	cd $(TS_SRC_DIR) && npx protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto \
+	cd $(TS_SRC_DIR) && protoc --plugin=./node_modules/.bin/protoc-gen-ts_proto \
+		--experimental_allow_proto3_optional \
 		--ts_proto_out=shared/src/types/pb --ts_proto_opt=outputEncodeMethods=false,outputJsonMethods=false,outputClientImpl=false,useOptionals=messages \
 		--proto_path=../proto ../proto/*.proto
 	# Generate OpenAPI Clients
