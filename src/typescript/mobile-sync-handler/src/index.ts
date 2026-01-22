@@ -11,8 +11,9 @@ import {
   FrameworkContext,
   FirebaseAuthStrategy,
   db,
+  HttpError,
 } from '@fitglue/shared';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import {
   MobileSyncRequest,
   MobileSyncResponse,
@@ -22,27 +23,24 @@ import {
 /**
  * Main handler for mobile sync requests
  */
-export const handler = async (req: Request, res: Response, ctx: FrameworkContext): Promise<void> => {
+export const handler = async (req: Request, ctx: FrameworkContext): Promise<MobileSyncResponse> => {
   const { logger, stores } = ctx;
   const userId = ctx.userId;
 
   if (!userId) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
+    throw new HttpError(401, 'Unauthorized');
   }
 
   // Only accept POST requests
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
-    return;
+    throw new HttpError(405, 'Method not allowed');
   }
 
   const syncRequest = req.body as MobileSyncRequest;
 
   // Validate request
   if (!syncRequest.activities || !Array.isArray(syncRequest.activities)) {
-    res.status(400).json({ error: 'Invalid request: activities array required' });
-    return;
+    throw new HttpError(400, 'Invalid request: activities array required');
   }
 
   logger.info('Mobile sync request received', {
@@ -54,8 +52,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
   // Check if user exists
   const user = await stores.users.get(userId);
   if (!user) {
-    res.status(404).json({ error: 'User not found' });
-    return;
+    throw new HttpError(404, 'User not found');
   }
 
   const executionIds: string[] = [];
@@ -129,7 +126,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
     totalReceived: syncRequest.activities.length,
   });
 
-  res.status(200).json(response);
+  return response;
 };
 
 // Export the wrapped function with Firebase Auth

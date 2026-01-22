@@ -5,12 +5,17 @@ import { AuthStrategy } from './auth';
 export * from './connector';
 export * from './base-connector';
 export * from './webhook-processor';
+export * from './errors';
 import { PubSub } from '@google-cloud/pubsub';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore } from '../storage/firestore';
 import { UserService, ApiKeyService, ExecutionService } from '../domain/services';
 import { AuthorizationService } from '../domain/services/authorization';
-import { initSentry } from '../infrastructure/sentry';
+import * as SentryModule from '../infrastructure/sentry';
+
+// Re-export Sentry utilities for handlers to use directly
+export const captureException = SentryModule.captureException;
+export const flushSentry = SentryModule.flushSentry;
 
 // Initialize Secret Manager
 const secretClient = new SecretManagerServiceClient();
@@ -50,7 +55,20 @@ const pubsub = new PubSub();
 
 // Helper to serialize Error objects for logging
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function serializeErrors(obj: any): any {
+// Helper to serialize Error objects for logging
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeErrors(obj: any, visited = new WeakSet<any>()): any {
+  // Primitives
+  if (!obj || typeof obj !== 'object') {
+    return obj;
+  }
+
+  // Check for cycles
+  if (visited.has(obj)) {
+    return '[Circular]';
+  }
+  visited.add(obj);
+
   if (obj instanceof Error) {
     return {
       message: obj.message,
@@ -60,24 +78,24 @@ function serializeErrors(obj: any): any {
       ...Object.getOwnPropertyNames(obj).reduce((acc, key) => {
         if (!['message', 'name', 'stack'].includes(key)) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          acc[key] = (obj as any)[key];
+          acc[key] = serializeErrors((obj as any)[key], visited);
         }
         return acc;
       }, {} as Record<string, unknown>)
     };
   }
+
   if (Array.isArray(obj)) {
-    return obj.map(serializeErrors);
+    return obj.map(item => serializeErrors(item, visited));
   }
-  if (obj && typeof obj === 'object') {
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result: any = {};
+  for (const key of Object.keys(obj)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result: any = {};
-    for (const key of Object.keys(obj)) {
-      result[key] = serializeErrors(obj[key]);
-    }
-    return result;
+    result[key] = serializeErrors(obj[key], visited);
   }
-  return obj;
+  return result;
 }
 
 // Custom format to properly serialize Error objects in metadata
@@ -109,7 +127,17 @@ const logger = winston.createLogger({
           };
           // Remove default keys to avoid duplication/conflict
           delete gcpInfo.level;
-          return JSON.stringify(gcpInfo);
+
+          // Use safer stringify here too just in case
+          try {
+            return JSON.stringify(gcpInfo);
+          } catch (e) {
+            return JSON.stringify({
+              severity: 'ERROR',
+              message: 'Failed to serialize log message',
+              originalMessage: info.message
+            });
+          }
         })
       )
     })
@@ -121,7 +149,7 @@ const sentryDsn = process.env.SENTRY_DSN;
 const environment = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
 const release = process.env.SENTRY_RELEASE || process.env.K_REVISION || 'unknown';
 
-initSentry({
+SentryModule.initSentry({
   dsn: sentryDsn,
   environment,
   release,
@@ -154,15 +182,13 @@ export interface FrameworkContext {
 // ...
 // Build the full context
 
+// ... (previous code)
 
-export type FrameworkHandler = (
+export type SafeHandler = (
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   req: any,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  res: any,
   ctx: FrameworkContext
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-) => Promise<any>;
+) => Promise<unknown>;
 
 export interface CloudFunctionOptions {
   auth?: {
@@ -237,7 +263,7 @@ function extractMetadata(req: any): { userId?: string; testRunId?: string; pipel
   return { userId, testRunId, pipelineExecutionId, triggerType };
 }
 
-export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFunctionOptions) => {
+export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctionOptions) => {
   // SECURITY: Require auth by default - handlers must explicitly opt out
   const hasAuth = options?.auth?.strategies && options.auth.strategies.length > 0;
   const isPublic = options?.allowUnauthenticated === true;
@@ -252,6 +278,8 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return async (reqOrEvent: any, resOrContext?: any) => {
     const serviceName = process.env.K_SERVICE || 'unknown-function';
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'unknown';
+    const isProd = projectId.includes('-prod'); // Determine environment
 
     // DETECT TRIGGER TYPE
     // HTTP: (req, res)
@@ -260,6 +288,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
 
     let isHttp = false;
     let req = reqOrEvent;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     let res = resOrContext;
 
     // If 'res' has 'status' and 'send' methods, it's HTTP
@@ -301,7 +330,9 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
         headersSent: false
       };
     } else {
-      // HTTP Trigger: Wrap res.send and res.json to capture output
+      // HTTP Trigger: We STILL wrap res methods to capture what's being sent,
+      // ALTHOUGH SafeHandler shouldn't use them directly.
+      // This is a safety net if legacy code persists or specialized headers are needed.
       const originalSend = res.send.bind(res);
       const originalJson = res.json.bind(res);
 
@@ -340,7 +371,7 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       method: req.method,
       path: req.path,
       query: req.query,
-      body: req.body,
+      // body: req.body, // Omitted for brevity/privacy in logs
       userId,
       testRunId,
       triggerType
@@ -368,7 +399,6 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     }
 
     // --- AUTHENTICATION MIDDLEWARE ---
-    // (Only run Auth for HTTP triggers usually, unless payload carries auth)
     let authScopes: string[] = [];
     let authenticatedUserId = userId; // Can be overridden by auth
 
@@ -426,15 +456,12 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
 
         if (!authenticated) {
           const msg = 'Request failed authentication filters';
-          preambleLogger.warn(msg);
-
-          // Log execution failure for Auth rejection
-          if (shouldLogExecution) {
-            await logExecutionFailure(loggingCtx, executionId, new Error(msg));
-          }
-
-          res.status(401).send('Unauthorized');
-          return;
+          // Throw specific 401
+          // We'll catch this in the specialized catch block below
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const err: any = new Error(msg);
+          err.statusCode = 401;
+          throw err;
         }
 
         // Scope Validation (Optional)
@@ -442,15 +469,11 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
           const hasScopes = options.auth.requiredScopes.every(scope => authScopes.includes(scope));
           if (!hasScopes) {
             const msg = `Authenticated user ${authenticatedUserId} missing required scopes`;
-            preambleLogger.warn(msg);
-
-            // Log execution failure for Scope rejection
-            if (shouldLogExecution) {
-              await logExecutionFailure(loggingCtx, executionId, new Error(msg));
-            }
-
-            res.status(403).send('Forbidden: Insufficient Scopes');
-            return;
+            // Throw specific 403
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const err: any = new Error(msg);
+            err.statusCode = 403;
+            throw err;
           }
         }
       }
@@ -485,68 +508,86 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
         res.set('x-execution-id', executionId);
       }
 
-      // Execute Handler
-      const result = await handler(req, res, ctx);
+      // Execute Handler (SafeHandler expects return value)
+      const result = await handler(req, ctx);
 
-      // Check HTTP Status for failure
-      if (isHttp && res.statusCode && res.statusCode >= 400) {
-        // It was a handled error (e.g. 400 Bad Request, 404 Not Found), but still an execution failure
-        // from the perspective of "did the task succeed?"
-        const errorMsg = `HTTP Error ${res.statusCode}`;
+      // AUTOMATIC RESPONSE HANDLING
+      // If result is returned and headers not sent, send 200 OK
+      if (isHttp && !res.headersSent && result !== undefined) {
+        res.status(200).json(result);
+        capturedResponse = result;
+      } else if (isHttp && !res.headersSent) {
+        // If undefined returned, assume 204 No Content or similar?
+        // Or user forgot to return?
+        // For safety, if no response sent, send 200 OK empty
+        res.status(200).send();
+      }
 
-        // Merge result/capturedResponse for failure context as well
-        let finalResult = capturedResponse || result;
-        if (capturedResponse && typeof capturedResponse === 'object' && result && typeof result === 'object') {
-          finalResult = { ...result, ...capturedResponse };
-        }
-
-        if (shouldLogExecution) {
-          await logExecutionFailure(loggingCtx, executionId, new Error(errorMsg), finalResult);
-        }
-      } else {
-        // Log execution success
-        // Combine capturedResponse and result if both exist and are objects, to maximize visibility
+      // Log success
+      if (shouldLogExecution) {
+        // Construct final result for logging
         let finalResult = capturedResponse || result || {};
+        // Merge if both exist and are objects
         if (capturedResponse && typeof capturedResponse === 'object' && result && typeof result === 'object') {
           finalResult = { ...result, ...capturedResponse };
         }
-
-        if (shouldLogExecution) {
-          await logExecutionSuccess(ctx, executionId, finalResult);
-        }
+        await logExecutionSuccess(ctx, executionId, finalResult);
       }
 
       preambleLogger.info('Function completed successfully');
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (err: any) {
+      // CENTRALIZED ERROR HANDLING
+
+      const statusCode = err.statusCode || 500;
+      const isSystemError = statusCode >= 500;
+
       // Log execution failure
-      preambleLogger.error('Function failed', { error: err.message, stack: err.stack });
+      preambleLogger.error('Function failed', { error: err.message, stack: err.stack, statusCode });
 
-      // Capture error in Sentry and flush before function terminates
-      const { captureException, flushSentry } = await import('../infrastructure/sentry');
-      captureException(err, {
-        service: serviceName,
-        execution_id: executionId,
-        user_id: authenticatedUserId,
-        trigger_type: triggerType,
-      }, preambleLogger);
+      // Capture error in Sentry (Only for 500s or explicit system errors)
+      if (isSystemError) {
+        const { captureException, flushSentry } = await import('../infrastructure/sentry');
+        captureException(err, {
+          service: serviceName,
+          execution_id: executionId,
+          user_id: authenticatedUserId,
+          trigger_type: triggerType,
+          status_code: statusCode
+        }, preambleLogger);
 
-      // Critical: Wait for Sentry to send the event before function terminates
-      await flushSentry(2000);
-
-      if (shouldLogExecution) {
-        if (capturedResponse && typeof capturedResponse === 'object') {
-          await logExecutionFailure(loggingCtx, executionId, err, capturedResponse);
-        } else {
-          await logExecutionFailure(loggingCtx, executionId, err);
-        }
+        // Critical: Wait for Sentry to send the event before function terminates
+        await flushSentry(2000);
       }
 
-      // Attach execution ID to response header (safety check)
+      // Log Failure to Execution Store
+      if (shouldLogExecution) {
+        // Pass captured response if any (e.g. partial writes)
+        await logExecutionFailure(loggingCtx, executionId, err, capturedResponse);
+      }
+
+      // Send Error Response (if not already sent)
       if (isHttp && !res.headersSent) {
         res.set('x-execution-id', executionId);
-        res.status(500).send('Internal Server Error');
+
+        // Response Body Logic:
+        // Prod + 500 = Generic Message
+        // Dev/Test OR < 500 = Specific Message
+        const showDetails = !isProd; // Show details if NOT prod
+
+        // If it's a 4xx error, we always show the message (client error)
+        // If it's a 5xx error, we hide it in prod
+        let message = err.message || 'Internal Server Error';
+        if (isProd && isSystemError) {
+          message = 'Internal Server Error';
+        }
+
+        const responseBody: any = { error: message };
+        if (showDetails && err.stack) {
+          responseBody.stack = err.stack;
+        }
+
+        res.status(statusCode).json(responseBody);
       }
     }
   };

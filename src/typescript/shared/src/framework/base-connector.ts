@@ -3,6 +3,7 @@ import { StandardizedActivity } from '../types/pb/standardized_activity';
 import { CloudEventSource } from '../types/pb/events';
 import { ActivitySource } from '../types/pb/activity';
 import { FrameworkContext } from './index';
+import { captureException } from '../infrastructure/sentry';
 
 /**
  * BaseConnector provides a default implementation for common connector tasks.
@@ -18,6 +19,20 @@ export abstract class BaseConnector<TConfig extends ConnectorConfig = ConnectorC
       throw new Error(`Connector ${this.name}: FrameworkContext not set. Ensure context is passed in constructor.`);
     }
     return this._context;
+  }
+
+  /**
+   * Capture a non-fatal error in Sentry.
+   * Useful for partial failures (e.g. 1 activity failed in a batch of 50).
+   */
+  protected captureError(error: unknown, context?: Record<string, unknown>): void {
+    const err = error instanceof Error ? error : new Error(String(error));
+    this.context.logger.warn(`Connector ${this.name} captured non-fatal error`, { error: err.message, ...context });
+
+    captureException(err, {
+      connector: this.name,
+      ...context
+    }, this.context.logger);
   }
 
   abstract readonly name: string;

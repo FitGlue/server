@@ -1,6 +1,7 @@
 import { PubSub, Topic } from '@google-cloud/pubsub';
 import { Logger } from 'winston';
 import { CloudEvent } from 'cloudevents';
+import { captureException } from '../sentry';
 
 export class CloudEventPublisher<T> {
   private topic: Topic;
@@ -55,6 +56,15 @@ export class CloudEventPublisher<T> {
       if (this.logger) {
         this.logger.error(`Failed to publish CloudEvent to ${this.topicName}`, { error });
       }
+
+      // Capture detailed error context to Sentry
+      captureException(error instanceof Error ? error : new Error(String(error)), {
+        topic: this.topicName,
+        ce_type: this.type,
+        ce_source: this.source,
+        subject
+      }, this.logger);
+
       throw error;
     }
   }

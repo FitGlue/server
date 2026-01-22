@@ -1,5 +1,5 @@
-import { createCloudFunction, getRegistry, FrameworkContext, PROJECT_ID } from '@fitglue/shared';
-import { Request, Response } from 'express';
+import { createCloudFunction, getRegistry, FrameworkContext, PROJECT_ID, HttpError } from '@fitglue/shared';
+import { Request } from 'express';
 
 /**
  * Registry Handler
@@ -28,63 +28,58 @@ function getShowcaseBaseUrl(): string {
   return 'https://fitglue.tech';
 }
 
-export const handler = async (req: Request, res: Response, ctx: FrameworkContext) => {
+export const handler = async (req: Request, ctx: FrameworkContext) => {
   const { logger } = ctx;
 
   // Only allow GET
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method Not Allowed' });
-    return;
+    throw new HttpError(405, 'Method Not Allowed');
   }
 
-  try {
-    // Get the plugin registry from shared library
-    const registry = getRegistry();
+  // Get the plugin registry from shared library
+  const registry = getRegistry();
 
-    // Filter out disabled plugins unless ?showAll=true
-    // Marketing mode (?marketingMode=true) shows all enabled plugins including temporarily unavailable ones
-    const showAll = req.query.showAll === 'true';
-    const marketingMode = req.query.marketingMode === 'true';
+  // Filter out disabled plugins unless ?showAll=true
+  // Marketing mode (?marketingMode=true) shows all enabled plugins including temporarily unavailable ones
+  const showAll = req.query.showAll === 'true';
+  const marketingMode = req.query.marketingMode === 'true';
 
-    // Helper to determine if a plugin should be included
-    const shouldIncludePlugin = (p: { enabled?: boolean; isTemporarilyUnavailable?: boolean }) => {
-      if (showAll) return p.enabled;
-      if (marketingMode) return p.enabled; // Include temp unavailable in marketing
-      return p.enabled && !p.isTemporarilyUnavailable; // Exclude temp unavailable in app
-    };
+  // Helper to determine if a plugin should be included
+  const shouldIncludePlugin = (p: { enabled?: boolean; isTemporarilyUnavailable?: boolean }) => {
+    if (showAll) return p.enabled;
+    if (marketingMode) return p.enabled; // Include temp unavailable in marketing
+    return p.enabled && !p.isTemporarilyUnavailable; // Exclude temp unavailable in app
+  };
 
-    // Inject env-specific Showcase URL template
-    const showcaseBaseUrl = getShowcaseBaseUrl();
-    const destinations = registry.destinations
-      .filter(shouldIncludePlugin)
-      .map(d => {
-        if (d.id === 'showcase') {
-          return { ...d, externalUrlTemplate: `${showcaseBaseUrl}/showcase/{id}` };
-        }
-        return d;
-      });
-
-    const response = {
-      sources: registry.sources.filter(shouldIncludePlugin),
-      enrichers: registry.enrichers.filter(shouldIncludePlugin),
-      destinations,
-      integrations: registry.integrations.filter(shouldIncludePlugin), // Apply same logic to integrations
-    };
-
-    // Cache for 5 minutes (plugin list rarely changes)
-    res.set('Cache-Control', 'public, max-age=300');
-    res.status(200).json(response);
-
-    logger.info('Plugin registry returned', {
-      sourceCount: response.sources.length,
-      enricherCount: response.enrichers.length,
-      destinationCount: response.destinations.length,
-      integrationCount: response.integrations.length,
+  // Inject env-specific Showcase URL template
+  const showcaseBaseUrl = getShowcaseBaseUrl();
+  const destinations = registry.destinations
+    .filter(shouldIncludePlugin)
+    .map(d => {
+      if (d.id === 'showcase') {
+        return { ...d, externalUrlTemplate: `${showcaseBaseUrl}/showcase/{id}` };
+      }
+      return d;
     });
-  } catch (e) {
-    logger.error('Failed to get plugin registry', { error: e });
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+
+  const response = {
+    sources: registry.sources.filter(shouldIncludePlugin),
+    enrichers: registry.enrichers.filter(shouldIncludePlugin),
+    destinations,
+    integrations: registry.integrations.filter(shouldIncludePlugin), // Apply same logic to integrations
+  };
+
+  // Note: Cache-Control is not currently supported by SafeHandler.
+  // Ideally: res.set('Cache-Control', 'public, max-age=300');
+
+  logger.info('Plugin registry returned', {
+    sourceCount: response.sources.length,
+    enricherCount: response.enrichers.length,
+    destinationCount: response.destinations.length,
+    integrationCount: response.integrations.length,
+  });
+
+  return response;
 };
 
 // Export the wrapped function - no auth required (public endpoint)

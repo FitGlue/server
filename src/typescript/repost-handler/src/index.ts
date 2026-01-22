@@ -7,10 +7,10 @@
  * - POST /api/repost/full-pipeline      - Full pipeline re-execution
  */
 
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getEffectiveTier } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getEffectiveTier, HttpError } from '@fitglue/shared';
 import { TOPICS } from '@fitglue/shared/dist/config';
 import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import { PubSub } from '@google-cloud/pubsub';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -84,34 +84,23 @@ function parseEnrichedActivityEvent(inputsJson: string): Record<string, unknown>
   }
 }
 
-export const handler = async (req: Request, res: Response, ctx: FrameworkContext) => {
-  // CORS headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+export const handler = async (req: Request, ctx: FrameworkContext) => {
+  // CORS handled by gateway
 
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method Not Allowed' });
-    return;
+    throw new HttpError(405, 'Method Not Allowed');
   }
 
   // Auth check
   if (!ctx.userId) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
+    throw new HttpError(401, 'Unauthorized');
   }
 
   // Check tier (Pro/Athlete only)
   try {
     const user = await ctx.stores.users.get(ctx.userId);
     if (!user) {
-      res.status(401).json({ error: 'User not found' });
-      return;
+      throw new HttpError(401, 'User not found');
     }
 
     const effectiveTier = getEffectiveTier(user);
@@ -119,31 +108,25 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       (user.trialEndsAt && user.trialEndsAt > new Date());
 
     if (!hasPro) {
-      res.status(403).json({ error: 'Athlete tier required for re-post features' });
-      return;
+      throw new HttpError(403, 'Athlete tier required for re-post features');
     }
   } catch (err) {
+    if (err instanceof HttpError) throw err;
     ctx.logger.error('Failed to check user tier', { error: err });
-    res.status(500).json({ error: 'Internal Server Error' });
-    return;
+    throw new HttpError(500, 'Internal Server Error');
   }
 
   // Route to appropriate handler
   const path = req.path;
 
-  try {
-    if (path.endsWith('/missed-destination')) {
-      await handleMissedDestination(req, res, ctx);
-    } else if (path.endsWith('/retry-destination')) {
-      await handleRetryDestination(req, res, ctx);
-    } else if (path.endsWith('/full-pipeline')) {
-      await handleFullPipeline(req, res, ctx);
-    } else {
-      res.status(404).json({ error: 'Not Found' });
-    }
-  } catch (err) {
-    ctx.logger.error('Re-post handler error', { error: err, path });
-    res.status(500).json({ error: 'Internal Server Error' });
+  if (path.endsWith('/missed-destination')) {
+    return await handleMissedDestination(req, ctx);
+  } else if (path.endsWith('/retry-destination')) {
+    return await handleRetryDestination(req, ctx);
+  } else if (path.endsWith('/full-pipeline')) {
+    return await handleFullPipeline(req, ctx);
+  } else {
+    throw new HttpError(404, 'Not Found');
   }
 };
 
@@ -151,49 +134,40 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
  * POST /api/repost/missed-destination
  * Send activity to a new destination that wasn't in the original pipeline.
  */
-async function handleMissedDestination(req: Request, res: Response, ctx: FrameworkContext): Promise<void> {
+async function handleMissedDestination(req: Request, ctx: FrameworkContext): Promise<RepostResponse> {
   const { activityId, destination } = req.body as RepostRequest;
 
   if (!activityId || !destination) {
-    res.status(400).json({ error: 'activityId and destination are required' });
-    return;
+    throw new HttpError(400, 'activityId and destination are required');
   }
 
   // Validate destination enum
   const destEnum = parseDestination(destination);
   if (destEnum === undefined) {
-    res.status(400).json({ error: `Invalid destination: ${destination}` });
-    return;
+    throw new HttpError(400, `Invalid destination: ${destination}`);
   }
 
   // Get synchronized activity
   const activity = await ctx.stores.activities.getSynchronized(ctx.userId!, activityId);
   if (!activity) {
-    res.status(404).json({ error: 'Activity not found' });
-    return;
+    throw new HttpError(404, 'Activity not found');
   }
 
   // Check destination isn't already synced
   const destKey = getDestinationName(destEnum);
   if (activity.destinations && activity.destinations[destKey]) {
-    res.status(400).json({
-      error: `Activity already synced to ${destKey}`,
-      existingExternalId: activity.destinations[destKey]
-    });
-    return;
+    throw new HttpError(400, `Activity already synced to ${destKey}`);
   }
 
   // Get router execution to retrieve EnrichedActivityEvent
   const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
   if (!routerExec || !routerExec.data.inputsJson) {
-    res.status(500).json({ error: 'Unable to retrieve original activity data from execution logs' });
-    return;
+    throw new HttpError(500, 'Unable to retrieve original activity data from execution logs');
   }
 
   const enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
   if (!enrichedEvent) {
-    res.status(500).json({ error: 'Failed to parse activity data from execution logs' });
-    return;
+    throw new HttpError(500, 'Failed to parse activity data from execution logs');
   }
 
   // Generate new execution ID
@@ -245,41 +219,36 @@ async function handleMissedDestination(req: Request, res: Response, ctx: Framewo
     newPipelineExecutionId,
   });
 
-  const response: RepostResponse = {
+  return {
     success: true,
     message: `Activity queued for sync to ${destKey}`,
     newPipelineExecutionId,
     destination: destKey,
     promptUpdatePipeline: true, // Frontend should prompt to add to pipeline
   };
-
-  res.status(200).json(response);
 }
 
 /**
  * POST /api/repost/retry-destination
  * Re-send activity to an existing destination.
  */
-async function handleRetryDestination(req: Request, res: Response, ctx: FrameworkContext): Promise<void> {
+async function handleRetryDestination(req: Request, ctx: FrameworkContext): Promise<RepostResponse> {
   const { activityId, destination } = req.body as RepostRequest;
 
   if (!activityId || !destination) {
-    res.status(400).json({ error: 'activityId and destination are required' });
-    return;
+    throw new HttpError(400, 'activityId and destination are required');
   }
 
   // Validate destination enum
   const destEnum = parseDestination(destination);
   if (destEnum === undefined) {
-    res.status(400).json({ error: `Invalid destination: ${destination}` });
-    return;
+    throw new HttpError(400, `Invalid destination: ${destination}`);
   }
 
   // Get synchronized activity
   const activity = await ctx.stores.activities.getSynchronized(ctx.userId!, activityId);
   if (!activity) {
-    res.status(404).json({ error: 'Activity not found' });
-    return;
+    throw new HttpError(404, 'Activity not found');
   }
 
   // For retry, destination should exist in the original sync
@@ -289,14 +258,12 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
   // Get router execution to retrieve EnrichedActivityEvent
   const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
   if (!routerExec || !routerExec.data.inputsJson) {
-    res.status(500).json({ error: 'Unable to retrieve original activity data from execution logs' });
-    return;
+    throw new HttpError(500, 'Unable to retrieve original activity data from execution logs');
   }
 
   const enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
   if (!enrichedEvent) {
-    res.status(500).json({ error: 'Failed to parse activity data from execution logs' });
-    return;
+    throw new HttpError(500, 'Failed to parse activity data from execution logs');
   }
 
   // Generate new execution ID
@@ -348,7 +315,7 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
     useUpdateMethod: !!hasExistingId,
   });
 
-  const response: RepostResponse = {
+  return {
     success: true,
     message: hasExistingId
       ? `Activity queued for update on ${destKey}`
@@ -356,42 +323,36 @@ async function handleRetryDestination(req: Request, res: Response, ctx: Framewor
     newPipelineExecutionId,
     destination: destKey,
   };
-
-  res.status(200).json(response);
 }
 
 /**
  * POST /api/repost/full-pipeline
  * Re-run the entire pipeline from the beginning with bypass_dedup.
  */
-async function handleFullPipeline(req: Request, res: Response, ctx: FrameworkContext): Promise<void> {
+async function handleFullPipeline(req: Request, ctx: FrameworkContext): Promise<RepostResponse> {
   const { activityId } = req.body as RepostRequest;
 
   if (!activityId) {
-    res.status(400).json({ error: 'activityId is required' });
-    return;
+    throw new HttpError(400, 'activityId is required');
   }
 
   // Get synchronized activity
   const activity = await ctx.stores.activities.getSynchronized(ctx.userId!, activityId);
   if (!activity) {
-    res.status(404).json({ error: 'Activity not found' });
-    return;
+    throw new HttpError(404, 'Activity not found');
   }
 
   // Get enricher execution to retrieve original ActivityPayload/inputs
   const enricherExec = await ctx.stores.executions.getEnricherExecution(activity.pipelineExecutionId);
   if (!enricherExec || !enricherExec.data.inputsJson) {
-    res.status(500).json({ error: 'Unable to retrieve original activity payload from execution logs' });
-    return;
+    throw new HttpError(500, 'Unable to retrieve original activity payload from execution logs');
   }
 
   let originalPayload;
   try {
     originalPayload = JSON.parse(enricherExec.data.inputsJson);
   } catch {
-    res.status(500).json({ error: 'Failed to parse original activity payload' });
-    return;
+    throw new HttpError(500, 'Failed to parse original activity payload');
   }
 
   // Generate new execution ID
@@ -437,13 +398,11 @@ async function handleFullPipeline(req: Request, res: Response, ctx: FrameworkCon
     originalExecutionId: activity.pipelineExecutionId,
   });
 
-  const response: RepostResponse = {
+  return {
     success: true,
     message: 'Activity queued for full pipeline re-execution. Note: This may create duplicate activities in destinations.',
     newPipelineExecutionId,
   };
-
-  res.status(200).json(response);
 }
 
 export const repostHandler = createCloudFunction(handler, {

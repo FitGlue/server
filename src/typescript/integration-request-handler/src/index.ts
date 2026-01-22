@@ -1,8 +1,9 @@
-import * as functions from '@google-cloud/functions-framework';
+import { createCloudFunction, FrameworkContext, HttpError } from '@fitglue/shared';
+import { Request } from 'express';
 import * as admin from 'firebase-admin';
 
-// Initialize Firebase Admin
-if (!admin.apps.length) {
+// Initialize Firebase Admin (Wrapped in createCloudFunction but good to have if side effects used)
+if (admin.apps.length === 0) {
   admin.initializeApp();
 }
 
@@ -83,17 +84,8 @@ function normalizeIntegrationName(input: string): string {
   return cleaned.replace(/\s+/g, '-');
 }
 
-export const integrationRequestHandler = async (req: functions.Request, res: functions.Response) => {
-  // CORS Headers
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  res.set('Access-Control-Max-Age', '3600');
-
-  if (req.method === 'OPTIONS') {
-    res.status(204).send('');
-    return;
-  }
+export const handler = async (req: Request, ctx: FrameworkContext) => {
+  // CORS Headers are NOT handled here anymore. Gateway should handle them.
 
   // GET: Return stats (admin use)
   if (req.method === 'GET') {
@@ -114,18 +106,16 @@ export const integrationRequestHandler = async (req: functions.Request, res: fun
         .sort(([, a], [, b]) => b.count - a.count)
         .map(([name, data]) => ({ name, ...data }));
 
-      res.status(200).json({ requests: sorted });
+      return { requests: sorted };
     } catch (error) {
       console.error('Error fetching stats:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
+      throw new HttpError(500, 'Internal Server Error');
     }
-    return;
   }
 
   // POST: Submit a request
   if (req.method !== 'POST') {
-    res.status(405).send('Method Not Allowed');
-    return;
+    throw new HttpError(405, 'Method Not Allowed');
   }
 
   const { integration, email, website_url } = req.body;
@@ -133,14 +123,12 @@ export const integrationRequestHandler = async (req: functions.Request, res: fun
   // Honeypot spam protection
   if (website_url) {
     console.warn(`Spam detected: honeypot filled. Integration: "${integration}"`);
-    res.status(200).json({ success: true, message: 'Thanks for your feedback!' });
-    return;
+    return { success: true, message: 'Thanks for your feedback!' };
   }
 
   // Validation
   if (!integration || typeof integration !== 'string' || integration.length < 2) {
-    res.status(400).json({ error: 'Please provide a valid integration name.' });
-    return;
+    throw new HttpError(400, 'Please provide a valid integration name.');
   }
 
   const canonicalName = normalizeIntegrationName(integration);
@@ -179,16 +167,19 @@ export const integrationRequestHandler = async (req: functions.Request, res: fun
     });
 
     console.log(`Integration request: "${rawInput}" -> "${canonicalName}"`);
-    res.status(200).json({
+    return {
       success: true,
       message: "Thanks! We'll consider adding this integration.",
       canonicalName,
-    });
+    };
   } catch (error) {
     console.error('Error processing integration request:', error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    throw new HttpError(500, 'Internal Server Error');
   }
 };
 
-// Register function
-functions.http('integrationRequestHandler', integrationRequestHandler);
+// Export the wrapped function with No Auth (Public)
+export const integrationRequestHandler = createCloudFunction(handler, {
+  allowUnauthenticated: true,
+  skipExecutionLogging: true
+});
