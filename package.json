@@ -1,6 +1,6 @@
 {
   "name": "fitglue-server",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "FitGlue server-side Cloud Functions and API handlers",
   "dependencies": {
     "ts-proto": "^2.8.3"

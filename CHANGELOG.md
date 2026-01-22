@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [4.0.1](https://github.com/FitGlue/server/compare/v4.0.0...v4.0.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* sentry setup and some bug fixing ([aac480f](https://github.com/FitGlue/server/commit/aac480f56325c5a3fdcadfd7639d9820095303d4))
+* sentry setup and some bug fixing ([0ad9c76](https://github.com/FitGlue/server/commit/0ad9c7690632576a242e875a0c1daea2a32c5fd0))
+
 ## [4.0.0](https://github.com/FitGlue/server/compare/v3.0.0...v4.0.0) (2026-01-22)
 
 
