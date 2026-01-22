@@ -494,6 +494,12 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	sourceName := source.String()
 
 	for _, p := range userRec.Pipelines {
+		// Skip disabled pipelines
+		if p.Disabled {
+			slog.Info("Skipping disabled pipeline", "id", p.Id, "name", p.Name, "source", p.Source)
+			continue
+		}
+
 		// Match Source - expects canonical format like "SOURCE_HEVY" (normalized by TypeScript layer)
 		if p.Source == sourceName {
 			var enrichers []configuredEnricher

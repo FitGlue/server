@@ -9,6 +9,7 @@
 
 import type { Middleware } from 'openapi-fetch';
 import type { Logger } from 'winston';
+import { captureException } from '../sentry';
 
 /** Maximum size of error body to include in error messages */
 export const MAX_ERROR_BODY_SIZE = 500;
@@ -77,6 +78,13 @@ export function errorLoggingMiddleware(logger: Logger, component?: string): Midd
         const body = await response.clone().text();
         const truncatedBody = truncate(body, MAX_ERROR_BODY_SIZE);
 
+        const error = new HttpError(
+          response.status,
+          response.statusText,
+          truncatedBody,
+          request.url
+        );
+
         logger.error('HTTP error response', {
           component: component || 'http-client',
           url: request.url,
@@ -85,6 +93,16 @@ export function errorLoggingMiddleware(logger: Logger, component?: string): Midd
           statusText: response.statusText,
           body: truncatedBody
         });
+
+        // Capture 5xx errors in Sentry (server errors, not client errors)
+        if (response.status >= 500) {
+          captureException(error, {
+            component: component || 'http-client',
+            url: request.url,
+            method: request.method,
+            status: response.status,
+          }, logger);
+        }
       }
       return response;
     }

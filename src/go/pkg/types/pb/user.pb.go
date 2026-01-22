@@ -635,7 +635,8 @@ type PipelineConfig struct {
 	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"` // e.g. "SOURCE_HEVY"
 	Enrichers     []*EnricherConfig      `protobuf:"bytes,3,rep,name=enrichers,proto3" json:"enrichers,omitempty"`
 	Destinations  []Destination          `protobuf:"varint,4,rep,packed,name=destinations,proto3,enum=fitglue.events.Destination" json:"destinations,omitempty"`
-	Name          string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"` // Optional user-friendly name (e.g., "Morning Gym Sessions")
+	Name          string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`          // Optional user-friendly name (e.g., "Morning Gym Sessions")
+	Disabled      bool                   `protobuf:"varint,6,opt,name=disabled,proto3" json:"disabled,omitempty"` // When true, pipeline is temporarily disabled and skipped by enricher
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -703,6 +704,13 @@ func (x *PipelineConfig) GetName() string {
 		return x.Name
 	}
 	return ""
+}
+
+func (x *PipelineConfig) GetDisabled() bool {
+	if x != nil {
+		return x.Disabled
+	}
+	return false
 }
 
 type UserIntegrations struct {
@@ -2541,13 +2549,14 @@ const file_user_proto_rawDesc = "" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\x10syncCountResetAt\x120\n" +
 	"\x14prevented_sync_count\x18\v \x01(\x05R\x12preventedSyncCount\x12,\n" +
 	"\x12stripe_customer_id\x18\f \x01(\tR\x10stripeCustomerId\x12%\n" +
-	"\x0eaccess_enabled\x18\r \x01(\bR\raccessEnabled\"\xc4\x01\n" +
+	"\x0eaccess_enabled\x18\r \x01(\bR\raccessEnabled\"\xe0\x01\n" +
 	"\x0ePipelineConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x125\n" +
 	"\tenrichers\x18\x03 \x03(\v2\x17.fitglue.EnricherConfigR\tenrichers\x12?\n" +
 	"\fdestinations\x18\x04 \x03(\x0e2\x1b.fitglue.events.DestinationR\fdestinations\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"\x8e\x05\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12\x1a\n" +
+	"\bdisabled\x18\x06 \x01(\bR\bdisabled\"\x8e\x05\n" +
 	"\x10UserIntegrations\x12,\n" +
 	"\x04hevy\x18\x01 \x01(\v2\x18.fitglue.HevyIntegrationR\x04hevy\x122\n" +
 	"\x06fitbit\x18\x02 \x01(\v2\x1a.fitglue.FitbitIntegrationR\x06fitbit\x122\n" +

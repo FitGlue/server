@@ -10,6 +10,7 @@ import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore } from '../storage/firestore';
 import { UserService, ApiKeyService, ExecutionService } from '../domain/services';
 import { AuthorizationService } from '../domain/services/authorization';
+import { initSentry } from '../infrastructure/sentry';
 
 // Initialize Secret Manager
 const secretClient = new SecretManagerServiceClient();
@@ -74,6 +75,20 @@ const logger = winston.createLogger({
     })
   ]
 });
+
+// Initialize Sentry
+const sentryDsn = process.env.SENTRY_DSN;
+const environment = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
+const release = process.env.SENTRY_RELEASE || process.env.K_REVISION || 'unknown';
+
+initSentry({
+  dsn: sentryDsn,
+  environment,
+  release,
+  serverName: process.env.K_SERVICE,
+  tracesSampleRate: environment === 'fitglue-server-prod' ? 0.1 : 1.0,
+  profilesSampleRate: environment === 'fitglue-server-prod' ? 0.1 : 1.0,
+}, logger);
 
 export interface FrameworkContext {
   services: {
@@ -467,6 +482,15 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
     } catch (err: any) {
       // Log execution failure
       preambleLogger.error('Function failed', { error: err.message, stack: err.stack });
+
+      // Capture error in Sentry
+      const { captureException } = await import('../infrastructure/sentry');
+      captureException(err, {
+        service: serviceName,
+        execution_id: executionId,
+        user_id: authenticatedUserId,
+        trigger_type: triggerType,
+      }, preambleLogger);
 
       if (shouldLogExecution) {
         if (capturedResponse && typeof capturedResponse === 'object') {

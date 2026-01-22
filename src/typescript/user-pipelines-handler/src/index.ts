@@ -134,7 +134,17 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: Req
   const body = req.body;
 
   try {
-    // replacePipeline(userId, pipelineId, name, source, enrichers, destinations)
+    // Check if this is a partial update (only disabled field)
+    const bodyKeys = Object.keys(body);
+    if (bodyKeys.length === 1 && bodyKeys[0] === 'disabled') {
+      // Toggle disabled state only
+      await ctx.services.user.togglePipelineDisabled(userId, pipelineId, body.disabled);
+      logger.info('Toggled pipeline disabled state', { userId, pipelineId, disabled: body.disabled });
+      res.status(200).json({ message: 'Pipeline disabled state updated' });
+      return;
+    }
+
+    // Full replacement
     await ctx.services.user.replacePipeline(
       userId,
       pipelineId,

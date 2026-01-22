@@ -168,6 +168,8 @@ export interface PipelineConfig {
   destinations: Destination[];
   /** Optional user-friendly name (e.g., "Morning Gym Sessions") */
   name: string;
+  /** When true, pipeline is temporarily disabled and skipped by enricher */
+  disabled: boolean;
 }
 
 export interface UserIntegrations {

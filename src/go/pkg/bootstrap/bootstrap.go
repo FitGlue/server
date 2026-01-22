@@ -15,6 +15,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/infrastructure/database"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/secrets"
+	sentryPkg "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 
 	firebase "firebase.google.com/go/v4"
@@ -211,6 +212,35 @@ func NewService(ctx context.Context) (*Service, error) {
 	authClient, err := fbApp.Auth(ctx)
 	if err != nil {
 		slog.Warn("Firebase Auth initialization failed", "error", err)
+	}
+
+	// Initialize Sentry
+	sentryDSN := os.Getenv("SENTRY_DSN")
+	environment := os.Getenv("GOOGLE_CLOUD_PROJECT")
+	if environment == "" {
+		environment = "fitglue-server-dev"
+	}
+	release := os.Getenv("SENTRY_RELEASE")
+	if release == "" {
+		release = "unknown"
+	}
+	serverName := os.Getenv("K_SERVICE")
+
+	tracesSampleRate := 0.1
+	if environment == "fitglue-server-dev" {
+		tracesSampleRate = 1.0
+	}
+
+	if err := sentryPkg.Init(sentryPkg.Config{
+		DSN:                sentryDSN,
+		Environment:        environment,
+		Release:            release,
+		ServerName:         serverName,
+		TracesSampleRate:   tracesSampleRate,
+		ProfilesSampleRate: tracesSampleRate,
+	}, slog.Default()); err != nil {
+		// Log but don't fail - Sentry is optional
+		slog.Warn("Sentry initialization failed", "error", err)
 	}
 
 	return &Service{

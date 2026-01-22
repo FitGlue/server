@@ -278,7 +278,8 @@ export const mapPipelineToFirestore = (p: PipelineConfig): Record<string, unknow
   enrichers: p.enrichers?.map(e => ({
     provider_type: e.providerType,
     typed_config: e.typedConfig
-  }))
+  })),
+  disabled: p.disabled || false
 });
 
 export const mapPipelineFromFirestore = (p: Record<string, unknown>): PipelineConfig => ({
@@ -299,7 +300,8 @@ export const mapPipelineFromFirestore = (p: Record<string, unknown>): PipelineCo
   enrichers: ((p.enrichers as any[]) || []).map((e: any) => ({
     providerType: e.provider_type || e.providerType,
     typedConfig: e.typed_config || e.typedConfig || {}
-  }))
+  })),
+  disabled: (p.disabled as boolean) || false
 });
 
 // Helper for partial execution updates

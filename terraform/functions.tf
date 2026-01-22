@@ -221,6 +221,10 @@ resource "google_cloudfunctions2_function" "enricher" {
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
       ASSETS_BASE_URL      = "https://assets.${var.domain_name}"
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -278,6 +282,10 @@ resource "google_cloudfunctions2_function" "enricher_lag" {
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
       ASSETS_BASE_URL      = "https://assets.${var.domain_name}"
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -329,6 +337,10 @@ resource "google_cloudfunctions2_function" "router" {
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       ENABLE_PUBLISH       = "true"
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -365,6 +377,10 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
       GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -408,6 +424,10 @@ resource "google_cloudfunctions2_function" "mock_uploader" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -449,6 +469,10 @@ resource "google_cloudfunctions2_function" "showcase_uploader" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -490,6 +514,10 @@ resource "google_cloudfunctions2_function" "hevy_uploader" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -531,6 +559,10 @@ resource "google_cloudfunctions2_function" "trainingpeaks_uploader" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -573,6 +605,10 @@ resource "google_cloudfunctions2_function" "intervals_uploader" {
       GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -614,6 +650,10 @@ resource "google_cloudfunctions2_function" "googlesheets_uploader" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -652,6 +692,10 @@ resource "google_cloudfunctions2_function" "mock_source_handler" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -690,6 +734,10 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
     timeout_seconds  = 60
     environment_variables = {
       LOG_LEVEL = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -727,6 +775,10 @@ resource "google_cloudfunctions2_function" "fitbit_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -793,6 +845,10 @@ resource "google_cloudfunctions2_function" "strava_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -852,6 +908,10 @@ resource "google_cloudfunctions2_function" "wahoo_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -904,6 +964,10 @@ resource "google_cloudfunctions_function" "auth_on_create" {
   environment_variables = {
     LOG_LEVEL            = var.log_level
     GOOGLE_CLOUD_PROJECT = var.project_id
+    SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+    SENTRY_ORG           = var.sentry_org
+    SENTRY_PROJECT       = var.sentry_project
+    SENTRY_DSN           = var.sentry_dsn
   }
 
   service_account_email = google_service_account.cloud_function_sa.email
@@ -934,6 +998,10 @@ resource "google_cloudfunctions2_function" "inputs_handler" {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
       PUBSUB_TOPIC         = google_pubsub_topic.raw_activity.name
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -971,7 +1039,13 @@ resource "google_cloudfunctions2_function" "activities_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      ENVIRONMENT          = var.environment
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 }
@@ -1008,6 +1082,10 @@ resource "google_cloudfunctions2_function" "user_profile_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1046,6 +1124,10 @@ resource "google_cloudfunctions2_function" "user_integrations_handler" {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
       BASE_URL             = var.base_url
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -1099,6 +1181,10 @@ resource "google_cloudfunctions2_function" "billing_handler" {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
       BASE_URL             = var.base_url
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     service_account_email = google_service_account.cloud_function_sa.email
@@ -1138,6 +1224,10 @@ resource "google_cloudfunctions2_function" "mobile_sync_handler" {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
       BASE_URL             = var.base_url
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     service_account_email = google_service_account.cloud_function_sa.email
@@ -1176,6 +1266,10 @@ resource "google_cloudfunctions2_function" "user_pipelines_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1213,6 +1307,10 @@ resource "google_cloudfunctions2_function" "registry_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1250,6 +1348,10 @@ resource "google_cloudfunctions2_function" "integration_request_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1296,6 +1398,10 @@ resource "google_cloudfunctions2_function" "parkrun_results_source" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       LOG_LEVEL            = var.log_level
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1390,6 +1496,10 @@ resource "google_cloudfunctions2_function" "showcase_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1435,6 +1545,10 @@ resource "google_cloudfunctions2_function" "fit_parser_handler" {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
       ENABLE_PUBLISH       = "true"
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1472,6 +1586,10 @@ resource "google_cloudfunctions2_function" "repost_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1509,6 +1627,10 @@ resource "google_cloudfunctions2_function" "admin_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1546,6 +1668,10 @@ resource "google_cloudfunctions2_function" "polar_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -1598,6 +1724,10 @@ resource "google_cloudfunctions2_function" "oura_handler" {
     environment_variables = {
       LOG_LEVEL            = var.log_level
       GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_RELEASE       = "fitglue-server-@${var.release_version}"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
     }
 
     secret_environment_variables {

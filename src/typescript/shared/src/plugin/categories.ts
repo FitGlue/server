@@ -15,6 +15,7 @@ export const CATEGORY_AI_CONTENT = 'ai_content';
 export const CATEGORY_STATS = 'stats';
 export const CATEGORY_DETECTION = 'detection';
 export const CATEGORY_TRANSFORMATION = 'transformation';
+export const CATEGORY_VISUAL = 'visual';
 export const CATEGORY_LOCATION = 'location';
 export const CATEGORY_LOGIC = 'logic';
 export const CATEGORY_REFERENCES = 'references';
@@ -44,6 +45,7 @@ export const ENRICHER_CATEGORIES: CategoryMeta[] = [
   { id: CATEGORY_STATS, name: 'Stats', emoji: '📊' },
   { id: CATEGORY_DETECTION, name: 'Detection', emoji: '🎯' },
   { id: CATEGORY_TRANSFORMATION, name: 'Transformation', emoji: '🔧' },
+  { id: CATEGORY_VISUAL, name: 'Visual', emoji: '🎨' },
   { id: CATEGORY_LOCATION, name: 'Location', emoji: '🗺️' },
   { id: CATEGORY_LOGIC, name: 'Logic', emoji: '⚙️' },
   { id: CATEGORY_REFERENCES, name: 'References', emoji: '🔗' },
@@ -54,3 +56,10 @@ export const DESTINATION_CATEGORIES: CategoryMeta[] = [
   { id: CATEGORY_ANALYTICS, name: 'Analytics', emoji: '📈' },
   { id: CATEGORY_LOGGING, name: 'Logging', emoji: '📊' },
 ];
+
+/**
+ * Type-safe category unions for compile-time validation
+ */
+export type SourceCategory = typeof CATEGORY_WEARABLES | typeof CATEGORY_APPS | typeof CATEGORY_MANUAL;
+export type EnricherCategory = typeof CATEGORY_AI_CONTENT | typeof CATEGORY_STATS | typeof CATEGORY_DETECTION | typeof CATEGORY_TRANSFORMATION | typeof CATEGORY_VISUAL | typeof CATEGORY_LOCATION | typeof CATEGORY_LOGIC | typeof CATEGORY_REFERENCES;
+export type DestinationCategory = typeof CATEGORY_SOCIAL | typeof CATEGORY_ANALYTICS | typeof CATEGORY_LOGGING;

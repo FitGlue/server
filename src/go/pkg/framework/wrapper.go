@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
+	"time"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/execution"
+	sentryPkg "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 	"github.com/fitglue/server/src/go/pkg/types"
 	"github.com/fitglue/server/src/go/pkg/types/pb"
+	"github.com/getsentry/sentry-go"
 )
 
 // FrameworkContext contains dependencies injected by the framework
@@ -118,6 +121,15 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 			baseLogger = baseLogger.With("user_id", userID)
 		}
 
+		// Set up Sentry scope with execution context
+		sentry.ConfigureScope(func(scope *sentry.Scope) {
+			scope.SetTag("service", serviceName)
+			scope.SetTag("trigger_type", e.Type())
+			if userID != "" {
+				scope.SetUser(sentry.User{ID: userID})
+			}
+		})
+
 		// Framework Logger (Preamble)
 		logger := baseLogger.With("component", "framework")
 
@@ -170,6 +182,14 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 				// Create an error from the panic
 				panicErr := fmt.Errorf("runtime panic: %v", r)
 
+				// Capture in Sentry
+				sentryPkg.CaptureException(panicErr, map[string]interface{}{
+					"service":      serviceName,
+					"execution_id": execID,
+					"user_id":      userID,
+				}, logger)
+				sentryPkg.Flush(2 * time.Second)
+
 				// Use the context we hopefully created, or the parent context if not
 				logCtx := ctx
 				if logErr := execution.LogFailure(logCtx, svc.DB, execID, panicErr, nil); logErr != nil {
@@ -184,9 +204,22 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 		// Log execution result
 		if handlerErr != nil {
 			logger.Error("Function failed", "error", handlerErr)
+
+			// Capture error in Sentry
+			sentryPkg.CaptureException(handlerErr, map[string]interface{}{
+				"service":      serviceName,
+				"execution_id": execID,
+				"user_id":      userID,
+				"trigger_type": triggerType,
+			}, logger)
+
 			if logErr := execution.LogFailure(ctx, svc.DB, execID, handlerErr, outputs); logErr != nil {
 				logger.Warn("Failed to log execution failure", "error", logErr)
 			}
+
+			// Flush Sentry before returning
+			sentryPkg.Flush(2 * time.Second)
+
 			return handlerErr
 		}
 
@@ -221,6 +254,9 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 				logger.Warn("Failed to log execution success", "error", logErr)
 			}
 		}
+
+		// Flush Sentry events before function terminates
+		sentryPkg.Flush(2 * time.Second)
 
 		return nil
 	}

@@ -225,4 +225,24 @@ export class UserStore {
       fcm_tokens: admin.firestore.FieldValue.arrayUnion(token)
     });
   }
+
+  /**
+   * Toggle the disabled state of a specific pipeline.
+   */
+  async togglePipelineDisabled(userId: string, pipelineId: string, disabled: boolean): Promise<void> {
+    const user = await this.get(userId);
+    if (!user) {
+      throw new Error('User not found');
+    }
+
+    const pipelineIndex = user.pipelines?.findIndex(p => p.id === pipelineId);
+    if (pipelineIndex === undefined || pipelineIndex === -1) {
+      throw new Error('Pipeline not found');
+    }
+
+    // Update the disabled field using Firestore field path notation
+    await this.db.collection('users').doc(userId).update({
+      [`pipelines.${pipelineIndex}.disabled`]: disabled
+    });
+  }
 }

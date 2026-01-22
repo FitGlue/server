@@ -233,7 +233,7 @@ export class UserService {
         const normalizedSource = this.normalizeSource(source);
         const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id, name, source: normalizedSource, enrichers, destinations: destEnums
+            id, name, source: normalizedSource, enrichers, destinations: destEnums, disabled: false
         });
         return id;
     }
@@ -250,7 +250,7 @@ export class UserService {
         const normalizedSource = this.normalizeSource(source);
         const destEnums = this.mapDestinations(destinations);
         await this.userStore.addPipeline(userId, {
-            id: pipelineId, name, source: normalizedSource, enrichers, destinations: destEnums
+            id: pipelineId, name, source: normalizedSource, enrichers, destinations: destEnums, disabled: false
         });
     }
 
@@ -298,6 +298,13 @@ export class UserService {
 
         // Map from registry ID to protobuf format
         return sourceMap[source.toLowerCase()] ?? `SOURCE_${source.toUpperCase()}`;
+    }
+
+    /**
+     * Toggle the disabled state of a pipeline.
+     */
+    async togglePipelineDisabled(userId: string, pipelineId: string, disabled: boolean): Promise<void> {
+        return this.userStore.togglePipelineDisabled(userId, pipelineId, disabled);
     }
 }
 

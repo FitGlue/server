@@ -10,6 +10,7 @@ require (
 	firebase.google.com/go/v4 v4.18.0
 	github.com/GoogleCloudPlatform/functions-framework-go v1.9.2
 	github.com/cloudevents/sdk-go/v2 v2.16.2
+	github.com/getsentry/sentry-go v0.27.0
 	github.com/golang/protobuf v1.5.4
 	github.com/google/generative-ai-go v0.20.1
 	github.com/google/uuid v1.6.0

@@ -26,6 +26,7 @@ import * as admin from 'firebase-admin';
  * - GET  /api/admin/users/:id                          - Full user details
  * - PATCH /api/admin/users/:id                         - Update tier/admin/trial
  * - DELETE /api/admin/users/:id/integrations/:provider - Remove integration
+ * - PATCH /api/admin/users/:id/pipelines/:pipelineId   - Toggle pipeline disabled state
  * - DELETE /api/admin/users/:id/pipelines/:pipelineId  - Remove pipeline
  * - DELETE /api/admin/users/:id/activities             - Delete synchronized activities
  * - DELETE /api/admin/users/:id/pending-inputs         - Delete pending inputs
@@ -249,6 +250,7 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
         name: p.name || 'Unnamed Pipeline',
         source: p.source,
         destinations: (p.destinations || []).map(d => formatDestination(d)),
+        disabled: p.disabled || false,
       }));
 
       res.status(200).json({
@@ -324,6 +326,52 @@ export const handler = async (req: Request, res: Response, ctx: FrameworkContext
       res.status(200).json({ success: true });
     } catch (e) {
       logger.error('Failed to remove integration', { error: e, targetUserId, provider });
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+    return;
+  }
+
+  // ========================================
+  // PATCH /api/admin/users/:id/pipelines/:pipelineId - Toggle disabled state
+  // ========================================
+  const pipelineUpdateMatch = subPath.match(/^\/users\/([^/]+)\/pipelines\/([^/]+)$/);
+  if (pipelineUpdateMatch && req.method === 'PATCH') {
+    const targetUserId = pipelineUpdateMatch[1];
+    const pipelineId = pipelineUpdateMatch[2];
+    const { disabled } = req.body;
+
+    if (disabled === undefined) {
+      res.status(400).json({ error: 'Missing disabled field in request body' });
+      return;
+    }
+
+    try {
+      const user = await services.user.get(targetUserId);
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      const pipelineIndex = user.pipelines?.findIndex(p => p.id === pipelineId);
+      if (pipelineIndex === undefined || pipelineIndex === -1) {
+        res.status(404).json({ error: 'Pipeline not found' });
+        return;
+      }
+
+      // Update the disabled field using Firestore field path notation
+      await db.collection('users').doc(targetUserId).update({
+        [`pipelines.${pipelineIndex}.disabled`]: disabled
+      });
+
+      logger.info('Admin toggled pipeline disabled state', {
+        adminUserId: userId,
+        targetUserId,
+        pipelineId,
+        disabled
+      });
+      res.status(200).json({ success: true });
+    } catch (e) {
+      logger.error('Failed to update pipeline', { error: e, targetUserId, pipelineId });
       res.status(500).json({ error: 'Internal Server Error' });
     }
     return;

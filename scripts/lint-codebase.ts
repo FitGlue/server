@@ -56,7 +56,7 @@ const NO_TERRAFORM_REQUIRED = ['admin-cli', 'mcp-server'];
 // Rules that should FAIL if they have warnings (blocking)
 const ERROR_RULES = new Set([
   // Infrastructure
-  'I1', 'I2', 'I3', 'I4', 'I5',
+  'I1', 'I2', 'I3', 'I4', 'I5', 'R1',
   // Go
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13',
   // TypeScript
@@ -3484,6 +3484,167 @@ function checkResponsiveMediaQueries(): CheckResult {
 }
 
 // ============================================================================
+// Check R1: Plugin Category Validation
+// ============================================================================
+
+/**
+ * Validates that all category fields in registry.ts match the defined constants
+ * in categories.ts. This ensures plugins appear correctly on the marketing site.
+ */
+function checkPluginCategoryValidation(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+  const categoriesPath = path.join(TS_SRC_DIR, 'shared/src/plugin/categories.ts');
+
+  if (!fs.existsSync(registryPath)) {
+    errors.push('Plugin registry not found');
+    return { name: 'Plugin Category Validation', passed: false, errors, warnings };
+  }
+
+  if (!fs.existsSync(categoriesPath)) {
+    errors.push('Categories file not found');
+    return { name: 'Plugin Category Validation', passed: false, errors, warnings };
+  }
+
+  // Extract valid categories from categories.ts
+  const categoriesContent = fs.readFileSync(categoriesPath, 'utf-8');
+  const validCategories = new Set<string>();
+
+  // Extract all CATEGORY_* constants
+  const categoryConstPattern = /export const (CATEGORY_\w+) = '([^']+)'/g;
+  let match;
+  while ((match = categoryConstPattern.exec(categoriesContent)) !== null) {
+    validCategories.add(match[2]); // The string value, e.g., 'visual', 'stats'
+  }
+
+  // Read registry and extract all category values
+  const registryContent = fs.readFileSync(registryPath, 'utf-8');
+
+  // Split into registration blocks
+  const registrationBlocks = registryContent.split(/\n(registerSource|registerEnricher|registerDestination|registerIntegration)\(/);
+
+  for (let i = 1; i < registrationBlocks.length; i += 2) {
+    const registerType = registrationBlocks[i];
+    const blockContent = registrationBlocks[i + 1];
+
+    // Extract id and category from this block
+    const idMatch = /id:\s*['"]([^'"]+)['"]/.exec(blockContent);
+    const categoryMatch = /category:\s*['"]([^'"]+)['"]/.exec(blockContent);
+
+    if (categoryMatch) {
+      const category = categoryMatch[1];
+      const pluginId = idMatch ? idMatch[1] : 'unknown';
+
+      if (!validCategories.has(category)) {
+        errors.push(`Plugin '${pluginId}' uses invalid category '${category}' (not defined in categories.ts)`);
+      }
+    }
+  }
+
+  return {
+    name: 'Plugin Category Validation',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check R2: Plugin Icon Uniqueness
+// ============================================================================
+
+/**
+ * Validates that enricher plugins use unique icons (emojis).
+ * Product integrations (sources/destinations) should use SVG icons.
+ */
+function checkPluginIconUniqueness(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+
+  if (!fs.existsSync(registryPath)) {
+    errors.push('Plugin registry not found');
+    return { name: 'Plugin Icon Uniqueness', passed: false, errors, warnings };
+  }
+
+  const registryContent = fs.readFileSync(registryPath, 'utf-8');
+
+  // Track icons by plugin type
+  const enricherIcons = new Map<string, string[]>(); // icon -> [plugin ids]
+  const sourceIcons = new Map<string, string[]>();
+  const destinationIcons = new Map<string, string[]>();
+
+  // Split into registration blocks
+  const registrationBlocks = registryContent.split(/\n(registerSource|registerEnricher|registerDestination|registerIntegration)\(/);
+
+  for (let i = 1; i < registrationBlocks.length; i += 2) {
+    const registerType = registrationBlocks[i];
+    const blockContent = registrationBlocks[i + 1];
+
+    // Extract id, icon, and iconType from this block
+    const idMatch = /id:\s*['"]([^'"]+)['"]/.exec(blockContent);
+    const iconMatch = /icon:\s*['"]([^'"]+)['"]/.exec(blockContent);
+    const iconTypeMatch = /iconType:\s*['"]([^'"]+)['"]/.exec(blockContent);
+
+    if (!idMatch || !iconMatch) continue;
+
+    const pluginId = idMatch[1];
+    const icon = iconMatch[1];
+    const iconType = iconTypeMatch ? iconTypeMatch[1] : 'emoji';
+
+    // Skip if using SVG (those are allowed to be unique per product)
+    if (iconType === 'svg') continue;
+
+    // Track by type
+    let iconMap: Map<string, string[]>;
+    if (registerType === 'registerEnricher') {
+      iconMap = enricherIcons;
+    } else if (registerType === 'registerSource') {
+      iconMap = sourceIcons;
+    } else if (registerType === 'registerDestination') {
+      iconMap = destinationIcons;
+    } else {
+      continue; // registerIntegration doesn't need icon uniqueness check
+    }
+
+    if (!iconMap.has(icon)) {
+      iconMap.set(icon, []);
+    }
+    iconMap.get(icon)!.push(pluginId);
+  }
+
+  // Check for duplicates in enrichers (should be unique)
+  for (const [icon, pluginIds] of enricherIcons.entries()) {
+    if (pluginIds.length > 1) {
+      errors.push(`Enricher icon '${icon}' is used by multiple plugins: ${pluginIds.join(', ')}`);
+    }
+  }
+
+  // Warn about sources/destinations using emojis instead of SVGs
+  for (const [icon, pluginIds] of sourceIcons.entries()) {
+    if (pluginIds.length > 1) {
+      warnings.push(`Source icon '${icon}' is used by multiple plugins: ${pluginIds.join(', ')} - consider using SVG icons for product integrations`);
+    }
+  }
+
+  for (const [icon, pluginIds] of destinationIcons.entries()) {
+    if (pluginIds.length > 1) {
+      warnings.push(`Destination icon '${icon}' is used by multiple plugins: ${pluginIds.join(', ')} - consider using SVG icons for product integrations`);
+    }
+  }
+
+  return {
+    name: 'Plugin Icon Uniqueness',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Main Runner
 // ============================================================================
 
@@ -3535,6 +3696,8 @@ function main(): void {
         { id: 'I3', fn: () => ({ ...checkWorkspaceMembership(), name: 'I3: Workspace Membership' }) },
         { id: 'I4', fn: () => ({ ...checkRegistryCoverage(), name: 'I4: Registry Coverage' }) },
         { id: 'I5', fn: () => ({ ...checkPluginRegistration(), name: 'I5: Plugin Registration' }) },
+        { id: 'R1', fn: () => ({ ...checkPluginCategoryValidation(), name: 'R1: Plugin Category Validation' }) },
+        { id: 'R2', fn: () => ({ ...checkPluginIconUniqueness(), name: 'R2: Plugin Icon Uniqueness' }) },
       ]
     },
     {

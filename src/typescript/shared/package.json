@@ -27,6 +27,8 @@
     "@google-cloud/functions-framework": "^4.0.1",
     "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/secret-manager": "^6.1.1",
+    "@sentry/node": "^8.0.0",
+    "@sentry/profiling-node": "^8.0.0",
     "cloudevents": "^10.0.0",
     "openapi-fetch": "^0.15.0",
     "typescript": "^5.9.3",
