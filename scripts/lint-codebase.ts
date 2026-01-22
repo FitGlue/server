@@ -60,7 +60,7 @@ const ERROR_RULES = new Set([
   // Go
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13',
   // TypeScript
-  'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14',
+  'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14', 'T15', 'T16', 'T17',
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
@@ -98,6 +98,8 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'E6': [/admin-cli/, /events-helper/, /fitbit-handler/, /EnricherConfigForm/],
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   'W1': [/usePluginRegistry/],
+  // T16: showcase-handler uses Gen1 Cloud Functions framework (functions-framework, not SafeHandler)
+  'T16': [/showcase-handler/],
 };
 
 // ============================================================================
@@ -1759,6 +1761,184 @@ function checkHardcodedEmojiMaps(): CheckResult {
 
   return {
     name: 'Hardcoded Emoji Maps (W13)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 19c: SafeHandler Signature Compliance (T15)
+// ============================================================================
+
+/**
+ * Validates that all handler functions use the SafeHandler signature:
+ * - (req, ctx) => Promise<unknown | FrameworkResponse>
+ * NOT the legacy (req, res, ctx) => Promise<void> signature.
+ */
+function checkSafeHandlerSignature(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Handler directories that should use SafeHandler
+  const handlersDir = TS_SRC_DIR;
+  const handlerDirs = getDirectories(handlersDir)
+    .filter(d => d.endsWith('-handler') || d.endsWith('-oauth-handler'))
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const indexPath = path.join(handlersDir, dir, 'src', 'index.ts');
+    if (!fs.existsSync(indexPath)) continue;
+
+    const content = fs.readFileSync(indexPath, 'utf-8');
+    const fileName = `${dir}/src/index.ts`;
+
+    // Check for legacy (req, res, ctx) signature in handler function
+    // Pattern: async (req: any, res: any, ctx:
+    const legacySignaturePattern = /(?:async\s+)?\(\s*req\s*:\s*\w+\s*,\s*res\s*:\s*\w+\s*,\s*ctx\s*:/g;
+    if (legacySignaturePattern.test(content)) {
+      errors.push(`${fileName}: Uses legacy (req, res, ctx) signature - should be (req, ctx)`);
+    }
+
+    // Check for Promise<void> return type in handlers (should return data or FrameworkResponse)
+    const voidReturnPattern = /(?:async\s+)?\(\s*req\s*:\s*\w+\s*,\s*ctx\s*:[^)]+\)\s*:\s*Promise<void>/g;
+    if (voidReturnPattern.test(content)) {
+      warnings.push(`${fileName}: Handler returns Promise<void> - should return data or FrameworkResponse`);
+    }
+  }
+
+  // Check connector verifyRequest implementations
+  const connectorDirs = ['hevy-handler', 'fitbit-handler', 'strava-handler', 'wahoo-handler', 'polar-handler'];
+  for (const dir of connectorDirs) {
+    const connectorPath = path.join(handlersDir, dir, 'src', 'connector.ts');
+    if (!fs.existsSync(connectorPath)) continue;
+
+    const content = fs.readFileSync(connectorPath, 'utf-8');
+    const fileName = `${dir}/src/connector.ts`;
+
+    // verifyRequest should accept FrameworkContext, not `any` for context
+    const anyContextPattern = /verifyRequest\s*\([^)]*,\s*context\s*:\s*any\s*\)/g;
+    if (anyContextPattern.test(content)) {
+      warnings.push(`${fileName}: verifyRequest uses 'context: any' - should use 'context: FrameworkContext'`);
+    }
+  }
+
+  return {
+    name: 'SafeHandler Signature Compliance (T15)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 19d: No Direct Response Object Usage (T16)
+// ============================================================================
+
+/**
+ * Ensures handlers don't use direct response object methods.
+ * Handlers should return values/FrameworkResponse, not call res.send/json/redirect.
+ */
+function checkNoDirectResponseUsage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const handlersDir = TS_SRC_DIR;
+  const handlerDirs = getDirectories(handlersDir)
+    .filter(d => d.endsWith('-handler') || d.endsWith('-oauth-handler'))
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const srcDir = path.join(handlersDir, dir, 'src');
+    if (!fs.existsSync(srcDir)) continue;
+
+    // Check all .ts files in src/ (excluding tests)
+    const tsFiles = fs.readdirSync(srcDir)
+      .filter(f => f.endsWith('.ts') && !f.endsWith('.test.ts'))
+      .map(f => path.join(srcDir, f));
+
+    for (const file of tsFiles) {
+      const content = fs.readFileSync(file, 'utf-8');
+      const fileName = path.relative(TS_SRC_DIR, file);
+
+      // Skip files that are just importing/mocking for tests
+      if (content.includes('jest.mock')) continue;
+
+      // Check for res.status, res.send, res.json, res.redirect usage
+      const responseMethodPatterns = [
+        { pattern: /\bres\.status\s*\(/g, method: 'res.status()' },
+        { pattern: /\bres\.send\s*\(/g, method: 'res.send()' },
+        { pattern: /\bres\.json\s*\(/g, method: 'res.json()' },
+        { pattern: /\bres\.redirect\s*\(/g, method: 'res.redirect()' },
+      ];
+
+      for (const { pattern, method } of responseMethodPatterns) {
+        if (pattern.test(content)) {
+          // Check if it's in a comment (acceptable for documentation)
+          const lines = content.split('\n');
+          for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+            if (pattern.test(line) && !line.trim().startsWith('//') && !line.trim().startsWith('*')) {
+              errors.push(`${fileName}:${i + 1}: Uses ${method} - return value or FrameworkResponse instead`);
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'No Direct Response Object Usage (T16)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 19e: Connector FrameworkContext Usage (T17)
+// ============================================================================
+
+/**
+ * Validates that Connector interface and implementations use FrameworkContext
+ * instead of `any` for context parameters.
+ */
+function checkConnectorFrameworkContext(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Check the Connector interface definition
+  const connectorInterfacePath = path.join(TS_SRC_DIR, 'shared/src/framework/connector.ts');
+  if (fs.existsSync(connectorInterfacePath)) {
+    const content = fs.readFileSync(connectorInterfacePath, 'utf-8');
+
+    // Check verifyRequest signature in interface
+    const verifyRequestPattern = /verifyRequest\s*\([^)]*context\s*:\s*any\s*\)/g;
+    if (verifyRequestPattern.test(content)) {
+      errors.push('shared/src/framework/connector.ts: Connector.verifyRequest uses "context: any" - should use "context: FrameworkContext"');
+    }
+
+    // Check resolveUser signature in interface
+    const resolveUserPattern = /resolveUser\?\s*\([^)]*context\s*:\s*any\s*\)/g;
+    if (resolveUserPattern.test(content)) {
+      warnings.push('shared/src/framework/connector.ts: Connector.resolveUser uses "context: any" - should use "context: FrameworkContext"');
+    }
+  }
+
+  // Check BaseConnector implementation
+  const baseConnectorPath = path.join(TS_SRC_DIR, 'shared/src/framework/base-connector.ts');
+  if (fs.existsSync(baseConnectorPath)) {
+    const content = fs.readFileSync(baseConnectorPath, 'utf-8');
+
+    const anyContextPattern = /\bcontext\s*:\s*any\b/g;
+    if (anyContextPattern.test(content)) {
+      warnings.push('shared/src/framework/base-connector.ts: Uses "context: any" - prefer FrameworkContext');
+    }
+  }
+
+  return {
+    name: 'Connector FrameworkContext Usage (T17)',
     passed: errors.length === 0,
     errors,
     warnings
@@ -3737,6 +3917,9 @@ function main(): void {
         { id: 'T12', fn: () => ({ ...checkDestinationTopicSync(), name: 'T12: Destination Topic Mapping Sync' }) },
         { id: 'T13', fn: () => ({ ...checkPipelineExecutionLogging(), name: 'T13: Pipeline Execution Logging' }) },
         { id: 'T14', fn: () => ({ ...checkSharedImportResolution(), name: 'T14: Shared Import Resolution' }) },
+        { id: 'T15', fn: () => ({ ...checkSafeHandlerSignature(), name: 'T15: SafeHandler Signature Compliance' }) },
+        { id: 'T16', fn: () => ({ ...checkNoDirectResponseUsage(), name: 'T16: No Direct Response Object Usage' }) },
+        { id: 'T17', fn: () => ({ ...checkConnectorFrameworkContext(), name: 'T17: Connector FrameworkContext Usage' }) },
       ]
     },
     {

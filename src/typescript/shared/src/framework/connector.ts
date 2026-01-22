@@ -123,5 +123,5 @@ export interface Connector<TConfig extends ConnectorConfig = ConnectorConfig, TR
    * @returns userId if resolved from payload, null to use auth-provided userId
    */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  resolveUser?(payload: any, context: any): Promise<string | null>;
+  resolveUser?(payload: any, context: import('./index').FrameworkContext): Promise<string | null>;
 }
