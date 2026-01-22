@@ -42,7 +42,7 @@ resource "google_storage_bucket_iam_member" "version_config_web_ci_access" {
 
 # Showcase assets bucket - stores generated images (AI banners, route thumbnails, muscle heatmaps)
 resource "google_storage_bucket" "showcase_assets_bucket" {
-  name     = "fitglue-showcase-assets"
+  name     = "${var.project_id}-showcase-assets"
   location = var.region
 
   uniform_bucket_level_access = true
