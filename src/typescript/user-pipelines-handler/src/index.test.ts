@@ -17,6 +17,7 @@ describe('user-pipelines-handler', () => {
       addPipeline: jest.fn(),
       replacePipeline: jest.fn(),
       removePipeline: jest.fn(),
+      togglePipelineDisabled: jest.fn(),
     };
 
     req = {
@@ -171,6 +172,40 @@ describe('user-pipelines-handler', () => {
         ['strava', 'mock']
       );
       expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('toggles disabled state when only disabled field is sent', async () => {
+      req.body = { disabled: true };
+      await handler(req, res, ctx);
+
+      expect(mockUserService.togglePipelineDisabled).toHaveBeenCalledWith('user-1', 'pipeline-123', true);
+      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('toggles disabled state to false when disabled=false is sent', async () => {
+      req.body = { disabled: false };
+      await handler(req, res, ctx);
+
+      expect(mockUserService.togglePipelineDisabled).toHaveBeenCalledWith('user-1', 'pipeline-123', false);
+      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('returns 400 when source is missing for full update', async () => {
+      req.body = { destinations: ['strava'] };
+      await handler(req, res, ctx);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 when destinations is missing for full update', async () => {
+      req.body = { source: 'fitbit' };
+      await handler(req, res, ctx);
+
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
     });
   });
 });

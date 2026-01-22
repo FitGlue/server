@@ -116,4 +116,12 @@ export function wrapHandler<T extends (...args: unknown[]) => Promise<unknown>>(
   }) as T;
 }
 
+/**
+ * Flush Sentry events - critical for Cloud Functions!
+ * Call this before the function terminates to ensure events are sent.
+ */
+export async function flushSentry(timeout: number = 2000): Promise<boolean> {
+  return Sentry.flush(timeout);
+}
+
 export { Sentry };

@@ -134,9 +134,15 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: Req
   const body = req.body;
 
   try {
-    // Check if this is a partial update (only disabled field)
+    // Check if this is a partial update (disabled field present, no source = toggle request)
+    // A full replacement always requires 'source', so its absence indicates toggle intent
     const bodyKeys = Object.keys(body);
-    if (bodyKeys.length === 1 && bodyKeys[0] === 'disabled') {
+    const hasDisabled = Object.prototype.hasOwnProperty.call(body, 'disabled');
+    const hasSource = Object.prototype.hasOwnProperty.call(body, 'source');
+
+    logger.info('PATCH pipeline request received', { userId, pipelineId, bodyKeys, body, hasDisabled, hasSource });
+
+    if (hasDisabled && !hasSource) {
       // Toggle disabled state only
       await ctx.services.user.togglePipelineDisabled(userId, pipelineId, body.disabled);
       logger.info('Toggled pipeline disabled state', { userId, pipelineId, disabled: body.disabled });
@@ -144,14 +150,24 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: Req
       return;
     }
 
-    // Full replacement
+    // Full replacement - validate required fields first
+    if (!body.source) {
+      res.status(400).json({ error: 'Missing required field: source' });
+      return;
+    }
+
+    if (!body.destinations || !Array.isArray(body.destinations) || body.destinations.length === 0) {
+      res.status(400).json({ error: 'Missing required field: destinations (must be non-empty array)' });
+      return;
+    }
+
     await ctx.services.user.replacePipeline(
       userId,
       pipelineId,
       body.name || '',
       body.source,
       body.enrichers || [],
-      body.destinations || []
+      body.destinations
     );
     logger.info('Updated pipeline', { userId, pipelineId });
     res.status(200).json({ message: 'Pipeline updated' });

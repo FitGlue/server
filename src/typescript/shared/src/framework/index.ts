@@ -48,11 +48,51 @@ export const db = admin.firestore();
 // Initialize PubSub
 const pubsub = new PubSub();
 
+// Helper to serialize Error objects for logging
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeErrors(obj: any): any {
+  if (obj instanceof Error) {
+    return {
+      message: obj.message,
+      name: obj.name,
+      stack: obj.stack,
+      // Include any custom properties
+      ...Object.getOwnPropertyNames(obj).reduce((acc, key) => {
+        if (!['message', 'name', 'stack'].includes(key)) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          acc[key] = (obj as any)[key];
+        }
+        return acc;
+      }, {} as Record<string, unknown>)
+    };
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(serializeErrors);
+  }
+  if (obj && typeof obj === 'object') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const result: any = {};
+    for (const key of Object.keys(obj)) {
+      result[key] = serializeErrors(obj[key]);
+    }
+    return result;
+  }
+  return obj;
+}
+
+// Custom format to properly serialize Error objects in metadata
+const errorSerializer = winston.format((info) => {
+  return serializeErrors(info);
+});
+
 // Configure Structured Logging
 const logLevel = (process.env.LOG_LEVEL || 'info').toLowerCase();
 const logger = winston.createLogger({
   level: logLevel, // Use configured level
-  format: winston.format.json(),
+  format: winston.format.combine(
+    errorSerializer(),
+    winston.format.json()
+  ),
   defaultMeta: { service: process.env.K_SERVICE || 'unknown-service' },
   transports: [
     new winston.transports.Console({
@@ -86,8 +126,8 @@ initSentry({
   environment,
   release,
   serverName: process.env.K_SERVICE,
-  tracesSampleRate: environment === 'fitglue-server-prod' ? 0.1 : 1.0,
-  profilesSampleRate: environment === 'fitglue-server-prod' ? 0.1 : 1.0,
+  tracesSampleRate: environment.includes('prod') ? 0.1 : 1.0,
+  profilesSampleRate: environment.includes('prod') ? 0.1 : 1.0,
 }, logger);
 
 export interface FrameworkContext {
@@ -483,14 +523,17 @@ export const createCloudFunction = (handler: FrameworkHandler, options?: CloudFu
       // Log execution failure
       preambleLogger.error('Function failed', { error: err.message, stack: err.stack });
 
-      // Capture error in Sentry
-      const { captureException } = await import('../infrastructure/sentry');
+      // Capture error in Sentry and flush before function terminates
+      const { captureException, flushSentry } = await import('../infrastructure/sentry');
       captureException(err, {
         service: serviceName,
         execution_id: executionId,
         user_id: authenticatedUserId,
         trigger_type: triggerType,
       }, preambleLogger);
+
+      // Critical: Wait for Sentry to send the event before function terminates
+      await flushSentry(2000);
 
       if (shouldLogExecution) {
         if (capturedResponse && typeof capturedResponse === 'object') {
