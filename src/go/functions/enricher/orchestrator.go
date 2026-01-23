@@ -309,17 +309,8 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			if res.NameSuffix != "" {
 				currentActivity.Name += res.NameSuffix
 			}
-			// Note: Description append logic usually happens at end, but if a provider filters on description?
-			// Let's update Description too.
-			if res.Description != "" {
-				trimmed := strings.TrimSpace(res.Description)
-				if trimmed != "" {
-					if currentActivity.Description != "" {
-						currentActivity.Description += "\n\n"
-					}
-					currentActivity.Description += trimmed
-				}
-			}
+			// Note: Description merging happens at the end during Fan-In phase to avoid duplications.
+			// We do NOT append to currentActivity.Description here.
 			if res.ActivityType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
 				currentActivity.Type = res.ActivityType
 			}
@@ -364,7 +355,8 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 		if payload.StandardizedActivity != nil {
 			finalEvent.Name = payload.StandardizedActivity.Name
-			finalEvent.Description = payload.StandardizedActivity.Description
+			// Start with the original description (not the mutated one)
+			finalEvent.Description = ""
 			finalEvent.ActivityType = payload.StandardizedActivity.Type
 		}
 
@@ -400,6 +392,17 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			}
 			cfgName := configs[i].ProviderType.String()
 			finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, cfgName)
+
+			// Merge descriptions from enrichers (build from scratch to avoid duplications)
+			if res.Description != "" {
+				trimmed := strings.TrimSpace(res.Description)
+				if trimmed != "" {
+					if finalEvent.Description != "" {
+						finalEvent.Description += "\n\n"
+					}
+					finalEvent.Description += trimmed
+				}
+			}
 
 			// Merge Data Streams into Records
 			if len(res.HeartRateStream) > 0 {

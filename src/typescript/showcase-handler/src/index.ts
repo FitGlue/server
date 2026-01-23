@@ -9,7 +9,8 @@ import {
   FrameworkResponse,
   HttpError,
   FrameworkContext,
-  routeRequest
+  routeRequest,
+  db
 } from '@fitglue/shared';
 import * as admin from 'firebase-admin';
 import { EnricherProviderType, UserRecord } from '@fitglue/shared/dist/types/pb/user';
@@ -22,8 +23,8 @@ import { Request } from 'express';
  *   GET /showcase/{id}     - Redirects to static viewer page
  */
 export const showcaseHandler = createCloudFunction(async (req: Request, ctx: FrameworkContext) => {
-  const { db } = ctx.stores as unknown as { db: admin.firestore.Firestore };
   const showcaseStore = new ShowcaseStore(db);
+
 
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
