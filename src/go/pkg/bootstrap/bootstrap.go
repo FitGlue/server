@@ -220,7 +220,10 @@ func NewService(ctx context.Context) (*Service, error) {
 	}
 	release := os.Getenv("SENTRY_RELEASE")
 	if release == "" {
-		release = "unknown"
+		release = os.Getenv("K_REVISION")
+		if release == "" {
+			release = "unknown"
+		}
 	}
 	serverName := os.Getenv("K_SERVICE")
 

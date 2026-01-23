@@ -8,7 +8,9 @@ import {
     ActivityStore,
     ApiKeyStore,
     ExecutionStore,
+    PipelineStore,
     EnricherProviderType,
+    Destination,
     db,
     createFitbitClient,
     UserRecord,
@@ -39,8 +41,9 @@ const userStore = new UserStore(db);
 const activityStore = new ActivityStore(db);
 const apiKeyStore = new ApiKeyStore(db);
 const executionStore = new ExecutionStore(db);
+const pipelineStore = new PipelineStore(db);
 
-const userService = new UserService(userStore, activityStore);
+const userService = new UserService(userStore, activityStore, pipelineStore);
 const apiKeyService = new ApiKeyService(apiKeyStore);
 const executionService = new ExecutionService(executionStore);
 
@@ -418,7 +421,7 @@ const getDestinationName = (dest: number | string): string => {
 };
 
 // Helper to format user output
-const formatUserOutput = (user: UserRecord) => {
+const formatUserOutput = async (user: UserRecord) => {
     // Adapter for legacy format where doc was passed
     const data = user;
 
@@ -436,10 +439,12 @@ const formatUserOutput = (user: UserRecord) => {
     console.log(`   Created: ${createdAt || 'Unknown'}`);
     console.log(`   Integrations: ${integrations.join(', ') || 'None'}`);
 
-    if (data.pipelines && Array.isArray(data.pipelines) && data.pipelines.length > 0) {
+    // Fetch pipelines from the pipeline store
+    const pipelines = await pipelineStore.list(data.userId);
+    if (pipelines && Array.isArray(pipelines) && pipelines.length > 0) {
         console.log('   Pipelines:');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        data.pipelines.forEach((p: any, index: number) => {
+        pipelines.forEach((p: any, index: number) => {
             console.log(`     #${index + 1} [${p.id}]`);
             console.log(`       Source: ${p.source}`);
             if (p.enrichers && p.enrichers.length > 0) {
@@ -495,7 +500,9 @@ program.command('users:list')
 
             console.log('\nFound ' + users.length + ' users:');
             console.log('--------------------------------------------------');
-            users.forEach(user => formatUserOutput(user));
+            for (const user of users) {
+                await formatUserOutput(user);
+            }
             console.log('');
         } catch (error: unknown) {
             console.error('Error listing users:', error);
@@ -516,7 +523,7 @@ program.command('users:get')
 
             console.log('\nUser Details:');
             console.log('--------------------------------------------------');
-            formatUserOutput(user);
+            await formatUserOutput(user);
             console.log('');
         } catch (error: unknown) {
             console.error('Error getting user:', error);
@@ -726,8 +733,16 @@ program.command('users:add-pipeline')
             ]);
 
             console.log('\nAdding pipeline...');
-            const id = await userService.addPipeline(userId, '', sourceAnswers.source, enrichers, destAnswers.destinations);
-            console.log(`Pipeline added successfully! ID: ${id}`);
+            const pipelineId = randomUUID();
+            await pipelineStore.create(userId, {
+                id: pipelineId,
+                name: '',
+                source: sourceAnswers.source,
+                enrichers,
+                destinations: destAnswers.destinations,
+                disabled: false
+            });
+            console.log(`Pipeline added successfully! ID: ${pipelineId}`);
 
         } catch (error: unknown) {
             console.error('Error adding pipeline:', error);
@@ -745,8 +760,7 @@ program.command('users:remove-pipeline')
                 console.error(`User ${userId} not found`);
                 process.exit(1);
             }
-            const data = user;
-            const pipelines = data?.pipelines || [];
+            const pipelines = await pipelineStore.list(userId);
 
             if (pipelines.length === 0) {
                 console.log('No pipelines found for this user.');
@@ -774,7 +788,7 @@ program.command('users:remove-pipeline')
             }]);
 
             if (confirm) {
-                await userService.removePipeline(userId, pipelineId);
+                await pipelineStore.delete(userId, pipelineId);
                 console.log(`Pipeline ${pipelineId} removed.`);
             } else {
                 console.log('Cancelled.');
@@ -796,8 +810,7 @@ program.command('users:replace-pipeline')
                 console.error(`User ${userId} not found`);
                 process.exit(1);
             }
-            const data = user;
-            const pipelines = data?.pipelines || [];
+            const pipelines = await pipelineStore.list(userId);
 
             if (pipelines.length === 0) {
                 console.log('No pipelines found for this user.');
@@ -882,7 +895,12 @@ program.command('users:replace-pipeline')
                 }
             ]);
 
-            await userService.replacePipeline(userId, { pipelineId, name: '', source: sourceAnswers.source, enrichers, destinations: destAnswers.destinations });
+            await pipelineStore.update(userId, pipelineId, {
+                name: '',
+                source: sourceAnswers.source,
+                enrichers,
+                destinations: destAnswers.destinations
+            });
             console.log(`Pipeline ${pipelineId} replaced successfully.`);
 
         } catch (error: unknown) {
@@ -1104,7 +1122,8 @@ const findUserByPipelineId = async (pipelineId: string): Promise<UserRecord | nu
     // Inefficient scan, but acceptable for admin CLI/dev tools
     const users = await userService.listUsers();
     for (const user of users) {
-        if (user.pipelines && user.pipelines.some(p => p.id === pipelineId)) {
+        const pipelines = await pipelineStore.list(user.userId);
+        if (pipelines && pipelines.some((p: PipelineConfig) => p.id === pipelineId)) {
             return user;
         }
     }
@@ -1160,9 +1179,14 @@ const configureTestPipeline = async (pipelineId: string, behavior: 'success' | '
         }
     }];
 
-    const destinations = ['mock'];
+    const destinations = [Destination.DESTINATION_MOCK];
 
-    await userService.replacePipeline(user.userId, { pipelineId, name: '', source: 'SOURCE_TEST', enrichers, destinations });
+    await pipelineStore.update(user.userId, pipelineId, {
+        name: '',
+        source: 'SOURCE_TEST',
+        enrichers,
+        destinations
+    });
     console.log(`✅ Pipeline ${pipelineId} reconfigured successfully.`);
 
     // 2. Create/Get Ingress Key

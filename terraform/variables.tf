@@ -36,17 +36,12 @@ variable "base_url" {
   type        = string
 }
 
-variable "release_version" {
-  description = "Release version for Sentry tracking"
-  type        = string
-  default     = "dev"
-}
-
 variable "sentry_org" {
   description = "Sentry organization slug"
   type        = string
   default     = "fitglue"
 }
+
 
 variable "sentry_project" {
   description = "Sentry project slug for server functions"

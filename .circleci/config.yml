@@ -108,10 +108,9 @@ jobs:
           name: Deploy to << parameters.target >>
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
-            # Pass dynamic release version (Git SHA) to Terraform
+            # Deploy without release_version - functions will use K_REVISION instead
             terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
-              -var-file="envs/<< parameters.target >>.tfvars" \
-              -var="release_version=${CIRCLE_SHA1}"
+              -var-file="envs/<< parameters.target >>.tfvars"
 
   upload-sourcemaps:
     executor: unified-executor

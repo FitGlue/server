@@ -3,7 +3,7 @@ import * as admin from 'firebase-admin';
 import { adminDb as db } from '../firebase';
 import { UserService } from '@fitglue/shared/dist/domain/services/user';
 import { ApiKeyService } from '@fitglue/shared/dist/domain/services/apikey';
-import { UserStore, ActivityStore, ApiKeyStore } from '@fitglue/shared/dist/storage/firestore';
+import { UserStore, ActivityStore, ApiKeyStore, PipelineStore } from '@fitglue/shared/dist/storage/firestore';
 import { generateOAuthState } from '@fitglue/shared';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
@@ -11,8 +11,9 @@ import { randomUUID } from 'crypto';
 const userStore = new UserStore(db);
 const activityStore = new ActivityStore(db);
 const apiKeyStore = new ApiKeyStore(db);
+const pipelineStore = new PipelineStore(db);
 
-const userService = new UserService(userStore, activityStore);
+const userService = new UserService(userStore, activityStore, pipelineStore);
 const apiKeyService = new ApiKeyService(apiKeyStore);
 
 export function registerUserTools(registerTool: (tool: any, handler: (args: any) => Promise<any>) => void) {
@@ -363,8 +364,16 @@ export function registerUserTools(registerTool: (tool: any, handler: (args: any)
       }
     },
     async ({ userId, source, enrichers, destinations }: any) => {
-      const id = await userService.addPipeline(userId, '', source, enrichers, destinations);
-      return { pipelineId: id, message: 'Pipeline added' };
+      const pipelineId = randomUUID();
+      await pipelineStore.create(userId, {
+        id: pipelineId,
+        name: '',
+        source,
+        enrichers,
+        destinations,
+        disabled: false
+      });
+      return { pipelineId, message: 'Pipeline added' };
     }
   );
 
@@ -383,7 +392,7 @@ export function registerUserTools(registerTool: (tool: any, handler: (args: any)
       }
     },
     async ({ userId, pipelineId }: { userId: string, pipelineId: string }) => {
-      await userService.removePipeline(userId, pipelineId);
+      await pipelineStore.delete(userId, pipelineId);
       return { message: 'Pipeline removed' };
     }
   );
