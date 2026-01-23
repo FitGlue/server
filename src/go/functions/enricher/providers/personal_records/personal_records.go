@@ -89,14 +89,9 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, activity *pb.Stand
 	}
 
 	prDescription := strings.Join(descriptionParts, "\n")
-	newDescription := activity.Description
-	if newDescription != "" {
-		newDescription += "\n\n"
-	}
-	newDescription += prDescription
 
 	result := &providers.EnrichmentResult{
-		Description: newDescription,
+		Description: prDescription,
 		Metadata: map[string]string{
 			"pr_status": "pr_detected",
 			"pr_count":  fmt.Sprintf("%d", len(newPRs)),
