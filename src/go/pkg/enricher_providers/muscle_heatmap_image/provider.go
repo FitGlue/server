@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"sort"
 	"text/template"
 
@@ -80,9 +81,10 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, activity *pb.St
 	// Store in Cloud Storage if service is available
 	var assetURL string
 	if p.service != nil && p.service.Store != nil {
-		bucketName := p.service.Config.GCSArtifactBucket
+		// Use dedicated showcase assets bucket
+		bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
 		if bucketName == "" {
-			bucketName = "fitglue-artifacts"
+			bucketName = "fitglue-showcase-assets" // Default bucket name
 		}
 
 		activityID := activity.ExternalId
@@ -90,11 +92,21 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, activity *pb.St
 			activityID = "unknown"
 		}
 
-		objectPath := fmt.Sprintf("showcase-assets/%s/muscle-heatmap.svg", activityID)
+		objectPath := fmt.Sprintf("%s/muscle-heatmap.svg", activityID)
 		if err := p.service.Store.Write(ctx, bucketName, objectPath, []byte(svgContent)); err != nil {
 			slog.Warn("Failed to store SVG asset", "error", err)
 		} else {
-			assetURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath)
+			// Build URL using custom domain if configured, otherwise raw GCS URL
+			// ASSETS_BASE_URL should be set per environment:
+			//   - Dev: https://assets.dev.fitglue.tech
+			//   - Prod: https://assets.fitglue.tech
+			assetsBaseURL := os.Getenv("ASSETS_BASE_URL")
+			if assetsBaseURL != "" {
+				assetURL = fmt.Sprintf("%s/%s", assetsBaseURL, objectPath)
+			} else {
+				// Fallback to raw GCS URL
+				assetURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath)
+			}
 		}
 	}
 

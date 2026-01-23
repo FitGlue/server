@@ -35,6 +35,13 @@ resource "google_project_iam_member" "cloud_function_sa_firebase_auth_viewer" {
   member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 
+# AI Platform User - allows enricher to call Vertex AI Imagen API for AI Banner generation
+resource "google_project_iam_member" "cloud_function_sa_aiplatform_user" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
+  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
 resource "google_project_iam_member" "web_deployer_run_viewer" {
   project = var.project_id
   role    = "roles/run.viewer"

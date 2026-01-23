@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
+	"os"
 	"text/template"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -82,10 +83,10 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, activity *pb.Standa
 	// Generate SVG
 	svgContent := generateRouteSVG(points)
 
-	// Upload to GCS
-	bucketName := p.service.Config.GCSArtifactBucket
+	// Upload to GCS - use dedicated showcase assets bucket
+	bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
 	if bucketName == "" {
-		bucketName = "fitglue-artifacts"
+		bucketName = "fitglue-showcase-assets" // Default bucket name
 	}
 
 	activityID := activity.ExternalId
@@ -93,12 +94,24 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, activity *pb.Standa
 		activityID = "unknown"
 	}
 
-	objectPath := fmt.Sprintf("showcase-assets/%s/route-thumbnail.svg", activityID)
+	objectPath := fmt.Sprintf("%s/route-thumbnail.svg", activityID)
 	if err := p.service.Store.Write(ctx, bucketName, objectPath, []byte(svgContent)); err != nil {
 		return nil, fmt.Errorf("failed to upload SVG to GCS: %w", err)
 	}
 
-	assetURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath)
+	// Build URL using custom domain if configured, otherwise raw GCS URL
+	// ASSETS_BASE_URL should be set per environment:
+	//   - Dev: https://assets.dev.fitglue.tech
+	//   - Prod: https://assets.fitglue.tech
+	assetsBaseURL := os.Getenv("ASSETS_BASE_URL")
+	var assetURL string
+	if assetsBaseURL != "" {
+		assetURL = fmt.Sprintf("%s/%s", assetsBaseURL, objectPath)
+	} else {
+		// Fallback to raw GCS URL
+		assetURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath)
+	}
+
 	slog.Info("Generated route thumbnail", "external_id", activityID, "url", assetURL, "points", len(points))
 
 	return &enricher_providers.EnrichmentResult{
