@@ -352,11 +352,30 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
   },
   fromFirestore(snapshot: QueryDocumentSnapshot): UserRecord {
     const data = snapshot.data();
+
+    // Normalize pipelines: handle both legacy object format and current array format
+    const normalizePipelines = (rawPipelines: unknown): Record<string, unknown>[] => {
+      if (!rawPipelines) return [];
+
+      // If it's already an array, return it
+      if (Array.isArray(rawPipelines)) {
+        return rawPipelines;
+      }
+
+      // If it's an object (legacy format), convert to array
+      if (typeof rawPipelines === 'object' && rawPipelines !== null) {
+        return Object.values(rawPipelines);
+      }
+
+      // Fallback to empty array for any other type
+      return [];
+    };
+
     return {
       userId: data.user_id || data.userId,
       createdAt: toDate(data.created_at || data.createdAt),
       integrations: mapUserIntegrationsFromFirestore(data.integrations),
-      pipelines: (data.pipelines || []).map(mapPipelineFromFirestore),
+      pipelines: normalizePipelines(data.pipelines).map(mapPipelineFromFirestore),
       fcmTokens: data.fcm_tokens || data.fcmTokens || [],
       // Tier management fields (with backwards-compatible defaults)
       tier: ((): UserTier => {
