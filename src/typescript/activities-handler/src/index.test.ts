@@ -29,7 +29,11 @@ describe('activities-handler', () => {
         error: jest.fn(),
       },
       pubsub: {}, // Mock pubsub object (CloudEventPublisher uses it, but we mocked the class)
-      services: {},
+      services: {
+        execution: {
+          listByPipeline: jest.fn(),
+        }
+      },
       stores: {
         activities: {
           countSynchronized: jest.fn(),
@@ -57,7 +61,7 @@ describe('activities-handler', () => {
         method: 'GET',
         body: {},
         query: {},
-        path: '',
+        path: '/api/activities',
       } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
@@ -74,7 +78,7 @@ describe('activities-handler', () => {
         method: 'GET',
         body: {},
         query: {},
-        path: '',
+        path: '/api/activities',
       } as any), ctx);
 
       expect(result).toEqual({
@@ -113,7 +117,7 @@ describe('activities-handler', () => {
         method: 'GET',
         body: {},
         query: { includeExecution: 'true' },
-        path: '',
+        path: '/api/activities',
       } as any), ctx);
 
       expect(result.activities).toHaveLength(1);
@@ -130,7 +134,7 @@ describe('activities-handler', () => {
         method: 'GET',
         body: {},
         query: {},
-        path: '/stats',
+        path: '/api/activities/stats',
       } as any), ctx);
 
       expect(result).toEqual({
@@ -148,14 +152,14 @@ describe('activities-handler', () => {
         description: 'Description 1',
         type: 46, // ACTIVITY_TYPE_WEIGHT_TRAINING
         source: 'SOURCE_FITBIT',
-      }
+      };
       ctx.stores.activities.getSynchronized.mockResolvedValue(activity);
 
       const result = await handler(({
         method: 'GET',
         body: {},
         query: {},
-        path: '/a1',
+        path: '/api/activities/a1',
       } as any), ctx);
 
       expect(result).toEqual({
@@ -175,7 +179,7 @@ describe('activities-handler', () => {
         method: 'GET',
         body: {},
         query: {},
-        path: '',
+        path: '/api/activities',
       } as any), ctx)).rejects.toThrow('db error');
     });
 
@@ -212,7 +216,7 @@ describe('activities-handler', () => {
           method: 'GET',
           body: {},
           query: {},
-          path: '/unsynchronized',
+          path: '/api/activities/unsynchronized',
         } as any), ctx);
 
         expect(result).toEqual({
@@ -221,7 +225,7 @@ describe('activities-handler', () => {
             title: 'Morning Run',
             activityType: 'Run',
             source: 'Fitbit',
-            status: 'SKIPPED',
+            status: 'Skipped',
             errorMessage: 'Activity filter rejected',
             timestamp: '2026-01-01T12:00:00.000Z',
           }],
@@ -245,7 +249,7 @@ describe('activities-handler', () => {
           method: 'GET',
           body: {},
           query: {},
-          path: '/unsynchronized',
+          path: '/api/activities/unsynchronized',
         } as any), ctx);
 
         expect(result).toEqual({ executions: [] });
@@ -273,14 +277,14 @@ describe('activities-handler', () => {
           method: 'GET',
           body: {},
           query: {},
-          path: '/unsynchronized/pipeline-1',
+          path: '/api/activities/unsynchronized/pipeline-1',
         } as any), ctx);
 
         expect(result).toEqual({
           pipelineExecutionId: 'pipeline-1',
           pipelineExecution: expect.arrayContaining([
-            expect.objectContaining({ service: 'fitbit-handler', status: 'STARTED' }),
-            expect.objectContaining({ service: 'enricher', status: 'SKIPPED', errorMessage: 'Skipped by filter' }),
+            expect.objectContaining({ service: 'fitbit-handler', status: 'Started' }),
+            expect.objectContaining({ service: 'enricher', status: 'Skipped', errorMessage: 'Skipped by filter' }),
           ]),
         });
       });
@@ -292,7 +296,7 @@ describe('activities-handler', () => {
           method: 'GET',
           body: {},
           query: {},
-          path: '/unsynchronized/unknown',
+          path: '/api/activities/unsynchronized/unknown',
         } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
       });
     });

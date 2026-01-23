@@ -1,5 +1,4 @@
-import { createCloudFunction, FrameworkContext, HttpError } from '@fitglue/shared';
-import { Request } from 'express';
+import { createCloudFunction, HttpError, FrameworkHandler } from '@fitglue/shared';
 import * as admin from 'firebase-admin';
 
 // Initialize Firebase Admin (Wrapped in createCloudFunction but good to have if side effects used)
@@ -84,7 +83,7 @@ function normalizeIntegrationName(input: string): string {
   return cleaned.replace(/\s+/g, '-');
 }
 
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+export const handler: FrameworkHandler = async (req, _ctx) => {
   // CORS Headers are NOT handled here anymore. Gateway should handle them.
 
   // GET: Return stats (admin use)
@@ -118,10 +117,11 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
     throw new HttpError(405, 'Method Not Allowed');
   }
 
-  const { integration, email, website_url } = req.body;
+  const { integration, email, website_url: websiteUrl } = req.body;
 
   // Honeypot spam protection
-  if (website_url) {
+  if (websiteUrl) {
+    // eslint-disable-next-line no-console
     console.warn(`Spam detected: honeypot filled. Integration: "${integration}"`);
     return { success: true, message: 'Thanks for your feedback!' };
   }
@@ -141,7 +141,7 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
       const doc = await transaction.get(docRef);
 
       if (doc.exists) {
-        const data = doc.data()!;
+        const data = doc.data() ?? {};
         const rawInputs: string[] = data.rawInputs || [];
 
         // Add new raw input if not already present
@@ -166,6 +166,7 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
       }
     });
 
+    // eslint-disable-next-line no-console
     console.log(`Integration request: "${rawInput}" -> "${canonicalName}"`);
     return {
       success: true,

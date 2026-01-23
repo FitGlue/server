@@ -1,6 +1,6 @@
 import { UserStore, ActivityStore } from '../../storage/firestore';
 import { UserRecord, UserIntegrations, EnricherConfig, ProcessedActivityRecord, UserTier } from '../../types/pb/user';
-import { FirestoreTokenSource } from '../../infrastructure/oauth/token-source';
+import { FirestoreTokenSource, OAuthProvider } from '../../infrastructure/oauth/token-source';
 import { Destination } from '../../types/pb/events';
 
 /**
@@ -69,7 +69,7 @@ export class UserService {
     /**
      * Get a valid OAuth token for a provider, refreshing if necessary.
      */
-    async getValidToken(userId: string, provider: 'strava' | 'fitbit', forceRefresh = false): Promise<string> {
+    async getValidToken(userId: string, provider: OAuthProvider, forceRefresh = false): Promise<string> {
         const tokenSource = new FirestoreTokenSource(this.userStore, userId, provider);
         const token = await tokenSource.getToken(forceRefresh);
         return token.accessToken;
@@ -78,11 +78,10 @@ export class UserService {
     /**
      * Get OAuth tokens for a user integration (raw access).
      */
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async getOAuthTokens(userId: string, provider: string): Promise<any> {
+    async getOAuthTokens(userId: string, provider: string): Promise<Record<string, unknown> | null> {
         const user = await this.get(userId);
         if (!user || !user.integrations) return null;
-        return (user.integrations as any)[provider];
+        return (user.integrations as Record<string, unknown>)[provider] as Record<string, unknown> | undefined || null;
     }
 
 
@@ -245,7 +244,11 @@ export class UserService {
         await this.userStore.updatePipelines(userId, newPipelines);
     }
 
-    async replacePipeline(userId: string, pipelineId: string, name: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<void> {
+    async replacePipeline(
+        userId: string,
+        options: { pipelineId: string; name: string; source: string; enrichers: EnricherConfig[]; destinations: string[] }
+    ): Promise<void> {
+        const { pipelineId, name, source, enrichers, destinations } = options;
         await this.removePipeline(userId, pipelineId);
         const normalizedSource = this.normalizeSource(source);
         const destEnums = this.mapDestinations(destinations);

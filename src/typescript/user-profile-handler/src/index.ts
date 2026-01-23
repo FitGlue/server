@@ -1,14 +1,13 @@
 import {
   createCloudFunction,
   db,
-  FrameworkContext,
   FirebaseAuthStrategy,
   ForbiddenError,
   INTEGRATIONS,
   IntegrationAuthType,
-  HttpError
+  HttpError,
+  FrameworkHandler
 } from '@fitglue/shared';
-import { Request } from 'express';
 
 
 
@@ -29,16 +28,16 @@ function maskToken(token: string | undefined): string | undefined {
 }
 
 // Get integration status summary (with masked tokens)
-function getIntegrationsSummary(user: any) {
-  const userIntegrations = user.integrations || {};
-  const summary: Record<string, any> = {};
+function getIntegrationsSummary(user: { userId?: string; integrations?: unknown;[key: string]: unknown }) {
+  const userIntegrations = (user.integrations as Record<string, Record<string, unknown>>) || {};
+  const summary: Record<string, { connected: boolean; externalUserId?: string; lastUsedAt?: string }> = {};
 
   for (const [key, def] of Object.entries(INTEGRATIONS)) {
-    const integration = (userIntegrations as any)[key];
+    const integration = (userIntegrations as Record<string, Record<string, unknown>>)[key];
     if (integration?.enabled) {
       let externalUserId = undefined;
       if (def.externalUserIdField) {
-        const rawId = (integration as any)[def.externalUserIdField];
+        const rawId = (integration as Record<string, unknown>)[def.externalUserIdField];
         if (rawId) {
           externalUserId = def.authType === IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY
             ? maskToken(String(rawId))
@@ -48,7 +47,7 @@ function getIntegrationsSummary(user: any) {
       summary[key] = {
         connected: true,
         externalUserId,
-        lastUsedAt: integration.lastUsedAt?.toISOString?.() || (integration.lastUsedAt instanceof Date ? integration.lastUsedAt.toISOString() : undefined)
+        lastUsedAt: ((integration as { lastUsedAt?: { toISOString?: () => string } }).lastUsedAt?.toISOString?.() || (integration.lastUsedAt instanceof Date ? integration.lastUsedAt.toISOString() : undefined))
       };
     } else {
       summary[key] = { connected: false };
@@ -83,7 +82,8 @@ function mapPipelineToResponse(pipeline: {
   };
 }
 
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+// eslint-disable-next-line complexity
+export const handler: FrameworkHandler = async (req, ctx) => {
   const { logger, services } = ctx;
   const userId = ctx.userId;
 
@@ -111,7 +111,7 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
       trialEndsAt: user.trialEndsAt?.toISOString(),
       isAdmin: user.isAdmin || false,
       syncCountThisMonth: user.syncCountThisMonth || 0,
-      integrations: getIntegrationsSummary(user),
+      integrations: getIntegrationsSummary(user as unknown as { userId?: string; integrations?: unknown;[key: string]: unknown }),
       pipelines: (user.pipelines || []).map(mapPipelineToResponse)
     };
 

@@ -1,5 +1,4 @@
 import { handler } from './index';
-import { Request } from 'express';
 import { FrameworkContext } from '@fitglue/shared';
 
 // Mock shared dependencies
@@ -7,7 +6,6 @@ jest.mock('@fitglue/shared', () => {
   const original = jest.requireActual('@fitglue/shared');
   return {
     ...original,
-    getSecret: jest.fn(),
     db: {
       collection: jest.fn(() => ({
         doc: jest.fn(() => ({
@@ -46,17 +44,17 @@ jest.mock('stripe', () => {
   }));
 });
 
-import { getSecret, db } from '@fitglue/shared';
+import { db } from '@fitglue/shared';
 
-// Helper to create request objects
-const createRequest = (overrides: Record<string, unknown> = {}): Request => ({
+// Helper to create request objects - casts to handler's expected request type
+const createRequest = (overrides: Record<string, unknown> = {}): Parameters<typeof handler>[0] => ({
   method: 'POST',
   path: '/api/billing/checkout',
   body: {},
   headers: {},
   query: {},
   ...overrides,
-} as unknown as Request);
+} as Parameters<typeof handler>[0]);
 
 describe('billing-handler', () => {
 
@@ -74,13 +72,10 @@ describe('billing-handler', () => {
       }),
     });
 
-    // Default getSecret mock
-    (getSecret as jest.Mock).mockImplementation(async (projectId: string, secretName: string) => {
-      if (secretName === 'stripe-secret-key') return 'sk_test_fake_key';
-      if (secretName === 'stripe-price-id') return 'price_test_123';
-      if (secretName === 'stripe-webhook-secret') return 'whsec_test_secret';
-      return 'mock-secret';
-    });
+    // Setup environment variables for secrets
+    process.env.STRIPE_SECRET_KEY = 'sk_test_fake_key';
+    process.env.STRIPE_PRICE_ID = 'price_test_123';
+    process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_secret';
 
 
 

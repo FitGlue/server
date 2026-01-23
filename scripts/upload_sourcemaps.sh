@@ -43,7 +43,8 @@ for handler_dir in $TS_ROOT/*-handler; do
     URL_PREFIX="~/$HANDLER_NAME/build"
 
     # Upload everything in build dir (js and maps)
-    npx @sentry/cli releases files "$RELEASE" upload-sourcemaps "$BUILD_DIR" \
+    npx @sentry/cli sourcemaps upload "$BUILD_DIR" \
+      --release "$RELEASE" \
       --url-prefix "$URL_PREFIX" \
       --org "$ORG" \
       --project "$PROJECT" \

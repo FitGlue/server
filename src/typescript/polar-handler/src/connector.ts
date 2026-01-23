@@ -7,7 +7,7 @@ import {
   ActivitySource,
   FrameworkContext,
   ActivityType,
-  getSecret
+  FrameworkResponse
 } from '@fitglue/shared';
 
 /**
@@ -24,9 +24,8 @@ interface PolarWebhookNotification {
 
 export type PolarBody = PolarWebhookNotification;
 
-export interface PolarConnectorConfig extends ConnectorConfig {
-  // OAuth tokens are managed by UserService
-}
+// OAuth tokens are managed by UserService
+export type PolarConnectorConfig = ConnectorConfig;
 
 /**
  * Polar AccessLink exercise data structure.
@@ -55,6 +54,7 @@ interface PolarExercise {
 /**
  * Map Polar sport types to FitGlue ActivityType.
  */
+// eslint-disable-next-line complexity
 export function mapPolarSportType(sport: string | undefined): ActivityType {
   const sportLower = (sport || '').toLowerCase().trim();
 
@@ -177,7 +177,6 @@ export class PolarConnector extends BaseConnector<PolarConnectorConfig> {
     if (req.method === 'GET') {
       logger.info('Polar webhook verification GET request');
 
-      const { FrameworkResponse } = await import('@fitglue/shared');
       return {
         handled: true,
         response: new FrameworkResponse({ status: 200, body: 'OK' })
@@ -252,8 +251,6 @@ export class PolarConnector extends BaseConnector<PolarConnectorConfig> {
     if (!accessToken || !polarUserId) {
       throw new Error('Missing Polar access token or user ID');
     }
-
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
 
     // Step 1: Start a transaction
     const transactionResponse = await fetch(

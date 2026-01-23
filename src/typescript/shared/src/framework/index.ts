@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as winston from 'winston';
+import { Request } from 'express';
 import { logExecutionStart, logExecutionSuccess, logExecutionFailure, logExecutionPending } from '../execution/logger';
 import { AuthStrategy } from './auth';
 export * from './connector';
@@ -131,7 +132,7 @@ const logger = winston.createLogger({
           // Use safer stringify here too just in case
           try {
             return JSON.stringify(gcpInfo);
-          } catch (e) {
+          } catch {
             return JSON.stringify({
               severity: 'ERROR',
               message: 'Failed to serialize log message',
@@ -202,6 +203,20 @@ export type SafeHandler = (
   ctx: FrameworkContext
 ) => Promise<unknown | FrameworkResponse>;
 
+/**
+ * FrameworkHandler is the standard signature for Cloud Function handlers.
+ * Use this type to avoid manually specifying parameter types.
+ *
+ * @example
+ * export const handler: FrameworkHandler = async (req, ctx) => {
+ *   // TypeScript will infer req: Request and ctx: FrameworkContext
+ * };
+ */
+export type FrameworkHandler = (
+  req: Request,
+  ctx: FrameworkContext
+) => Promise<unknown | FrameworkResponse>;
+
 export interface CloudFunctionOptions {
   auth?: {
     strategies: AuthStrategy[]; // Only accept strategy instances
@@ -225,7 +240,7 @@ export interface CloudFunctionOptions {
  * Extract metadata from HTTP request
  * Handles both HTTP requests and Pub/Sub messages
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, complexity
 function extractMetadata(req: any): { userId?: string; testRunId?: string; pipelineExecutionId?: string; triggerType: string } {
   let userId: string | undefined;
   let testRunId: string | undefined;
@@ -243,7 +258,7 @@ function extractMetadata(req: any): { userId?: string; testRunId?: string; pipel
       userId = payload.user_id || payload.userId;
       // Extract from payload
       pipelineExecutionId = payload.pipeline_execution_id || payload.pipelineExecutionId;
-    } catch (e) {
+    } catch {
       // If parsing fails, continue without user_id
     }
 
@@ -275,6 +290,7 @@ function extractMetadata(req: any): { userId?: string; testRunId?: string; pipel
   return { userId, testRunId, pipelineExecutionId, triggerType };
 }
 
+// eslint-disable-next-line max-lines-per-function, complexity
 export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctionOptions) => {
   // SECURITY: Require auth by default - handlers must explicitly opt out
   const hasAuth = options?.auth?.strategies && options.auth.strategies.length > 0;
@@ -287,7 +303,7 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
     );
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, max-lines-per-function, complexity
   return async (reqOrEvent: any, resOrContext?: any) => {
     const serviceName = process.env.K_SERVICE || 'unknown-function';
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -588,19 +604,19 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
 
       preambleLogger.info('Function completed successfully');
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       // CENTRALIZED ERROR HANDLING
-
-      const statusCode = err.statusCode || 500;
+      const error = err as Error & { statusCode?: number; stack?: string };
+      const statusCode = error.statusCode || 500;
       const isSystemError = statusCode >= 500;
 
       // Log execution failure
-      preambleLogger.error('Function failed', { error: err.message, stack: err.stack, statusCode });
+      preambleLogger.error('Function failed', { error: error.message, stack: error.stack, statusCode });
 
       // Capture error in Sentry (Only for 500s or explicit system errors)
       if (isSystemError) {
         const { captureException, flushSentry } = await import('../infrastructure/sentry');
-        captureException(err, {
+        captureException(error, {
           service: serviceName,
           execution_id: executionId,
           user_id: authenticatedUserId,
@@ -615,7 +631,7 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
       // Log Failure to Execution Store
       if (shouldLogExecution) {
         // Pass captured response if any (e.g. partial writes)
-        await logExecutionFailure(loggingCtx, executionId, err, capturedResponse);
+        await logExecutionFailure(loggingCtx, executionId, error, capturedResponse);
       }
 
       // Send Error Response (if not already sent)
@@ -629,18 +645,18 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
 
         // If it's a 4xx error, we always show the message (client error)
         // If it's a 5xx error, we hide it in prod
-        let message = err.message || 'Internal Server Error';
+        let message = error.message || 'Internal Server Error';
         if (isProd && isSystemError) {
           message = 'Internal Server Error';
         }
 
-        const responseBody: any = { error: message };
-        if (showDetails && err.stack) {
-          responseBody.stack = err.stack;
+        const responseBody: Record<string, unknown> = { error: message };
+        if (showDetails && error.stack) {
+          responseBody.stack = error.stack;
         }
 
         res.status(statusCode).json(responseBody);
       }
     }
   };
-}
+};

@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -31,9 +31,13 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'spotify-client-id');
-    const clientSecret = await getSecret(projectId, 'spotify-client-secret');
+    const clientId = process.env.SPOTIFY_CLIENT_ID;
+    const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      logger.error('Missing Spotify OAuth credentials');
+      return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/spotify/error?reason=config_error` } };
+    }
 
     const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
@@ -60,15 +64,15 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_in: number;
       scope: string;
     };
-    const { access_token, refresh_token, expires_in } = tokenData;
+    const { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn } = tokenData;
 
     // Calculate expires_at from expires_in (seconds)
-    const expiresAt = new Date(Date.now() + expires_in * 1000);
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Fetch Spotify user profile to get user ID
     const profileResponse = await fetch('https://api.spotify.com/v1/me', {
       headers: {
-        'Authorization': `Bearer ${access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
     });
 
@@ -81,8 +85,8 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
     // Store tokens in Firestore
     await storeOAuthTokens(userId, 'spotify', {
-      accessToken: access_token,
-      refreshToken: refresh_token,
+      accessToken,
+      refreshToken,
       expiresAt,
       externalUserId: profile.id,
     }, stores);

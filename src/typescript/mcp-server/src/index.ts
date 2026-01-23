@@ -1,21 +1,21 @@
 
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {
   CallToolRequestSchema,
   ListToolsRequestSchema,
   Tool,
-} from "@modelcontextprotocol/sdk/types.js";
+} from '@modelcontextprotocol/sdk/types.js';
 
 // Tools
-import { registerUserTools } from "./tools/users";
-import { registerFitTools } from "./tools/fit_tools";
+import { registerUserTools } from './tools/users';
+import { registerFitTools } from './tools/fit_tools';
 
 async function main() {
   const server = new Server(
     {
-      name: "fitglue-mcp-server",
-      version: "1.0.0",
+      name: 'fitglue-mcp-server',
+      version: '1.0.0',
     },
     {
       capabilities: {
@@ -61,7 +61,7 @@ async function main() {
       return {
         content: [
           {
-            type: "text",
+            type: 'text',
             text: JSON.stringify(result, null, 2),
           },
         ],
@@ -70,7 +70,7 @@ async function main() {
       return {
         content: [
           {
-            type: "text",
+            type: 'text',
             text: `Error: ${error.message}`,
           },
         ],
@@ -81,10 +81,10 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("FitGlue MCP Server running on stdio");
+  console.error('FitGlue MCP Server running on stdio');
 }
 
 main().catch((error) => {
-  console.error("Fatal error in MCP server:", error);
+  console.error('Fatal error in MCP server:', error);
   process.exit(1);
 });

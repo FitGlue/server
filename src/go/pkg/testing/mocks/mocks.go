@@ -203,15 +203,3 @@ func (m *MockBlobStore) Read(ctx context.Context, bucket, object string) ([]byte
 	}
 	return []byte("mock-data"), nil
 }
-
-// --- Mock Secrets ---
-type MockSecretStore struct {
-	GetSecretFunc func(ctx context.Context, projectID, name string) (string, error)
-}
-
-func (m *MockSecretStore) GetSecret(ctx context.Context, projectID, name string) (string, error) {
-	if m.GetSecretFunc != nil {
-		return m.GetSecretFunc(ctx, projectID, name)
-	}
-	return "mock-secret-value", nil
-}

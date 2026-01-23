@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -31,9 +31,13 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'oura-client-id');
-    const clientSecret = await getSecret(projectId, 'oura-client-secret');
+    const clientId = process.env.OURA_CLIENT_ID;
+    const clientSecret = process.env.OURA_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      logger.error('Missing Oura OAuth credentials');
+      return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/oura/error?reason=config_error` } };
+    }
 
     // Oura uses standard OAuth2 token exchange
     const tokenResponse = await fetch('https://api.ouraring.com/oauth/token', {
@@ -62,15 +66,15 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_in: number;
       token_type: string;
     };
-    const { access_token, refresh_token, expires_in } = tokenData;
+    const { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn } = tokenData;
 
     // Calculate expiration time
-    const expiresAt = new Date(Date.now() + expires_in * 1000);
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Fetch user info to get external user ID
     const userInfoResponse = await fetch('https://api.ouraring.com/v2/usercollection/personal_info', {
       headers: {
-        'Authorization': `Bearer ${access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
     });
 
@@ -82,8 +86,8 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
     // Store tokens in Firestore
     await storeOAuthTokens(userId, 'oura', {
-      accessToken: access_token,
-      refreshToken: refresh_token,
+      accessToken,
+      refreshToken,
       expiresAt,
       externalUserId,
     }, stores);

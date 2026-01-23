@@ -35,7 +35,7 @@ export async function logExecutionPending(
   functionName: string,
   trigger: string
 ): Promise<void> {
-  ctx.logger.info(`Execution pending`, { executionId, trigger });
+  ctx.logger.info('Execution pending', { executionId, trigger });
 
   await ctx.services.execution.create(executionId, {
     executionId,
@@ -56,7 +56,7 @@ export async function logExecutionStart(
   originalPayload?: unknown,
   pipelineExecutionId?: string
 ): Promise<void> {
-  ctx.logger.info(`Execution started`, { executionId, trigger, pipelineExecutionId });
+  ctx.logger.info('Execution started', { executionId, trigger, pipelineExecutionId });
 
   // Update existing record to running
   await ctx.services.execution.update(executionId, {
@@ -75,7 +75,7 @@ export async function logExecutionSuccess(
   executionId: string,
   result?: unknown
 ): Promise<void> {
-  ctx.logger.info(`Execution completed successfully`, { executionId });
+  ctx.logger.info('Execution completed successfully', { executionId });
 
   await ctx.services.execution.update(executionId, {
     endTime: new Date(),
@@ -93,7 +93,7 @@ export async function logExecutionFailure(
   error: Error,
   result?: unknown
 ): Promise<void> {
-  ctx.logger.error(`Execution failed`, { executionId, error: error.message, stack: error.stack, result });
+  ctx.logger.error('Execution failed', { executionId, error: error.message, stack: error.stack, result });
 
   await ctx.services.execution.update(executionId, {
     endTime: new Date(),

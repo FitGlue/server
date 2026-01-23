@@ -157,7 +157,7 @@ When you complete a workout in Hevy, FitGlue receives a webhook notification and
   isPremium: false,
   popularityScore: 80,
   iconType: 'svg',
-  iconPath: '/assets/icons/hevy.svg',
+  iconPath: '/images/icons/hevy.svg',
 });
 
 registerSource({
@@ -190,7 +190,7 @@ FitGlue connects to the Fitbit API and receives notifications when you complete 
   isPremium: false,
   popularityScore: 85,
   iconType: 'svg',
-  iconPath: '/assets/icons/fitbit.svg',
+  iconPath: '/images/icons/fitbit.svg',
 });
 
 registerSource({
@@ -378,7 +378,7 @@ FitGlue's intelligent loop prevention ensures that activities uploaded TO Strava
   isPremium: false,
   popularityScore: 95,
   iconType: 'svg',
-  iconPath: '/assets/icons/strava.svg',
+  iconPath: '/images/icons/strava.svg',
 });
 
 registerSource({
@@ -404,8 +404,9 @@ Standard Garmin Connect integration for importing activities.
   sortOrder: 3,
   isPremium: false,
   popularityScore: 88,
+  isTemporarilyUnavailable: true,
   iconType: 'svg',
-  iconPath: '/assets/icons/garmin.svg',
+  iconPath: '/images/icons/garmin.svg',
 });
 
 registerSource({
@@ -446,6 +447,8 @@ Power meters, heart rate monitors, cadence sensors, and GPS data — all capture
   sortOrder: 2,
   isPremium: false,
   popularityScore: 82,
+  iconType: 'jpg',
+  iconPath: '/images/icons/wahoo.jpg',
 });
 
 registerSource({
@@ -483,6 +486,8 @@ When you complete a workout tracked by your Oura Ring, FitGlue receives a webhoo
   sortOrder: 5,
   isPremium: false,
   popularityScore: 70,
+  iconType: 'jpg',
+  iconPath: '/images/icons/oura.jpg',
 });
 
 registerSource({
@@ -524,7 +529,7 @@ Polar uses a unique transaction-based API that ensures reliable data delivery. F
   isPremium: false,
   popularityScore: 75,
   iconType: 'svg',
-  iconPath: '/assets/icons/polar.svg',
+  iconPath: '/images/icons/polar.svg',
 });
 
 registerSource({
@@ -561,6 +566,8 @@ FitGlue polls your Intervals.icu account for new activities. When new activities
   sortOrder: 1,
   isPremium: false,
   popularityScore: 70,
+  iconType: 'png',
+  iconPath: '/images/icons/intervals.png',
 });
 
 // ============================================================================
@@ -599,7 +606,7 @@ Once activities pass through your Pipeline, FitGlue uploads them to Strava via t
   isPremium: false,
   popularityScore: 95,
   iconType: 'svg',
-  iconPath: '/assets/icons/strava.svg',
+  iconPath: '/images/icons/strava.svg',
 });
 
 registerDestination({
@@ -681,7 +688,7 @@ Exercise names are fuzzy-matched to Hevy's library. Unknown exercises automatica
   isPremium: false,
   popularityScore: 75,
   iconType: 'svg',
-  iconPath: '/assets/icons/hevy.svg',
+  iconPath: '/images/icons/hevy.svg',
 });
 
 registerDestination({
@@ -723,8 +730,8 @@ Activity types are automatically mapped to TrainingPeaks workout types (Run, Bik
   sortOrder: 1,
   isPremium: false,
   popularityScore: 70,
-  iconType: 'svg',
-  iconPath: '/assets/icons/trainingpeaks.svg',
+  iconType: 'png',
+  iconPath: '/images/icons/trainingpeaks.png',
 });
 
 registerDestination({
@@ -847,6 +854,8 @@ If enabled, muscle heatmaps and route thumbnails are embedded using Google Sheet
   sortOrder: 2,
   isPremium: false,
   popularityScore: 65,
+  iconType: 'svg',
+  iconPath: '/images/icons/googlesheets.svg',
 });
 
 
@@ -2537,8 +2546,8 @@ When you complete an activity, FitGlue checks your Spotify listening history for
   sortOrder: 2,
   isPremium: false,
   popularityScore: 58,
-  iconType: 'svg',
-  iconPath: '/assets/icons/spotify.svg',
+  iconType: 'png',
+  iconPath: '/images/icons/spotify.png',
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING, {

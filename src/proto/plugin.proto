@@ -140,6 +140,11 @@ message IntegrationManifest {
   string marketing_description = 12;          // Extended description for marketing site (markdown)
   repeated string features = 13;              // List of features/capabilities
 
+  // SVG Icon support (for products with real logos)
+  optional string icon_type = 15;             // "emoji" (default), "svg", "png", or "jpg"
+  optional string icon_path = 16;             // Path to icon asset (e.g., "/images/icons/strava.svg")
+
+
   // When true, integration is hidden from connections page but shown on marketing with "Coming Soon"
   optional bool is_temporarily_unavailable = 14;
 }

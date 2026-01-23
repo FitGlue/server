@@ -1,5 +1,4 @@
-import { createCloudFunction, db, InputStore, InputService, FrameworkContext, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore, ForbiddenError, HttpError } from '@fitglue/shared';
-import { Request } from 'express';
+import { createCloudFunction, db, InputStore, InputService, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore, ForbiddenError, HttpError, FrameworkHandler } from '@fitglue/shared';
 
 // PubSub topic name logic via env var
 const TOPIC = process.env.PUBSUB_TOPIC || 'activity-updates';
@@ -12,7 +11,8 @@ interface ResolveInputRequest {
 
 
 // Handler Implementation
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+// eslint-disable-next-line complexity
+export const handler: FrameworkHandler = async (req, ctx) => {
 
   const inputStore = new InputStore(db);
   const inputService = new InputService(inputStore, ctx.services.authorization);
@@ -96,7 +96,7 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
 
       await publisher.publish(input.originalPayload);
 
-      ctx.logger.info(`Resolved and re-published activity`, { activityId: body.activityId });
+      ctx.logger.info('Resolved and re-published activity', { activityId: body.activityId });
       return { success: true };
 
     } catch (e: unknown) {

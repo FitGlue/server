@@ -19,10 +19,11 @@ export interface ConnectorConstructor<TConfig extends ConnectorConfig, TRaw> {
  * createWebhookProcessor creates a standardized Cloud Function handler for webhooks.
  * It enforces the Extract -> Dedup -> Fetch -> Publish lifecycle.
  */
+// eslint-disable-next-line complexity
 export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
   ConnectorClass: ConnectorConstructor<TConfig, TRaw>
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any, complexity
   return async (req: any, ctx: FrameworkContext) => {
     const { logger, userId } = ctx;
     const timestamp = new Date();
@@ -35,7 +36,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     if (!userId) {
       logger.error('Handler called without authenticated userId');
       // res.status(401).send('Unauthorized'); // REPLACE
-      const err: any = new Error('Unauthorized');
+      const err = new Error('Unauthorized') as Error & { statusCode: number };
       err.statusCode = 401;
       throw err;
     }
@@ -176,7 +177,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
         source: connector.activitySource,
         userId: userId,
         timestamp: timestamp,
-        originalPayloadJson: JSON.stringify({ id: externalId, activityId: activityExternalId, note: "Fetched via Generic Connector" }),
+        originalPayloadJson: JSON.stringify({ id: externalId, activityId: activityExternalId, note: 'Fetched via Generic Connector' }),
         metadata: {
           'fetch_method': 'active_fetch_connector',
           'webhook_id': externalId,

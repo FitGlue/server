@@ -1,5 +1,4 @@
-import { createCloudFunction, getRegistry, FrameworkContext, PROJECT_ID, HttpError } from '@fitglue/shared';
-import { Request } from 'express';
+import { createCloudFunction, getRegistry, PROJECT_ID, HttpError, FrameworkHandler } from '@fitglue/shared';
 
 /**
  * Registry Handler
@@ -28,7 +27,7 @@ function getShowcaseBaseUrl(): string {
   return 'https://fitglue.tech';
 }
 
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+export const handler: FrameworkHandler = async (req, ctx) => {
   const { logger } = ctx;
 
   // Only allow GET

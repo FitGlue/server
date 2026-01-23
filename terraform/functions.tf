@@ -234,6 +234,36 @@ resource "google_cloudfunctions2_function" "enricher" {
       version    = "latest"
     }
 
+    # Spotify secrets (for spotify_tracks enricher)
+    secret_environment_variables {
+      key        = "SPOTIFY_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.spotify_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "SPOTIFY_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.spotify_client_secret.secret_id
+      version    = "latest"
+    }
+
+    # Fitbit secrets (for fitbit_hr enricher)
+    secret_environment_variables {
+      key        = "FITBIT_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.fitbit_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "FITBIT_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.fitbit_client_secret.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 
@@ -382,6 +412,21 @@ resource "google_cloudfunctions2_function" "strava_uploader" {
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
     }
+
+    secret_environment_variables {
+      key        = "STRAVA_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.strava_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "STRAVA_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.strava_client_secret.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 
@@ -564,6 +609,21 @@ resource "google_cloudfunctions2_function" "trainingpeaks_uploader" {
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
     }
+
+    secret_environment_variables {
+      key        = "TRAININGPEAKS_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.trainingpeaks_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "TRAININGPEAKS_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.trainingpeaks_client_secret.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 
@@ -655,6 +715,21 @@ resource "google_cloudfunctions2_function" "googlesheets_uploader" {
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
     }
+
+    secret_environment_variables {
+      key        = "GOOGLE_OAUTH_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.google_oauth_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "GOOGLE_OAUTH_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.google_oauth_client_secret.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 
@@ -1185,6 +1260,27 @@ resource "google_cloudfunctions2_function" "billing_handler" {
       SENTRY_ORG           = var.sentry_org
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
+    }
+
+    secret_environment_variables {
+      key        = "STRIPE_SECRET_KEY"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.stripe_secret_key.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "STRIPE_WEBHOOK_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.stripe_webhook_secret.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "STRIPE_PRICE_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.stripe_price_id.secret_id
+      version    = "latest"
     }
 
     service_account_email = google_service_account.cloud_function_sa.email

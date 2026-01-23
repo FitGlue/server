@@ -1,6 +1,4 @@
-
-import { createCloudFunction, FrameworkContext } from './index';
-
+import { createCloudFunction, FrameworkContext, FrameworkResponse } from './index';
 
 // Mock dependencies
 jest.mock('firebase-admin', () => ({
@@ -23,29 +21,34 @@ jest.mock('@google-cloud/pubsub', () => ({
   })),
 }));
 
-jest.mock('winston', () => ({
-  createLogger: jest.fn().mockImplementation(() => ({
-    child: jest.fn().mockReturnThis(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-  })),
-  format: {
-    json: jest.fn(),
-    combine: jest.fn(),
-    timestamp: jest.fn(),
-    printf: jest.fn(),
-  },
-  transports: {
-    Console: jest.fn(),
-  },
-}));
+jest.mock('winston', () => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const formatFn: any = jest.fn().mockReturnValue(jest.fn());
+  formatFn.json = jest.fn();
+  formatFn.combine = jest.fn();
+  formatFn.timestamp = jest.fn();
+  formatFn.printf = jest.fn();
+
+  return {
+    createLogger: jest.fn().mockImplementation(() => ({
+      child: jest.fn().mockReturnThis(),
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    })),
+    format: formatFn,
+    transports: {
+      Console: jest.fn(),
+    },
+  };
+});
 
 jest.mock('../execution/logger', () => ({
   logExecutionStart: jest.fn().mockResolvedValue('exec-123'),
   logExecutionSuccess: jest.fn().mockResolvedValue(undefined),
   logExecutionFailure: jest.fn().mockResolvedValue(undefined),
+  logExecutionPending: jest.fn().mockResolvedValue(undefined),
 }));
 
 describe('createCloudFunction', () => {
@@ -73,6 +76,15 @@ describe('createCloudFunction', () => {
       set: jest.fn(),
     };
     handler = jest.fn().mockResolvedValue({ success: true });
+
+    // Default env vars for tests
+    process.env.K_SERVICE = 'test-function';
+    process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-test';
+  });
+
+  afterEach(() => {
+    delete process.env.K_SERVICE;
+    delete process.env.GOOGLE_CLOUD_PROJECT;
   });
 
   it('should execute handler and log success', async () => {
@@ -80,7 +92,7 @@ describe('createCloudFunction', () => {
     await cloudFunction(mockReq, mockRes);
 
     expect(handler).toHaveBeenCalled();
-    expect(mockRes.set).toHaveBeenCalledWith('x-execution-id', expect.stringMatching(/^unknown-function-\d+$/));
+    expect(mockRes.set).toHaveBeenCalledWith('x-execution-id', expect.stringMatching(/^test-function-\d+$/));
   });
 
   it('should handle errors and log failure', async () => {
@@ -90,20 +102,22 @@ describe('createCloudFunction', () => {
     await cloudFunction(mockReq, mockRes);
 
     expect(mockRes.status).toHaveBeenCalledWith(500);
-    expect(sendSpy).toHaveBeenCalledWith('Internal Server Error');
+    // Framework sends { error: 'Internal Server Error' } or specific error in non-prod
+    expect(jsonSpy).toHaveBeenCalledWith(expect.objectContaining({ error: 'Test Error' }));
   });
 
   it('should extract user_id from body', async () => {
     const cloudFunction = createCloudFunction(handler, { allowUnauthenticated: true });
     await cloudFunction(mockReq, mockRes);
 
-    const ctx = handler.mock.calls[0][2] as FrameworkContext;
+    // Context is the 2nd argument now
+    const ctx = handler.mock.calls[0][1] as FrameworkContext;
     expect(ctx.userId).toBe('user-1');
   });
 
   it('should log execution failure on HTTP 400', async () => {
-    handler.mockImplementation(async (req, res) => {
-      res.status(400).json({ error: 'Bad Request' });
+    handler.mockImplementation(async () => {
+      return new FrameworkResponse({ status: 400, body: { error: 'Bad Request' } });
     });
     const cloudFunction = createCloudFunction(handler, { allowUnauthenticated: true });
     await cloudFunction(mockReq, mockRes);

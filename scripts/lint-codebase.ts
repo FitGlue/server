@@ -98,8 +98,6 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'E6': [/admin-cli/, /events-helper/, /fitbit-handler/, /EnricherConfigForm/],
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   'W1': [/usePluginRegistry/],
-  // T16: showcase-handler uses Gen1 Cloud Functions framework (functions-framework, not SafeHandler)
-  'T16': [/showcase-handler/],
 };
 
 // ============================================================================
@@ -1793,11 +1791,11 @@ function checkSafeHandlerSignature(): CheckResult {
     const content = fs.readFileSync(indexPath, 'utf-8');
     const fileName = `${dir}/src/index.ts`;
 
-    // Check for legacy (req, res, ctx) signature in handler function
-    // Pattern: async (req: any, res: any, ctx:
-    const legacySignaturePattern = /(?:async\s+)?\(\s*req\s*:\s*\w+\s*,\s*res\s*:\s*\w+\s*,\s*ctx\s*:/g;
+    // Check for legacy signature in handler function (has 'res')
+    // Pattern: matches (req, res) or (req, res, ctx) regardless of types
+    const legacySignaturePattern = /\(\s*req\b[^)]*\bres\b/g;
     if (legacySignaturePattern.test(content)) {
-      errors.push(`${fileName}: Uses legacy (req, res, ctx) signature - should be (req, ctx)`);
+      errors.push(`${fileName}: Uses signature with 'res' object - should be (req, ctx) and return value/FrameworkResponse`);
     }
 
     // Check for Promise<void> return type in handlers (should return data or FrameworkResponse)

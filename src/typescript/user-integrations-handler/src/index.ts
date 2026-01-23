@@ -1,51 +1,34 @@
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, generateOAuthState, getSecret, canAddConnection, countActiveConnections, HttpError } from '@fitglue/shared';
-import { Request } from 'express';
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, generateOAuthState, getSecret, canAddConnection, countActiveConnections, HttpError, routeRequest, RouteMatch, getRegistry, IntegrationAuthType, FrameworkHandler, createHevyClient } from '@fitglue/shared';
 
 
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+export const handler: FrameworkHandler = async (req, ctx) => {
   const userId = ctx.userId;
   if (!userId) {
     throw new HttpError(401, 'Unauthorized');
   }
 
-  const { logger } = ctx;
-  const path = req.path;
-
-  // Extract path segments for sub-routes
-  // Path may be /api/users/me/integrations or /integrations or just /
-  // Get the last meaningful segments after 'integrations'
-  const integrationsIndex = path.indexOf('/integrations');
-  const subPath = integrationsIndex >= 0
-    ? path.substring(integrationsIndex + '/integrations'.length)
-    : path;
-  const pathParts = subPath.split('/').filter(p => p !== '');
-
-  logger.info('Routing request', { path, subPath, pathParts, method: req.method });
-
-  // GET /users/me/integrations - List all integrations
-  if (req.method === 'GET' && pathParts.length === 0) {
-    return await handleListIntegrations(userId, ctx);
-  }
-
-  // POST /users/me/integrations/{provider}/connect - Generate OAuth URL
-  if (req.method === 'POST' && pathParts.length >= 2 && pathParts[1] === 'connect') {
-    const provider = pathParts[0];
-    return await handleConnect(userId, provider, ctx);
-  }
-
-  // DELETE /users/me/integrations/{provider} - Disconnect integration
-  if (req.method === 'DELETE' && pathParts.length >= 1) {
-    const provider = pathParts[0];
-    return await handleDisconnect(userId, provider, ctx);
-  }
-
-  // PUT /users/me/integrations/{provider} - Configure API key integration
-  if (req.method === 'PUT' && pathParts.length >= 1) {
-    const provider = pathParts[0];
-    return await handleConfigure(userId, provider, req.body, ctx);
-  }
-
-  throw new HttpError(404, 'Not found');
+  return await routeRequest(req, ctx, [
+    {
+      method: 'GET',
+      pattern: '/api/users/me/integrations',
+      handler: async () => await handleListIntegrations(userId, ctx)
+    },
+    {
+      method: 'POST',
+      pattern: '/api/users/me/integrations/:provider/connect',
+      handler: async (match: RouteMatch) => await handleConnect(userId, match.params.provider, ctx)
+    },
+    {
+      method: 'DELETE',
+      pattern: '/api/users/me/integrations/:provider',
+      handler: async (match: RouteMatch) => await handleDisconnect(userId, match.params.provider, ctx)
+    },
+    {
+      method: 'PUT',
+      pattern: '/api/users/me/integrations/:provider',
+      handler: async (match: RouteMatch) => await handleConfigure(userId, match.params.provider, req.body, ctx)
+    }
+  ]);
 };
 
 async function handleListIntegrations(userId: string, ctx: FrameworkContext) {
@@ -117,25 +100,25 @@ async function handleConnect(userId: string, provider: string, ctx: FrameworkCon
   const env = projectId.includes('-prod') ? 'prod' : projectId.includes('-test') ? 'test' : 'dev';
   const baseUrl = env === 'prod' ? 'https://fitglue.tech' : `https://${env}.fitglue.tech`;
 
-  // Get client ID from secrets
-  const clientId = await getSecret(projectId, `${provider}-client-id`);
+  // Get client ID from secrets (environment variable)
+  const clientId = getSecret(`${provider.toUpperCase()}_CLIENT_ID`);
 
   // Generate state token
   const state = await generateOAuthState(userId);
 
   let authUrl: string;
   if (provider === 'strava') {
-    authUrl = `https://www.strava.com/oauth/authorize?` +
+    authUrl = 'https://www.strava.com/oauth/authorize?' +
       `client_id=${clientId}&` +
       `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/strava/callback`)}&` +
-      `response_type=code&` +
-      `scope=read,activity:read_all,activity:write&` +
+      'response_type=code&' +
+      'scope=read,activity:read_all,activity:write&' +
       `state=${state}`;
   } else {
-    authUrl = `https://www.fitbit.com/oauth2/authorize?` +
+    authUrl = 'https://www.fitbit.com/oauth2/authorize?' +
       `client_id=${clientId}&` +
       `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/fitbit/callback`)}&` +
-      `response_type=code&` +
+      'response_type=code&' +
       `scope=${encodeURIComponent('activity heartrate profile location')}&` +
       `state=${state}`;
   }
@@ -147,8 +130,7 @@ async function handleConnect(userId: string, provider: string, ctx: FrameworkCon
 async function handleDisconnect(userId: string, provider: string, ctx: FrameworkContext) {
   const { logger } = ctx;
 
-  // Import registry dynamically to validate provider
-  const { getRegistry } = await import('@fitglue/shared');
+  // Validate provider using registry
   const registry = getRegistry();
   const integrationManifest = registry.integrations.find((i: { id: string }) => i.id === provider);
 
@@ -184,8 +166,7 @@ async function handleConfigure(
 ) {
   const { logger } = ctx;
 
-  // Import registry and auth types
-  const { getRegistry, IntegrationAuthType } = await import('@fitglue/shared');
+  // Get registry and auth types
   const registry = getRegistry();
 
   // Look up integration from registry
@@ -285,13 +266,10 @@ async function handleConfigure(
 
 async function validateHevyApiKey(apiKey: string): Promise<boolean> {
   try {
-    // Make a simple API call to validate the key
-    // Use /v1/workouts with page_count=1 for efficiency (the /v1/user endpoint doesn't exist)
-    const response = await fetch('https://api.hevyapp.com/v1/workouts?page_count=1', {
-      headers: {
-        'api-key': apiKey,
-        'Accept': 'application/json',
-      },
+    // Use typed Hevy client to validate the API key
+    const client = createHevyClient({ apiKey });
+    const { response } = await client.GET('/v1/workouts', {
+      params: { query: { page: 1, pageSize: 1 } }
     });
     return response.ok;
   } catch {

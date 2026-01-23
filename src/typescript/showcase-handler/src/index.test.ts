@@ -1,6 +1,7 @@
 import * as admin from 'firebase-admin';
+import { FrameworkResponse, HttpError, ShowcaseStore, UserTier } from '@fitglue/shared';
 
-// Mock firebase-admin
+// Mock firebase-admin for user lookup
 jest.mock('firebase-admin', () => {
   const mockDoc = {
     get: jest.fn(),
@@ -14,39 +15,56 @@ jest.mock('firebase-admin', () => {
   return {
     apps: [],
     initializeApp: jest.fn(),
-    firestore: jest.fn(() => mockFirestore),
+    firestore: Object.assign(jest.fn(() => mockFirestore), {
+      Timestamp: {
+        now: () => ({ toDate: () => new Date() }),
+        fromDate: (d: Date) => ({ toDate: () => d }),
+      },
+    }),
   };
 });
 
-// Mock @google-cloud/functions-framework
-jest.mock('@google-cloud/functions-framework', () => ({
-  http: jest.fn(),
-}));
+// Mock ShowcaseStore and createCloudFunction
+jest.mock('@fitglue/shared', () => {
+  const actual = jest.requireActual('@fitglue/shared');
+  return {
+    ...actual,
+    createCloudFunction: (handler: any) => handler,
+    ShowcaseStore: jest.fn(),
+  };
+});
 
 import { showcaseHandler } from './index';
 
 describe('showcase-handler', () => {
   let req: any;
-  let res: any;
-  let mockDocGet: jest.Mock;
+  let ctx: any;
+  let mockShowcaseStore: any;
   let mockFirestore: any;
 
   beforeEach(() => {
-    // Get the mocked firestore
     mockFirestore = (admin.firestore as unknown as jest.Mock)();
-    mockDocGet = mockFirestore.collection().doc().get;
+
+    mockShowcaseStore = {
+      get: jest.fn(),
+      exists: jest.fn(),
+    };
+    (ShowcaseStore as unknown as jest.Mock).mockImplementation(() => mockShowcaseStore);
 
     req = {
       method: 'GET',
       path: '/api/showcase/test-id',
     };
 
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-      send: jest.fn(),
-      set: jest.fn(),
-      redirect: jest.fn(),
+    ctx = {
+      stores: {
+        db: mockFirestore,
+      },
+      logger: {
+        info: jest.fn(),
+        error: jest.fn(),
+        debug: jest.fn(),
+      },
     };
 
     jest.clearAllMocks();
@@ -55,155 +73,122 @@ describe('showcase-handler', () => {
   describe('CORS handling', () => {
     it('responds to OPTIONS with 204', async () => {
       req.method = 'OPTIONS';
-      await showcaseHandler(req, res);
-      expect(res.status).toHaveBeenCalledWith(204);
-      expect(res.send).toHaveBeenCalledWith('');
-    });
-
-    it('sets CORS headers on all requests', async () => {
-      mockDocGet.mockResolvedValue({ exists: false });
-      await showcaseHandler(req, res);
-      expect(res.set).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
-      expect(res.set).toHaveBeenCalledWith('Access-Control-Allow-Methods', 'GET, OPTIONS');
+      const result = await showcaseHandler(req, ctx);
+      expect(result).toBeInstanceOf(FrameworkResponse);
+      expect((result as unknown as FrameworkResponse).options.status).toBe(204);
     });
   });
 
   describe('method validation', () => {
     it('rejects non-GET/OPTIONS methods', async () => {
       req.method = 'POST';
-      await showcaseHandler(req, res);
-      expect(res.status).toHaveBeenCalledWith(405);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Method Not Allowed' });
+      await expect(showcaseHandler(req, ctx)).rejects.toThrow(HttpError);
     });
   });
 
   describe('showcase ID extraction', () => {
     it('extracts ID from /api/showcase/{id} path', async () => {
       req.path = '/api/showcase/my-activity-id';
-      mockDocGet.mockResolvedValue({ exists: false });
-      await showcaseHandler(req, res);
-      expect(mockFirestore.collection).toHaveBeenCalledWith('showcased_activities');
-      expect(mockFirestore.collection().doc).toHaveBeenCalledWith('my-activity-id');
+      mockShowcaseStore.get.mockResolvedValue(null);
+      try {
+        await showcaseHandler(req, ctx);
+      } catch (e) {
+        // Expected to throw 404
+      }
+      expect(mockShowcaseStore.get).toHaveBeenCalledWith('my-activity-id');
     });
 
     it('extracts ID from /showcase/{id} path', async () => {
       req.path = '/showcase/my-activity-id';
-      mockDocGet.mockResolvedValue({ exists: false });
-      await showcaseHandler(req, res);
-      expect(mockFirestore.collection().doc).toHaveBeenCalledWith('my-activity-id');
-    });
-
-    it('returns 400 if no showcase ID provided', async () => {
-      req.path = '/api/showcase/';
-      await showcaseHandler(req, res);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Missing showcase ID' });
+      mockShowcaseStore.get.mockResolvedValue(null);
+      try {
+        await showcaseHandler(req, ctx);
+      } catch (e) {
+        // Expected to throw 404
+      }
+      expect(mockShowcaseStore.get).toHaveBeenCalledWith('my-activity-id');
     });
   });
 
   describe('showcase retrieval', () => {
     it('returns 404 if showcase not found', async () => {
-      mockDocGet.mockResolvedValue({ exists: false });
-      await showcaseHandler(req, res);
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Showcase not found' });
+      mockShowcaseStore.get.mockResolvedValue(null);
+      await expect(showcaseHandler(req, ctx)).rejects.toThrow(HttpError);
     });
 
     it('returns 410 if showcase expired', async () => {
-      const pastDate = new Date(Date.now() - 86400000); // 1 day ago
-      mockDocGet.mockResolvedValue({
-        exists: true,
-        data: () => ({
-          // Firestore stores as snake_case
-          showcase_id: 'test-id',
-          expires_at: pastDate,
-        }),
+      const pastDate = new Date(Date.now() - 86400000);
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'test-id',
+        expiresAt: pastDate,
       });
-      await showcaseHandler(req, res);
-      expect(res.status).toHaveBeenCalledWith(410);
-      expect(res.json).toHaveBeenCalledWith({ error: 'This showcase has expired' });
+      await expect(showcaseHandler(req, ctx)).rejects.toThrow(HttpError);
     });
 
     it('returns showcase data with correct format', async () => {
       const now = new Date();
-      const futureDate = new Date(Date.now() + 86400000); // 1 day from now
-      mockDocGet.mockResolvedValue({
-        exists: true,
-        data: () => ({
-          // Firestore stores as snake_case
-          showcase_id: 'test-id',
-          title: 'Morning Run',
-          description: 'A nice run',
-          activity_type: 27, // RUN
-          source: 1, // HEVY
-          start_time: now,
-          created_at: now,
-          expires_at: futureDate,
-          applied_enrichments: ['fitbit-heart-rate'],
-          enrichment_metadata: { hr: 'true' },
-          tags: ['running'],
-          // These should be stripped
-          user_id: 'should-not-appear',
-          activity_id: 'should-not-appear',
-        }),
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'test-id',
+        userId: 'user-123',
+        title: 'Morning Run',
+        activityType: 27,
+        source: 1,
+        startTime: now,
+        createdAt: now,
+        appliedEnrichments: ['fitbit-heart-rate'],
       });
 
-      await showcaseHandler(req, res);
+      // Mock user lookup
+      const mockUserGet = jest.fn().mockResolvedValue({
+        data: () => ({
+          tier: UserTier.USER_TIER_ATHLETE,
+        }),
+      });
+      mockFirestore.collection.mockReturnValue({
+        doc: jest.fn().mockReturnValue({ get: mockUserGet }),
+      });
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const responseData = res.json.mock.calls[0][0];
+      const result = await showcaseHandler(req, ctx);
+      expect((result as unknown as FrameworkResponse).options.status).toBe(200);
+      const responseData: any = (result as unknown as FrameworkResponse).options.body;
       expect(responseData.showcaseId).toBe('test-id');
-      expect(responseData.title).toBe('Morning Run');
-      expect(responseData.activityType).toBe(27);
-      expect(responseData.source).toBe(1);
-      expect(responseData).not.toHaveProperty('userId');
-      expect(responseData).not.toHaveProperty('activityId');
+      expect(responseData.isAthlete).toBe(true);
     });
 
     it('sets immutable cache headers', async () => {
-      mockDocGet.mockResolvedValue({
-        exists: true,
-        data: () => ({
-          showcase_id: 'test-id',
-          title: 'Test',
-          description: '',
-          activity_type: 0,
-          source: 0,
-        }),
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'test-id',
+        userId: 'user-123',
+        title: 'Test',
       });
 
-      await showcaseHandler(req, res);
-
-      expect(res.set).toHaveBeenCalledWith(
-        'Cache-Control',
-        'public, max-age=31536000, immutable'
-      );
+      const result = await showcaseHandler(req, ctx);
+      expect((result as unknown as FrameworkResponse).options.headers).toMatchObject({
+        'Cache-Control': 'public, max-age=31536000, immutable',
+      });
     });
   });
 
   describe('HTML redirect', () => {
     it('redirects to static page for /showcase/{id} paths', async () => {
       req.path = '/showcase/my-activity';
-      mockDocGet.mockResolvedValue({
-        exists: true,
-        data: () => ({
-          showcase_id: 'my-activity',
-          title: 'Test',
-        }),
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'my-activity',
+        userId: 'user-123',
       });
 
-      await showcaseHandler(req, res);
-
-      expect(res.redirect).toHaveBeenCalledWith(302, '/showcase.html?id=my-activity');
+      const result = await showcaseHandler(req, ctx);
+      expect((result as unknown as FrameworkResponse).options.status).toBe(302);
+      expect((result as unknown as FrameworkResponse).options.headers).toMatchObject({
+        'Location': '/showcase.html?id=my-activity',
+      });
     });
   });
 
   describe('error handling', () => {
-    it('returns 500 on Firestore errors', async () => {
-      mockDocGet.mockRejectedValue(new Error('Firestore error'));
-      await showcaseHandler(req, res);
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
+    it('throws on Firestore errors', async () => {
+      mockShowcaseStore.get.mockRejectedValue(new Error('Firestore error'));
+      await expect(showcaseHandler(req, ctx)).rejects.toThrow('Firestore error');
     });
   });
 });

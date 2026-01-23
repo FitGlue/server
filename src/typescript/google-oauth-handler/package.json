@@ -9,7 +9,9 @@
     "lint": "eslint src --ext .ts"
   },
   "dependencies": {
-    "@fitglue/shared": "*"
+    "@fitglue/shared": "*",
+    "@typescript-eslint/eslint-plugin": "^8.53.1",
+    "@typescript-eslint/parser": "^8.53.1"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

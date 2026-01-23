@@ -1,0 +1,228 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "TrainingPeaks API",
+    "description": "Minimal OpenAPI specification for TrainingPeaks API endpoints used by FitGlue. This is a partial spec covering only the endpoints we consume.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "TrainingPeaks",
+      "url": "https://developers.trainingpeaks.com"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://api.trainingpeaks.com",
+      "description": "TrainingPeaks API"
+    },
+    {
+      "url": "https://oauth.trainingpeaks.com",
+      "description": "TrainingPeaks OAuth Server"
+    }
+  ],
+  "paths": {
+    "/token": {
+      "post": {
+        "operationId": "exchangeToken",
+        "summary": "Exchange authorization code for tokens",
+        "description": "Exchange an OAuth authorization code for access and refresh tokens. Note: This endpoint is on oauth.trainingpeaks.com",
+        "tags": [
+          "OAuth"
+        ],
+        "servers": [
+          {
+            "url": "https://oauth.trainingpeaks.com",
+            "description": "TrainingPeaks OAuth Server"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "client_id",
+                  "client_secret",
+                  "code",
+                  "grant_type",
+                  "redirect_uri"
+                ],
+                "properties": {
+                  "client_id": {
+                    "type": "string",
+                    "description": "OAuth client ID"
+                  },
+                  "client_secret": {
+                    "type": "string",
+                    "description": "OAuth client secret"
+                  },
+                  "code": {
+                    "type": "string",
+                    "description": "Authorization code from OAuth callback"
+                  },
+                  "grant_type": {
+                    "type": "string",
+                    "enum": [
+                      "authorization_code",
+                      "refresh_token"
+                    ],
+                    "description": "OAuth grant type"
+                  },
+                  "redirect_uri": {
+                    "type": "string",
+                    "description": "Redirect URI used in authorization request"
+                  },
+                  "refresh_token": {
+                    "type": "string",
+                    "description": "Refresh token (required when grant_type is refresh_token)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful token exchange",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request"
+          },
+          "401": {
+            "description": "Invalid credentials"
+          }
+        }
+      }
+    },
+    "/v1/athlete/profile": {
+      "get": {
+        "operationId": "getAthleteProfile",
+        "summary": "Get athlete profile",
+        "description": "Returns the authenticated athlete's profile information.",
+        "tags": [
+          "Athlete"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Athlete profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AthleteProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "OAuth2 access token"
+      }
+    },
+    "schemas": {
+      "TokenResponse": {
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token",
+          "expires_in"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "description": "OAuth access token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "description": "OAuth refresh token"
+          },
+          "expires_in": {
+            "type": "integer",
+            "description": "Token expiration time in seconds"
+          },
+          "token_type": {
+            "type": "string",
+            "description": "Token type (usually 'Bearer')"
+          },
+          "athlete_id": {
+            "type": "string",
+            "description": "Athlete ID (may be included in token response)"
+          }
+        }
+      },
+      "AthleteProfile": {
+        "type": "object",
+        "properties": {
+          "Id": {
+            "type": "string",
+            "description": "Athlete ID"
+          },
+          "FirstName": {
+            "type": "string",
+            "description": "Athlete first name"
+          },
+          "LastName": {
+            "type": "string",
+            "description": "Athlete last name"
+          },
+          "Email": {
+            "type": "string",
+            "format": "email",
+            "description": "Athlete email address"
+          },
+          "DateOfBirth": {
+            "type": "string",
+            "format": "date",
+            "description": "Athlete date of birth"
+          },
+          "Gender": {
+            "type": "string",
+            "enum": [
+              "Male",
+              "Female",
+              "Other"
+            ],
+            "description": "Athlete gender"
+          },
+          "Weight": {
+            "type": "number",
+            "description": "Athlete weight in kg"
+          },
+          "ThresholdHeartRate": {
+            "type": "integer",
+            "description": "Threshold heart rate in BPM"
+          },
+          "ThresholdPower": {
+            "type": "integer",
+            "description": "Functional threshold power in watts"
+          },
+          "ThresholdPace": {
+            "type": "number",
+            "description": "Threshold pace"
+          }
+        }
+      }
+    }
+  }
+}

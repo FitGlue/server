@@ -222,10 +222,9 @@ export class ExecutionStore {
         const pipelineId = data.pipelineExecutionId;
 
         if (pipelineId) {
-          if (!results.has(pipelineId)) {
-            results.set(pipelineId, []);
-          }
-          results.get(pipelineId)!.push({ id: doc.id, data });
+          const existing = results.get(pipelineId) ?? [];
+          existing.push({ id: doc.id, data });
+          results.set(pipelineId, existing);
         }
       }
     }
@@ -316,6 +315,7 @@ export class ExecutionStore {
 
       await batch.commit();
       deletedCount += snapshot.size;
+      // eslint-disable-next-line no-console
       console.log(`  Deleted batch of ${snapshot.size} executions (total: ${deletedCount})...`);
     }
     return deletedCount;

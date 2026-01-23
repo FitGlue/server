@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -31,9 +31,13 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'strava-client-id');
-    const clientSecret = await getSecret(projectId, 'strava-client-secret');
+    const clientId = process.env.STRAVA_CLIENT_ID;
+    const clientSecret = process.env.STRAVA_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      logger.error('Missing Strava OAuth credentials');
+      return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/strava/error?reason=config_error` } };
+    }
 
     const tokenResponse = await fetch('https://www.strava.com/api/v3/oauth/token', {
       method: 'POST',
@@ -58,13 +62,13 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_at: number;
       athlete: { id: number };
     };
-    const { access_token, refresh_token, expires_at, athlete } = tokenData;
+    const { access_token: accessToken, refresh_token: refreshToken, expires_at: expiresAtSeconds, athlete } = tokenData;
 
     // Store tokens in Firestore
     await storeOAuthTokens(userId, 'strava', {
-      accessToken: access_token,
-      refreshToken: refresh_token,
-      expiresAt: new Date(expires_at * 1000),
+      accessToken,
+      refreshToken,
+      expiresAt: new Date(expiresAtSeconds * 1000),
       externalUserId: athlete.id.toString(),
     }, stores); // Pass stores directly
 

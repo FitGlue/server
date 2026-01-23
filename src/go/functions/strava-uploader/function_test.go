@@ -129,9 +129,8 @@ func TestUploadToStrava(t *testing.T) {
 
 	// Inject Mocks into Global Service
 	svc = &bootstrap.Service{
-		DB:      mockDB,
-		Store:   mockStore,
-		Secrets: &mocks.MockSecretStore{},
+		DB:    mockDB,
+		Store: mockStore,
 		Config: &bootstrap.Config{
 			ProjectID:         "test-project",
 			GCSArtifactBucket: "test-bucket",
@@ -231,9 +230,8 @@ func TestUploadPhotosToStrava(t *testing.T) {
 
 	// Setup service with mocks
 	svc = &bootstrap.Service{
-		DB:      &mocks.MockDatabase{},
-		Store:   mockStore,
-		Secrets: &mocks.MockSecretStore{},
+		DB:    &mocks.MockDatabase{},
+		Store: mockStore,
 		Config: &bootstrap.Config{
 			ProjectID:         "test-project",
 			GCSArtifactBucket: "test-bucket",

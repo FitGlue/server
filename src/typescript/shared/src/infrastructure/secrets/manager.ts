@@ -1,43 +1,16 @@
-import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
-
-let client: SecretManagerServiceClient;
-
-function getClient() {
-    if (!client) {
-        client = new SecretManagerServiceClient();
-    }
-    return client;
-}
-
 /**
- * Fetches the latest version of a secret from Google Secret Manager.
- * @param projectId The Google Cloud Project ID.
- * @param secretName The name of the secret (not the full path).
+ * Reads a secret from environment variables.
+ * Secrets are injected via Terraform's secret_environment_variables blocks.
+ * @param secretName The name of the environment variable containing the secret.
  * @returns The secret string value.
+ * @throws Error if the secret is not found in environment variables.
  */
-export async function getSecret(projectId: string, secretName: string): Promise<string> {
-    // 1. Local Fallback: Check environment variable first
-    // This allows local development without needing authenticated access to Secret Manager
-    if (process.env[secretName]) {
-        console.log(`[SecretManager] Using local env var for: ${secretName}`);
-        return process.env[secretName]!;
+export function getSecret(secretName: string): string {
+    const value = process.env[secretName];
+
+    if (!value) {
+        throw new Error(`Secret ${secretName} not found in environment variables`);
     }
 
-    // 2. Cloud Secret Manager
-    const name = `projects/${projectId}/secrets/${secretName}/versions/latest`;
-
-    try {
-        const [version] = await getClient().accessSecretVersion({
-            name: name,
-        });
-
-        const payload = version.payload?.data?.toString();
-        if (!payload) {
-            throw new Error(`Secret payload is empty for ${secretName}`);
-        }
-        return payload;
-    } catch (error: unknown) {
-        console.error(`Failed to fetch secret ${secretName}:`, error);
-        throw error;
-    }
+    return value;
 }

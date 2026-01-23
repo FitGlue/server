@@ -1,17 +1,11 @@
 import { FirestoreTokenSource } from './token-source';
 import { UserStore } from '../../storage/firestore';
-import * as secrets from '../secrets/manager';
 
 // Mock UserStore
 const mockUserStore = {
   get: jest.fn(),
   setIntegration: jest.fn()
 } as unknown as UserStore;
-
-// Mock SecretManager
-jest.mock('../secrets/manager', () => ({
-  getSecret: jest.fn()
-}));
 
 // Mock fetch
 global.fetch = jest.fn() as unknown as jest.Mock;
@@ -24,11 +18,19 @@ describe('FirestoreTokenSource', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers().setSystemTime(now);
-    (secrets.getSecret as jest.Mock).mockResolvedValue('test-secret');
+    // Set env vars for OAuth credentials
+    process.env.FITBIT_CLIENT_ID = 'test-client-id';
+    process.env.FITBIT_CLIENT_SECRET = 'test-client-secret';
+    process.env.STRAVA_CLIENT_ID = 'test-client-id';
+    process.env.STRAVA_CLIENT_SECRET = 'test-client-secret';
   });
 
   afterEach(() => {
     jest.useRealTimers();
+    delete process.env.FITBIT_CLIENT_ID;
+    delete process.env.FITBIT_CLIENT_SECRET;
+    delete process.env.STRAVA_CLIENT_ID;
+    delete process.env.STRAVA_CLIENT_SECRET;
   });
 
   it('should return valid existing token', async () => {
@@ -166,6 +168,6 @@ describe('FirestoreTokenSource', () => {
     // Verify body contains client_id for Strava
     const call = (global.fetch as jest.Mock).mock.calls[0];
     const body = call[1].body as URLSearchParams;
-    expect(body.get('client_id')).toBe('test-secret');
+    expect(body.get('client_id')).toBe('test-client-id');
   });
 });

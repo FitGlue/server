@@ -1,20 +1,21 @@
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getSecret, db, UserTier } from '@fitglue/shared';
+import { createCloudFunction, FirebaseAuthStrategy, db, UserTier, FrameworkHandler } from '@fitglue/shared';
 import Stripe from 'stripe';
-import { Request } from 'express';
 
 let stripe: Stripe;
 
-async function getStripe(): Promise<Stripe> {
+function getStripe(): Stripe {
   if (!stripe) {
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
-    const secretKey = await getSecret(projectId, 'stripe-secret-key');
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+    if (!secretKey) {
+      throw new Error('STRIPE_SECRET_KEY not found in environment variables');
+    }
     stripe = new Stripe(secretKey, {});
   }
   return stripe;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+export const handler: FrameworkHandler = async (req, ctx) => {
   const { logger, services } = ctx;
   const userId = ctx.userId;
 
@@ -32,8 +33,11 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
 
     try {
       const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
-      const stripeClient = await getStripe();
-      const priceId = await getSecret(projectId, 'stripe-price-id');
+      const stripeClient = getStripe();
+      const priceId = process.env.STRIPE_PRICE_ID;
+      if (!priceId) {
+        throw new Error('STRIPE_PRICE_ID not found in environment variables');
+      }
 
       const user = await services.user.get(userId);
       if (!user) {
@@ -75,7 +79,10 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
       return { url: session.url };
     } catch (error: any) {
       logger.error('Checkout error', { error, userId });
-      // res.status(500).json({ error: 'Failed to create checkout session' });
+      // Re-throw if error already has a statusCode (like 404)
+      if (error.statusCode) {
+        throw error;
+      }
       // Throwing error bubbles to SafeHandler which handles 500s
       throw new Error('Failed to create checkout session');
     }
@@ -84,9 +91,11 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
   // POST /api/billing/webhook - Handle Stripe webhook events
   if (subPath === '/webhook' && req.method === 'POST') {
     try {
-      const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-dev';
-      const stripeClient = await getStripe();
-      const webhookSecret = await getSecret(projectId, 'stripe-webhook-secret');
+      const stripeClient = getStripe();
+      const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+      if (!webhookSecret) {
+        throw new Error('STRIPE_WEBHOOK_SECRET not found in environment variables');
+      }
       const sig = req.headers['stripe-signature'] as string;
 
       // Stripe expects raw body for signature verification
@@ -145,7 +154,7 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
 
     try {
       const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
-      const stripeClient = await getStripe();
+      const stripeClient = getStripe();
 
       const user = await services.user.get(userId);
       if (!user?.stripeCustomerId) {

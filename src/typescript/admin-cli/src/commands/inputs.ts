@@ -37,7 +37,7 @@ export const addInputsCommands = (program: Command) => {
           console.error(`❌ Error listing inputs: ${error.message}`);
           console.error('Stack:', error.stack);
         } else {
-          console.error(`❌ An unknown error occurred`);
+          console.error('❌ An unknown error occurred');
         }
         process.exit(1);
       }
@@ -72,7 +72,7 @@ export const addInputsCommands = (program: Command) => {
           console.error(`❌ Error getting input: ${error.message}`);
           console.error('Stack:', error.stack);
         } else {
-          console.error(`❌ An unknown error occurred`);
+          console.error('❌ An unknown error occurred');
         }
         process.exit(1);
       }
@@ -95,7 +95,7 @@ export const addInputsCommands = (program: Command) => {
         if (options.data) {
           try {
             inputData = JSON.parse(options.data);
-          } catch (e) {
+          } catch {
             console.error('Invalid JSON data provided');
             process.exit(1);
           }
@@ -141,7 +141,7 @@ export const addInputsCommands = (program: Command) => {
           console.error(`❌ Error resolving input: ${error.message}`);
           console.error('Stack:', error.stack);
         } else {
-          console.error(`❌ An unknown error occurred`);
+          console.error('❌ An unknown error occurred');
         }
         process.exit(1);
       }

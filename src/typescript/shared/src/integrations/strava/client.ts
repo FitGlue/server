@@ -1,6 +1,6 @@
 import { createAuthenticatedClient } from '../factory';
 import { UserService } from '../../domain/services/user';
-import type { paths } from "./schema";
+import type { paths } from './schema';
 
 export function createStravaClient(userService: UserService, userId: string) {
   return createAuthenticatedClient<paths>(

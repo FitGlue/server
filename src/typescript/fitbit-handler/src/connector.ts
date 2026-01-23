@@ -1,4 +1,4 @@
-import { BaseConnector, ConnectorConfig, IngestStrategy, StandardizedActivity, CloudEventSource, ActivitySource, createFitbitClient, mapTCXToStandardized, FrameworkContext, ActivityType } from '@fitglue/shared';
+import { BaseConnector, ConnectorConfig, IngestStrategy, StandardizedActivity, CloudEventSource, ActivitySource, createFitbitClient, mapTCXToStandardized, FrameworkContext, ActivityType, FrameworkResponse } from '@fitglue/shared';
 
 interface FitbitNotification {
   collectionType: string;
@@ -10,15 +10,15 @@ interface FitbitNotification {
 
 export type FitbitBody = FitbitNotification[];
 
-export interface FitbitConnectorConfig extends ConnectorConfig {
-  // OAuth tokens are managed by UserService via createFitbitClient
-}
+// OAuth tokens are managed by UserService via createFitbitClient
+export type FitbitConnectorConfig = ConnectorConfig;
 
 /**
  * Map Fitbit activityParentName to ActivityType enum.
  * Fitbit has 500+ activity types, but we map common ones to Strava-compatible types.
  * This mapping covers the most common activity categories from Fitbit.
  */
+// eslint-disable-next-line complexity
 export function mapFitbitActivityType(activityParentName: string | undefined): ActivityType {
   const name = (activityParentName || '').toLowerCase().trim();
 
@@ -255,7 +255,6 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       if (!verifyCode) {
         logger.warn('Missing verify code in GET request');
         // Return 404 with body
-        const { FrameworkResponse } = await import('@fitglue/shared');
         return {
           handled: true,
           response: new FrameworkResponse({ status: 404, body: 'Not Found' })
@@ -266,7 +265,6 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       if (verifyCode === expectedCode) {
         logger.info('Fitbit verification successful');
         // Return 204 No Content
-        const { FrameworkResponse } = await import('@fitglue/shared');
         return {
           handled: true,
           response: new FrameworkResponse({ status: 204 })
@@ -274,7 +272,6 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       } else {
         logger.warn('Invalid verification code');
         // Return 404 with body
-        const { FrameworkResponse } = await import('@fitglue/shared');
         return {
           handled: true,
           response: new FrameworkResponse({ status: 404, body: 'Not Found' })
@@ -287,7 +284,6 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       const signature = req.headers['x-fitbit-signature'];
       if (!signature) {
         logger.warn('Missing X-Fitbit-Signature header');
-        const { FrameworkResponse } = await import('@fitglue/shared');
         // Use FrameworkResponse for 400 error
         return {
           handled: true,
@@ -315,7 +311,6 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
 
       if (signature !== expectedSignature) {
         logger.warn('Invalid Fitbit signature');
-        const { FrameworkResponse } = await import('@fitglue/shared');
         // Use FrameworkResponse for 404 error
         return {
           handled: true,
@@ -370,10 +365,11 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
    * @param activityId - The date string (YYYY-MM-DD) from the webhook
    * @param config - Fitbit connector config with userId injected
    */
+  // eslint-disable-next-line complexity
   async fetchAndMap(activityId: string, config: FitbitConnectorConfig): Promise<StandardizedActivity[]> {
     const userId = (config as unknown as { userId: string }).userId;
     if (!userId) {
-      throw new Error("userId missing in connector config");
+      throw new Error('userId missing in connector config');
     }
 
 
@@ -384,7 +380,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
     const date = activityId; // The "activityId" is actually a date for Fitbit
 
     // Fetch activity list for the date
-    const { data: activityList, error: listError } = await client.GET("/1/user/-/activities/date/{date}.json", {
+    const { data: activityList, error: listError } = await client.GET('/1/user/-/activities/date/{date}.json', {
       params: {
         path: { date: date }
       }
@@ -405,7 +401,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       if (!logIdStr) continue;
 
       // Fetch TCX for the activity
-      const { data: tcxData, error: tcxError, response } = await client.GET("/1/user/-/activities/{log-id}.tcx", {
+      const { data: tcxData, error: tcxError, response } = await client.GET('/1/user/-/activities/{log-id}.tcx', {
         params: { path: { 'log-id': logIdStr } },
         parseAs: 'text'
       });
@@ -430,7 +426,7 @@ export class FitbitConnector extends BaseConnector<FitbitConnectorConfig> {
       // Fetch detailed activity data to get the correct type (TCX doesn't have it, and daily summary is insufficient)
       // See: https://dev.fitbit.com/build/reference/web-api/activity/get-activity-log/
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: activityDetail, error: detailError } = await client.GET("/1/user/-/activities/{log-id}.json" as any, {
+      const { data: activityDetail, error: detailError } = await client.GET('/1/user/-/activities/{log-id}.json' as any, {
         params: { path: { 'log-id': logIdStr } }
       });
 

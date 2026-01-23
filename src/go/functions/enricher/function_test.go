@@ -74,7 +74,6 @@ func TestEnrichActivity(t *testing.T) {
 			return nil
 		},
 	}
-	mockSecrets := &mocks.MockSecretStore{}
 
 	// Override provider registry with mock provider for testing
 	providers.ClearRegistry()
@@ -96,10 +95,9 @@ func TestEnrichActivity(t *testing.T) {
 
 	// Inject Mocks into Global Service
 	svc = &bootstrap.Service{
-		DB:      mockDB,
-		Pub:     mockPub,
-		Store:   mockStore,
-		Secrets: mockSecrets,
+		DB:    mockDB,
+		Pub:   mockPub,
+		Store: mockStore,
 		Config: &bootstrap.Config{
 			ProjectID:     "test-project",
 			EnablePublish: false,

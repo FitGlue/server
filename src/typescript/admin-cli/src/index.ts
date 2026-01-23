@@ -293,7 +293,7 @@ program.command('fitbit:subscribe')
             // POST /1/user/-/{collection-path}/apiSubscriptions/{subscription-id}.json
             // collection-path: activities
             // subscription-id: fitglue-activities
-            const { data, error, response } = await client.POST("/1/user/-/{collection-path}/apiSubscriptions/{subscription-id}.json", {
+            const { data, error, response } = await client.POST('/1/user/-/{collection-path}/apiSubscriptions/{subscription-id}.json', {
                 params: {
                     path: {
                         'collection-path': 'activities',
@@ -420,7 +420,7 @@ const getDestinationName = (dest: number | string): string => {
 // Helper to format user output
 const formatUserOutput = (user: UserRecord) => {
     // Adapter for legacy format where doc was passed
-    const data = user
+    const data = user;
 
     if (!data) return;
 
@@ -437,13 +437,13 @@ const formatUserOutput = (user: UserRecord) => {
     console.log(`   Integrations: ${integrations.join(', ') || 'None'}`);
 
     if (data.pipelines && Array.isArray(data.pipelines) && data.pipelines.length > 0) {
-        console.log(`   Pipelines:`);
+        console.log('   Pipelines:');
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data.pipelines.forEach((p: any, index: number) => {
             console.log(`     #${index + 1} [${p.id}]`);
             console.log(`       Source: ${p.source}`);
             if (p.enrichers && p.enrichers.length > 0) {
-                console.log(`       Enrichers:`);
+                console.log('       Enrichers:');
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 p.enrichers.forEach((e: any, eIdx: number) => {
                     const providerName = getEnricherProviderName(e.provider_type || e.providerType);
@@ -458,7 +458,7 @@ const formatUserOutput = (user: UserRecord) => {
                                     console.log(`              ${key}:`);
                                     formatted.forEach(line => console.log(`                ${line}`));
                                     printed = true;
-                                } catch (err) {
+                                } catch {
                                     // Not valid JSON, fall through
                                 }
                             }
@@ -470,14 +470,14 @@ const formatUserOutput = (user: UserRecord) => {
                     }
                 });
             } else {
-                console.log(`       Enrichers: (None)`);
+                console.log('       Enrichers: (None)');
             }
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const destinationNames = p.destinations?.map((d: any) => getDestinationName(d)).join(', ') || 'None';
             console.log(`       Destinations: ${destinationNames}`);
         });
     } else {
-        console.log(`   Pipelines: None`);
+        console.log('   Pipelines: None');
     }
     console.log('--------------------------------------------------');
 };
@@ -568,17 +568,17 @@ program.command('users:connect')
 
             let authUrl: string;
             if (provider === 'strava') {
-                authUrl = `https://www.strava.com/oauth/authorize?` +
+                authUrl = 'https://www.strava.com/oauth/authorize?' +
                     `client_id=${clientId}&` +
                     `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/strava/callback`)}&` +
-                    `response_type=code&` +
-                    `scope=read,activity:read_all,activity:write&` +
+                    'response_type=code&' +
+                    'scope=read,activity:read_all,activity:write&' +
                     `state=${state}`;
             } else {
-                authUrl = `https://www.fitbit.com/oauth2/authorize?` +
+                authUrl = 'https://www.fitbit.com/oauth2/authorize?' +
                     `client_id=${clientId}&` +
                     `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/fitbit/callback`)}&` +
-                    `response_type=code&` +
+                    'response_type=code&' +
                     `scope=${encodeURIComponent('activity heartrate profile location')}&` +
                     `state=${state}`;
             }
@@ -882,7 +882,7 @@ program.command('users:replace-pipeline')
                 }
             ]);
 
-            await userService.replacePipeline(userId, pipelineId, '', sourceAnswers.source, enrichers, destAnswers.destinations);
+            await userService.replacePipeline(userId, { pipelineId, name: '', source: sourceAnswers.source, enrichers, destinations: destAnswers.destinations });
             console.log(`Pipeline ${pipelineId} replaced successfully.`);
 
         } catch (error: unknown) {
@@ -955,7 +955,7 @@ program
             if (error instanceof Error) {
                 console.error(`❌ Error listing executions: ${error.message}`);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1010,7 +1010,7 @@ program
             if (error instanceof Error) {
                 console.error(`❌ Error starting watch: ${error.message}`);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1041,7 +1041,7 @@ program
             if (error instanceof Error) {
                 console.error(`❌ Error fetching execution: ${error.message}`);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1093,7 +1093,7 @@ program
             if (error instanceof Error) {
                 console.error(`❌ Error starting watch: ${error.message}`);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1162,7 +1162,7 @@ const configureTestPipeline = async (pipelineId: string, behavior: 'success' | '
 
     const destinations = ['mock'];
 
-    await userService.replacePipeline(user.userId, pipelineId, '', 'SOURCE_TEST', enrichers, destinations);
+    await userService.replacePipeline(user.userId, { pipelineId, name: '', source: 'SOURCE_TEST', enrichers, destinations });
     console.log(`✅ Pipeline ${pipelineId} reconfigured successfully.`);
 
     // 2. Create/Get Ingress Key
@@ -1261,6 +1261,7 @@ function truncateData(obj: unknown, verbose: boolean = false, depth: number = 0)
 }
 
 // Helper to print full execution details
+// eslint-disable-next-line complexity
 function printExecutionDetails(executionId: string, data: ExecutionRecord, verbose: boolean) {
     console.log('\n==========================================');
     console.log('EXECUTION DETAILS');
@@ -1363,7 +1364,7 @@ program
             if (error instanceof Error) {
                 console.error(`❌ Error getting execution: ${error.message}`);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1389,7 +1390,7 @@ program
             if (error instanceof Error) {
                 console.error(`❌ Error getting pipeline executions: ${error.message}`);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1420,7 +1421,7 @@ program
                 console.error(`❌ Error creating execution: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1462,7 +1463,7 @@ program
                 console.error(`❌ Error updating execution: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1514,7 +1515,7 @@ program
                 console.error(`❌ Error cleaning executions: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1572,7 +1573,7 @@ program
                 console.error(`❌ Error cleaning executions: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1617,7 +1618,7 @@ program
                 console.error(`❌ Error listing buckets: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1653,7 +1654,7 @@ program
                 console.error(`❌ Error getting bucket: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1662,6 +1663,7 @@ program
 program
     .command('buckets:from-execution <executionId>')
     .description('Get details of the bucket used in a specific execution')
+    // eslint-disable-next-line complexity
     .action(async (executionId) => {
         try {
             console.log(`Fetching execution ${executionId}...`);
@@ -1670,7 +1672,7 @@ program
                 console.error(`Execution ${executionId} not found.`);
                 process.exit(1);
             }
-            let fitFileUri = null
+            let fitFileUri = null;
 
             // If not found at top level, check within inputs or outputs
             if (!fitFileUri) {
@@ -1679,7 +1681,7 @@ program
                     try {
                         const outputs = JSON.parse(data.outputsJson);
                         fitFileUri = outputs.fit_file_uri || outputs.uri;
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                 }
@@ -1689,7 +1691,7 @@ program
                     try {
                         const inputs = JSON.parse(data.inputsJson);
                         fitFileUri = inputs.fit_file_uri || inputs.uri || inputs.fileUri;
-                    } catch (e) {
+                    } catch {
                         // ignore
                     }
                 }
@@ -1739,7 +1741,7 @@ program
                 console.error(`❌ Error getting bucket from execution: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1819,7 +1821,7 @@ program
                 console.error(`❌ Error downloading file: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1871,7 +1873,7 @@ program
 
             let selectedUri: string;
             if (uris.size === 1) {
-                selectedUri = uris.values().next().value!;
+                selectedUri = uris.values().next().value ?? '';
                 console.log(`Found only one URI: ${selectedUri}`);
             } else {
                 const answers = await inquirer.prompt([
@@ -1921,7 +1923,7 @@ program
                 console.error(`❌ Error downloading from execution: ${error.message}`);
                 console.error('Stack:', error.stack);
             } else {
-                console.error(`❌ An unknown error occurred`);
+                console.error('❌ An unknown error occurred');
             }
             process.exit(1);
         }
@@ -1934,6 +1936,7 @@ registerReplayCommands(program);
 
 program.parse();
 
+// eslint-disable-next-line max-lines-per-function, complexity
 async function promptForEnricherConfig(providerType: EnricherProviderType): Promise<{ [key: string]: string }> {
     let inputs: { [key: string]: string } = {};
 
@@ -2281,7 +2284,7 @@ async function promptForEnricherConfig(providerType: EnricherProviderType): Prom
                 message: 'Inputs (JSON string, optional):',
                 validate: (input) => {
                     if (!input) return true;
-                    try { JSON.parse(input); return true; } catch (e) { return 'Invalid JSON'; }
+                    try { JSON.parse(input); return true; } catch { return 'Invalid JSON'; }
                 }
             }]);
             inputs = jsonInput.inputsJson ? JSON.parse(jsonInput.inputsJson) : {};

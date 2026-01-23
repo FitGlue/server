@@ -8,6 +8,7 @@ export function addTerraformCommands(program: Command) {
   program.command('terraform:unlock')
     .argument('<environment>', 'Environment to unlock (dev, test, prod)')
     .description('Attempt to find and clear a Terraform state lock for a specific environment')
+    // eslint-disable-next-line complexity
     .action(async (environment: string) => {
       try {
         if (!['dev', 'test', 'prod'].includes(environment)) {

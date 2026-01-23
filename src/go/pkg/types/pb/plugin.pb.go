@@ -844,6 +844,9 @@ type IntegrationManifest struct {
 	// Marketing metadata
 	MarketingDescription string   `protobuf:"bytes,12,opt,name=marketing_description,json=marketingDescription,proto3" json:"marketing_description,omitempty"` // Extended description for marketing site (markdown)
 	Features             []string `protobuf:"bytes,13,rep,name=features,proto3" json:"features,omitempty"`                                                     // List of features/capabilities
+	// SVG Icon support (for products with real logos)
+	IconType *string `protobuf:"bytes,15,opt,name=icon_type,json=iconType,proto3,oneof" json:"icon_type,omitempty"` // "emoji" (default), "svg", "png", or "jpg"
+	IconPath *string `protobuf:"bytes,16,opt,name=icon_path,json=iconPath,proto3,oneof" json:"icon_path,omitempty"` // Path to icon asset (e.g., "/images/icons/strava.svg")
 	// When true, integration is hidden from connections page but shown on marketing with "Coming Soon"
 	IsTemporarilyUnavailable *bool `protobuf:"varint,14,opt,name=is_temporarily_unavailable,json=isTemporarilyUnavailable,proto3,oneof" json:"is_temporarily_unavailable,omitempty"`
 	unknownFields            protoimpl.UnknownFields
@@ -969,6 +972,20 @@ func (x *IntegrationManifest) GetFeatures() []string {
 		return x.Features
 	}
 	return nil
+}
+
+func (x *IntegrationManifest) GetIconType() string {
+	if x != nil && x.IconType != nil {
+		return *x.IconType
+	}
+	return ""
+}
+
+func (x *IntegrationManifest) GetIconPath() string {
+	if x != nil && x.IconPath != nil {
+		return *x.IconPath
+	}
+	return ""
 }
 
 func (x *IntegrationManifest) GetIsTemporarilyUnavailable() bool {
@@ -1144,7 +1161,7 @@ const file_plugin_proto_rawDesc = "" +
 	"\n" +
 	"_min_valueB\f\n" +
 	"\n" +
-	"_max_value\"\xaf\x04\n" +
+	"_max_value\"\x8f\x05\n" +
 	"\x13IntegrationManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1160,8 +1177,14 @@ const file_plugin_proto_rawDesc = "" +
 	" \x01(\tR\vapiKeyLabel\x12'\n" +
 	"\x10api_key_help_url\x18\v \x01(\tR\rapiKeyHelpUrl\x123\n" +
 	"\x15marketing_description\x18\f \x01(\tR\x14marketingDescription\x12\x1a\n" +
-	"\bfeatures\x18\r \x03(\tR\bfeatures\x12A\n" +
-	"\x1ais_temporarily_unavailable\x18\x0e \x01(\bH\x00R\x18isTemporarilyUnavailable\x88\x01\x01B\x1d\n" +
+	"\bfeatures\x18\r \x03(\tR\bfeatures\x12 \n" +
+	"\ticon_type\x18\x0f \x01(\tH\x00R\biconType\x88\x01\x01\x12 \n" +
+	"\ticon_path\x18\x10 \x01(\tH\x01R\biconPath\x88\x01\x01\x12A\n" +
+	"\x1ais_temporarily_unavailable\x18\x0e \x01(\bH\x02R\x18isTemporarilyUnavailable\x88\x01\x01B\f\n" +
+	"\n" +
+	"_icon_typeB\f\n" +
+	"\n" +
+	"_icon_pathB\x1d\n" +
 	"\x1b_is_temporarily_unavailable\"\x81\x02\n" +
 	"\x16PluginRegistryResponse\x121\n" +
 	"\asources\x18\x01 \x03(\v2\x17.fitglue.PluginManifestR\asources\x125\n" +

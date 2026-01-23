@@ -1,5 +1,4 @@
 
-import { z } from "zod";
 import * as path from 'path';
 import * as fs from 'fs';
 import { execFile } from 'child_process';
@@ -18,14 +17,14 @@ export function registerFitTools(registerTool: (tool: any, handler: (args: any) 
   // --- inspect_fit_file ---
   registerTool(
     {
-      name: "inspect_fit_file",
+      name: 'inspect_fit_file',
       description: "Inspect a FIT file using the project's fit-inspect binary.",
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          filePath: { type: "string", description: "Absolute path to the FIT file" },
+          filePath: { type: 'string', description: 'Absolute path to the FIT file' },
         },
-        required: ["filePath"],
+        required: ['filePath'],
       },
     },
     async ({ filePath }: { filePath: string }) => {
@@ -36,7 +35,7 @@ export function registerFitTools(registerTool: (tool: any, handler: (args: any) 
       try {
         const { stdout, stderr } = await execFileAsync(FIT_INSPECT_BIN, [filePath]);
         if (stderr) {
-          console.warn("fit-inspect stderr:", stderr);
+          console.warn('fit-inspect stderr:', stderr);
         }
         return { output: stdout };
       } catch (error: any) {
@@ -48,15 +47,15 @@ export function registerFitTools(registerTool: (tool: any, handler: (args: any) 
   // --- generate_fit_file ---
   registerTool(
     {
-      name: "generate_fit_file",
-      description: "Generate a FIT file from StandardizedActivity JSON using fit-gen.",
+      name: 'generate_fit_file',
+      description: 'Generate a FIT file from StandardizedActivity JSON using fit-gen.',
       inputSchema: {
-        type: "object",
+        type: 'object',
         properties: {
-          inputJsonPath: { type: "string", description: "Path to input JSON file" },
-          outputFitPath: { type: "string", description: "Path where FIT file should be written" },
+          inputJsonPath: { type: 'string', description: 'Path to input JSON file' },
+          outputFitPath: { type: 'string', description: 'Path where FIT file should be written' },
         },
-        required: ["inputJsonPath", "outputFitPath"],
+        required: ['inputJsonPath', 'outputFitPath'],
       },
     },
     async ({ inputJsonPath, outputFitPath }: { inputJsonPath: string, outputFitPath: string }) => {
@@ -71,7 +70,7 @@ export function registerFitTools(registerTool: (tool: any, handler: (args: any) 
         ]);
 
         return {
-          message: "FIT file generated successfully",
+          message: 'FIT file generated successfully',
           outputPath: outputFitPath,
           stdout: stdout,
           stderr: stderr

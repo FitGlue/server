@@ -6,7 +6,9 @@ import {
   CloudEventSource,
   ActivitySource,
   FrameworkContext,
-  ActivityType
+  ActivityType,
+  FrameworkResponse,
+  createWahooClient
 } from '@fitglue/shared';
 
 /**
@@ -67,9 +69,8 @@ export function mapWahooWorkoutType(workoutTypeId: number | undefined): Activity
   return WAHOO_WORKOUT_TYPE_MAP[workoutTypeId] ?? ActivityType.ACTIVITY_TYPE_WORKOUT;
 }
 
-export interface WahooConnectorConfig extends ConnectorConfig {
-  // OAuth tokens are managed by UserService
-}
+// OAuth tokens are managed by UserService
+export type WahooConnectorConfig = ConnectorConfig;
 
 export class WahooConnector extends BaseConnector<WahooConnectorConfig> {
   readonly name = 'wahoo';
@@ -121,7 +122,6 @@ export class WahooConnector extends BaseConnector<WahooConnectorConfig> {
     if (req.method === 'GET') {
       logger.info('Wahoo verification request received');
 
-      const { FrameworkResponse } = await import('@fitglue/shared');
       return {
         handled: true,
         // 200 OK + Text Body
@@ -157,7 +157,7 @@ export class WahooConnector extends BaseConnector<WahooConnectorConfig> {
   }
 
   /**
-   * Fetches workout details from Wahoo and downloads FIT file.
+   * Fetches workout details from Wahoo using typed client.
    * Maps to StandardizedActivity.
    *
    * @param workoutId - The Wahoo workout ID
@@ -166,50 +166,29 @@ export class WahooConnector extends BaseConnector<WahooConnectorConfig> {
   async fetchAndMap(workoutId: string, config: WahooConnectorConfig): Promise<StandardizedActivity[]> {
     const userId = (config as unknown as { userId: string }).userId;
     if (!userId) {
-      throw new Error("userId missing in connector config");
+      throw new Error('userId missing in connector config');
     }
 
     const { logger, services } = this.context;
 
-    // Get user and their Wahoo integration
-    const user = await services.user.get(userId);
-    if (!user || !user.integrations?.wahoo || !user.integrations.wahoo.accessToken) {
-      throw new Error('Wahoo integration not found or missing access token');
-    }
+    // Create typed Wahoo client with automatic token refresh
+    const client = createWahooClient(services.user, userId, { usageTracking: true });
 
-    const accessToken = user.integrations.wahoo.accessToken;
-
-    // Fetch workout details
-    const workoutResponse = await fetch(`https://api.wahooligan.com/v1/workouts/${workoutId}`, {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+    // Fetch workout details using typed client
+    const { data: workout, error, response } = await client.GET('/v1/workouts/{workoutId}', {
+      params: { path: { workoutId } }
     });
 
-    if (!workoutResponse.ok) {
-      throw new Error(`Wahoo API Error: ${workoutResponse.status} ${workoutResponse.statusText}`);
+    if (error || !response.ok || !workout) {
+      throw new Error(`Wahoo API Error: ${response.status} ${response.statusText}`);
     }
-
-    const workout = await workoutResponse.json() as {
-      id: number;
-      name: string;
-      workout_token: string;
-      workout_type_id: number;
-      starts: string;
-      minutes: number;
-      distance_accum?: number;
-      ascent_accum?: number;
-      calories?: number;
-      heart_rate_avg?: number;
-      power_avg?: number;
-      cadence_avg?: number;
-      speed_avg?: number;
-    };
 
     logger.debug(`Wahoo Workout Response for ${workoutId}`, { workout });
 
     // Download FIT file if available (for future implementation)
     try {
-      const fitResponse = await fetch(`https://api.wahooligan.com/v1/workouts/${workoutId}/file`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` }
+      const { response: fitResponse } = await client.GET('/v1/workouts/{workoutId}/file', {
+        params: { path: { workoutId } }
       });
 
       if (fitResponse.ok) {
@@ -254,3 +233,4 @@ export class WahooConnector extends BaseConnector<WahooConnectorConfig> {
     throw new Error('mapActivity not implemented for WahooConnector - use fetchAndMap instead');
   }
 }
+

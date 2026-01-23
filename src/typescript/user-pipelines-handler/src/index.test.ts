@@ -24,7 +24,7 @@ describe('user-pipelines-handler', () => {
       method: 'GET',
       body: {},
       query: {},
-      path: '',
+      path: '/api/users/me/pipelines',
     };
 
     ctx = {
@@ -81,6 +81,7 @@ describe('user-pipelines-handler', () => {
   describe('POST / (create pipeline)', () => {
     beforeEach(() => {
       req.method = 'POST';
+      req.path = '/api/users/me/pipelines';
       req.body = {
         source: 'hevy',
         destinations: ['strava']
@@ -128,7 +129,7 @@ describe('user-pipelines-handler', () => {
   describe('DELETE /{pipelineId}', () => {
     beforeEach(() => {
       req.method = 'DELETE';
-      req.path = '/pipeline-123';
+      req.path = '/api/users/me/pipelines/pipeline-123';
     });
 
     it('deletes pipeline successfully', async () => {
@@ -141,7 +142,7 @@ describe('user-pipelines-handler', () => {
   describe('PATCH /{pipelineId}', () => {
     beforeEach(() => {
       req.method = 'PATCH';
-      req.path = '/pipeline-123';
+      req.path = '/api/users/me/pipelines/pipeline-123';
       req.body = {
         source: 'fitbit',
         destinations: ['strava', 'mock']
@@ -151,14 +152,16 @@ describe('user-pipelines-handler', () => {
     it('updates pipeline successfully', async () => {
       await handler(req, ctx);
 
-      // replacePipeline(userId, pipelineId, name, source, enrichers, destinations)
+      // replacePipeline(userId, { pipelineId, name, source, enrichers, destinations })
       expect(mockUserService.replacePipeline).toHaveBeenCalledWith(
         'user-1',
-        'pipeline-123',
-        '',
-        'fitbit',
-        [],
-        ['strava', 'mock']
+        {
+          pipelineId: 'pipeline-123',
+          name: '',
+          source: 'fitbit',
+          enrichers: [],
+          destinations: ['strava', 'mock']
+        }
       );
     });
 

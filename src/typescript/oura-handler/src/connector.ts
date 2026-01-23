@@ -6,7 +6,8 @@ import {
   CloudEventSource,
   ActivitySource,
   FrameworkContext,
-  ActivityType
+  ActivityType,
+  createOuraClient
 } from '@fitglue/shared';
 
 /**
@@ -22,7 +23,7 @@ export interface OuraWebhookEvent {
 }
 
 /**
- * Oura Workout data structure from API
+ * Oura Workout data structure from API (local reference)
  * https://cloud.ouraring.com/v2/docs#tag/Workout-Routes
  */
 export interface OuraWorkout {
@@ -40,9 +41,8 @@ export interface OuraWorkout {
   max_heart_rate?: number;
 }
 
-export interface OuraConnectorConfig extends ConnectorConfig {
-  // OAuth tokens are managed by UserService
-}
+// OAuth tokens are managed by UserService
+export type OuraConnectorConfig = ConnectorConfig;
 
 /**
  * Map Oura activity type string to ActivityType enum.
@@ -149,7 +149,8 @@ export class OuraConnector extends BaseConnector<OuraConnectorConfig> {
   }
 
   /**
-   * Fetches workout details from Oura and maps to StandardizedActivity.
+   * Fetches workout details from Oura using typed client.
+   * Maps to StandardizedActivity.
    *
    * @param workoutId - The Oura workout ID
    * @param config - Oura connector config with userId injected
@@ -157,28 +158,21 @@ export class OuraConnector extends BaseConnector<OuraConnectorConfig> {
   async fetchAndMap(workoutId: string, config: OuraConnectorConfig): Promise<StandardizedActivity[]> {
     const userId = (config as unknown as { userId: string }).userId;
     if (!userId) {
-      throw new Error("userId missing in connector config");
+      throw new Error('userId missing in connector config');
     }
 
-    // Get OAuth tokens from user service
-    const tokens = await this.context.services.user.getOAuthTokens(userId, 'oura');
-    if (!tokens || !tokens.accessToken) {
-      throw new Error('Oura OAuth tokens not found for user');
-    }
+    // Create typed Oura client with automatic token refresh
+    const client = createOuraClient(this.context.services.user, userId, { usageTracking: true });
 
-    // Fetch workout details from Oura API
-    const response = await fetch(`https://api.ouraring.com/v2/usercollection/workout/${workoutId}`, {
-      headers: {
-        'Authorization': `Bearer ${tokens.accessToken}`,
-      },
+    // Fetch workout details from Oura API using typed client
+    const { data: workout, error, response } = await client.GET('/v2/usercollection/workout/{document_id}', {
+      params: { path: { document_id: workoutId } }
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
+    if (error || !response.ok || !workout) {
+      const errorText = error ? JSON.stringify(error) : response.statusText;
       throw new Error(`Oura API Error (${response.status}): ${errorText}`);
     }
-
-    const workout = await response.json() as OuraWorkout;
 
     this.context.logger.debug(`Oura Workout Response for ${workoutId}`, { workout });
 
@@ -201,10 +195,9 @@ export class OuraConnector extends BaseConnector<OuraConnectorConfig> {
       sessions: [{
         startTime: startTime,
         totalElapsedTime: durationSeconds,
-        totalDistance: workout.distance || 0,
-        totalCalories: workout.calories,
-        avgHeartRate: workout.average_heart_rate,
-        maxHeartRate: workout.max_heart_rate,
+        totalDistance: workout.distance ?? 0,
+        totalCalories: workout.calories ?? undefined,
+        // Note: Heart rate data not available from Oura workout API
         laps: [],
         strengthSets: []
       }]

@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -31,9 +31,11 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'trainingpeaks-client-id');
-    const clientSecret = await getSecret(projectId, 'trainingpeaks-client-secret');
+    const clientId = process.env.TRAININGPEAKS_CLIENT_ID;
+    const clientSecret = process.env.TRAININGPEAKS_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error('Missing TRAININGPEAKS_CLIENT_ID or TRAININGPEAKS_CLIENT_SECRET environment variables');
+    }
 
     const tokenResponse = await fetch('https://oauth.trainingpeaks.com/token', {
       method: 'POST',
@@ -59,10 +61,10 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_in: number;
       athlete_id?: string;
     };
-    const { access_token, refresh_token, expires_in } = tokenData;
+    const { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn } = tokenData;
 
     // Calculate expiration time
-    const expiresAt = new Date(Date.now() + expires_in * 1000);
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Get athlete ID from token response or fetch from API
     let athleteId = tokenData.athlete_id;
@@ -70,7 +72,7 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       // Fetch athlete info from TrainingPeaks API
       const athleteResponse = await fetch('https://api.trainingpeaks.com/v1/athlete/profile', {
         headers: {
-          'Authorization': `Bearer ${access_token}`,
+          'Authorization': `Bearer ${accessToken}`,
         },
       });
       if (athleteResponse.ok) {
@@ -86,8 +88,8 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
     // Store tokens in Firestore
     await storeOAuthTokens(userId, 'trainingpeaks', {
-      accessToken: access_token,
-      refreshToken: refresh_token,
+      accessToken,
+      refreshToken,
       expiresAt,
       externalUserId: athleteId,
     }, stores);

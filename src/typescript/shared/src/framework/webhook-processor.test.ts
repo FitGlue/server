@@ -53,7 +53,6 @@ jest.mock('../types/events-helper', () => ({
 describe('createWebhookProcessor', () => {
   let handler: any;
   let req: any;
-  let res: any;
   let ctx: any;
 
   beforeEach(() => {
@@ -61,11 +60,6 @@ describe('createWebhookProcessor', () => {
     handler = createWebhookProcessor(MockConnectorClass);
 
     req = { body: { id: 'evt-123' } };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      send: jest.fn(),
-      json: jest.fn()
-    };
 
     // Proper context mocking with services
     ctx = {
@@ -95,7 +89,7 @@ describe('createWebhookProcessor', () => {
   });
 
   it('should process a valid webhook successfully', async () => {
-    await handler(req, res, ctx);
+    const result = await handler(req, ctx);
 
     expect(mockExtractId).toHaveBeenCalledWith(req.body);
     expect(mockHasProcessedActivity).toHaveBeenCalledWith('user-1', 'test-connector', 'evt-123');
@@ -103,35 +97,33 @@ describe('createWebhookProcessor', () => {
     expect(mockFetchAndMap).toHaveBeenCalledWith('evt-123', expect.objectContaining({ enabled: true }));
     expect(mockPublish).toHaveBeenCalled();
     expect(mockMarkActivityAsProcessed).toHaveBeenCalledWith('user-1', 'test-connector', 'evt-123', expect.anything());
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ status: 'Success' }));
+    expect(result.status).toBe('Success');
   });
 
   it('should throw Unauthorized if userId is missing', async () => {
     ctx.userId = undefined;
-    await expect(handler(req, res, ctx)).rejects.toThrow('Unauthorized');
-    expect(res.status).toHaveBeenCalledWith(401);
+    await expect(handler(req, ctx)).rejects.toThrow('Unauthorized');
   });
 
   it('should skip if deduplication finds existing', async () => {
     mockHasProcessedActivity.mockResolvedValue(true);
-    const result = await handler(req, res, ctx);
+    const result = await handler(req, ctx);
 
     expect(result.status).toBe('Skipped');
+    expect(result.reason).toBe('Already processed');
     expect(mockFetchAndMap).not.toHaveBeenCalled();
     expect(mockPublish).not.toHaveBeenCalled();
   });
 
   it('should skip if loop detected', async () => {
     mockCheckDestinationExists.mockResolvedValue(true);
-    const result = await handler(req, res, ctx);
+    const result = await handler(req, ctx);
 
     expect(result.status).toBe('Skipped');
-    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Loop prevention'));
-    expect(mockHasProcessedActivity).not.toHaveBeenCalled(); // Should skip dedup cheek entirely? Actually it returns early.
+    expect(result.reason).toContain('Loop prevention');
+    expect(mockHasProcessedActivity).not.toHaveBeenCalled();
     expect(mockFetchAndMap).not.toHaveBeenCalled();
     expect(mockPublish).not.toHaveBeenCalled();
-
   });
 
   it('should error if config is disabled', async () => {
@@ -140,10 +132,10 @@ describe('createWebhookProcessor', () => {
       pipelines: [{ id: 'pipe-1', source: 'SOURCE_HEVY', enrichers: [], destinations: [1] }]
     });
 
-    await handler(req, res, ctx);
+    const result = await handler(req, ctx);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Integration disabled'));
+    expect(result.status).toBe('Skipped');
+    expect(result.reason).toContain('Integration disabled');
   });
 
   it('should skip if no pipeline configured for source', async () => {
@@ -152,10 +144,10 @@ describe('createWebhookProcessor', () => {
       pipelines: [{ id: 'pipe-1', source: 'SOURCE_FITBIT', enrichers: [], destinations: [1] }] // Different source!
     });
 
-    const result = await handler(req, res, ctx);
+    const result = await handler(req, ctx);
 
     expect(result.status).toBe('Skipped');
-    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('No pipeline configured'));
+    expect(result.reason).toContain('No pipeline for source SOURCE_HEVY');
     expect(mockFetchAndMap).not.toHaveBeenCalled();
     expect(mockPublish).not.toHaveBeenCalled();
   });
@@ -163,11 +155,10 @@ describe('createWebhookProcessor', () => {
   it('should error if validateConfig fails', async () => {
     mockValidateConfig.mockImplementation(() => { throw new Error('Missing API Key'); });
 
-    const result = await handler(req, res, ctx);
+    const result = await handler(req, ctx);
 
     expect(mockValidateConfig).toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.send).toHaveBeenCalledWith(expect.stringContaining('Configuration Error'));
     expect(result.status).toBe('Failed');
+    expect(result.reason).toContain('Configuration Error');
   });
 });

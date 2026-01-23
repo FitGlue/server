@@ -204,6 +204,7 @@ const mapUserIntegrationsToFirestore = (i?: UserIntegrations): Record<string, un
   return out;
 };
 
+// eslint-disable-next-line complexity
 const mapGenericIntegrationFromFirestore = (data: GenericIntegrationData, key: string): Record<string, unknown> | undefined => {
   if (!data) return undefined;
 

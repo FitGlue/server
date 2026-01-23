@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -32,9 +32,11 @@ const handler = async (req: any, ctx: FrameworkContext) => {
   try {
     // Exchange authorization code for tokens
     // Polar uses polarremote.com for token exchange
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'polar-client-id');
-    const clientSecret = await getSecret(projectId, 'polar-client-secret');
+    const clientId = process.env.POLAR_CLIENT_ID;
+    const clientSecret = process.env.POLAR_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error('Missing POLAR_CLIENT_ID or POLAR_CLIENT_SECRET environment variables');
+    }
 
     const tokenResponse = await fetch('https://polarremote.com/v2/oauth2/token', {
       method: 'POST',
@@ -63,17 +65,17 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_in: number;
       x_user_id: number; // Polar returns user ID as x_user_id
     };
-    const { access_token, expires_in, x_user_id } = tokenData;
+    const { access_token: accessToken, expires_in: expiresIn, x_user_id: polarUserId } = tokenData;
 
     // Calculate expiration time
-    const expiresAt = new Date(Date.now() + expires_in * 1000);
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Register user with Polar AccessLink API
     // This is required before we can access user data
     const registerResponse = await fetch('https://www.polaraccesslink.com/v3/users', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
@@ -92,13 +94,13 @@ const handler = async (req: any, ctx: FrameworkContext) => {
     // Store tokens in Firestore
     // Note: Polar OAuth doesn't return a refresh token - tokens are long-lived
     await storeOAuthTokens(userId, 'polar', {
-      accessToken: access_token,
+      accessToken,
       refreshToken: '', // Polar doesn't use refresh tokens in the same way
       expiresAt,
-      externalUserId: String(x_user_id),
+      externalUserId: String(polarUserId),
     }, stores);
 
-    logger.info('Successfully connected Polar account', { userId, polarUserId: x_user_id });
+    logger.info('Successfully connected Polar account', { userId, polarUserId });
 
     // Redirect to success page
     // Redirect to success page

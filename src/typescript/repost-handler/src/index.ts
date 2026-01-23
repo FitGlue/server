@@ -7,10 +7,9 @@
  * - POST /api/repost/full-pipeline      - Full pipeline re-execution
  */
 
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getEffectiveTier, HttpError } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getEffectiveTier, HttpError, FrameworkHandler } from '@fitglue/shared';
 import { TOPICS } from '@fitglue/shared/dist/config';
 import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
-import { Request } from 'express';
 import { PubSub } from '@google-cloud/pubsub';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -84,7 +83,7 @@ function parseEnrichedActivityEvent(inputsJson: string): Record<string, unknown>
   }
 }
 
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+export const handler: FrameworkHandler = async (req, ctx) => {
   // CORS handled by gateway
 
   if (req.method !== 'POST') {
@@ -96,9 +95,12 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
     throw new HttpError(401, 'Unauthorized');
   }
 
+  // Store userId after auth check for type narrowing
+  const userId = ctx.userId;
+
   // Check tier (Pro/Athlete only)
   try {
-    const user = await ctx.stores.users.get(ctx.userId);
+    const user = await ctx.stores.users.get(userId);
     if (!user) {
       throw new HttpError(401, 'User not found');
     }
@@ -120,11 +122,11 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
   const path = req.path;
 
   if (path.endsWith('/missed-destination')) {
-    return await handleMissedDestination(req, ctx);
+    return await handleMissedDestination(req, ctx, userId);
   } else if (path.endsWith('/retry-destination')) {
-    return await handleRetryDestination(req, ctx);
+    return await handleRetryDestination(req, ctx, userId);
   } else if (path.endsWith('/full-pipeline')) {
-    return await handleFullPipeline(req, ctx);
+    return await handleFullPipeline(req, ctx, userId);
   } else {
     throw new HttpError(404, 'Not Found');
   }
@@ -132,10 +134,10 @@ export const handler = async (req: Request, ctx: FrameworkContext) => {
 
 /**
  * POST /api/repost/missed-destination
- * Send activity to a new destination that wasn't in the original pipeline.
- */
-async function handleMissedDestination(req: Request, ctx: FrameworkContext): Promise<RepostResponse> {
-  const { activityId, destination } = req.body as RepostRequest;
+   * Send activity to a new destination that wasn't in the original pipeline.
+   */
+async function handleMissedDestination(req: { body: RepostRequest }, ctx: FrameworkContext, userId: string): Promise<RepostResponse> {
+  const { activityId, destination } = req.body;
 
   if (!activityId || !destination) {
     throw new HttpError(400, 'activityId and destination are required');
@@ -148,7 +150,7 @@ async function handleMissedDestination(req: Request, ctx: FrameworkContext): Pro
   }
 
   // Get synchronized activity
-  const activity = await ctx.stores.activities.getSynchronized(ctx.userId!, activityId);
+  const activity = await ctx.stores.activities.getSynchronized(userId, activityId);
   if (!activity) {
     throw new HttpError(404, 'Activity not found');
   }
@@ -232,8 +234,8 @@ async function handleMissedDestination(req: Request, ctx: FrameworkContext): Pro
  * POST /api/repost/retry-destination
  * Re-send activity to an existing destination.
  */
-async function handleRetryDestination(req: Request, ctx: FrameworkContext): Promise<RepostResponse> {
-  const { activityId, destination } = req.body as RepostRequest;
+async function handleRetryDestination(req: { body: RepostRequest }, ctx: FrameworkContext, userId: string): Promise<RepostResponse> {
+  const { activityId, destination } = req.body;
 
   if (!activityId || !destination) {
     throw new HttpError(400, 'activityId and destination are required');
@@ -246,7 +248,7 @@ async function handleRetryDestination(req: Request, ctx: FrameworkContext): Prom
   }
 
   // Get synchronized activity
-  const activity = await ctx.stores.activities.getSynchronized(ctx.userId!, activityId);
+  const activity = await ctx.stores.activities.getSynchronized(userId, activityId);
   if (!activity) {
     throw new HttpError(404, 'Activity not found');
   }
@@ -329,15 +331,15 @@ async function handleRetryDestination(req: Request, ctx: FrameworkContext): Prom
  * POST /api/repost/full-pipeline
  * Re-run the entire pipeline from the beginning with bypass_dedup.
  */
-async function handleFullPipeline(req: Request, ctx: FrameworkContext): Promise<RepostResponse> {
-  const { activityId } = req.body as RepostRequest;
+async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkContext, userId: string): Promise<RepostResponse> {
+  const { activityId } = req.body;
 
   if (!activityId) {
     throw new HttpError(400, 'activityId is required');
   }
 
   // Get synchronized activity
-  const activity = await ctx.stores.activities.getSynchronized(ctx.userId!, activityId);
+  const activity = await ctx.stores.activities.getSynchronized(userId, activityId);
   if (!activity) {
     throw new HttpError(404, 'Activity not found');
   }
@@ -413,3 +415,4 @@ export const repostHandler = createCloudFunction(handler, {
   },
   skipExecutionLogging: true
 });
+

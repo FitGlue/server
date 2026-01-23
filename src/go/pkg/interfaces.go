@@ -61,12 +61,6 @@ type BlobStore interface {
 	Read(ctx context.Context, bucket, object string) ([]byte, error)
 }
 
-// --- Secrets Interface ---
-
-type SecretStore interface {
-	GetSecret(ctx context.Context, projectID, name string) (string, error)
-}
-
 // --- Notification Interfaces ---
 
 type NotificationService interface {

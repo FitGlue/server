@@ -1,58 +1,41 @@
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, HttpError } from '@fitglue/shared';
-import { Request } from 'express';
+import { createCloudFunction, FirebaseAuthStrategy, HttpError, routeRequest, RouteMatch, FrameworkHandler, FrameworkContext, EnricherConfig } from '@fitglue/shared';
 import { v4 as uuidv4 } from 'uuid';
 
 // ... imports
 
-export const handler = async (req: Request, ctx: FrameworkContext) => {
+export const handler: FrameworkHandler = async (req, ctx) => {
   const userId = ctx.userId;
   if (!userId) {
     throw new HttpError(401, 'Unauthorized');
   }
 
-  const { logger } = ctx;
-  const path = req.path;
-
-  // Extract path segments for sub-routes
-  // Path may be /api/users/me/pipelines or /pipelines or just /
-  // Get the last meaningful segments after 'pipelines'
-  const pipelinesIndex = path.indexOf('/pipelines');
-  const subPath = pipelinesIndex >= 0
-    ? path.substring(pipelinesIndex + '/pipelines'.length)
-    : path;
-  const pathParts = subPath.split('/').filter(p => p !== '');
-
-  logger.info('Routing request', { path, subPath, pathParts, method: req.method });
-
-  // GET /users/me/pipelines - List all pipelines
-  if (req.method === 'GET' && pathParts.length === 0) {
-    return await handleListPipelines(userId, ctx);
-  }
-
-  // GET /users/me/pipelines/{pipelineId} - Get single pipeline
-  if (req.method === 'GET' && pathParts.length >= 1) {
-    const pipelineId = pathParts[0];
-    return await handleGetPipeline(userId, pipelineId, ctx);
-  }
-
-  // POST /users/me/pipelines - Create new pipeline
-  if (req.method === 'POST' && pathParts.length === 0) {
-    return await handleCreatePipeline(userId, req, ctx);
-  }
-
-  // PATCH /users/me/pipelines/{pipelineId} - Update pipeline
-  if (req.method === 'PATCH' && pathParts.length >= 1) {
-    const pipelineId = pathParts[0];
-    return await handleUpdatePipeline(userId, pipelineId, req, ctx);
-  }
-
-  // DELETE /users/me/pipelines/{pipelineId} - Delete pipeline
-  if (req.method === 'DELETE' && pathParts.length >= 1) {
-    const pipelineId = pathParts[0];
-    return await handleDeletePipeline(userId, pipelineId, ctx);
-  }
-
-  throw new HttpError(404, 'Not found');
+  return await routeRequest(req, ctx, [
+    {
+      method: 'GET',
+      pattern: '/api/users/me/pipelines',
+      handler: async () => await handleListPipelines(userId, ctx)
+    },
+    {
+      method: 'GET',
+      pattern: '/api/users/me/pipelines/:pipelineId',
+      handler: async (match: RouteMatch) => await handleGetPipeline(userId, match.params.pipelineId, ctx)
+    },
+    {
+      method: 'POST',
+      pattern: '/api/users/me/pipelines',
+      handler: async () => await handleCreatePipeline(userId, req, ctx)
+    },
+    {
+      method: 'PATCH',
+      pattern: '/api/users/me/pipelines/:pipelineId',
+      handler: async (match: RouteMatch) => await handleUpdatePipeline(userId, match.params.pipelineId, req, ctx)
+    },
+    {
+      method: 'DELETE',
+      pattern: '/api/users/me/pipelines/:pipelineId',
+      handler: async (match: RouteMatch) => await handleDeletePipeline(userId, match.params.pipelineId, ctx)
+    }
+  ]);
 };
 
 async function handleListPipelines(userId: string, ctx: FrameworkContext) {
@@ -78,7 +61,7 @@ async function handleGetPipeline(userId: string, pipelineId: string, ctx: Framew
   return pipeline;
 }
 
-async function handleCreatePipeline(userId: string, req: Request, ctx: FrameworkContext) {
+async function handleCreatePipeline(userId: string, req: { body: Record<string, unknown> }, ctx: FrameworkContext) {
   const { logger } = ctx;
   const body = req.body;
 
@@ -105,16 +88,16 @@ async function handleCreatePipeline(userId: string, req: Request, ctx: Framework
   // addPipeline(userId, name, source, enrichers, destinations) returns generated ID
   const generatedId = await ctx.services.user.addPipeline(
     userId,
-    pipeline.name,
-    pipeline.source,
-    pipeline.enrichers,
-    pipeline.destinations
+    pipeline.name as string,
+    pipeline.source as string,
+    pipeline.enrichers as EnricherConfig[],
+    pipeline.destinations as string[]
   );
   logger.info('Created pipeline', { userId, pipelineId: generatedId });
   return { id: generatedId };
 }
 
-async function handleUpdatePipeline(userId: string, pipelineId: string, req: Request, ctx: FrameworkContext) {
+async function handleUpdatePipeline(userId: string, pipelineId: string, req: { body: Record<string, unknown> }, ctx: FrameworkContext) {
   const { logger } = ctx;
   const body = req.body;
 
@@ -128,7 +111,7 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: Req
 
   if (hasDisabled && !hasSource) {
     // Toggle disabled state only
-    await ctx.services.user.togglePipelineDisabled(userId, pipelineId, body.disabled);
+    await ctx.services.user.togglePipelineDisabled(userId, pipelineId, body.disabled as boolean);
     logger.info('Toggled pipeline disabled state', { userId, pipelineId, disabled: body.disabled });
     return { message: 'Pipeline disabled state updated' };
   }
@@ -144,11 +127,13 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: Req
 
   await ctx.services.user.replacePipeline(
     userId,
-    pipelineId,
-    body.name || '',
-    body.source,
-    body.enrichers || [],
-    body.destinations
+    {
+      pipelineId,
+      name: (body.name || '') as string,
+      source: body.source as string,
+      enrichers: (body.enrichers || []) as EnricherConfig[],
+      destinations: body.destinations as string[]
+    }
   );
   logger.info('Updated pipeline', { userId, pipelineId });
   return { message: 'Pipeline updated' };

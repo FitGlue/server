@@ -7,7 +7,8 @@ import {
   ActivitySource,
   createStravaClient,
   FrameworkContext,
-  ActivityType
+  ActivityType,
+  FrameworkResponse
 } from '@fitglue/shared';
 
 /**
@@ -24,9 +25,8 @@ export interface StravaWebhookEvent {
   event_time: number;
 }
 
-export interface StravaConnectorConfig extends ConnectorConfig {
-  // OAuth tokens are managed by UserService via createStravaClient
-}
+// OAuth tokens are managed by UserService via createStravaClient
+export type StravaConnectorConfig = ConnectorConfig;
 
 /**
  * Map Strava activity type string to ActivityType enum.
@@ -142,7 +142,6 @@ export class StravaConnector extends BaseConnector<StravaConnectorConfig> {
 
       if (!hubChallenge) {
         logger.warn('Missing hub.challenge in GET request');
-        const { FrameworkResponse } = await import('@fitglue/shared');
         return {
           handled: true,
           response: new FrameworkResponse({ status: 400, body: 'Missing hub.challenge' })
@@ -153,7 +152,6 @@ export class StravaConnector extends BaseConnector<StravaConnectorConfig> {
       const expectedToken = process.env['STRAVA_VERIFY_TOKEN'];
       if (hubVerifyToken !== expectedToken) {
         logger.warn('Invalid verify_token');
-        const { FrameworkResponse } = await import('@fitglue/shared');
         return {
           handled: true,
           // 403 Forbidden
@@ -208,7 +206,7 @@ export class StravaConnector extends BaseConnector<StravaConnectorConfig> {
   async fetchAndMap(activityId: string, config: StravaConnectorConfig): Promise<StandardizedActivity[]> {
     const userId = (config as unknown as { userId: string }).userId;
     if (!userId) {
-      throw new Error("userId missing in connector config");
+      throw new Error('userId missing in connector config');
     }
 
     const userService = this.context.services.user;

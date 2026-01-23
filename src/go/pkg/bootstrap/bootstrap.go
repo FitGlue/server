@@ -14,7 +14,6 @@ import (
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/database"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
-	"github.com/fitglue/server/src/go/pkg/infrastructure/secrets"
 	sentryPkg "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 	infrastorage "github.com/fitglue/server/src/go/pkg/infrastructure/storage"
 
@@ -35,7 +34,6 @@ type Service struct {
 	DB            shared.Database
 	Store         shared.BlobStore
 	Pub           shared.Publisher
-	Secrets       shared.SecretStore
 	Notifications shared.NotificationService
 	Auth          *auth.Client
 	Config        *Config
@@ -247,7 +245,6 @@ func NewService(ctx context.Context) (*Service, error) {
 		DB:            database.NewFirestoreAdapter(fsClient),
 		Pub:           pubAdapter,
 		Store:         &infrastorage.StorageAdapter{Client: gcsClient},
-		Secrets:       &secrets.SecretsAdapter{},
 		Notifications: fcmAdapter,
 		Auth:          authClient,
 		Config:        cfg,

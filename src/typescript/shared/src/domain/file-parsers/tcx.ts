@@ -74,7 +74,7 @@ export const mapTCXToStandardized = (tcxXml: string, logData: LogData, userId: s
   const data = logData as LogData;
   const parser = new XMLParser({
     ignoreAttributes: false,
-    attributeNamePrefix: "@_"
+    attributeNamePrefix: '@_'
   });
   const parsed = parser.parse(tcxXml) as TcxDatabase;
 

@@ -1,15 +1,15 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
   const { stores, logger } = ctx;
 
   // Extract query parameters
-  const { code, state, error, error_description } = req.query;
+  const { code, state, error, error_description: errorDescription } = req.query;
 
   // Handle authorization denial
   if (error) {
-    logger.warn('User denied Wahoo authorization', { error, error_description });
+    logger.warn('User denied Wahoo authorization', { error, errorDescription });
     return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/wahoo/error?reason=denied` } };
   }
 
@@ -31,9 +31,13 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'wahoo-client-id');
-    const clientSecret = await getSecret(projectId, 'wahoo-client-secret');
+    const clientId = process.env.WAHOO_CLIENT_ID;
+    const clientSecret = process.env.WAHOO_CLIENT_SECRET;
+
+    if (!clientId || !clientSecret) {
+      logger.error('Missing Wahoo OAuth credentials');
+      return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/wahoo/error?reason=config_error` } };
+    }
 
     const tokenResponse = await fetch('https://api.wahooligan.com/oauth/token', {
       method: 'POST',
@@ -59,11 +63,11 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_in: number;
       created_at: number;
     };
-    const { access_token, refresh_token, expires_in, created_at } = tokenData;
+    const { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn, created_at: createdAt } = tokenData;
 
     // Fetch user profile to get Wahoo user ID
     const userResponse = await fetch('https://api.wahooligan.com/v1/user', {
-      headers: { 'Authorization': `Bearer ${access_token}` },
+      headers: { 'Authorization': `Bearer ${accessToken}` },
     });
 
     if (!userResponse.ok) {
@@ -74,12 +78,12 @@ const handler = async (req: any, ctx: FrameworkContext) => {
     const userData = await userResponse.json() as { id: number };
 
     // Calculate expiration time
-    const expiresAt = new Date((created_at + expires_in) * 1000);
+    const expiresAt = new Date((createdAt + expiresIn) * 1000);
 
     // Store tokens in Firestore
     await storeOAuthTokens(userId, 'wahoo', {
-      accessToken: access_token,
-      refreshToken: refresh_token,
+      accessToken,
+      refreshToken,
       expiresAt,
       externalUserId: userData.id.toString(),
     }, stores);

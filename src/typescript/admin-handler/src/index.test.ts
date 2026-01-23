@@ -1,4 +1,3 @@
-import { Request } from 'express';
 import { handler } from './index';
 import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
 
@@ -18,9 +17,57 @@ jest.mock('@fitglue/shared', () => {
     withConverter: jest.fn().mockReturnThis(),
   };
 
+  class HttpError extends Error {
+    statusCode: number;
+    details?: unknown;
+    constructor(statusCode: number, message: string, details?: unknown) {
+      super(message);
+      this.statusCode = statusCode;
+      this.details = details;
+      this.name = 'HttpError';
+      Object.setPrototypeOf(this, HttpError.prototype);
+    }
+  }
+
+  // Simple route matching implementation for tests
+  async function routeRequest(
+    req: { method: string; path: string; query: Record<string, unknown> },
+    ctx: unknown,
+    routes: Array<{ method: string; pattern: string; handler: (match: { params: Record<string, string>; query: Record<string, string> }, req: unknown, ctx: unknown) => Promise<unknown> }>
+  ): Promise<unknown> {
+    for (const route of routes) {
+      if (route.method !== req.method) continue;
+
+      // Simple pattern matching
+      const patternParts = route.pattern.split('/').filter(Boolean);
+      const pathParts = req.path.split('/').filter(Boolean);
+
+      if (patternParts.length !== pathParts.length) continue;
+
+      const params: Record<string, string> = {};
+      let matched = true;
+
+      for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i].startsWith(':')) {
+          params[patternParts[i].slice(1)] = pathParts[i];
+        } else if (patternParts[i] !== pathParts[i]) {
+          matched = false;
+          break;
+        }
+      }
+
+      if (matched) {
+        return await route.handler({ params, query: req.query as Record<string, string> }, req, ctx);
+      }
+    }
+
+    throw new HttpError(404, 'Not found');
+  }
+
   return {
     createCloudFunction: jest.fn((fn) => fn),
     FrameworkContext: jest.fn(),
+    FrameworkHandler: jest.fn(),
     FirebaseAuthStrategy: jest.fn(),
     ForbiddenError: class ForbiddenError extends Error {
       constructor(message: string) {
@@ -28,6 +75,9 @@ jest.mock('@fitglue/shared', () => {
         this.name = 'ForbiddenError';
       }
     },
+    HttpError,
+    routeRequest,
+    RouteMatch: jest.fn(),
     db: mockDb,
     userConverter: {
       toFirestore: jest.fn(),
@@ -37,6 +87,26 @@ jest.mock('@fitglue/shared', () => {
       USER_TIER_UNSPECIFIED: 0,
       USER_TIER_HOBBYIST: 1,
       USER_TIER_ATHLETE: 2,
+    },
+    formatExecutionStatus: (status: number | string | undefined | null) => {
+      if (status === 2) return 'SUCCESS';
+      if (status === 3) return 'FAILED';
+      if (status === 1) return 'STARTED';
+      return 'UNKNOWN';
+    },
+    formatDestination: (dest: unknown) => String(dest),
+    ExecutionStatus: {
+      STATUS_UNKNOWN: 0,
+      STATUS_STARTED: 1,
+      STATUS_SUCCESS: 2,
+      STATUS_FAILED: 3,
+      STATUS_PENDING: 4,
+      STATUS_WAITING: 5,
+    },
+    PendingInput_Status: {
+      STATUS_UNSPECIFIED: 0,
+      STATUS_WAITING: 1,
+      STATUS_COMPLETED: 2,
     },
   };
 });
@@ -52,15 +122,15 @@ jest.mock('firebase-admin', () => ({
 import { db, ForbiddenError } from '@fitglue/shared';
 const mockDb = db as jest.Mocked<typeof db>;
 
-// Helper to create mock request
-function createMockRequest(overrides: Partial<Request> = {}): Request {
+// Helper to create mock request - casts to handler's expected request type
+function createMockRequest(overrides: Record<string, unknown> = {}): Parameters<typeof handler>[0] {
   return {
     method: 'GET',
     path: '/api/admin/stats',
     query: {},
     body: {},
     ...overrides,
-  } as Request;
+  } as Parameters<typeof handler>[0];
 }
 
 

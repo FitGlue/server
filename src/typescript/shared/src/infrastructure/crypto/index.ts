@@ -1,5 +1,4 @@
 import crypto from 'crypto';
-import { getSecret } from '../secrets';
 
 /**
  * Encrypts user credentials using AES-256-GCM with the OAuth state secret
@@ -7,11 +6,13 @@ import { getSecret } from '../secrets';
  * @param projectId Google Cloud project ID
  * @returns Encrypted credentials as JSON string
  */
-export async function encryptCredentials(
-  credentials: { email: string; password: string },
-  projectId: string
-): Promise<string> {
-  const secret = await getSecret(projectId, 'oauth-state-secret');
+export function encryptCredentials(
+  credentials: { email: string; password: string }
+): string {
+  const secret = process.env.OAUTH_STATE_SECRET;
+  if (!secret) {
+    throw new Error('OAUTH_STATE_SECRET not found in environment variables');
+  }
   const iv = crypto.randomBytes(16);
   const cipher = crypto.createCipheriv(
     'aes-256-gcm',
@@ -39,11 +40,13 @@ export async function encryptCredentials(
  * @param projectId Google Cloud project ID
  * @returns Decrypted email and password
  */
-export async function decryptCredentials(
-  encryptedData: string,
-  projectId: string
-): Promise<{ email: string; password: string }> {
-  const secret = await getSecret(projectId, 'oauth-state-secret');
+export function decryptCredentials(
+  encryptedData: string
+): { email: string; password: string } {
+  const secret = process.env.OAUTH_STATE_SECRET;
+  if (!secret) {
+    throw new Error('OAUTH_STATE_SECRET not found in environment variables');
+  }
   const { iv, data, authTag } = JSON.parse(encryptedData);
 
   const decipher = crypto.createDecipheriv(

@@ -1,20 +1,5 @@
 import { getSecret } from './manager';
 
-// Mock dependencies if needed, but getSecret logic is simple fallback
-// We want to test env var fallback and mocked GSM call
-
-jest.mock('@google-cloud/secret-manager', () => {
-    return {
-        SecretManagerServiceClient: jest.fn().mockImplementation(() => ({
-            accessSecretVersion: jest.fn().mockResolvedValue([{
-                payload: {
-                    data: Buffer.from('gsm-secret')
-                }
-            }])
-        }))
-    };
-});
-
 describe('getSecret', () => {
     const originalEnv = process.env;
 
@@ -27,15 +12,14 @@ describe('getSecret', () => {
         process.env = originalEnv;
     });
 
-    it('should return env var if set', async () => {
-        process.env['MY_SECRET'] = 'local-value';
-        const val = await getSecret('proj', 'MY_SECRET');
-        expect(val).toBe('local-value');
+    it('should return env var if set', () => {
+        process.env['MY_SECRET'] = 'test-secret-value';
+        const val = getSecret('MY_SECRET');
+        expect(val).toBe('test-secret-value');
     });
 
-    it('should return GSM value if env var not set', async () => {
-        // GSM mock returns 'gsm-secret'
-        const val = await getSecret('proj', 'MY_SECRET');
-        expect(val).toBe('gsm-secret');
+    it('should throw error if env var not set', () => {
+        delete process.env['MY_SECRET'];
+        expect(() => getSecret('MY_SECRET')).toThrow('Secret MY_SECRET not found in environment variables');
     });
 });

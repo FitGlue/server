@@ -5,6 +5,7 @@ export * from './infrastructure/crypto';
 export * from './framework/index';
 export * from './framework/auth';
 export * from './framework/auth-strategies';
+export * from './routing';
 
 // Types
 export { ActivityPayload, ActivitySource } from './types/pb/activity';
@@ -37,6 +38,11 @@ export * from './domain/tier';
 export * from './integrations/hevy/client';
 export * from './integrations/fitbit/client';
 export * from './integrations/strava/client';
+export * from './integrations/oura/client';
+export * from './integrations/polar/client';
+export * from './integrations/spotify/client';
+export * from './integrations/wahoo/client';
+export * from './integrations/trainingpeaks/client';
 export * from './infrastructure/oauth';
 
 // Infrastructure

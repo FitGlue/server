@@ -223,6 +223,14 @@ export interface IntegrationManifest {
   marketingDescription: string;
   /** List of features/capabilities */
   features: string[];
+  /** SVG Icon support (for products with real logos) */
+  iconType?:
+    | string
+    | undefined;
+  /** Path to icon asset (e.g., "/images/icons/strava.svg") */
+  iconPath?:
+    | string
+    | undefined;
   /** When true, integration is hidden from connections page but shown on marketing with "Coming Soon" */
   isTemporarilyUnavailable?: boolean | undefined;
 }

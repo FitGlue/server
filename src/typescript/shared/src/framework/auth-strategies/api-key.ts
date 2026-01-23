@@ -9,6 +9,7 @@ export class ApiKeyStrategy implements AuthStrategy {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
 
+  // eslint-disable-next-line complexity
   async authenticate(req: { headers: Record<string, string | string[] | undefined>; query?: Record<string, string | string[] | undefined> }, ctx: FrameworkContext): Promise<AuthResult | null> {
     let token: string | undefined;
 
@@ -55,7 +56,7 @@ export class ApiKeyStrategy implements AuthStrategy {
       }
 
       return {
-        userId: result.userId!,
+        userId: result.userId ?? '',
         scopes: result.scopes || []
       };
     } catch (err: unknown) {

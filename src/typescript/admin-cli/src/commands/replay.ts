@@ -48,7 +48,7 @@ function getSubscriptionName(service: string): string {
       const fullPath = subscriptions[0];
       return fullPath.split('/').pop() || fullPath;
     }
-  } catch (error) {
+  } catch {
     // Fall through
   }
 
@@ -76,16 +76,16 @@ export function registerReplayCommands(program: Command) {
         if (error instanceof Error) {
           console.error(`❌ ${error.message}`);
         } else {
-          console.error(`❌ An unknown error occurred`);
+          console.error('❌ An unknown error occurred');
         }
         process.exit(1);
       }
 
       // Seek to 60 seconds before execution to account for cold starts/queueing
-      const seekTime = new Date(execution.timestamp!);
+      const seekTime = new Date(execution.timestamp ?? new Date());
       seekTime.setSeconds(seekTime.getSeconds() - 60);
 
-      console.log(`\n📋 Replay Details:`);
+      console.log('\n📋 Replay Details:');
       console.log(`   Execution ID: ${executionId}`);
       console.log(`   Service: ${execution.service}`);
       console.log(`   Subscription: ${subscription}`);
@@ -145,7 +145,7 @@ export function registerReplayCommands(program: Command) {
 
       const payload = execution.inputsJson ? JSON.parse(execution.inputsJson) : {};
 
-      console.log(`\n📋 Replay Details:`);
+      console.log('\n📋 Replay Details:');
       console.log(`   Execution ID: ${executionId}`);
       console.log(`   Service: ${execution.service}`);
       console.log(`   Environment: ${options.env}`);

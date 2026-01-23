@@ -26,7 +26,7 @@ export class AuthorizationService {
    */
   async isAdmin(userId: string): Promise<boolean> {
     if (this.adminCache.has(userId)) {
-      return this.adminCache.get(userId)!;
+      return this.adminCache.get(userId) ?? false;
     }
 
     const user = await this.userStore.get(userId);

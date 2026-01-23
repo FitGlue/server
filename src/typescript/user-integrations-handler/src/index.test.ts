@@ -34,7 +34,7 @@ describe('user-integrations-handler', () => {
       method: 'GET',
       body: {},
       query: {},
-      path: '',
+      path: '/api/users/me/integrations',
     };
 
     ctx = {
@@ -93,7 +93,7 @@ describe('user-integrations-handler', () => {
   describe('POST /{provider}/connect', () => {
     beforeEach(() => {
       req.method = 'POST';
-      req.path = '/strava/connect';
+      req.path = '/api/users/me/integrations/strava/connect';
       // Mock user for connection limit checks
       mockUserService.get.mockResolvedValue({
         userId: 'user-1',
@@ -103,7 +103,7 @@ describe('user-integrations-handler', () => {
     });
 
     it('returns 400 for invalid provider', async () => {
-      req.path = '/invalid/connect';
+      req.path = '/api/users/me/integrations/invalid/connect';
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
@@ -115,7 +115,7 @@ describe('user-integrations-handler', () => {
     });
 
     it('returns OAuth URL for fitbit', async () => {
-      req.path = '/fitbit/connect';
+      req.path = '/api/users/me/integrations/fitbit/connect';
       const result: any = await handler(req, ctx);
       expect(result.url).toContain('fitbit.com/oauth2/authorize');
     });
@@ -124,7 +124,7 @@ describe('user-integrations-handler', () => {
   describe('DELETE /{provider}', () => {
     beforeEach(() => {
       req.method = 'DELETE';
-      req.path = '/strava';
+      req.path = '/api/users/me/integrations/strava';
       // Mock user lookup needed for disconnect
       mockUserService.get.mockResolvedValue({
         integrations: {
@@ -134,7 +134,7 @@ describe('user-integrations-handler', () => {
     });
 
     it('returns 400 for invalid provider', async () => {
-      req.path = '/invalid';
+      req.path = '/api/users/me/integrations/invalid';
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
@@ -152,7 +152,7 @@ describe('user-integrations-handler', () => {
     });
 
     it('deletes associated ingress keys for hevy', async () => {
-      req.path = '/hevy';
+      req.path = '/api/users/me/integrations/hevy';
       mockUserService.get.mockResolvedValue({
         integrations: {
           hevy: { enabled: true, apiKey: 'secret', userId: 'hevy-123' }

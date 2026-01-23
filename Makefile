@@ -86,8 +86,8 @@ lint-go:
 	@echo "Linting Go..."
 	@echo "Checking formatting..."
 	@cd $(GO_SRC_DIR) && test -z "$$(gofmt -l .)" || (echo "Go files need formatting. Run 'gofmt -w .'" && exit 1)
-	@echo "Running go vet..."
-	cd $(GO_SRC_DIR) && go vet ./...
+	@echo "Running go vet (excluding generated clients)..."
+	@cd $(GO_SRC_DIR) && go vet $$(go list ./... | grep -v '/integrations/')
 	@echo "Checking for Protobuf JSON misuse..."
 	@./scripts/lint-proto-json.sh
 
@@ -129,22 +129,12 @@ build-ts:
 	@echo "TypeScript build complete."
 
 test-ts:
-	@echo "Testing TypeScript services in parallel..."
-	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
-		if [ -d "$$dir" ] && [ -f "$$dir/package.json" ]; then \
-			name=$$(basename $$dir); \
-			npm test --workspace=$$name --if-present & \
-		fi; \
-	done; wait || exit 1
+	@echo "Testing TypeScript services..."
+	@cd $(TS_SRC_DIR) && npm test --workspaces --if-present
 
 lint-ts:
-	@echo "Linting TypeScript services in parallel..."
-	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_DIRS); do \
-		if [ -d "$$dir" ] && [ -f "$$dir/package.json" ]; then \
-			name=$$(basename $$dir); \
-			npm run lint --workspace=$$name --if-present & \
-		fi; \
-	done; wait || exit 1
+	@echo "Linting TypeScript services..."
+	@cd $(TS_SRC_DIR) && npm run lint --workspaces --if-present
 
 typecheck-ts:
 	@echo "Typechecking TypeScript..."

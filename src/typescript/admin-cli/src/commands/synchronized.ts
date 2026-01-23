@@ -36,7 +36,7 @@ export const addSynchronizedCommands = (program: Command) => {
         if (error instanceof Error) {
           console.error(`❌ Error listing synchronized activities: ${error.message}`);
         } else {
-          console.error(`❌ An unknown error occurred`);
+          console.error('❌ An unknown error occurred');
         }
         process.exit(1);
       }
@@ -118,7 +118,7 @@ export const addSynchronizedCommands = (program: Command) => {
         if (error instanceof Error) {
           console.error(`❌ Error getting synchronized activity: ${error.message}`);
         } else {
-          console.error(`❌ An unknown error occurred`);
+          console.error('❌ An unknown error occurred');
         }
         process.exit(1);
       }

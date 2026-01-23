@@ -1,6 +1,6 @@
-import { integrationRequestHandler } from './index';
-import { Request, Response } from '@google-cloud/functions-framework';
+import { handler } from './index';
 import * as admin from 'firebase-admin';
+import { FrameworkContext } from '@fitglue/shared';
 
 // Mock firebase-admin
 jest.mock('firebase-admin', () => {
@@ -34,93 +34,69 @@ jest.mock('firebase-admin', () => {
   };
 });
 
-// Helper to create mock request
-const mockRequest = (overrides: Partial<Request> = {}): Request => ({
+// Helper to create request objects
+const createRequest = (overrides: Record<string, unknown> = {}): Parameters<typeof handler>[0] => ({
   method: 'POST',
+  path: '/api/integration-request',
   body: {},
+  headers: {},
+  query: {},
   ...overrides,
-} as Request);
+} as Parameters<typeof handler>[0]);
 
-// Helper to create mock response
-const mockResponse = (): Response => {
-  const res: Partial<Response> = {
-    set: jest.fn().mockReturnThis(),
-    status: jest.fn().mockReturnThis(),
-    send: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-  return res as Response;
-};
+// Helper to create mock context
+const createContext = (): FrameworkContext => ({
+  userId: undefined,
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  },
+  services: {
+    user: {} as any,
+    apiKey: {} as any,
+    execution: {} as any,
+    authorization: {} as any,
+  },
+  stores: {} as any,
+  pubsub: {} as any,
+  secrets: {} as any,
+  executionId: 'test-123',
+} as unknown as FrameworkContext);
 
 describe('integration-request-handler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
-  describe('CORS handling', () => {
-    it('sets CORS headers on all requests', async () => {
-      const req = mockRequest({ method: 'POST', body: { integration: 'garmin' } });
-      const res = mockResponse();
-
-      const mockDoc = { exists: false };
-      const mockFirestore = admin.firestore() as any;
-      mockFirestore.runTransaction.mockImplementation((fn: any) => {
-        return fn({
-          get: jest.fn().mockResolvedValue(mockDoc),
-          create: jest.fn(),
-        });
-      });
-
-      await integrationRequestHandler(req, res);
-
-      expect(res.set).toHaveBeenCalledWith('Access-Control-Allow-Origin', '*');
-      expect(res.set).toHaveBeenCalledWith('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-    });
-
-    it('responds to OPTIONS with 204', async () => {
-      const req = mockRequest({ method: 'OPTIONS' });
-      const res = mockResponse();
-
-      await integrationRequestHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(204);
-      expect(res.send).toHaveBeenCalledWith('');
-    });
-  });
-
   describe('POST /integration-request', () => {
     it('returns 400 if integration is missing', async () => {
-      const req = mockRequest({ body: {} });
-      const res = mockResponse();
+      const req = createRequest({ body: {} });
+      const ctx = createContext();
 
-      await integrationRequestHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Please provide a valid integration name.' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('returns 400 if integration is too short', async () => {
-      const req = mockRequest({ body: { integration: 'x' } });
-      const res = mockResponse();
+      const req = createRequest({ body: { integration: 'x' } });
+      const ctx = createContext();
 
-      await integrationRequestHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
     });
 
     it('silently accepts spam (honeypot filled)', async () => {
-      const req = mockRequest({ body: { integration: 'garmin', website_url: 'spam.com' } });
-      const res = mockResponse();
+      const req = createRequest({ body: { integration: 'garmin', website_url: 'spam.com' } });
+      const ctx = createContext();
 
-      await integrationRequestHandler(req, res);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({ success: true, message: 'Thanks for your feedback!' });
+      expect(result).toEqual({ success: true, message: 'Thanks for your feedback!' });
     });
 
     it('normalizes integration name and stores request', async () => {
-      const req = mockRequest({ body: { integration: 'Garmin Connect' } });
-      const res = mockResponse();
+      const req = createRequest({ body: { integration: 'Garmin Connect' } });
+      const ctx = createContext();
 
       const mockDoc = { exists: false };
       const mockFirestore = admin.firestore() as any;
@@ -131,35 +107,29 @@ describe('integration-request-handler', () => {
         });
       });
 
-      await integrationRequestHandler(req, res);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          canonicalName: 'garmin',
-        })
-      );
+      expect(result).toEqual(expect.objectContaining({
+        success: true,
+        canonicalName: 'garmin',
+      }));
     });
 
     it('returns 500 on Firestore error', async () => {
-      const req = mockRequest({ body: { integration: 'garmin' } });
-      const res = mockResponse();
+      const req = createRequest({ body: { integration: 'garmin' } });
+      const ctx = createContext();
 
       const mockFirestore = admin.firestore() as any;
       mockFirestore.runTransaction.mockRejectedValue(new Error('Firestore error'));
 
-      await integrationRequestHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 500 }));
     });
   });
 
   describe('GET /integration-request (stats)', () => {
     it('returns sorted stats', async () => {
-      const req = mockRequest({ method: 'GET' });
-      const res = mockResponse();
+      const req = createRequest({ method: 'GET' });
+      const ctx = createContext();
 
       const mockDocs = [
         { id: 'garmin', data: () => ({ count: 10, rawInputs: ['Garmin', 'Garmin Connect'] }) },
@@ -170,10 +140,9 @@ describe('integration-request-handler', () => {
         forEach: (fn: (doc: any) => void) => mockDocs.forEach(fn),
       });
 
-      await integrationRequestHandler(req, res);
+      const result = await handler(req, ctx);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(result).toEqual({
         requests: [
           { name: 'garmin', count: 10, rawInputs: ['Garmin', 'Garmin Connect'] },
           { name: 'whoop', count: 5, rawInputs: ['Whoop'] },
@@ -182,27 +151,22 @@ describe('integration-request-handler', () => {
     });
 
     it('returns 500 on error', async () => {
-      const req = mockRequest({ method: 'GET' });
-      const res = mockResponse();
+      const req = createRequest({ method: 'GET' });
+      const ctx = createContext();
 
       const mockFirestore = admin.firestore() as any;
       mockFirestore.get.mockRejectedValue(new Error('Firestore error'));
 
-      await integrationRequestHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 500 }));
     });
   });
 
   describe('method validation', () => {
     it('returns 405 for unsupported methods', async () => {
-      const req = mockRequest({ method: 'PUT' });
-      const res = mockResponse();
+      const req = createRequest({ method: 'PUT' });
+      const ctx = createContext();
 
-      await integrationRequestHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(405);
-      expect(res.send).toHaveBeenCalledWith('Method Not Allowed');
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 405 }));
     });
   });
 });

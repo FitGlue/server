@@ -1,9 +1,9 @@
 import { BaseConnector, ConnectorConfig, IngestStrategy, StandardizedActivity, Session, StrengthSet, MuscleGroup, CloudEventSource, ActivitySource, createHevyClient, FrameworkContext, ActivityType } from '@fitglue/shared';
-import type { components } from "@fitglue/shared/dist/integrations/hevy/schema";
+import type { components } from '@fitglue/shared/dist/integrations/hevy/schema';
 
 // Define Hevy-specific types
-type HevyWorkout = components["schemas"]["Workout"];
-type HevyExerciseTemplate = components["schemas"]["ExerciseTemplate"];
+type HevyWorkout = components['schemas']['Workout'];
+type HevyExerciseTemplate = components['schemas']['ExerciseTemplate'];
 
 export interface HevyConnectorConfig extends ConnectorConfig {
   apiKey: string;
@@ -17,7 +17,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
 
   constructor(context: FrameworkContext) {
     super(context);
-    context.logger.debug(`HevyConnector: initialized`);
+    context.logger.debug('HevyConnector: initialized');
   }
 
   extractId(body: unknown): string | null {
@@ -35,7 +35,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
         userId: (config as unknown as { userId: string }).userId
       }
     });
-    const { data: fullWorkout, error, response } = await client.GET("/v1/workouts/{workoutId}", {
+    const { data: fullWorkout, error, response } = await client.GET('/v1/workouts/{workoutId}', {
       params: { path: { workoutId: activityId } }
     });
 
@@ -53,11 +53,12 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
 
     // Fetch all templates concurrently
     const templatePromises = Array.from(templateIds).map(async (tmplId) => {
-      const { data: tmplData, error: tmplError } = await client.GET("/v1/exercise_templates/{exerciseTemplateId}", {
+      const { data: tmplData, error: tmplError } = await client.GET('/v1/exercise_templates/{exerciseTemplateId}', {
         params: { path: { exerciseTemplateId: tmplId } }
       });
 
       if (tmplError || !tmplData) {
+        // eslint-disable-next-line no-console
         console.warn(`Failed to fetch template ${tmplId}`);
         return { id: tmplId, data: undefined };
       }
@@ -76,7 +77,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
     // I'll assume config has userId for now, provided by the caller who loads the config.
     const userId = (config as unknown as { userId: string }).userId;
     if (!userId) {
-      throw new Error("userId missing in connector config");
+      throw new Error('userId missing in connector config');
     }
 
     const standardized = await this.mapActivity(fullWorkout, { userId, templateMap });
@@ -89,7 +90,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
    */
   async mapActivity(workout: HevyWorkout, context?: { userId: string, templateMap: Record<string, HevyExerciseTemplate> }): Promise<StandardizedActivity> {
     this.context.logger.debug(`HevyConnector: mapping workout ${workout.id}, ${workout.title || 'Unknown Title'}`, { workout });
-    if (!context?.userId) throw new Error("HevyMapping requires userId in context");
+    if (!context?.userId) throw new Error('HevyMapping requires userId in context');
     const templateMap = context.templateMap || {};
     const userId = context.userId;
 
@@ -162,6 +163,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
     };
   }
 
+  // eslint-disable-next-line complexity
   private mapToMuscleGroupEnum(muscle: string | undefined): MuscleGroup {
     if (!muscle) return MuscleGroup.MUSCLE_GROUP_UNSPECIFIED;
     const normalized = muscle.toLowerCase().trim();

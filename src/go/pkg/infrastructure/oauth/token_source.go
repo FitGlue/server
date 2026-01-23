@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -263,6 +264,14 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 }
 
 func (s *FirestoreTokenSource) getSecret(keyType string) (string, error) {
-	name := fmt.Sprintf("%s-%s", s.provider, keyType)
-	return s.db.Secrets.GetSecret(context.Background(), s.db.Config.ProjectID, name)
+	// Environment variables use uppercase with underscores
+	// e.g., "strava-client-id" becomes "STRAVA_CLIENT_ID"
+	envVarName := strings.ToUpper(strings.ReplaceAll(s.provider, "-", "_")) + "_" + strings.ToUpper(strings.ReplaceAll(keyType, "-", "_"))
+
+	value := os.Getenv(envVarName)
+	if value == "" {
+		return "", fmt.Errorf("environment variable %s not found", envVarName)
+	}
+
+	return value, nil
 }

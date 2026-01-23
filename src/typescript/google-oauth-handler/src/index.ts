@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -31,9 +31,11 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'google-oauth-client-id');
-    const clientSecret = await getSecret(projectId, 'google-oauth-client-secret');
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error('Missing GOOGLE_OAUTH_CLIENT_ID or GOOGLE_OAUTH_CLIENT_SECRET environment variables');
+    }
 
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
@@ -59,15 +61,15 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_in: number;
       scope: string;
     };
-    const { access_token, refresh_token, expires_in } = tokenData;
+    const { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn } = tokenData;
 
     // Calculate expiration time
-    const expiresAt = new Date(Date.now() + expires_in * 1000);
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Get user info from Google to get external user ID
     const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
       headers: {
-        'Authorization': `Bearer ${access_token}`,
+        'Authorization': `Bearer ${accessToken}`,
       },
     });
 
@@ -84,8 +86,8 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
     // Store tokens in Firestore
     await storeOAuthTokens(userId, 'google', {
-      accessToken: access_token,
-      refreshToken: refresh_token,
+      accessToken,
+      refreshToken,
       expiresAt,
       externalUserId,
     }, stores);

@@ -105,7 +105,7 @@ export class CloudEventPublisher<T> {
       if (!jsonString.trim().startsWith('{')) {
         try {
           jsonString = Buffer.from(jsonString, 'base64').toString('utf-8');
-        } catch (e) {
+        } catch {
           // ignore, maybe properly valid JSON string that doesn't start with {?
         }
       }

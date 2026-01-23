@@ -1,4 +1,4 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens, getSecret } from '@fitglue/shared';
+import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -31,9 +31,11 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const clientId = await getSecret(projectId, 'fitbit-client-id');
-    const clientSecret = await getSecret(projectId, 'fitbit-client-secret');
+    const clientId = process.env.FITBIT_CLIENT_ID;
+    const clientSecret = process.env.FITBIT_CLIENT_SECRET;
+    if (!clientId || !clientSecret) {
+      throw new Error('Missing FITBIT_CLIENT_ID or FITBIT_CLIENT_SECRET environment variables');
+    }
 
     // Fitbit requires Basic Auth for token exchange
     const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
@@ -63,20 +65,20 @@ const handler = async (req: any, ctx: FrameworkContext) => {
       expires_in: number;
       user_id: string;
     };
-    const { access_token, refresh_token, expires_in, user_id } = tokenData;
+    const { access_token: accessToken, refresh_token: refreshToken, expires_in: expiresIn, user_id: fitbitUserId } = tokenData;
 
     // Calculate expiration time
-    const expiresAt = new Date(Date.now() + expires_in * 1000);
+    const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
     // Store tokens in Firestore
     await storeOAuthTokens(userId, 'fitbit', {
-      accessToken: access_token,
-      refreshToken: refresh_token,
+      accessToken,
+      refreshToken,
       expiresAt,
-      externalUserId: user_id,
+      externalUserId: fitbitUserId,
     }, stores); // Pass stores directly
 
-    logger.info('Successfully connected Fitbit account', { userId, fitbitUserId: user_id });
+    logger.info('Successfully connected Fitbit account', { userId, fitbitUserId });
 
     // Redirect to success page
     // Redirect to success page

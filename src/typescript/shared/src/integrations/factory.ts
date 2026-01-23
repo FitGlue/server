@@ -1,6 +1,7 @@
 import createClient from 'openapi-fetch';
 import { UserService } from '../domain/services/user';
 import { MAX_ERROR_BODY_SIZE } from '../infrastructure/http/errors';
+import { OAuthProvider } from '../infrastructure/oauth/token-source';
 
 // Define a generic type for the client since we might not have the generated schema types imported here universally
 // But actually createAuthenticatedClient needs to be generic or strict.
@@ -22,7 +23,7 @@ export function createAuthenticatedClient<Paths extends object>(
   baseUrl: string,
   userService: UserService,
   userId: string,
-  provider: 'strava' | 'fitbit',
+  provider: OAuthProvider,
   options?: AuthenticatedClientOptions
 ) {
   const retryFetch: typeof fetch = async (input, init) => {
@@ -40,6 +41,7 @@ export function createAuthenticatedClient<Paths extends object>(
     if (!response.ok) {
       const errorBody = await response.clone().text();
       const truncatedBody = truncate(errorBody, MAX_ERROR_BODY_SIZE);
+      // eslint-disable-next-line no-console
       console.error(`[${provider}] HTTP ${response.status}: ${truncatedBody}`);
     }
 
@@ -51,6 +53,7 @@ export function createAuthenticatedClient<Paths extends object>(
     }
 
     if (response.status === 401) {
+      // eslint-disable-next-line no-console
       console.log(`[${provider}] 401 Unauthorized for user ${userId}. Retrying with force refresh.`);
       // Force Refresh
       const newToken = await userService.getValidToken(userId, provider, true);
