@@ -2,7 +2,7 @@
   "name": "user-pipelines-handler",
   "version": "1.0.0",
   "description": "Handles user pipeline management (CRUD)",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "gcp-build": "npm run build",

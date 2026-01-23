@@ -2,7 +2,7 @@
   "name": "user-profile-handler",
   "version": "1.0.0",
   "description": "Handles user profile operations (GET, PATCH, DELETE)",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "gcp-build": "npm run build",

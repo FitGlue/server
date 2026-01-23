@@ -2,7 +2,7 @@
   "name": "mobile-sync-handler",
   "version": "1.0.0",
   "description": "Handles mobile app health data sync from iOS HealthKit and Android Health Connect",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "gcp-build": "npm run build",

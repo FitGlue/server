@@ -22,33 +22,53 @@ TS_ROOT="src/typescript"
 echo "Creating release $RELEASE..."
 npx @sentry/cli releases new "$RELEASE" --org "$ORG" --project "$PROJECT" || true
 
-# Iterate over handlers
-for handler_dir in $TS_ROOT/*-handler; do
-  if [ -d "$handler_dir" ]; then
-    HANDLER_NAME=$(basename "$handler_dir")
+# 1. Upload Shared Library Source Maps
+echo "Uploading source maps for shared library..."
+SHARED_DIST="$TS_ROOT/shared/dist"
+if [ -d "$SHARED_DIST" ]; then
+  npx @sentry/cli sourcemaps upload "$SHARED_DIST" \
+    --release "$RELEASE" \
+    --url-prefix "~/shared/dist" \
+    --org "$ORG" \
+    --project "$PROJECT" \
+    --ext js --ext map \
+    --ignore "*.test.js" --ignore "*.test.js.map"
+else
+  echo "Warning: No dist directory found for shared library. Skipping."
+fi
 
-    # Determine build directory (default to build, check tsconfig if you want robustness later)
-    BUILD_DIR="$handler_dir/build"
+# 2. Iterate over all TypeScript workspaces (excluding shared, admin-cli, mcp-server, node_modules)
+for dir in $TS_ROOT/*; do
+  if [ -d "$dir" ] && [ -f "$dir/package.json" ]; then
+    NAME=$(basename "$dir")
 
-    if [ ! -d "$BUILD_DIR" ]; then
-      echo "Warning: No build directory found for $HANDLER_NAME. Skipping."
+    # Skip excluded directories
+    if [[ "$NAME" == "shared" || "$NAME" == "admin-cli" || "$NAME" == "mcp-server" || "$NAME" == "node_modules" ]]; then
       continue
     fi
 
-    echo "Uploading source maps for $HANDLER_NAME..."
+    DIST_DIR="$dir/dist"
+
+    if [ ! -d "$DIST_DIR" ]; then
+      echo "Warning: No dist directory found for $NAME. Skipping."
+      continue
+    fi
+
+    echo "Uploading source maps for $NAME..."
 
     # URL Prefix strategy:
-    # Runtime path: /workspace/{handler-name}/build/index.js
-    # Sentry Artifact: ~/{handler-name}/build/index.js
-    URL_PREFIX="~/$HANDLER_NAME/build"
+    # Runtime path: /workspace/{name}/dist/index.js
+    # Sentry Artifact: ~/{name}/dist/index.js
+    URL_PREFIX="~/$NAME/dist"
 
-    # Upload everything in build dir (js and maps)
-    npx @sentry/cli sourcemaps upload "$BUILD_DIR" \
+    # Upload everything in dist dir (js and maps), excluding tests
+    npx @sentry/cli sourcemaps upload "$DIST_DIR" \
       --release "$RELEASE" \
       --url-prefix "$URL_PREFIX" \
       --org "$ORG" \
       --project "$PROJECT" \
-      --ext js --ext map
+      --ext js --ext map \
+      --ignore "*.test.js" --ignore "*.test.js.map"
   fi
 done
 

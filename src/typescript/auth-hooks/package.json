@@ -1,7 +1,7 @@
 {
   "name": "auth-hooks",
   "version": "1.0.0",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "watch": "tsc -w",

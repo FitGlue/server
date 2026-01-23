@@ -83,14 +83,15 @@ create_source() {
 {
   "name": "${kebab_name}-handler",
   "version": "1.0.0",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
-    "lint": "eslint 'src/**/*.ts'",
-    "test": "jest"
+    "gcp-build": "npm run build",
+    "test": "jest",
+    "lint": "eslint src --ext .ts",
   },
   "dependencies": {
-    "@fitglue/shared": "file:../shared"
+    "@fitglue/shared": "^1.0.0",
   },
   "devDependencies": {
     "typescript": "^5.3.3"
@@ -102,16 +103,23 @@ EOF
     cat > "$handler_dir/tsconfig.json" << EOF
 {
   "compilerOptions": {
-    "target": "ES2020",
     "module": "commonjs",
-    "outDir": "./build",
-    "rootDir": "./src",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "dist",
+    "sourceMap": true,
     "strict": true,
+    "target": "es2017",
+    "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
 }
+
 EOF
 
     # src/index.ts

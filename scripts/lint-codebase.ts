@@ -249,8 +249,8 @@ function checkIndexJsExports(): CheckResult {
     .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
 
   // Extract referenced packages from index.js
-  // Pattern: require('./xxx-handler/build/index') or require('./xxx-handler/dist/index')
-  const requirePattern = /require\(['"]\.\/([^/]+)\/(build|dist)\/index['"]\)/g;
+  // Pattern: require('./xxx-handler/dist/index')
+  const requirePattern = /require\(['"]\.\/([^/]+)\/dist\/index['"]\)/g;
   const exportedPackages = new Set<string>();
   let match;
   while ((match = requirePattern.exec(indexContent)) !== null) {
@@ -2559,7 +2559,7 @@ function checkSharedImportResolution(): CheckResult {
       const items = fs.readdirSync(dir, { withFileTypes: true });
       for (const item of items) {
         const fullPath = path.join(dir, item.name);
-        if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('build')) {
+        if (item.isDirectory() && !item.name.includes('node_modules') && !item.name.includes('build') && !item.name.includes('dist')) {
           files.push(...findTsFiles(fullPath));
         } else if (item.isFile() && item.name.endsWith('.ts') && !item.name.endsWith('.test.ts')) {
           files.push(fullPath);

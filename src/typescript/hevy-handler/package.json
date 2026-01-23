@@ -2,7 +2,7 @@
   "name": "hevy-handler",
   "version": "1.0.0",
   "description": "Ingests Hevy workout webhooks",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "gcp-build": "npm run build",

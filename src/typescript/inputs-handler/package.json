@@ -2,7 +2,7 @@
   "name": "inputs-handler",
   "version": "1.0.0",
   "description": "Handles user inputs for halted enrichment pipelines",
-  "main": "build/index.js",
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "gcp-build": "npm run build",
