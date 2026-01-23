@@ -122,26 +122,29 @@ TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name
 TS_HANDLER_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules -not -name shared -not -name mcp-server -not -name admin-cli)
 TS_TOOL_DIRS := $(TS_SRC_DIR)/mcp-server $(TS_SRC_DIR)/admin-cli
 
-build-ts:
-	@echo "Building TypeScript services..."
-	@echo "Step 1: Building shared library (dependency for all handlers)..."
-	@cd $(TS_SRC_DIR) && npm run build --workspace=@fitglue/shared
-	@echo "Step 2: Building all handlers in parallel..."
-	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_HANDLER_DIRS); do \
-		name=$$(basename $$dir); \
-		npm run build --workspace=$$name --if-present & \
-	done; wait || exit 1
-	@echo "TypeScript build complete."
+TS_HANDLER_NAMES := $(notdir $(TS_HANDLER_DIRS))
+TS_TOOL_NAMES := $(notdir $(TS_TOOL_DIRS))
 
-build-tools-ts:
-	@echo "Building TypeScript tools..."
-	@echo "Step 1: Building shared library (if not already built)..."
+# Helper target to build the shared library first
+build-shared:
+	@echo "Building shared library..."
 	@cd $(TS_SRC_DIR) && npm run build --workspace=@fitglue/shared
-	@echo "Step 2: Building tools in parallel..."
-	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_TOOL_DIRS); do \
-		name=$$(basename $$dir); \
-		npm run build --workspace=$$name --if-present & \
-	done; wait || exit 1
+
+# Pattern rule for building any typescript workspace
+build-handler-%: build-shared
+	@echo "Building handler $*..."
+	@cd $(TS_SRC_DIR) && npm run build --workspace=$* --if-present
+
+build-tool-%: build-shared
+	@echo "Building tool $*..."
+	@cd $(TS_SRC_DIR) && npm run build --workspace=$* --if-present
+
+# Build all handlers using Make's job server
+build-ts: build-shared $(addprefix build-handler-,$(TS_HANDLER_NAMES))
+	@echo "TypeScript service builds complete."
+
+# Build all tools using Make's job server
+build-tools-ts: build-shared $(addprefix build-tool-,$(TS_TOOL_NAMES))
 	@echo "TypeScript tools build complete."
 
 tools: build-tools-ts build-tools-go
@@ -175,7 +178,8 @@ clean-ts:
 # --- Combined Targets ---
 # P1: Parallel builds - Go and TS can build concurrently
 build:
-	@$(MAKE) -j2 build-go build-ts
+	@$(MAKE) build-go
+	@$(MAKE) -j4 build-ts
 
 # P2: Parallel tests - Go and TS tests can run concurrently
 test:
