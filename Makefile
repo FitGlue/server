@@ -149,13 +149,23 @@ build-tools-ts: build-shared $(addprefix build-tool-,$(TS_TOOL_NAMES))
 
 tools: build-tools-ts build-tools-go
 
-test-ts:
-	@echo "Testing TypeScript services..."
-	@cd $(TS_SRC_DIR) && npm test --workspaces --if-present
+# Pattern rule for testing any typescript workspace
+test-handler-%: build-shared
+	@echo "Testing handler $*..."
+	@cd $(TS_SRC_DIR) && npm test --workspace=$* --if-present
 
-lint-ts:
-	@echo "Linting TypeScript services..."
-	@cd $(TS_SRC_DIR) && npm run lint --workspaces --if-present
+# Test all handlers using Make's job server
+test-ts: build-shared $(addprefix test-handler-,$(TS_HANDLER_NAMES))
+	@echo "TypeScript tests complete."
+
+# Pattern rule for linting any typescript workspace
+lint-handler-%:
+	@echo "Linting handler $*..."
+	@cd $(TS_SRC_DIR) && npm run lint --workspace=$* --if-present
+
+# Lint all handlers using Make's job server
+lint-ts: $(addprefix lint-handler-,$(TS_HANDLER_NAMES))
+	@echo "TypeScript linting complete."
 
 typecheck-ts:
 	@echo "Typechecking TypeScript..."
@@ -183,11 +193,12 @@ build:
 
 # P2: Parallel tests - Go and TS tests can run concurrently
 test:
-	@$(MAKE) -j2 test-go test-ts
+	@$(MAKE) test-go
+	@$(MAKE) -j4 test-ts
 
 # P3: Parallel lint - Go, TS, and codebase checks can run concurrently
 lint:
-	@$(MAKE) -j3 lint-go lint-ts lint-codebase
+	@$(MAKE) -j4 lint-go lint-ts lint-codebase
 
 prepare: prepare-go
 # P4: Parallel clean
