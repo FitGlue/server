@@ -42,3 +42,6 @@ downloads/
 
 # Backups
 *.bak
+
+# Examples
+examples_output

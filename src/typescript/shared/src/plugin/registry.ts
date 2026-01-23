@@ -1043,7 +1043,33 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE, {
   enabled: true,
   requiredIntegrations: [],
   requiredTier: 'athlete',
-  configSchema: [],
+  configSchema: [
+    {
+      key: 'preset',
+      label: 'Coefficient Preset',
+      description: 'Muscle weighting preset (same options as text heatmap)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'standard',
+      options: [
+        { value: 'standard', label: 'Standard (balanced)' },
+        { value: 'powerlifting', label: 'Powerlifting (emphasize compounds)' },
+        { value: 'bodybuilding', label: 'Bodybuilding (emphasize isolation)' },
+      ],
+    },
+    {
+      key: 'gender',
+      label: 'Anatomy Model',
+      description: 'Select the anatomical model for the heatmap',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'man',
+      options: [
+        { value: 'man', label: 'Male' },
+        { value: 'woman', label: 'Female' },
+      ],
+    },
+  ],
   marketingDescription: `
 ### Premium Visual Muscle Activation
 The Muscle Heatmap Image booster creates a stunning anatomical diagram showing exactly which muscles you trained and how hard. Unlike the text-based heatmap, this generates a shareable visual asset perfect for social media and the Showcase.

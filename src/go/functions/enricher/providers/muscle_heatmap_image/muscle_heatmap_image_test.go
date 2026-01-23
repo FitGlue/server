@@ -3,6 +3,7 @@ package muscle_heatmap_image
 import (
 	"testing"
 
+	"github.com/fitglue/server/src/go/functions/enricher/providers/muscle_heatmap"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -39,7 +40,7 @@ func TestCalculateMuscleScores(t *testing.T) {
 		},
 	}
 
-	scores := provider.calculateMuscleScores(sets)
+	scores := provider.calculateMuscleScores(sets, muscle_heatmap.StandardCoefficients)
 
 	// Should have scores for chest and quads
 	if len(scores) == 0 {
@@ -55,11 +56,14 @@ func TestCalculateMuscleScores(t *testing.T) {
 
 	// Check that all scores have valid colors
 	for _, score := range scores {
+		if len(score.SVGIDs) == 0 {
+			t.Errorf("Score has empty SVGIDs")
+		}
 		if score.Color == "" {
-			t.Errorf("Score for %s has empty color", score.Name)
+			t.Errorf("Score has empty color")
 		}
 		if score.Percentage < 0 || score.Percentage > 1 {
-			t.Errorf("Score for %s has invalid percentage: %.2f", score.Name, score.Percentage)
+			t.Errorf("Score for %v has invalid percentage: %.2f", score.SVGIDs, score.Percentage)
 		}
 	}
 }
@@ -68,12 +72,12 @@ func TestGenerateSVG(t *testing.T) {
 	provider := NewMuscleHeatmapImageProvider()
 
 	scores := []MuscleScore{
-		{Name: "chest", Percentage: 1.0, Color: "#EC4899"},
-		{Name: "biceps", Percentage: 0.6, Color: "#7C3AED"},
-		{Name: "quads", Percentage: 0.3, Color: "#8B5CF6"},
+		{SVGIDs: []string{"chest"}, Percentage: 1.0, Color: "#EC4899"},
+		{SVGIDs: []string{"biceps"}, Percentage: 0.6, Color: "#7C3AED"},
+		{SVGIDs: []string{"quads"}, Percentage: 0.3, Color: "#8B5CF6"},
 	}
 
-	svg, err := provider.generateSVG(scores)
+	svg, err := provider.GenerateSVG("man", scores)
 	if err != nil {
 		t.Fatalf("generateSVG failed: %v", err)
 	}

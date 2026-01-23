@@ -142,23 +142,31 @@ func generateRouteSVG(points []GPSPoint) string {
 		}
 	}
 
-	// Add padding
-	padding := 0.0001
-	minLat -= padding
-	maxLat += padding
-	minLong -= padding
-	maxLong += padding
-
-	// Canvas dimensions
+	// Canvas dimensions with margin
 	width := 400.0
 	height := 400.0
+	margin := 30.0 // Padding from canvas edges
 
-	// Calculate scale to maintain aspect ratio
+	// Available drawing area (inside margins)
+	drawWidth := width - 2*margin
+	drawHeight := height - 2*margin
+
+	// Calculate scale to fit route within drawing area while maintaining aspect ratio
 	latRange := maxLat - minLat
 	longRange := maxLong - minLong
 
-	// Use the larger range to maintain aspect ratio
-	scale := width / math.Max(longRange, latRange)
+	// Scale based on whichever dimension constrains us
+	scaleX := drawWidth / longRange
+	scaleY := drawHeight / latRange
+	scale := math.Min(scaleX, scaleY)
+
+	// Calculate actual route dimensions after scaling
+	routeWidth := longRange * scale
+	routeHeight := latRange * scale
+
+	// Calculate offsets to center the route within the drawing area
+	offsetX := margin + (drawWidth-routeWidth)/2
+	offsetY := margin + (drawHeight-routeHeight)/2
 
 	// Project points to SVG coordinates
 	var svgPoints []struct {
@@ -168,8 +176,8 @@ func generateRouteSVG(points []GPSPoint) string {
 
 	for _, p := range points {
 		// Longitude is X, Latitude is Y (inverted because SVG Y increases downward)
-		x := (p.Long - minLong) * scale
-		y := height - (p.Lat-minLat)*scale
+		x := offsetX + (p.Long-minLong)*scale
+		y := offsetY + (maxLat-p.Lat)*scale // Invert Y: higher lat = lower Y value
 		svgPoints = append(svgPoints, struct {
 			X float64
 			Y float64

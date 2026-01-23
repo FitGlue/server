@@ -10,17 +10,44 @@ import (
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
+// StandardCoefficients is the default coefficient map for muscle group normalization.
+// Smaller muscles (arms, shoulders) have lower max loads, so we multiply their volume
+// to match legs/back. This is exported for use by the muscle_heatmap_image provider.
+var StandardCoefficients = map[pb.MuscleGroup]float64{
+	// Legs: baseline 1.0
+	pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS: 1.0,
+	pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS: 1.0,
+	pb.MuscleGroup_MUSCLE_GROUP_GLUTES:     1.0,
+	pb.MuscleGroup_MUSCLE_GROUP_CALVES:     1.0,
+	pb.MuscleGroup_MUSCLE_GROUP_ADDUCTORS:  1.0,
+	pb.MuscleGroup_MUSCLE_GROUP_ABDUCTORS:  1.0,
+
+	// Back: 1.2x
+	pb.MuscleGroup_MUSCLE_GROUP_LATS:       1.2,
+	pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK: 1.2,
+	pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK: 1.2,
+	pb.MuscleGroup_MUSCLE_GROUP_NECK:       1.2,
+	pb.MuscleGroup_MUSCLE_GROUP_TRAPS:      1.2,
+
+	// Chest: 1.5x
+	pb.MuscleGroup_MUSCLE_GROUP_CHEST: 1.5,
+
+	// Shoulders: 2.5x
+	pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS: 2.5,
+
+	// Arms: 4.0x (100kg curl is impossible, 100kg squat is warmup)
+	pb.MuscleGroup_MUSCLE_GROUP_BICEPS:   4.0,
+	pb.MuscleGroup_MUSCLE_GROUP_TRICEPS:  4.0,
+	pb.MuscleGroup_MUSCLE_GROUP_FOREARMS: 4.0,
+
+	// Core & Misc
+	pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS: 3.0,
+	pb.MuscleGroup_MUSCLE_GROUP_CARDIO:     0.5,
+	pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY:  1.0,
+}
+
 // MuscleHeatmapProvider generates an emoji-based "heatmap" of muscle volume.
 type MuscleHeatmapProvider struct {
-	// Coefficient map to skew effort based on muscle size/strength.
-	// Smaller muscles (arms, shoulders) have lower max loads, so we multiplier their volume to match legs/back.
-	// Baseline: Legs (Squat) = 1.0.
-	// Arms: 100kg curl is impossible, 100kg squat is warmup.
-	// Ratio: World Record Curl ~115kg. WR Squat ~500kg. Ratio ~4-5x.
-	// So Arms volume * 4 = Equivalent Leg Volume?
-	// User said: "100kg x 3 Squats (legs) is much easier than 100kg x 3 Bicep Curls"
-	// So if weight is constant, Curls should score higher.
-	// Score = Volume * Coefficient.
 	coefficients map[pb.MuscleGroup]float64
 }
 
@@ -30,31 +57,7 @@ func init() {
 
 func NewMuscleHeatmapProvider() *MuscleHeatmapProvider {
 	return &MuscleHeatmapProvider{
-		coefficients: map[pb.MuscleGroup]float64{
-			pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS: 1.0,
-			pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS: 1.0,
-			pb.MuscleGroup_MUSCLE_GROUP_GLUTES:     1.0,
-			pb.MuscleGroup_MUSCLE_GROUP_CALVES:     1.0,
-			pb.MuscleGroup_MUSCLE_GROUP_ADDUCTORS:  1.0,
-			pb.MuscleGroup_MUSCLE_GROUP_ABDUCTORS:  1.0,
-
-			pb.MuscleGroup_MUSCLE_GROUP_LATS:       1.2,
-			pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK: 1.2,
-			pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK: 1.2,
-			pb.MuscleGroup_MUSCLE_GROUP_NECK:       1.2,
-			pb.MuscleGroup_MUSCLE_GROUP_TRAPS:      1.2,
-
-			pb.MuscleGroup_MUSCLE_GROUP_CHEST:     1.5,
-			pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS: 2.5,
-
-			pb.MuscleGroup_MUSCLE_GROUP_BICEPS:   4.0,
-			pb.MuscleGroup_MUSCLE_GROUP_TRICEPS:  4.0,
-			pb.MuscleGroup_MUSCLE_GROUP_FOREARMS: 4.0,
-
-			pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS: 3.0,
-			pb.MuscleGroup_MUSCLE_GROUP_CARDIO:     0.5,
-			pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY:  1.0,
-		},
+		coefficients: StandardCoefficients,
 	}
 }
 
@@ -66,13 +69,13 @@ func (p *MuscleHeatmapProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP
 }
 
-func getMuscleCoefficient(coeffs map[pb.MuscleGroup]float64, muscle pb.MuscleGroup) float64 {
+// GetMuscleCoefficient returns the normalization coefficient for a muscle group.
+// This is exported for use by the muscle_heatmap_image provider.
+func GetMuscleCoefficient(coeffs map[pb.MuscleGroup]float64, muscle pb.MuscleGroup) float64 {
 	if v, ok := coeffs[muscle]; ok {
 		return v
 	}
-	// Fallback logic could go here if we had grouped enums (e.g. all legs)
-	// For now, if not in map, return 1.0
-	return 1.0
+	return 1.0 // Default fallback
 }
 
 func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
@@ -111,7 +114,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 	// Apply coefficient preset
 	coeffs := p.coefficients
 	if preset, ok := inputConfig["preset"]; ok {
-		coeffs = p.getPresetCoefficients(preset)
+		coeffs = GetPresetCoefficients(preset)
 	}
 
 	// Calculate Weighted Volume per Muscle Group
@@ -122,7 +125,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		// Process Primary Muscle
 		primary := set.PrimaryMuscleGroup
 		secondary := set.SecondaryMuscleGroups
-		load := calculateLoad(set)
+		load := CalculateLoad(set)
 
 		// Fallback: if muscle group is unspecified, use taxonomy lookup
 		if primary == pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED || primary == pb.MuscleGroup_MUSCLE_GROUP_OTHER {
@@ -134,7 +137,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		}
 
 		if primary != pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED && primary != pb.MuscleGroup_MUSCLE_GROUP_OTHER {
-			coeff := getMuscleCoefficient(coeffs, primary)
+			coeff := GetMuscleCoefficient(coeffs, primary)
 			score := load * coeff
 
 			name := formatMuscleName(primary)
@@ -147,7 +150,7 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 		// Process Secondary Muscles (0.5x impact)
 		for _, sec := range secondary {
 			if sec != pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED && sec != pb.MuscleGroup_MUSCLE_GROUP_OTHER {
-				coeff := getMuscleCoefficient(coeffs, sec)
+				coeff := GetMuscleCoefficient(coeffs, sec)
 				score := load * coeff * 0.5
 
 				name := formatMuscleName(sec)
@@ -198,8 +201,9 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.Standar
 	}, nil
 }
 
-// getPresetCoefficients returns coefficient map for a given preset
-func (p *MuscleHeatmapProvider) getPresetCoefficients(preset string) map[pb.MuscleGroup]float64 {
+// GetPresetCoefficients returns coefficient map for a given preset.
+// This is exported for use by the muscle_heatmap_image provider.
+func GetPresetCoefficients(preset string) map[pb.MuscleGroup]float64 {
 	switch preset {
 	case "powerlifting":
 		// Emphasize compounds (squat, deadlift, bench)
@@ -238,7 +242,7 @@ func (p *MuscleHeatmapProvider) getPresetCoefficients(preset string) map[pb.Musc
 			pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS: 2.5,
 		}
 	default: // standard
-		return p.coefficients
+		return StandardCoefficients
 	}
 }
 
@@ -284,7 +288,9 @@ func formatMuscleName(m pb.MuscleGroup) string {
 	return strings.Title(strings.ToLower(s))
 }
 
-func calculateLoad(set *pb.StrengthSet) float64 {
+// CalculateLoad calculates the training load for a strength set.
+// This is exported for use by the muscle_heatmap_image provider.
+func CalculateLoad(set *pb.StrengthSet) float64 {
 	// Handle distance-based exercises (running, cycling, rowing, etc.)
 	if set.DistanceMeters > 0 {
 		// Use distance as primary metric: 10m = 1 unit of load

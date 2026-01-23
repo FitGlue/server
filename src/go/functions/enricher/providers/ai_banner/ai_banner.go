@@ -17,7 +17,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
-	"google.golang.org/api/idtoken"
+	"golang.org/x/oauth2/google"
 )
 
 // AIBannerProvider generates custom header images for activities using Vertex AI Imagen.
@@ -220,8 +220,9 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	// Get ID token for authentication
-	tokenSource, err := idtoken.NewTokenSource(ctx, "https://"+region+"-aiplatform.googleapis.com")
+	// Get access token for authentication using Application Default Credentials
+	// Note: Vertex AI requires OAuth 2.0 access tokens, not ID tokens
+	tokenSource, err := google.DefaultTokenSource(ctx, "https://www.googleapis.com/auth/cloud-platform")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create token source: %w", err)
 	}

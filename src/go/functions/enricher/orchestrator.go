@@ -169,6 +169,14 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		// Note: This mutates the payload's activity in-place, allowing subsequent enrichers to see changes.
 		currentActivity := payload.StandardizedActivity
 
+		// Save the original description and build enriched description separately
+		// to prevent stacking across reposts
+		originalDescription := currentActivity.Description
+		var descriptionBuilder strings.Builder
+		if originalDescription != "" {
+			descriptionBuilder.WriteString(originalDescription)
+		}
+
 		for i, cfg := range configs {
 			var provider providers.Provider
 			var ok bool
@@ -321,10 +329,10 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			if res.Description != "" {
 				trimmed := strings.TrimSpace(res.Description)
 				if trimmed != "" {
-					if currentActivity.Description != "" {
-						currentActivity.Description += "\n\n"
+					if descriptionBuilder.Len() > 0 {
+						descriptionBuilder.WriteString("\n\n")
 					}
-					currentActivity.Description += trimmed
+					descriptionBuilder.WriteString(trimmed)
 				}
 			}
 
@@ -385,6 +393,25 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 				}
 			}
 		}
+		brandingApplied := false
+		// Run branding provider last (only for Hobbyist tier)
+		if brandingProvider, ok := o.providersByName["branding"]; ok && tier.GetEffectiveTier(userRec) == tier.TierHobbyist {
+			brandingRes, err := brandingProvider.Enrich(ctx, currentActivity, userRec, map[string]string{}, doNotRetry)
+			if err != nil {
+				slog.Warn("Branding provider failed", "error", err)
+			} else if brandingRes != nil && brandingRes.Description != "" {
+				trimmed := strings.TrimSpace(brandingRes.Description)
+				if trimmed != "" {
+					if descriptionBuilder.Len() > 0 {
+						descriptionBuilder.WriteString("\n\n")
+					}
+					descriptionBuilder.WriteString(trimmed)
+					// Track that branding was applied
+					brandingApplied = true
+				}
+			}
+		}
+		currentActivity.Description = descriptionBuilder.String()
 
 		// Append executions from this pipeline
 		allProviderExecutions = append(allProviderExecutions, providerExecs...)
@@ -397,7 +424,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			ActivityData:        currentActivity, // Already fully enriched
 			ActivityType:        currentActivity.Type,
 			Name:                currentActivity.Name,
-			Description:         currentActivity.Description,
+			Description:         descriptionBuilder.String(),
 			AppliedEnrichments:  []string{},
 			EnrichmentMetadata:  make(map[string]string),
 			Destinations:        pipeline.Destinations,
@@ -421,6 +448,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			if res == nil {
 				continue
 			}
+
 			cfgName := configs[i].ProviderType.String()
 			finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, cfgName)
 
@@ -429,24 +457,9 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 				finalEvent.EnrichmentMetadata[k] = v
 			}
 		}
-
-		// Run branding provider last (only for Hobbyist tier)
-		if brandingProvider, ok := o.providersByName["branding"]; ok && tier.GetEffectiveTier(userRec) == tier.TierHobbyist {
-			brandingRes, err := brandingProvider.Enrich(ctx, currentActivity, userRec, map[string]string{}, doNotRetry)
-			if err != nil {
-				slog.Warn("Branding provider failed", "error", err)
-			} else if brandingRes != nil && brandingRes.Description != "" {
-				trimmed := strings.TrimSpace(brandingRes.Description)
-				if trimmed != "" {
-					if currentActivity.Description != "" {
-						currentActivity.Description += "\n\n"
-					}
-					currentActivity.Description += trimmed
-					// Update finalEvent description as well
-					finalEvent.Description = currentActivity.Description
-				}
-				finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, "branding")
-			}
+		// Add branding if it was applied
+		if brandingApplied {
+			finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, "branding")
 		}
 
 		// Generate FIT file artifact
