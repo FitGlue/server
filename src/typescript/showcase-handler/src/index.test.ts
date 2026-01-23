@@ -1,51 +1,108 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import * as admin from 'firebase-admin';
 import { FrameworkResponse, HttpError, ShowcaseStore, UserTier } from '@fitglue/shared';
 
-// Mock firebase-admin for user lookup
-jest.mock('firebase-admin', () => {
-  const mockDoc = {
-    get: jest.fn(),
-  };
-  const mockCollection = {
-    doc: jest.fn(() => mockDoc),
-  };
-  const mockFirestore = {
-    collection: jest.fn(() => mockCollection),
-  };
+// Create mock objects that will be shared across mocks
+const mockUserDoc = {
+  exists: true,
+  data: jest.fn(() => ({
+    tier: 1, // USER_TIER_HOBBYIST by default
+  })),
+};
+
+const mockUserGet = jest.fn(() => Promise.resolve(mockUserDoc));
+
+const mockDoc = {
+  get: mockUserGet,
+};
+
+const mockShowcaseDoc = {
+  get: jest.fn(),
+};
+
+const mockCollection = jest.fn((collectionName: string) => {
+  if (collectionName === 'users') {
+    return {
+      doc: jest.fn(() => mockDoc),
+    };
+  }
   return {
-    apps: [],
-    initializeApp: jest.fn(),
-    firestore: Object.assign(jest.fn(() => mockFirestore), {
-      Timestamp: {
-        now: () => ({ toDate: () => new Date() }),
-        fromDate: (d: Date) => ({ toDate: () => d }),
-      },
-    }),
+    doc: jest.fn(() => mockShowcaseDoc),
   };
 });
 
-// Mock ShowcaseStore and createCloudFunction
+const mockFirestore = {
+  collection: mockCollection,
+};
+
+// Mock firebase-admin
+jest.mock('firebase-admin', () => ({
+  apps: [],
+  initializeApp: jest.fn(),
+  firestore: Object.assign(jest.fn(() => mockFirestore), {
+    Timestamp: {
+      now: () => ({ toDate: () => new Date() }),
+      fromDate: (d: Date) => ({ toDate: () => d }),
+    },
+  }),
+}));
+
+// Mock ShowcaseStore, createCloudFunction, and db
 jest.mock('@fitglue/shared', () => {
   const actual = jest.requireActual('@fitglue/shared');
+
+  // Create a mock firestore that matches the structure above
+  const mockUserDoc = {
+    exists: true,
+    data: jest.fn(() => ({
+      tier: 1,
+    })),
+  };
+
+  const mockUserGet = jest.fn(() => Promise.resolve(mockUserDoc));
+
+  const mockDoc = {
+    get: mockUserGet,
+  };
+
+  const mockShowcaseDoc = {
+    get: jest.fn(),
+  };
+
+  const mockCollection = jest.fn((collectionName: string) => {
+    if (collectionName === 'users') {
+      return {
+        doc: jest.fn(() => mockDoc),
+      };
+    }
+    return {
+      doc: jest.fn(() => mockShowcaseDoc),
+    };
+  });
+
+  const mockDb = {
+    collection: mockCollection,
+  };
+
   return {
     ...actual,
     createCloudFunction: (handler: any) => handler,
     ShowcaseStore: jest.fn(),
+    db: mockDb,
+    _mockUserDoc: mockUserDoc, // Expose for test manipulation
   };
 });
 
 import { showcaseHandler } from './index';
+import * as shared from '@fitglue/shared';
+
+// Access the exposed mock from the mocked @fitglue/shared module
+const mockUserDocFromShared = (shared as any)._mockUserDoc;
 
 describe('showcase-handler', () => {
   let req: any;
   let ctx: any;
   let mockShowcaseStore: any;
-  let mockFirestore: any;
 
   beforeEach(() => {
-    mockFirestore = (admin.firestore as unknown as jest.Mock)();
-
     mockShowcaseStore = {
       get: jest.fn(),
       exists: jest.fn(),
@@ -58,9 +115,6 @@ describe('showcase-handler', () => {
     };
 
     ctx = {
-      stores: {
-        db: mockFirestore,
-      },
       logger: {
         info: jest.fn(),
         error: jest.fn(),
@@ -139,14 +193,9 @@ describe('showcase-handler', () => {
         appliedEnrichments: ['fitbit-heart-rate'],
       });
 
-      // Mock user lookup
-      const mockUserGet = jest.fn().mockResolvedValue({
-        data: () => ({
-          tier: UserTier.USER_TIER_ATHLETE,
-        }),
-      });
-      mockFirestore.collection.mockReturnValue({
-        doc: jest.fn().mockReturnValue({ get: mockUserGet }),
+      // Set user tier for this test
+      mockUserDocFromShared.data.mockReturnValueOnce({
+        tier: UserTier.USER_TIER_ATHLETE,
       });
 
       const result = await showcaseHandler(req, ctx);
@@ -161,6 +210,11 @@ describe('showcase-handler', () => {
         showcaseId: 'test-id',
         userId: 'user-123',
         title: 'Test',
+      });
+
+      // Set user tier for this test
+      mockUserDocFromShared.data.mockReturnValueOnce({
+        tier: UserTier.USER_TIER_HOBBYIST,
       });
 
       const result = await showcaseHandler(req, ctx);
@@ -178,6 +232,7 @@ describe('showcase-handler', () => {
         userId: 'user-123',
       });
 
+      // Note: HTML redirect path doesn't fetch user data, so no mock needed
       const result = await showcaseHandler(req, ctx);
       expect((result as unknown as FrameworkResponse).options.status).toBe(302);
       expect((result as unknown as FrameworkResponse).options.headers).toMatchObject({
