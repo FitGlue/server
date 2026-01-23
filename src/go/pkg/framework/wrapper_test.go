@@ -97,6 +97,9 @@ func (m *MockDB) GetPersonalRecord(ctx context.Context, userId string, recordTyp
 func (m *MockDB) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
 	return nil
 }
+func (m *MockDB) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+	return []*pb.PipelineConfig{}, nil
+}
 
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {

@@ -12,7 +12,8 @@ import (
 
 // MockDatabase implements shared.Database
 type MockDatabase struct {
-	GetUserFunc func(ctx context.Context, id string) (*pb.UserRecord, error)
+	GetUserFunc          func(ctx context.Context, id string) (*pb.UserRecord, error)
+	GetUserPipelinesFunc func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
 }
 
 func (m *MockDatabase) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
@@ -91,6 +92,12 @@ func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, rec
 func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
 	return nil
 }
+func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+	if m.GetUserPipelinesFunc != nil {
+		return m.GetUserPipelinesFunc(ctx, userId)
+	}
+	return []*pb.PipelineConfig{}, nil
+}
 
 type MockBlobStore struct {
 	WriteFunc func(ctx context.Context, bucket, object string, data []byte) error
@@ -142,16 +149,18 @@ func TestOrchestrator_Process(t *testing.T) {
 			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
 				return &pb.UserRecord{
 					UserId: id,
-					Pipelines: []*pb.PipelineConfig{
-						{
-							Id:           "pipeline-1",
-							Source:       "SOURCE_HEVY",
-							Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
-							Enrichers: []*pb.EnricherConfig{
-								{
-									ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
-									TypedConfig:  map[string]string{"key": "val"},
-								},
+				}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+				return []*pb.PipelineConfig{
+					{
+						Id:           "pipeline-1",
+						Source:       "SOURCE_HEVY",
+						Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
+						Enrichers: []*pb.EnricherConfig{
+							{
+								ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+								TypedConfig:  map[string]string{"key": "val"},
 							},
 						},
 					},
@@ -316,13 +325,15 @@ func TestOrchestrator_Process(t *testing.T) {
 			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
 				return &pb.UserRecord{
 					UserId: id,
-					Pipelines: []*pb.PipelineConfig{
-						{
-							Id:     "p1",
-							Source: "SOURCE_HEVY",
-							Enrichers: []*pb.EnricherConfig{
-								{ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK},
-							},
+				}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+				return []*pb.PipelineConfig{
+					{
+						Id:     "p1",
+						Source: "SOURCE_HEVY",
+						Enrichers: []*pb.EnricherConfig{
+							{ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK},
 						},
 					},
 				}, nil

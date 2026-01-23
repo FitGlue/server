@@ -30,12 +30,16 @@ const mockHasProcessedActivity = jest.fn();
 const mockCheckDestinationExists = jest.fn();
 const mockMarkActivityAsProcessed = jest.fn();
 const mockGet = jest.fn();
+const mockPipelineStoreList = jest.fn();
 
 const mockUserService = {
   hasProcessedActivity: mockHasProcessedActivity,
   checkDestinationExists: mockCheckDestinationExists,
   markActivityAsProcessed: mockMarkActivityAsProcessed,
-  get: mockGet
+  get: mockGet,
+  pipelineStore: {
+    list: mockPipelineStoreList
+  }
 };
 
 const mockPublish = jest.fn().mockResolvedValue('msg-id-123');
@@ -76,9 +80,11 @@ describe('createWebhookProcessor', () => {
 
     mockExtractId.mockReturnValue('evt-123');
     mockGet.mockResolvedValue({
-      integrations: { 'test-connector': { enabled: true } },
-      pipelines: [{ id: 'pipe-1', source: 'SOURCE_HEVY', enrichers: [], destinations: [1] }]
+      integrations: { 'test-connector': { enabled: true } }
     });
+    mockPipelineStoreList.mockResolvedValue([
+      { id: 'pipe-1', source: 'SOURCE_HEVY', enrichers: [], destinations: [1] }
+    ]);
     mockHasProcessedActivity.mockResolvedValue(false);
     mockCheckDestinationExists.mockResolvedValue(false);
     mockFetchAndMap.mockResolvedValue([{
@@ -128,9 +134,11 @@ describe('createWebhookProcessor', () => {
 
   it('should error if config is disabled', async () => {
     mockGet.mockResolvedValue({
-      integrations: { 'test-connector': { enabled: false } },
-      pipelines: [{ id: 'pipe-1', source: 'SOURCE_HEVY', enrichers: [], destinations: [1] }]
+      integrations: { 'test-connector': { enabled: false } }
     });
+    mockPipelineStoreList.mockResolvedValue([
+      { id: 'pipe-1', source: 'SOURCE_HEVY', enrichers: [], destinations: [1] }
+    ]);
 
     const result = await handler(req, ctx);
 
@@ -140,9 +148,11 @@ describe('createWebhookProcessor', () => {
 
   it('should skip if no pipeline configured for source', async () => {
     mockGet.mockResolvedValue({
-      integrations: { 'test-connector': { enabled: true } },
-      pipelines: [{ id: 'pipe-1', source: 'SOURCE_FITBIT', enrichers: [], destinations: [1] }] // Different source!
+      integrations: { 'test-connector': { enabled: true } }
     });
+    mockPipelineStoreList.mockResolvedValue([
+      { id: 'pipe-1', source: 'SOURCE_FITBIT', enrichers: [], destinations: [1] } // Different source!
+    ]);
 
     const result = await handler(req, ctx);
 

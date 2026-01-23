@@ -180,26 +180,6 @@ export class UserStore {
   }
 
   /**
-   * Update pipelines for a user.
-   */
-  async updatePipelines(userId: string, pipelines: import('../../types/pb/user').PipelineConfig[]): Promise<void> {
-    const firestorePipelines = pipelines.map(converters.mapPipelineToFirestore);
-    await this.collection().doc(userId).update({
-      pipelines: firestorePipelines
-    });
-  }
-
-  /**
-   * Add a pipeline to the user's list.
-   */
-  async addPipeline(userId: string, pipeline: import('../../types/pb/user').PipelineConfig): Promise<void> {
-    const firestorePipeline = converters.mapPipelineToFirestore(pipeline);
-    await this.collection().doc(userId).update({
-      pipelines: admin.firestore.FieldValue.arrayUnion(firestorePipeline)
-    });
-  }
-
-  /**
    * Create or overwrite a user document.
    */
   async create(userId: string, data: UserRecord): Promise<void> {
@@ -223,26 +203,6 @@ export class UserStore {
     // Use raw collection to bypass converter types for arrayUnion on specific field
     await this.db.collection('users').doc(userId).update({
       fcm_tokens: admin.firestore.FieldValue.arrayUnion(token)
-    });
-  }
-
-  /**
-   * Toggle the disabled state of a specific pipeline.
-   */
-  async togglePipelineDisabled(userId: string, pipelineId: string, disabled: boolean): Promise<void> {
-    const user = await this.get(userId);
-    if (!user) {
-      throw new Error('User not found');
-    }
-
-    const pipelineIndex = user.pipelines?.findIndex(p => p.id === pipelineId);
-    if (pipelineIndex === undefined || pipelineIndex === -1) {
-      throw new Error('Pipeline not found');
-    }
-
-    // Update the disabled field using Firestore field path notation
-    await this.db.collection('users').doc(userId).update({
-      [`pipelines.${pipelineIndex}.disabled`]: disabled
     });
   }
 }

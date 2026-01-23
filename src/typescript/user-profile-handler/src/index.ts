@@ -104,6 +104,9 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       throw new HttpError(404, 'User not found');
     }
 
+    // Query pipelines from sub-collection
+    const pipelines = await services.user.pipelineStore.list(userId);
+
     const profile = {
       userId: user.userId,
       createdAt: user.createdAt?.toISOString(),
@@ -112,7 +115,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       isAdmin: user.isAdmin || false,
       syncCountThisMonth: user.syncCountThisMonth || 0,
       integrations: getIntegrationsSummary(user as unknown as { userId?: string; integrations?: unknown;[key: string]: unknown }),
-      pipelines: (user.pipelines || []).map(mapPipelineToResponse)
+      pipelines: pipelines.map(mapPipelineToResponse)
     };
 
     return profile;

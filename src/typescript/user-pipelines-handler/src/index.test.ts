@@ -7,17 +7,17 @@ jest.mock('uuid', () => ({
 
 describe('user-pipelines-handler', () => {
   let req: any;
-
   let ctx: any;
-  let mockUserService: any;
+  let mockPipelineStore: any;
 
   beforeEach(() => {
-    mockUserService = {
+    mockPipelineStore = {
       get: jest.fn(),
-      addPipeline: jest.fn(),
-      replacePipeline: jest.fn(),
-      removePipeline: jest.fn(),
-      togglePipelineDisabled: jest.fn(),
+      list: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      delete: jest.fn(),
+      toggleDisabled: jest.fn(),
     };
 
     req = {
@@ -35,7 +35,9 @@ describe('user-pipelines-handler', () => {
         error: jest.fn(),
       },
       services: {
-        user: mockUserService,
+        user: {
+          pipelineStore: mockPipelineStore
+        },
       },
     };
   });
@@ -50,31 +52,55 @@ describe('user-pipelines-handler', () => {
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
     });
 
-    it('returns 404 if user not found', async () => {
-      mockUserService.get.mockResolvedValue(null);
-      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
-    });
-
     it('returns pipelines list', async () => {
-      mockUserService.get.mockResolvedValue({
-        pipelines: [
-          { id: 'p1', source: 'hevy', destinations: ['strava'] }
-        ]
-      });
+      mockPipelineStore.list.mockResolvedValue([
+        { id: 'p1', source: 'SOURCE_HEVY', destinations: [1] }
+      ]);
 
       const result = await handler(req, ctx);
 
+      expect(mockPipelineStore.list).toHaveBeenCalledWith('user-1');
       expect(result).toEqual({
-        pipelines: [{ id: 'p1', source: 'hevy', destinations: ['strava'] }]
+        pipelines: [{ id: 'p1', source: 'SOURCE_HEVY', destinations: [1] }]
       });
     });
 
     it('returns empty array if no pipelines', async () => {
-      mockUserService.get.mockResolvedValue({});
+      mockPipelineStore.list.mockResolvedValue([]);
 
       const result = await handler(req, ctx);
 
       expect(result).toEqual({ pipelines: [] });
+    });
+  });
+
+  describe('GET /:pipelineId', () => {
+    beforeEach(() => {
+      req.method = 'GET';
+      req.path = '/api/users/me/pipelines/pipeline-123';
+    });
+
+    it('returns pipeline if found', async () => {
+      mockPipelineStore.get.mockResolvedValue({
+        id: 'pipeline-123',
+        source: 'SOURCE_HEVY',
+        destinations: [1]
+      });
+
+      const result = await handler(req, ctx);
+
+      expect(mockPipelineStore.get).toHaveBeenCalledWith('user-1', 'pipeline-123');
+      expect(result).toEqual({
+        id: 'pipeline-123',
+        source: 'SOURCE_HEVY',
+        destinations: [1]
+      });
+    });
+
+    it('returns 404 if pipeline not found', async () => {
+      mockPipelineStore.get.mockResolvedValue(null);
+
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
   });
 
@@ -101,32 +127,21 @@ describe('user-pipelines-handler', () => {
     it('creates pipeline with generated ID', async () => {
       await handler(req, ctx);
 
-      // addPipeline(userId, name, source, enrichers, destinations)
-      expect(mockUserService.addPipeline).toHaveBeenCalledWith(
+      expect(mockPipelineStore.create).toHaveBeenCalledWith(
         'user-1',
-        '',
-        'hevy',
-        [],
-        ['strava']
-      );
-    });
-
-    it('uses provided ID if given', async () => {
-      req.body.id = 'custom-id';
-      await handler(req, ctx);
-
-      // Still uses name, source, enrichers, destinations (id is managed internally)
-      expect(mockUserService.addPipeline).toHaveBeenCalledWith(
-        'user-1',
-        '',
-        'hevy',
-        [],
-        ['strava']
+        expect.objectContaining({
+          id: expect.stringContaining('pipe_'),
+          name: '',
+          source: 'SOURCE_HEVY',
+          enrichers: [],
+          destinations: expect.any(Array),
+          disabled: false
+        })
       );
     });
   });
 
-  describe('DELETE /{pipelineId}', () => {
+  describe('DELETE /:pipelineId', () => {
     beforeEach(() => {
       req.method = 'DELETE';
       req.path = '/api/users/me/pipelines/pipeline-123';
@@ -135,11 +150,11 @@ describe('user-pipelines-handler', () => {
     it('deletes pipeline successfully', async () => {
       await handler(req, ctx);
 
-      expect(mockUserService.removePipeline).toHaveBeenCalledWith('user-1', 'pipeline-123');
+      expect(mockPipelineStore.delete).toHaveBeenCalledWith('user-1', 'pipeline-123');
     });
   });
 
-  describe('PATCH /{pipelineId}', () => {
+  describe('PATCH /:pipelineId', () => {
     beforeEach(() => {
       req.method = 'PATCH';
       req.path = '/api/users/me/pipelines/pipeline-123';
@@ -152,16 +167,13 @@ describe('user-pipelines-handler', () => {
     it('updates pipeline successfully', async () => {
       await handler(req, ctx);
 
-      // replacePipeline(userId, { pipelineId, name, source, enrichers, destinations })
-      expect(mockUserService.replacePipeline).toHaveBeenCalledWith(
+      expect(mockPipelineStore.create).toHaveBeenCalledWith(
         'user-1',
-        {
-          pipelineId: 'pipeline-123',
-          name: '',
-          source: 'fitbit',
-          enrichers: [],
-          destinations: ['strava', 'mock']
-        }
+        expect.objectContaining({
+          id: 'pipeline-123',
+          source: 'SOURCE_FITBIT',
+          destinations: expect.any(Array)
+        })
       );
     });
 
@@ -169,28 +181,28 @@ describe('user-pipelines-handler', () => {
       req.body = { disabled: true };
       await handler(req, ctx);
 
-      expect(mockUserService.togglePipelineDisabled).toHaveBeenCalledWith('user-1', 'pipeline-123', true);
-      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
+      expect(mockPipelineStore.toggleDisabled).toHaveBeenCalledWith('user-1', 'pipeline-123', true);
+      expect(mockPipelineStore.create).not.toHaveBeenCalled();
     });
 
     it('toggles disabled state to false when disabled=false is sent', async () => {
       req.body = { disabled: false };
       await handler(req, ctx);
 
-      expect(mockUserService.togglePipelineDisabled).toHaveBeenCalledWith('user-1', 'pipeline-123', false);
-      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
+      expect(mockPipelineStore.toggleDisabled).toHaveBeenCalledWith('user-1', 'pipeline-123', false);
+      expect(mockPipelineStore.create).not.toHaveBeenCalled();
     });
 
     it('returns 400 when source is missing for full update', async () => {
       req.body = { destinations: ['strava'] };
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
-      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
+      expect(mockPipelineStore.create).not.toHaveBeenCalled();
     });
 
     it('returns 400 when destinations is missing for full update', async () => {
       req.body = { source: 'fitbit' };
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
-      expect(mockUserService.replacePipeline).not.toHaveBeenCalled();
+      expect(mockPipelineStore.create).not.toHaveBeenCalled();
     });
   });
 });

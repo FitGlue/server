@@ -1,20 +1,25 @@
 {
-  "name": "@fitglue/google-oauth-handler",
+  "name": "google-oauth-handler",
   "version": "1.0.0",
   "description": "Google OAuth callback handler",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "test": "jest",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "gcp-build": "npm run build"
   },
   "dependencies": {
-    "@fitglue/shared": "*",
+    "@fitglue/shared": "^1.0.0",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
-    "@typescript-eslint/parser": "^8.53.1"
+    "@typescript-eslint/parser": "^8.53.1",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6"
   }
 }

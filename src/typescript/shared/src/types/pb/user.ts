@@ -135,8 +135,7 @@ export interface UserRecord {
   integrations?:
     | UserIntegrations
     | undefined;
-  /** Pipelines define the data flow: Source -> Enrichers -> Routing */
-  pipelines: PipelineConfig[];
+  /** Field 4 was pipelines (moved to sub-collection users/{userId}/pipelines) */
   fcmTokens: string[];
   /** Pricing tier */
   tier: UserTier;

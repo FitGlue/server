@@ -1,13 +1,18 @@
 {
   "compilerOptions": {
-    "target": "es2020",
     "module": "commonjs",
-    "rootDir": "./src",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
     "outDir": "dist",
+    "sourceMap": true,
     "strict": true,
+    "target": "es2017",
+    "moduleResolution": "node",
     "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "compileOnSave": true,
+  "include": [
+    "src"
+  ]
 }

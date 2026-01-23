@@ -152,6 +152,11 @@ function createMockContext(overrides: Partial<any> = {}): any {
       user: {
         get: jest.fn(),
         removePipeline: jest.fn(),
+        pipelineStore: {
+          list: jest.fn().mockResolvedValue([]),
+          delete: jest.fn().mockResolvedValue(undefined),
+          toggleDisabled: jest.fn().mockResolvedValue(undefined),
+        },
       },
       execution: {
         listExecutions: jest.fn().mockResolvedValue([]),
@@ -267,23 +272,28 @@ describe('admin-handler', () => {
 
       const result = await handler(req, ctx);
 
-      expect(result).toEqual(
-        expect.objectContaining({
-          data: expect.arrayContaining([
-            expect.objectContaining({
-              userId: 'user-1',
-              tier: 2, // USER_TIER_ATHLETE
-              integrations: ['strava'],
-              pipelineCount: 1,
-            }),
-          ]),
-          pagination: expect.objectContaining({
-            page: 1,
-            limit: 25,
-            total: 1,
-          }),
-        })
-      );
+      expect(result).toEqual({
+        data: [
+          {
+            userId: 'user-1',
+            createdAt: undefined,
+            tier: 2, // USER_TIER_ATHLETE
+            trialEndsAt: undefined,
+            isAdmin: false,
+            accessEnabled: false,
+            syncCountThisMonth: 5,
+            stripeCustomerId: null,
+            preventedSyncCount: 0,
+            integrations: ['strava'],
+          },
+        ],
+        pagination: {
+          page: 1,
+          limit: 25,
+          total: 1,
+          hasMore: false,
+        },
+      });
     });
   });
 
@@ -300,8 +310,10 @@ describe('admin-handler', () => {
         integrations: {
           hevy: { enabled: true, apiKey: 'super-secret-api-key-12345' },
         },
-        pipelines: [],
       });
+
+      // Mock pipelineStore.list to return empty array
+      ctx.services.user.pipelineStore.list.mockResolvedValue([]);
 
       // Mock pending inputs query (single where, filter in memory)
       (mockDb.collection as jest.Mock).mockReturnValue({
@@ -390,7 +402,7 @@ describe('admin-handler', () => {
 
       const result = await handler(req, ctx);
 
-      expect(ctx.services.user.removePipeline).toHaveBeenCalledWith('user-123', 'pipe-456');
+      expect(ctx.services.user.pipelineStore.delete).toHaveBeenCalledWith('user-123', 'pipe-456');
       expect(result).toEqual({ success: true });
     });
   });

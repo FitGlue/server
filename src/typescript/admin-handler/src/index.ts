@@ -118,7 +118,6 @@ async function handleListUsers(match: RouteMatch) {
       stripeCustomerId: data.stripeCustomerId || null,
       preventedSyncCount: data.preventedSyncCount || 0,
       integrations,
-      pipelineCount: data.pipelines?.length || 0,
     };
   });
 
@@ -215,7 +214,8 @@ async function handleGetUserDetails(match: RouteMatch, ctx: FrameworkContext) {
 
   const integrations = buildMaskedIntegrations(user.integrations as Record<string, unknown>);
 
-  const pipelines = (user.pipelines || []).map(p => ({
+  // Query pipelines from sub-collection
+  const pipelines = (await services.user.pipelineStore.list(targetUserId)).map(p => ({
     id: p.id,
     name: p.name || 'Unnamed Pipeline',
     source: p.source,
@@ -288,20 +288,8 @@ async function handleUpdatePipeline(match: RouteMatch, req: { body: { disabled?:
     throw new HttpError(400, 'Missing disabled field in request body');
   }
 
-  const user = await services.user.get(targetUserId);
-  if (!user) {
-    throw new HttpError(404, 'User not found');
-  }
-
-  const pipelineIndex = user.pipelines?.findIndex(p => p.id === pipelineId);
-  if (pipelineIndex === undefined || pipelineIndex === -1) {
-    throw new HttpError(404, 'Pipeline not found');
-  }
-
-  // Update the disabled field using Firestore field path notation
-  await db.collection('users').doc(targetUserId).update({
-    [`pipelines.${pipelineIndex}.disabled`]: disabled
-  });
+  // Use PipelineStore to toggle disabled state
+  await services.user.pipelineStore.toggleDisabled(targetUserId, pipelineId, disabled);
 
   logger.info('Admin toggled pipeline disabled state', {
     adminUserId,
@@ -317,7 +305,7 @@ async function handleDeletePipeline(match: RouteMatch, adminUserId: string, ctx:
   const targetUserId = match.params.id;
   const pipelineId = match.params.pipelineId;
 
-  await services.user.removePipeline(targetUserId, pipelineId);
+  await services.user.pipelineStore.delete(targetUserId, pipelineId);
   logger.info('Admin removed pipeline', { adminUserId, targetUserId, pipelineId });
   return { success: true };
 }

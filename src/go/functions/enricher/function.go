@@ -292,6 +292,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 		return map[string]interface{}{
 			"status":              "SKIPPED",
 			"reason":              "No enriched event created - possibly halted by a provider",
+			"published_events":    []interface{}{},
 			"provider_executions": processResult.ProviderExecutions,
 		}, nil
 	}

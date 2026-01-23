@@ -160,8 +160,20 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Query pipelines from sub-collection
+	pipelines, err := svc.DB.GetUserPipelines(ctx, userId)
+	if err != nil {
+		slog.Error("Failed to get user pipelines", "error", err, "user_id", userId)
+		w.WriteHeader(http.StatusInternalServerError)
+		json.NewEncoder(w).Encode(ParseFitFileResponse{
+			Success: false,
+			Error:   "Internal server error",
+		})
+		return
+	}
+
 	hasPipeline := false
-	for _, p := range user.Pipelines {
+	for _, p := range pipelines {
 		if p.Source == "SOURCE_FILE_UPLOAD" {
 			hasPipeline = true
 			break

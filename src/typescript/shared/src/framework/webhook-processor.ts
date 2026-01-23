@@ -94,7 +94,8 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     // Bail early if user has no pipeline configured for this source.
     // This prevents phantom pipeline executions and the legacy fallback in the enricher.
     const sourceEnumName = ActivitySource[connector.activitySource]; // e.g., "SOURCE_HEVY"
-    const hasPipelineForSource = user.pipelines?.some(p => p.source === sourceEnumName) ?? false;
+    const userPipelines = await ctx.services.user.pipelineStore.list(userId);
+    const hasPipelineForSource = userPipelines.some(p => p.source === sourceEnumName);
     if (!hasPipelineForSource) {
       logger.info(`User ${userId} has no pipeline configured for source ${sourceEnumName}. Skipping.`);
       // res.status(200).send('No pipeline configured for this source');

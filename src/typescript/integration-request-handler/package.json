@@ -6,15 +6,21 @@
     "build": "tsc",
     "lint": "eslint src --ext .ts",
     "test": "jest",
-    "pack": "npm run build && cp package.json dist/"
+    "pack": "npm run build && cp package.json dist/",
+    "gcp-build": "npm run build"
   },
   "dependencies": {
     "@google-cloud/functions-framework": "^3.4.2",
     "@typescript-eslint/eslint-plugin": "^8.53.1",
     "@typescript-eslint/parser": "^8.53.1",
-    "firebase-admin": "^13.0.2"
+    "firebase-admin": "^13.0.2",
+    "@fitglue/shared": "^1.0.0",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "eslint": "^8.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6"
   }
 }

@@ -10,7 +10,7 @@ describe('createAuthenticatedClient', () => {
   let mockUserService: jest.Mocked<UserService>;
 
   beforeEach(() => {
-    mockUserService = new UserService(null as any, null as any) as any;
+    mockUserService = new UserService(null as any, null as any, null as any) as any;
   });
 
   it('should create a client', () => {

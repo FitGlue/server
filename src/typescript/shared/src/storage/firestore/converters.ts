@@ -1,10 +1,9 @@
 import { FirestoreDataConverter, QueryDocumentSnapshot, Timestamp } from 'firebase-admin/firestore';
-import { UserRecord, UserTier, UserIntegrations, PipelineConfig, ProcessedActivityRecord } from '../../types/pb/user';
+import { UserRecord, UserTier, UserIntegrations, ProcessedActivityRecord } from '../../types/pb/user';
 import { WaitlistEntry } from '../../types/pb/waitlist';
 import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
 import { PendingInput, PendingInput_Status } from '../../types/pb/pending_input';
-import { Destination } from '../../types/pb/events';
 import { INTEGRATIONS, isOAuthIntegration } from '../../types/integrations';
 
 
@@ -269,41 +268,7 @@ const mapUserIntegrationsFromFirestore = (data: Record<string, unknown> | undefi
   return out as UserIntegrations;
 };
 
-// Pipelines Mapping
-
-export const mapPipelineToFirestore = (p: PipelineConfig): Record<string, unknown> => ({
-  id: p.id,
-  name: p.name || '',
-  source: p.source,
-  destinations: p.destinations, // Stored as numbers (enum values)
-  enrichers: p.enrichers?.map(e => ({
-    provider_type: e.providerType,
-    typed_config: e.typedConfig
-  })),
-  disabled: p.disabled || false
-});
-
-export const mapPipelineFromFirestore = (p: Record<string, unknown>): PipelineConfig => ({
-  id: p.id as string,
-  name: (p.name as string) || '',
-  source: p.source as string,
-  destinations: ((p.destinations as unknown[]) || []).map(d => {
-    if (typeof d === 'number') return d as Destination;
-    if (typeof d === 'string') {
-      // Legacy string support
-      if (d === 'strava' || d === 'DESTINATION_STRAVA') return Destination.DESTINATION_STRAVA;
-      if (d === 'showcase' || d === 'DESTINATION_SHOWCASE') return Destination.DESTINATION_SHOWCASE;
-      if (d === 'mock' || d === 'DESTINATION_MOCK') return Destination.DESTINATION_MOCK;
-    }
-    return Destination.DESTINATION_UNSPECIFIED;
-  }),
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  enrichers: ((p.enrichers as any[]) || []).map((e: any) => ({
-    providerType: e.provider_type || e.providerType,
-    typedConfig: e.typed_config || e.typedConfig || {}
-  })),
-  disabled: (p.disabled as boolean) || false
-});
+// Pipeline converters moved to pipeline-store.ts
 
 // Helper for partial execution updates
 export const mapExecutionPartialToFirestore = (data: Partial<ExecutionRecord>): Record<string, unknown> => {
@@ -331,7 +296,6 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
     if (model.userId !== undefined) data.user_id = model.userId;
     if (model.createdAt !== undefined) data.created_at = model.createdAt;
     if (model.integrations !== undefined) data.integrations = mapUserIntegrationsToFirestore(model.integrations);
-    if (model.pipelines !== undefined) data.pipelines = model.pipelines?.map(mapPipelineToFirestore);
     if (model.fcmTokens !== undefined) data.fcm_tokens = model.fcmTokens;
     // Tier management fields
     if (model.tier !== undefined) {
@@ -353,29 +317,10 @@ export const userConverter: FirestoreDataConverter<UserRecord> = {
   fromFirestore(snapshot: QueryDocumentSnapshot): UserRecord {
     const data = snapshot.data();
 
-    // Normalize pipelines: handle both legacy object format and current array format
-    const normalizePipelines = (rawPipelines: unknown): Record<string, unknown>[] => {
-      if (!rawPipelines) return [];
-
-      // If it's already an array, return it
-      if (Array.isArray(rawPipelines)) {
-        return rawPipelines;
-      }
-
-      // If it's an object (legacy format), convert to array
-      if (typeof rawPipelines === 'object' && rawPipelines !== null) {
-        return Object.values(rawPipelines);
-      }
-
-      // Fallback to empty array for any other type
-      return [];
-    };
-
     return {
       userId: data.user_id || data.userId,
       createdAt: toDate(data.created_at || data.createdAt),
       integrations: mapUserIntegrationsFromFirestore(data.integrations),
-      pipelines: normalizePipelines(data.pipelines).map(mapPipelineFromFirestore),
       fcmTokens: data.fcm_tokens || data.fcmTokens || [],
       // Tier management fields (with backwards-compatible defaults)
       tier: ((): UserTier => {

@@ -493,7 +493,14 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	var pipelines []configuredPipeline
 	sourceName := source.String()
 
-	for _, p := range userRec.Pipelines {
+	// Query pipelines from sub-collection
+	userPipelines, err := o.database.GetUserPipelines(context.Background(), userRec.UserId)
+	if err != nil {
+		slog.Error("Failed to get user pipelines", "error", err, "user_id", userRec.UserId)
+		return pipelines
+	}
+
+	for _, p := range userPipelines {
 		// Skip disabled pipelines
 		if p.Disabled {
 			slog.Info("Skipping disabled pipeline", "id", p.Id, "name", p.Name, "source", p.Source)

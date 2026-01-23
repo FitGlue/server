@@ -173,6 +173,13 @@ func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, rec
 	return nil
 }
 
+// --- Pipelines (Sub-collection) ---
+
+func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+	// No-op for tests by default - return empty slice
+	return []*pb.PipelineConfig{}, nil
+}
+
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)

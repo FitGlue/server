@@ -47,19 +47,6 @@ func TestEnrichActivity(t *testing.T) {
 		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
 			return &pb.UserRecord{
 				UserId: id,
-				Pipelines: []*pb.PipelineConfig{
-					{
-						Id:     "pipeline-1",
-						Source: "SOURCE_HEVY",
-						Enrichers: []*pb.EnricherConfig{
-							{
-								ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
-								TypedConfig:  map[string]string{"test_key": "test_value"},
-							},
-						},
-						Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
-					},
-				},
 			}, nil
 		},
 	}

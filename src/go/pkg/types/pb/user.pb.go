@@ -486,9 +486,8 @@ type UserRecord struct {
 	UserId       string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
 	CreatedAt    *timestamp.Timestamp   `protobuf:"bytes,2,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
 	Integrations *UserIntegrations      `protobuf:"bytes,3,opt,name=integrations,proto3" json:"integrations,omitempty"`
-	// Pipelines define the data flow: Source -> Enrichers -> Routing
-	Pipelines []*PipelineConfig `protobuf:"bytes,4,rep,name=pipelines,proto3" json:"pipelines,omitempty"`
-	FcmTokens []string          `protobuf:"bytes,5,rep,name=fcm_tokens,json=fcmTokens,proto3" json:"fcm_tokens,omitempty"`
+	// Field 4 was pipelines (moved to sub-collection users/{userId}/pipelines)
+	FcmTokens []string `protobuf:"bytes,5,rep,name=fcm_tokens,json=fcmTokens,proto3" json:"fcm_tokens,omitempty"`
 	// Pricing tier
 	Tier UserTier `protobuf:"varint,6,opt,name=tier,proto3,enum=fitglue.UserTier" json:"tier,omitempty"`
 	// Athlete trial end date (null = no trial, set to now+30d on signup)
@@ -555,13 +554,6 @@ func (x *UserRecord) GetCreatedAt() *timestamp.Timestamp {
 func (x *UserRecord) GetIntegrations() *UserIntegrations {
 	if x != nil {
 		return x.Integrations
-	}
-	return nil
-}
-
-func (x *UserRecord) GetPipelines() []*PipelineConfig {
-	if x != nil {
-		return x.Pipelines
 	}
 	return nil
 }
@@ -2531,14 +2523,13 @@ var File_user_proto protoreflect.FileDescriptor
 const file_user_proto_rawDesc = "" +
 	"\n" +
 	"\n" +
-	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\x1a\fevents.proto\"\xfc\x04\n" +
+	"user.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\x1a\fevents.proto\"\xc5\x04\n" +
 	"\n" +
 	"UserRecord\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x129\n" +
 	"\n" +
 	"created_at\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x12=\n" +
-	"\fintegrations\x18\x03 \x01(\v2\x19.fitglue.UserIntegrationsR\fintegrations\x125\n" +
-	"\tpipelines\x18\x04 \x03(\v2\x17.fitglue.PipelineConfigR\tpipelines\x12\x1d\n" +
+	"\fintegrations\x18\x03 \x01(\v2\x19.fitglue.UserIntegrationsR\fintegrations\x12\x1d\n" +
 	"\n" +
 	"fcm_tokens\x18\x05 \x03(\tR\tfcmTokens\x12%\n" +
 	"\x04tier\x18\x06 \x01(\x0e2\x11.fitglue.UserTierR\x04tier\x12>\n" +
@@ -2895,81 +2886,80 @@ var file_user_proto_goTypes = []any{
 var file_user_proto_depIdxs = []int32{
 	32, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
 	9,  // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
-	8,  // 2: fitglue.UserRecord.pipelines:type_name -> fitglue.PipelineConfig
-	0,  // 3: fitglue.UserRecord.tier:type_name -> fitglue.UserTier
-	32, // 4: fitglue.UserRecord.trial_ends_at:type_name -> google.protobuf.Timestamp
-	32, // 5: fitglue.UserRecord.sync_count_reset_at:type_name -> google.protobuf.Timestamp
-	14, // 6: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
-	33, // 7: fitglue.PipelineConfig.destinations:type_name -> fitglue.events.Destination
-	11, // 8: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
-	12, // 9: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
-	15, // 10: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
-	10, // 11: fitglue.UserIntegrations.mock:type_name -> fitglue.MockIntegration
-	16, // 12: fitglue.UserIntegrations.parkrun:type_name -> fitglue.ParkrunIntegration
-	17, // 13: fitglue.UserIntegrations.spotify:type_name -> fitglue.SpotifyIntegration
-	18, // 14: fitglue.UserIntegrations.trainingpeaks:type_name -> fitglue.TrainingPeaksIntegration
-	19, // 15: fitglue.UserIntegrations.intervals:type_name -> fitglue.IntervalsIntegration
-	21, // 16: fitglue.UserIntegrations.google:type_name -> fitglue.GoogleIntegration
-	20, // 17: fitglue.UserIntegrations.oura:type_name -> fitglue.OuraIntegration
-	22, // 18: fitglue.UserIntegrations.polar:type_name -> fitglue.PolarIntegration
-	23, // 19: fitglue.UserIntegrations.wahoo:type_name -> fitglue.WahooIntegration
-	32, // 20: fitglue.MockIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 21: fitglue.MockIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 22: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 23: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 24: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 25: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 26: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	14, // 27: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
-	1,  // 28: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
-	29, // 29: fitglue.EnricherConfig.typed_config:type_name -> fitglue.EnricherConfig.TypedConfigEntry
-	32, // 30: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 31: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 32: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 33: fitglue.ParkrunIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 34: fitglue.ParkrunIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 35: fitglue.SpotifyIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 36: fitglue.SpotifyIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 37: fitglue.SpotifyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 38: fitglue.TrainingPeaksIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 39: fitglue.TrainingPeaksIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 40: fitglue.TrainingPeaksIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 41: fitglue.IntervalsIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 42: fitglue.IntervalsIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 43: fitglue.OuraIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 44: fitglue.OuraIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 45: fitglue.OuraIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 46: fitglue.GoogleIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 47: fitglue.GoogleIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 48: fitglue.GoogleIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 49: fitglue.PolarIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 50: fitglue.PolarIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 51: fitglue.PolarIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 52: fitglue.WahooIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	32, // 53: fitglue.WahooIntegration.created_at:type_name -> google.protobuf.Timestamp
-	32, // 54: fitglue.WahooIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	32, // 55: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
-	32, // 56: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
-	32, // 57: fitglue.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
-	34, // 58: fitglue.PersonalRecord.activity_type:type_name -> fitglue.ActivityType
-	34, // 59: fitglue.SynchronizedActivity.type:type_name -> fitglue.ActivityType
-	32, // 60: fitglue.SynchronizedActivity.start_time:type_name -> google.protobuf.Timestamp
-	30, // 61: fitglue.SynchronizedActivity.destinations:type_name -> fitglue.SynchronizedActivity.DestinationsEntry
-	32, // 62: fitglue.SynchronizedActivity.synced_at:type_name -> google.protobuf.Timestamp
-	6,  // 63: fitglue.SynchronizedActivity.parkrun_results_state:type_name -> fitglue.ParkrunResultsState
-	32, // 64: fitglue.SynchronizedActivity.parkrun_polling_deadline:type_name -> google.protobuf.Timestamp
-	34, // 65: fitglue.ShowcasedActivity.activity_type:type_name -> fitglue.ActivityType
-	35, // 66: fitglue.ShowcasedActivity.source:type_name -> fitglue.ActivitySource
-	32, // 67: fitglue.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
-	36, // 68: fitglue.ShowcasedActivity.activity_data:type_name -> fitglue.StandardizedActivity
-	31, // 69: fitglue.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.ShowcasedActivity.EnrichmentMetadataEntry
-	32, // 70: fitglue.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
-	32, // 71: fitglue.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
-	72, // [72:72] is the sub-list for method output_type
-	72, // [72:72] is the sub-list for method input_type
-	72, // [72:72] is the sub-list for extension type_name
-	72, // [72:72] is the sub-list for extension extendee
-	0,  // [0:72] is the sub-list for field type_name
+	0,  // 2: fitglue.UserRecord.tier:type_name -> fitglue.UserTier
+	32, // 3: fitglue.UserRecord.trial_ends_at:type_name -> google.protobuf.Timestamp
+	32, // 4: fitglue.UserRecord.sync_count_reset_at:type_name -> google.protobuf.Timestamp
+	14, // 5: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
+	33, // 6: fitglue.PipelineConfig.destinations:type_name -> fitglue.events.Destination
+	11, // 7: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
+	12, // 8: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
+	15, // 9: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
+	10, // 10: fitglue.UserIntegrations.mock:type_name -> fitglue.MockIntegration
+	16, // 11: fitglue.UserIntegrations.parkrun:type_name -> fitglue.ParkrunIntegration
+	17, // 12: fitglue.UserIntegrations.spotify:type_name -> fitglue.SpotifyIntegration
+	18, // 13: fitglue.UserIntegrations.trainingpeaks:type_name -> fitglue.TrainingPeaksIntegration
+	19, // 14: fitglue.UserIntegrations.intervals:type_name -> fitglue.IntervalsIntegration
+	21, // 15: fitglue.UserIntegrations.google:type_name -> fitglue.GoogleIntegration
+	20, // 16: fitglue.UserIntegrations.oura:type_name -> fitglue.OuraIntegration
+	22, // 17: fitglue.UserIntegrations.polar:type_name -> fitglue.PolarIntegration
+	23, // 18: fitglue.UserIntegrations.wahoo:type_name -> fitglue.WahooIntegration
+	32, // 19: fitglue.MockIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 20: fitglue.MockIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 21: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 22: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 23: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 24: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 25: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	14, // 26: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
+	1,  // 27: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
+	29, // 28: fitglue.EnricherConfig.typed_config:type_name -> fitglue.EnricherConfig.TypedConfigEntry
+	32, // 29: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 30: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 31: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 32: fitglue.ParkrunIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 33: fitglue.ParkrunIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 34: fitglue.SpotifyIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 35: fitglue.SpotifyIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 36: fitglue.SpotifyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 37: fitglue.TrainingPeaksIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 38: fitglue.TrainingPeaksIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 39: fitglue.TrainingPeaksIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 40: fitglue.IntervalsIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 41: fitglue.IntervalsIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 42: fitglue.OuraIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 43: fitglue.OuraIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 44: fitglue.OuraIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 45: fitglue.GoogleIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 46: fitglue.GoogleIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 47: fitglue.GoogleIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 48: fitglue.PolarIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 49: fitglue.PolarIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 50: fitglue.PolarIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 51: fitglue.WahooIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	32, // 52: fitglue.WahooIntegration.created_at:type_name -> google.protobuf.Timestamp
+	32, // 53: fitglue.WahooIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	32, // 54: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
+	32, // 55: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
+	32, // 56: fitglue.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
+	34, // 57: fitglue.PersonalRecord.activity_type:type_name -> fitglue.ActivityType
+	34, // 58: fitglue.SynchronizedActivity.type:type_name -> fitglue.ActivityType
+	32, // 59: fitglue.SynchronizedActivity.start_time:type_name -> google.protobuf.Timestamp
+	30, // 60: fitglue.SynchronizedActivity.destinations:type_name -> fitglue.SynchronizedActivity.DestinationsEntry
+	32, // 61: fitglue.SynchronizedActivity.synced_at:type_name -> google.protobuf.Timestamp
+	6,  // 62: fitglue.SynchronizedActivity.parkrun_results_state:type_name -> fitglue.ParkrunResultsState
+	32, // 63: fitglue.SynchronizedActivity.parkrun_polling_deadline:type_name -> google.protobuf.Timestamp
+	34, // 64: fitglue.ShowcasedActivity.activity_type:type_name -> fitglue.ActivityType
+	35, // 65: fitglue.ShowcasedActivity.source:type_name -> fitglue.ActivitySource
+	32, // 66: fitglue.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
+	36, // 67: fitglue.ShowcasedActivity.activity_data:type_name -> fitglue.StandardizedActivity
+	31, // 68: fitglue.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.ShowcasedActivity.EnrichmentMetadataEntry
+	32, // 69: fitglue.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
+	32, // 70: fitglue.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
+	71, // [71:71] is the sub-list for method output_type
+	71, // [71:71] is the sub-list for method input_type
+	71, // [71:71] is the sub-list for extension type_name
+	71, // [71:71] is the sub-list for extension extendee
+	0,  // [0:71] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }

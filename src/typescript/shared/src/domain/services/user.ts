@@ -1,7 +1,6 @@
-import { UserStore, ActivityStore } from '../../storage/firestore';
-import { UserRecord, UserIntegrations, EnricherConfig, ProcessedActivityRecord, UserTier } from '../../types/pb/user';
+import { UserStore, ActivityStore, PipelineStore } from '../../storage/firestore';
+import { UserRecord, UserIntegrations, ProcessedActivityRecord, UserTier } from '../../types/pb/user';
 import { FirestoreTokenSource, OAuthProvider } from '../../infrastructure/oauth/token-source';
-import { Destination } from '../../types/pb/events';
 
 /**
  * UserService provides business logic for user operations.
@@ -10,7 +9,8 @@ export class UserService {
 
     constructor(
         private userStore: UserStore,
-        private activityStore: ActivityStore
+        private activityStore: ActivityStore,
+        public readonly pipelineStore: PipelineStore
     ) { }
 
     /**
@@ -120,7 +120,6 @@ export class UserService {
             userId: userId,
             createdAt: now,
             integrations: {} as UserIntegrations,
-            pipelines: [],
             fcmTokens: [],
             // Initialize with 30-day Pro trial
             tier: UserTier.USER_TIER_ATHLETE,
@@ -226,88 +225,6 @@ export class UserService {
         return this.activityStore.checkDestinationExists(userId, destinationKey, externalId);
     }
 
-    // Pipeline methods (legacy support)
-    async addPipeline(userId: string, name: string, source: string, enrichers: EnricherConfig[], destinations: string[]): Promise<string> {
-        const id = `pipe_${Date.now()}`;
-        const normalizedSource = this.normalizeSource(source);
-        const destEnums = this.mapDestinations(destinations);
-        await this.userStore.addPipeline(userId, {
-            id, name, source: normalizedSource, enrichers, destinations: destEnums, disabled: false
-        });
-        return id;
-    }
 
-    async removePipeline(userId: string, pipelineId: string): Promise<void> {
-        const user = await this.get(userId);
-        if (!user || !user.pipelines) return;
-        const newPipelines = user.pipelines.filter(p => p.id !== pipelineId);
-        await this.userStore.updatePipelines(userId, newPipelines);
-    }
-
-    async replacePipeline(
-        userId: string,
-        options: { pipelineId: string; name: string; source: string; enrichers: EnricherConfig[]; destinations: string[] }
-    ): Promise<void> {
-        const { pipelineId, name, source, enrichers, destinations } = options;
-        await this.removePipeline(userId, pipelineId);
-        const normalizedSource = this.normalizeSource(source);
-        const destEnums = this.mapDestinations(destinations);
-        await this.userStore.addPipeline(userId, {
-            id: pipelineId, name, source: normalizedSource, enrichers, destinations: destEnums, disabled: false
-        });
-    }
-
-    private mapDestinations(dests: (string | number)[]): Destination[] {
-        return dests.map(d => {
-            // If already a number, validate and return as Destination
-            if (typeof d === 'number') {
-                return Object.values(Destination).includes(d) ? d : Destination.DESTINATION_UNSPECIFIED;
-            }
-
-            // String lookup: check against proto enum names (e.g., 'DESTINATION_STRAVA' or just 'strava')
-            const normalized = d.toUpperCase();
-            const enumKey = normalized.startsWith('DESTINATION_') ? normalized : `DESTINATION_${normalized}`;
-
-            // Find matching enum value from Destination enum
-            const enumValue = Destination[enumKey as keyof typeof Destination];
-            if (typeof enumValue === 'number') {
-                return enumValue;
-            }
-
-            return Destination.DESTINATION_UNSPECIFIED;
-        });
-    }
-
-    /**
-     * Normalize source ID from registry format to protobuf enum string format.
-     * Maps registry IDs (e.g., 'hevy') to Go-expected format (e.g., 'SOURCE_HEVY').
-     * This is the source of truth for source ID mappings - matches registry.ts source IDs.
-     */
-    private normalizeSource(source: string): string {
-        // Mapping from registry IDs to protobuf enum strings
-        const sourceMap: Record<string, string> = {
-            'hevy': 'SOURCE_HEVY',
-            'fitbit': 'SOURCE_FITBIT',
-            'mock': 'SOURCE_TEST',
-            'apple-health': 'SOURCE_APPLE_HEALTH',
-            'health-connect': 'SOURCE_HEALTH_CONNECT',
-            'file_upload': 'SOURCE_FILE_UPLOAD',
-        };
-
-        // If already in protobuf format, return as-is
-        if (source.startsWith('SOURCE_')) {
-            return source;
-        }
-
-        // Map from registry ID to protobuf format
-        return sourceMap[source.toLowerCase()] ?? `SOURCE_${source.toUpperCase()}`;
-    }
-
-    /**
-     * Toggle the disabled state of a pipeline.
-     */
-    async togglePipelineDisabled(userId: string, pipelineId: string, disabled: boolean): Promise<void> {
-        return this.userStore.togglePipelineDisabled(userId, pipelineId, disabled);
-    }
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import * as admin from 'firebase-admin';
 import { FrameworkResponse, HttpError, ShowcaseStore, UserTier } from '@fitglue/shared';
 

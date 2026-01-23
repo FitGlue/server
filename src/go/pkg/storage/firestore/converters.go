@@ -98,25 +98,7 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 		m["fcm_tokens"] = u.FcmTokens
 	}
 
-	if len(u.Pipelines) > 0 {
-		pipelines := make([]map[string]interface{}, len(u.Pipelines))
-		for i, p := range u.Pipelines {
-			enrichers := make([]map[string]interface{}, len(p.Enrichers))
-			for j, e := range p.Enrichers {
-				enrichers[j] = map[string]interface{}{
-					"provider_type": int32(e.ProviderType),
-					"typed_config":  e.TypedConfig,
-				}
-			}
-			pipelines[i] = map[string]interface{}{
-				"id":           p.Id,
-				"source":       p.Source,
-				"destinations": p.Destinations,
-				"enrichers":    enrichers,
-			}
-		}
-		m["pipelines"] = pipelines
-	}
+	// Pipelines moved to sub-collection users/{userId}/pipelines
 
 	// Tier management fields
 	if u.Tier == pb.UserTier_USER_TIER_ATHLETE {
@@ -269,81 +251,100 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 		u.FcmTokens = tokens
 	}
 
-	if pList, ok := m["pipelines"].([]interface{}); ok {
-		u.Pipelines = make([]*pb.PipelineConfig, len(pList))
-		for i, pRaw := range pList {
-			if pMap, ok := pRaw.(map[string]interface{}); ok {
-				// Enrichers
-				var enrichers []*pb.EnricherConfig
-				if eList, ok := pMap["enrichers"].([]interface{}); ok {
-					enrichers = make([]*pb.EnricherConfig, len(eList))
-					for j, eRaw := range eList {
-						if eMap, ok := eRaw.(map[string]interface{}); ok {
-							// TypedConfig
-							typedConfig := make(map[string]string)
-							if cMap, ok := eMap["typed_config"].(map[string]interface{}); ok {
-								for k, v := range cMap {
-									if s, ok := v.(string); ok {
-										typedConfig[k] = s
-									}
-								}
-							}
+	// Pipelines moved to sub-collection users/{userId}/pipelines
 
-							ptype := pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
-							if v, ok := eMap["provider_type"]; ok {
-								// int conversion
-								switch n := v.(type) {
-								case int64:
-									ptype = pb.EnricherProviderType(n)
-								case int:
-									ptype = pb.EnricherProviderType(n)
-								case float64:
-									ptype = pb.EnricherProviderType(int32(n))
-								}
-							}
+	return u
+}
 
-							enrichers[j] = &pb.EnricherConfig{
-								ProviderType: ptype,
-								TypedConfig:  typedConfig,
-							}
+// --- PipelineConfig Converters ---
+
+func PipelineToFirestore(p *pb.PipelineConfig) map[string]interface{} {
+	enrichers := make([]map[string]interface{}, len(p.Enrichers))
+	for i, e := range p.Enrichers {
+		enrichers[i] = map[string]interface{}{
+			"provider_type": int32(e.ProviderType),
+			"typed_config":  e.TypedConfig,
+		}
+	}
+
+	return map[string]interface{}{
+		"id":           p.Id,
+		"name":         p.Name,
+		"source":       p.Source,
+		"destinations": p.Destinations,
+		"enrichers":    enrichers,
+		"disabled":     p.Disabled,
+	}
+}
+
+func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
+	// Enrichers
+	var enrichers []*pb.EnricherConfig
+	if eList, ok := m["enrichers"].([]interface{}); ok {
+		enrichers = make([]*pb.EnricherConfig, len(eList))
+		for j, eRaw := range eList {
+			if eMap, ok := eRaw.(map[string]interface{}); ok {
+				// TypedConfig
+				typedConfig := make(map[string]string)
+				if cMap, ok := eMap["typed_config"].(map[string]interface{}); ok {
+					for k, v := range cMap {
+						if s, ok := v.(string); ok {
+							typedConfig[k] = s
 						}
 					}
 				}
 
-				// Destinations - handle both legacy strings and new enum ints
-				var dests []pb.Destination
-				if dList, ok := pMap["destinations"].([]interface{}); ok {
-					for _, d := range dList {
-						switch val := d.(type) {
-						case int64:
-							dests = append(dests, pb.Destination(val))
-						case int:
-							dests = append(dests, pb.Destination(val))
-						case float64:
-							dests = append(dests, pb.Destination(int32(val)))
-						case string:
-							// Legacy string support - map known strings to enums
-							switch val {
-							case "strava", "DESTINATION_STRAVA":
-								dests = append(dests, pb.Destination_DESTINATION_STRAVA)
-							case "mock", "DESTINATION_MOCK":
-								dests = append(dests, pb.Destination_DESTINATION_MOCK)
-							}
-						}
+				ptype := pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
+				if v, ok := eMap["provider_type"]; ok {
+					switch n := v.(type) {
+					case int64:
+						ptype = pb.EnricherProviderType(n)
+					case int:
+						ptype = pb.EnricherProviderType(n)
+					case float64:
+						ptype = pb.EnricherProviderType(int32(n))
 					}
 				}
 
-				u.Pipelines[i] = &pb.PipelineConfig{
-					Id:           getString(pMap, "id"),
-					Source:       getString(pMap, "source"),
-					Enrichers:    enrichers,
-					Destinations: dests,
+				enrichers[j] = &pb.EnricherConfig{
+					ProviderType: ptype,
+					TypedConfig:  typedConfig,
 				}
 			}
 		}
 	}
 
-	return u
+	// Destinations - handle both legacy strings and new enum ints
+	var dests []pb.Destination
+	if dList, ok := m["destinations"].([]interface{}); ok {
+		for _, d := range dList {
+			switch val := d.(type) {
+			case int64:
+				dests = append(dests, pb.Destination(val))
+			case int:
+				dests = append(dests, pb.Destination(val))
+			case float64:
+				dests = append(dests, pb.Destination(int32(val)))
+			case string:
+				// Legacy string support
+				switch val {
+				case "strava", "DESTINATION_STRAVA":
+					dests = append(dests, pb.Destination_DESTINATION_STRAVA)
+				case "mock", "DESTINATION_MOCK":
+					dests = append(dests, pb.Destination_DESTINATION_MOCK)
+				}
+			}
+		}
+	}
+
+	return &pb.PipelineConfig{
+		Id:           getString(m, "id"),
+		Name:         getString(m, "name"),
+		Source:       getString(m, "source"),
+		Enrichers:    enrichers,
+		Destinations: dests,
+		Disabled:     getBool(m, "disabled"),
+	}
 }
 
 // --- Execution Record ---

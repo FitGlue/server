@@ -40,7 +40,10 @@ describe('user-profile-handler', () => {
   beforeEach(() => {
     mockUserService = {
       get: jest.fn(),
-      deleteUser: jest.fn()
+      deleteUser: jest.fn(),
+      pipelineStore: {
+        list: jest.fn().mockResolvedValue([])
+      }
     };
     mockAuthorizationService = {
       requireAdmin: jest.fn(),
@@ -93,11 +96,12 @@ describe('user-profile-handler', () => {
           strava: { enabled: true, athleteId: 123456 },
           fitbit: { enabled: false },
           hevy: { enabled: true, apiKey: 'abc123xyz789' }
-        },
-        pipelines: [
-          { id: 'p1', source: 'hevy', enrichers: [], destinations: [1] }
-        ]
+        }
       });
+
+      mockUserService.pipelineStore.list.mockResolvedValue([
+        { id: 'p1', source: 'hevy', enrichers: [], destinations: [1] }
+      ]);
 
       const result: any = await handler(req, ctx);
 

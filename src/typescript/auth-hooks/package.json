@@ -7,14 +7,16 @@
     "watch": "tsc -w",
     "clean": "rm -rf build",
     "lint": "eslint src --ext .ts",
-    "test": "jest"
+    "test": "jest",
+    "gcp-build": "npm run build"
   },
   "dependencies": {
     "@fitglue/shared": "^1.0.0",
     "@google-cloud/functions-framework": "^3.3.0",
     "cloudevents": "^8.0.0",
     "firebase-admin": "^13.6.0",
-    "firebase-functions": "^6.0.0"
+    "firebase-functions": "^6.0.0",
+    "typescript": "^5.0.0"
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",

@@ -314,3 +314,25 @@ func isNotFoundError(err error) bool {
 	errStr := err.Error()
 	return strings.Contains(errStr, "NotFound") || strings.Contains(errStr, "not found")
 }
+
+// --- Pipelines (Sub-collection) ---
+
+// GetUserPipelines retrieves all pipelines for a user from the sub-collection
+func (a *FirestoreAdapter) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+	iter := a.Client.Collection("users").Doc(userId).Collection("pipelines").Documents(ctx)
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	pipelines := make([]*pb.PipelineConfig, len(docs))
+	for i, doc := range docs {
+		pipelines[i] = storage.FirestoreToPipeline(doc.Data())
+		// Ensure ID is set from doc ID if missing
+		if pipelines[i].Id == "" {
+			pipelines[i].Id = doc.Ref.ID
+		}
+	}
+
+	return pipelines, nil
+}

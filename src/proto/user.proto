@@ -12,8 +12,7 @@ message UserRecord {
   string user_id = 1;
   google.protobuf.Timestamp created_at = 2;
   UserIntegrations integrations = 3;
-  // Pipelines define the data flow: Source -> Enrichers -> Routing
-  repeated PipelineConfig pipelines = 4;
+  // Field 4 was pipelines (moved to sub-collection users/{userId}/pipelines)
   repeated string fcm_tokens = 5;
 
   // Pricing tier

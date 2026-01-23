@@ -60,7 +60,7 @@ const ERROR_RULES = new Set([
   // Go
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13',
   // TypeScript
-  'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14', 'T15', 'T16', 'T17',
+  'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14', 'T15', 'T16', 'T17', 'T51', 'T52', 'T53',
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
@@ -3823,6 +3823,225 @@ function checkPluginIconUniqueness(): CheckResult {
 }
 
 // ============================================================================
+// Check T51: Handler package.json Required Properties
+// ============================================================================
+
+/**
+ * Validates that all TypeScript handlers have exact required package.json properties.
+ */
+function checkHandlerPackageJsonProperties(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const handlerDirs = getDirectories(TS_SRC_DIR)
+    .filter(d => d.endsWith('-handler') || d === 'auth-hooks')
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const pkgPath = path.join(TS_SRC_DIR, dir, 'package.json');
+    if (!fs.existsSync(pkgPath)) {
+      errors.push(`Handler '${dir}' missing package.json`);
+      continue;
+    }
+
+    const pkg = JSON.parse(fs.readFileSync(pkgPath, 'utf-8'));
+
+    // Check name matches folder name
+    if (pkg.name !== dir) {
+      errors.push(`Handler '${dir}': package.json name must be '${dir}', got '${pkg.name}'`);
+    }
+
+    // Check version exists
+    if (!pkg.version) {
+      errors.push(`Handler '${dir}': missing version in package.json`);
+    }
+
+    // Check main is exactly "dist/index.js"
+    if (pkg.main !== 'dist/index.js') {
+      errors.push(`Handler '${dir}': main must be "dist/index.js", got "${pkg.main}"`);
+    }
+
+    // Check scripts
+    const scripts = pkg.scripts || {};
+    if (scripts.build !== 'tsc') {
+      errors.push(`Handler '${dir}': scripts.build must be "tsc", got "${scripts.build}"`);
+    }
+    if (scripts.test !== 'jest') {
+      errors.push(`Handler '${dir}': scripts.test must be "jest", got "${scripts.test}"`);
+    }
+    if (scripts['gcp-build'] !== 'npm run build') {
+      errors.push(`Handler '${dir}': scripts.gcp-build must be "npm run build", got "${scripts['gcp-build']}"`);
+    }
+    if (scripts.lint !== 'eslint src --ext .ts') {
+      errors.push(`Handler '${dir}': scripts.lint must be "eslint src --ext .ts", got "${scripts.lint}"`);
+    }
+
+    // Check dependencies
+    const deps = pkg.dependencies || {};
+    if (deps['@fitglue/shared'] !== '^1.0.0') {
+      errors.push(`Handler '${dir}': dependencies["@fitglue/shared"] must be "^1.0.0", got "${deps['@fitglue/shared']}"`);
+    }
+    if (!deps.typescript) {
+      errors.push(`Handler '${dir}': missing dependencies.typescript`);
+    }
+
+    // Check devDependencies
+    const devDeps = pkg.devDependencies || {};
+    if (!devDeps.jest) {
+      errors.push(`Handler '${dir}': missing devDependencies.jest`);
+    }
+    if (!devDeps.eslint) {
+      errors.push(`Handler '${dir}': missing devDependencies.eslint`);
+    }
+    if (!devDeps['ts-jest']) {
+      errors.push(`Handler '${dir}': missing devDependencies["ts-jest"]`);
+    }
+  }
+
+  return {
+    name: 'Handler package.json Properties (T51)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check T52: Handler tsconfig.json Exact Match
+// ============================================================================
+
+/**
+ * Validates that all TypeScript handlers have exact tsconfig.json match.
+ */
+function checkHandlerTsConfigExactMatch(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const REQUIRED_TSCONFIG = {
+    compilerOptions: {
+      module: 'commonjs',
+      noImplicitReturns: true,
+      noUnusedLocals: true,
+      outDir: 'dist',
+      sourceMap: true,
+      strict: true,
+      target: 'es2017',
+      moduleResolution: 'node',
+      esModuleInterop: true,
+      skipLibCheck: true
+    },
+    compileOnSave: true,
+    include: ['src']
+  };
+
+  const handlerDirs = getDirectories(TS_SRC_DIR)
+    .filter(d => d.endsWith('-handler') || d === 'auth-hooks')
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const tsconfigPath = path.join(TS_SRC_DIR, dir, 'tsconfig.json');
+    if (!fs.existsSync(tsconfigPath)) {
+      errors.push(`Handler '${dir}' missing tsconfig.json`);
+      continue;
+    }
+
+    const tsconfig = JSON.parse(fs.readFileSync(tsconfigPath, 'utf-8'));
+
+    // Deep compare
+    const compareObjects = (expected: any, actual: any, path: string): void => {
+      for (const key in expected) {
+        const fullPath = path ? `${path}.${key}` : key;
+        if (!(key in actual)) {
+          errors.push(`Handler '${dir}': tsconfig.json missing ${fullPath}`);
+        } else if (typeof expected[key] === 'object' && !Array.isArray(expected[key])) {
+          compareObjects(expected[key], actual[key], fullPath);
+        } else if (JSON.stringify(expected[key]) !== JSON.stringify(actual[key])) {
+          errors.push(`Handler '${dir}': tsconfig.json ${fullPath} must be ${JSON.stringify(expected[key])}, got ${JSON.stringify(actual[key])}`);
+        }
+      }
+    };
+
+    compareObjects(REQUIRED_TSCONFIG, tsconfig, '');
+
+    // Check for extra keys at root level
+    for (const key in tsconfig) {
+      if (!(key in REQUIRED_TSCONFIG)) {
+        warnings.push(`Handler '${dir}': tsconfig.json has unexpected key '${key}'`);
+      }
+    }
+  }
+
+  return {
+    name: 'Handler tsconfig.json Exact Match (T52)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check T53: Handler jest.config.js Exact Match
+// ============================================================================
+
+/**
+ * Validates that all TypeScript handlers have exact jest.config.js match.
+ */
+function checkHandlerJestConfigExactMatch(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const handlerDirs = getDirectories(TS_SRC_DIR)
+    .filter(d => d.endsWith('-handler') || d === 'auth-hooks')
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const jestConfigPath = path.join(TS_SRC_DIR, dir, 'jest.config.js');
+    if (!fs.existsSync(jestConfigPath)) {
+      errors.push(`Handler '${dir}' missing jest.config.js`);
+      continue;
+    }
+
+    const content = fs.readFileSync(jestConfigPath, 'utf-8');
+
+    // Normalize whitespace and quotes for comparison
+    const normalized = content
+      .replace(/\s+/g, ' ')
+      .replace(/'/g, '"')
+      .trim();
+
+    // Expected pattern (normalized)
+    const expectedPattern = 'const baseConfig = require("../shared/jest.config.base.js"); module.exports = { ...baseConfig, };';
+
+    if (!normalized.includes('require("../shared/jest.config.base.js")') &&
+      !normalized.includes('require(\'../shared/jest.config.base.js\')')) {
+      errors.push(`Handler '${dir}': jest.config.js must require('../shared/jest.config.base.js')`);
+    }
+
+    if (!normalized.includes('module.exports')) {
+      errors.push(`Handler '${dir}': jest.config.js must have module.exports`);
+    }
+
+    if (!normalized.includes('...baseConfig')) {
+      errors.push(`Handler '${dir}': jest.config.js must spread ...baseConfig`);
+    }
+
+    // Check for extra content (comments are OK, but extra config is not)
+    const hasExtraConfig = normalized.includes('...baseConfig,') &&
+      !normalized.match(/\.\.\.baseConfig,\s*\}/);
+    if (hasExtraConfig) {
+      warnings.push(`Handler '${dir}': jest.config.js has additional configuration beyond baseConfig`);
+    }
+  }
+
+  return {
+    name: 'Handler jest.config.js Exact Match (T53)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Main Runner
 // ============================================================================
 
@@ -3918,6 +4137,9 @@ function main(): void {
         { id: 'T15', fn: () => ({ ...checkSafeHandlerSignature(), name: 'T15: SafeHandler Signature Compliance' }) },
         { id: 'T16', fn: () => ({ ...checkNoDirectResponseUsage(), name: 'T16: No Direct Response Object Usage' }) },
         { id: 'T17', fn: () => ({ ...checkConnectorFrameworkContext(), name: 'T17: Connector FrameworkContext Usage' }) },
+        { id: 'T51', fn: () => ({ ...checkHandlerPackageJsonProperties(), name: 'T51: Handler package.json Properties' }) },
+        { id: 'T52', fn: () => ({ ...checkHandlerTsConfigExactMatch(), name: 'T52: Handler tsconfig.json Exact Match' }) },
+        { id: 'T53', fn: () => ({ ...checkHandlerJestConfigExactMatch(), name: 'T53: Handler jest.config.js Exact Match' }) },
       ]
     },
     {
