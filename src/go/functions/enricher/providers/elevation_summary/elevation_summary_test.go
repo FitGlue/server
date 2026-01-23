@@ -64,10 +64,10 @@ func TestElevationSummary_Enrich_Success(t *testing.T) {
 		t.Errorf("Expected elevation_max=250.00, got %s", result.Metadata["elevation_max"])
 	}
 
-	// Verify description is appended
-	expectedSummary := "\n\n⛰️ Elevation: +170m gain • -50m loss • 250m max"
-	if result.Description != "Mountain Ride"+expectedSummary {
-		t.Errorf("Expected description %q, got %q", "Mountain Ride"+expectedSummary, result.Description)
+	// Verify description contains only the new summary (not the original description)
+	expectedSummary := "⛰️ Elevation: +170m gain • -50m loss • 250m max"
+	if result.Description != expectedSummary {
+		t.Errorf("Expected description %q, got %q", expectedSummary, result.Description)
 	}
 }
 

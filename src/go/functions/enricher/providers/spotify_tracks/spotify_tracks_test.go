@@ -196,7 +196,7 @@ func TestSpotifyTracks_SuccessfulEnrichment(t *testing.T) {
 		t.Errorf("Expected top_artist 'The Weeknd', got %s", result.Metadata["top_artist"])
 	}
 
-	expectedDesc := "Morning Run\n\n🎵 Soundtrack: 3 tracks • Top played: Blinding Lights - The Weeknd • From playlist: spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"
+	expectedDesc := "🎵 Soundtrack: 3 tracks • Top played: Blinding Lights - The Weeknd • From playlist: spotify:playlist:37i9dQZF1DXcBWIGoYBM5M"
 	if result.Description != expectedDesc {
 		t.Errorf("Expected description:\n%s\nGot:\n%s", expectedDesc, result.Description)
 	}
