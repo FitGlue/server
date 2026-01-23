@@ -242,6 +242,8 @@ Install the FitGlue mobile app on your iOS device and grant access to Apple Heal
   sortOrder: 1,
   isPremium: false,
   popularityScore: 90,
+  iconType: 'png',
+  iconPath: '/images/icons/healthkit.png',
 });
 
 registerSource({
@@ -273,6 +275,8 @@ Install the FitGlue mobile app on your Android device and grant access to Health
   sortOrder: 4,
   isPremium: false,
   popularityScore: 75,
+  iconType: 'svg',
+  iconPath: '/images/icons/healthconnect.svg',
 });
 
 registerSource({
@@ -774,6 +778,8 @@ Unlike some platforms, Intervals.icu accepts raw FIT files, meaning all your dat
   sortOrder: 2,
   isPremium: false,
   popularityScore: 70,
+  iconType: 'png',
+  iconPath: '/images/icons/intervals.png',
 });
 
 registerDestination({
@@ -2701,6 +2707,8 @@ FitGlue connects to your Hevy account via API key, allowing your logged activiti
     '✅ Real-time sync when you finish a workout',
     '✅ Simple API key setup — no OAuth required',
   ],
+  iconType: 'svg',
+  iconPath: '/images/icons/hevy.svg',
 });
 
 registerIntegration({
@@ -2736,6 +2744,8 @@ FitGlue connects to your Fitbit account via OAuth, enabling you to import activi
     '✅ Secure OAuth connection — no passwords stored',
     '✅ Automatic sync of new activities',
   ],
+  iconType: 'svg',
+  iconPath: '/images/icons/fitbit.svg',
 });
 
 registerIntegration({
@@ -2771,6 +2781,8 @@ FitGlue connects to your Strava account via OAuth and can upload your boosted ac
     '✅ Muscle heatmaps and stats included',
     '✅ Secure OAuth connection',
   ],
+  iconType: 'svg',
+  iconPath: '/images/icons/strava.svg',
 });
 
 registerIntegration({
@@ -2805,6 +2817,8 @@ FitGlue's mobile app reads your workout data from Apple Health and syncs it to t
     '✅ GPS routes for outdoor activities',
     '✅ Background sync via FitGlue mobile app',
   ],
+  iconType: 'png',
+  iconPath: '/images/icons/healthkit.png',
 });
 
 registerIntegration({
@@ -2839,6 +2853,8 @@ FitGlue's mobile app reads your workout data from Health Connect and syncs it to
     '✅ Heart rate and GPS data included',
     '✅ Background sync via FitGlue mobile app',
   ],
+  iconType: 'svg',
+  iconPath: '/images/icons/healthconnect.svg',
 });
 
 registerIntegration({
@@ -2874,6 +2890,8 @@ FitGlue automatically detects when your run is a Parkrun based on GPS location a
     '✅ Special event detection (Christmas, New Year)',
     '✅ 2,500+ worldwide Parkrun locations supported',
   ],
+  iconType: 'emoji',
+  iconPath: '',
 });
 
 registerIntegration({
@@ -2910,6 +2928,8 @@ FitGlue connects to your TrainingPeaks account via OAuth and uploads your booste
     '✅ Activity types mapped to TrainingPeaks workout types',
     '✅ Secure OAuth connection',
   ],
+  iconType: 'png',
+  iconPath: '/images/icons/trainingpeaks.png',
 });
 
 registerIntegration({
@@ -2945,12 +2965,14 @@ FitGlue connects to your Spotify account and tracks what music you listened to d
     '✅ Identify workout playlists',
     '✅ Automatic time-window matching',
   ],
+  iconType: 'png',
+  iconPath: '/images/icons/spotify.png',
 });
 
 registerIntegration({
   id: 'google',
   name: 'Google',
-  description: 'Connect your Google account for Sheets integration',
+  description: 'Connect your Google account',
   icon: '🔵',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
@@ -2980,6 +3002,8 @@ FitGlue connects to your Google account and automatically logs your activities t
     '✅ Visual assets via IMAGE formulas',
     '✅ Secure OAuth connection',
   ],
+  iconType: 'png',
+  iconPath: '/images/icons/google.png',
 });
 
 registerIntegration({
@@ -3016,6 +3040,8 @@ FitGlue connects to your Oura account via OAuth and imports your tracked workout
     '✅ Automatic sync of new workouts',
     '✅ Secure OAuth connection',
   ],
+  iconType: 'jpg',
+  iconPath: '/images/icons/oura.jpg',
 });
 
 registerIntegration({
@@ -3059,6 +3085,8 @@ Polar uses a unique transaction-based API that ensures no activities are lost. F
     '✅ Real-time sync via webhooks',
     '✅ Secure OAuth connection',
   ],
+  iconType: 'svg',
+  iconPath: '/images/icons/polar.svg',
 });
 
 registerIntegration({
@@ -3096,6 +3124,8 @@ FitGlue connects to your Intervals.icu account via API key and can upload your b
     '✅ Simple API key setup — no OAuth required',
     '✅ Works with all FitGlue boosters',
   ],
+  iconType: 'png',
+  iconPath: '/images/icons/intervals.png',
 });
 
 registerIntegration({
@@ -3133,4 +3163,43 @@ FitGlue connects to your Wahoo account via OAuth and imports your workouts with 
     '✅ Real-time sync via webhooks',
     '✅ Secure OAuth connection',
   ],
+  iconType: 'jpg',
+  iconPath: '/images/icons/wahoo.jpg',
+});
+
+registerIntegration({
+  id: 'garmin',
+  name: 'Garmin',
+  description: 'Import activities from Garmin Connect',
+  icon: '⌚',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  isTemporarilyUnavailable: true,
+  docsUrl: '',
+  setupTitle: 'Connect Garmin',
+  setupInstructions: `Connect your Garmin Connect account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on Garmin
+3. Sign in to your **Garmin account** when redirected
+4. Review and **Accept Permissions** to allow FitGlue to access your activities
+5. You're connected! Activities will sync automatically
+
+FitGlue uses secure OAuth — your Garmin password is never stored.`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is Garmin Connect?
+Garmin Connect is the tool for tracking, analyzing and sharing health and fitness activities from your Garmin device.
+
+### What FitGlue Does
+FitGlue connects to your Garmin Connect account via OAuth and imports your activities. Heart rate data, GPS routes, and training metrics flow through your FitGlue pipeline for enhancement and distribution to destinations like Strava.
+  `,
+  features: [
+    '✅ Import activities from Garmin devices',
+    '✅ Heart rate and GPS data included',
+    '✅ Secure OAuth connection',
+  ],
+  iconType: 'svg',
+  iconPath: '/images/icons/garmin.svg',
 });
