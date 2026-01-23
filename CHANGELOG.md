@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.0.0](https://github.com/FitGlue/server/compare/v5.0.1...v6.0.0) (2026-01-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* moves enricher providers to the enricher function, so non-enricher functions aren't needlessly redployed on amending enricher providers
+
+### Features
+
+* move enricher providers to enricher function ([2d116c7](https://github.com/FitGlue/server/commit/2d116c74f55b2049d9e4354c02e056b07cbae7d0))
+* use cloud cdn for assets bucket exposure plus SSL cert ([15964bf](https://github.com/FitGlue/server/commit/15964bf1bf344d9643dcd0120931a6a8dee4bb15))
+
+
+### Bug Fixes
+
+* enricher ordering bug ([1ca1a4c](https://github.com/FitGlue/server/commit/1ca1a4cc0e75d5a5a7c799e8432f4e14b42c0c05))
+* enricher providers only return their description additions, not whole description plus addition ([012418b](https://github.com/FitGlue/server/commit/012418bfe2b9da1ae2358bf7fb1f19eb78135e74))
+* failing go tests ([16cf090](https://github.com/FitGlue/server/commit/16cf090ea02d38361f2099bc50c60090abe088ad))
+* make hyde park virtual route much nicer ([1838427](https://github.com/FitGlue/server/commit/183842792572886f1852a503b2842dc34365d301))
+* some enrichers still returning total description ([d0b4304](https://github.com/FitGlue/server/commit/d0b43049f3ff94dd59fac077c8d0b01b2568069f))
+
 ### [5.0.1](https://github.com/FitGlue/server/compare/v5.0.0...v5.0.1) (2026-01-23)
 
 
