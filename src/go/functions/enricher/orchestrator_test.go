@@ -5,9 +5,10 @@ import (
 	"testing"
 	"time"
 
-	providers "github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/fitglue/server/src/go/functions/enricher/providers"
 )
 
 // MockDatabase implements shared.Database
