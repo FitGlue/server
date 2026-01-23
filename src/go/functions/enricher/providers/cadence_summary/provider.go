@@ -86,10 +86,10 @@ func (p *CadenceSummary) Enrich(ctx context.Context, activity *pb.StandardizedAc
 	)
 
 	// Build the summary text to append to description
-	summaryText := fmt.Sprintf("\n\n🦶 Cadence: %.0f %s avg • %d %s max", avgCadence, unit, maxCadence, unit)
+	summaryText := fmt.Sprintf("🦶 Cadence: %.0f %s avg • %d %s max", avgCadence, unit, maxCadence, unit)
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	return &providers.EnrichmentResult{
 		Description: newDescription,

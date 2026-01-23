@@ -145,10 +145,10 @@ func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity,
 	// Format summary
 	var summaryText string
 	if includeWind {
-		summaryText = fmt.Sprintf("\n\n🌤️ Weather: %.0f°C, %s • Wind: %.0f km/h %s",
+		summaryText = fmt.Sprintf("🌤️ Weather: %.0f°C, %s • Wind: %.0f km/h %s",
 			temperature, weatherDesc, windSpeed, windCardinal)
 	} else {
-		summaryText = fmt.Sprintf("\n\n🌤️ Weather: %.0f°C, %s",
+		summaryText = fmt.Sprintf("🌤️ Weather: %.0f°C, %s",
 			temperature, weatherDesc)
 	}
 
@@ -161,7 +161,7 @@ func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity,
 	)
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	return &providers.EnrichmentResult{
 		Description: newDescription,

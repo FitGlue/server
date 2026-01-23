@@ -232,7 +232,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 		if cityName != "" && cityName != displayLocation {
 			locationLine = fmt.Sprintf("\n\n📍 Location: %s, %s", displayLocation, cityName)
 		}
-		result.Description = activity.Description + locationLine
+		result.Description = locationLine
 		slog.Info("Generated location description", "location_line", locationLine)
 	}
 

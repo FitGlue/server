@@ -84,10 +84,10 @@ func (p *SpeedSummary) Enrich(ctx context.Context, activity *pb.StandardizedActi
 	)
 
 	// Build the summary text to append to description
-	summaryText := fmt.Sprintf("\n\n🚀 Speed: %.1f km/h avg • %.1f km/h max", avgSpeedKmh, maxSpeedKmh)
+	summaryText := fmt.Sprintf("🚀 Speed: %.1f km/h avg • %.1f km/h max", avgSpeedKmh, maxSpeedKmh)
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	return &providers.EnrichmentResult{
 		Description: newDescription,

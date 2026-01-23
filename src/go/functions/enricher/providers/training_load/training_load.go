@@ -128,7 +128,7 @@ func (p *TrainingLoad) Enrich(ctx context.Context, activity *pb.StandardizedActi
 	slog.Info("Training Load calculated", "trimp", totalTRIMP, "zone", zone)
 
 	return &providers.EnrichmentResult{
-		Description: activity.Description + summaryText,
+		Description: summaryText,
 		Metadata: map[string]string{
 			"training_load_status": "success",
 			"trimp":                fmt.Sprintf("%.0f", totalTRIMP),

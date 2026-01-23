@@ -89,10 +89,10 @@ func (p *PaceSummary) Enrich(ctx context.Context, activity *pb.StandardizedActiv
 	bestPaceStr := formatPace(bestPace)
 
 	// Build the summary text to append to description
-	summaryText := fmt.Sprintf("\n\n⚡ Pace: %s/km avg • %s/km best", avgPaceStr, bestPaceStr)
+	summaryText := fmt.Sprintf("⚡ Pace: %s/km avg • %s/km best", avgPaceStr, bestPaceStr)
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	return &providers.EnrichmentResult{
 		Description: newDescription,

@@ -80,10 +80,10 @@ func (p *PowerSummary) Enrich(ctx context.Context, activity *pb.StandardizedActi
 	)
 
 	// Build the summary text to append to description
-	summaryText := fmt.Sprintf("\n\n⚡ Power: %.0fW avg • %dW max", avgPower, maxPower)
+	summaryText := fmt.Sprintf("⚡ Power: %.0fW avg • %dW max", avgPower, maxPower)
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	return &providers.EnrichmentResult{
 		Description: newDescription,

@@ -180,7 +180,7 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, activity *pb.Stand
 
 	// 7. Format Output
 	// "🎵 Soundtrack: 12 tracks • Top played: Blinding Lights - The Weeknd • From playlist: Running Hits 2026"
-	summaryText := fmt.Sprintf("\n\n🎵 Soundtrack: %d tracks", len(recentlyPlayed.Items))
+	summaryText := fmt.Sprintf("🎵 Soundtrack: %d tracks", len(recentlyPlayed.Items))
 
 	if topTrack != "" {
 		artist := trackInfo[topTrack]
@@ -196,7 +196,7 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, activity *pb.Stand
 	}
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	slog.Info("Spotify tracks enrichment complete",
 		"track_count", len(recentlyPlayed.Items),

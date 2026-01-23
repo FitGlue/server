@@ -87,10 +87,10 @@ func (p *ElevationSummary) Enrich(ctx context.Context, activity *pb.Standardized
 
 	// Build the summary text
 	// Output Format: "⛰️ Elevation: +342m gain • -289m loss • 1,245m max"
-	summaryText := fmt.Sprintf("\n\n⛰️ Elevation: +%.0fm gain • -%.0fm loss • %.0fm max", gain, loss, maxAltitude)
+	summaryText := fmt.Sprintf("⛰️ Elevation: +%.0fm gain • -%.0fm loss • %.0fm max", gain, loss, maxAltitude)
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	return &providers.EnrichmentResult{
 		Description: newDescription,

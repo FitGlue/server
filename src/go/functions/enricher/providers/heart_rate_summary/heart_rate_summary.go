@@ -82,10 +82,10 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.Standardized
 	)
 
 	// Build the summary text to append to description (single line format like workout summary)
-	summaryText := fmt.Sprintf("\n\n❤️ Heart Rate: %d bpm min • %.0f bpm avg • %d bpm max", minHR, avgHR, maxHR)
+	summaryText := fmt.Sprintf("❤️ Heart Rate: %d bpm min • %.0f bpm avg • %d bpm max", minHR, avgHR, maxHR)
 
 	// Append to existing description
-	newDescription := activity.Description + summaryText
+	newDescription := summaryText
 
 	return &providers.EnrichmentResult{
 		Description: newDescription,
