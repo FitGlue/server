@@ -309,83 +309,113 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			if res.NameSuffix != "" {
 				currentActivity.Name += res.NameSuffix
 			}
-			// Note: Description merging happens at the end during Fan-In phase to avoid duplications.
-			// We do NOT append to currentActivity.Description here.
 			if res.ActivityType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
 				currentActivity.Type = res.ActivityType
 			}
-			// Apply Tags?
 			if len(res.Tags) > 0 {
 				currentActivity.Tags = append(currentActivity.Tags, res.Tags...)
 			}
-			// Note: We currently skip applying complex stream data (HR/Power) to currentActivity here.
-			// Downstream providers typically depend only on metadata (Name/Tags) which we updated above.
-			// Full stream merging happens in the final Fan-In phase.
+
+			// Apply description immediately (append with separator if not empty)
+			if res.Description != "" {
+				trimmed := strings.TrimSpace(res.Description)
+				if trimmed != "" {
+					if currentActivity.Description != "" {
+						currentActivity.Description += "\n\n"
+					}
+					currentActivity.Description += trimmed
+				}
+			}
+
+			// Apply stream data immediately to currentActivity so downstream enrichers can see it
+			// Ensure Laps/Records exist
+			enricherSession := currentActivity.Sessions[0]
+			if len(enricherSession.Laps) == 0 {
+				enricherSession.Laps = append(enricherSession.Laps, &pb.Lap{
+					StartTime:        enricherSession.StartTime,
+					TotalElapsedTime: enricherSession.TotalElapsedTime,
+					Records:          []*pb.Record{},
+				})
+			}
+			enricherLap := enricherSession.Laps[0]
+
+			// Ensure records are large enough for stream data
+			enricherDuration := int(enricherSession.TotalElapsedTime)
+			enricherCurrentLen := len(enricherLap.Records)
+			if enricherCurrentLen < enricherDuration {
+				enricherStartTime := enricherSession.StartTime.AsTime()
+				for k := enricherCurrentLen; k < enricherDuration; k++ {
+					ts := timestamppb.New(enricherStartTime.Add(time.Duration(k) * time.Second))
+					enricherLap.Records = append(enricherLap.Records, &pb.Record{Timestamp: ts})
+				}
+			}
+
+			// Apply HR stream
+			if len(res.HeartRateStream) > 0 {
+				for idx, val := range res.HeartRateStream {
+					if idx < len(enricherLap.Records) && val > 0 {
+						enricherLap.Records[idx].HeartRate = int32(val)
+					}
+				}
+			}
+
+			// Apply Power stream
+			if len(res.PowerStream) > 0 {
+				for idx, val := range res.PowerStream {
+					if idx < len(enricherLap.Records) && val > 0 {
+						enricherLap.Records[idx].Power = int32(val)
+					}
+				}
+			}
+
+			// Apply GPS position streams
+			if len(res.PositionLatStream) > 0 {
+				for idx, val := range res.PositionLatStream {
+					if idx < len(enricherLap.Records) {
+						enricherLap.Records[idx].PositionLat = val
+					}
+				}
+			}
+			if len(res.PositionLongStream) > 0 {
+				for idx, val := range res.PositionLongStream {
+					if idx < len(enricherLap.Records) {
+						enricherLap.Records[idx].PositionLong = val
+					}
+				}
+			}
 		}
 
 		// Append executions from this pipeline
 		allProviderExecutions = append(allProviderExecutions, providerExecs...)
 
-		// 3b. Merge Results (Fan-In)
+		// Build final event structure (no Fan-In needed - currentActivity is already fully enriched)
 		finalEvent := &pb.EnrichedActivityEvent{
 			UserId:              payload.UserId,
 			Source:              payload.Source,
 			ActivityId:          uuid.NewString(),
-			ActivityData:        payload.StandardizedActivity,
-			ActivityType:        pb.ActivityType_ACTIVITY_TYPE_WORKOUT,
-			Name:                "Workout",
+			ActivityData:        currentActivity, // Already fully enriched
+			ActivityType:        currentActivity.Type,
+			Name:                currentActivity.Name,
+			Description:         currentActivity.Description,
 			AppliedEnrichments:  []string{},
 			EnrichmentMetadata:  make(map[string]string),
 			Destinations:        pipeline.Destinations,
 			PipelineId:          pipeline.ID,
 			PipelineExecutionId: &pipelineExecutionID,
-			StartTime:           payload.StandardizedActivity.Sessions[0].StartTime,
+			StartTime:           currentActivity.Sessions[0].StartTime,
 		}
 
-		// 3b.1 Resume Mode: Add update metadata and use original activity ID
+		// Resume Mode: Add update metadata and use original activity ID
 		if isResumeMode {
 			if useUpdateMethod {
 				finalEvent.EnrichmentMetadata["use_update_method"] = "true"
 			}
-			// Use the original activity ID for updates (from payload)
 			if payload.ActivityId != nil && *payload.ActivityId != "" {
 				finalEvent.ActivityId = *payload.ActivityId
 			}
 		}
 
-		if payload.StandardizedActivity != nil {
-			finalEvent.Name = payload.StandardizedActivity.Name
-			// Start with the original description (not the mutated one)
-			finalEvent.Description = ""
-			finalEvent.ActivityType = payload.StandardizedActivity.Type
-		}
-
-		// Merge Streams & Metadata
-		session := payload.StandardizedActivity.Sessions[0]
-		duration := int(session.TotalElapsedTime)
-
-		// Ensure Laps/Records exist
-		if len(session.Laps) == 0 {
-			// Create a default lap if missing
-			session.Laps = append(session.Laps, &pb.Lap{
-				StartTime:        session.StartTime,
-				TotalElapsedTime: session.TotalElapsedTime,
-				Records:          []*pb.Record{},
-			})
-		}
-		lap := session.Laps[0]
-
-		// Ensure records are large enough
-		currentLen := len(lap.Records)
-		if currentLen < duration {
-			startTime := session.StartTime.AsTime()
-			// Pad with timestamp-only records
-			for k := currentLen; k < duration; k++ {
-				ts := timestamppb.New(startTime.Add(time.Duration(k) * time.Second))
-				lap.Records = append(lap.Records, &pb.Record{Timestamp: ts})
-			}
-		}
-
+		// Build AppliedEnrichments list and merge metadata from results
 		for i, res := range results {
 			if res == nil {
 				continue
@@ -393,73 +423,33 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			cfgName := configs[i].ProviderType.String()
 			finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, cfgName)
 
-			// Merge descriptions from enrichers (build from scratch to avoid duplications)
-			if res.Description != "" {
-				trimmed := strings.TrimSpace(res.Description)
-				if trimmed != "" {
-					if finalEvent.Description != "" {
-						finalEvent.Description += "\n\n"
-					}
-					finalEvent.Description += trimmed
-				}
-			}
-
-			// Merge Data Streams into Records
-			if len(res.HeartRateStream) > 0 {
-				for idx, val := range res.HeartRateStream {
-					if idx < len(lap.Records) && val > 0 {
-						lap.Records[idx].HeartRate = int32(val)
-					}
-				}
-			}
-			if len(res.PowerStream) > 0 {
-				for idx, val := range res.PowerStream {
-					if idx < len(lap.Records) && val > 0 {
-						lap.Records[idx].Power = int32(val)
-					}
-				}
-			}
-			if len(res.PositionLatStream) > 0 {
-				for idx, val := range res.PositionLatStream {
-					if idx < len(lap.Records) {
-						lap.Records[idx].PositionLat = val
-					}
-				}
-			}
-			if len(res.PositionLongStream) > 0 {
-				for idx, val := range res.PositionLongStream {
-					if idx < len(lap.Records) {
-						lap.Records[idx].PositionLong = val
-					}
-				}
-			}
-
+			// Merge metadata
 			for k, v := range res.Metadata {
 				finalEvent.EnrichmentMetadata[k] = v
 			}
 		}
 
-		// Run branding provider last (only for Hobbyist)
+		// Run branding provider last (only for Hobbyist tier)
 		if brandingProvider, ok := o.providersByName["branding"]; ok && tier.GetEffectiveTier(userRec) == tier.TierHobbyist {
-			// Branding provider doesn't care about retries usually, but we match signature
-			brandingRes, err := brandingProvider.Enrich(ctx, payload.StandardizedActivity, userRec, map[string]string{}, doNotRetry)
+			brandingRes, err := brandingProvider.Enrich(ctx, currentActivity, userRec, map[string]string{}, doNotRetry)
 			if err != nil {
 				slog.Warn("Branding provider failed", "error", err)
 			} else if brandingRes != nil && brandingRes.Description != "" {
 				trimmed := strings.TrimSpace(brandingRes.Description)
 				if trimmed != "" {
-					if finalEvent.Description != "" {
-						finalEvent.Description += "\n\n"
+					if currentActivity.Description != "" {
+						currentActivity.Description += "\n\n"
 					}
-					finalEvent.Description += trimmed
+					currentActivity.Description += trimmed
+					// Update finalEvent description as well
+					finalEvent.Description = currentActivity.Description
 				}
-				// Add to applied enrichments
 				finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, "branding")
 			}
 		}
 
-		// 3c. Generate Artifacts (FIT File)
-		fitBytes, err := fit.GenerateFitFile(payload.StandardizedActivity)
+		// Generate FIT file artifact
+		fitBytes, err := fit.GenerateFitFile(currentActivity)
 		if err != nil {
 			slog.Error("Failed to generate FIT file", "error", err) // Don't fail the whole event, just log
 		} else if len(fitBytes) > 0 {
