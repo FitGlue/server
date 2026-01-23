@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [5.0.1](https://github.com/FitGlue/server/compare/v5.0.0...v5.0.1) (2026-01-23)
+
+
+### Bug Fixes
+
+* bugs since refactoring ([a49f005](https://github.com/FitGlue/server/commit/a49f0059a33781efe513eb933b153f4291e4070c))
+* failing showcase-handler test ([b432692](https://github.com/FitGlue/server/commit/b43269289310fa3af0fb11520e24b94d251b1a66))
+* gofmt ([5b26656](https://github.com/FitGlue/server/commit/5b26656240246becccc3bd73173bab3e8ee3688d))
+* image generation enricher failures ([f557697](https://github.com/FitGlue/server/commit/f557697e42532adbfc805146cbbe78bd006d96e1))
+* prevent endless redeploys, fix tool build ([3b11517](https://github.com/FitGlue/server/commit/3b11517b8c72b37a587aaf87c47b3f697e893816))
+* showcase assets bucket config ([43b8893](https://github.com/FitGlue/server/commit/43b88933d8d94e291411ce24e34818e1b1df8cb2))
+
 ## [5.0.0](https://github.com/FitGlue/server/compare/v4.0.1...v5.0.0) (2026-01-23)
 
 
