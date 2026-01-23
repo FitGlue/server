@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { FrameworkResponse, HttpError, ShowcaseStore, UserTier } from '@fitglue/shared';
 
 // Create mock objects that will be shared across mocks
