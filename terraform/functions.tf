@@ -216,15 +216,16 @@ resource "google_cloudfunctions2_function" "enricher" {
     available_memory = "512Mi"
     timeout_seconds  = 300
     environment_variables = {
-      GOOGLE_CLOUD_PROJECT = var.project_id
-      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
-      ENABLE_PUBLISH       = "true"
-      LOG_LEVEL            = var.log_level
-      ASSETS_BASE_URL      = "https://assets.${var.domain_name}"
-      SENTRY_RELEASE       = "fitglue-server@${var.release_version}"
-      SENTRY_ORG           = var.sentry_org
-      SENTRY_PROJECT       = var.sentry_project
-      SENTRY_DSN           = var.sentry_dsn
+      GOOGLE_CLOUD_PROJECT   = var.project_id
+      GCS_ARTIFACT_BUCKET    = "${var.project_id}-artifacts"
+      SHOWCASE_ASSETS_BUCKET = google_storage_bucket.showcase_assets_bucket.name
+      ENABLE_PUBLISH         = "true"
+      LOG_LEVEL              = var.log_level
+      ASSETS_BASE_URL        = "https://assets.${var.domain_name}"
+      SENTRY_RELEASE         = "fitglue-server@${var.release_version}"
+      SENTRY_ORG             = var.sentry_org
+      SENTRY_PROJECT         = var.sentry_project
+      SENTRY_DSN             = var.sentry_dsn
     }
 
     secret_environment_variables {
@@ -307,15 +308,16 @@ resource "google_cloudfunctions2_function" "enricher_lag" {
     available_memory = "512Mi"
     timeout_seconds  = 300
     environment_variables = {
-      GOOGLE_CLOUD_PROJECT = var.project_id
-      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
-      ENABLE_PUBLISH       = "true"
-      LOG_LEVEL            = var.log_level
-      ASSETS_BASE_URL      = "https://assets.${var.domain_name}"
-      SENTRY_RELEASE       = "fitglue-server@${var.release_version}"
-      SENTRY_ORG           = var.sentry_org
-      SENTRY_PROJECT       = var.sentry_project
-      SENTRY_DSN           = var.sentry_dsn
+      GOOGLE_CLOUD_PROJECT   = var.project_id
+      GCS_ARTIFACT_BUCKET    = "${var.project_id}-artifacts"
+      SHOWCASE_ASSETS_BUCKET = google_storage_bucket.showcase_assets_bucket.name
+      ENABLE_PUBLISH         = "true"
+      LOG_LEVEL              = var.log_level
+      ASSETS_BASE_URL        = "https://assets.${var.domain_name}"
+      SENTRY_RELEASE         = "fitglue-server@${var.release_version}"
+      SENTRY_ORG             = var.sentry_org
+      SENTRY_PROJECT         = var.sentry_project
+      SENTRY_DSN             = var.sentry_dsn
     }
 
     secret_environment_variables {

@@ -4,8 +4,11 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
+	"net/http"
 	"os"
 	"strings"
 
@@ -14,11 +17,10 @@ import (
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
 	"github.com/fitglue/server/src/go/pkg/enricher_providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
-	"github.com/google/generative-ai-go/genai"
-	"google.golang.org/api/option"
+	"google.golang.org/api/idtoken"
 )
 
-// AIBannerProvider generates custom header images for activities using Gemini 2.0 Flash.
+// AIBannerProvider generates custom header images for activities using Vertex AI Imagen.
 // This is an Athlete-tier only feature.
 // Generated images are stored in Cloud Storage and referenced in activity metadata.
 type AIBannerProvider struct {
@@ -143,44 +145,130 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 	}, nil
 }
 
+// ImagenRequest represents the request body for Vertex AI Imagen API
+type ImagenRequest struct {
+	Instances  []ImagenInstance  `json:"instances"`
+	Parameters ImagenParameters  `json:"parameters"`
+}
+
+type ImagenInstance struct {
+	Prompt string `json:"prompt"`
+}
+
+type ImagenParameters struct {
+	SampleCount int    `json:"sampleCount"`
+	AspectRatio string `json:"aspectRatio"`
+	AddWatermark bool  `json:"addWatermark"`
+	PersonGeneration string `json:"personGeneration"`
+}
+
+// ImagenResponse represents the response from Vertex AI Imagen API
+type ImagenResponse struct {
+	Predictions []ImagenPrediction `json:"predictions"`
+}
+
+type ImagenPrediction struct {
+	BytesBase64Encoded string `json:"bytesBase64Encoded"`
+	MimeType           string `json:"mimeType"`
+}
+
 func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey, prompt string) ([]byte, error) {
-	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	// Get GCP project ID and region from environment
+	projectID := os.Getenv("GCP_PROJECT_ID")
+	if projectID == "" {
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+	}
+	if projectID == "" {
+		return nil, fmt.Errorf("GCP_PROJECT_ID or GOOGLE_CLOUD_PROJECT environment variable not set")
+	}
+
+	region := os.Getenv("GCP_REGION")
+	if region == "" {
+		region = "us-central1" // Default region
+	}
+
+	// Use imagen-3.0-generate-002 model as specified in documentation
+	modelVersion := "imagen-3.0-generate-002"
+
+	// Build Vertex AI Imagen endpoint
+	endpoint := fmt.Sprintf(
+		"https://%s-aiplatform.googleapis.com/v1/projects/%s/locations/%s/publishers/google/models/%s:predict",
+		region, projectID, region, modelVersion,
+	)
+
+	// Prepare request body
+	reqBody := ImagenRequest{
+		Instances: []ImagenInstance{
+			{Prompt: prompt},
+		},
+		Parameters: ImagenParameters{
+			SampleCount: 1,
+			AspectRatio: "3:1", // Closest to 1200x400 (3:1 ratio)
+			AddWatermark: false, // Disable watermark for cleaner banners
+			PersonGeneration: "dont_allow", // No people/faces in abstract banners
+		},
+	}
+
+	reqBodyBytes, err := json.Marshal(reqBody)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
+		return nil, fmt.Errorf("failed to marshal request body: %w", err)
 	}
-	defer client.Close()
 
-	// Use Gemini 2.0 Flash for image generation
-	model := client.GenerativeModel("gemini-2.0-flash-exp")
-
-	// Configure for image generation
-	model.SetTemperature(0.8)
-	model.GenerationConfig.ResponseMIMEType = "image/png"
-
-	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	// Create HTTP request
+	req, err := http.NewRequestWithContext(ctx, "POST", endpoint, bytes.NewReader(reqBodyBytes))
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate image: %w", err)
+		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
-		return nil, fmt.Errorf("no image generated")
+	// Get ID token for authentication
+	tokenSource, err := idtoken.NewTokenSource(ctx, "https://"+region+"-aiplatform.googleapis.com")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create token source: %w", err)
 	}
 
-	// Extract image data from response
-	for _, part := range resp.Candidates[0].Content.Parts {
-		if blob, ok := part.(genai.Blob); ok {
-			return blob.Data, nil
-		}
-		// Handle base64-encoded image data
-		if text, ok := part.(genai.Text); ok {
-			data, err := base64.StdEncoding.DecodeString(string(text))
-			if err == nil && len(data) > 0 {
-				return data, nil
-			}
-		}
+	token, err := tokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get auth token: %w", err)
 	}
 
-	return nil, fmt.Errorf("no image data in response")
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+
+	// Make the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to make request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Read response body
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("imagen API returned status %d: %s", resp.StatusCode, string(respBody))
+	}
+
+	// Parse response
+	var imagenResp ImagenResponse
+	if err := json.Unmarshal(respBody, &imagenResp); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	if len(imagenResp.Predictions) == 0 {
+		return nil, fmt.Errorf("no predictions in response")
+	}
+
+	// Decode base64 image data
+	imageData, err := base64.StdEncoding.DecodeString(imagenResp.Predictions[0].BytesBase64Encoded)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode base64 image: %w", err)
+	}
+
+	return imageData, nil
 }
 
 func (p *AIBannerProvider) storeImage(ctx context.Context, bucketName, objectPath string, data []byte) (string, error) {
