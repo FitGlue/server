@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -130,11 +130,11 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 
 		targetLat, err := strconv.ParseFloat(latStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("invalid location_lat: %v", err)
+			return nil, fmt.Errorf("invalid location_lat: %w", err)
 		}
 		targetLong, err := strconv.ParseFloat(longStr, 64)
 		if err != nil {
-			return nil, fmt.Errorf("invalid location_long: %v", err)
+			return nil, fmt.Errorf("invalid location_long: %w", err)
 		}
 
 		radiusStr, hasRadius := inputs["radius_m"]
@@ -146,7 +146,7 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 		if radiusStr != "" {
 			r, err := strconv.ParseFloat(radiusStr, 64)
 			if err != nil {
-				return nil, fmt.Errorf("invalid radius: %v", err)
+				return nil, fmt.Errorf("invalid radius: %w", err)
 			}
 			radius = r
 		}

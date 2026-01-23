@@ -80,7 +80,7 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // X3: Sources that don't need dedicated handlers (handled by others or mobile)
   'X3': [/FILE_UPLOAD/, /PARKRUN_RESULTS/, /APPLE_HEALTH/, /HEALTH_CONNECT/, /GARMIN/],
   // G3: Existing error wrapping patterns - legacy code
-  'G3': [/router\/function\.go/],
+  'G3': [/router\/function\.go/, /parkrun\/parkrun\.go/],
   // G4: Many existing logger patterns - needs gradual migration
   'G4': [/.*/], // Demote to warning-only
   // G8: New uploaders without tests yet

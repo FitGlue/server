@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -76,7 +76,7 @@ func (p *AutoIncrementProvider) Enrich(ctx context.Context, activity *pb.Standar
 				Metadata: map[string]string{
 					"auto_increment_applied": "false",
 				},
-			}, fmt.Errorf("failed to get counter: %v", err)
+			}, fmt.Errorf("failed to get counter: %w", err)
 		}
 	}
 
@@ -104,7 +104,7 @@ func (p *AutoIncrementProvider) Enrich(ctx context.Context, activity *pb.Standar
 
 	// Persist
 	if err := p.service.DB.SetCounter(ctx, user.UserId, counter); err != nil {
-		return nil, fmt.Errorf("failed to update counter: %v", err)
+		return nil, fmt.Errorf("failed to update counter: %w", err)
 	}
 
 	return &providers.EnrichmentResult{

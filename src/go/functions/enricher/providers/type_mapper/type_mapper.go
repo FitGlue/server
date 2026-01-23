@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 
-	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 

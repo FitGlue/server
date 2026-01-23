@@ -9,9 +9,9 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
-	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 

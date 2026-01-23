@@ -10,8 +10,8 @@ import (
 	"sort"
 	"time"
 
-	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
+	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
