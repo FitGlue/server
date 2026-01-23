@@ -11,7 +11,7 @@ GO_SRC_DIR=src/go
 TS_SRC_DIR=src/typescript
 
 # --- Phony Targets ---
-.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase
+.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase tools build-tools-go build-tools-ts
 
 all: generate clean lint build test
 
@@ -73,9 +73,13 @@ generate:
 build-go:
 	@echo "Building Go services..."
 	cd $(GO_SRC_DIR) && $(GOBUILD) -v ./...
-	@echo "Building fit-gen tool..."
+
+build-tools-go:
+	@echo "Building Go tools..."
+	@mkdir -p bin
+	@echo "  Building fit-gen tool..."
 	cd $(GO_SRC_DIR) && $(GOBUILD) -o ../../bin/fit-gen ./cmd/fit-gen
-	@echo "Building fit-inspect tool..."
+	@echo "  Building fit-inspect tool..."
 	cd $(GO_SRC_DIR) && $(GOBUILD) -o ../../bin/fit-inspect ./cmd/fit-inspect
 
 test-go:
@@ -116,6 +120,7 @@ TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name
 # Note: We enforce building 'shared' first because other packages depend on it.
 # Then we build all other workspaces in parallel for speed.
 TS_HANDLER_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules -not -name shared -not -name mcp-server -not -name admin-cli)
+TS_TOOL_DIRS := $(TS_SRC_DIR)/mcp-server $(TS_SRC_DIR)/admin-cli
 
 build-ts:
 	@echo "Building TypeScript services..."
@@ -127,6 +132,19 @@ build-ts:
 		npm run build --workspace=$$name --if-present & \
 	done; wait || exit 1
 	@echo "TypeScript build complete."
+
+build-tools-ts:
+	@echo "Building TypeScript tools..."
+	@echo "Step 1: Building shared library (if not already built)..."
+	@cd $(TS_SRC_DIR) && npm run build --workspace=@fitglue/shared
+	@echo "Step 2: Building tools in parallel..."
+	@set -e; cd $(TS_SRC_DIR) && for dir in $(TS_TOOL_DIRS); do \
+		name=$$(basename $$dir); \
+		npm run build --workspace=$$name --if-present & \
+	done; wait || exit 1
+	@echo "TypeScript tools build complete."
+
+tools: build-tools-ts build-tools-go
 
 test-ts:
 	@echo "Testing TypeScript services..."
