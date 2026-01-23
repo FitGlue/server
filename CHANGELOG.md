@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [5.0.0](https://github.com/FitGlue/server/compare/v4.0.1...v5.0.0) (2026-01-23)
+
+
+### ⚠ BREAKING CHANGES
+
+* **shared:** SafeHandler signature changed from (req, res, ctx) to (req, ctx).
+Handlers must now return a value or a FrameworkResponse instance instead of
+directly manipulating the Express 'res' object. Direct usage of 'res.send()'
+or 'res.status()' in handlers is now deprecated and discouraged.
+* **shared:** Standardized secret management. The direct 'GetSecret'
+capability has been removed from the shared library and Go implementations.
+Secrets are now injected via environment variables or accessed through
+the SecretsHelper which uses SecretManagerServiceClient.
+Changes include:
+- Refactored 'createCloudFunction' to handle both HTTP and CloudEvent triggers.
+- Introduced 'FrameworkResponse' for declarative control over response codes and headers.
+- Integrated Sentry error capture directly into the framework lifecycle.
+- Updated all existing handlers (admin, activities, showcase, etc.) to the new signature.
+- Implemented 'Zero-Debt Convergence' standard (0 Errors, 0 Warnings) across TypeScript.
+- Added Sentry environment variable injection in Terraform.
+- Updated Plugin Registry with High-Fidelity Icon support (Rule G16).
+
+### Features
+
+* error handling, build and lint fixes ([93f0386](https://github.com/FitGlue/server/commit/93f0386010876308b0b1c31923f7f419f1bcb41d))
+* sentry integration and safe handling of errors across TS ([da337e9](https://github.com/FitGlue/server/commit/da337e933112a312df94448cf6de93597ef6fbe2))
+
+
+### Bug Fixes
+
+* circleci and linter ([a4a87a7](https://github.com/FitGlue/server/commit/a4a87a704b32270e9e2934e5cf4f40aefd1d7509))
+* pipelines in legacy format breaking converters ([85bd2bc](https://github.com/FitGlue/server/commit/85bd2bc51dfab8b0acfc2fabf93268616f9ef886))
+* upload sourcemaps fix ([256349f](https://github.com/FitGlue/server/commit/256349f17701d09b5d46aca59dfd9a616621a3d4))
+
+
+* **shared:** unify handler signatures and standardize secret management ([d6bc891](https://github.com/FitGlue/server/commit/d6bc8910e844c7a997b2a75e54bb17e5c9a4fea2))
+
 ### [4.0.1](https://github.com/FitGlue/server/compare/v4.0.0...v4.0.1) (2026-01-22)
 
 
