@@ -18,21 +18,32 @@ type RouteDefinition struct {
 // RoutesLibrary holds available routes
 var RoutesLibrary = map[string]RouteDefinition{
 	"london": {
-		Name: "London Hyde Park (Approx)",
-		// A rough rectangle around Hyde Park / Kensington Gardens
+		Name: "London Hyde Park Loop",
+		// Scenic loop: Hyde Park Corner → along The Serpentine → Round Pond → back via Rotten Row
 		Points: []LatLong{
-			{51.5028, -0.1513}, // Hyde Park Corner
-			{51.5037, -0.1495},
-			{51.5065, -0.1505},
-			{51.5118, -0.1656}, // Bayswater Road
-			{51.5090, -0.1770},
-			{51.5080, -0.1830},
-			{51.5040, -0.1848}, // Kensington Palace Gdns
-			{51.5020, -0.1865},
-			{51.4995, -0.1810}, // Kensington Rd
-			{51.5005, -0.1710},
-			{51.5015, -0.1605}, // Knightsbridge
-			{51.5028, -0.1513}, // Back to start
+			{51.5028, -0.1513}, // Hyde Park Corner (start)
+			{51.5035, -0.1545}, // Entering park, heading west
+			{51.5040, -0.1575}, // Approaching Serpentine
+			{51.5048, -0.1600}, // Serpentine east end
+			{51.5055, -0.1640}, // Along Serpentine north bank
+			{51.5058, -0.1680}, // Serpentine mid-east
+			{51.5055, -0.1720}, // Serpentine centre
+			{51.5050, -0.1760}, // Serpentine west
+			{51.5048, -0.1790}, // Near Long Water
+			{51.5060, -0.1810}, // Long Water east bank
+			{51.5075, -0.1820}, // Long Water north
+			{51.5090, -0.1795}, // Approaching Round Pond
+			{51.5095, -0.1770}, // Round Pond east
+			{51.5092, -0.1745}, // Round Pond south
+			{51.5085, -0.1720}, // Heading back east
+			{51.5075, -0.1690}, // Through Kensington Gardens
+			{51.5065, -0.1660}, // Heading towards Serpentine Bridge
+			{51.5055, -0.1630}, // Near Princess Diana Memorial
+			{51.5045, -0.1600}, // South of Serpentine
+			{51.5038, -0.1570}, // Rotten Row west end
+			{51.5032, -0.1550}, // Along Rotten Row
+			{51.5030, -0.1530}, // Rotten Row continuing east
+			{51.5028, -0.1513}, // Back to Hyde Park Corner
 		},
 	},
 	"nyc": {
