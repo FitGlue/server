@@ -147,8 +147,8 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 
 // ImagenRequest represents the request body for Vertex AI Imagen API
 type ImagenRequest struct {
-	Instances  []ImagenInstance  `json:"instances"`
-	Parameters ImagenParameters  `json:"parameters"`
+	Instances  []ImagenInstance `json:"instances"`
+	Parameters ImagenParameters `json:"parameters"`
 }
 
 type ImagenInstance struct {
@@ -156,9 +156,9 @@ type ImagenInstance struct {
 }
 
 type ImagenParameters struct {
-	SampleCount int    `json:"sampleCount"`
-	AspectRatio string `json:"aspectRatio"`
-	AddWatermark bool  `json:"addWatermark"`
+	SampleCount      int    `json:"sampleCount"`
+	AspectRatio      string `json:"aspectRatio"`
+	AddWatermark     bool   `json:"addWatermark"`
 	PersonGeneration string `json:"personGeneration"`
 }
 
@@ -202,9 +202,9 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 			{Prompt: prompt},
 		},
 		Parameters: ImagenParameters{
-			SampleCount: 1,
-			AspectRatio: "3:1", // Closest to 1200x400 (3:1 ratio)
-			AddWatermark: false, // Disable watermark for cleaner banners
+			SampleCount:      1,
+			AspectRatio:      "3:1",        // Closest to 1200x400 (3:1 ratio)
+			AddWatermark:     false,        // Disable watermark for cleaner banners
 			PersonGeneration: "dont_allow", // No people/faces in abstract banners
 		},
 	}
