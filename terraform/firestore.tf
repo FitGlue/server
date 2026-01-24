@@ -181,4 +181,23 @@ resource "google_firestore_index" "executions_user_sync_timestamp" {
 #   }
 # }
 
+# Index for parkrun-results-source to query pending inputs by enricher
+# This is a collection group query since pending_inputs may be queried across users
+resource "google_firestore_index" "pending_inputs_enricher_status" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pending_inputs"
+  query_scope = "COLLECTION_GROUP"
+
+  fields {
+    field_path = "enricher_provider_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+}
+
 
