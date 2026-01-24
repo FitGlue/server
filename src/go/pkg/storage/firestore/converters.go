@@ -520,14 +520,22 @@ func FirestoreToPersonalRecord(m map[string]interface{}) *pb.PersonalRecord {
 
 func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {
 	m := map[string]interface{}{
-		"activity_id":     p.ActivityId,
-		"user_id":         p.UserId,
-		"status":          int32(p.Status),
-		"required_fields": p.RequiredFields,
-		"input_data":      p.InputData,
-		"created_at":      p.CreatedAt.AsTime(),
-		"updated_at":      p.UpdatedAt.AsTime(),
-		"completed_at":    p.CompletedAt.AsTime(),
+		"activity_id":                  p.ActivityId,
+		"user_id":                      p.UserId,
+		"status":                       int32(p.Status),
+		"required_fields":              p.RequiredFields,
+		"input_data":                   p.InputData,
+		"created_at":                   p.CreatedAt.AsTime(),
+		"updated_at":                   p.UpdatedAt.AsTime(),
+		"completed_at":                 p.CompletedAt.AsTime(),
+		"auto_populated":               p.AutoPopulated,
+		"continued_without_resolution": p.ContinuedWithoutResolution,
+		"enricher_provider_id":         p.EnricherProviderId,
+		"linked_activity_id":           p.LinkedActivityId,
+	}
+
+	if p.AutoDeadline != nil {
+		m["auto_deadline"] = p.AutoDeadline.AsTime()
 	}
 
 	// Serialize original_payload to JSON string (not binary proto) so TypeScript can republish it
@@ -573,9 +581,14 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 			}
 			return nil
 		}(),
-		CreatedAt:   getTime(m, "created_at"),
-		UpdatedAt:   getTime(m, "updated_at"),
-		CompletedAt: getTime(m, "completed_at"),
+		CreatedAt:                  getTime(m, "created_at"),
+		UpdatedAt:                  getTime(m, "updated_at"),
+		CompletedAt:                getTime(m, "completed_at"),
+		AutoPopulated:              getBool(m, "auto_populated"),
+		ContinuedWithoutResolution: getBool(m, "continued_without_resolution"),
+		EnricherProviderId:         getString(m, "enricher_provider_id"),
+		AutoDeadline:               getTime(m, "auto_deadline"),
+		LinkedActivityId:           getString(m, "linked_activity_id"),
 	}
 
 	if v, ok := m["status"]; ok {
