@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -332,6 +333,8 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
 	rows := rowPattern.FindAllStringSubmatch(html, -1)
 
+	log.Printf("[DEBUG] parseAthleteResultsBySlug: html_len=%d, event_slug=%s, total_rows=%d", len(html), eventSlug, len(rows))
+
 	// Track our target result and all historical data for PB calculations
 	var targetResult *ParkrunResult
 	var targetEventSlugLower = strings.ToLower(eventSlug)
@@ -355,11 +358,17 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 	// Cell pattern for extraction
 	cellPattern := regexp.MustCompile(`(?s)<td[^>]*>(.*?)</td>`)
 
-	for _, rowMatch := range rows {
+	headerRows := 0
+	insufficientCellRows := 0
+	invalidPositionRows := 0
+	validDataRows := 0
+
+	for i, rowMatch := range rows {
 		row := rowMatch[1]
 
 		// Skip header rows (they contain <th> elements)
 		if strings.Contains(row, "<th") {
+			headerRows++
 			continue
 		}
 
@@ -368,6 +377,7 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 
 		// Expect 7 columns: Event (0), Run Date (1), Run Number (2), Pos (3), Time (4), Age Grade (5), PB? (6)
 		if len(cells) < 7 {
+			insufficientCellRows++
 			continue
 		}
 
@@ -381,8 +391,11 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 		var position int
 		fmt.Sscanf(positionStr, "%d", &position)
 		if position == 0 {
+			invalidPositionRows++
 			continue // Skip invalid rows
 		}
+
+		validDataRows++
 
 		// Parse age grade (remove % if present)
 		ageGradeStr = strings.TrimSuffix(ageGradeStr, "%")
@@ -414,7 +427,17 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 		}
 
 		// Check if this is our target row (most recent match for the event slug)
-		if targetResult == nil && strings.Contains(strings.ToLower(row), targetEventSlugLower) {
+		rowLower := strings.ToLower(row)
+		containsTarget := strings.Contains(rowLower, targetEventSlugLower)
+
+		if i < 25 || containsTarget { // Log first 25 rows or any matching rows
+			log.Printf("[DEBUG] Row %d: event=%s, rowSlug=%s, containsTarget=%v, targetResult_nil=%v",
+				i, eventCell, rowEventSlug, containsTarget, targetResult == nil)
+		}
+
+		if targetResult == nil && containsTarget {
+			log.Printf("[DEBUG] MATCH FOUND! Row %d: event=%s, date=%s, pos=%d, time=%s, ag=%.2f%%",
+				i, eventCell, dateCell, position, timeStr, ageGrade)
 			targetResult = &ParkrunResult{
 				Time:            timeStr,
 				Position:        position,
@@ -428,6 +451,9 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 			targetRowDate = dateCell
 		}
 	}
+
+	log.Printf("[DEBUG] Parsing complete: headerRows=%d, insufficientCells=%d, invalidPos=%d, validDataRows=%d, targetFound=%v",
+		headerRows, insufficientCellRows, invalidPositionRows, validDataRows, targetResult != nil)
 
 	// If no matching result found
 	if targetResult == nil {
