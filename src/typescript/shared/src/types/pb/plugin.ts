@@ -115,7 +115,11 @@ export interface PluginManifest {
     | string
     | undefined;
   /** When true, plugin is hidden from app but still shown on marketing site with "Coming Soon" indicator */
-  isTemporarilyUnavailable?: boolean | undefined;
+  isTemporarilyUnavailable?:
+    | boolean
+    | undefined;
+  /** When true, this enricher can be added multiple times to a pipeline with different configs */
+  allowMultipleInstances?: boolean | undefined;
 }
 
 /** Transformation shows a before/after example of what a plugin does to a field */

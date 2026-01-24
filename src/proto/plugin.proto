@@ -51,6 +51,9 @@ message PluginManifest {
 
   // When true, plugin is hidden from app but still shown on marketing site with "Coming Soon" indicator
   optional bool is_temporarily_unavailable = 23;
+
+  // When true, this enricher can be added multiple times to a pipeline with different configs
+  optional bool allow_multiple_instances = 24;
 }
 
 // Transformation shows a before/after example of what a plugin does to a field

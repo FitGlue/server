@@ -1500,6 +1500,7 @@ Define matching rules like "title contains 'Zwift'" → "Virtual Ride" or "title
   sortOrder: 1,
   isPremium: false,
   popularityScore: 55,
+  allowMultipleInstances: true,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PARKRUN, {
@@ -1683,6 +1684,7 @@ Define conditions like "Saturday morning run near the park" and specify a title 
   sortOrder: 2,
   isPremium: false,
   popularityScore: 60,
+  allowMultipleInstances: true,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT, {
@@ -1733,6 +1735,7 @@ Define a counter key and optional title filter. Activities matching the filter g
   sortOrder: 2,
   isPremium: false,
   popularityScore: 45,
+  allowMultipleInstances: true,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT, {
@@ -1784,6 +1787,7 @@ When an activity reaches this booster, it’s held pending your input. You recei
   sortOrder: 3,
   isPremium: false,
   popularityScore: 50,
+  allowMultipleInstances: true,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER, {
@@ -1870,6 +1874,7 @@ Define include or exclude rules by activity type or title keywords. Activities m
   sortOrder: 4,
   isPremium: false,
   popularityScore: 50,
+  allowMultipleInstances: true,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE, {
@@ -1961,6 +1966,7 @@ Define rules using fields like activity type, day of week, time, location, or ti
   sortOrder: 5,
   isPremium: false,
   popularityScore: 55,
+  allowMultipleInstances: true,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY, {

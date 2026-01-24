@@ -326,6 +326,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			}
 
 			// Apply description immediately (append with separator if not empty)
+			slog.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name(), "description", res.Description)
 			if res.Description != "" {
 				trimmed := strings.TrimSpace(res.Description)
 				if trimmed != "" {
@@ -400,6 +401,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			if err != nil {
 				slog.Warn("Branding provider failed", "error", err)
 			} else if brandingRes != nil && brandingRes.Description != "" {
+				slog.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", brandingProvider.Name(), len(brandingRes.Description)), "name", brandingProvider.Name(), "description", brandingRes.Description)
 				trimmed := strings.TrimSpace(brandingRes.Description)
 				if trimmed != "" {
 					if descriptionBuilder.Len() > 0 {

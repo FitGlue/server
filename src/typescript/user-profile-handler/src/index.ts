@@ -97,6 +97,20 @@ export const handler: FrameworkHandler = async (req, ctx) => {
   // Extract subpath: /users/me, /admin/users, etc.
   const subPath = req.path.replace(/^\/api/, '') || '/';
 
+  // --- GET /users/me/counters ---
+  // Returns all user-defined counters for dynamic select in Auto Increment enricher
+  if (subPath === '/users/me/counters' && req.method === 'GET') {
+    const countersSnapshot = await db.collection('users').doc(userId).collection('counters').get();
+    const counters = countersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        count: data.count || 0
+      };
+    });
+    return counters;
+  }
+
   // --- GET /users/me ---
   if (subPath === '/users/me' && req.method === 'GET') {
     const user = await services.user.get(userId);

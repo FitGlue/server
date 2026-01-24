@@ -229,8 +229,10 @@ type PluginManifest struct {
 	IconPath *string `protobuf:"bytes,22,opt,name=icon_path,json=iconPath,proto3,oneof" json:"icon_path,omitempty"` // Path to SVG asset (e.g., "/assets/icons/strava.svg")
 	// When true, plugin is hidden from app but still shown on marketing site with "Coming Soon" indicator
 	IsTemporarilyUnavailable *bool `protobuf:"varint,23,opt,name=is_temporarily_unavailable,json=isTemporarilyUnavailable,proto3,oneof" json:"is_temporarily_unavailable,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// When true, this enricher can be added multiple times to a pipeline with different configs
+	AllowMultipleInstances *bool `protobuf:"varint,24,opt,name=allow_multiple_instances,json=allowMultipleInstances,proto3,oneof" json:"allow_multiple_instances,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *PluginManifest) Reset() {
@@ -420,6 +422,13 @@ func (x *PluginManifest) GetIconPath() string {
 func (x *PluginManifest) GetIsTemporarilyUnavailable() bool {
 	if x != nil && x.IsTemporarilyUnavailable != nil {
 		return *x.IsTemporarilyUnavailable
+	}
+	return false
+}
+
+func (x *PluginManifest) GetAllowMultipleInstances() bool {
+	if x != nil && x.AllowMultipleInstances != nil {
+		return *x.AllowMultipleInstances
 	}
 	return false
 }
@@ -1068,7 +1077,7 @@ var File_plugin_proto protoreflect.FileDescriptor
 
 const file_plugin_proto_rawDesc = "" +
 	"\n" +
-	"\fplugin.proto\x12\afitglue\"\x99\t\n" +
+	"\fplugin.proto\x12\afitglue\"\xf5\t\n" +
 	"\x0ePluginManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12'\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x13.fitglue.PluginTypeR\x04type\x12\x12\n" +
@@ -1096,7 +1105,8 @@ const file_plugin_proto_rawDesc = "" +
 	"\ticon_type\x18\x15 \x01(\tH\bR\biconType\x88\x01\x01\x12 \n" +
 	"\ticon_path\x18\x16 \x01(\tH\tR\biconPath\x88\x01\x01\x12A\n" +
 	"\x1ais_temporarily_unavailable\x18\x17 \x01(\bH\n" +
-	"R\x18isTemporarilyUnavailable\x88\x01\x01B\x19\n" +
+	"R\x18isTemporarilyUnavailable\x88\x01\x01\x12=\n" +
+	"\x18allow_multiple_instances\x18\x18 \x01(\bH\vR\x16allowMultipleInstances\x88\x01\x01B\x19\n" +
 	"\x17_enricher_provider_typeB\x13\n" +
 	"\x11_destination_typeB\x18\n" +
 	"\x16_external_url_templateB\x10\n" +
@@ -1109,7 +1119,8 @@ const file_plugin_proto_rawDesc = "" +
 	"_icon_typeB\f\n" +
 	"\n" +
 	"_icon_pathB\x1d\n" +
-	"\x1b_is_temporarily_unavailable\"\xaa\x01\n" +
+	"\x1b_is_temporarily_unavailableB\x1b\n" +
+	"\x19_allow_multiple_instances\"\xaa\x01\n" +
 	"\x0eTransformation\x12\x14\n" +
 	"\x05field\x18\x01 \x01(\tR\x05field\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x16\n" +
