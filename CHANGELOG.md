@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [7.0.0](https://github.com/FitGlue/server/compare/v6.1.0...v7.0.0) (2026-01-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* Adds new ActivitySource enum values (INTERVALS, TRAININGPEAKS, GOOGLESHEETS) which may require Protobuf regeneration in downstream consumers.
+
+- Implement isBounceback() with retry logic to handle webhook race conditions
+- Add source-level loop prevention check in webhook-processor before deduplication
+- Filter pending inputs by auto-deadline to allow automated resolution first
+- Fix Hevy external URL template (workouts -> workout)
+- Exempt destination-only sources from handler coverage linting
+
+### Features
+
+* add bounceback detection with exponential backoff and support for destination-only sources ([625bed1](https://github.com/FitGlue/server/commit/625bed1e2620e8ef634d5a39db72749a229c5d01))
+
+
+### Bug Fixes
+
+* add index to firestore for parkrun results etc ([0cb8fec](https://github.com/FitGlue/server/commit/0cb8fec02eb43d709eff07508968b3e74995344c))
+
 ## [6.1.0](https://github.com/FitGlue/server/compare/v6.0.0...v6.1.0) (2026-01-24)
 
 
