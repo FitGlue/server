@@ -1,11 +1,16 @@
 package parkrun_results_source
 
 import (
+	"io"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
 )
+
+// discardLogger returns a logger that discards all output (for tests)
+var discardLogger = slog.New(slog.NewTextHandler(io.Discard, nil))
 
 // loadExampleHTML loads the example-results.html test fixture
 func loadExampleHTML(t *testing.T) string {
@@ -28,7 +33,7 @@ func loadExampleHTML(t *testing.T) string {
 func TestParseAthleteResultsBySlug_NewarkLatestRun(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(html, "newark")
+	result, err := parseAthleteResultsBySlug(discardLogger, html, "newark")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -75,7 +80,7 @@ func TestParseAthleteResultsBySlug_NewarkLatestRun(t *testing.T) {
 func TestParseAthleteResultsBySlug_Colwick(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(html, "colwick")
+	result, err := parseAthleteResultsBySlug(discardLogger, html, "colwick")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -100,7 +105,7 @@ func TestParseAthleteResultsBySlug_Colwick(t *testing.T) {
 func TestParseAthleteResultsBySlug_RobertsPark(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(html, "robertspark")
+	result, err := parseAthleteResultsBySlug(discardLogger, html, "robertspark")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -128,7 +133,7 @@ func TestParseAthleteResultsBySlug_RobertsPark(t *testing.T) {
 func TestParseAthleteResultsBySlug_Lancaster(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(html, "lancaster")
+	result, err := parseAthleteResultsBySlug(discardLogger, html, "lancaster")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -153,7 +158,7 @@ func TestParseAthleteResultsBySlug_Lancaster(t *testing.T) {
 func TestParseAthleteResultsBySlug_NonExistentEvent(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(html, "bushypark")
+	result, err := parseAthleteResultsBySlug(discardLogger, html, "bushypark")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

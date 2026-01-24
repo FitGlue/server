@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strings"
@@ -127,7 +127,7 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 			}
 
 			// Fetch results from Parkrun
-			results, err := fetchParkrunResultsForAthlete(ctx, httpClient, user.Integrations.Parkrun, eventSlug)
+			results, err := fetchParkrunResultsForAthlete(ctx, fwCtx.Logger, httpClient, user.Integrations.Parkrun, eventSlug)
 			if err != nil {
 				fwCtx.Logger.Warn("Failed to fetch results (may not be published yet)",
 					"activity_id", input.ActivityId,
@@ -190,8 +190,8 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 				continue
 			}
 
-			// Publish to the enricher topic to resume the pipeline
-			_, err = fwCtx.Service.Pub.PublishCloudEvent(ctx, shared.TopicActivityEnrichment, ceEvent)
+			// Publish to the raw activity topic to resume the pipeline (enricher listens on this topic)
+			_, err = fwCtx.Service.Pub.PublishCloudEvent(ctx, shared.TopicRawActivity, ceEvent)
 			if err != nil {
 				fwCtx.Logger.Error("Failed to publish resume event", "error", err)
 				failed++
@@ -243,7 +243,7 @@ type ParkrunResult struct {
 
 // fetchParkrunResultsForAthlete fetches and parses results from Parkrun website
 // Uses eventSlug directly instead of activity struct
-func fetchParkrunResultsForAthlete(ctx context.Context, client *http.Client, integration *pb.ParkrunIntegration, eventSlug string) (*ParkrunResult, error) {
+func fetchParkrunResultsForAthlete(ctx context.Context, logger *slog.Logger, client *http.Client, integration *pb.ParkrunIntegration, eventSlug string) (*ParkrunResult, error) {
 	// Extract numeric athlete ID from barcode (A12345 -> 12345)
 	athleteID := strings.TrimPrefix(integration.AthleteId, "A")
 
@@ -282,24 +282,29 @@ func fetchParkrunResultsForAthlete(ctx context.Context, client *http.Client, int
 	// Warn if HTML is suspiciously small (likely an error page or rate limited)
 	const minExpectedHTMLBytes = 5000
 	if len(body) < minExpectedHTMLBytes {
-		log.Printf("[WARN] Parkrun HTML response unusually small: %d bytes (expected >%d), url=%s",
-			len(body), minExpectedHTMLBytes, url)
+		logger.Warn("Parkrun HTML response unusually small",
+			"bytes", len(body),
+			"expected_min", minExpectedHTMLBytes,
+			"url", url)
 	}
 
 	// Parse the HTML to find matching event by slug
-	return parseAthleteResultsBySlug(string(body), eventSlug)
+	return parseAthleteResultsBySlug(logger, string(body), eventSlug)
 }
 
 // parseAthleteResultsBySlug parses the athlete's results page HTML to find result by event slug
 // and calculate PBs/stats from historical data.
 // The /all/ page has a table with columns: Event, Run Date, Run Number, Pos, Time, Age Grade, PB?
-func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, error) {
+func parseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug string) (*ParkrunResult, error) {
 	// Find rows in the "All Results" table (look for tbody rows to skip header)
 	// Using (?s) for dot-all mode to match across newlines
 	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
 	rows := rowPattern.FindAllStringSubmatch(html, -1)
 
-	log.Printf("[DEBUG] parseAthleteResultsBySlug: html_len=%d, event_slug=%s, total_rows=%d", len(html), eventSlug, len(rows))
+	logger.Debug("parseAthleteResultsBySlug starting",
+		"html_len", len(html),
+		"event_slug", eventSlug,
+		"total_rows", len(rows))
 
 	// Track our target result and all historical data for PB calculations
 	var targetResult *ParkrunResult
@@ -397,13 +402,22 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 		containsTarget := strings.Contains(rowLower, targetEventSlugLower)
 
 		if i < 25 || containsTarget { // Log first 25 rows or any matching rows
-			log.Printf("[DEBUG] Row %d: event=%s, rowSlug=%s, containsTarget=%v, targetResult_nil=%v",
-				i, eventCell, rowEventSlug, containsTarget, targetResult == nil)
+			logger.Debug("Row parsing",
+				"row", i,
+				"event", eventCell,
+				"row_slug", rowEventSlug,
+				"contains_target", containsTarget,
+				"target_result_nil", targetResult == nil)
 		}
 
 		if targetResult == nil && containsTarget {
-			log.Printf("[DEBUG] MATCH FOUND! Row %d: event=%s, date=%s, pos=%d, time=%s, ag=%.2f%%",
-				i, eventCell, dateCell, position, timeStr, ageGrade)
+			logger.Debug("Match found",
+				"row", i,
+				"event", eventCell,
+				"date", dateCell,
+				"position", position,
+				"time", timeStr,
+				"age_grade", ageGrade)
 			targetResult = &ParkrunResult{
 				Time:            timeStr,
 				Position:        position,
@@ -418,8 +432,12 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 		}
 	}
 
-	log.Printf("[DEBUG] Parsing complete: headerRows=%d, insufficientCells=%d, invalidPos=%d, validDataRows=%d, targetFound=%v",
-		headerRows, insufficientCellRows, invalidPositionRows, validDataRows, targetResult != nil)
+	logger.Debug("Parsing complete",
+		"header_rows", headerRows,
+		"insufficient_cells", insufficientCellRows,
+		"invalid_pos", invalidPositionRows,
+		"valid_data_rows", validDataRows,
+		"target_found", targetResult != nil)
 
 	// If no matching result found
 	if targetResult == nil {
