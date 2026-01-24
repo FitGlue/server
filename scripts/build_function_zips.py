@@ -24,6 +24,15 @@ def create_function_zip(function_name, src_dir, output_dir):
             continue
         shutil.copy2(go_file, temp_dir / go_file.name)
 
+    # Copy function subdirectories (like providers/) excluding cmd and test files
+    for subdir in function_dir.iterdir():
+        if subdir.is_dir() and subdir.name not in ["cmd", "__pycache__"]:
+            shutil.copytree(
+                subdir,
+                temp_dir / subdir.name,
+                ignore=shutil.ignore_patterns('*_test.go', 'cmd')
+            )
+
     # Copy shared pkg directory (excluding test files)
     shared_pkg = src_dir / "pkg"
     if shared_pkg.exists():
