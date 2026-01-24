@@ -1,6 +1,8 @@
 package firestore
 
 import (
+	"encoding/json"
+	"log"
 	"time"
 
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
@@ -610,7 +612,22 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 		}
 		if jsonStr != "" {
 			var payload pb.ActivityPayload
-			if err := protojson.Unmarshal([]byte(jsonStr), &payload); err == nil {
+			if err := protojson.Unmarshal([]byte(jsonStr), &payload); err != nil {
+				// protojson failed - try fallback: parse as generic JSON and extract metadata manually
+				// This handles payloads created by TypeScript that may not match proto format exactly
+				var genericPayload struct {
+					UserId   string            `json:"userId"`
+					Metadata map[string]string `json:"metadata"`
+				}
+				if jsonErr := json.Unmarshal([]byte(jsonStr), &genericPayload); jsonErr == nil {
+					// Successfully parsed as generic JSON - populate what we can
+					payload.UserId = genericPayload.UserId
+					payload.Metadata = genericPayload.Metadata
+					p.OriginalPayload = &payload
+				} else {
+					log.Printf("[converter] WARNING: Failed to parse original_payload: protojson=%v, json=%v", err, jsonErr)
+				}
+			} else {
 				p.OriginalPayload = &payload
 			}
 		}
