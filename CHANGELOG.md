@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [8.0.0](https://github.com/FitGlue/server/compare/v7.1.0...v8.0.0) (2026-01-24)
+
+
+### ⚠ BREAKING CHANGES
+
+* remove Mock Publish capability. It's fucked us.
+
+### Features
+
+* remove Mock Publish capability. It's fucked us. ([30dff86](https://github.com/FitGlue/server/commit/30dff86a107eeca735dd5ed458809db678c2c555))
+
+
+### Bug Fixes
+
+* add new pending input fields to firestore golang converter ([806ae5b](https://github.com/FitGlue/server/commit/806ae5b5d246b19edd1f8066f3ea394207aa1370))
+* allow 202 http response for parkrun ([859fbac](https://github.com/FitGlue/server/commit/859fbac0ba1ba80c53a80bc718e1ff43d8b7d9aa))
+* filtering of pending inputs now sends down auto_populated: true as expected ([c900ac6](https://github.com/FitGlue/server/commit/c900ac619fb8c39ae3d0542a6fbbf44f81a1a8e3))
+* make converter handle original payload in JSON format not ProtobufJSON format ([7577bfd](https://github.com/FitGlue/server/commit/7577bfd4c20f0fb08156d9f8d205caff830aa922))
+* parkrun html request to use browser-like user-agent header ([fb975e0](https://github.com/FitGlue/server/commit/fb975e009062d501d0a4bd8a3db04c245ef19b3b))
+* **parkrun:** publish to right topic ([7d349ad](https://github.com/FitGlue/server/commit/7d349ad756526bbcd37d4ca2cc151c243cbf43c6))
+
 ## [7.1.0](https://github.com/FitGlue/server/compare/v7.0.0...v7.1.0) (2026-01-24)
 
 
