@@ -111,10 +111,18 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 			if input.OriginalPayload != nil && input.OriginalPayload.Metadata != nil {
 				eventSlug = input.OriginalPayload.Metadata["parkrun_event_slug"]
 				eventName = input.OriginalPayload.Metadata["parkrun_event_name"]
+			} else {
+				// This is an error - the payload should always have metadata
+				fwCtx.Logger.Error("Pending input missing OriginalPayload or Metadata",
+					"input_id", input.ActivityId,
+					"has_original_payload", input.OriginalPayload != nil)
+				continue
 			}
 
 			if eventSlug == "" {
-				fwCtx.Logger.Warn("No event slug in pending input", "input_id", input.ActivityId)
+				fwCtx.Logger.Error("Required field missing: parkrun_event_slug is empty",
+					"input_id", input.ActivityId,
+					"event_name", eventName)
 				continue
 			}
 
@@ -262,12 +270,20 @@ func fetchParkrunResultsForAthlete(ctx context.Context, client *http.Client, int
 	// Accept 200 OK and 202 Accepted (Parkrun sometimes returns 202 during caching)
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("unexpected status: %d, body: %s", resp.StatusCode, string(body))
+		// Return error with status code for caller to handle
+		return nil, fmt.Errorf("http_status_%d: unexpected response (body_len=%d)", resp.StatusCode, len(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, fmt.Errorf("read body: %w", err)
+	}
+
+	// Warn if HTML is suspiciously small (likely an error page or rate limited)
+	const minExpectedHTMLBytes = 5000
+	if len(body) < minExpectedHTMLBytes {
+		log.Printf("[WARN] Parkrun HTML response unusually small: %d bytes (expected >%d), url=%s",
+			len(body), minExpectedHTMLBytes, url)
 	}
 
 	// Parse the HTML to find matching event by slug
