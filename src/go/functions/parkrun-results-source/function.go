@@ -299,7 +299,7 @@ func fetchParkrunResultsForAthlete(ctx context.Context, client *http.Client, int
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
-	req.Header.Set("User-Agent", "FitGlue/1.0 (https://fitglue.com)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "text/html")
 
 	resp, err := client.Do(req)
@@ -577,7 +577,7 @@ func fetchParkrunResults(ctx context.Context, client *http.Client, integration *
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
-	req.Header.Set("User-Agent", "FitGlue/1.0 (https://fitglue.com)")
+	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "text/html")
 
 	resp, err := client.Do(req)
