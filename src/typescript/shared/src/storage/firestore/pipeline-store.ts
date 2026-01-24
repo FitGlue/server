@@ -14,7 +14,7 @@ export const pipelineConverter: admin.firestore.FirestoreDataConverter<PipelineC
       destinations: model.destinations,
       enrichers: model.enrichers?.map(e => ({
         provider_type: e.providerType,
-        typed_config: e.typedConfig
+        typed_config: e.typedConfig || {}
       })) || [],
       disabled: model.disabled || false
     };
