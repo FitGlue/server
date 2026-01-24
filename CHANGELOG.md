@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [7.1.0](https://github.com/FitGlue/server/compare/v7.0.0...v7.1.0) (2026-01-24)
+
+
+### Features
+
+* **parkrun:** add placeholder description, rich results with PB tracking, and tests ([806b076](https://github.com/FitGlue/server/commit/806b076274bf549e05349ddf2b6c19b3679c9399))
+
 ## [7.0.0](https://github.com/FitGlue/server/compare/v6.1.0...v7.0.0) (2026-01-24)
 
 
