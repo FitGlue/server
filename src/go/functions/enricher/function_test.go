@@ -87,8 +87,7 @@ func TestEnrichActivity(t *testing.T) {
 		Pub:   mockPub,
 		Store: mockStore,
 		Config: &bootstrap.Config{
-			ProjectID:     "test-project",
-			EnablePublish: false,
+			ProjectID: "test-project",
 		},
 	}
 

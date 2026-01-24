@@ -50,23 +50,3 @@ func (a *PubSubAdapter) publishWithAttrs(ctx context.Context, topicID string, da
 	slog.Info("Message published successfully", "topic", topicID, "message_id", msgID, "size_bytes", len(data))
 	return msgID, nil
 }
-
-// LogPublisher is a mock publisher for local development
-type LogPublisher struct{}
-
-func (p *LogPublisher) PublishCloudEvent(ctx context.Context, topicID string, e event.Event) (string, error) {
-	bytes, err := json.Marshal(e)
-	if err != nil {
-		return "", err
-	}
-	return p.publish(ctx, topicID, bytes)
-}
-
-func (p *LogPublisher) publish(ctx context.Context, topicID string, data []byte) (string, error) {
-	return p.publishWithAttrs(ctx, topicID, data, nil)
-}
-
-func (p *LogPublisher) publishWithAttrs(ctx context.Context, topicID string, data []byte, attributes map[string]string) (string, error) {
-	slog.Info("MOCK PUBLISH", "topic", topicID, "data", string(data), "attributes", attributes)
-	return "mock-msg-id", nil
-}

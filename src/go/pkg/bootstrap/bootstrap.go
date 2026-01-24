@@ -25,7 +25,6 @@ import (
 // Config holds standard configuration for all services
 type Config struct {
 	ProjectID         string
-	EnablePublish     bool
 	GCSArtifactBucket string
 }
 
@@ -48,7 +47,6 @@ func LoadConfig() *Config {
 
 	return &Config{
 		ProjectID:         projectID,
-		EnablePublish:     os.Getenv("ENABLE_PUBLISH") == "true",
 		GCSArtifactBucket: os.Getenv("GCS_ARTIFACT_BUCKET"),
 	}
 }
@@ -172,20 +170,14 @@ func NewService(ctx context.Context) (*Service, error) {
 		return nil, fmt.Errorf("firestore init: %w", err)
 	}
 
-	// Pub/Sub
-	var pubAdapter shared.Publisher
-	if cfg.EnablePublish {
-		psClient, err := pubsub.NewClient(ctx, cfg.ProjectID)
-		if err != nil {
-			slog.Error("PubSub init failed", "error", err)
-			return nil, fmt.Errorf("pubsub init: %w", err)
-		}
-		pubAdapter = &infrapubsub.PubSubAdapter{Client: psClient}
-		slog.Info("Pub/Sub: REAL (ENABLE_PUBLISH=true)")
-	} else {
-		pubAdapter = &infrapubsub.LogPublisher{}
-		slog.Info("Pub/Sub: MOCK (LogPublisher)")
+	// Pub/Sub - always use real publisher
+	psClient, err := pubsub.NewClient(ctx, cfg.ProjectID)
+	if err != nil {
+		slog.Error("PubSub init failed", "error", err)
+		return nil, fmt.Errorf("pubsub init: %w", err)
 	}
+	pubAdapter := &infrapubsub.PubSubAdapter{Client: psClient}
+	slog.Info("Pub/Sub initialized")
 
 	// Storage
 	gcsClient, err := storage.NewClient(ctx)

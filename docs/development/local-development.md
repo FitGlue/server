@@ -35,7 +35,6 @@ Edit `.env` to set your mock secrets:
 ```bash
 GOOGLE_CLOUD_PROJECT=fitglue-local
 HEVY_SIGNING_SECRET=local-secret
-ENABLE_PUBLISH=false  # Set to true to publish to local Pub/Sub emulator
 ```
 
 ## 3. Starting Services

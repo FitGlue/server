@@ -206,17 +206,6 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 	}
 }
 
-// PendingParkrunActivity represents an activity awaiting results
-type PendingParkrunActivity struct {
-	ActivityID       string
-	UserID           string
-	StravaActivityID int64
-	EventName        string
-	EventSlug        string
-	StartTime        time.Time
-	PollingDeadline  *timestamppb.Timestamp
-}
-
 // ParkrunResult represents fetched results with PB tracking and location stats
 type ParkrunResult struct {
 	// Current run
@@ -242,45 +231,6 @@ type ParkrunResult struct {
 	// Event info
 	EventName string
 	EventDate string
-}
-
-// queryPendingParkrunActivities queries Firestore for activities awaiting results
-func queryPendingParkrunActivities(ctx context.Context, svc *bootstrap.Service) ([]PendingParkrunActivity, error) {
-	// Use the database adapter to query for pending Parkrun activities
-	activities, userIDs, err := svc.DB.ListPendingParkrunActivities(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("query pending activities: %w", err)
-	}
-
-	var pending []PendingParkrunActivity
-	for i, activity := range activities {
-		// Convert to our internal struct
-		pending = append(pending, PendingParkrunActivity{
-			ActivityID:       activity.ActivityId,
-			UserID:           userIDs[i],
-			StravaActivityID: extractStravaActivityID(activity.Destinations),
-			EventName:        activity.ParkrunEventName,
-			EventSlug:        activity.ParkrunEventSlug,
-			StartTime:        activity.StartTime.AsTime(),
-			PollingDeadline:  activity.ParkrunPollingDeadline,
-		})
-	}
-
-	return pending, nil
-}
-
-// extractStravaActivityID extracts Strava activity ID from destinations map
-func extractStravaActivityID(destinations map[string]string) int64 {
-	if destinations == nil {
-		return 0
-	}
-	// Destinations map has format: {"strava": "activity_id"}
-	if stravaID, ok := destinations["strava"]; ok {
-		var id int64
-		fmt.Sscanf(stravaID, "%d", &id)
-		return id
-	}
-	return 0
 }
 
 // fetchParkrunResultsForAthlete fetches and parses results from Parkrun website
@@ -589,98 +539,6 @@ func isAgeGradePBThisYear(targetAG float64, thisYearAgeGrades []float64) bool {
 	return len(thisYearAgeGrades) > 1
 }
 
-// fetchParkrunResults fetches and parses results from Parkrun website (legacy - uses activity struct)
-func fetchParkrunResults(ctx context.Context, client *http.Client, integration *pb.ParkrunIntegration, activity PendingParkrunActivity) (*ParkrunResult, error) {
-	// Extract numeric athlete ID from barcode (A12345 -> 12345)
-	athleteID := strings.TrimPrefix(integration.AthleteId, "A")
-
-	// Build URL: https://www.parkrun.org.uk/parkrunner/{athlete_id}/all/
-	baseURL := integration.CountryUrl
-	if baseURL == "" {
-		baseURL = "www.parkrun.org.uk"
-	}
-	url := fmt.Sprintf("https://%s/parkrunner/%s/all/", baseURL, athleteID)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-	req.Header.Set("Accept", "text/html")
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("fetch results: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status: %d", resp.StatusCode)
-	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read body: %w", err)
-	}
-
-	// Parse the HTML to find matching event/date
-	return parseAthleteResults(string(body), activity.EventName, activity.StartTime)
-}
-
-// parseAthleteResults parses the athlete's results page HTML to find matching result
-// The /all/ page has columns: Event, Run Date, Run Number, Pos, Time, Age Grade, PB?
-func parseAthleteResults(html string, eventName string, activityDate time.Time) (*ParkrunResult, error) {
-	// Format the date for matching (DD/MM/YYYY format used by Parkrun)
-	dateStr := activityDate.Format("02/01/2006")
-
-	// Find all rows in the table
-	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
-	rows := rowPattern.FindAllStringSubmatch(html, -1)
-
-	for _, rowMatch := range rows {
-		row := rowMatch[1]
-
-		// Skip header rows
-		if strings.Contains(row, "<th") {
-			continue
-		}
-
-		// Check if row contains both event name (or slug) and date
-		eventSlug := strings.ToLower(strings.ReplaceAll(eventName, " ", ""))
-		rowLower := strings.ToLower(row)
-
-		hasEvent := strings.Contains(row, eventName) || strings.Contains(rowLower, eventSlug)
-		hasDate := strings.Contains(row, dateStr)
-
-		if !hasEvent || !hasDate {
-			continue
-		}
-
-		// Extract table cells
-		cellPattern := regexp.MustCompile(`(?s)<td[^>]*>(.*?)</td>`)
-		cells := cellPattern.FindAllStringSubmatch(row, -1)
-
-		// Expect 7 columns: Event (0), Run Date (1), Run Number (2), Pos (3), Time (4), Age Grade (5), PB? (6)
-		if len(cells) >= 7 {
-			result := &ParkrunResult{
-				EventName: eventName,
-				EventDate: dateStr,
-			}
-
-			fmt.Sscanf(stripTags(cells[3][1]), "%d", &result.Position)
-			result.Time = stripTags(cells[4][1])
-			result.AgeGrade = stripTags(cells[5][1])
-			pbCell := stripTags(cells[6][1])
-			// Legacy: set TimeAllTimePB based on PB column (simplified)
-			result.TimeAllTimePB = strings.Contains(strings.ToUpper(pbCell), "PB")
-
-			return result, nil
-		}
-	}
-
-	return nil, nil // No matching result found yet
-}
-
 // formatResultsDescription formats results into a nice description with PB badges
 func formatResultsDescription(results *ParkrunResult, eventName string) *string {
 	if results == nil {
@@ -754,14 +612,8 @@ func ordinal(n int) string {
 	}
 }
 
-// Helper regex patterns for parsing Parkrun results HTML
-var (
-	// Parkrun result tables use specific TD classes
-	positionRegex = regexp.MustCompile(`<td[^>]*data-th="Pos"[^>]*>(\d+)</td>`)
-	timeRegex     = regexp.MustCompile(`<td[^>]*data-th="Time"[^>]*>(\d+:\d+)</td>`)
-	ageGradeRegex = regexp.MustCompile(`<td[^>]*data-th="Age Grade"[^>]*>(\d+\.\d+%)</td>`)
-	tagRegex      = regexp.MustCompile(`<[^>]*>`)
-)
+// tagRegex for HTML tag stripping
+var tagRegex = regexp.MustCompile(`<[^>]*>`)
 
 // stripTags removes HTML tags from a string
 func stripTags(s string) string {

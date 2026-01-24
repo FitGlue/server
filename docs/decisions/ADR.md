@@ -16,7 +16,6 @@ We adopted a **Hybrid Cloud/Local** workflow:
     - *Test Isolation:* Integration tests generate random UUIDs (`user_test_<uuid>`) and clean up after themselves.
 3.  **Mocked Pub/Sub:** We use a `LogPublisher` (No-Op) adapter by default.
     - *Why:* Prevents "Topic Pollution" where one dev's test event triggers another dev's local subscriber.
-    - *Mechanism:* `ENABLE_PUBLISH` env var. Default is `false` (Log Only).
 4.  **Future:** Formal "Test" and "Prod" environments will be separate GCP Projects managed by Terraform.
 
 ### Consequences

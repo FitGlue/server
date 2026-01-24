@@ -9,39 +9,29 @@ import (
 func TestLoadConfig(t *testing.T) {
 	// Save original env
 	origProject := os.Getenv("GOOGLE_CLOUD_PROJECT")
-	origPublish := os.Getenv("ENABLE_PUBLISH")
 	origBucket := os.Getenv("GCS_ARTIFACT_BUCKET")
 	defer func() {
 		os.Setenv("GOOGLE_CLOUD_PROJECT", origProject)
-		os.Setenv("ENABLE_PUBLISH", origPublish)
 		os.Setenv("GCS_ARTIFACT_BUCKET", origBucket)
 	}()
 
 	t.Run("Defaults", func(t *testing.T) {
 		os.Unsetenv("GOOGLE_CLOUD_PROJECT")
-		os.Unsetenv("ENABLE_PUBLISH")
 		os.Unsetenv("GCS_ARTIFACT_BUCKET")
 
 		cfg := LoadConfig()
 		if cfg.ProjectID == "" {
 			t.Error("ProjectID should have default fallback")
 		}
-		if cfg.EnablePublish != false {
-			t.Error("EnablePublish should default to false")
-		}
 	})
 
 	t.Run("Overrides", func(t *testing.T) {
 		os.Setenv("GOOGLE_CLOUD_PROJECT", "test-project")
-		os.Setenv("ENABLE_PUBLISH", "true")
 		os.Setenv("GCS_ARTIFACT_BUCKET", "test-bucket")
 
 		cfg := LoadConfig()
 		if cfg.ProjectID != "test-project" {
 			t.Errorf("Expected test-project, got %s", cfg.ProjectID)
-		}
-		if !cfg.EnablePublish {
-			t.Error("Expected EnablePublish to be true")
 		}
 		if cfg.GCSArtifactBucket != "test-bucket" {
 			t.Errorf("Expected test-bucket, got %s", cfg.GCSArtifactBucket)
