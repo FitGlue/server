@@ -216,12 +216,29 @@ type PendingParkrunActivity struct {
 	PollingDeadline  *timestamppb.Timestamp
 }
 
-// ParkrunResult represents fetched results
+// ParkrunResult represents fetched results with PB tracking and location stats
 type ParkrunResult struct {
-	Position  int
-	Time      string // e.g., "24:12"
-	AgeGrade  string // e.g., "65.2%"
-	IsPB      bool
+	// Current run
+	Time     string // e.g., "24:12"
+	Position int    // e.g., 30
+	AgeGrade string // e.g., "54.76%"
+
+	// All-time PB tracking
+	TimeAllTimePB     bool // Is this a new all-time time PB?
+	PosAllTimePB      bool // Is this a new all-time position PB?
+	AgeGradeAllTimePB bool // Is this a new all-time age grade PB?
+
+	// This-year PB tracking (Jan 1st cutoff)
+	TimeThisYearPB     bool
+	PosThisYearPB      bool
+	AgeGradeThisYearPB bool
+
+	// Location stats
+	TotalAtLocation int  // How many times at this location (including this run)
+	TotalAllTime    int  // Total parkruns ever (including this run)
+	FirstAtLocation bool // First time at this location
+
+	// Event info
 	EventName string
 	EventDate string
 }
@@ -305,6 +322,7 @@ func fetchParkrunResultsForAthlete(ctx context.Context, client *http.Client, int
 }
 
 // parseAthleteResultsBySlug parses the athlete's results page HTML to find result by event slug
+// and calculate PBs/stats from historical data.
 // The /all/ page has a table with columns: Event, Run Date, Run Number, Pos, Time, Age Grade, PB?
 func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, error) {
 	// Find rows in the "All Results" table (look for tbody rows to skip header)
@@ -312,14 +330,31 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
 	rows := rowPattern.FindAllStringSubmatch(html, -1)
 
+	// Track our target result and all historical data for PB calculations
+	var targetResult *ParkrunResult
+	var targetEventSlugLower = strings.ToLower(eventSlug)
+	var targetRowDate string
+
+	// Historical tracking for PB calculations
+	var allTimes []string
+	var allPositions []int
+	var allAgeGrades []float64
+	var thisYearTimes []string
+	var thisYearPositions []int
+	var thisYearAgeGrades []float64
+
+	// Location tracking
+	locationVisits := make(map[string]int)
+	totalRuns := 0
+
+	// Get current year for this-year PB calculations
+	currentYear := time.Now().Year()
+
+	// Cell pattern for extraction
+	cellPattern := regexp.MustCompile(`(?s)<td[^>]*>(.*?)</td>`)
+
 	for _, rowMatch := range rows {
 		row := rowMatch[1]
-
-		// Check if this row contains the event slug in an href
-		// Event links look like: href="https://www.parkrun.org.uk/newark/results/"
-		if !strings.Contains(strings.ToLower(row), strings.ToLower(eventSlug)) {
-			continue
-		}
 
 		// Skip header rows (they contain <th> elements)
 		if strings.Contains(row, "<th") {
@@ -327,31 +362,203 @@ func parseAthleteResultsBySlug(html string, eventSlug string) (*ParkrunResult, e
 		}
 
 		// Extract table cells
-		// Using (?s) for dot-all mode since cell content may span lines
-		cellPattern := regexp.MustCompile(`(?s)<td[^>]*>(.*?)</td>`)
 		cells := cellPattern.FindAllStringSubmatch(row, -1)
 
 		// Expect 7 columns: Event (0), Run Date (1), Run Number (2), Pos (3), Time (4), Age Grade (5), PB? (6)
-		if len(cells) >= 7 {
-			eventCell := stripTags(cells[0][1])
-			position := 0
-			fmt.Sscanf(stripTags(cells[3][1]), "%d", &position)
-			time := stripTags(cells[4][1])
-			ageGrade := stripTags(cells[5][1])
-			pbCell := stripTags(cells[6][1])
-			isPB := strings.Contains(strings.ToUpper(pbCell), "PB")
+		if len(cells) < 7 {
+			continue
+		}
 
-			return &ParkrunResult{
-				Position:  position,
-				Time:      time,
-				AgeGrade:  ageGrade,
-				IsPB:      isPB,
-				EventName: eventCell,
-			}, nil
+		eventCell := stripTags(cells[0][1])
+		dateCell := stripTags(cells[1][1])
+		positionStr := stripTags(cells[3][1])
+		timeStr := stripTags(cells[4][1])
+		ageGradeStr := stripTags(cells[5][1])
+
+		// Parse position
+		var position int
+		fmt.Sscanf(positionStr, "%d", &position)
+		if position == 0 {
+			continue // Skip invalid rows
+		}
+
+		// Parse age grade (remove % if present)
+		ageGradeStr = strings.TrimSuffix(ageGradeStr, "%")
+		var ageGrade float64
+		fmt.Sscanf(ageGradeStr, "%f", &ageGrade)
+
+		// Parse date to determine year (format: DD/MM/YYYY)
+		runYear := 0
+		if len(dateCell) >= 10 {
+			fmt.Sscanf(dateCell[6:10], "%d", &runYear)
+		}
+
+		// Extract event slug from this row's event link
+		rowEventSlug := extractEventSlugFromRow(row)
+
+		// Track location visits
+		locationVisits[rowEventSlug]++
+		totalRuns++
+
+		// Track historical data for PB calculations (excluding the target row itself later)
+		allTimes = append(allTimes, timeStr)
+		allPositions = append(allPositions, position)
+		allAgeGrades = append(allAgeGrades, ageGrade)
+
+		if runYear == currentYear {
+			thisYearTimes = append(thisYearTimes, timeStr)
+			thisYearPositions = append(thisYearPositions, position)
+			thisYearAgeGrades = append(thisYearAgeGrades, ageGrade)
+		}
+
+		// Check if this is our target row (most recent match for the event slug)
+		if targetResult == nil && strings.Contains(strings.ToLower(row), targetEventSlugLower) {
+			targetResult = &ParkrunResult{
+				Time:            timeStr,
+				Position:        position,
+				AgeGrade:        fmt.Sprintf("%.2f%%", ageGrade),
+				EventName:       eventCell,
+				EventDate:       dateCell,
+				TotalAtLocation: locationVisits[rowEventSlug],
+				TotalAllTime:    totalRuns,
+				FirstAtLocation: locationVisits[rowEventSlug] == 1,
+			}
+			targetRowDate = dateCell
 		}
 	}
 
-	return nil, nil // Results not found yet
+	// If no matching result found
+	if targetResult == nil {
+		return nil, nil
+	}
+
+	// Now calculate PBs by comparing against all OTHER results (excluding target row)
+	targetResult.TimeAllTimePB = isTimePB(targetResult.Time, allTimes, targetRowDate)
+	targetResult.PosAllTimePB = isPositionPB(targetResult.Position, allPositions, targetRowDate)
+	targetResult.AgeGradeAllTimePB = isAgeGradePB(parseAgeGrade(targetResult.AgeGrade), allAgeGrades, targetRowDate)
+
+	// This-year PBs
+	targetResult.TimeThisYearPB = isTimePBThisYear(targetResult.Time, thisYearTimes)
+	targetResult.PosThisYearPB = isPositionPBThisYear(targetResult.Position, thisYearPositions)
+	targetResult.AgeGradeThisYearPB = isAgeGradePBThisYear(parseAgeGrade(targetResult.AgeGrade), thisYearAgeGrades)
+
+	// Update totals (we want to show counts including this run)
+	eventSlugLower := strings.ToLower(eventSlug)
+	targetResult.TotalAtLocation = locationVisits[eventSlugLower]
+	targetResult.TotalAllTime = totalRuns
+	// FirstAtLocation is true only if this is the only run ever at this location
+	targetResult.FirstAtLocation = locationVisits[eventSlugLower] == 1
+
+	return targetResult, nil
+}
+
+// extractEventSlugFromRow extracts the event slug from a row's event link
+func extractEventSlugFromRow(row string) string {
+	// Look for href pattern like https://www.parkrun.org.uk/newark/results/
+	hrefPattern := regexp.MustCompile(`href="https?://[^/]+/([^/]+)/results/"`)
+	match := hrefPattern.FindStringSubmatch(row)
+	if len(match) >= 2 {
+		return strings.ToLower(match[1])
+	}
+	return ""
+}
+
+// parseAgeGrade parses age grade string to float
+func parseAgeGrade(ag string) float64 {
+	ag = strings.TrimSuffix(ag, "%")
+	var val float64
+	fmt.Sscanf(ag, "%f", &val)
+	return val
+}
+
+// parseTimeToSeconds converts time string (MM:SS or HH:MM:SS) to seconds for comparison
+func parseTimeToSeconds(timeStr string) int {
+	parts := strings.Split(timeStr, ":")
+	seconds := 0
+	switch len(parts) {
+	case 2: // MM:SS
+		var mins, secs int
+		fmt.Sscanf(parts[0], "%d", &mins)
+		fmt.Sscanf(parts[1], "%d", &secs)
+		seconds = mins*60 + secs
+	case 3: // HH:MM:SS
+		var hours, mins, secs int
+		fmt.Sscanf(parts[0], "%d", &hours)
+		fmt.Sscanf(parts[1], "%d", &mins)
+		fmt.Sscanf(parts[2], "%d", &secs)
+		seconds = hours*3600 + mins*60 + secs
+	}
+	return seconds
+}
+
+// isTimePB checks if the target time is a new all-time PB (lower is better)
+func isTimePB(targetTime string, allTimes []string, targetDate string) bool {
+	targetSeconds := parseTimeToSeconds(targetTime)
+	if targetSeconds == 0 {
+		return false
+	}
+	for _, t := range allTimes {
+		otherSeconds := parseTimeToSeconds(t)
+		if otherSeconds > 0 && otherSeconds < targetSeconds {
+			return false // Found a faster time
+		}
+	}
+	return len(allTimes) > 1 // Only a PB if there were previous runs
+}
+
+// isPositionPB checks if the target position is a new all-time PB (lower is better)
+func isPositionPB(targetPos int, allPositions []int, targetDate string) bool {
+	for _, pos := range allPositions {
+		if pos > 0 && pos < targetPos {
+			return false // Found a better position
+		}
+	}
+	return len(allPositions) > 1
+}
+
+// isAgeGradePB checks if the target age grade is a new all-time PB (higher is better)
+func isAgeGradePB(targetAG float64, allAgeGrades []float64, targetDate string) bool {
+	for _, ag := range allAgeGrades {
+		if ag > targetAG {
+			return false // Found a higher age grade
+		}
+	}
+	return len(allAgeGrades) > 1
+}
+
+// isTimePBThisYear checks if the target time is a this-year PB
+func isTimePBThisYear(targetTime string, thisYearTimes []string) bool {
+	targetSeconds := parseTimeToSeconds(targetTime)
+	if targetSeconds == 0 {
+		return false
+	}
+	for _, t := range thisYearTimes {
+		otherSeconds := parseTimeToSeconds(t)
+		if otherSeconds > 0 && otherSeconds < targetSeconds {
+			return false
+		}
+	}
+	return len(thisYearTimes) > 1
+}
+
+// isPositionPBThisYear checks if the target position is a this-year PB
+func isPositionPBThisYear(targetPos int, thisYearPositions []int) bool {
+	for _, pos := range thisYearPositions {
+		if pos > 0 && pos < targetPos {
+			return false
+		}
+	}
+	return len(thisYearPositions) > 1
+}
+
+// isAgeGradePBThisYear checks if the target age grade is a this-year PB
+func isAgeGradePBThisYear(targetAG float64, thisYearAgeGrades []float64) bool {
+	for _, ag := range thisYearAgeGrades {
+		if ag > targetAG {
+			return false
+		}
+	}
+	return len(thisYearAgeGrades) > 1
 }
 
 // fetchParkrunResults fetches and parses results from Parkrun website (legacy - uses activity struct)
@@ -436,7 +643,8 @@ func parseAthleteResults(html string, eventName string, activityDate time.Time) 
 			result.Time = stripTags(cells[4][1])
 			result.AgeGrade = stripTags(cells[5][1])
 			pbCell := stripTags(cells[6][1])
-			result.IsPB = strings.Contains(strings.ToUpper(pbCell), "PB")
+			// Legacy: set TimeAllTimePB based on PB column (simplified)
+			result.TimeAllTimePB = strings.Contains(strings.ToUpper(pbCell), "PB")
 
 			return result, nil
 		}
@@ -445,28 +653,77 @@ func parseAthleteResults(html string, eventName string, activityDate time.Time) 
 	return nil, nil // No matching result found yet
 }
 
-// formatResultsDescription formats results into a nice description
+// formatResultsDescription formats results into a nice description with PB badges
 func formatResultsDescription(results *ParkrunResult, eventName string) *string {
 	if results == nil {
 		return nil
 	}
 
 	var sb strings.Builder
-	sb.WriteString("🏃 **Official Parkrun Results**\n\n")
-	sb.WriteString(fmt.Sprintf("📍 %s\n", eventName))
-	sb.WriteString(fmt.Sprintf("🏁 Position: %d\n", results.Position))
-	sb.WriteString(fmt.Sprintf("⏱️ Official Time: %s\n", results.Time))
+	sb.WriteString("🏃♂️ Parkrun Results:\n")
 
+	// Position line with PB badges
+	sb.WriteString(fmt.Sprintf("Position: %s", ordinal(results.Position)))
+	if results.PosAllTimePB {
+		sb.WriteString(" | 🏆 New all-time PB!")
+	}
+	if results.PosThisYearPB {
+		sb.WriteString(" | 🏅 New this-year PB!")
+	}
+	sb.WriteString("\n")
+
+	// Time line with PB badges
+	sb.WriteString(fmt.Sprintf("Time: %s", results.Time))
+	if results.TimeAllTimePB {
+		sb.WriteString(" | 🏆 New all-time PB!")
+	}
+	if results.TimeThisYearPB {
+		sb.WriteString(" | 🏅 New this-year PB!")
+	}
+	sb.WriteString("\n")
+
+	// Age Grade line with PB badges
 	if results.AgeGrade != "" {
-		sb.WriteString(fmt.Sprintf("📊 Age Grade: %s\n", results.AgeGrade))
+		sb.WriteString(fmt.Sprintf("Age Grade: %s", results.AgeGrade))
+		if results.AgeGradeAllTimePB {
+			sb.WriteString(" | 🏆 New all-time PB!")
+		}
+		if results.AgeGradeThisYearPB {
+			sb.WriteString(" | 🏅 New this-year PB!")
+		}
+		sb.WriteString("\n")
 	}
 
-	if results.IsPB {
-		sb.WriteString("🎉 **New PB!** 🎉\n")
+	// Location line
+	sb.WriteString(fmt.Sprintf("Location: %s, %s Parkrun here (%d total)",
+		eventName, ordinal(results.TotalAtLocation), results.TotalAllTime))
+	if results.FirstAtLocation {
+		sb.WriteString(" | 🌟 First time at this location!")
 	}
 
 	desc := sb.String()
 	return &desc
+}
+
+// ordinal converts an integer to its ordinal string (1st, 2nd, 3rd, 4th, etc.)
+func ordinal(n int) string {
+	if n <= 0 {
+		return fmt.Sprintf("%d", n)
+	}
+	switch n % 100 {
+	case 11, 12, 13:
+		return fmt.Sprintf("%dth", n)
+	}
+	switch n % 10 {
+	case 1:
+		return fmt.Sprintf("%dst", n)
+	case 2:
+		return fmt.Sprintf("%dnd", n)
+	case 3:
+		return fmt.Sprintf("%drd", n)
+	default:
+		return fmt.Sprintf("%dth", n)
+	}
 }
 
 // Helper regex patterns for parsing Parkrun results HTML

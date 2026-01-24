@@ -274,6 +274,9 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 				result.Metadata["results_auto_deadline"] = autoDeadline.Format(time.RFC3339)
 			}
 
+			// Add placeholder description for destinations while waiting for official results
+			result.Description = "🏃 Parkrun Results:\nWaiting for results to be released..."
+
 			result.Metadata["parkrun_results_state"] = "PENDING"
 		} else {
 			result.Metadata["parkrun_results_state"] = "DISABLED"
