@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [6.1.0](https://github.com/FitGlue/server/compare/v6.0.0...v6.1.0) (2026-01-24)
+
+
+### Features
+
+* Implement muscle heatmap image enricher provider using SVG body diagrams to visualize muscle activation. ([f5e8456](https://github.com/FitGlue/server/commit/f5e845675d7bc5d9e5768671490d98dab4e47b0d))
+* many things I'm tired ([225471f](https://github.com/FitGlue/server/commit/225471fcfa975367c967af217362045cc18b5a7c))
+
+
+### Bug Fixes
+
+* ACTUALLY UPLOAD CORRECT GO ZIPS OH MY GOD ([549a58c](https://github.com/FitGlue/server/commit/549a58ce0da8efd77e564ee76c74f5416a00c19d))
+* **build:** limit build concurrency to 4 jobs to prevent CI OOM ([9f23ce9](https://github.com/FitGlue/server/commit/9f23ce9db9f1f21b8b1dec49f5f9a35bfed3733f))
+* **build:** limit build/test concurrency to 4 jobs to prevent CI OOM ([c491e8e](https://github.com/FitGlue/server/commit/c491e8eed175a11b925c61fae7e01b347c7b9fa6))
+* fix pipeline imports ([e087c62](https://github.com/FitGlue/server/commit/e087c620d203a802b3ed7592f130e741125a8e95))
+* include subdirs in go function zip builds ([29cea1b](https://github.com/FitGlue/server/commit/29cea1b06637f63ff4d2fc240ff4ab88564d4530))
+
 ## [6.0.0](https://github.com/FitGlue/server/compare/v5.0.1...v6.0.0) (2026-01-23)
 
 
