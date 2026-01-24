@@ -24,12 +24,15 @@ def create_function_zip(function_name, src_dir, output_dir):
             continue
         shutil.copy2(go_file, temp_dir / go_file.name)
 
-    # Copy function subdirectories (like providers/) excluding cmd and test files
+    # Copy function subdirectories (like providers/) to preserving the import path structure
+    # Import paths are relative to the module root (github.com/fitglue/server/src/go),
+    # so providers/ needs to be at functions/{function_name}/providers/ in the ZIP
     for subdir in function_dir.iterdir():
         if subdir.is_dir() and subdir.name not in ["cmd", "__pycache__"]:
+            target_path = temp_dir / "functions" / function_name / subdir.name
             shutil.copytree(
                 subdir,
-                temp_dir / subdir.name,
+                target_path,
                 ignore=shutil.ignore_patterns('*_test.go', 'cmd')
             )
 
