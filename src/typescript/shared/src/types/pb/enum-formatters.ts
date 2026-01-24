@@ -705,6 +705,18 @@ const ActivitySourceNames: Record<string, string> = {
     'WAHOO': 'Wahoo',
     'Wahoo': 'Wahoo',
     '12': 'Wahoo',
+    'SOURCE_INTERVALS': 'Intervals',
+    'INTERVALS': 'Intervals',
+    'Intervals': 'Intervals',
+    '13': 'Intervals',
+    'SOURCE_TRAININGPEAKS': 'Trainingpeaks',
+    'TRAININGPEAKS': 'Trainingpeaks',
+    'Trainingpeaks': 'Trainingpeaks',
+    '14': 'Trainingpeaks',
+    'SOURCE_GOOGLESHEETS': 'Googlesheets',
+    'GOOGLESHEETS': 'Googlesheets',
+    'Googlesheets': 'Googlesheets',
+    '15': 'Googlesheets',
     'SOURCE_TEST': 'Test',
     'TEST': 'Test',
     'Test': 'Test',
@@ -742,6 +754,9 @@ export function formatActivitySource(value: ActivitySource | number | string | u
     case ActivitySource.SOURCE_OURA: return 'Oura';
     case ActivitySource.SOURCE_POLAR: return 'Polar';
     case ActivitySource.SOURCE_WAHOO: return 'Wahoo';
+    case ActivitySource.SOURCE_INTERVALS: return 'Intervals';
+    case ActivitySource.SOURCE_TRAININGPEAKS: return 'Trainingpeaks';
+    case ActivitySource.SOURCE_GOOGLESHEETS: return 'Googlesheets';
     case ActivitySource.SOURCE_TEST: return 'Test';
     default: return 'Unknown';
   }

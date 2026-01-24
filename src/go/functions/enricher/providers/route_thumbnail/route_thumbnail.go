@@ -89,12 +89,17 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, activity *pb.Standa
 		bucketName = "fitglue-showcase-assets" // Default bucket name
 	}
 
-	activityID := activity.ExternalId
-	if activityID == "" {
-		activityID = "unknown"
+	// Use pipeline_execution_id for asset storage path (unique per pipeline execution)
+	// Falls back to activity.ExternalId for backward compatibility
+	assetFolderID := inputConfig["pipeline_execution_id"]
+	if assetFolderID == "" {
+		assetFolderID = activity.ExternalId
+	}
+	if assetFolderID == "" {
+		assetFolderID = "unknown"
 	}
 
-	objectPath := fmt.Sprintf("%s/route-thumbnail.svg", activityID)
+	objectPath := fmt.Sprintf("%s/route-thumbnail.svg", assetFolderID)
 	if err := p.service.Store.Write(ctx, bucketName, objectPath, []byte(svgContent)); err != nil {
 		return nil, fmt.Errorf("failed to upload SVG to GCS: %w", err)
 	}
@@ -112,7 +117,7 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, activity *pb.Standa
 		assetURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath)
 	}
 
-	slog.Info("Generated route thumbnail", "external_id", activityID, "url", assetURL, "points", len(points))
+	slog.Info("Generated route thumbnail", "asset_folder_id", assetFolderID, "url", assetURL, "points", len(points))
 
 	return &providers.EnrichmentResult{
 		Metadata: map[string]string{

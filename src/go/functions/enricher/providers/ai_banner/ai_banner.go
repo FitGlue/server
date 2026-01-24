@@ -69,15 +69,19 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 		style = "vibrant" // Default
 	}
 
-	// Get activity ID for storage path
-	activityID := activity.ExternalId
-	if activityID == "" {
-		slog.Warn("AI Banner skipped: no activity ID")
+	// Get asset folder ID for storage path
+	// Use pipeline_execution_id (unique per pipeline execution) with fallback to activity.ExternalId
+	assetFolderID := inputs["pipeline_execution_id"]
+	if assetFolderID == "" {
+		assetFolderID = activity.ExternalId
+	}
+	if assetFolderID == "" {
+		slog.Warn("AI Banner skipped: no pipeline execution ID or activity ID")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "skipped",
-				"reason":        "no_activity_id",
-				"status_detail": "Activity ID is required for image storage",
+				"reason":        "no_asset_folder_id",
+				"status_detail": "Pipeline execution ID or Activity ID is required for image storage",
 			},
 		}, nil
 	}
@@ -117,7 +121,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 		bucketName = "fitglue-showcase-assets" // Default bucket name
 	}
 
-	objectPath := fmt.Sprintf("%s/banner.png", activityID)
+	objectPath := fmt.Sprintf("%s/banner.png", assetFolderID)
 	bannerURL, err := p.storeImage(ctx, bucketName, objectPath, imageData)
 	if err != nil {
 		slog.Error("Failed to store AI banner", "error", err)
@@ -131,7 +135,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 	}
 
 	slog.Info("AI Banner generated successfully",
-		"activity_id", activityID,
+		"asset_folder_id", assetFolderID,
 		"banner_url", bannerURL,
 		"style", style,
 	)
@@ -203,7 +207,7 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 		},
 		Parameters: ImagenParameters{
 			SampleCount:      1,
-			AspectRatio:      "3:1",        // Closest to 1200x400 (3:1 ratio)
+			AspectRatio:      "3:4",        // Standard photograph ratio
 			AddWatermark:     false,        // Disable watermark for cleaner banners
 			PersonGeneration: "dont_allow", // No people/faces in abstract banners
 		},
@@ -354,20 +358,4 @@ func buildImagePrompt(activity *pb.StandardizedActivity, style string) string {
 	parts = append(parts, "No text or watermarks. Abstract or semi-abstract athletic imagery. High quality, professional look.")
 
 	return strings.Join(parts, "\n")
-}
-
-// getTimeOfDay returns a descriptive time of day string from hour
-func getTimeOfDay(hour int) string {
-	switch {
-	case hour >= 5 && hour < 9:
-		return "early morning"
-	case hour >= 9 && hour < 12:
-		return "morning"
-	case hour >= 12 && hour < 17:
-		return "afternoon"
-	case hour >= 17 && hour < 20:
-		return "evening"
-	default:
-		return "night"
-	}
 }

@@ -685,7 +685,7 @@ Exercise names are fuzzy-matched to Hevy's library. Unknown exercises automatica
     'Centralize gym workouts from multiple sources',
     'Track Fitbit activities in Hevy',
   ],
-  externalUrlTemplate: 'https://hevy.com/workouts/{id}',
+  externalUrlTemplate: 'https://hevy.com/workout/{id}',
   // UX Organization
   category: 'logging',
   sortOrder: 1,

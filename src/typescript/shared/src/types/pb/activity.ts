@@ -14,9 +14,9 @@ export enum ActivitySource {
   SOURCE_UNKNOWN = 0,
   SOURCE_HEVY = 1,
   SOURCE_FITBIT = 3,
-  /** SOURCE_PARKRUN_RESULTS - Parkrun official results (CREATE mode) */
+  /** SOURCE_PARKRUN_RESULTS - Parkrun official results (CREATE mode) - no destination */
   SOURCE_PARKRUN_RESULTS = 4,
-  /** SOURCE_FILE_UPLOAD - Direct FIT file upload */
+  /** SOURCE_FILE_UPLOAD - Direct FIT file upload - source only */
   SOURCE_FILE_UPLOAD = 5,
   SOURCE_STRAVA = 6,
   SOURCE_GARMIN = 7,
@@ -25,6 +25,9 @@ export enum ActivitySource {
   SOURCE_OURA = 10,
   SOURCE_POLAR = 11,
   SOURCE_WAHOO = 12,
+  SOURCE_INTERVALS = 13,
+  SOURCE_TRAININGPEAKS = 14,
+  SOURCE_GOOGLESHEETS = 15,
   SOURCE_TEST = 99,
   UNRECOGNIZED = -1,
 }

@@ -76,3 +76,13 @@ func (c *Client) ShowcasedActivities() *Collection[pb.ShowcasedActivity] {
 		FromFirestore: FirestoreToShowcasedActivity,
 	}
 }
+
+// UploadedActivities are sub-collections of Users: users/{uid}/uploaded_activities/{id}
+// Used for loop prevention to track activities we've posted to destinations
+func (c *Client) UploadedActivities(userId string) *Collection[pb.UploadedActivityRecord] {
+	return &Collection[pb.UploadedActivityRecord]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("uploaded_activities"),
+		ToFirestore:   UploadedActivityToFirestore,
+		FromFirestore: FirestoreToUploadedActivity,
+	}
+}

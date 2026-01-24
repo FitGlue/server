@@ -32,28 +32,3 @@ func TestBuildSheetRow_BasicActivity(t *testing.T) {
 		t.Error("Expected activity name in row")
 	}
 }
-
-func TestIsLoopOrigin_NoMetadata(t *testing.T) {
-	event := &pb.EnrichedActivityEvent{
-		ActivityId: "test-123",
-	}
-
-	result := isLoopOrigin(event)
-	if result {
-		t.Error("Expected false when no origin_destination metadata")
-	}
-}
-
-func TestIsLoopOrigin_GoogleSheetsOrigin(t *testing.T) {
-	event := &pb.EnrichedActivityEvent{
-		ActivityId: "test-123",
-		EnrichmentMetadata: map[string]string{
-			"origin_destination": "googlesheets",
-		},
-	}
-
-	result := isLoopOrigin(event)
-	if !result {
-		t.Error("Expected true when origin_destination is googlesheets")
-	}
-}

@@ -2,6 +2,7 @@ package enricher
 
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -98,6 +99,12 @@ func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*
 		return m.GetUserPipelinesFunc(ctx, userId)
 	}
 	return []*pb.PipelineConfig{}, nil
+}
+func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
+	return nil
+}
+func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error) {
+	return nil, nil
 }
 
 type MockBlobStore struct {
@@ -366,18 +373,22 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		_, err := orchestrator.Process(ctx, payload, "exec-1", "pipe-1", false)
+		result, err := orchestrator.Process(ctx, payload, "exec-1", "pipe-1", false)
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)
 		}
 
-		// Verify records were populated
-		if len(payload.StandardizedActivity.Sessions) == 0 {
-			t.Fatal("Session missing")
+		// Verify enriched activity in OUTPUT events (not mutated payload due to Pointer Isolation)
+		if len(result.Events) == 0 {
+			t.Fatal("Expected at least one event")
 		}
-		session := payload.StandardizedActivity.Sessions[0]
+		enrichedActivity := result.Events[0].ActivityData
+		if len(enrichedActivity.Sessions) == 0 {
+			t.Fatal("Session missing in enriched event")
+		}
+		session := enrichedActivity.Sessions[0]
 		if len(session.Laps) == 0 {
-			t.Fatal("Lap missing") // Orchestrator adds default lap
+			t.Fatal("Lap missing in enriched event") // Orchestrator adds default lap
 		}
 		records := session.Laps[0].Records
 		if len(records) != 3 {
@@ -392,6 +403,134 @@ func TestOrchestrator_Process(t *testing.T) {
 			if records[2].HeartRate != 120 {
 				t.Errorf("Expected HR 120, got %d", records[2].HeartRate)
 			}
+		}
+	})
+
+	t.Run("Multi-pipeline isolation - no cross-pipeline state leakage", func(t *testing.T) {
+		// Setup: Two pipelines from same source, each with an enricher that adds descriptions
+		mockDB := &MockDatabase{
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{
+					UserId: id,
+				}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+				return []*pb.PipelineConfig{
+					{
+						Id:           "pipeline-A",
+						Source:       "SOURCE_HEVY",
+						Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
+						Enrichers: []*pb.EnricherConfig{
+							{
+								ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+								TypedConfig:  map[string]string{"id": "A"},
+							},
+						},
+					},
+					{
+						Id:           "pipeline-B",
+						Source:       "SOURCE_HEVY",
+						Destinations: []pb.Destination{pb.Destination_DESTINATION_INTERVALS},
+						Enrichers: []*pb.EnricherConfig{
+							{
+								ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+								TypedConfig:  map[string]string{"id": "B"},
+							},
+						},
+					},
+				}, nil
+			},
+		}
+
+		mockStorage := &MockBlobStore{
+			WriteFunc: func(ctx context.Context, bucket, object string, data []byte) error {
+				return nil
+			},
+		}
+
+		orchestrator := NewOrchestrator(mockDB, mockStorage, "test-bucket", nil)
+
+		// Mock provider returns a description based on its config ID
+		mockProvider := &MockProvider{
+			NameFunc: func() string { return "mock-enricher" },
+			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+				id := inputConfig["id"]
+				return &providers.EnrichmentResult{
+					Name:        "Activity " + id,
+					Description: "Description from pipeline " + id,
+					Metadata: map[string]string{
+						"pipeline_id": id,
+					},
+				}, nil
+			},
+		}
+		orchestrator.Register(mockProvider)
+
+		payload := &pb.ActivityPayload{
+			UserId:    "user-123",
+			Source:    pb.ActivitySource_SOURCE_HEVY,
+			Timestamp: timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+			StandardizedActivity: &pb.StandardizedActivity{
+				Name:        "Original Run",
+				Description: "", // Start with empty description
+				Sessions: []*pb.Session{
+					{
+						StartTime:        timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+						TotalElapsedTime: 60,
+					},
+				},
+			},
+		}
+
+		result, err := orchestrator.Process(ctx, payload, "parent-exec", "base-pipeline-exec", false)
+
+		if err != nil {
+			t.Fatalf("Process failed: %v", err)
+		}
+
+		// Should produce 2 events (one per pipeline)
+		if len(result.Events) != 2 {
+			t.Fatalf("Expected 2 events, got %d", len(result.Events))
+		}
+
+		// Find events by pipeline ID
+		var eventA, eventB *pb.EnrichedActivityEvent
+		for _, e := range result.Events {
+			if e.PipelineId == "pipeline-A" {
+				eventA = e
+			} else if e.PipelineId == "pipeline-B" {
+				eventB = e
+			}
+		}
+
+		if eventA == nil || eventB == nil {
+			t.Fatal("Expected events for both pipeline-A and pipeline-B")
+		}
+
+		// Verify Pipeline A contains ONLY its own description
+		if eventA.Description != "Description from pipeline A" {
+			t.Errorf("Pipeline A: expected 'Description from pipeline A', got '%s'", eventA.Description)
+		}
+
+		// Verify Pipeline B contains ONLY its own description (NOT merged with A)
+		if eventB.Description != "Description from pipeline B" {
+			t.Errorf("Pipeline B: expected 'Description from pipeline B', got '%s'", eventB.Description)
+		}
+
+		// Verify each event has a unique pipelineExecutionId
+		if eventA.PipelineExecutionId == nil || eventB.PipelineExecutionId == nil {
+			t.Fatal("Expected both events to have pipelineExecutionId")
+		}
+		if *eventA.PipelineExecutionId == *eventB.PipelineExecutionId {
+			t.Errorf("Expected unique pipelineExecutionIds, but both are '%s'", *eventA.PipelineExecutionId)
+		}
+
+		// Verify execution IDs contain the pipeline ID
+		if !strings.Contains(*eventA.PipelineExecutionId, "pipeline-A") {
+			t.Errorf("Pipeline A execution ID should contain 'pipeline-A', got '%s'", *eventA.PipelineExecutionId)
+		}
+		if !strings.Contains(*eventB.PipelineExecutionId, "pipeline-B") {
+			t.Errorf("Pipeline B execution ID should contain 'pipeline-B', got '%s'", *eventB.PipelineExecutionId)
 		}
 	})
 }

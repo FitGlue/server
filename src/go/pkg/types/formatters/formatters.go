@@ -268,6 +268,12 @@ func FormatActivitySource(value pb.ActivitySource) string {
 		return "Polar"
 	case pb.ActivitySource_SOURCE_WAHOO:
 		return "Wahoo"
+	case pb.ActivitySource_SOURCE_INTERVALS:
+		return "Intervals"
+	case pb.ActivitySource_SOURCE_TRAININGPEAKS:
+		return "Trainingpeaks"
+	case pb.ActivitySource_SOURCE_GOOGLESHEETS:
+		return "Googlesheets"
 	case pb.ActivitySource_SOURCE_TEST:
 		return "Test"
 	default:

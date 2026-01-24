@@ -24,6 +24,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
+	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -82,16 +83,8 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 
 		fwCtx.Logger.Info("Starting upload", "activity_id", eventPayload.ActivityId, "pipeline_id", eventPayload.PipelineId)
 
-		// 1. Loop Prevention Check
-		// Skip if this activity originated from Strava (would create a loop)
-		if isLoopOrigin(&eventPayload) {
-			fwCtx.Logger.Info("Skipping Strava upload - activity originated from Strava",
-				"activity_id", eventPayload.ActivityId)
-			return map[string]interface{}{
-				"status": "SKIPPED",
-				"reason": "loop_prevention",
-			}, nil
-		}
+		// Note: Loop prevention is handled at source-handler level (isBounceback check)
+		// The source handler checks uploaded_activities before publishing to the enricher
 
 		// Initialize OAuth HTTP Client if not provided (for testing)
 		if httpClient == nil {
@@ -108,25 +101,6 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// --- CREATE MODE ---
 		return handleStravaCreate(ctx, httpClient, &eventPayload, fwCtx)
 	}
-}
-
-// isLoopOrigin checks if the activity originated from Strava (as destination)
-// Note: Strava is currently destination-only in FitGlue (no SOURCE_STRAVA webhook handler),
-// so we only check origin_destination metadata. When Strava becomes a source, add SOURCE_STRAVA check.
-func isLoopOrigin(event *pb.EnrichedActivityEvent) bool {
-	// Check enrichment_metadata for origin_destination marker
-	if event.EnrichmentMetadata != nil {
-		if origin, ok := event.EnrichmentMetadata["origin_destination"]; ok && origin == "strava" {
-			return true
-		}
-	}
-
-	// Future: Add SOURCE_STRAVA check when Strava webhook handler is implemented
-	// if event.Source == pb.ActivitySource_SOURCE_STRAVA {
-	//     return true
-	// }
-
-	return false
 }
 
 // handleStravaCreate uploads a new activity to Strava (POST /uploads)
@@ -214,6 +188,27 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	// Persist SynchronizedActivity if successful
 	if uploadResp.ActivityID != 0 {
 		stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)
+
+		// Record upload for loop prevention
+		// When Strava sends webhooks, we'll check if we just uploaded this activity
+		if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
+			uploadRecord := &pb.UploadedActivityRecord{
+				Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
+				UserId:        eventPayload.UserId,
+				Source:        eventPayload.Source,
+				ExternalId:    eventPayload.ActivityData.ExternalId,
+				StartTime:     eventPayload.StartTime,
+				Destination:   pb.Destination_DESTINATION_STRAVA,
+				DestinationId: stravaDestID,
+				UploadedAt:    timestamppb.Now(),
+			}
+			if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+				fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+				// Don't fail the upload - this is just for loop prevention
+			} else {
+				fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
+			}
+		}
 
 		// Check if activity already exists (e.g., repost scenario)
 		// If it does, only update destinations to preserve original pipelineExecutionId

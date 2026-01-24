@@ -7,6 +7,7 @@
 package pb
 
 import (
+	descriptor "github.com/golang/protobuf/protoc-gen-go/descriptor"
 	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -29,8 +30,8 @@ const (
 	ActivitySource_SOURCE_UNKNOWN         ActivitySource = 0
 	ActivitySource_SOURCE_HEVY            ActivitySource = 1
 	ActivitySource_SOURCE_FITBIT          ActivitySource = 3
-	ActivitySource_SOURCE_PARKRUN_RESULTS ActivitySource = 4 // Parkrun official results (CREATE mode)
-	ActivitySource_SOURCE_FILE_UPLOAD     ActivitySource = 5 // Direct FIT file upload
+	ActivitySource_SOURCE_PARKRUN_RESULTS ActivitySource = 4 // Parkrun official results (CREATE mode) - no destination
+	ActivitySource_SOURCE_FILE_UPLOAD     ActivitySource = 5 // Direct FIT file upload - source only
 	ActivitySource_SOURCE_STRAVA          ActivitySource = 6
 	ActivitySource_SOURCE_GARMIN          ActivitySource = 7
 	ActivitySource_SOURCE_APPLE_HEALTH    ActivitySource = 8
@@ -38,6 +39,9 @@ const (
 	ActivitySource_SOURCE_OURA            ActivitySource = 10
 	ActivitySource_SOURCE_POLAR           ActivitySource = 11
 	ActivitySource_SOURCE_WAHOO           ActivitySource = 12
+	ActivitySource_SOURCE_INTERVALS       ActivitySource = 13
+	ActivitySource_SOURCE_TRAININGPEAKS   ActivitySource = 14
+	ActivitySource_SOURCE_GOOGLESHEETS    ActivitySource = 15
 	ActivitySource_SOURCE_TEST            ActivitySource = 99
 )
 
@@ -56,6 +60,9 @@ var (
 		10: "SOURCE_OURA",
 		11: "SOURCE_POLAR",
 		12: "SOURCE_WAHOO",
+		13: "SOURCE_INTERVALS",
+		14: "SOURCE_TRAININGPEAKS",
+		15: "SOURCE_GOOGLESHEETS",
 		99: "SOURCE_TEST",
 	}
 	ActivitySource_value = map[string]int32{
@@ -71,6 +78,9 @@ var (
 		"SOURCE_OURA":            10,
 		"SOURCE_POLAR":           11,
 		"SOURCE_WAHOO":           12,
+		"SOURCE_INTERVALS":       13,
+		"SOURCE_TRAININGPEAKS":   14,
+		"SOURCE_GOOGLESHEETS":    15,
 		"SOURCE_TEST":            99,
 	}
 )
@@ -254,11 +264,31 @@ func (x *ActivityPayload) GetOriginDestination() string {
 	return ""
 }
 
+var file_activity_proto_extTypes = []protoimpl.ExtensionInfo{
+	{
+		ExtendedType:  (*descriptor.EnumValueOptions)(nil),
+		ExtensionType: (*string)(nil),
+		Field:         50020,
+		Name:          "fitglue.corresponding_destination",
+		Tag:           "bytes,50020,opt,name=corresponding_destination",
+		Filename:      "activity.proto",
+	},
+}
+
+// Extension fields to descriptor.EnumValueOptions.
+var (
+	// Maps an ActivitySource to its corresponding Destination enum name
+	// e.g., SOURCE_HEVY has corresponding_destination = "DESTINATION_HEVY"
+	//
+	// optional string corresponding_destination = 50020;
+	E_CorrespondingDestination = &file_activity_proto_extTypes[0]
+)
+
 var File_activity_proto protoreflect.FileDescriptor
 
 const file_activity_proto_rawDesc = "" +
 	"\n" +
-	"\x0eactivity.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\"\xfd\x06\n" +
+	"\x0eactivity.proto\x12\afitglue\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\"\xfd\x06\n" +
 	"\x0fActivityPayload\x12/\n" +
 	"\x06source\x18\x01 \x01(\x0e2\x17.fitglue.ActivitySourceR\x06source\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x128\n" +
@@ -284,22 +314,26 @@ const file_activity_proto_rawDesc = "" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
 	"\x18_resume_pending_input_idB\x15\n" +
-	"\x13_origin_destination*\x9c\x02\n" +
+	"\x13_origin_destination*\x83\x04\n" +
 	"\x0eActivitySource\x12\x12\n" +
-	"\x0eSOURCE_UNKNOWN\x10\x00\x12\x0f\n" +
-	"\vSOURCE_HEVY\x10\x01\x12\x11\n" +
-	"\rSOURCE_FITBIT\x10\x03\x12\x1a\n" +
+	"\x0eSOURCE_UNKNOWN\x10\x00\x12%\n" +
+	"\vSOURCE_HEVY\x10\x01\x1a\x14\xa2\xb6\x18\x10DESTINATION_HEVY\x12)\n" +
+	"\rSOURCE_FITBIT\x10\x03\x1a\x16\xa2\xb6\x18\x12DESTINATION_FITBIT\x12\x1a\n" +
 	"\x16SOURCE_PARKRUN_RESULTS\x10\x04\x12\x16\n" +
-	"\x12SOURCE_FILE_UPLOAD\x10\x05\x12\x11\n" +
-	"\rSOURCE_STRAVA\x10\x06\x12\x11\n" +
+	"\x12SOURCE_FILE_UPLOAD\x10\x05\x12)\n" +
+	"\rSOURCE_STRAVA\x10\x06\x1a\x16\xa2\xb6\x18\x12DESTINATION_STRAVA\x12\x11\n" +
 	"\rSOURCE_GARMIN\x10\a\x12\x17\n" +
 	"\x13SOURCE_APPLE_HEALTH\x10\b\x12\x19\n" +
 	"\x15SOURCE_HEALTH_CONNECT\x10\t\x12\x0f\n" +
 	"\vSOURCE_OURA\x10\n" +
 	"\x12\x10\n" +
 	"\fSOURCE_POLAR\x10\v\x12\x10\n" +
-	"\fSOURCE_WAHOO\x10\f\x12\x0f\n" +
-	"\vSOURCE_TEST\x10cB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
+	"\fSOURCE_WAHOO\x10\f\x12/\n" +
+	"\x10SOURCE_INTERVALS\x10\r\x1a\x19\xa2\xb6\x18\x15DESTINATION_INTERVALS\x127\n" +
+	"\x14SOURCE_TRAININGPEAKS\x10\x0e\x1a\x1d\xa2\xb6\x18\x19DESTINATION_TRAININGPEAKS\x125\n" +
+	"\x13SOURCE_GOOGLESHEETS\x10\x0f\x1a\x1c\xa2\xb6\x18\x18DESTINATION_GOOGLESHEETS\x12\x0f\n" +
+	"\vSOURCE_TEST\x10c:`\n" +
+	"\x19corresponding_destination\x12!.google.protobuf.EnumValueOptions\x18\xe4\x86\x03 \x01(\tR\x18correspondingDestinationB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_activity_proto_rawDescOnce sync.Once
@@ -316,21 +350,23 @@ func file_activity_proto_rawDescGZIP() []byte {
 var file_activity_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
 var file_activity_proto_goTypes = []any{
-	(ActivitySource)(0),          // 0: fitglue.ActivitySource
-	(*ActivityPayload)(nil),      // 1: fitglue.ActivityPayload
-	nil,                          // 2: fitglue.ActivityPayload.MetadataEntry
-	(*timestamp.Timestamp)(nil),  // 3: google.protobuf.Timestamp
-	(*StandardizedActivity)(nil), // 4: fitglue.StandardizedActivity
+	(ActivitySource)(0),                 // 0: fitglue.ActivitySource
+	(*ActivityPayload)(nil),             // 1: fitglue.ActivityPayload
+	nil,                                 // 2: fitglue.ActivityPayload.MetadataEntry
+	(*timestamp.Timestamp)(nil),         // 3: google.protobuf.Timestamp
+	(*StandardizedActivity)(nil),        // 4: fitglue.StandardizedActivity
+	(*descriptor.EnumValueOptions)(nil), // 5: google.protobuf.EnumValueOptions
 }
 var file_activity_proto_depIdxs = []int32{
 	0, // 0: fitglue.ActivityPayload.source:type_name -> fitglue.ActivitySource
 	3, // 1: fitglue.ActivityPayload.timestamp:type_name -> google.protobuf.Timestamp
 	2, // 2: fitglue.ActivityPayload.metadata:type_name -> fitglue.ActivityPayload.MetadataEntry
 	4, // 3: fitglue.ActivityPayload.standardized_activity:type_name -> fitglue.StandardizedActivity
-	4, // [4:4] is the sub-list for method output_type
-	4, // [4:4] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
+	5, // 4: fitglue.corresponding_destination:extendee -> google.protobuf.EnumValueOptions
+	5, // [5:5] is the sub-list for method output_type
+	5, // [5:5] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	4, // [4:5] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
 }
 
@@ -348,13 +384,14 @@ func file_activity_proto_init() {
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_activity_proto_rawDesc), len(file_activity_proto_rawDesc)),
 			NumEnums:      1,
 			NumMessages:   2,
-			NumExtensions: 0,
+			NumExtensions: 1,
 			NumServices:   0,
 		},
 		GoTypes:           file_activity_proto_goTypes,
 		DependencyIndexes: file_activity_proto_depIdxs,
 		EnumInfos:         file_activity_proto_enumTypes,
 		MessageInfos:      file_activity_proto_msgTypes,
+		ExtensionInfos:    file_activity_proto_extTypes,
 	}.Build()
 	File_activity_proto = out.File
 	file_activity_proto_goTypes = nil

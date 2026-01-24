@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package fitglue;
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb";
+
+import "google/protobuf/timestamp.proto";
+import "activity.proto";
+import "events.proto";
+
+// UploadedActivityRecord tracks activities we've uploaded to destinations.
+// Used for loop prevention: when a webhook comes back, we check if we just uploaded it.
+message UploadedActivityRecord {
+  // Composite ID: "{source}:{external_id}" for efficient lookup
+  string id = 1;
+  string user_id = 2;
+
+  // Activity identification
+  ActivitySource source = 3;           // Where the activity originally came from
+  string external_id = 4;              // External ID on the source platform
+  google.protobuf.Timestamp start_time = 5;  // Activity start time for deduplication
+
+  // Destination info
+  fitglue.events.Destination destination = 6;  // Where we uploaded it
+  string destination_id = 7;           // ID on the destination platform
+
+  // Timestamp for TTL-based cleanup
+  google.protobuf.Timestamp uploaded_at = 8;
+}

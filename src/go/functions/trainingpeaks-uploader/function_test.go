@@ -114,56 +114,6 @@ func TestMapToTrainingPeaksType(t *testing.T) {
 	}
 }
 
-func TestIsLoopOrigin(t *testing.T) {
-	tests := []struct {
-		name  string
-		event *pb.EnrichedActivityEvent
-		want  bool
-	}{
-		{
-			name: "TrainingPeaks origin should be detected",
-			event: &pb.EnrichedActivityEvent{
-				EnrichmentMetadata: map[string]string{
-					"origin_destination": "trainingpeaks",
-				},
-			},
-			want: true,
-		},
-		{
-			name: "Strava origin should not be detected",
-			event: &pb.EnrichedActivityEvent{
-				EnrichmentMetadata: map[string]string{
-					"origin_destination": "strava",
-				},
-			},
-			want: false,
-		},
-		{
-			name: "No metadata should not be detected",
-			event: &pb.EnrichedActivityEvent{
-				EnrichmentMetadata: nil,
-			},
-			want: false,
-		},
-		{
-			name: "Empty metadata should not be detected",
-			event: &pb.EnrichedActivityEvent{
-				EnrichmentMetadata: map[string]string{},
-			},
-			want: false,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := isLoopOrigin(tt.event)
-			if got != tt.want {
-				t.Errorf("isLoopOrigin() = %v, want %v", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestBuildTrainingPeaksWorkout(t *testing.T) {
 	tests := []struct {
 		name  string

@@ -102,21 +102,28 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       return { status: 'Skipped', reason: `No pipeline for source ${sourceEnumName}` };
     }
 
-    // 6. Loop Prevention Check
+    // 6. Source-Level Bounceback Check (Primary Loop Prevention)
+    // Check if this activity was uploaded by us - if so, this webhook is a "bounceback"
+    // This uses the uploaded_activities collection which tracks our successful uploads
+    const isBounceback = await ctx.services.user.isBounceback(userId, sourceEnumName, externalId);
+    if (isBounceback) {
+      logger.info(`Bounceback detected: Activity ${externalId} was uploaded by us to ${connector.name}. Skipping.`);
+      return { status: 'Skipped', reason: 'Bounceback - activity was uploaded by FitGlue' };
+    }
+
+    // 7. Loop Prevention Check (Fallback)
     // Check if the incoming external ID exists as a destination in any synchronized activity.
     // This prevents infinite loops (e.g., Hevy → Strava → Hevy → ...)
     const isLoopActivity = await ctx.services.user.checkDestinationExists(userId, connector.name, externalId);
     if (isLoopActivity) {
       logger.info(`Loop detected: Activity ${externalId} was already posted by this system. Skipping.`);
-      // res.status(200).send('Skipped: Loop prevention');
       return { status: 'Skipped', reason: 'Loop prevention - activity was already posted as destination' };
     }
 
-    // 7. Deduplication Check
+    // 8. Deduplication Check
     const alreadyProcessed = await ctx.services.user.hasProcessedActivity(userId, connector.name, externalId);
     if (alreadyProcessed) {
       logger.info(`Activity ${externalId} already processed for user ${userId}`);
-      // res.status(200).send('Already processed');
       return { status: 'Skipped', reason: 'Already processed' };
     }
 

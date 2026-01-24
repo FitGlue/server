@@ -15,6 +15,7 @@ import (
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/functions/enricher/providers/user_input"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -70,7 +71,7 @@ type ProviderExecution struct {
 }
 
 // Process executes the enrichment pipelines for the activity
-func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload, parentExecutionID string, pipelineExecutionID string, doNotRetry bool) (*ProcessResult, error) {
+func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload, parentExecutionID string, basePipelineExecutionID string, doNotRetry bool) (*ProcessResult, error) {
 	// 1. Fetch User Config
 	userRec, err := o.database.GetUser(ctx, payload.UserId)
 	if err != nil {
@@ -158,16 +159,18 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 	// 3. Execute Each Pipeline
 	for _, pipeline := range pipelines {
-		slog.Info("Executing pipeline", "id", pipeline.ID)
+		// Generate unique per-pipeline execution ID for trace isolation
+		pipelineExecutionID := fmt.Sprintf("%s-%s", basePipelineExecutionID, pipeline.ID)
+		slog.Info("Executing pipeline", "id", pipeline.ID, "pipelineExecutionId", pipelineExecutionID)
 
 		// 3a. Execute Enrichers Sequentially
 		configs := pipeline.Enrichers
 		results := make([]*providers.EnrichmentResult, len(configs))
 		providerExecs := []ProviderExecution{}
 
-		// Use the standardized activity as the working state for this pipeline.
-		// Note: This mutates the payload's activity in-place, allowing subsequent enrichers to see changes.
-		currentActivity := payload.StandardizedActivity
+		// Deep clone the activity to ensure pipeline isolation (Rule G20: Protobuf Mutation Safety)
+		// Each pipeline operates on its own copy, preventing cross-pipeline state leakage
+		currentActivity := proto.Clone(payload.StandardizedActivity).(*pb.StandardizedActivity)
 
 		// Save the original description and build enriched description separately
 		// to prevent stacking across reposts
@@ -234,8 +237,15 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 				Status:       "STARTED",
 			}
 
+			// Merge pipelineExecutionID into config for asset-generating providers
+			enricherConfig := make(map[string]string)
+			for k, v := range cfg.TypedConfig {
+				enricherConfig[k] = v
+			}
+			enricherConfig["pipeline_execution_id"] = pipelineExecutionID
+
 			// Execute
-			res, err := provider.Enrich(ctx, currentActivity, userRec, cfg.TypedConfig, doNotRetry)
+			res, err := provider.Enrich(ctx, currentActivity, userRec, enricherConfig, doNotRetry)
 			duration := time.Since(startTime).Milliseconds()
 			pe.DurationMs = duration
 

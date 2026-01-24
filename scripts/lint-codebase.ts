@@ -77,8 +77,14 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'X1': [/enum-formatters\.ts/],
   // T10: mobile-sync-handler uses different architecture
   'T10': [/mobile-sync-handler/],
-  // X3: Sources that don't need dedicated handlers (handled by others or mobile)
-  'X3': [/FILE_UPLOAD/, /PARKRUN_RESULTS/, /APPLE_HEALTH/, /HEALTH_CONNECT/, /GARMIN/],
+  // X3: Sources that don't need dedicated handlers:
+  // - FILE_UPLOAD, PARKRUN_RESULTS: source-only, no external webhook
+  // - APPLE_HEALTH, HEALTH_CONNECT, GARMIN: mobile/device sources
+  // - STRAVA: has strava-handler but name pattern differs
+  // - INTERVALS, TRAININGPEAKS, GOOGLESHEETS: destination-only (sources added for loop prevention mapping)
+  'X3': [/FILE_UPLOAD/, /PARKRUN_RESULTS/, /APPLE_HEALTH/, /HEALTH_CONNECT/, /GARMIN/, /STRAVA/, /INTERVALS/, /TRAININGPEAKS/, /GOOGLESHEETS/],
+  // I5: Sources that don't need plugin registration (destination-only platforms)
+  'I5': [/SOURCE_INTERVALS/, /SOURCE_TRAININGPEAKS/, /SOURCE_GOOGLESHEETS/],
   // G3: Existing error wrapping patterns - legacy code
   'G3': [/router\/function\.go/, /parkrun\/parkrun\.go/],
   // G4: Many existing logger patterns - needs gradual migration
@@ -555,7 +561,14 @@ function checkPluginRegistration(): CheckResult {
     registeredSources.add(match[1].toLowerCase());
   }
 
+  // Get I5 exclusions for sources that don't need plugin registration
+  const i5Exclusions = EXCLUSIONS['I5'] || [];
+
   for (const enumValue of sourceEnums) {
+    // Check if this source is excluded (destination-only platforms)
+    const isExcluded = i5Exclusions.some(pattern => pattern.test(enumValue));
+    if (isExcluded) continue;
+
     // Convert SOURCE_HEVY -> hevy
     const sourceId = enumValue.replace(/^SOURCE_/, '').toLowerCase();
     if (isUsedInCode(enumValue) && !registeredSources.has(sourceId)) {
@@ -941,17 +954,18 @@ function checkPipelineExecutionLogging(): CheckResult {
 
 /**
  * Validates that Go destination uploaders follow required patterns:
- * - Loop prevention (isLoopOrigin or similar)
  * - UPDATE support (handleXxxUpdate function)
  * - SynchronizedActivity persistence
  * - Billing (IncrementSyncCount)
+ *
+ * Note: Loop prevention is now handled at source-handler level (isBounceback check)
+ * and no longer required in uploaders.
  */
 function checkDestinationUploaderPattern(): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
   // Uploaders that are excluded from certain checks
-  const EXEMPT_FROM_LOOP_PREVENTION = ['mock-uploader', 'showcase-uploader']; // No external webhooks
   const EXEMPT_FROM_UPDATE = ['mock-uploader', 'showcase-uploader']; // One-shot destinations
 
   // Get all Go uploader function directories
@@ -969,26 +983,6 @@ function checkDestinationUploaderPattern(): CheckResult {
 
     const content = fs.readFileSync(functionPath, 'utf-8');
     const uploaderName = dir.replace('-uploader', '');
-
-    // Check for loop prevention (exempt showcase - no external webhooks)
-    if (!EXEMPT_FROM_LOOP_PREVENTION.includes(dir)) {
-      const hasLoopPrevention =
-        content.includes('isLoopOrigin') ||
-        content.includes('loop_prevention') ||
-        content.includes('origin_destination') ||
-        content.includes('OriginDestination') ||
-        content.includes('SOURCE_STRAVA'); // Strava has implicit loop prevention
-
-      if (!hasLoopPrevention) {
-        // Grandfather existing uploaders with warnings, new ones get errors
-        const isGrandfathered = ['strava-uploader'].includes(dir);
-        if (isGrandfathered) {
-          warnings.push(`Uploader '${dir}' should add explicit loop prevention`);
-        } else {
-          errors.push(`Uploader '${dir}' missing loop prevention check`);
-        }
-      }
-    }
 
     // Check for UPDATE support (exempt mock and showcase)
     if (!EXEMPT_FROM_UPDATE.includes(dir)) {
@@ -1015,6 +1009,13 @@ function checkDestinationUploaderPattern(): CheckResult {
     const hasBilling = content.includes('IncrementSyncCount');
     if (!hasBilling) {
       warnings.push(`Uploader '${dir}' may not increment sync count for billing`);
+    }
+
+    // Check for uploaded activity recording (required for source-level loop prevention)
+    // Uploaders must call SetUploadedActivity to record successful uploads
+    const hasUploadedActivityRecording = content.includes('SetUploadedActivity');
+    if (!hasUploadedActivityRecording && !EXEMPT_FROM_UPDATE.includes(dir)) {
+      errors.push(`Uploader '${dir}' missing SetUploadedActivity call for loop prevention`);
     }
   }
 
@@ -1114,81 +1115,8 @@ function checkDestinationEnumCoverage(): CheckResult {
 
 // ============================================================================
 // Check 12: Loop Prevention in Destinations
-// ============================================================================
-
-/**
- * Validates that destination uploaders properly check for loop scenarios:
- * - Check if activity source matches the destination (self-loop)
- * - Check origin_destination metadata
- */
-function checkLoopPrevention(): CheckResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  // Uploaders exempt from loop prevention (internal only, no external webhooks)
-  const EXEMPT_UPLOADERS = ['showcase-uploader'];
-
-  // Read activity.proto to know which sources actually exist
-  const activityProtoPath = path.join(PROTO_DIR, 'activity.proto');
-  let existingSources: string[] = [];
-  if (fs.existsSync(activityProtoPath)) {
-    const protoContent = fs.readFileSync(activityProtoPath, 'utf-8');
-    const sourcePattern = /SOURCE_(\w+)\s*=/g;
-    let match;
-    while ((match = sourcePattern.exec(protoContent)) !== null) {
-      if (match[1] !== 'UNKNOWN' && match[1] !== 'TEST') {
-        existingSources.push(match[1].toLowerCase());
-      }
-    }
-  }
-
-  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
-  const uploaderDirs = getDirectories(goFunctionsDir)
-    .filter(d => d.endsWith('-uploader') && !d.includes('mock'))
-    .filter(d => !EXEMPT_UPLOADERS.includes(d));
-
-  for (const dir of uploaderDirs) {
-    const functionPath = path.join(goFunctionsDir, dir, 'function.go');
-    if (!fs.existsSync(functionPath)) continue;
-
-    const content = fs.readFileSync(functionPath, 'utf-8');
-    const uploaderName = dir.replace('-uploader', '');
-
-    // Check if this destination also has a SOURCE enum (bidirectional like Hevy)
-    const sourceEnumName = `SOURCE_${uploaderName.toUpperCase()}`;
-    const hasSourceInProto = existingSources.includes(uploaderName);
-
-    // Check for source-based loop prevention (e.g., SOURCE_HEVY check)
-    const hasSourceCheck = content.includes(sourceEnumName) ||
-      content.includes(`ActivitySource_${sourceEnumName}`);
-
-    // Check for origin_destination check
-    const hasOriginCheck =
-      content.includes('origin_destination') ||
-      content.includes('OriginDestination') ||
-      content.includes('isLoopOrigin'); // Common helper function pattern
-
-    // origin_destination check is ALWAYS required
-    if (!hasOriginCheck) {
-      errors.push(`Uploader '${dir}' missing origin_destination check for loop prevention`);
-    }
-
-    // SOURCE check is required ONLY if the source enum exists in proto
-    if (hasSourceInProto && !hasSourceCheck) {
-      errors.push(`Uploader '${dir}' missing ${sourceEnumName} check for loop prevention (source exists in proto)`);
-    } else if (!hasSourceInProto && !hasSourceCheck) {
-      // Source doesn't exist - this is expected, just note it
-      // (no error, destination-only platform)
-    }
-  }
-
-  return {
-    name: 'Loop Prevention in Destinations',
-    passed: errors.length === 0,
-    errors,
-    warnings
-  };
-}
+// Note: Loop prevention (G10) was removed - now handled at source-handler level
+// via isBounceback check in webhook-processor.ts
 
 // ============================================================================
 // Check 13: Destination Return Fields (G11)
@@ -2741,11 +2669,14 @@ function checkSourceHandlerCoverage(): CheckResult {
   const handlerDirs = getDirectories(TS_SRC_DIR).filter(d => d.endsWith('-handler'));
   const handlerNames = handlerDirs.map(d => d.toLowerCase());
 
-  // Exemptions (sources that don't need dedicated handlers)
-  const exemptions = ['PARKRUN_RESULTS', 'FILE_UPLOAD', 'APPLE_HEALTH', 'HEALTH_CONNECT', 'GARMIN', 'STRAVA'];
+  // Exemptions are defined in EXCLUSIONS at the top of the file
+  // Check EXCLUSIONS['X3'] for the list of exempt sources
+  const exemptionPatterns = EXCLUSIONS['X3'] || [];
 
   for (const source of sources) {
-    if (exemptions.includes(source)) continue;
+    // Check if source matches any exemption pattern
+    const isExempt = exemptionPatterns.some(pattern => pattern.test(source));
+    if (isExempt) continue;
 
     const expectedHandler = source.toLowerCase().replace(/_/g, '-');
     const hasHandler = handlerNames.some(h => h.includes(expectedHandler) || h.includes(source.toLowerCase()));
@@ -4111,7 +4042,7 @@ function main(): void {
         { id: 'G7', fn: () => ({ ...checkGoStructFieldNaming(), name: 'G7: Struct Field Naming' }) },
         { id: 'G8', fn: () => ({ ...checkGoTestCoverage(), name: 'G8: Test File Coverage' }) },
         { id: 'G9', fn: () => ({ ...checkDestinationUploaderPattern(), name: 'G9: Destination Uploader Pattern' }) },
-        { id: 'G10', fn: () => ({ ...checkLoopPrevention(), name: 'G10: Loop Prevention' }) },
+        // Note: G10 (Loop Prevention) was removed - now handled at source-handler level
         { id: 'G11', fn: () => ({ ...checkDestinationReturnFields(), name: 'G11: Destination Return Fields' }) },
         { id: 'G12', fn: () => ({ ...checkDestinationUrlTemplates(), name: 'G12: Destination URL Templates' }) },
         { id: 'G13', fn: () => ({ ...checkEnricherProviderArchitecture(), name: 'G13: Enricher Provider Architecture' }) },

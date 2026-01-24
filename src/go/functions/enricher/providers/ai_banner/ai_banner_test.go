@@ -86,12 +86,12 @@ func TestAIBanner_Enrich_NoActivityID(t *testing.T) {
 		t.Fatal("Expected non-nil result")
 	}
 
-	// Verify skipped due to no activity ID
+	// Verify skipped due to no asset folder ID (neither pipeline_execution_id nor activity.ExternalId)
 	if result.Metadata["status"] != "skipped" {
 		t.Errorf("Expected status=skipped, got %s", result.Metadata["status"])
 	}
-	if result.Metadata["reason"] != "no_activity_id" {
-		t.Errorf("Expected reason=no_activity_id, got %s", result.Metadata["reason"])
+	if result.Metadata["reason"] != "no_asset_folder_id" {
+		t.Errorf("Expected reason=no_asset_folder_id, got %s", result.Metadata["reason"])
 	}
 }
 

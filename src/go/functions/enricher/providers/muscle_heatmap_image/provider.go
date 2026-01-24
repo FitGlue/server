@@ -102,12 +102,17 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, activity *pb.St
 			bucketName = "fitglue-showcase-assets" // Default bucket name
 		}
 
-		activityID := activity.ExternalId
-		if activityID == "" {
-			activityID = "unknown"
+		// Use pipeline_execution_id for asset storage path (unique per pipeline execution)
+		// Falls back to activity.ExternalId for backward compatibility
+		assetFolderID := inputConfig["pipeline_execution_id"]
+		if assetFolderID == "" {
+			assetFolderID = activity.ExternalId
+		}
+		if assetFolderID == "" {
+			assetFolderID = "unknown"
 		}
 
-		objectPath := fmt.Sprintf("%s/muscle-heatmap.svg", activityID)
+		objectPath := fmt.Sprintf("%s/muscle-heatmap.svg", assetFolderID)
 		if err := p.service.Store.Write(ctx, bucketName, objectPath, []byte(svgContent)); err != nil {
 			slog.Warn("Failed to store SVG asset", "error", err)
 		} else {

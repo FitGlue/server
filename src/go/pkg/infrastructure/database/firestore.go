@@ -336,3 +336,37 @@ func (a *FirestoreAdapter) GetUserPipelines(ctx context.Context, userId string) 
 
 	return pipelines, nil
 }
+
+// --- Uploaded Activities (for loop prevention) ---
+
+// SetUploadedActivity records that an activity was uploaded to a destination.
+// Used for loop prevention: when a webhook comes back, we check if we just uploaded it.
+func (a *FirestoreAdapter) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
+	return a.storage.UploadedActivities(userId).Doc(record.Id).Set(ctx, record)
+}
+
+// GetUploadedActivity retrieves an uploaded activity record by source and external ID.
+func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error) {
+	// Query for the record with matching source and external_id
+	iter := a.Client.Collection("users").Doc(userId).Collection("uploaded_activities").
+		Where("source", "==", int32(source)).
+		Where("external_id", "==", externalId).
+		Limit(1).
+		Documents(ctx)
+
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(docs) == 0 {
+		return nil, nil // Not found - not an error, just no match
+	}
+
+	m := docs[0].Data()
+	record := storage.FirestoreToUploadedActivity(m)
+	if record.Id == "" {
+		record.Id = docs[0].Ref.ID
+	}
+	return record, nil
+}

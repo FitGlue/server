@@ -818,3 +818,62 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 
 	return s
 }
+
+// --- UploadedActivityRecord Converters (Loop Prevention) ---
+
+func UploadedActivityToFirestore(r *pb.UploadedActivityRecord) map[string]interface{} {
+	m := map[string]interface{}{
+		"id":             r.Id,
+		"user_id":        r.UserId,
+		"source":         int32(r.Source),
+		"external_id":    r.ExternalId,
+		"destination":    int32(r.Destination),
+		"destination_id": r.DestinationId,
+	}
+
+	if r.StartTime != nil {
+		m["start_time"] = r.StartTime.AsTime()
+	}
+	if r.UploadedAt != nil {
+		m["uploaded_at"] = r.UploadedAt.AsTime()
+	}
+
+	return m
+}
+
+func FirestoreToUploadedActivity(m map[string]interface{}) *pb.UploadedActivityRecord {
+	r := &pb.UploadedActivityRecord{
+		Id:            getString(m, "id"),
+		UserId:        getString(m, "user_id"),
+		ExternalId:    getString(m, "external_id"),
+		DestinationId: getString(m, "destination_id"),
+		StartTime:     getTime(m, "start_time"),
+		UploadedAt:    getTime(m, "uploaded_at"),
+	}
+
+	// Source
+	if v, ok := m["source"]; ok {
+		switch val := v.(type) {
+		case int64:
+			r.Source = pb.ActivitySource(val)
+		case int:
+			r.Source = pb.ActivitySource(int32(val))
+		case float64:
+			r.Source = pb.ActivitySource(int32(val))
+		}
+	}
+
+	// Destination
+	if v, ok := m["destination"]; ok {
+		switch val := v.(type) {
+		case int64:
+			r.Destination = pb.Destination(val)
+		case int:
+			r.Destination = pb.Destination(int32(val))
+		case float64:
+			r.Destination = pb.Destination(int32(val))
+		}
+	}
+
+	return r
+}

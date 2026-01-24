@@ -53,7 +53,13 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       status: i.status,
       requiredFields: i.requiredFields,
       createdAt: i.createdAt,
-      inputData: i.inputData
+      inputData: i.inputData,
+      // Additional fields for proper UI display
+      pipelineId: i.pipelineId,
+      enricherProviderId: i.enricherProviderId,
+      autoPopulated: i.autoPopulated,
+      autoDeadline: i.autoDeadline,
+      linkedActivityId: i.linkedActivityId
     }));
     return { inputs: responseInputs };
   }

@@ -4,23 +4,34 @@ package fitglue;
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb";
 
+import "google/protobuf/descriptor.proto";
 import "google/protobuf/timestamp.proto";
 import "standardized_activity.proto";
+
+// Extension for mapping sources to their corresponding destinations (for loop prevention)
+extend google.protobuf.EnumValueOptions {
+  // Maps an ActivitySource to its corresponding Destination enum name
+  // e.g., SOURCE_HEVY has corresponding_destination = "DESTINATION_HEVY"
+  string corresponding_destination = 50020;
+}
 
 // ActivitySource enum defines where the data originated.
 enum ActivitySource {
   SOURCE_UNKNOWN = 0;
-  SOURCE_HEVY = 1;
-  SOURCE_FITBIT = 3;
-  SOURCE_PARKRUN_RESULTS = 4; // Parkrun official results (CREATE mode)
-  SOURCE_FILE_UPLOAD = 5;     // Direct FIT file upload
-  SOURCE_STRAVA = 6;
+  SOURCE_HEVY = 1 [(corresponding_destination) = "DESTINATION_HEVY"];
+  SOURCE_FITBIT = 3 [(corresponding_destination) = "DESTINATION_FITBIT"];
+  SOURCE_PARKRUN_RESULTS = 4; // Parkrun official results (CREATE mode) - no destination
+  SOURCE_FILE_UPLOAD = 5;     // Direct FIT file upload - source only
+  SOURCE_STRAVA = 6 [(corresponding_destination) = "DESTINATION_STRAVA"];
   SOURCE_GARMIN = 7;
   SOURCE_APPLE_HEALTH = 8;
   SOURCE_HEALTH_CONNECT = 9;
   SOURCE_OURA = 10;
   SOURCE_POLAR = 11;
   SOURCE_WAHOO = 12;
+  SOURCE_INTERVALS = 13 [(corresponding_destination) = "DESTINATION_INTERVALS"];
+  SOURCE_TRAININGPEAKS = 14 [(corresponding_destination) = "DESTINATION_TRAININGPEAKS"];
+  SOURCE_GOOGLESHEETS = 15 [(corresponding_destination) = "DESTINATION_GOOGLESHEETS"];
   SOURCE_TEST = 99;
 }
 

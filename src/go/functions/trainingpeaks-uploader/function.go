@@ -20,6 +20,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
+	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -78,17 +79,10 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			"user_id", eventPayload.UserId,
 		)
 
-		// 1. Loop Prevention Check
-		if isLoopOrigin(&eventPayload) {
-			fwCtx.Logger.Info("Skipping TrainingPeaks upload - activity originated from TrainingPeaks",
-				"activity_id", eventPayload.ActivityId)
-			return map[string]interface{}{
-				"status": "SKIPPED",
-				"reason": "loop_prevention",
-			}, nil
-		}
+		// Note: Loop prevention is handled at source-handler level (isBounceback check)
+		// The source handler checks uploaded_activities before publishing to the enricher
 
-		// 2. Get user's TrainingPeaks integration
+		// 1. Get user's TrainingPeaks integration
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user: %w", err)
@@ -134,6 +128,25 @@ func handleTrainingPeaksCreate(ctx context.Context, httpClient *http.Client, eve
 	fwCtx.Logger.Info("Successfully created TrainingPeaks workout",
 		"workoutId", workoutID,
 		"activityId", eventPayload.ActivityId)
+
+	// Record upload for loop prevention
+	if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
+		uploadRecord := &pb.UploadedActivityRecord{
+			Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
+			UserId:        eventPayload.UserId,
+			Source:        eventPayload.Source,
+			ExternalId:    eventPayload.ActivityData.ExternalId,
+			StartTime:     eventPayload.StartTime,
+			Destination:   pb.Destination_DESTINATION_TRAININGPEAKS,
+			DestinationId: workoutID,
+			UploadedAt:    timestamppb.Now(),
+		}
+		if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+			fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+		} else {
+			fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
+		}
+	}
 
 	// Persist SynchronizedActivity
 	existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
@@ -274,16 +287,6 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 		"activity_type":    eventPayload.ActivityType.String(),
 		"description":      mergedDescription,
 	}, nil
-}
-
-// isLoopOrigin checks if the activity originated from TrainingPeaks
-func isLoopOrigin(event *pb.EnrichedActivityEvent) bool {
-	if event.EnrichmentMetadata != nil {
-		if origin, ok := event.EnrichmentMetadata["origin_destination"]; ok && origin == "trainingpeaks" {
-			return true
-		}
-	}
-	return false
 }
 
 // TrainingPeaksWorkout represents the workout payload for TrainingPeaks API

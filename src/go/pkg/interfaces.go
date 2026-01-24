@@ -49,6 +49,10 @@ type Database interface {
 	ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error)
 	SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error
 	GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error)
+
+	// Uploaded Activities (for loop prevention - tracks what we've posted to destinations)
+	SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error
+	GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error)
 }
 
 // --- Messaging Interfaces ---

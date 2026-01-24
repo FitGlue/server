@@ -20,6 +20,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
+	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -77,18 +78,10 @@ func uploadHandler() framework.HandlerFunc {
 			"user_id", eventPayload.UserId,
 		)
 
-		// 1. Loop Prevention Check
-		// Skip if this activity originated from Hevy (would create a loop)
-		if isLoopOrigin(&eventPayload) {
-			fwCtx.Logger.Info("Skipping Hevy upload - activity originated from Hevy",
-				"activity_id", eventPayload.ActivityId)
-			return map[string]interface{}{
-				"status": "SKIPPED",
-				"reason": "loop_prevention",
-			}, nil
-		}
+		// Note: Loop prevention is handled at source-handler level (isBounceback check)
+		// The source handler checks uploaded_activities before publishing to the enricher
 
-		// 2. Get user's Hevy API key
+		// 1. Get user's Hevy API key
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user: %w", err)
@@ -130,6 +123,27 @@ func uploadHandler() framework.HandlerFunc {
 		fwCtx.Logger.Info("Successfully created Hevy workout",
 			"workoutId", workoutID,
 			"activityId", eventPayload.ActivityId)
+
+		// Record upload for loop prevention
+		// When Hevy sends webhooks, we'll check if we just uploaded this activity
+		if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
+			uploadRecord := &pb.UploadedActivityRecord{
+				Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
+				UserId:        eventPayload.UserId,
+				Source:        eventPayload.Source,
+				ExternalId:    eventPayload.ActivityData.ExternalId,
+				StartTime:     eventPayload.StartTime,
+				Destination:   pb.Destination_DESTINATION_HEVY,
+				DestinationId: workoutID,
+				UploadedAt:    timestamppb.Now(),
+			}
+			if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+				fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+				// Don't fail the upload - this is just for loop prevention
+			} else {
+				fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
+			}
+		}
 
 		// 7. Persist SynchronizedActivity
 		// Check if activity already exists (e.g., repost scenario)
@@ -186,23 +200,6 @@ func uploadHandler() framework.HandlerFunc {
 			"description":   eventPayload.Description,
 		}, nil
 	}
-}
-
-// isLoopOrigin checks if the activity originated from Hevy (source or destination)
-func isLoopOrigin(event *pb.EnrichedActivityEvent) bool {
-	// Check enrichment_metadata for origin_destination marker
-	if event.EnrichmentMetadata != nil {
-		if origin, ok := event.EnrichmentMetadata["origin_destination"]; ok && origin == "hevy" {
-			return true
-		}
-	}
-
-	// Also check if source is Hevy (self-loop prevention)
-	if event.Source == pb.ActivitySource_SOURCE_HEVY {
-		return true
-	}
-
-	return false
 }
 
 // checkExistingActivity looks up if we've already synced this activity to Hevy
@@ -388,7 +385,7 @@ func createHevyWorkout(ctx context.Context, apiKey string, workout *HevyWorkoutR
 
 	// Parse response to get workout ID
 	var respBody struct {
-		ID string `json:"id"`
+		ID string `json:"workoutId"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
 		return "", fmt.Errorf("failed to decode Hevy response: %w", err)

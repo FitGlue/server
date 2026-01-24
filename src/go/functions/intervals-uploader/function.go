@@ -22,6 +22,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
+	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -80,17 +81,10 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 
 		fwCtx.Logger.Info("Starting upload", "activity_id", eventPayload.ActivityId, "pipeline_id", eventPayload.PipelineId)
 
-		// 1. Loop Prevention Check
-		if isLoopOrigin(&eventPayload) {
-			fwCtx.Logger.Info("Skipping Intervals upload - activity originated from Intervals",
-				"activity_id", eventPayload.ActivityId)
-			return map[string]interface{}{
-				"status": "SKIPPED",
-				"reason": "loop_prevention",
-			}, nil
-		}
+		// Note: Loop prevention is handled at source-handler level (isBounceback check)
+		// The source handler checks uploaded_activities before publishing to the enricher
 
-		// 2. Get user's Intervals integration credentials
+		// 1. Get user's Intervals integration credentials
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user: %w", err)
@@ -119,17 +113,6 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// --- CREATE MODE ---
 		return handleIntervalsCreate(ctx, httpClient, intervalsIntegration, &eventPayload, fwCtx)
 	}
-}
-
-// isLoopOrigin checks if the activity originated from Intervals
-func isLoopOrigin(event *pb.EnrichedActivityEvent) bool {
-	if event.EnrichmentMetadata != nil {
-		if origin, ok := event.EnrichmentMetadata["origin_destination"]; ok && origin == "intervals" {
-			return true
-		}
-	}
-	// Future: Add SOURCE_INTERVALS check when source handler is implemented
-	return false
 }
 
 // handleIntervalsCreate uploads a new activity to Intervals.icu
@@ -197,6 +180,26 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 
 	// Persist SynchronizedActivity
 	intervalsDestID := fmt.Sprintf("%d", uploadResp.ID)
+
+	// Record upload for loop prevention
+	if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
+		uploadRecord := &pb.UploadedActivityRecord{
+			Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
+			UserId:        eventPayload.UserId,
+			Source:        eventPayload.Source,
+			ExternalId:    eventPayload.ActivityData.ExternalId,
+			StartTime:     eventPayload.StartTime,
+			Destination:   pb.Destination_DESTINATION_INTERVALS,
+			DestinationId: intervalsDestID,
+			UploadedAt:    timestamppb.Now(),
+		}
+		if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+			fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+		} else {
+			fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
+		}
+	}
+
 	existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
 	if existingActivity != nil {
 		if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{

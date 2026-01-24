@@ -149,4 +149,50 @@ export class ActivityStore {
       .doc(activityId)
       .update({ [`destinations.${destination}`]: externalId });
   }
+
+  /**
+   * Check if an incoming activity is a "bounceback" from our own upload.
+   * Used for source-level loop prevention - when a destination sends a webhook,
+   * we check if we recently uploaded an activity with this source + externalId.
+   *
+   * Uses exponential backoff to handle race conditions where the webhook
+   * arrives before we've finished writing the upload record to Firestore.
+   *
+   * @param userId - User to check
+   * @param sourceKey - e.g., 'SOURCE_HEVY', 'SOURCE_STRAVA'
+   * @param externalId - The external ID from the webhook
+   * @returns true if this activity was uploaded by us (should skip processing)
+   */
+  async isBounceback(userId: string, sourceKey: string, externalId: string): Promise<boolean> {
+    const docId = `${sourceKey}:${externalId}`;
+    const maxRetries = 3;
+    const baseDelayMs = 100; // 100ms, 200ms, 400ms
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      const doc = await this.uploadedActivitiesCollection(userId).doc(docId).get();
+      if (doc.exists) {
+        return true;
+      }
+
+      // If not found and we have retries left, wait with exponential backoff
+      if (attempt < maxRetries) {
+        const delayMs = baseDelayMs * Math.pow(2, attempt);
+        await this.sleep(delayMs);
+      }
+    }
+
+    return false;
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Get the uploaded_activities collection for a specific user.
+   * Used for loop prevention tracking.
+   */
+  private uploadedActivitiesCollection(userId: string) {
+    return this.db.collection('users').doc(userId).collection('uploaded_activities');
+  }
 }

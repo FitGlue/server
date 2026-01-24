@@ -225,6 +225,18 @@ export class UserService {
         return this.activityStore.checkDestinationExists(userId, destinationKey, externalId);
     }
 
+    /**
+     * Check if an incoming activity is a "bounceback" from our own upload.
+     * Used for source-level loop prevention - when a source sends a webhook,
+     * we check if we recently uploaded an activity with this source + externalId.
+     *
+     * @param userId - User to check
+     * @param sourceKey - e.g., 'SOURCE_HEVY', 'SOURCE_STRAVA'
+     * @param externalId - The external ID from the webhook
+     * @returns true if this activity was uploaded by us (should skip processing)
+     */
+    async isBounceback(userId: string, sourceKey: string, externalId: string): Promise<boolean> {
+        return this.activityStore.isBounceback(userId, sourceKey, externalId);
+    }
 
 }
-

@@ -20,6 +20,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
+	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -78,17 +79,10 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			"user_id", eventPayload.UserId,
 		)
 
-		// 1. Loop Prevention Check
-		if isLoopOrigin(&eventPayload) {
-			fwCtx.Logger.Info("Skipping Google Sheets upload - activity originated from Google Sheets",
-				"activity_id", eventPayload.ActivityId)
-			return map[string]interface{}{
-				"status": "SKIPPED",
-				"reason": "loop_prevention",
-			}, nil
-		}
+		// Note: Loop prevention is handled at source-handler level (isBounceback check)
+		// The source handler checks uploaded_activities before publishing to the enricher
 
-		// 2. Get user's Google Sheets integration
+		// 1. Get user's Google Sheets integration
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get user: %w", err)
@@ -161,6 +155,26 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 		"rowNumber", rowNumber,
 		"activityId", eventPayload.ActivityId)
 
+	// Record upload for loop prevention
+	googlesheetsDestID := fmt.Sprintf("%d", rowNumber)
+	if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
+		uploadRecord := &pb.UploadedActivityRecord{
+			Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
+			UserId:        eventPayload.UserId,
+			Source:        eventPayload.Source,
+			ExternalId:    eventPayload.ActivityData.ExternalId,
+			StartTime:     eventPayload.StartTime,
+			Destination:   pb.Destination_DESTINATION_GOOGLESHEETS,
+			DestinationId: googlesheetsDestID,
+			UploadedAt:    timestamppb.Now(),
+		}
+		if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+			fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+		} else {
+			fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
+		}
+	}
+
 	// Persist SynchronizedActivity
 	existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
 	if existingActivity != nil {
@@ -222,16 +236,6 @@ func handleGooglesheetsUpdate(ctx context.Context, httpClient *http.Client, even
 
 	// For append-only destinations, UPDATE is the same as CREATE
 	return handleGoogleSheetsCreate(ctx, httpClient, eventPayload, spreadsheetID, sheetName, includeShowcaseLink, includeVisuals, fwCtx)
-}
-
-// isLoopOrigin checks if the activity originated from Google Sheets
-func isLoopOrigin(event *pb.EnrichedActivityEvent) bool {
-	if event.EnrichmentMetadata != nil {
-		if origin, ok := event.EnrichmentMetadata["origin_destination"]; ok && origin == "googlesheets" {
-			return true
-		}
-	}
-	return false
 }
 
 // buildSheetRow constructs the row data for Google Sheets

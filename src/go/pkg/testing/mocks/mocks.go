@@ -180,6 +180,18 @@ func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*
 	return []*pb.PipelineConfig{}, nil
 }
 
+// --- Uploaded Activities (for loop prevention) ---
+
+func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error) {
+	// No-op for tests by default - return nil (not found)
+	return nil, nil
+}
+
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)
