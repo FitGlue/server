@@ -18,7 +18,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 # Handlers excluded from ZIP generation (not Cloud Functions)
-EXCLUDED_DIRS = {'shared', 'admin-cli', 'mcp-server', 'node_modules'}
+EXCLUDED_DIRS = {'shared', 'admin-cli', 'mcp-server', 'node_modules', 'parkrun-fetcher'}
 
 # Patterns to exclude from ZIPs (same as Terraform archive_file)
 EXCLUDE_PATTERNS = {'node_modules', 'dist', 'build', 'coverage', '.DS_Store'}

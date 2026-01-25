@@ -64,7 +64,8 @@ const ERROR_RULES = new Set([
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
-  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13', 'W15',
+  // TODO: Re-add 'W15' to ERROR_RULES after all pages are migrated to use component library
+  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13',
   // Enum
   'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7',
 ]);

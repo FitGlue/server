@@ -1485,14 +1485,40 @@ resource "google_cloud_run_service_iam_member" "integration_request_handler_invo
 
 # ----------------- Parkrun Fetcher (Playwright) -----------------
 # Cloud Run service with headless browser to bypass AWS WAF
+
+# Upload the source to GCS for Cloud Build (similar to other handlers)
+resource "google_storage_bucket_object" "parkrun_fetcher_source" {
+  name   = "parkrun-fetcher-source-${filemd5("${path.module}/../src/typescript/parkrun-fetcher/Dockerfile")}.tar.gz"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/parkrun-fetcher.tar.gz"
+}
+
+# Build the container using Cloud Build
+resource "null_resource" "parkrun_fetcher_build" {
+  triggers = {
+    source_hash = google_storage_bucket_object.parkrun_fetcher_source.md5hash
+  }
+
+  provisioner "local-exec" {
+    command = <<-EOT
+      gcloud builds submit \
+        --tag ${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${google_storage_bucket_object.parkrun_fetcher_source.md5hash} \
+        --project ${var.project_id} \
+        ${path.module}/../src/typescript/parkrun-fetcher
+    EOT
+  }
+}
+
 resource "google_cloud_run_v2_service" "parkrun_fetcher" {
   name     = "parkrun-fetcher"
   location = var.region
   ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
 
+  depends_on = [null_resource.parkrun_fetcher_build]
+
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${google_storage_bucket_object.parkrun_fetcher_source.md5hash}"
 
       resources {
         limits = {
