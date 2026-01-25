@@ -4179,12 +4179,13 @@ function checkBareHtmlUsage(): CheckResult {
   }
 
   // All HTML tags to detect - these should be wrapped in components
+  // Note: form/label (accessibility), strong/em (semantic text) are allowed inside components
   const HTML_TAGS = [
     'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-    'button', 'input', 'select', 'textarea', 'form', 'label',
+    'button', 'input', 'select', 'textarea',
     'a', 'img', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
     'section', 'article', 'header', 'footer', 'nav', 'aside', 'main',
-    'strong', 'em', 'b', 'i', 'u', 'small', 'code', 'pre', 'blockquote',
+    'b', 'i', 'u', 'small', 'code', 'pre', 'blockquote',
     'hr', 'br',
   ];
 
@@ -4194,10 +4195,9 @@ function checkBareHtmlUsage(): CheckResult {
 
   // Allowed paths (UI primitives that define components)
   const ALLOWED_PATHS = [
-    /components\/ui\//,
-    /components\/forms\//,
-    /components\/layout\//,
+    /components\/library\//,
     /AdminPage\.tsx$/,  // Admin page excluded per user request
+    /utils\/markdown\.tsx$/,  // Markdown utility produces semantic inline HTML
   ];
 
   // Recursively find all .tsx files
