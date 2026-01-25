@@ -1,11 +1,14 @@
 package parkrun_results_source
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -21,7 +24,6 @@ import (
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/framework"
-	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
@@ -61,9 +63,12 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 	return func(ctx context.Context, e cloudevents.Event, fwCtx *framework.FrameworkContext) (interface{}, error) {
 		fwCtx.Logger.Info("Starting Parkrun results poll")
 
-		// Default HTTP client with error logging for fetching results
+		// Use plain HTTP client - matches successful local testing configuration
+		// The oauth wrapper transports may interfere with headers in ways that trigger bot protection
 		if httpClient == nil {
-			httpClient = oauth.NewClientWithErrorLogging(fwCtx.Logger, "parkrun", 30*time.Second)
+			httpClient = &http.Client{
+				Timeout: 30 * time.Second,
+			}
 		}
 
 		// Query for auto-populated pending inputs from the Parkrun enricher
@@ -258,7 +263,7 @@ type ParkrunResult struct {
 }
 
 // fetchParkrunResultsForAthlete fetches and parses results from Parkrun website
-// Uses eventSlug directly instead of activity struct
+// Uses the Playwright fetcher service to bypass AWS WAF bot protection
 func fetchParkrunResultsForAthlete(ctx context.Context, logger *slog.Logger, client *http.Client, integration *pb.ParkrunIntegration, eventSlug string) (*ParkrunResult, error) {
 	// Extract numeric athlete ID from barcode (A12345 -> 12345)
 	athleteID := strings.TrimPrefix(integration.AthleteId, "A")
@@ -268,44 +273,116 @@ func fetchParkrunResultsForAthlete(ctx context.Context, logger *slog.Logger, cli
 	if baseURL == "" {
 		baseURL = "www.parkrun.org.uk"
 	}
-	url := fmt.Sprintf("https://%s/parkrunner/%s/all/", baseURL, athleteID)
+	parkrunURL := fmt.Sprintf("https://%s/parkrunner/%s/all/", baseURL, athleteID)
 
+	// Get HTML via Playwright fetcher service (bypasses AWS WAF)
+	html, err := fetchViaPlaywright(ctx, logger, client, parkrunURL)
+	if err != nil {
+		return nil, fmt.Errorf("fetch via playwright: %w", err)
+	}
+
+	// Parse the HTML to find matching event by slug
+	return parseAthleteResultsBySlug(logger, html, eventSlug)
+}
+
+// PlaywrightFetchRequest is the request body for the Playwright fetcher service
+type PlaywrightFetchRequest struct {
+	URL string `json:"url"`
+}
+
+// PlaywrightFetchResponse is the response from the Playwright fetcher service
+type PlaywrightFetchResponse struct {
+	HTML       string `json:"html"`
+	ByteLength int    `json:"byteLength"`
+	Success    bool   `json:"success"`
+	Error      string `json:"error,omitempty"`
+}
+
+// fetchViaPlaywright calls the Playwright fetcher Cloud Run service to get HTML
+// This bypasses AWS WAF JavaScript challenges by using a real browser
+func fetchViaPlaywright(ctx context.Context, logger *slog.Logger, client *http.Client, url string) (string, error) {
+	fetcherURL := os.Getenv("PARKRUN_FETCHER_URL")
+	if fetcherURL == "" {
+		// Fallback to direct fetch for local development/testing
+		logger.Warn("PARKRUN_FETCHER_URL not set, falling back to direct HTTP fetch")
+		return fetchDirectHTTP(ctx, client, url)
+	}
+
+	// Build request to Playwright service
+	reqBody := PlaywrightFetchRequest{URL: url}
+	jsonBody, err := json.Marshal(reqBody)
+	if err != nil {
+		return "", fmt.Errorf("marshal request: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", fetcherURL+"/fetch", bytes.NewReader(jsonBody))
+	if err != nil {
+		return "", fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("call playwright service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("playwright service error: status=%d body=%s", resp.StatusCode, string(body))
+	}
+
+	var fetchResp PlaywrightFetchResponse
+	if err := json.NewDecoder(resp.Body).Decode(&fetchResp); err != nil {
+		return "", fmt.Errorf("decode response: %w", err)
+	}
+
+	if !fetchResp.Success {
+		return "", fmt.Errorf("playwright fetch failed: %s", fetchResp.Error)
+	}
+
+	logger.Info("Fetched HTML via Playwright",
+		"url", url,
+		"bytes", fetchResp.ByteLength)
+
+	// Warn if HTML is suspiciously small (likely an error page)
+	const minExpectedHTMLBytes = 5000
+	if fetchResp.ByteLength < minExpectedHTMLBytes {
+		logger.Warn("Parkrun HTML response unusually small",
+			"bytes", fetchResp.ByteLength,
+			"expected_min", minExpectedHTMLBytes,
+			"url", url)
+	}
+
+	return fetchResp.HTML, nil
+}
+
+// fetchDirectHTTP is a fallback for local development when Playwright service is not available
+func fetchDirectHTTP(ctx context.Context, client *http.Client, url string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("create request: %w", err)
+		return "", fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
 	req.Header.Set("Accept", "text/html")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("fetch results: %w", err)
+		return "", fmt.Errorf("fetch results: %w", err)
 	}
 	defer resp.Body.Close()
 
-	// Accept 200 OK and 202 Accepted (Parkrun sometimes returns 202 during caching)
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusAccepted {
 		body, _ := io.ReadAll(resp.Body)
-		// Return error with status code for caller to handle
-		return nil, fmt.Errorf("http_status_%d: unexpected response (body_len=%d)", resp.StatusCode, len(body))
+		return "", fmt.Errorf("http_status_%d: unexpected response (body_len=%d)", resp.StatusCode, len(body))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read body: %w", err)
+		return "", fmt.Errorf("read body: %w", err)
 	}
 
-	// Warn if HTML is suspiciously small (likely an error page or rate limited)
-	const minExpectedHTMLBytes = 5000
-	if len(body) < minExpectedHTMLBytes {
-		logger.Warn("Parkrun HTML response unusually small",
-			"bytes", len(body),
-			"expected_min", minExpectedHTMLBytes,
-			"url", url)
-	}
-
-	// Parse the HTML to find matching event by slug
-	return parseAthleteResultsBySlug(logger, string(body), eventSlug)
+	return string(body), nil
 }
 
 // parseAthleteResultsBySlug parses the athlete's results page HTML to find result by event slug

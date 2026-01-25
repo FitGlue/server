@@ -22,7 +22,7 @@ const TERRAFORM_DIR = path.join(SERVER_ROOT, 'terraform');
 const PROTO_DIR = path.join(SERVER_ROOT, 'src/proto');
 
 // Packages that are NOT cloud functions (excluded from function checks)
-const NON_FUNCTION_PACKAGES = ['shared', 'admin-cli', 'mcp-server', 'node_modules'];
+const NON_FUNCTION_PACKAGES = ['shared', 'admin-cli', 'mcp-server', 'node_modules', 'parkrun-fetcher'];
 
 // Enums defined in protobuf that should have generated formatters and be used consistently
 const PROTO_ENUMS = [
@@ -64,7 +64,7 @@ const ERROR_RULES = new Set([
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
-  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13',
+  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13', 'W15',
   // Enum
   'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7',
 ]);
@@ -103,6 +103,8 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   // ActivityDetailPage fetches image assets (SVGs), not API calls
   'W1': [/usePluginRegistry/, /ActivityDetailPage/],
+  // W15: Bare HTML allowed in UI primitives, forms, layout, and admin page
+  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/],
 };
 
 // ============================================================================
@@ -4154,6 +4156,118 @@ function checkHandlerJestConfigExactMatch(): CheckResult {
 }
 
 // ============================================================================
+// Check W15: Bare HTML Detection in Web App
+// ============================================================================
+
+/**
+ * Validates that no bare HTML elements are used in pages or non-library components.
+ * ALL UI must be composed from the component library.
+ */
+function checkBareHtmlUsage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Bare HTML Detection (W15)', passed: true, errors, warnings };
+  }
+
+  const appDir = path.join(webDir, 'src', 'app');
+  if (!fs.existsSync(appDir)) {
+    return { name: 'Bare HTML Detection (W15)', passed: true, errors, warnings };
+  }
+
+  // All HTML tags to detect - these should be wrapped in components
+  const HTML_TAGS = [
+    'div', 'span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'button', 'input', 'select', 'textarea', 'form', 'label',
+    'a', 'img', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody',
+    'section', 'article', 'header', 'footer', 'nav', 'aside', 'main',
+    'strong', 'em', 'b', 'i', 'u', 'small', 'code', 'pre', 'blockquote',
+    'hr', 'br',
+  ];
+
+  // Build regex pattern to match JSX opening tags
+  // Matches: <tagname, <tagname>, <tagname followed by space/newline
+  const tagPattern = new RegExp(`<(${HTML_TAGS.join('|')})(?=[\\s>/])`, 'g');
+
+  // Allowed paths (UI primitives that define components)
+  const ALLOWED_PATHS = [
+    /components\/ui\//,
+    /components\/forms\//,
+    /components\/layout\//,
+    /AdminPage\.tsx$/,  // Admin page excluded per user request
+  ];
+
+  // Recursively find all .tsx files
+  const findTsxFiles = (dir: string): string[] => {
+    if (!fs.existsSync(dir)) return [];
+    const files: string[] = [];
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+    for (const item of items) {
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory() && !item.name.includes('node_modules')) {
+        files.push(...findTsxFiles(fullPath));
+      } else if (item.isFile() && item.name.endsWith('.tsx')) {
+        files.push(fullPath);
+      }
+    }
+    return files;
+  };
+
+  const tsxFiles = findTsxFiles(appDir);
+
+  for (const file of tsxFiles) {
+    const relativePath = path.relative(webDir, file);
+
+    // Skip allowed paths
+    if (ALLOWED_PATHS.some(pattern => pattern.test(relativePath))) {
+      continue;
+    }
+
+    const content = fs.readFileSync(file, 'utf-8');
+    const lines = content.split('\n');
+
+    // Track violations by tag for this file
+    const violations: Map<string, number[]> = new Map();
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      // Skip comments
+      if (line.trim().startsWith('//') || line.trim().startsWith('*')) continue;
+
+      let match;
+      tagPattern.lastIndex = 0; // Reset regex state
+      while ((match = tagPattern.exec(line)) !== null) {
+        const tag = match[1];
+        if (!violations.has(tag)) {
+          violations.set(tag, []);
+        }
+        violations.get(tag)!.push(i + 1);
+      }
+    }
+
+    // Report violations grouped by tag
+    if (violations.size > 0) {
+      for (const [tag, lineNumbers] of violations.entries()) {
+        if (lineNumbers.length <= 3) {
+          warnings.push(`${relativePath}: Bare <${tag}> at line(s) ${lineNumbers.join(', ')}`);
+        } else {
+          warnings.push(`${relativePath}: Bare <${tag}> at ${lineNumbers.length} locations (lines ${lineNumbers.slice(0, 3).join(', ')}...)`);
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'Bare HTML Detection (W15)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Main Runner
 // ============================================================================
 
@@ -4282,6 +4396,7 @@ function main(): void {
         { id: 'W11', fn: () => ({ ...checkResponsiveMediaQueries(), name: 'W11: Responsive Media Queries' }) },
         { id: 'W12', fn: () => ({ ...checkApiEndpointAlignment(), name: 'W12: API Endpoint Alignment' }) },
         { id: 'W13', fn: () => ({ ...checkHardcodedEmojiMaps(), name: 'W13: Hardcoded Emoji Maps' }) },
+        { id: 'W15', fn: () => ({ ...checkBareHtmlUsage(), name: 'W15: Bare HTML Detection' }) },
       ]
     },
     {

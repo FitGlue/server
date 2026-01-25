@@ -1,0 +1,121 @@
+import express, { Request, Response } from 'express';
+import { chromium, Browser } from 'playwright';
+
+const app = express();
+app.use(express.json());
+
+const PORT = process.env.PORT || 3000;
+
+// Keep browser instance alive for reuse (Cloud Run container lifecycle)
+let browser: Browser | null = null;
+
+async function getBrowser(): Promise<Browser> {
+  if (!browser) {
+    browser = await chromium.launch({
+      headless: true,
+      args: [
+        '--disable-dev-shm-usage', // Required for Docker
+        '--no-sandbox', // Required for Cloud Run
+        '--disable-setuid-sandbox',
+      ],
+    });
+  }
+  return browser;
+}
+
+interface FetchRequest {
+  url: string;
+}
+
+interface FetchResponse {
+  html: string;
+  byteLength: number;
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * POST /fetch
+ * Fetches a URL using a headless browser to bypass JavaScript challenges.
+ */
+app.post('/fetch', async (req: Request<{}, FetchResponse, FetchRequest>, res: Response<FetchResponse>) => {
+  const { url } = req.body;
+
+  if (!url) {
+    return res.status(400).json({
+      html: '',
+      byteLength: 0,
+      success: false,
+      error: 'Missing required field: url',
+    });
+  }
+
+  // Basic URL validation
+  if (!url.startsWith('https://') || !url.includes('parkrun')) {
+    return res.status(400).json({
+      html: '',
+      byteLength: 0,
+      success: false,
+      error: 'Invalid URL: must be a parkrun HTTPS URL',
+    });
+  }
+
+  console.log(`[parkrun-fetcher] Fetching: ${url}`);
+  const startTime = Date.now();
+
+  try {
+    const browserInstance = await getBrowser();
+    const context = await browserInstance.newContext({
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    });
+    const page = await context.newPage();
+
+    // Navigate and wait for content to load
+    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+
+    // Wait a bit extra for any JavaScript rendering
+    await page.waitForTimeout(2000);
+
+    // Get the full HTML content
+    const html = await page.content();
+
+    await context.close();
+
+    const duration = Date.now() - startTime;
+    console.log(`[parkrun-fetcher] Success: ${html.length} bytes in ${duration}ms`);
+
+    return res.json({
+      html,
+      byteLength: html.length,
+      success: true,
+    });
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error(`[parkrun-fetcher] Error: ${errorMessage}`);
+
+    return res.status(500).json({
+      html: '',
+      byteLength: 0,
+      success: false,
+      error: errorMessage,
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/health', (_req: Request, res: Response) => {
+  res.json({ status: 'ok', service: 'parkrun-fetcher' });
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+  console.log('[parkrun-fetcher] Shutting down...');
+  if (browser) {
+    await browser.close();
+  }
+  process.exit(0);
+});
+
+app.listen(PORT, () => {
+  console.log(`[parkrun-fetcher] Server running on port ${PORT}`);
+});

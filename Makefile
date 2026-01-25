@@ -119,7 +119,7 @@ TS_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name
 
 # Note: We enforce building 'shared' first because other packages depend on it.
 # Then we build all other workspaces in parallel for speed.
-TS_HANDLER_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules -not -name shared -not -name mcp-server -not -name admin-cli)
+TS_HANDLER_DIRS := $(shell find $(TS_SRC_DIR) -mindepth 1 -maxdepth 1 -type d -not -name node_modules -not -name shared -not -name mcp-server -not -name admin-cli -not -name parkrun-fetcher)
 TS_TOOL_DIRS := $(TS_SRC_DIR)/mcp-server $(TS_SRC_DIR)/admin-cli
 
 TS_HANDLER_NAMES := $(notdir $(TS_HANDLER_DIRS))

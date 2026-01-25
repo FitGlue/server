@@ -841,10 +841,10 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
     available_memory = "256Mi"
     timeout_seconds  = 60
     environment_variables = {
-      LOG_LEVEL = var.log_level
-      SENTRY_ORG           = var.sentry_org
-      SENTRY_PROJECT       = var.sentry_project
-      SENTRY_DSN           = var.sentry_dsn
+      LOG_LEVEL      = var.log_level
+      SENTRY_ORG     = var.sentry_org
+      SENTRY_PROJECT = var.sentry_project
+      SENTRY_DSN     = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1483,6 +1483,47 @@ resource "google_cloud_run_service_iam_member" "integration_request_handler_invo
 # NOTE: strava-updater removed - UPDATE operations are now handled by strava-uploader via use_update_method flag
 
 
+# ----------------- Parkrun Fetcher (Playwright) -----------------
+# Cloud Run service with headless browser to bypass AWS WAF
+resource "google_cloud_run_v2_service" "parkrun_fetcher" {
+  name     = "parkrun-fetcher"
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+
+  template {
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:latest"
+
+      resources {
+        limits = {
+          cpu    = "1"
+          memory = "1Gi"
+        }
+      }
+
+      ports {
+        container_port = 8080
+      }
+    }
+
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 2
+    }
+
+    timeout         = "60s"
+    service_account = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_v2_service_iam_member" "parkrun_fetcher_invoker" {
+  project  = google_cloud_run_v2_service.parkrun_fetcher.project
+  location = google_cloud_run_v2_service.parkrun_fetcher.location
+  name     = google_cloud_run_v2_service.parkrun_fetcher.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
 # ----------------- Parkrun Results Source -----------------
 # Scheduled function to poll for official Parkrun results
 resource "google_storage_bucket_object" "parkrun_results_source_zip" {
@@ -1516,6 +1557,7 @@ resource "google_cloudfunctions2_function" "parkrun_results_source" {
       SENTRY_ORG           = var.sentry_org
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
+      PARKRUN_FETCHER_URL  = google_cloud_run_v2_service.parkrun_fetcher.uri
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }
@@ -1532,7 +1574,7 @@ resource "google_cloudfunctions2_function" "parkrun_results_source" {
 resource "google_cloud_scheduler_job" "parkrun_results_rapid" {
   name        = "parkrun-results-rapid"
   description = "Poll for Parkrun results every 30 min on Saturday mornings"
-  schedule    = "0,30 10-13 * * 6"  # Saturdays 10:00-13:30 UTC
+  schedule    = "0,30 10-13 * * 6" # Saturdays 10:00-13:30 UTC
   time_zone   = "UTC"
   region      = var.region
 
@@ -1546,7 +1588,7 @@ resource "google_cloud_scheduler_job" "parkrun_results_rapid" {
 resource "google_cloud_scheduler_job" "parkrun_results_extended" {
   name        = "parkrun-results-extended"
   description = "Poll for Parkrun results every 2 hours on Saturday afternoons"
-  schedule    = "0 14,16,18,20,22 * * 6"  # Saturdays 14:00-22:00 UTC
+  schedule    = "0 14,16,18,20,22 * * 6" # Saturdays 14:00-22:00 UTC
   time_zone   = "UTC"
   region      = var.region
 
