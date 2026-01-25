@@ -534,6 +534,7 @@ func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {
 		"continued_without_resolution": p.ContinuedWithoutResolution,
 		"enricher_provider_id":         p.EnricherProviderId,
 		"linked_activity_id":           p.LinkedActivityId,
+		"pipeline_id":                  p.PipelineId,
 	}
 
 	if p.AutoDeadline != nil {
@@ -591,6 +592,7 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 		EnricherProviderId:         getString(m, "enricher_provider_id"),
 		AutoDeadline:               getTime(m, "auto_deadline"),
 		LinkedActivityId:           getString(m, "linked_activity_id"),
+		PipelineId:                 getString(m, "pipeline_id"),
 	}
 
 	if v, ok := m["status"]; ok {

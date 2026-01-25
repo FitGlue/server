@@ -186,8 +186,15 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 			if input.LinkedActivityId != "" {
 				resumePayload.ActivityId = &input.LinkedActivityId
 			}
+
+			// Debug: log pipelineId from pending input
+			fwCtx.Logger.Info("Resume payload pipelineId check",
+				"input_pipeline_id", input.PipelineId,
+				"activity_id", input.ActivityId)
+
 			if input.PipelineId != "" {
 				resumePayload.PipelineId = &input.PipelineId
+				fwCtx.Logger.Info("Set pipelineId on resume payload", "pipeline_id", input.PipelineId)
 			}
 
 			// Generate a fresh pipeline execution ID for this resume flow
