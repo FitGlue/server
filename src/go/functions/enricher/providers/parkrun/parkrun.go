@@ -308,7 +308,8 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 				ContinuedWithoutResolution: true,
 				EnricherProviderId:         "parkrun",
 				AutoDeadline:               timestamppb.New(autoDeadline),
-				LinkedActivityId:           stableID, // Link to this activity
+				LinkedActivityId:           stableID,              // Link to this activity
+				PipelineId:                 inputs["pipeline_id"], // For resume mode
 				OriginalPayload: &pb.ActivityPayload{
 					UserId:               user.UserId,
 					StandardizedActivity: activity, // Include full activity for resume

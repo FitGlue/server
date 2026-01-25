@@ -237,12 +237,13 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				Status:       "STARTED",
 			}
 
-			// Merge pipelineExecutionID into config for asset-generating providers
+			// Merge pipelineExecutionID and pipelineID into config for asset-generating providers
 			enricherConfig := make(map[string]string)
 			for k, v := range cfg.TypedConfig {
 				enricherConfig[k] = v
 			}
 			enricherConfig["pipeline_execution_id"] = pipelineExecutionID
+			enricherConfig["pipeline_id"] = pipeline.ID
 
 			// Execute
 			// TODO: Get logger from FrameworkContext when orchestrator is refactored

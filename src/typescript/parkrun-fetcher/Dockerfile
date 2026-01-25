@@ -1,5 +1,5 @@
 # Multi-stage build to compile TypeScript and install only production deps
-FROM mcr.microsoft.com/playwright:v1.40.0-jammy AS builder
+FROM mcr.microsoft.com/playwright:v1.58.0-jammy AS builder
 
 WORKDIR /app
 
@@ -17,7 +17,7 @@ COPY src ./src
 RUN npm run build
 
 # --- Production stage ---
-FROM mcr.microsoft.com/playwright:v1.40.0-jammy
+FROM mcr.microsoft.com/playwright:v1.58.0-jammy
 
 WORKDIR /app
 
