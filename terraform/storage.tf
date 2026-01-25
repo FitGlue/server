@@ -70,3 +70,9 @@ resource "google_storage_bucket_iam_member" "showcase_assets_functions_write" {
   role   = "roles/storage.objectCreator"
   member = "serviceAccount:${var.project_id}@appspot.gserviceaccount.com"
 }
+
+# NOTE: The Artifact Registry "cloud-run-source-deploy" is managed manually, not via Terraform.
+# Create it for each environment with:
+#   gcloud artifacts repositories create cloud-run-source-deploy \
+#     --repository-format=docker --location=us-central1 \
+#     --project=fitglue-server-<env>

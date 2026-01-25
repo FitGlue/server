@@ -1486,27 +1486,21 @@ resource "google_cloud_run_service_iam_member" "integration_request_handler_invo
 # ----------------- Parkrun Fetcher (Playwright) -----------------
 # Cloud Run service with headless browser to bypass AWS WAF
 #
-# The image is built via Cloud Build during terraform apply.
-# Using null_resource since gcloud is authenticated in the CI deploy phase.
-
-locals {
-  parkrun_fetcher_image_tag = filemd5("${path.module}/../src/typescript/parkrun-fetcher/Dockerfile")
-}
-
-resource "null_resource" "parkrun_fetcher_build" {
-  triggers = {
-    dockerfile_hash = local.parkrun_fetcher_image_tag
-  }
-
-  provisioner "local-exec" {
-    command = <<-EOT
-      gcloud builds submit \
-        --tag ${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${local.parkrun_fetcher_image_tag} \
-        --project ${var.project_id} \
-        ${path.module}/../src/typescript/parkrun-fetcher
-    EOT
-  }
-}
+# ⚠️  MANUAL DEPLOYMENT REQUIRED ⚠️
+# This function's Docker image is NOT deployed via Terraform/CI.
+# The Playwright container requires manual deployment when the Dockerfile changes.
+#
+# To deploy/update, run from server directory:
+#   gcloud builds submit \
+#     --tag us-central1-docker.pkg.dev/fitglue-server-dev/cloud-run-source-deploy/parkrun-fetcher:latest \
+#     --project fitglue-server-dev \
+#     src/typescript/parkrun-fetcher
+#
+# For prod:
+#   gcloud builds submit \
+#     --tag us-central1-docker.pkg.dev/fitglue-server-prod/cloud-run-source-deploy/parkrun-fetcher:latest \
+#     --project fitglue-server-prod \
+#     src/typescript/parkrun-fetcher
 
 resource "google_cloud_run_v2_service" "parkrun_fetcher" {
   name                = "parkrun-fetcher"
@@ -1514,11 +1508,10 @@ resource "google_cloud_run_v2_service" "parkrun_fetcher" {
   ingress             = "INGRESS_TRAFFIC_INTERNAL_ONLY"
   deletion_protection = false
 
-  depends_on = [null_resource.parkrun_fetcher_build]
-
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${local.parkrun_fetcher_image_tag}"
+      # Image must be pre-deployed manually - see comments above
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:latest"
 
       resources {
         limits = {
@@ -1539,6 +1532,13 @@ resource "google_cloud_run_v2_service" "parkrun_fetcher" {
 
     timeout         = "60s"
     service_account = google_service_account.cloud_function_sa.email
+  }
+
+  # Ignore changes to the image since it's deployed manually
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+    ]
   }
 }
 

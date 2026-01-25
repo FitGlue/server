@@ -1,4 +1,22 @@
-# Use Playwright's official image with browsers pre-installed
+# Multi-stage build to compile TypeScript and install only production deps
+FROM mcr.microsoft.com/playwright:v1.40.0-jammy AS builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install ALL dependencies (including dev) for build
+RUN npm ci
+
+# Copy source
+COPY tsconfig.json ./
+COPY src ./src
+
+# Build TypeScript
+RUN npm run build
+
+# --- Production stage ---
 FROM mcr.microsoft.com/playwright:v1.40.0-jammy
 
 WORKDIR /app
@@ -6,15 +24,11 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install production dependencies only
+RUN npm ci --omit=dev
 
-# Copy source and build
-COPY tsconfig.json ./
-COPY src ./src
-
-# Build TypeScript
-RUN npm run build
+# Copy built output from builder
+COPY --from=builder /app/dist ./dist
 
 # Expose port
 EXPOSE 8080

@@ -42,9 +42,9 @@ resource "google_compute_target_https_proxy" "showcase_assets_https_proxy" {
 
 # Global forwarding rule (creates the external IP)
 resource "google_compute_global_forwarding_rule" "showcase_assets_https" {
-  name       = "${var.project_id}-showcase-assets-https"
-  target     = google_compute_target_https_proxy.showcase_assets_https_proxy.id
-  port_range = "443"
+  name        = "${var.project_id}-showcase-assets-https"
+  target      = google_compute_target_https_proxy.showcase_assets_https_proxy.id
+  port_range  = "443"
   ip_protocol = "TCP"
 }
 
@@ -65,9 +65,9 @@ resource "google_compute_target_http_proxy" "showcase_assets_http_proxy" {
 }
 
 resource "google_compute_global_forwarding_rule" "showcase_assets_http" {
-  name       = "${var.project_id}-showcase-assets-http"
-  target     = google_compute_target_http_proxy.showcase_assets_http_proxy.id
-  port_range = "80"
+  name        = "${var.project_id}-showcase-assets-http"
+  target      = google_compute_target_http_proxy.showcase_assets_http_proxy.id
+  port_range  = "80"
   ip_protocol = "TCP"
 }
 
