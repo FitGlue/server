@@ -200,8 +200,8 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 				continue
 			}
 
-			// Publish to the raw activity topic to resume the pipeline (enricher listens on this topic)
-			_, err = fwCtx.Service.Pub.PublishCloudEvent(ctx, shared.TopicRawActivity, ceEvent)
+			// Publish to PIPELINE_ACTIVITY since we already have the pipelineId (bypasses splitter)
+			_, err = fwCtx.Service.Pub.PublishCloudEvent(ctx, shared.TopicPipelineActivity, ceEvent)
 			if err != nil {
 				fwCtx.Logger.Error("Failed to publish resume event", "error", err)
 				failed++
