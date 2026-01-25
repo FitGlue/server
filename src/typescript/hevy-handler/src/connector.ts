@@ -58,8 +58,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
       });
 
       if (tmplError || !tmplData) {
-        // eslint-disable-next-line no-console
-        console.warn(`Failed to fetch template ${tmplId}`);
+        this.context.logger.warn(`Failed to fetch template ${tmplId}`);
         return { id: tmplId, data: undefined };
       }
 

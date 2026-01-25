@@ -1,7 +1,7 @@
-import { createCloudFunction, db, InputStore, InputService, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore, ForbiddenError, HttpError, FrameworkHandler } from '@fitglue/shared';
+import { createCloudFunction, db, InputStore, InputService, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore, ForbiddenError, HttpError, FrameworkHandler, TOPICS } from '@fitglue/shared';
 
-// PubSub topic name logic via env var
-const TOPIC = process.env.PUBSUB_TOPIC || 'activity-updates';
+// PubSub topic for resume: PIPELINE_ACTIVITY (bypasses splitter since pipelineId is already set)
+const TOPIC = TOPICS.PIPELINE_ACTIVITY;
 
 
 interface ResolveInputRequest {
@@ -102,7 +102,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
 
       await publisher.publish(input.originalPayload);
 
-      ctx.logger.info('Resolved and re-published activity', { activityId: body.activityId });
+      ctx.logger.info('Resolved and re-published activity to enricher', { activityId: body.activityId, topic: TOPIC });
       return { success: true };
 
     } catch (e: unknown) {

@@ -58,7 +58,7 @@ const ERROR_RULES = new Set([
   // Infrastructure
   'I1', 'I2', 'I3', 'I4', 'I5', 'R1',
   // Go
-  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13',
+  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14',
   // TypeScript
   'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14', 'T15', 'T16', 'T17', 'T51', 'T52', 'T53',
   // Cross-Language
@@ -133,6 +133,23 @@ function getFiles(dirPath: string, extension?: string): string[] {
     .filter(dirent => dirent.isFile())
     .filter(dirent => !extension || dirent.name.endsWith(extension))
     .map(dirent => dirent.name);
+}
+
+function getFilesRecursive(dirPath: string, extension?: string): string[] {
+  if (!fs.existsSync(dirPath)) return [];
+  const result: string[] = [];
+
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dirPath, entry.name);
+    if (entry.isDirectory()) {
+      result.push(...getFilesRecursive(fullPath, extension));
+    } else if (entry.isFile() && (!extension || entry.name.endsWith(extension))) {
+      result.push(fullPath);
+    }
+  }
+
+  return result;
 }
 
 // ============================================================================
@@ -1292,6 +1309,74 @@ function checkEnricherProviderArchitecture(): CheckResult {
 }
 
 // ============================================================================
+// Check 14: Uploader Description Section Replacement (G14)
+// ============================================================================
+
+/**
+ * Validates that Go uploaders with update handlers use the description section
+ * replacement pattern instead of simple appending.
+ *
+ * Uploaders must:
+ * 1. Import the description package
+ * 2. Use description.HasSection or description.ReplaceSection in update handlers
+ *
+ * This ensures enricher placeholders (e.g., Parkrun "Waiting for results...")
+ * are replaced rather than appended when results arrive.
+ */
+function checkUploaderDescriptionSectionReplacement(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // One-shot or append-only destinations don't need section replacement
+  // - mock/showcase: one-shot destinations
+  // - googlesheets: append-only (UPDATE just appends a new row, doesn't merge descriptions)
+  const EXEMPT_UPLOADERS = ['mock-uploader', 'showcase-uploader', 'googlesheets-uploader'];
+
+  const goFunctionsDir = path.join(GO_SRC_DIR, 'functions');
+  const uploaderDirs = getDirectories(goFunctionsDir)
+    .filter(d => d.endsWith('-uploader'))
+    .filter(d => !EXEMPT_UPLOADERS.includes(d));
+
+  for (const dir of uploaderDirs) {
+    const functionPath = path.join(goFunctionsDir, dir, 'function.go');
+    if (!fs.existsSync(functionPath)) continue;
+
+    const content = fs.readFileSync(functionPath, 'utf-8');
+
+    // Check if this uploader has an update handler
+    const hasUpdateHandler =
+      content.includes('handleUpdate') ||
+      content.includes('Handle') && content.includes('Update');
+
+    if (!hasUpdateHandler) continue;
+
+    // Check for description package import
+    const hasDescriptionImport = content.includes('"github.com/fitglue/server/src/go/pkg/description"');
+
+    if (!hasDescriptionImport) {
+      errors.push(`Uploader '${dir}' has update handler but missing description package import - required for section replacement`);
+      continue;
+    }
+
+    // Check for section replacement usage
+    const usesSectionReplacement =
+      content.includes('description.HasSection') ||
+      content.includes('description.ReplaceSection');
+
+    if (!usesSectionReplacement) {
+      errors.push(`Uploader '${dir}' imports description package but doesn't use HasSection/ReplaceSection in update handler`);
+    }
+  }
+
+  return {
+    name: 'Uploader Description Section Replacement (G14)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Check 14: Environment Variable Access (T8)
 // ============================================================================
 
@@ -1864,6 +1949,84 @@ function checkConnectorFrameworkContext(): CheckResult {
 
   return {
     name: 'Connector FrameworkContext Usage (T17)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check T18: TypeScript Logger Usage
+// ============================================================================
+
+/**
+ * Validates that TypeScript handlers and utilities use ctx.logger instead of:
+ * 1. console.log/info/warn/error/debug - bypasses structured logging
+ * 2. Direct winston.createLogger() - only the framework should create loggers
+ *
+ * Exceptions:
+ * - Test files (*.test.ts) - can use console for debugging
+ * - admin-cli/ - CLI tools can use console for user output
+ * - node_modules/ and dist/ - third-party/compiled code
+ * - framework/context.ts - where the logger IS created
+ * - framework/logger.ts - where logger config lives (if exists)
+ */
+function checkTsConsoleLog(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Allowed files that can create loggers (framework internals)
+  const ALLOWED_LOGGER_CREATION = [
+    'framework/context.ts',
+    'framework/logger.ts',
+    'execution/logger.ts',
+  ];
+
+  // Find all TypeScript files in handlers and shared
+  const handlersDir = TS_SRC_DIR;
+  const handlerDirs = getDirectories(handlersDir)
+    .filter(d => d.endsWith('-handler') || d === 'shared')
+    .filter(d => !NON_FUNCTION_PACKAGES.includes(d));
+
+  for (const dir of handlerDirs) {
+    const srcDir = path.join(handlersDir, dir, 'src');
+    if (!fs.existsSync(srcDir)) continue;
+
+    const tsFiles = getFilesRecursive(srcDir, '.ts')
+      .filter(f => !f.endsWith('.test.ts'))
+      .filter(f => !f.includes('/dist/'))
+      .filter(f => !f.includes('node_modules'));
+
+    for (const file of tsFiles) {
+      const content = fs.readFileSync(file, 'utf-8');
+      const lines = content.split('\n');
+      const relativePath = path.relative(SERVER_ROOT, file);
+
+      // Check if this file is allowed to create loggers
+      const canCreateLogger = ALLOWED_LOGGER_CREATION.some(allowed => relativePath.includes(allowed));
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Skip comments
+        if (line.trim().startsWith('//') || line.trim().startsWith('*')) continue;
+
+        // Check for console.log/info/warn/error/debug
+        if (/console\.(log|info|warn|error|debug)\s*\(/.test(line)) {
+          warnings.push(`[L1] ${relativePath}:${i + 1}: Uses console.${line.match(/console\.(\w+)/)?.[1] || 'log'}() - prefer ctx.logger instead`);
+        }
+
+        // Check for direct winston logger creation (only in non-framework files)
+        if (!canCreateLogger) {
+          if (/winston\.createLogger\s*\(/.test(line) || /new\s+winston\.Logger\s*\(/.test(line)) {
+            errors.push(`[L2] ${relativePath}:${i + 1}: Direct winston logger creation - use ctx.logger from framework instead`);
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'TypeScript Logger Usage (T18)',
     passed: errors.length === 0,
     errors,
     warnings
@@ -4063,6 +4226,7 @@ function main(): void {
         { id: 'G11', fn: () => ({ ...checkDestinationReturnFields(), name: 'G11: Destination Return Fields' }) },
         { id: 'G12', fn: () => ({ ...checkDestinationUrlTemplates(), name: 'G12: Destination URL Templates' }) },
         { id: 'G13', fn: () => ({ ...checkEnricherProviderArchitecture(), name: 'G13: Enricher Provider Architecture' }) },
+        { id: 'G14', fn: () => ({ ...checkUploaderDescriptionSectionReplacement(), name: 'G14: Uploader Description Section Replacement' }) },
       ]
     },
     {
@@ -4086,6 +4250,7 @@ function main(): void {
         { id: 'T15', fn: () => ({ ...checkSafeHandlerSignature(), name: 'T15: SafeHandler Signature Compliance' }) },
         { id: 'T16', fn: () => ({ ...checkNoDirectResponseUsage(), name: 'T16: No Direct Response Object Usage' }) },
         { id: 'T17', fn: () => ({ ...checkConnectorFrameworkContext(), name: 'T17: Connector FrameworkContext Usage' }) },
+        { id: 'T18', fn: () => ({ ...checkTsConsoleLog(), name: 'T18: TypeScript Console.log Usage' }) },
         { id: 'T51', fn: () => ({ ...checkHandlerPackageJsonProperties(), name: 'T51: Handler package.json Properties' }) },
         { id: 'T52', fn: () => ({ ...checkHandlerTsConfigExactMatch(), name: 'T52: Handler tsconfig.json Exact Match' }) },
         { id: 'T53', fn: () => ({ ...checkHandlerJestConfigExactMatch(), name: 'T53: Handler jest.config.js Exact Match' }) },

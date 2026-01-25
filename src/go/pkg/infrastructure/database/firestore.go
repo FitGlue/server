@@ -345,12 +345,13 @@ func (a *FirestoreAdapter) SetUploadedActivity(ctx context.Context, userId strin
 	return a.storage.UploadedActivities(userId).Doc(record.Id).Set(ctx, record)
 }
 
-// GetUploadedActivity retrieves an uploaded activity record by source and external ID.
-func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error) {
-	// Query for the record with matching source and external_id
+// GetUploadedActivity retrieves an uploaded activity record by destination and destination ID.
+// This matches how webhooks arrive: when Hevy sends a webhook, we look up by HEVY:{hevy_workout_id}
+func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
+	// Query for the record with matching destination and destination_id
 	iter := a.Client.Collection("users").Doc(userId).Collection("uploaded_activities").
-		Where("source", "==", int32(source)).
-		Where("external_id", "==", externalId).
+		Where("destination", "==", int32(destination)).
+		Where("destination_id", "==", destinationId).
 		Limit(1).
 		Documents(ctx)
 

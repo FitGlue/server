@@ -98,61 +98,78 @@ func (p *ActivityFilterProvider) Enrich(ctx context.Context, logger *slog.Logger
 		}
 	}
 
-	// --- INCLUSION LOGIC (Allow-list) ---
-	// If any include_* rules are present, the activity MUST match at least one of them to proceed.
+	// --- INCLUSION LOGIC (Allow-list with AND semantics) ---
+	// If include_* rules are present, the activity MUST match ALL defined rules to proceed.
+	// Each rule type (type, title, description) that is defined must be satisfied.
 
 	incTypes := inputs["include_activity_types"]
 	incTitle := inputs["include_title_contains"]
 	incDesc := inputs["include_description_contains"]
 
-	hasInclusionRules := incTypes != "" || incTitle != "" || incDesc != ""
-
-	if hasInclusionRules {
-		matched := false
-
-		// Check include_activity_types
-		if incTypes != "" {
-			actType := act.Type.String()
-			for _, t := range strings.Split(incTypes, ",") {
-				t = strings.TrimSpace(t)
-				if strings.EqualFold(t, actType) || strings.EqualFold("ACTIVITY_TYPE_"+t, actType) {
-					matched = true
-					break
-				}
+	// Check include_activity_types - must match if defined
+	if incTypes != "" {
+		actType := act.Type.String()
+		typeMatched := false
+		for _, t := range strings.Split(incTypes, ",") {
+			t = strings.TrimSpace(t)
+			if strings.EqualFold(t, actType) || strings.EqualFold("ACTIVITY_TYPE_"+t, actType) {
+				typeMatched = true
+				break
 			}
 		}
-
-		// Check include_title_contains
-		if !matched && incTitle != "" {
-			titleLower := strings.ToLower(act.Name)
-			for _, pattern := range strings.Split(incTitle, ",") {
-				pattern = strings.TrimSpace(strings.ToLower(pattern))
-				if pattern != "" && strings.Contains(titleLower, pattern) {
-					matched = true
-					break
-				}
-			}
-		}
-
-		// Check include_description_contains
-		if !matched && incDesc != "" {
-			descLower := strings.ToLower(act.Description)
-			for _, pattern := range strings.Split(incDesc, ",") {
-				pattern = strings.TrimSpace(strings.ToLower(pattern))
-				if pattern != "" && strings.Contains(descLower, pattern) {
-					matched = true
-					break
-				}
-			}
-		}
-
-		if !matched {
+		if !typeMatched {
 			return &providers.EnrichmentResult{
 				HaltPipeline: true,
-				HaltReason:   "Activity did not match any inclusion criteria",
+				HaltReason:   fmt.Sprintf("Activity type %s not in include list", actType),
 				Metadata: map[string]string{
 					"filter_applied": "true",
-					"filter_reason":  "not_included",
+					"filter_reason":  "type_not_included",
+				},
+			}, nil
+		}
+	}
+
+	// Check include_title_contains - must match if defined
+	if incTitle != "" {
+		titleLower := strings.ToLower(act.Name)
+		titleMatched := false
+		for _, pattern := range strings.Split(incTitle, ",") {
+			pattern = strings.TrimSpace(strings.ToLower(pattern))
+			if pattern != "" && strings.Contains(titleLower, pattern) {
+				titleMatched = true
+				break
+			}
+		}
+		if !titleMatched {
+			return &providers.EnrichmentResult{
+				HaltPipeline: true,
+				HaltReason:   fmt.Sprintf("Title '%s' does not contain any required pattern", act.Name),
+				Metadata: map[string]string{
+					"filter_applied": "true",
+					"filter_reason":  "title_not_included",
+				},
+			}, nil
+		}
+	}
+
+	// Check include_description_contains - must match if defined
+	if incDesc != "" {
+		descLower := strings.ToLower(act.Description)
+		descMatched := false
+		for _, pattern := range strings.Split(incDesc, ",") {
+			pattern = strings.TrimSpace(strings.ToLower(pattern))
+			if pattern != "" && strings.Contains(descLower, pattern) {
+				descMatched = true
+				break
+			}
+		}
+		if !descMatched {
+			return &providers.EnrichmentResult{
+				HaltPipeline: true,
+				HaltReason:   "Description does not contain any required pattern",
+				Metadata: map[string]string{
+					"filter_applied": "true",
+					"filter_reason":  "description_not_included",
 				},
 			}, nil
 		}

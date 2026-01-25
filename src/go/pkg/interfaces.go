@@ -52,7 +52,7 @@ type Database interface {
 
 	// Uploaded Activities (for loop prevention - tracks what we've posted to destinations)
 	SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error
-	GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error)
+	GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error)
 }
 
 // --- Messaging Interfaces ---

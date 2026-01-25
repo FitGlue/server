@@ -104,7 +104,7 @@ func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*
 func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
 	return nil
 }
-func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error) {
+func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
 	return nil, nil
 }
 

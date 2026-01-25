@@ -321,6 +321,7 @@ describe('repost-handler', () => {
     beforeEach(() => {
       ctx.stores.activities.getSynchronized.mockResolvedValue({
         activityId: 'a1',
+        pipelineId: 'pipeline-123',
         pipelineExecutionId: 'pipe-1',
         destinations: { strava: 'ext-123' },
       });
@@ -378,7 +379,7 @@ describe('repost-handler', () => {
 
       // Should be a CloudEvent
       expect(publishedData.specversion).toBe('1.0');
-      expect(publishedData.type).toBe('com.fitglue.activity.created');
+      expect(publishedData.type).toBe('com.fitglue.activity.pipeline');
       expect(publishedData.data.bypass_dedup).toBe(true);
       expect(publishedData.data.activity_id).toBe('a1');
 

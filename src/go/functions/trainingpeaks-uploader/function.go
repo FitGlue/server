@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/description"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
@@ -129,12 +131,14 @@ func handleTrainingPeaksCreate(ctx context.Context, httpClient *http.Client, eve
 		"activityId", eventPayload.ActivityId)
 
 	// Record upload for loop prevention
-	if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
+	// Key is destination:destinationId so when TrainingPeaks sends a webhook,
+	// we can look it up and detect the bounceback
+	if workoutID != "" {
 		uploadRecord := &pb.UploadedActivityRecord{
-			Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
+			Id:            loopprevention.BuildUploadedActivityID(pb.Destination_DESTINATION_TRAININGPEAKS, workoutID),
 			UserId:        eventPayload.UserId,
 			Source:        eventPayload.Source,
-			ExternalId:    eventPayload.ActivityData.ExternalId,
+			ExternalId:    eventPayload.ActivityData.GetExternalId(),
 			StartTime:     eventPayload.StartTime,
 			Destination:   pb.Destination_DESTINATION_TRAININGPEAKS,
 			DestinationId: workoutID,
@@ -221,11 +225,26 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 
 	fwCtx.Logger.Info("Found existing TrainingPeaks workout", "trainingpeaks_workout_id", workoutIDStr)
 
-	// 2. Build update payload - for UPDATE we merge descriptions
+	// 2. Merge description: use stored description as base (from SynchronizedActivity)
+	// then apply section replacement with the enricher's new content
 	existingDescription := syncActivity.Description
 	mergedDescription := existingDescription
 	if eventPayload.Description != "" {
-		if mergedDescription != "" {
+		// Check for section header in metadata (signals replaceable section)
+		sectionHeader := ""
+		for key, val := range eventPayload.EnrichmentMetadata {
+			if strings.HasPrefix(key, "section_header_") {
+				sectionHeader = val
+				break
+			}
+		}
+
+		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
+			// Replace the existing section with the new content
+			mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, eventPayload.Description)
+			fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+		} else if mergedDescription != "" {
+			// Fallback to append
 			mergedDescription += "\n\n" + eventPayload.Description
 		} else {
 			mergedDescription = eventPayload.Description

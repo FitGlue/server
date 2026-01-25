@@ -99,20 +99,21 @@ func (CloudEventType) EnumDescriptor() ([]byte, []int) {
 type CloudEventSource int32
 
 const (
-	CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED     CloudEventSource = 0
-	CloudEventSource_CLOUD_EVENT_SOURCE_HEVY            CloudEventSource = 1
-	CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK  CloudEventSource = 2
-	CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST   CloudEventSource = 3
-	CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER        CloudEventSource = 4
-	CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER          CloudEventSource = 5
-	CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER  CloudEventSource = 6
-	CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS CloudEventSource = 7
-	CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD     CloudEventSource = 8
-	CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA          CloudEventSource = 9
-	CloudEventSource_CLOUD_EVENT_SOURCE_OURA            CloudEventSource = 10
-	CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK   CloudEventSource = 11
-	CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO           CloudEventSource = 12
-	CloudEventSource_CLOUD_EVENT_SOURCE_MOCK            CloudEventSource = 99
+	CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED       CloudEventSource = 0
+	CloudEventSource_CLOUD_EVENT_SOURCE_HEVY              CloudEventSource = 1
+	CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK    CloudEventSource = 2
+	CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST     CloudEventSource = 3
+	CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER          CloudEventSource = 4
+	CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER            CloudEventSource = 5
+	CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER    CloudEventSource = 6
+	CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS   CloudEventSource = 7
+	CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD       CloudEventSource = 8
+	CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA            CloudEventSource = 9
+	CloudEventSource_CLOUD_EVENT_SOURCE_OURA              CloudEventSource = 10
+	CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK     CloudEventSource = 11
+	CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO             CloudEventSource = 12
+	CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER CloudEventSource = 13
+	CloudEventSource_CLOUD_EVENT_SOURCE_MOCK              CloudEventSource = 99
 )
 
 // Enum value maps for CloudEventSource.
@@ -131,23 +132,25 @@ var (
 		10: "CLOUD_EVENT_SOURCE_OURA",
 		11: "CLOUD_EVENT_SOURCE_POLAR_WEBHOOK",
 		12: "CLOUD_EVENT_SOURCE_WAHOO",
+		13: "CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER",
 		99: "CLOUD_EVENT_SOURCE_MOCK",
 	}
 	CloudEventSource_value = map[string]int32{
-		"CLOUD_EVENT_SOURCE_UNSPECIFIED":     0,
-		"CLOUD_EVENT_SOURCE_HEVY":            1,
-		"CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK":  2,
-		"CLOUD_EVENT_SOURCE_FITBIT_INGEST":   3,
-		"CLOUD_EVENT_SOURCE_ENRICHER":        4,
-		"CLOUD_EVENT_SOURCE_ROUTER":          5,
-		"CLOUD_EVENT_SOURCE_INPUTS_HANDLER":  6,
-		"CLOUD_EVENT_SOURCE_PARKRUN_RESULTS": 7,
-		"CLOUD_EVENT_SOURCE_FILE_UPLOAD":     8,
-		"CLOUD_EVENT_SOURCE_STRAVA":          9,
-		"CLOUD_EVENT_SOURCE_OURA":            10,
-		"CLOUD_EVENT_SOURCE_POLAR_WEBHOOK":   11,
-		"CLOUD_EVENT_SOURCE_WAHOO":           12,
-		"CLOUD_EVENT_SOURCE_MOCK":            99,
+		"CLOUD_EVENT_SOURCE_UNSPECIFIED":       0,
+		"CLOUD_EVENT_SOURCE_HEVY":              1,
+		"CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK":    2,
+		"CLOUD_EVENT_SOURCE_FITBIT_INGEST":     3,
+		"CLOUD_EVENT_SOURCE_ENRICHER":          4,
+		"CLOUD_EVENT_SOURCE_ROUTER":            5,
+		"CLOUD_EVENT_SOURCE_INPUTS_HANDLER":    6,
+		"CLOUD_EVENT_SOURCE_PARKRUN_RESULTS":   7,
+		"CLOUD_EVENT_SOURCE_FILE_UPLOAD":       8,
+		"CLOUD_EVENT_SOURCE_STRAVA":            9,
+		"CLOUD_EVENT_SOURCE_OURA":              10,
+		"CLOUD_EVENT_SOURCE_POLAR_WEBHOOK":     11,
+		"CLOUD_EVENT_SOURCE_WAHOO":             12,
+		"CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER": 13,
+		"CLOUD_EVENT_SOURCE_MOCK":              99,
 	}
 )
 
@@ -558,7 +561,7 @@ const file_events_proto_rawDesc = "" +
 	"$CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION\x10\x04\x1a#\x82\xb5\x18\x1fcom.fitglue.fitbit.notification\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_ENRICHMENT_LAG\x10\x05\x1a\x1e\x82\xb5\x18\x1acom.fitglue.enrichment.lag\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_INPUT_RESOLVED\x10\x06\x1a\x1e\x82\xb5\x18\x1acom.fitglue.input.resolved\x12E\n" +
-	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\xd1\x06\n" +
+	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\x98\a\n" +
 	"\x10CloudEventSource\x12\"\n" +
 	"\x1eCLOUD_EVENT_SOURCE_UNSPECIFIED\x10\x00\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_HEVY\x10\x01\x1a\x16\x8a\xb5\x18\x12/integrations/hevy\x12G\n" +
@@ -573,7 +576,8 @@ const file_events_proto_rawDesc = "" +
 	"\x17CLOUD_EVENT_SOURCE_OURA\x10\n" +
 	"\x1a\x16\x8a\xb5\x18\x12/integrations/oura\x12E\n" +
 	" CLOUD_EVENT_SOURCE_POLAR_WEBHOOK\x10\v\x1a\x1f\x8a\xb5\x18\x1b/integrations/polar/webhook\x125\n" +
-	"\x18CLOUD_EVENT_SOURCE_WAHOO\x10\f\x1a\x17\x8a\xb5\x18\x13/integrations/wahoo\x123\n" +
+	"\x18CLOUD_EVENT_SOURCE_WAHOO\x10\f\x1a\x17\x8a\xb5\x18\x13/integrations/wahoo\x12E\n" +
+	"$CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER\x10\r\x1a\x1b\x8a\xb5\x18\x17/core/pipeline-splitter\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\xb9\x03\n" +
 	"\vDestination\x12\x1b\n" +
 	"\x17DESTINATION_UNSPECIFIED\x10\x00\x123\n" +

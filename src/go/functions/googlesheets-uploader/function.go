@@ -156,22 +156,22 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 
 	// Record upload for loop prevention
 	googlesheetsDestID := fmt.Sprintf("%d", rowNumber)
-	if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
-		uploadRecord := &pb.UploadedActivityRecord{
-			Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
-			UserId:        eventPayload.UserId,
-			Source:        eventPayload.Source,
-			ExternalId:    eventPayload.ActivityData.ExternalId,
-			StartTime:     eventPayload.StartTime,
-			Destination:   pb.Destination_DESTINATION_GOOGLESHEETS,
-			DestinationId: googlesheetsDestID,
-			UploadedAt:    timestamppb.Now(),
-		}
-		if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
-			fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
-		} else {
-			fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
-		}
+	// Key is destination:destinationId - though Google Sheets doesn't send webhooks,
+	// this maintains consistency with other uploaders
+	uploadRecord := &pb.UploadedActivityRecord{
+		Id:            loopprevention.BuildUploadedActivityID(pb.Destination_DESTINATION_GOOGLESHEETS, googlesheetsDestID),
+		UserId:        eventPayload.UserId,
+		Source:        eventPayload.Source,
+		ExternalId:    eventPayload.ActivityData.GetExternalId(),
+		StartTime:     eventPayload.StartTime,
+		Destination:   pb.Destination_DESTINATION_GOOGLESHEETS,
+		DestinationId: googlesheetsDestID,
+		UploadedAt:    timestamppb.Now(),
+	}
+	if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+		fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+	} else {
+		fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
 	}
 
 	// Persist SynchronizedActivity

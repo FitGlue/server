@@ -1,5 +1,6 @@
 export const TOPICS = {
   RAW_ACTIVITY: 'topic-raw-activity',
+  PIPELINE_ACTIVITY: 'topic-pipeline-activity',
   ENRICHED_ACTIVITY: 'topic-enriched-activity',
   JOB_UPLOAD_STRAVA: 'topic-job-upload-strava',
   JOB_UPLOAD_OTHER: 'topic-job-upload-other',

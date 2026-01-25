@@ -51,30 +51,30 @@ func TestGetCorrespondingDestination(t *testing.T) {
 
 func TestBuildUploadedActivityID(t *testing.T) {
 	tests := []struct {
-		name       string
-		source     pb.ActivitySource
-		externalId string
-		expected   string
+		name          string
+		destination   pb.Destination
+		destinationId string
+		expected      string
 	}{
 		{
-			name:       "Hevy workout ID",
-			source:     pb.ActivitySource_SOURCE_HEVY,
-			externalId: "abc123",
-			expected:   "hevy:abc123",
+			name:          "Hevy destination ID",
+			destination:   pb.Destination_DESTINATION_HEVY,
+			destinationId: "abc123",
+			expected:      "hevy:abc123",
 		},
 		{
-			name:       "Strava activity ID",
-			source:     pb.ActivitySource_SOURCE_STRAVA,
-			externalId: "12345678",
-			expected:   "strava:12345678",
+			name:          "Strava destination ID",
+			destination:   pb.Destination_DESTINATION_STRAVA,
+			destinationId: "12345678",
+			expected:      "strava:12345678",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := BuildUploadedActivityID(tt.source, tt.externalId)
+			result := BuildUploadedActivityID(tt.destination, tt.destinationId)
 			if result != tt.expected {
-				t.Errorf("BuildUploadedActivityID(%v, %s) = %s, want %s", tt.source, tt.externalId, result, tt.expected)
+				t.Errorf("BuildUploadedActivityID(%v, %s) = %s, want %s", tt.destination, tt.destinationId, result, tt.expected)
 			}
 		})
 	}

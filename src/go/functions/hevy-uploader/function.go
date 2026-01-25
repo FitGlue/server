@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/description"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
@@ -124,13 +126,14 @@ func uploadHandler() framework.HandlerFunc {
 			"activityId", eventPayload.ActivityId)
 
 		// Record upload for loop prevention
-		// When Hevy sends webhooks, we'll check if we just uploaded this activity
-		if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
+		// Key is destination:destinationId so when Hevy sends a webhook with workoutID,
+		// we can look it up by HEVY:{workoutID} and detect the bounceback
+		if workoutID != "" {
 			uploadRecord := &pb.UploadedActivityRecord{
-				Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
+				Id:            loopprevention.BuildUploadedActivityID(pb.Destination_DESTINATION_HEVY, workoutID),
 				UserId:        eventPayload.UserId,
 				Source:        eventPayload.Source,
-				ExternalId:    eventPayload.ActivityData.ExternalId,
+				ExternalId:    eventPayload.ActivityData.GetExternalId(),
 				StartTime:     eventPayload.StartTime,
 				Destination:   pb.Destination_DESTINATION_HEVY,
 				DestinationId: workoutID,
@@ -262,10 +265,25 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		"existingTitle", existingWorkout.Title,
 		"existingDescLength", len(existingWorkout.Description))
 
-	// 2. Merge new description with existing (append, don't overwrite)
-	mergedDescription := existingWorkout.Description
+	// 2. Merge description: use DESTINATION's description as base (fetched via GET above)
+	// then apply section replacement with the enricher's new content
+	mergedDescription := existingWorkout.Description // From destination API, NOT event
 	if event.Description != "" {
-		if mergedDescription != "" {
+		// Check for section header in metadata (signals replaceable section)
+		sectionHeader := ""
+		for key, val := range event.EnrichmentMetadata {
+			if strings.HasPrefix(key, "section_header_") {
+				sectionHeader = val
+				break
+			}
+		}
+
+		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
+			// Replace the existing section with the new content
+			mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, event.Description)
+			fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+		} else if mergedDescription != "" {
+			// Fallback to append
 			mergedDescription += "\n\n" + event.Description
 		} else {
 			mergedDescription = event.Description

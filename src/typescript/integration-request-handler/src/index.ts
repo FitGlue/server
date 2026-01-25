@@ -83,7 +83,7 @@ function normalizeIntegrationName(input: string): string {
   return cleaned.replace(/\s+/g, '-');
 }
 
-export const handler: FrameworkHandler = async (req, _ctx) => {
+export const handler: FrameworkHandler = async (req, ctx) => {
   // CORS Headers are NOT handled here anymore. Gateway should handle them.
 
   // GET: Return stats (admin use)
@@ -107,7 +107,7 @@ export const handler: FrameworkHandler = async (req, _ctx) => {
 
       return { requests: sorted };
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      ctx.logger.error('Error fetching stats:', { error });
       throw new HttpError(500, 'Internal Server Error');
     }
   }
@@ -121,8 +121,7 @@ export const handler: FrameworkHandler = async (req, _ctx) => {
 
   // Honeypot spam protection
   if (websiteUrl) {
-    // eslint-disable-next-line no-console
-    console.warn(`Spam detected: honeypot filled. Integration: "${integration}"`);
+    ctx.logger.warn('Spam detected: honeypot filled', { integration });
     return { success: true, message: 'Thanks for your feedback!' };
   }
 
@@ -166,15 +165,14 @@ export const handler: FrameworkHandler = async (req, _ctx) => {
       }
     });
 
-    // eslint-disable-next-line no-console
-    console.log(`Integration request: "${rawInput}" -> "${canonicalName}"`);
+    ctx.logger.info('Integration request processed', { rawInput, canonicalName });
     return {
       success: true,
       message: "Thanks! We'll consider adding this integration.",
       canonicalName,
     };
   } catch (error) {
-    console.error('Error processing integration request:', error);
+    ctx.logger.error('Error processing integration request', { error });
     throw new HttpError(500, 'Internal Server Error');
   }
 };

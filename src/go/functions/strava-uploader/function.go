@@ -20,6 +20,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/description"
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
@@ -190,24 +191,23 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)
 
 		// Record upload for loop prevention
-		// When Strava sends webhooks, we'll check if we just uploaded this activity
-		if eventPayload.ActivityData != nil && eventPayload.ActivityData.ExternalId != "" {
-			uploadRecord := &pb.UploadedActivityRecord{
-				Id:            loopprevention.BuildUploadedActivityID(eventPayload.Source, eventPayload.ActivityData.ExternalId),
-				UserId:        eventPayload.UserId,
-				Source:        eventPayload.Source,
-				ExternalId:    eventPayload.ActivityData.ExternalId,
-				StartTime:     eventPayload.StartTime,
-				Destination:   pb.Destination_DESTINATION_STRAVA,
-				DestinationId: stravaDestID,
-				UploadedAt:    timestamppb.Now(),
-			}
-			if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
-				fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
-				// Don't fail the upload - this is just for loop prevention
-			} else {
-				fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
-			}
+		// Key is destination:destinationId so when Strava sends a webhook with activityId,
+		// we can look it up by STRAVA:{activityId} and detect the bounceback
+		uploadRecord := &pb.UploadedActivityRecord{
+			Id:            loopprevention.BuildUploadedActivityID(pb.Destination_DESTINATION_STRAVA, stravaDestID),
+			UserId:        eventPayload.UserId,
+			Source:        eventPayload.Source,
+			ExternalId:    eventPayload.ActivityData.GetExternalId(),
+			StartTime:     eventPayload.StartTime,
+			Destination:   pb.Destination_DESTINATION_STRAVA,
+			DestinationId: stravaDestID,
+			UploadedAt:    timestamppb.Now(),
+		}
+		if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+			fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+			// Don't fail the upload - this is just for loop prevention
+		} else {
+			fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
 		}
 
 		// Check if activity already exists (e.g., repost scenario)
@@ -348,10 +348,25 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		return nil, fmt.Errorf("failed to decode existing activity: %w", err)
 	}
 
-	// 3. Merge new description with existing (append, don't overwrite)
-	mergedDescription := existingActivity.Description
+	// 3. Merge description: use DESTINATION's description as base (fetched via GET above)
+	// then apply section replacement with the enricher's new content
+	mergedDescription := existingActivity.Description // From destination API, NOT eventPayload
 	if eventPayload.Description != "" {
-		if mergedDescription != "" {
+		// Check for section header in metadata (signals replaceable section)
+		sectionHeader := ""
+		for key, val := range eventPayload.EnrichmentMetadata {
+			if strings.HasPrefix(key, "section_header_") {
+				sectionHeader = val
+				break
+			}
+		}
+
+		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
+			// Replace the existing section with the new content
+			mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, eventPayload.Description)
+			fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+		} else if mergedDescription != "" {
+			// Fallback to append
 			mergedDescription += "\n\n" + eventPayload.Description
 		} else {
 			mergedDescription = eventPayload.Description

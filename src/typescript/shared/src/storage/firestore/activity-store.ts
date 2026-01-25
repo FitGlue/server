@@ -153,24 +153,29 @@ export class ActivityStore {
   /**
    * Check if an incoming activity is a "bounceback" from our own upload.
    * Used for source-level loop prevention - when a destination sends a webhook,
-   * we check if we recently uploaded an activity with this source + externalId.
+   * we check if we recently uploaded an activity with the same destination ID.
    *
    * Uses exponential backoff to handle race conditions where the webhook
    * arrives before we've finished writing the upload record to Firestore.
    *
    * @param userId - User to check
-   * @param sourceKey - e.g., 'SOURCE_HEVY', 'SOURCE_STRAVA'
-   * @param externalId - The external ID from the webhook
+   * @param destination - The destination enum value (e.g., Destination.DESTINATION_HEVY)
+   * @param destinationId - The external ID from the webhook (which IS the destination's ID)
    * @returns true if this activity was uploaded by us (should skip processing)
    */
-  async isBounceback(userId: string, sourceKey: string, externalId: string): Promise<boolean> {
-    const docId = `${sourceKey}:${externalId}`;
+  async isBounceback(userId: string, destination: number, destinationId: string): Promise<boolean> {
     const maxRetries = 3;
     const baseDelayMs = 100; // 100ms, 200ms, 400ms
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
-      const doc = await this.uploadedActivitiesCollection(userId).doc(docId).get();
-      if (doc.exists) {
+      // Query by enum fields - exactly like Go does
+      const snapshot = await this.uploadedActivitiesCollection(userId)
+        .where('destination', '==', destination)
+        .where('destination_id', '==', destinationId)
+        .limit(1)
+        .get();
+
+      if (!snapshot.empty) {
         return true;
       }
 

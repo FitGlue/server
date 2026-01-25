@@ -264,7 +264,10 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 	}
 
 	if len(imagenResp.Predictions) == 0 {
-		return nil, fmt.Errorf("no predictions in response")
+		// Log the full response to help debug content moderation or other issues
+		// Note: Using fmt.Errorf with error message since we don't have logger in this scope
+		// The error will be logged by the caller (Enrich function) which has access to logger
+		return nil, fmt.Errorf("no predictions in response (possible content moderation)")
 	}
 
 	// Decode base64 image data
@@ -314,8 +317,8 @@ func (p *AIBannerProvider) storeImage(ctx context.Context, bucketName, objectPat
 func buildImagePrompt(activity *pb.StandardizedActivity, style string) string {
 	var parts []string
 
-	// Base prompt for banner generation
-	parts = append(parts, "Generate a wide banner image (1200x400 pixels) for a fitness activity.")
+	// Base prompt for banner generation (aspect ratio is set via API parameter, not in prompt)
+	parts = append(parts, "Generate an artistic banner image for a fitness activity.")
 
 	// Activity type context
 	activityType := strings.ToLower(strings.ReplaceAll(activity.Type.String(), "ACTIVITY_TYPE_", ""))
@@ -354,8 +357,8 @@ func buildImagePrompt(activity *pb.StandardizedActivity, style string) string {
 		parts = append(parts, "Style: vibrant, energetic, bold colors, athletic and dynamic mood")
 	}
 
-	// General guidance
-	parts = append(parts, "No text or watermarks. Abstract or semi-abstract athletic imagery. High quality, professional look.")
+	// General guidance - explicitly abstract to avoid person generation conflicts
+	parts = append(parts, "No text, watermarks, or people. Abstract landscape or geometric patterns. High quality, professional digital art.")
 
 	return strings.Join(parts, "\n")
 }

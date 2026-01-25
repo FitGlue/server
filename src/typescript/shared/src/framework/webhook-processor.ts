@@ -5,7 +5,7 @@ import { StandardizedActivity } from '../types/pb/standardized_activity';
 import { CloudEventPublisher } from '../infrastructure/pubsub/cloud-event-publisher';
 import { CloudEventType } from '../types/pb/events';
 import { ExecutionStatus } from '../types/pb/execution';
-import { getCloudEventSource, getCloudEventType } from '../types/events-helper';
+import { getCloudEventSource, getCloudEventType, getCorrespondingDestination } from '../types/events-helper';
 import { TOPICS } from '../config';
 
 /**
@@ -104,11 +104,15 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
 
     // 6. Source-Level Bounceback Check (Primary Loop Prevention)
     // Check if this activity was uploaded by us - if so, this webhook is a "bounceback"
-    // This uses the uploaded_activities collection which tracks our successful uploads
-    const isBounceback = await ctx.services.user.isBounceback(userId, sourceEnumName, externalId);
-    if (isBounceback) {
-      logger.info(`Bounceback detected: Activity ${externalId} was uploaded by us to ${connector.name}. Skipping.`);
-      return { status: 'Skipped', reason: 'Bounceback - activity was uploaded by FitGlue' };
+    // This uses the uploaded_activities collection which tracks our successful uploads.
+    // We query by destination enum + destinationId (the externalId from webhook IS the destination's ID).
+    const correspondingDestination = getCorrespondingDestination(connector.activitySource);
+    if (correspondingDestination !== undefined) {
+      const isBounceback = await ctx.services.user.isBounceback(userId, correspondingDestination, externalId);
+      if (isBounceback) {
+        logger.info(`Bounceback detected: Activity ${externalId} was uploaded by us to ${connector.name}. Skipping.`);
+        return { status: 'Skipped', reason: 'Bounceback - activity was uploaded by FitGlue' };
+      }
     }
 
     // 7. Loop Prevention Check (Fallback)

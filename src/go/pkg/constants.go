@@ -4,6 +4,7 @@ const (
 	ProjectID = "fitglue-project" // Can be overridden by env var in main if needed
 
 	TopicRawActivity           = "topic-raw-activity"
+	TopicPipelineActivity      = "topic-pipeline-activity"
 	TopicEnrichedActivity      = "topic-enriched-activity"
 	TopicJobUploadStrava       = "topic-job-upload-strava"
 	TopicFitbitUpdates         = "topic-fitbit-updates"

@@ -613,6 +613,10 @@ const CloudEventSourceNames: Record<string, string> = {
     'WAHOO': 'Wahoo',
     'Wahoo': 'Wahoo',
     '12': 'Wahoo',
+    'CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER': 'Pipeline Splitter',
+    'PIPELINE_SPLITTER': 'Pipeline Splitter',
+    'Pipeline Splitter': 'Pipeline Splitter',
+    '13': 'Pipeline Splitter',
     'CLOUD_EVENT_SOURCE_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -651,6 +655,7 @@ export function formatCloudEventSource(value: CloudEventSource | number | string
     case CloudEventSource.CLOUD_EVENT_SOURCE_OURA: return 'Oura';
     case CloudEventSource.CLOUD_EVENT_SOURCE_POLAR_WEBHOOK: return 'Polar Webhook';
     case CloudEventSource.CLOUD_EVENT_SOURCE_WAHOO: return 'Wahoo';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER: return 'Pipeline Splitter';
     case CloudEventSource.CLOUD_EVENT_SOURCE_MOCK: return 'Mock';
     default: return 'Unknown';
   }

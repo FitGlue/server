@@ -187,7 +187,7 @@ func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, r
 	return nil
 }
 
-func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, source pb.ActivitySource, externalId string) (*pb.UploadedActivityRecord, error) {
+func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
 	// No-op for tests by default - return nil (not found)
 	return nil, nil
 }

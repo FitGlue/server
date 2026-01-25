@@ -471,6 +471,11 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			for k, v := range res.Metadata {
 				finalEvent.EnrichmentMetadata[k] = v
 			}
+
+			// Propagate section header for replaceable description sections
+			if res.SectionHeader != "" {
+				finalEvent.EnrichmentMetadata["section_header_"+cfgName] = res.SectionHeader
+			}
 		}
 		// Add branding if it was applied
 		if brandingApplied {

@@ -13,6 +13,12 @@ type EnrichmentResult struct {
 	ActivityType pb.ActivityType
 	Description  string
 
+	// SectionHeader identifies this description as a replaceable section.
+	// If set, uploaders in UPDATE mode will replace existing content
+	// matching this header instead of appending.
+	// Example: "🏃 Parkrun Results:"
+	SectionHeader string
+
 	Name       string
 	NameSuffix string // Appended to the final name (e.g. " (#5)")
 	Tags       []string

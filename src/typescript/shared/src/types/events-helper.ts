@@ -1,5 +1,28 @@
 import { CloudEventType, CloudEventSource, Destination } from './pb/events';
+import { ActivitySource } from './pb/activity';
 import { formatDestination } from './pb/enum-formatters';
+
+/**
+ * Maps ActivitySource enums to their corresponding Destination enums.
+ * Sources without destinations (e.g., FILE_UPLOAD) are not included.
+ * This mirrors the Go SourceToDestinationMap in loopprevention.go
+ */
+export const SourceToDestinationMap: Partial<Record<ActivitySource, Destination>> = {
+  [ActivitySource.SOURCE_HEVY]: Destination.DESTINATION_HEVY,
+  [ActivitySource.SOURCE_STRAVA]: Destination.DESTINATION_STRAVA,
+  [ActivitySource.SOURCE_INTERVALS]: Destination.DESTINATION_INTERVALS,
+  [ActivitySource.SOURCE_TRAININGPEAKS]: Destination.DESTINATION_TRAININGPEAKS,
+  [ActivitySource.SOURCE_GOOGLESHEETS]: Destination.DESTINATION_GOOGLESHEETS,
+  // Note: SOURCE_FILE_UPLOAD, SOURCE_PARKRUN_RESULTS, SOURCE_FITBIT etc. are source-only
+};
+
+/**
+ * Get the destination that corresponds to a given source.
+ * Returns undefined if the source has no corresponding destination.
+ */
+export function getCorrespondingDestination(source: ActivitySource): Destination | undefined {
+  return SourceToDestinationMap[source];
+}
 
 // Map CloudEventType enum to string URN
 export const CloudEventTypeURN: Record<number, string> = {
@@ -11,6 +34,7 @@ export const CloudEventTypeURN: Record<number, string> = {
   [CloudEventType.CLOUD_EVENT_TYPE_INPUT_RESOLVED]: 'com.fitglue.input.resolved',
 };
 
+
 // Map CloudEventSource enum to string URN
 export const CloudEventSourceURN: Record<number, string> = {
   [CloudEventSource.CLOUD_EVENT_SOURCE_HEVY]: '/integrations/hevy',
@@ -19,6 +43,7 @@ export const CloudEventSourceURN: Record<number, string> = {
   [CloudEventSource.CLOUD_EVENT_SOURCE_ENRICHER]: '/core/enricher',
   [CloudEventSource.CLOUD_EVENT_SOURCE_ROUTER]: '/core/router',
   [CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER]: '/core/inputs-handler',
+  [CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER]: '/core/pipeline-splitter',
 };
 
 // Map Destination enum to Pub/Sub topic

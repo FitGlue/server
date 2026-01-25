@@ -330,6 +330,7 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
 /**
  * POST /api/repost/full-pipeline
  * Re-run the entire pipeline from the beginning with bypass_dedup.
+ * Now publishes directly to PIPELINE_ACTIVITY with pipelineId set.
  */
 async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkContext, userId: string): Promise<RepostResponse> {
   const { activityId } = req.body;
@@ -342,6 +343,11 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
   const activity = await ctx.stores.activities.getSynchronized(userId, activityId);
   if (!activity) {
     throw new HttpError(404, 'Activity not found');
+  }
+
+  // Verify the activity has a pipelineId (required for direct enricher publish)
+  if (!activity.pipelineId) {
+    throw new HttpError(500, 'Activity missing pipelineId - cannot re-run pipeline');
   }
 
   // Get enricher execution to retrieve original ActivityPayload/inputs
@@ -368,23 +374,26 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     activityId: _aidAlt,
     user_id: _uid,
     userId: _uidAlt,
+    pipeline_id: _pid,
+    pipelineId: _pidAlt,
     ...rest
   } = originalPayload;
 
-  // Add bypass_dedup flag and new execution ID
+  // Add bypass_dedup flag, pipelineId, and new execution ID
+  // Publish directly to PIPELINE_ACTIVITY (bypasses splitter since pipelineId is set)
   const repostPayload = {
     ...rest,
     user_id: _uid || _uidAlt,
     activity_id: _aid || _aidAlt,
+    pipeline_id: activity.pipelineId, // USE THE ORIGINAL PIPELINE
     bypass_dedup: true,
     pipeline_execution_id: newPipelineExecutionId,
   };
 
-  // Publish to raw activity topic (beginning of pipeline)
   // Wrap in CloudEvent envelope matching Go enricher format
-  const cloudEvent = createCloudEvent(repostPayload, 'com.fitglue.activity.created');
+  const cloudEvent = createCloudEvent(repostPayload, 'com.fitglue.activity.pipeline');
   const messageData = Buffer.from(JSON.stringify(cloudEvent));
-  await pubsub.topic(TOPICS.RAW_ACTIVITY).publishMessage({
+  await pubsub.topic(TOPICS.PIPELINE_ACTIVITY).publishMessage({
     data: messageData,
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
@@ -394,8 +403,9 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     },
   });
 
-  ctx.logger.info('Published full pipeline re-execution', {
+  ctx.logger.info('Published full pipeline re-execution (direct to enricher)', {
     activityId,
+    pipelineId: activity.pipelineId,
     newPipelineExecutionId,
     originalExecutionId: activity.pipelineExecutionId,
   });

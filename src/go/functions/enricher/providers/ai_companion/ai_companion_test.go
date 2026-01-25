@@ -10,6 +10,9 @@ import (
 )
 
 func TestAICompanionProvider_TierCheck(t *testing.T) {
+	// Clear API key to ensure predictable test behavior
+	t.Setenv("GEMINI_API_KEY", "")
+
 	provider := NewAICompanionProvider()
 
 	activity := &pb.StandardizedActivity{
@@ -121,6 +124,9 @@ func TestAICompanionProvider_HobbyistTierSkipped(t *testing.T) {
 }
 
 func TestAICompanionProvider_ModeConfig(t *testing.T) {
+	// Clear API key to ensure predictable test behavior
+	t.Setenv("GEMINI_API_KEY", "")
+
 	provider := NewAICompanionProvider()
 
 	activity := &pb.StandardizedActivity{

@@ -14,6 +14,16 @@ resource "google_pubsub_topic" "enriched_activity" {
   message_retention_duration = "3600s"
 }
 
+# Pipeline activity topic - carries activities with specific pipelineId set
+# Pipeline Splitter publishes here, Enricher subscribes
+resource "google_pubsub_topic" "pipeline_activity" {
+  name    = "topic-pipeline-activity"
+  project = var.project_id
+
+  # Enable message retention for replay (1 hour)
+  message_retention_duration = "3600s"
+}
+
 resource "google_pubsub_topic" "job_upload_strava" {
   name    = "topic-job-upload-strava"
   project = var.project_id

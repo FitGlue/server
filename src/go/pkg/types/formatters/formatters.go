@@ -235,6 +235,8 @@ func FormatCloudEventSource(value pb.CloudEventSource) string {
 		return "Polar Webhook"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO:
 		return "Wahoo"
+	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER:
+		return "Pipeline Splitter"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK:
 		return "Mock"
 	default:

@@ -269,7 +269,7 @@ resource "google_cloudfunctions2_function" "enricher" {
   event_trigger {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.raw_activity.id
+    pubsub_topic   = google_pubsub_topic.pipeline_activity.id
     retry_policy   = var.retry_policy
   }
 }
@@ -375,6 +375,51 @@ resource "google_cloudfunctions2_function" "router" {
     trigger_region = var.region
     event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
     pubsub_topic   = google_pubsub_topic.enriched_activity.id
+    retry_policy   = var.retry_policy
+  }
+}
+
+# ----------------- Pipeline Splitter Service -----------------
+# Receives raw activities and fans out to per-pipeline messages
+resource "google_storage_bucket_object" "pipeline_splitter_zip" {
+  name   = "pipeline-splitter-${filemd5("/tmp/fitglue-function-zips/pipeline-splitter.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/pipeline-splitter.zip"
+}
+
+resource "google_cloudfunctions2_function" "pipeline_splitter" {
+  name     = "pipeline-splitter"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "SplitByPipeline"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.pipeline_splitter_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.raw_activity.id
     retry_policy   = var.retry_policy
   }
 }

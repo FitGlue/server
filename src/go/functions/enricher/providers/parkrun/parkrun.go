@@ -63,7 +63,8 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pb.Standar
 	ageGrade := pendingInput.InputData["age_grade"]
 
 	result := &providers.EnrichmentResult{
-		Description: description,
+		Description:   "🏃 Parkrun Results:\n" + description,
+		SectionHeader: "🏃 Parkrun Results:",
 		Metadata: map[string]string{
 			"status":                "success",
 			"is_parkrun":            "true",
@@ -334,6 +335,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 
 			// Add placeholder description for destinations while waiting for official results
 			result.Description = "🏃 Parkrun Results:\nWaiting for results to be released..."
+			result.SectionHeader = "🏃 Parkrun Results:"
 
 			result.Metadata["parkrun_results_state"] = "PENDING"
 		} else {
