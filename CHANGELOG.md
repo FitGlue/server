@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.0.0](https://github.com/FitGlue/server/compare/v8.0.0...v9.0.0) (2026-01-25)
+
+
+### ⚠ BREAKING CHANGES
+
+* lots of changes to function params to account for passing loggers around
+
+### Features
+
+* add extensive debug logging to Golang funcs ([d9fdb83](https://github.com/FitGlue/server/commit/d9fdb83d97d613ffbb42c9704d32c15f0934bb19))
+
 ## [8.0.0](https://github.com/FitGlue/server/compare/v7.1.0...v8.0.0) (2026-01-24)
 
 
