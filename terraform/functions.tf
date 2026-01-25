@@ -1485,24 +1485,23 @@ resource "google_cloud_run_service_iam_member" "integration_request_handler_invo
 
 # ----------------- Parkrun Fetcher (Playwright) -----------------
 # Cloud Run service with headless browser to bypass AWS WAF
+#
+# The image is built via Cloud Build during terraform apply.
+# Using null_resource since gcloud is authenticated in the CI deploy phase.
 
-# Upload the source to GCS for Cloud Build (similar to other handlers)
-resource "google_storage_bucket_object" "parkrun_fetcher_source" {
-  name   = "parkrun-fetcher-source-${filemd5("${path.module}/../src/typescript/parkrun-fetcher/Dockerfile")}.tar.gz"
-  bucket = google_storage_bucket.source_bucket.name
-  source = "/tmp/fitglue-function-zips/parkrun-fetcher.tar.gz"
+locals {
+  parkrun_fetcher_image_tag = filemd5("${path.module}/../src/typescript/parkrun-fetcher/Dockerfile")
 }
 
-# Build the container using Cloud Build
 resource "null_resource" "parkrun_fetcher_build" {
   triggers = {
-    source_hash = google_storage_bucket_object.parkrun_fetcher_source.md5hash
+    dockerfile_hash = local.parkrun_fetcher_image_tag
   }
 
   provisioner "local-exec" {
     command = <<-EOT
       gcloud builds submit \
-        --tag ${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${google_storage_bucket_object.parkrun_fetcher_source.md5hash} \
+        --tag ${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${local.parkrun_fetcher_image_tag} \
         --project ${var.project_id} \
         ${path.module}/../src/typescript/parkrun-fetcher
     EOT
@@ -1519,7 +1518,7 @@ resource "google_cloud_run_v2_service" "parkrun_fetcher" {
 
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${google_storage_bucket_object.parkrun_fetcher_source.md5hash}"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/cloud-run-source-deploy/parkrun-fetcher:${local.parkrun_fetcher_image_tag}"
 
       resources {
         limits = {

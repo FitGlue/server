@@ -103,17 +103,9 @@ prepare-ts:
 	@echo "Preparing TypeScript function ZIPs..."
 	python3 scripts/build_typescript_zips.py 2>&1
 
-prepare-parkrun-fetcher:
-	@echo "Preparing parkrun-fetcher tar.gz for Cloud Build..."
-	@mkdir -p /tmp/fitglue-function-zips
-	@cd $(TS_SRC_DIR)/parkrun-fetcher && tar -czf /tmp/fitglue-function-zips/parkrun-fetcher.tar.gz \
-		--exclude='node_modules' --exclude='dist' --exclude='.git' \
-		-C . .
-
 # Parallel prepare - Go and TS ZIPs can be built concurrently
 prepare:
 	@$(MAKE) -j2 prepare-go prepare-ts
-	@$(MAKE) prepare-parkrun-fetcher
 
 clean-go:
 	@echo "Cleaning Go..."
