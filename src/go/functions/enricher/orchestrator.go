@@ -128,19 +128,47 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		logger.Info("Resume mode activated",
 			"resume_only_enrichers", resumeOnlyEnrichers,
 			"use_update_method", useUpdateMethod,
-			"resume_pending_input_id", payload.ResumePendingInputId)
+			"resume_pending_input_id", payload.ResumePendingInputId,
+			"pipeline_id", payload.PipelineId)
 
-		// If a specific pipeline ID is set, filter to just that pipeline
+		// If a specific pipeline ID is set, find that pipeline directly from ALL user pipelines
+		// (bypassing source filtering since resume could come from a different source activity)
 		if payload.PipelineId != nil && *payload.PipelineId != "" {
-			var filteredPipelines []configuredPipeline
+			// First check if it's already in the source-filtered list
+			var found bool
 			for _, p := range pipelines {
 				if p.ID == *payload.PipelineId {
-					filteredPipelines = append(filteredPipelines, p)
+					pipelines = []configuredPipeline{p}
+					found = true
 					break
 				}
 			}
-			if len(filteredPipelines) > 0 {
-				pipelines = filteredPipelines
+
+			// If not found, fetch ALL user pipelines and find by ID
+			if !found {
+				logger.Info("Pipeline not in source-filtered list, fetching all pipelines",
+					"target_pipeline_id", *payload.PipelineId)
+				allPipelines, err := o.database.GetUserPipelines(context.Background(), userRec.UserId)
+				if err == nil {
+					for _, p := range allPipelines {
+						if p.Id == *payload.PipelineId && !p.Disabled {
+							var enrichers []configuredEnricher
+							for _, e := range p.Enrichers {
+								enrichers = append(enrichers, configuredEnricher{
+									ProviderType: e.ProviderType,
+									TypedConfig:  e.TypedConfig,
+								})
+							}
+							pipelines = []configuredPipeline{{
+								ID:           p.Id,
+								Enrichers:    enrichers,
+								Destinations: p.Destinations,
+							}}
+							logger.Info("Found pipeline by ID for resume", "pipeline_id", p.Id)
+							break
+						}
+					}
+				}
 			}
 		}
 	}

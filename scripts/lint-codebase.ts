@@ -1132,6 +1132,215 @@ function checkDestinationEnumCoverage(): CheckResult {
 }
 
 // ============================================================================
+// Check X5: Converter Protobuf Field Parity
+// ============================================================================
+
+/**
+ * Validates that Firestore converters (Go and TypeScript) handle ALL fields
+ * defined in corresponding protobuf messages.
+ *
+ * This check parses proto files, extracts message field names, and verifies
+ * that converters include each field in both ToFirestore and FromFirestore.
+ *
+ * Prevents bugs like missing pipeline_id in PendingInput converters.
+ */
+function checkConverterProtobufFieldParity(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Define proto messages that have Firestore converters
+  // Format: { protoFile, messageName, goConverterPattern, tsConverterPattern }
+  const CONVERTER_MAPPINGS = [
+    {
+      protoFile: 'pending_input.proto',
+      messageName: 'PendingInput',
+      goConverterFile: 'converters.go',
+      goToPattern: /func PendingInputToFirestore\(.*?\{([\s\S]*?)^func /m,
+      goFromPattern: /func FirestoreToPendingInput\(.*?\{([\s\S]*?)^func /m,
+      tsConverterFile: 'converters.ts',
+      tsToPattern: /PendingInputToFirestore\s*=\s*\([^)]*\)\s*(?::\s*[^=]*)?=>\s*\{([\s\S]*?)\n\};/,
+      tsFromPattern: /FirestoreToPendingInput\s*=\s*\([^)]*\)\s*(?::\s*[^=]*)?=>\s*\{([\s\S]*?)\n\};/,
+      // Fields to exclude from checking (internal/computed fields)
+      excludeFields: [] as string[],
+    },
+    {
+      protoFile: 'execution.proto',
+      messageName: 'ExecutionRecord',
+      goConverterFile: 'converters.go',
+      goToPattern: /func ExecutionToFirestore\(.*?\{([\s\S]*?)^func /m,
+      goFromPattern: /func FirestoreToExecution\(.*?\{([\s\S]*?)^func /m,
+      tsConverterFile: 'converters.ts',
+      tsToPattern: /executionConverter[\s\S]*?toFirestore\([^)]*\)[^{]*\{([\s\S]*?)\n\s{2}\},/,
+      tsFromPattern: /executionConverter[\s\S]*?fromFirestore\([^)]*\)[^{]*\{([\s\S]*?)^\s{2}\}/m,
+      excludeFields: [] as string[],
+    },
+    {
+      protoFile: 'user.proto',
+      messageName: 'SynchronizedActivity',
+      goConverterFile: 'converters.go',
+      goToPattern: /func SynchronizedActivityToFirestore\(.*?\{([\s\S]*?)^func /m,
+      goFromPattern: /func FirestoreToSynchronizedActivity\(.*?\{([\s\S]*?)^func /m,
+      tsConverterFile: 'converters.ts',
+      tsToPattern: /synchronizedActivityConverter[\s\S]*?toFirestore\([^)]*\)[^{]*\{([\s\S]*?)\n\s{2}\},/,
+      tsFromPattern: /synchronizedActivityConverter[\s\S]*?fromFirestore\([^)]*\)[^{]*\{([\s\S]*?)^\s{2}\}/m,
+      excludeFields: [] as string[],
+    },
+  ];
+
+  // Helper: Extract field names from a proto message definition
+  function extractProtoFields(protoFile: string, messageName: string): string[] {
+    const protoPath = path.join(PROTO_DIR, protoFile);
+    if (!fs.existsSync(protoPath)) {
+      return [];
+    }
+
+    const content = fs.readFileSync(protoPath, 'utf-8');
+
+    // Find the message block
+    const messagePattern = new RegExp(`message\\s+${messageName}\\s*\\{([^}]+(?:\\{[^}]*\\}[^}]*)*)\\}`, 's');
+    const messageMatch = messagePattern.exec(content);
+    if (!messageMatch) {
+      return [];
+    }
+
+    const messageBody = messageMatch[1];
+    const fields: string[] = [];
+
+    // Extract field names (format: type field_name = N;)
+    const fieldPattern = /^\s*(?:repeated\s+)?(?:map<[^>]+>|[\w.]+)\s+(\w+)\s*=\s*\d+/gm;
+    let fieldMatch;
+    while ((fieldMatch = fieldPattern.exec(messageBody)) !== null) {
+      fields.push(fieldMatch[1]);
+    }
+
+    return fields;
+  }
+
+  // Helper: Convert snake_case to camelCase
+  function snakeToCamel(str: string): string {
+    return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+  }
+
+  // Helper: Check if a field is referenced in converter code
+  // For ToFirestore: we check that the snake_case field is used as a key
+  // For FromFirestore: we check that the camelCase field is assigned
+  function isFieldInConverter(converterCode: string, fieldName: string, isTsCode: boolean, isToDirection: boolean): boolean {
+    const camelField = snakeToCamel(fieldName);
+
+    if (isTsCode) {
+      if (isToDirection) {
+        // ToFirestore: should have `snake_case: model.camelCase` (object literal)
+        // OR `data.snake_case = model.camelCase` (object assignment)
+        const literalPattern = new RegExp(`['"]?${fieldName}['"]?\\s*:`, 'i');
+        const assignPattern = new RegExp(`\\.${fieldName}\\s*=`, 'i');
+        return literalPattern.test(converterCode) || assignPattern.test(converterCode);
+      } else {
+        // FromFirestore: should have `camelCase:` (object literal) or `camelCase =` (assignment)
+        const assignPattern = new RegExp(`\\b${camelField}\\s*[:=]`, 'i');
+        return assignPattern.test(converterCode);
+      }
+    } else {
+      // Go code
+      if (isToDirection) {
+        // ToFirestore: should have `"snake_case":` as a map key
+        // OR `m["snake_case"] =` for conditional field assignment
+        const keyPattern = new RegExp(`["']${fieldName}["']\\s*:`, 'i');
+        const bracketPattern = new RegExp(`\\["${fieldName}"\\]\\s*=`, 'i');
+        return keyPattern.test(converterCode) || bracketPattern.test(converterCode);
+      } else {
+        // FromFirestore: should have `CamelCase:` or assignment to CamelCase, or getString helper
+        const camelPascal = camelField.charAt(0).toUpperCase() + camelField.slice(1);
+        const assignPattern = new RegExp(`\\b${camelPascal}\\s*[:=]|getString\\([^,]+,\\s*["']${fieldName}["']`, 'i');
+        return assignPattern.test(converterCode);
+      }
+    }
+  }
+
+  // Check each converter mapping
+  for (const mapping of CONVERTER_MAPPINGS) {
+    const protoFields = extractProtoFields(mapping.protoFile, mapping.messageName);
+    if (protoFields.length === 0) {
+      warnings.push(`Could not parse ${mapping.messageName} from ${mapping.protoFile}`);
+      continue;
+    }
+
+    // Filter out excluded fields
+    const fieldsToCheck = protoFields.filter(f => !mapping.excludeFields.includes(f));
+
+    // Check Go converters
+    const goConverterPath = path.join(GO_SRC_DIR, 'pkg/storage/firestore', mapping.goConverterFile);
+    if (fs.existsSync(goConverterPath)) {
+      const goContent = fs.readFileSync(goConverterPath, 'utf-8');
+
+      // Check ToFirestore
+      const goToMatch = mapping.goToPattern.exec(goContent);
+      if (goToMatch) {
+        const toBody = goToMatch[1];
+        for (const field of fieldsToCheck) {
+          if (!isFieldInConverter(toBody, field, false, true)) {
+            errors.push(`Go ${mapping.messageName}ToFirestore missing field: ${field}`);
+          }
+        }
+      } else {
+        warnings.push(`Could not find Go ToFirestore function for ${mapping.messageName}`);
+      }
+
+      // Check FromFirestore
+      const goFromMatch = mapping.goFromPattern.exec(goContent);
+      if (goFromMatch) {
+        const fromBody = goFromMatch[1];
+        for (const field of fieldsToCheck) {
+          if (!isFieldInConverter(fromBody, field, false, false)) {
+            errors.push(`Go FirestoreTo${mapping.messageName} missing field: ${field}`);
+          }
+        }
+      } else {
+        warnings.push(`Could not find Go FromFirestore function for ${mapping.messageName}`);
+      }
+    }
+
+    // Check TypeScript converters
+    const tsConverterPath = path.join(TS_SRC_DIR, 'shared/src/storage/firestore', mapping.tsConverterFile);
+    if (fs.existsSync(tsConverterPath)) {
+      const tsContent = fs.readFileSync(tsConverterPath, 'utf-8');
+
+      // Check toFirestore
+      const tsToMatch = mapping.tsToPattern.exec(tsContent);
+      if (tsToMatch) {
+        const toBody = tsToMatch[1];
+        for (const field of fieldsToCheck) {
+          if (!isFieldInConverter(toBody, field, true, true)) {
+            errors.push(`TS ${mapping.messageName} toFirestore missing field: ${field}`);
+          }
+        }
+      } else {
+        warnings.push(`Could not find TS toFirestore function for ${mapping.messageName}`);
+      }
+
+      // Check fromFirestore
+      const tsFromMatch = mapping.tsFromPattern.exec(tsContent);
+      if (tsFromMatch) {
+        const fromBody = tsFromMatch[1];
+        for (const field of fieldsToCheck) {
+          if (!isFieldInConverter(fromBody, field, true, false)) {
+            errors.push(`TS ${mapping.messageName} fromFirestore missing field: ${field}`);
+          }
+        }
+      } else {
+        warnings.push(`Could not find TS fromFirestore function for ${mapping.messageName}`);
+      }
+    }
+  }
+
+  return {
+    name: 'Converter Protobuf Field Parity',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Check 12: Loop Prevention in Destinations
 // Note: Loop prevention (G10) was removed - now handled at source-handler level
 // via isBounceback check in webhook-processor.ts
@@ -4379,6 +4588,7 @@ function main(): void {
         { id: 'X2', fn: () => ({ ...checkIntegrationFieldParity(), name: 'X2: Integration Field Parity' }) },
         { id: 'X3', fn: () => ({ ...checkSourceHandlerCoverage(), name: 'X3: ActivitySource Handler Coverage' }) },
         { id: 'X4', fn: () => ({ ...checkDestinationEnumCoverage(), name: 'X4: Destination Enum Coverage' }) },
+        { id: 'X5', fn: () => ({ ...checkConverterProtobufFieldParity(), name: 'X5: Converter Protobuf Field Parity' }) },
       ]
     },
     {
