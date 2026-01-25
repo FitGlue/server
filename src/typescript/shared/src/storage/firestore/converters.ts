@@ -370,6 +370,13 @@ export const PendingInputToFirestore = (model: PendingInput): Record<string, unk
     created_at: model.createdAt,
     updated_at: model.updatedAt,
     completed_at: model.completedAt,
+    // Resume pattern fields
+    continued_without_resolution: model.continuedWithoutResolution,
+    linked_activity_id: model.linkedActivityId,
+    pipeline_id: model.pipelineId,
+    enricher_provider_id: model.enricherProviderId,
+    auto_populated: model.autoPopulated,
+    auto_deadline: model.autoDeadline,
   };
   // If we had original_payload exposed in TS, we'd map it here, but it's often binary or complex structure
   // For now, allow passthrough if it exists on model (duck typing)
