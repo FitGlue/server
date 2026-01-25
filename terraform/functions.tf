@@ -1510,9 +1510,10 @@ resource "null_resource" "parkrun_fetcher_build" {
 }
 
 resource "google_cloud_run_v2_service" "parkrun_fetcher" {
-  name     = "parkrun-fetcher"
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  name                = "parkrun-fetcher"
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  deletion_protection = false
 
   depends_on = [null_resource.parkrun_fetcher_build]
 
