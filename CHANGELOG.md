@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.1.0](https://github.com/FitGlue/server/compare/v9.0.0...v9.1.0) (2026-01-25)
+
+
+### Features
+
+* **core:** implement pipeline fan-out, section-based descriptions, and robust loop prevention ([a0bce15](https://github.com/FitGlue/server/commit/a0bce159eb9bfc8242e4e8f20f639d5b3ff4ed2c))
+
+
+### Bug Fixes
+
+* parkrun results to use correct topic ([e65cccc](https://github.com/FitGlue/server/commit/e65cccc3c1bffa783ddcab67a25668910aaed0c4))
+
 ## [9.0.0](https://github.com/FitGlue/server/compare/v8.0.0...v9.0.0) (2026-01-25)
 
 
