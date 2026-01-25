@@ -18,6 +18,7 @@ import (
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"google.golang.org/api/idtoken"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -300,12 +301,19 @@ type PlaywrightFetchResponse struct {
 
 // fetchViaPlaywright calls the Playwright fetcher Cloud Run service to get HTML
 // This bypasses AWS WAF JavaScript challenges by using a real browser
-func fetchViaPlaywright(ctx context.Context, logger *slog.Logger, client *http.Client, url string) (string, error) {
+func fetchViaPlaywright(ctx context.Context, logger *slog.Logger, _ *http.Client, url string) (string, error) {
 	fetcherURL := os.Getenv("PARKRUN_FETCHER_URL")
 	if fetcherURL == "" {
 		// Fallback to direct fetch for local development/testing
 		logger.Warn("PARKRUN_FETCHER_URL not set, falling back to direct HTTP fetch")
-		return fetchDirectHTTP(ctx, client, url)
+		return fetchDirectHTTP(ctx, &http.Client{Timeout: 30 * time.Second}, url)
+	}
+
+	// Create an authenticated HTTP client for Cloud Run service-to-service auth
+	// The idtoken.NewClient automatically obtains identity tokens from the metadata service
+	authClient, err := idtoken.NewClient(ctx, fetcherURL)
+	if err != nil {
+		return "", fmt.Errorf("create authenticated client: %w", err)
 	}
 
 	// Build request to Playwright service
@@ -321,15 +329,7 @@ func fetchViaPlaywright(ctx context.Context, logger *slog.Logger, client *http.C
 	}
 	req.Header.Set("Content-Type", "application/json")
 
-	// Add identity token for Cloud Run authentication (internal-only services require this)
-	idToken, err := getIDToken(ctx, fetcherURL)
-	if err != nil {
-		logger.Warn("Failed to get identity token, proceeding without auth", "error", err)
-	} else {
-		req.Header.Set("Authorization", "Bearer "+idToken)
-	}
-
-	resp, err := client.Do(req)
+	resp, err := authClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("call playwright service: %w", err)
 	}
@@ -391,40 +391,6 @@ func fetchDirectHTTP(ctx context.Context, client *http.Client, url string) (stri
 	}
 
 	return string(body), nil
-}
-
-// getIDToken fetches an identity token from the GCP metadata service
-// This is required to authenticate calls to Cloud Run services with internal-only ingress
-func getIDToken(ctx context.Context, audience string) (string, error) {
-	metadataURL := fmt.Sprintf(
-		"http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/identity?audience=%s",
-		audience,
-	)
-
-	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
-	if err != nil {
-		return "", fmt.Errorf("create metadata request: %w", err)
-	}
-	req.Header.Set("Metadata-Flavor", "Google")
-
-	client := &http.Client{Timeout: 5 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("fetch identity token: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("metadata service error: status=%d body=%s", resp.StatusCode, string(body))
-	}
-
-	token, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("read token: %w", err)
-	}
-
-	return string(token), nil
 }
 
 // parseAthleteResultsBySlug parses the athlete's results page HTML to find result by event slug

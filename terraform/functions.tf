@@ -1505,7 +1505,7 @@ resource "google_cloud_run_service_iam_member" "integration_request_handler_invo
 resource "google_cloud_run_v2_service" "parkrun_fetcher" {
   name                = "parkrun-fetcher"
   location            = var.region
-  ingress             = "INGRESS_TRAFFIC_INTERNAL_ONLY"
+  ingress             = "INGRESS_TRAFFIC_ALL" # Security enforced via IAM, not network
   deletion_protection = false
 
   template {
