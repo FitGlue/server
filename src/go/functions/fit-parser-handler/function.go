@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"sync"
 
@@ -37,7 +36,7 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 	svcOnce.Do(func() {
 		baseSvc, err := bootstrap.NewService(ctx)
 		if err != nil {
-			slog.Error("Failed to initialize service", "error", err)
+			// Error returned to caller
 			svcErr = err
 			return
 		}
@@ -81,7 +80,6 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 	// Initialize service
 	svc, err := initService(ctx)
 	if err != nil {
-		slog.Error("Service init failed", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -137,7 +135,6 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 	// Verify Firebase token and get user ID
 	userId, err := verifyFirebaseToken(ctx, idToken)
 	if err != nil {
-		slog.Warn("Token verification failed", "error", err)
 		w.WriteHeader(http.StatusUnauthorized)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -146,12 +143,9 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slog.Info("Processing FIT file upload", "user_id", userId)
-
 	// Check if user has a FILE_UPLOAD pipeline
 	user, err := svc.DB.GetUser(ctx, userId)
 	if err != nil || user == nil {
-		slog.Error("Failed to get user", "error", err, "user_id", userId)
 		w.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -163,7 +157,6 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 	// Query pipelines from sub-collection
 	pipelines, err := svc.DB.GetUserPipelines(ctx, userId)
 	if err != nil {
-		slog.Error("Failed to get user pipelines", "error", err, "user_id", userId)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -191,7 +184,6 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 	// Decode base64 FIT file
 	fitData, err := base64.StdEncoding.DecodeString(req.FitFileBase64)
 	if err != nil {
-		slog.Error("Failed to decode base64", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -203,7 +195,6 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 	// Parse FIT file
 	activity, err := fit_parser.ParseFitFile(fitData)
 	if err != nil {
-		slog.Error("Failed to parse FIT file", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -237,7 +228,6 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 	// Create CloudEvent for publishing
 	event, err := infrapubsub.NewCloudEvent("/fit-parser", "com.fitglue.activity.raw", payload)
 	if err != nil {
-		slog.Error("Failed to create cloud event", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -247,9 +237,8 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Publish to raw-activity topic
-	msgID, err := svc.Pub.PublishCloudEvent(ctx, shared.TopicRawActivity, event)
+	_, err = svc.Pub.PublishCloudEvent(ctx, shared.TopicRawActivity, event)
 	if err != nil {
-		slog.Error("Failed to publish to PubSub", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		json.NewEncoder(w).Encode(ParseFitFileResponse{
 			Success: false,
@@ -257,14 +246,6 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-
-	slog.Info("FIT file parsed and published",
-		"user_id", userId,
-		"external_id", externalId,
-		"message_id", msgID,
-		"activity_type", activity.Type.String(),
-		"sessions", len(activity.Sessions),
-	)
 
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(ParseFitFileResponse{

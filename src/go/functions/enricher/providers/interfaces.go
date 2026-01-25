@@ -2,6 +2,7 @@ package providers
 
 import (
 	"context"
+	"log/slog"
 
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
@@ -44,7 +45,8 @@ type Provider interface {
 	ProviderType() pb.EnricherProviderType
 
 	// Enrich applies the logic to the activity.
+	// logger is the structured logger from FrameworkContext for debug/info logging.
 	// inputConfig contains the user-specific input parameters for this provider.
 	// doNotRetry indicates if the provider should return partial/success data instead of RetryableError on lag.
-	Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error)
+	Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error)
 }

@@ -2,6 +2,7 @@ package elevation_summary
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -38,7 +39,7 @@ func TestElevationSummary_Enrich_Success(t *testing.T) {
 
 	user := &pb.UserRecord{UserId: "test-user"}
 
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -91,7 +92,7 @@ func TestElevationSummary_Enrich_SkipNegative(t *testing.T) {
 		},
 	}
 
-	result, _ := provider.Enrich(context.Background(), activity, nil, nil, false)
+	result, _ := provider.Enrich(context.Background(), slog.Default(), activity, nil, nil, false)
 
 	if result.Metadata["elevation_gain"] != "50.00" {
 		t.Errorf("Expected elevation_gain=50.00, got %s", result.Metadata["elevation_gain"])
@@ -120,7 +121,7 @@ func TestElevationSummary_Enrich_NoData(t *testing.T) {
 		},
 	}
 
-	result, _ := provider.Enrich(context.Background(), activity, nil, nil, false)
+	result, _ := provider.Enrich(context.Background(), slog.Default(), activity, nil, nil, false)
 
 	if result.Metadata["elevation_summary_status"] != "skipped" {
 		t.Errorf("Expected elevation_summary_status=skipped, got %s", result.Metadata["elevation_summary_status"])

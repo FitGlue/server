@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -46,13 +46,23 @@ type Config struct {
 	OnNoMatch string `json:"on_no_match"`
 }
 
-func (p *LogicGateProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *LogicGateProvider) Enrich(ctx context.Context, logger *slog.Logger, act *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("logic_gate: starting",
+		"activity_type", act.Type.String(),
+		"activity_name", act.Name,
+		"has_logic_config", inputs["logic_config"] != "",
+		"has_rules", inputs["rules"] != "",
+	)
+
 	var cfg Config
 
 	// Check for legacy single-JSON config
 	cfgStr, hasLegacy := inputs["logic_config"]
 	if hasLegacy && strings.TrimSpace(cfgStr) != "" {
 		if err := json.Unmarshal([]byte(cfgStr), &cfg); err != nil {
+			logger.Debug("logic_gate: invalid JSON config",
+				"error", err.Error(),
+			)
 			return nil, fmt.Errorf("logic_gate: invalid JSON config: %w", err)
 		}
 	} else {
@@ -65,10 +75,20 @@ func (p *LogicGateProvider) Enrich(ctx context.Context, act *pb.StandardizedActi
 		rulesStr := inputs["rules"]
 		if rulesStr != "" && rulesStr != "[]" {
 			if err := json.Unmarshal([]byte(rulesStr), &cfg.Rules); err != nil {
+				logger.Debug("logic_gate: invalid rules JSON",
+					"error", err.Error(),
+				)
 				return nil, fmt.Errorf("logic_gate: invalid rules JSON: %w", err)
 			}
 		}
 	}
+
+	logger.Debug("logic_gate: parsed config",
+		"rule_count", len(cfg.Rules),
+		"match_mode", cfg.MatchMode,
+		"on_match", cfg.OnMatch,
+		"on_no_match", cfg.OnNoMatch,
+	)
 
 	// Default match mode is "all"
 	if cfg.MatchMode == "" {
@@ -79,7 +99,11 @@ func (p *LogicGateProvider) Enrich(ctx context.Context, act *pb.StandardizedActi
 	for i, r := range cfg.Rules {
 		result, err := evaluateRule(r, act)
 		if err != nil {
-			log.Printf("logic_gate rule evaluation error: %v", err)
+			// Log rule evaluation errors as warnings - they're non-fatal but worth noting
+			logger.Warn("logic_gate rule evaluation error",
+				"rule_index", i,
+				"field", r.Field,
+				"error", err)
 			// Treat error as non‑match
 			result = false
 		}
@@ -87,6 +111,13 @@ func (p *LogicGateProvider) Enrich(ctx context.Context, act *pb.StandardizedActi
 			result = !result
 		}
 		matches[i] = result
+		logger.Debug("logic_gate: rule evaluated",
+			"rule_index", i,
+			"field", r.Field,
+			"op", r.Op,
+			"negate", r.Negate,
+			"result", result,
+		)
 	}
 	// Determine overall match based on mode
 	overall := false
@@ -129,6 +160,12 @@ func (p *LogicGateProvider) Enrich(ctx context.Context, act *pb.StandardizedActi
 			halt = true
 		}
 	}
+
+	logger.Debug("logic_gate: decision",
+		"overall_match", overall,
+		"match_mode", cfg.MatchMode,
+		"halt_pipeline", halt,
+	)
 
 	result := &providers.EnrichmentResult{
 		Metadata: map[string]string{

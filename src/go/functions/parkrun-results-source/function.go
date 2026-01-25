@@ -161,15 +161,25 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 				continue
 			}
 
-			// Trigger pipeline resume by publishing ActivityPayload with resume flags
-			resumePayload := &pb.ActivityPayload{
-				UserId:               input.UserId,
-				ActivityId:           &input.LinkedActivityId,
-				PipelineId:           &input.PipelineId,
-				IsResume:             true,
-				ResumeOnlyEnrichers:  []string{"parkrun"},
-				UseUpdateMethod:      true,
-				ResumePendingInputId: &input.ActivityId,
+			// Trigger pipeline resume by using the original payload with resume flags
+			// The OriginalPayload contains the full ActivityPayload including StandardizedActivity
+			// which the enricher requires to function
+			resumePayload := input.OriginalPayload
+			if resumePayload == nil {
+				fwCtx.Logger.Error("No OriginalPayload in pending input", "activity_id", input.ActivityId)
+				failed++
+				continue
+			}
+			// Add resume flags to the original payload
+			resumePayload.IsResume = true
+			resumePayload.ResumeOnlyEnrichers = []string{"parkrun"}
+			resumePayload.UseUpdateMethod = true
+			resumePayload.ResumePendingInputId = &input.ActivityId
+			if input.LinkedActivityId != "" {
+				resumePayload.ActivityId = &input.LinkedActivityId
+			}
+			if input.PipelineId != "" {
+				resumePayload.PipelineId = &input.PipelineId
 			}
 
 			eventData, err := protojson.Marshal(resumePayload)

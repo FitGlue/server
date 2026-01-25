@@ -36,7 +36,8 @@ func (p *PaceSummary) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY
 }
 
-func (p *PaceSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("pace_summary: starting", "activity_name", activity.Name)
 	// Collect all speed values from the activity (m/s)
 	var speeds []float64
 
@@ -51,7 +52,7 @@ func (p *PaceSummary) Enrich(ctx context.Context, activity *pb.StandardizedActiv
 	}
 
 	if len(speeds) == 0 {
-		slog.Info("No speed data found for pace summary enricher")
+		logger.Info("No speed data found for pace summary enricher")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"pace_summary_status": "skipped",
@@ -78,7 +79,7 @@ func (p *PaceSummary) Enrich(ctx context.Context, activity *pb.StandardizedActiv
 	avgPace := 1000.0 / avgSpeed / 60.0 // minutes per km
 	bestPace := 1000.0 / maxSpeed / 60.0
 
-	slog.Info("Pace summary calculated",
+	logger.Info("Pace summary calculated",
 		"avg_pace_min_km", avgPace,
 		"best_pace_min_km", bestPace,
 		"sample_count", len(speeds),

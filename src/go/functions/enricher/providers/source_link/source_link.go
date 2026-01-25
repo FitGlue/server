@@ -3,6 +3,7 @@ package source_link
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -28,8 +29,14 @@ func (p *SourceLinkProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK
 }
 
-func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *SourceLinkProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("source_link: starting",
+		"source", activity.Source,
+		"external_id", activity.ExternalId,
+	)
+
 	if activity.ExternalId == "" {
+		logger.Debug("source_link: skipping - no external_id")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_external_id"},
 		}, nil
@@ -46,6 +53,9 @@ func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 		link = fmt.Sprintf("https://www.strava.com/activities/%s", activity.ExternalId)
 	default:
 		// If unknown source, don't generate a link
+		logger.Debug("source_link: skipping - unknown source",
+			"source", sourceLower,
+		)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "unknown_source", "source": sourceLower},
 		}, nil
@@ -55,6 +65,11 @@ func (p *SourceLinkProvider) Enrich(ctx context.Context, activity *pb.Standardiz
 	// We can allow customization via inputConfig if needed later
 	sourceDisplay := strings.Title(strings.TrimPrefix(sourceLower, "source_"))
 	desc := fmt.Sprintf("View on %s: %s", sourceDisplay, link)
+
+	logger.Debug("source_link: generated link",
+		"source_display", sourceDisplay,
+		"link", link,
+	)
 
 	return &providers.EnrichmentResult{
 		Description: desc,

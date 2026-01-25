@@ -36,7 +36,8 @@ func (p *CadenceSummary) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY
 }
 
-func (p *CadenceSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("cadence_summary: starting", "activity_name", activity.Name)
 	// Collect all cadence values from the activity
 	var cadences []int32
 
@@ -51,7 +52,7 @@ func (p *CadenceSummary) Enrich(ctx context.Context, activity *pb.StandardizedAc
 	}
 
 	if len(cadences) == 0 {
-		slog.Info("No cadence data found for cadence summary enricher")
+		logger.Info("No cadence data found for cadence summary enricher")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"cadence_summary_status": "skipped",
@@ -79,7 +80,7 @@ func (p *CadenceSummary) Enrich(ctx context.Context, activity *pb.StandardizedAc
 		unit = "spm"
 	}
 
-	slog.Info("Cadence summary calculated",
+	logger.Info("Cadence summary calculated",
 		"avg_cadence", avgCadence,
 		"max_cadence", maxCadence,
 		"sample_count", len(cadences),

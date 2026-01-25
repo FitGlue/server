@@ -47,10 +47,10 @@ func (p *AIBannerProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER
 }
 
-func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Tier check - Athlete tier only
 	if tier.GetEffectiveTier(user) != tier.TierAthlete {
-		slog.Info("AI Banner skipped: user not on athlete tier",
+		logger.Info("AI Banner skipped: user not on athlete tier",
 			"user_id", user.UserId,
 			"tier", tier.GetEffectiveTier(user),
 		)
@@ -76,7 +76,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 		assetFolderID = activity.ExternalId
 	}
 	if assetFolderID == "" {
-		slog.Warn("AI Banner skipped: no pipeline execution ID or activity ID")
+		logger.Warn("AI Banner skipped: no pipeline execution ID or activity ID")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "skipped",
@@ -89,7 +89,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 	// Get Gemini API key
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		slog.Warn("GEMINI_API_KEY not set, skipping AI banner")
+		logger.Warn("GEMINI_API_KEY not set, skipping AI banner")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "skipped",
@@ -105,7 +105,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 	// Generate image using Gemini
 	imageData, err := p.generateBannerWithGemini(ctx, apiKey, prompt)
 	if err != nil {
-		slog.Error("Failed to generate AI banner", "error", err)
+		logger.Error("Failed to generate AI banner", "error", err)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "error",
@@ -124,7 +124,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 	objectPath := fmt.Sprintf("%s/banner.png", assetFolderID)
 	bannerURL, err := p.storeImage(ctx, bucketName, objectPath, imageData)
 	if err != nil {
-		slog.Error("Failed to store AI banner", "error", err)
+		logger.Error("Failed to store AI banner", "error", err)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "error",
@@ -134,7 +134,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, activity *pb.Standardized
 		}, nil
 	}
 
-	slog.Info("AI Banner generated successfully",
+	logger.Info("AI Banner generated successfully",
 		"asset_folder_id", assetFolderID,
 		"banner_url", bannerURL,
 		"style", style,

@@ -36,7 +36,8 @@ func (p *SpeedSummary) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY
 }
 
-func (p *SpeedSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *SpeedSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("speed_summary: starting", "activity_name", activity.Name)
 	// Collect all speed values from the activity (m/s)
 	var speeds []float64
 
@@ -51,7 +52,7 @@ func (p *SpeedSummary) Enrich(ctx context.Context, activity *pb.StandardizedActi
 	}
 
 	if len(speeds) == 0 {
-		slog.Info("No speed data found for speed summary enricher")
+		logger.Info("No speed data found for speed summary enricher")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"speed_summary_status": "skipped",
@@ -77,7 +78,7 @@ func (p *SpeedSummary) Enrich(ctx context.Context, activity *pb.StandardizedActi
 	avgSpeedKmh := avgSpeed * 3.6
 	maxSpeedKmh := maxSpeed * 3.6
 
-	slog.Info("Speed summary calculated",
+	logger.Info("Speed summary calculated",
 		"avg_speed_kmh", avgSpeedKmh,
 		"max_speed_kmh", maxSpeedKmh,
 		"sample_count", len(speeds),

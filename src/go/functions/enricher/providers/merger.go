@@ -43,7 +43,7 @@ var DefaultAlignmentConfig = AlignmentConfig{
 // 3. If drift < MaxDriftPercent: apply elastic stretch/compress with linear interpolation
 // 4. If drift >= MaxDriftPercent: still apply alignment but log warning
 // 5. Handle edge cases (missing data at start/end, gaps)
-func AlignTimeSeries(gpsTimestamps []time.Time, hrSamples []TimedSample, config AlignmentConfig) (*AlignmentResult, error) {
+func AlignTimeSeries(gpsTimestamps []time.Time, hrSamples []TimedSample, config AlignmentConfig, logger *slog.Logger) (*AlignmentResult, error) {
 	result := &AlignmentResult{
 		AlignedHR: make([]int, len(gpsTimestamps)),
 		Metadata:  make(map[string]string),
@@ -52,7 +52,7 @@ func AlignTimeSeries(gpsTimestamps []time.Time, hrSamples []TimedSample, config 
 	// Edge case: No GPS timestamps
 	if len(gpsTimestamps) == 0 {
 		result.Metadata["alignment_status"] = "skipped_no_gps"
-		slog.Info("HR alignment skipped: no GPS timestamps provided")
+		logger.Info("HR alignment skipped: no GPS timestamps provided")
 		return result, nil
 	}
 
@@ -60,7 +60,7 @@ func AlignTimeSeries(gpsTimestamps []time.Time, hrSamples []TimedSample, config 
 	if len(hrSamples) == 0 {
 		result.Metadata["alignment_status"] = "skipped_no_hr"
 		result.WarningMessage = "No HR data available for alignment"
-		slog.Warn("HR alignment skipped: no HR samples provided")
+		logger.Warn("HR alignment skipped: no HR samples provided")
 		return result, nil
 	}
 
@@ -102,7 +102,7 @@ func AlignTimeSeries(gpsTimestamps []time.Time, hrSamples []TimedSample, config 
 	// Check drift threshold
 	if result.DriftPercent > config.MaxDriftPercent {
 		result.WarningMessage = fmt.Sprintf("Clock drift of %.2f%% detected (threshold: %.2f%%), applying best-effort alignment", result.DriftPercent, config.MaxDriftPercent)
-		slog.Warn("High clock drift detected during HR alignment",
+		logger.Warn("High clock drift detected during HR alignment",
 			"drift_percent", result.DriftPercent,
 			"threshold_percent", config.MaxDriftPercent,
 			"gps_duration_sec", gpsDuration.Seconds(),
@@ -139,7 +139,7 @@ func AlignTimeSeries(gpsTimestamps []time.Time, hrSamples []TimedSample, config 
 		result.AlignedHR[i] = hrValue
 	}
 
-	slog.Info("HR alignment completed",
+	logger.Info("HR alignment completed",
 		"gps_duration_sec", gpsDuration.Seconds(),
 		"hr_duration_sec", hrDuration.Seconds(),
 		"drift_percent", result.DriftPercent,
@@ -224,7 +224,7 @@ func ConvertHRResponseToSamples(dataset []struct {
 		// Parse time in "15:04:05" format
 		ptTime, err := time.Parse("15:04:05", point.Time)
 		if err != nil {
-			slog.Warn("Failed to parse HR timestamp", "time", point.Time, "error", err)
+			// Skip invalid timestamps silently - not critical for functionality
 			continue
 		}
 

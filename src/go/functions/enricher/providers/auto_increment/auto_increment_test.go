@@ -2,6 +2,7 @@ package auto_increment
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -24,7 +25,7 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 			"title_contains": "Parkrun",
 		}
 
-		res, err := provider.Enrich(ctx, activity, user, inputs, false)
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -61,7 +62,7 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 			"title_contains": "Parkrun",
 		}
 
-		res, err := provider.Enrich(ctx, activity, user, inputs, false)
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -104,7 +105,7 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 			"counter_key": "parkrun",
 		}
 
-		res, err := provider.Enrich(ctx, activity, user, inputs, false)
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -142,7 +143,7 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 			"initial_value": "100",
 		}
 
-		res, err := provider.Enrich(ctx, activity, user, inputs, false)
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}
@@ -179,7 +180,7 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 			"title_contains": "parkrun", // Lowercase filter vs Uppercase Activity
 		}
 
-		res, err := provider.Enrich(ctx, activity, user, inputs, false)
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}

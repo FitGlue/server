@@ -2,6 +2,7 @@ package parkrun
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -159,7 +160,7 @@ func TestParkrunProvider_Enrich(t *testing.T) {
 				inputs = make(map[string]string)
 			}
 
-			res, err := provider.Enrich(context.Background(), activity, nil, inputs, false)
+			res, err := provider.Enrich(context.Background(), slog.Default(), activity, nil, inputs, false)
 			if err != nil {
 				t.Fatalf("Unexpected error: %v", err)
 			}

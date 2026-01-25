@@ -40,16 +40,16 @@ func (p *FitBitHeartRate) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE
 }
 
-func (p *FitBitHeartRate) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
-	return p.EnrichWithClient(ctx, activity, user, inputs, nil, doNotRetry)
+func (p *FitBitHeartRate) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	return p.EnrichWithClient(ctx, logger, activity, user, inputs, nil, doNotRetry)
 }
 
 // EnrichWithClient allows HTTP client injection for testing
-func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// 0. Check force option - skip if activity already has heartrate data and force is not set
 	forceOverwrite := inputs["force"] == "true"
 	if !forceOverwrite && hasExistingHeartRateData(activity) {
-		slog.Info("Skipping Fitbit HR enrichment: activity already has heartrate data and force=false")
+		logger.Info("Skipping Fitbit HR enrichment: activity already has heartrate data and force=false")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"hr_source":     "skipped",
@@ -127,7 +127,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 
 	if hasGPSData(activity) {
 		// Use elastic matching for GPS+HR alignment
-		slog.Info("GPS data detected, applying elastic HR alignment")
+		logger.Info("GPS data detected, applying elastic HR alignment")
 
 		// Convert HR response to timed samples
 		hrSamples := providers.ConvertHRResponseToSamples(hrResponse.ActivitiesHeartIntraday.Dataset, startTime)
@@ -136,9 +136,9 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 		gpsTimestamps := extractGPSTimestamps(activity)
 
 		if len(gpsTimestamps) > 0 && len(hrSamples) > 0 {
-			alignResult, err := providers.AlignTimeSeries(gpsTimestamps, hrSamples, providers.DefaultAlignmentConfig)
+			alignResult, err := providers.AlignTimeSeries(gpsTimestamps, hrSamples, providers.DefaultAlignmentConfig, logger)
 			if err != nil {
-				slog.Warn("HR alignment failed, falling back to index-based mapping", "error", err)
+				logger.Warn("HR alignment failed, falling back to index-based mapping", "error", err)
 				stream = buildStreamIndexBased(hrResponse.ActivitiesHeartIntraday.Dataset, startTimeStr, durationSec)
 			} else {
 				stream = alignResult.AlignedHR
@@ -160,7 +160,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 	}
 
 	pointsFound := len(hrResponse.ActivitiesHeartIntraday.Dataset)
-	slog.Info(fmt.Sprintf("Retrieved Fitbit HR points=%d duration=%d start_time=%s", pointsFound, durationSec, startTimeStr))
+	logger.Info(fmt.Sprintf("Retrieved Fitbit HR points=%d duration=%d start_time=%s", pointsFound, durationSec, startTimeStr))
 
 	// Lag Detection (Start/End Coverage)
 	hasStart := false
@@ -188,7 +188,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 			hasEnd = true
 		}
 	}
-	slog.Info(fmt.Sprintf("Retrieved Fitbit HR points=%d duration=%d start_time=%s has_start=%v has_end=%v", pointsFound, durationSec, startTimeStr, hasStart, hasEnd))
+	logger.Info(fmt.Sprintf("Retrieved Fitbit HR points=%d duration=%d start_time=%s has_start=%v has_end=%v", pointsFound, durationSec, startTimeStr, hasStart, hasEnd))
 
 	// Decision logic
 	timeSinceEnd := time.Since(endTime)
@@ -200,10 +200,10 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 
 		// Check if we exhausted retries
 		if doNotRetry {
-			slog.Warn("Incomplete data detected but forced to continue: " + reason)
+			logger.Warn("Incomplete data detected but forced to continue: " + reason)
 			// DO NOT return error, accept whatever data we have
 		} else {
-			slog.Warn("Incomplete data detected: " + reason)
+			logger.Warn("Incomplete data detected: " + reason)
 			// Return RetryableError to trigger lag mechanism
 			lagErr = providers.NewRetryableError(fmt.Errorf("incomplete data"), 1*time.Minute, reason)
 			// Logic: If it's a RetryableError, the system will discard this result anyway.
@@ -211,7 +211,7 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, activity *pb.Sta
 		}
 	} else if pointsFound == 0 && !isRecent {
 		// If old and empty, likely no data ever. Just return empty.
-		slog.Warn(fmt.Sprintf("No heart rate data points found in Fitbit response start_time=%s end_time=%s", startTimeStr, endTimeStr))
+		logger.Warn(fmt.Sprintf("No heart rate data points found in Fitbit response start_time=%s end_time=%s", startTimeStr, endTimeStr))
 	}
 
 	return &providers.EnrichmentResult{

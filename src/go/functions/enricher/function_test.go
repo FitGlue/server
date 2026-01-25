@@ -3,6 +3,7 @@ package enricher
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -68,7 +69,7 @@ func TestEnrichActivity(t *testing.T) {
 	providers.Register(&MockProvider{
 		NameFunc:         func() string { return "mock-enricher" },
 		ProviderTypeFunc: func() pb.EnricherProviderType { return pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK },
-		EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+		EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 			return &providers.EnrichmentResult{
 				Name:        "Mock Enriched Activity",
 				Description: "Enriched by mock provider",

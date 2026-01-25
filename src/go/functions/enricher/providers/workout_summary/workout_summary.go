@@ -3,6 +3,7 @@ package workout_summary
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -30,14 +31,22 @@ func (p *WorkoutSummaryProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY
 }
 
-func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Aggregate all sets from all sessions
 	var allSets []*pb.StrengthSet
 	for _, s := range activity.Sessions {
 		allSets = append(allSets, s.StrengthSets...)
 	}
 
+	logger.Debug("workout_summary: starting",
+		"activity_name", activity.Name,
+		"session_count", len(activity.Sessions),
+		"total_sets", len(allSets),
+		"format", inputConfig["format"],
+	)
+
 	if len(allSets) == 0 {
+		logger.Debug("workout_summary: skipping - no strength sets")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status": "skipped",

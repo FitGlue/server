@@ -2,6 +2,7 @@ package speed_summary
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -39,7 +40,7 @@ func TestSpeedSummary_Enrich_Success(t *testing.T) {
 
 	user := &pb.UserRecord{UserId: "test-user"}
 
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -97,7 +98,7 @@ func TestSpeedSummary_Enrich_NoSpeedData(t *testing.T) {
 
 	user := &pb.UserRecord{UserId: "test-user"}
 
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}

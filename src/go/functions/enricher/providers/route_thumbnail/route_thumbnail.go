@@ -47,10 +47,10 @@ type GPSPoint struct {
 	Long float64
 }
 
-func (p *RouteThumbnailProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *RouteThumbnailProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Tier check - Athlete only
 	if tier.GetEffectiveTier(user) != tier.TierAthlete {
-		slog.Info("Skipping route thumbnail - Athlete tier required")
+		logger.Info("Skipping route thumbnail - Athlete tier required")
 		return &providers.EnrichmentResult{}, nil
 	}
 
@@ -71,7 +71,7 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, activity *pb.Standa
 
 	// Require at least 10 GPS points for a reasonable route
 	if len(points) < 10 {
-		slog.Info("Skipping route thumbnail - insufficient GPS data", "points", len(points))
+		logger.Info("Skipping route thumbnail - insufficient GPS data", "points", len(points))
 		return &providers.EnrichmentResult{}, nil
 	}
 
@@ -117,7 +117,7 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, activity *pb.Standa
 		assetURL = fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath)
 	}
 
-	slog.Info("Generated route thumbnail", "asset_folder_id", assetFolderID, "url", assetURL, "points", len(points))
+	logger.Info("Generated route thumbnail", "asset_folder_id", assetFolderID, "url", assetURL, "points", len(points))
 
 	return &providers.EnrichmentResult{
 		Metadata: map[string]string{

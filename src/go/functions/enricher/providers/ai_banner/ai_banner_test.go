@@ -2,6 +2,7 @@ package ai_banner
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -43,7 +44,7 @@ func TestAIBanner_Enrich_TierRestriction(t *testing.T) {
 		Tier:   pb.UserTier_USER_TIER_HOBBYIST,
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -77,7 +78,7 @@ func TestAIBanner_Enrich_NoActivityID(t *testing.T) {
 		Tier:   pb.UserTier_USER_TIER_ATHLETE,
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}

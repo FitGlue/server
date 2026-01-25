@@ -3,6 +3,7 @@ package muscle_heatmap
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"sort"
 	"strings"
 
@@ -78,7 +79,8 @@ func GetMuscleCoefficient(coeffs map[pb.MuscleGroup]float64, muscle pb.MuscleGro
 	return 1.0 // Default fallback
 }
 
-func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("muscle_heatmap: starting", "activity_name", activity.Name)
 	// Aggregate sets
 	var allSets []*pb.StrengthSet
 	for _, s := range activity.Sessions {

@@ -3,6 +3,7 @@ package user_input
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -43,18 +44,32 @@ func (p *UserInputProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT
 }
 
-func (p *UserInputProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *UserInputProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
+
+	logger.Debug("user_input: starting",
+		"stable_id", stableID,
+		"requested_fields", inputs["fields"],
+	)
+
 	if p.service == nil {
+		logger.Debug("user_input: error - service not initialized")
 		return nil, fmt.Errorf("service not initialized")
 	}
-
-	stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
 
 	// Check DB
 	pending, err := p.service.DB.GetPendingInput(ctx, stableID)
 	if err == nil && pending != nil {
+		logger.Debug("user_input: found pending input",
+			"status", pending.Status.String(),
+		)
+
 		if pending.Status == pb.PendingInput_STATUS_COMPLETED {
 			// CONSUME IT
+			logger.Debug("user_input: applying completed input",
+				"has_title", pending.InputData["title"] != "",
+				"has_description", pending.InputData["description"] != "",
+			)
 			// Map input data to EnrichmentResult
 			res := &providers.EnrichmentResult{
 				Name:        pending.InputData["title"],
@@ -67,6 +82,7 @@ func (p *UserInputProvider) Enrich(ctx context.Context, activity *pb.Standardize
 		}
 		if pending.Status == pb.PendingInput_STATUS_WAITING {
 			// Still waiting
+			logger.Debug("user_input: still waiting for user input")
 			return nil, &WaitForInputError{
 				ActivityID:     stableID, // Pass stable ID to orchestrator (redundant if orchestration calculates it too)
 				RequiredFields: parseFields(inputs["fields"]),
@@ -75,9 +91,13 @@ func (p *UserInputProvider) Enrich(ctx context.Context, activity *pb.Standardize
 	}
 
 	// No pending input doc exists -> Request it
+	requiredFields := parseFields(inputs["fields"])
+	logger.Debug("user_input: no pending input exists - requesting",
+		"required_fields", requiredFields,
+	)
 	return nil, &WaitForInputError{
 		ActivityID:     stableID,
-		RequiredFields: parseFields(inputs["fields"]),
+		RequiredFields: requiredFields,
 	}
 }
 

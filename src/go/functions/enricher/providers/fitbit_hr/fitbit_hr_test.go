@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
@@ -62,7 +63,7 @@ func TestFitBitHeartRate_Enrich(t *testing.T) {
 	}
 
 	// Execute enrichment
-	result, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
+	result, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, false)
 
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
@@ -117,7 +118,7 @@ func TestFitBitHeartRate_Enrich_IntegrationDisabled(t *testing.T) {
 		},
 	}
 
-	_, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	_, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err == nil {
 		t.Error("Expected error when Fitbit integration is disabled")
 	}
@@ -153,7 +154,7 @@ func TestFitBitHeartRate_Enrich_APIError(t *testing.T) {
 		},
 	}
 
-	_, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
+	_, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, false)
 	if err == nil {
 		t.Error("Expected error when API returns 401")
 	}
@@ -207,7 +208,7 @@ func TestFitBitHeartRate_Enrich_LagDetected(t *testing.T) {
 		},
 	}
 
-	_, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
+	_, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, false)
 	if err == nil {
 		t.Fatal("Expected error for recent missing data")
 	}
@@ -252,7 +253,7 @@ func TestFitBitHeartRate_Enrich_LagExpired(t *testing.T) {
 		},
 	}
 
-	res, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, false)
+	res, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, false)
 	if err != nil {
 		t.Fatalf("Expected success for old missing data, got: %v", err)
 	}
@@ -302,7 +303,7 @@ func TestFitBitHeartRate_Enrich_LagExhausted(t *testing.T) {
 	}
 
 	// Should not return error despite missing data (doNotRetry=true)
-	_, err := provider.EnrichWithClient(context.Background(), activity, user, nil, mockHTTPClient, true)
+	_, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, true)
 	if err != nil {
 		t.Fatalf("Expected success when doNotRetry is set, got error: %v", err)
 	}
@@ -343,7 +344,7 @@ func TestFitBitHeartRate_Enrich_SkipIfExistingHRData(t *testing.T) {
 	}
 
 	// Without force=true, should skip
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Expected no error, got: %v", err)
 	}
@@ -407,7 +408,7 @@ func TestFitBitHeartRate_Enrich_ForceOverwrite(t *testing.T) {
 	}
 
 	// With force=true, should proceed to fetch from Fitbit
-	result, err := provider.EnrichWithClient(context.Background(), activity, user, map[string]string{"force": "true"}, mockHTTPClient, false)
+	result, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, map[string]string{"force": "true"}, mockHTTPClient, false)
 	if err != nil {
 		t.Fatalf("Expected no error with force=true, got: %v", err)
 	}

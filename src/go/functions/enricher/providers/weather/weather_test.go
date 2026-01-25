@@ -2,6 +2,7 @@ package weather
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -28,7 +29,7 @@ func TestWeatherEnrich_NoGPS(t *testing.T) {
 		},
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, &pb.UserRecord{}, map[string]string{}, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, &pb.UserRecord{}, map[string]string{}, false)
 	if err != nil {
 		t.Fatalf("Expected no error for activity without GPS, got: %v", err)
 	}

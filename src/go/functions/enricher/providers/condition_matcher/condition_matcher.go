@@ -3,6 +3,7 @@ package condition_matcher
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"strconv"
 	"strings"
@@ -32,11 +33,21 @@ func (p *ConditionMatcherProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER
 }
 
-func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *ConditionMatcherProvider) Enrich(ctx context.Context, logger *slog.Logger, act *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("condition_matcher: starting",
+		"activity_type", act.Type.String(),
+		"activity_name", act.Name,
+		"has_activity_type_condition", inputs["activity_type"] != "",
+		"has_days_condition", inputs["days"] != "" || inputs["days_of_week"] != "",
+		"has_time_condition", inputs["time_start"] != "" || inputs["time_end"] != "",
+		"has_location_condition", inputs["location_lat"] != "",
+	)
+
 	// Helper to handle mismatch
 	returnMismatch := func(reason string) (*providers.EnrichmentResult, error) {
-		// Log for visibility
-		fmt.Printf("ConditionMatcher mismatch: %s\n", reason)
+		logger.Debug("condition_matcher: condition not met",
+			"reason", reason,
+		)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"condition_matcher_applied": "false",
@@ -53,6 +64,10 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 		if expectedType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED && act.Type != expectedType {
 			return returnMismatch(fmt.Sprintf("Activity Type mismatch. Expected %v, got %v", expectedType, act.Type))
 		}
+		logger.Debug("condition_matcher: activity_type check passed",
+			"expected", expectedType.String(),
+			"actual", act.Type.String(),
+		)
 	}
 
 	// B. Days of Week
@@ -81,6 +96,10 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 		if !match {
 			return returnMismatch(fmt.Sprintf("Day mismatch. Expected one of [%s], got %s (%d)", daysVal, currentDay, currentDayInt))
 		}
+		logger.Debug("condition_matcher: days check passed",
+			"allowed_days", daysVal,
+			"current_day", currentDay,
+		)
 	}
 
 	// C. Time Window
@@ -100,6 +119,10 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 		if !checkTime(localTime, startTimeVal, true) {
 			return returnMismatch(fmt.Sprintf("Start Time mismatch. Expected >= %s, got %s (Local Est.)", startTimeVal, localTime.Format("15:04")))
 		}
+		logger.Debug("condition_matcher: start_time check passed",
+			"min_time", startTimeVal,
+			"local_time", localTime.Format("15:04"),
+		)
 	}
 
 	endTimeVal, hasEndTime := inputs["time_end"]
@@ -110,6 +133,10 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 		if !checkTime(localTime, endTimeVal, false) {
 			return returnMismatch(fmt.Sprintf("End Time mismatch. Expected <= %s, got %s (Local Est.)", endTimeVal, localTime.Format("15:04")))
 		}
+		logger.Debug("condition_matcher: end_time check passed",
+			"max_time", endTimeVal,
+			"local_time", localTime.Format("15:04"),
+		)
 	}
 
 	// D. Location
@@ -155,9 +182,20 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, act *pb.Standardi
 		if dist > radius {
 			return returnMismatch(fmt.Sprintf("Location mismatch. Distance %.2fm > Radius %.2fm. Act: (%.4f, %.4f), Target: (%.4f, %.4f)", dist, radius, lat, long, targetLat, targetLong))
 		}
+		logger.Debug("condition_matcher: location check passed",
+			"distance", dist,
+			"radius", radius,
+			"activity_lat", lat,
+			"activity_long", long,
+		)
 	}
 
 	// 2. Conditions Met - Apply Outputs
+	logger.Debug("condition_matcher: all conditions matched - applying outputs",
+		"has_title_template", inputs["title_template"] != "",
+		"has_description_template", inputs["description_template"] != "",
+	)
+
 	result := &providers.EnrichmentResult{
 		Metadata: map[string]string{
 			"condition_matcher_applied": "true",

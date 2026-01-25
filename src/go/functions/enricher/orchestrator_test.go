@@ -2,6 +2,7 @@ package enricher
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -125,7 +126,7 @@ func (m *MockBlobStore) Read(ctx context.Context, bucket, object string) ([]byte
 type MockProvider struct {
 	NameFunc         func() string
 	ProviderTypeFunc func() pb.EnricherProviderType
-	EnrichFunc       func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error)
+	EnrichFunc       func(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error)
 }
 
 func (m *MockProvider) Name() string {
@@ -142,9 +143,9 @@ func (m *MockProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK
 }
 
-func (m *MockProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (m *MockProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	if m.EnrichFunc != nil {
-		return m.EnrichFunc(ctx, activity, user, inputConfig, doNotRetry)
+		return m.EnrichFunc(ctx, logger, activity, user, inputConfig, doNotRetry)
 	}
 	return &providers.EnrichmentResult{}, nil
 }
@@ -186,7 +187,7 @@ func TestOrchestrator_Process(t *testing.T) {
 
 		mockProvider := &MockProvider{
 			NameFunc: func() string { return "mock-enricher" },
-			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+			EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 				return &providers.EnrichmentResult{
 					Name:        "Enriched Activity",
 					Description: "Added by mock",
@@ -214,7 +215,7 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 
 		// Update calls
-		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", "test-pipeline-id", false) // false = doNotRetry
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "test-parent-exec-id", "test-pipeline-id", false) // false = doNotRetry
 
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)
@@ -274,7 +275,7 @@ func TestOrchestrator_Process(t *testing.T) {
 			Timestamp: timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 		}
 
-		result, err := orchestrator.Process(ctx, payload, "test-parent-exec-id", "test-pipeline-id", false)
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "test-parent-exec-id", "test-pipeline-id", false)
 
 		if err != nil {
 			t.Fatalf("Process should not error on no pipelines, got: %v", err)
@@ -301,7 +302,7 @@ func TestOrchestrator_Process(t *testing.T) {
 				Sessions: []*pb.Session{{}, {}}, // Two sessions
 			},
 		}
-		_, err := orchestrator.Process(ctx, payload, "exec-1", "pipe-1", false)
+		_, err := orchestrator.Process(ctx, slog.Default(), payload, "exec-1", "pipe-1", false)
 		if err == nil || err.Error() != "multiple sessions not supported" {
 			t.Errorf("Expected 'multiple sessions not supported' error, got %v", err)
 		}
@@ -322,7 +323,7 @@ func TestOrchestrator_Process(t *testing.T) {
 				},
 			},
 		}
-		_, err := orchestrator.Process(ctx, payload, "exec-1", "pipe-1", false)
+		_, err := orchestrator.Process(ctx, slog.Default(), payload, "exec-1", "pipe-1", false)
 		if err == nil || err.Error() != "session total elapsed time is 0" {
 			t.Errorf("Expected 'session total elapsed time is 0' error, got %v", err)
 		}
@@ -349,7 +350,7 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 		mockProvider := &MockProvider{
 			NameFunc: func() string { return "mock-enricher" },
-			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+			EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 				return &providers.EnrichmentResult{
 					HeartRateStream: []int{100, 110, 120}, // 3 data points
 				}, nil
@@ -373,7 +374,7 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		result, err := orchestrator.Process(ctx, payload, "exec-1", "pipe-1", false)
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "exec-1", "pipe-1", false)
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)
 		}
@@ -453,7 +454,7 @@ func TestOrchestrator_Process(t *testing.T) {
 		// Mock provider returns a description based on its config ID
 		mockProvider := &MockProvider{
 			NameFunc: func() string { return "mock-enricher" },
-			EnrichFunc: func(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+			EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 				id := inputConfig["id"]
 				return &providers.EnrichmentResult{
 					Name:        "Activity " + id,
@@ -482,7 +483,7 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		result, err := orchestrator.Process(ctx, payload, "parent-exec", "base-pipeline-exec", false)
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "parent-exec", "base-pipeline-exec", false)
 
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)

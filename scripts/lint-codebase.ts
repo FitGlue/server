@@ -87,8 +87,6 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'I5': [/SOURCE_INTERVALS/, /SOURCE_TRAININGPEAKS/, /SOURCE_GOOGLESHEETS/],
   // G3: Existing error wrapping patterns - legacy code
   'G3': [/router\/function\.go/, /parkrun\/parkrun\.go/],
-  // G4: Many existing logger patterns - needs gradual migration
-  'G4': [/.*/], // Demote to warning-only
   // G8: New uploaders without tests yet
   'G8': [/hevy-uploader/, /mock-uploader/, /showcase-uploader/],
   // G9/G10: Uploaders need explicit loop prevention added later
@@ -2315,16 +2313,35 @@ function checkGoLoggerUsage(): CheckResult {
     const content = fs.readFileSync(file, 'utf-8');
     const fileName = path.relative(SERVER_ROOT, file);
 
-    // Check for log.Print/Printf/Println instead of structured logging
-    const usesStdLog = /\blog\.(Print|Printf|Println|Fatal|Fatalf)\b/.test(content);
-    if (usesStdLog) {
-      warnings.push(`${fileName}: Uses log.Print* - consider using structured logging (ctx.Logger)`);
+    // L1: Check for raw log package usage (log.Print/Printf/Println)
+    // This bypasses LOG_LEVEL control and uses unstructured format
+    // Exclude: cmd/main.go (startup), registry.go (init-time panics)
+    const isExcludedFromL1 = file.includes('/cmd/main.go') || file.includes('registry.go');
+    if (!isExcludedFromL1) {
+      const rawLogPattern = /\blog\.(Print|Printf|Println)\b/g;
+      const rawLogMatches = content.match(rawLogPattern);
+      if (rawLogMatches) {
+        errors.push(`[L1] ${fileName}: Uses raw log.${rawLogMatches[0].split('.')[1]}() - pass logger from FrameworkContext instead`);
+      }
+    }
+
+    // L2: Check for global slog usage (slog.Debug/Info/Warn/Error without receiver)
+    // Logger should be passed from FrameworkContext, not called globally
+    const globalSlogPattern = /\bslog\.(Debug|Info|Warn|Error)\s*\(/g;
+    const globalSlogMatches = content.match(globalSlogPattern);
+    if (globalSlogMatches) {
+      // Only flag if file uses FrameworkContext (indicating it's a handler or helper)
+      // Files in pkg/ that don't have framework context are OK to use global slog
+      const isHandlerOrProvider = file.includes('functions/');
+      if (isHandlerOrProvider) {
+        errors.push(`[L2] ${fileName}: Uses global slog.${globalSlogMatches[0].split('.')[1].split('(')[0]}() - pass logger from FrameworkContext instead`);
+      }
     }
   }
 
   return {
     name: 'Go Logger Usage (G4)',
-    passed: true,
+    passed: errors.length === 0,
     errors,
     warnings
   };

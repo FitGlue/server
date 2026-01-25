@@ -2,6 +2,7 @@ package training_load
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -46,7 +47,7 @@ func TestTrainingLoad_Enrich_Success(t *testing.T) {
 		"gender":  "male",
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, user, inputs, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, inputs, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -109,7 +110,7 @@ func TestTrainingLoad_Enrich_NoData(t *testing.T) {
 		},
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, &pb.UserRecord{}, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, &pb.UserRecord{}, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}

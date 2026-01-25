@@ -35,7 +35,8 @@ func (p *ElevationSummary) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY
 }
 
-func (p *ElevationSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *ElevationSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("elevation_summary: starting", "activity_name", activity.Name)
 	var gain float64
 	var loss float64
 	var maxAltitude float64
@@ -69,7 +70,7 @@ func (p *ElevationSummary) Enrich(ctx context.Context, activity *pb.Standardized
 	}
 
 	if recordCount == 0 {
-		slog.Info("No elevation data found for elevation summary enricher")
+		logger.Info("No elevation data found for elevation summary enricher")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"elevation_summary_status": "skipped",
@@ -78,7 +79,7 @@ func (p *ElevationSummary) Enrich(ctx context.Context, activity *pb.Standardized
 		}, nil
 	}
 
-	slog.Info("Elevation summary calculated",
+	logger.Info("Elevation summary calculated",
 		"gain", gain,
 		"loss", loss,
 		"max_altitude", maxAltitude,

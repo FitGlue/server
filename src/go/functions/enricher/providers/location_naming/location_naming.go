@@ -49,7 +49,7 @@ func (p *LocationNaming) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING
 }
 
-func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Extract GPS coordinates from first record
 	var latitude, longitude float64
 	var hasGPS bool
@@ -74,7 +74,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 	}
 
 	if !hasGPS {
-		slog.Info("No GPS data found for location naming enricher, skipping")
+		logger.Info("No GPS data found for location naming enricher, skipping")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"location_naming_status": "skipped",
@@ -91,7 +91,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 
 	var locationName, cityName string
 	if cached {
-		slog.Info("Using cached location", "key", cacheKey, "location", cachedLocation)
+		logger.Info("Using cached location", "key", cacheKey, "location", cachedLocation)
 		// Parse cached value (format: "location|city")
 		parts := strings.SplitN(cachedLocation, "|", 2)
 		locationName = parts[0]
@@ -114,7 +114,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 			latitude, longitude,
 		)
 
-		slog.Info("Fetching location data from Nominatim",
+		logger.Info("Fetching location data from Nominatim",
 			"latitude", latitude,
 			"longitude", longitude,
 			"url", url,
@@ -122,7 +122,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 
 		req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 		if err != nil {
-			slog.Error("Failed to create Nominatim request", "error", err)
+			logger.Error("Failed to create Nominatim request", "error", err)
 			return nil, &providers.RetryableError{Err: fmt.Errorf("failed to create request: %w", err)}
 		}
 
@@ -132,21 +132,21 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 		client := &http.Client{Timeout: 10 * time.Second}
 		resp, err := client.Do(req)
 		if err != nil {
-			slog.Error("Failed to fetch location data", "error", err)
+			logger.Error("Failed to fetch location data", "error", err)
 			return nil, &providers.RetryableError{Err: fmt.Errorf("nominatim API request failed: %w", err)}
 		}
 		defer resp.Body.Close()
 
 		if resp.StatusCode != http.StatusOK {
 			body, _ := io.ReadAll(resp.Body)
-			slog.Error("Nominatim API returned non-200 status", "status", resp.StatusCode, "body", string(body))
+			logger.Error("Nominatim API returned non-200 status", "status", resp.StatusCode, "body", string(body))
 			return nil, &providers.RetryableError{Err: fmt.Errorf("nominatim API returned status %d", resp.StatusCode)}
 		}
 
 		// Parse response
 		var nominatimResp NominatimResponse
 		if err := json.NewDecoder(resp.Body).Decode(&nominatimResp); err != nil {
-			slog.Error("Failed to decode nominatim response", "error", err)
+			logger.Error("Failed to decode nominatim response", "error", err)
 			return &providers.EnrichmentResult{
 				Metadata: map[string]string{
 					"location_naming_status": "skipped",
@@ -165,7 +165,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 		locationCache[cacheKey] = cacheValue
 		locationCacheMutex.Unlock()
 
-		slog.Info("Location resolved",
+		logger.Info("Location resolved",
 			"location", locationName,
 			"city", cityName,
 		)
@@ -224,7 +224,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 		newTitle = strings.ReplaceAll(newTitle, "{activity_type}", activityType)
 		newTitle = strings.ReplaceAll(newTitle, "{location}", displayLocation)
 		result.Name = newTitle
-		slog.Info("Generated location-based title", "title", newTitle)
+		logger.Info("Generated location-based title", "title", newTitle)
 
 	case "description":
 		// Append location line to description
@@ -233,7 +233,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, activity *pb.StandardizedAc
 			locationLine = fmt.Sprintf("\n\n📍 Location: %s, %s", displayLocation, cityName)
 		}
 		result.Description = locationLine
-		slog.Info("Generated location description", "location_line", locationLine)
+		logger.Info("Generated location description", "location_line", locationLine)
 	}
 
 	return result, nil

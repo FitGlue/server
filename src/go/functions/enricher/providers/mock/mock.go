@@ -3,6 +3,7 @@ package mock
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -32,23 +33,40 @@ func (p *MockProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK
 }
 
-func (p *MockProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *MockProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	behavior := inputs["behavior"]
 	if behavior == "" {
 		behavior = "success"
 	}
 
+	logger.Debug("mock: starting",
+		"behavior", behavior,
+		"do_not_retry", doNotRetry,
+		"has_name", inputs["name"] != "",
+		"has_description", inputs["description"] != "",
+	)
+
 	switch behavior {
 	case "success":
+		logger.Debug("mock: returning success")
 		return p.handleSuccess(inputs)
 
 	case "lag":
+		logger.Debug("mock: simulating lag/retry",
+			"do_not_retry", doNotRetry,
+		)
 		return p.handleLag(inputs, doNotRetry)
 
 	case "fail":
+		logger.Debug("mock: returning hard failure",
+			"error_message", inputs["error_message"],
+		)
 		return p.handleFail(inputs)
 
 	default:
+		logger.Debug("mock: unknown behavior",
+			"behavior", behavior,
+		)
 		return nil, fmt.Errorf("unknown mock behavior: %s", behavior)
 	}
 }

@@ -2,6 +2,7 @@ package ai_companion
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"testing"
 
@@ -75,10 +76,10 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 
 	// 3. Execute Providers
 	ctx := context.Background()
-	resLink, _ := pLink.Enrich(ctx, activity, nil, nil, false)
-	resSummary, _ := pSummary.Enrich(ctx, activity, nil, nil, false)
-	resHeatmap, _ := pHeatmap.Enrich(ctx, activity, nil, nil, false)
-	resBranding, _ := pBranding.Enrich(ctx, activity, nil, nil, false)
+	resLink, _ := pLink.Enrich(ctx, slog.Default(), activity, nil, nil, false)
+	resSummary, _ := pSummary.Enrich(ctx, slog.Default(), activity, nil, nil, false)
+	resHeatmap, _ := pHeatmap.Enrich(ctx, slog.Default(), activity, nil, nil, false)
+	resBranding, _ := pBranding.Enrich(ctx, slog.Default(), activity, nil, nil, false)
 
 	// 4. Simulate Orchestrator Merge
 	finalDesc := activity.Description
@@ -185,7 +186,7 @@ func TestDescriptionEngine_StatsDisabled(t *testing.T) {
 
 	// Test with stats disabled
 	config := map[string]string{"show_stats": "false"}
-	res, _ := pSummary.Enrich(context.Background(), activity, nil, config, false)
+	res, _ := pSummary.Enrich(context.Background(), slog.Default(), activity, nil, config, false)
 
 	if strings.Contains(res.Description, "sets •") {
 		t.Error("Expected stats to be hidden when show_stats=false")

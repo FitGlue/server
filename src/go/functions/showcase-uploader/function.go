@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"log/slog"
 	"regexp"
 	"strings"
 	"sync"
@@ -44,7 +43,7 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 	svcOnce.Do(func() {
 		baseSvc, err := bootstrap.NewService(ctx)
 		if err != nil {
-			slog.Error("Failed to initialize service", "error", err)
+			// Error returned to caller
 			svcErr = err
 			return
 		}

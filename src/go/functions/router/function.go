@@ -3,7 +3,6 @@ package router
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"sync"
 
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
@@ -33,7 +32,7 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 	svcOnce.Do(func() {
 		svc, svcErr = bootstrap.NewService(ctx)
 		if svcErr != nil {
-			slog.Error("Failed to initialize service", "error", svcErr)
+			// Error returned to caller
 		}
 	})
 	return svc, svcErr

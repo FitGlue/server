@@ -41,10 +41,10 @@ func (p *AICompanionProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION
 }
 
-func (p *AICompanionProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Tier check - Athlete tier only
 	if tier.GetEffectiveTier(user) != tier.TierAthlete {
-		slog.Info("AI Companion skipped: user not on athlete tier",
+		logger.Info("AI Companion skipped: user not on athlete tier",
 			"user_id", user.UserId,
 			"tier", tier.GetEffectiveTier(user),
 		)
@@ -71,7 +71,7 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, activity *pb.Standardi
 	// Get Gemini API key
 	apiKey := os.Getenv("GEMINI_API_KEY")
 	if apiKey == "" {
-		slog.Warn("GEMINI_API_KEY not set, skipping AI companion")
+		logger.Warn("GEMINI_API_KEY not set, skipping AI companion")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "skipped",
@@ -84,7 +84,7 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, activity *pb.Standardi
 	// Generate content using Gemini
 	result, err := p.generateWithGemini(ctx, apiKey, mode, activityContext)
 	if err != nil {
-		slog.Error("Failed to generate AI companion content", "error", err)
+		logger.Error("Failed to generate AI companion content", "error", err)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "error",
@@ -98,7 +98,7 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, activity *pb.Standardi
 		result.Description = "✨ AI Summary:\n" + result.Description
 	}
 
-	slog.Info("AI Companion content generated successfully",
+	logger.Info("AI Companion content generated successfully",
 		"mode", mode,
 		"has_title", result.Title != "",
 		"has_description", result.Description != "",

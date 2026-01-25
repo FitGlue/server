@@ -40,15 +40,15 @@ func (p *SpotifyTracks) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS
 }
 
-func (p *SpotifyTracks) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
-	return p.EnrichWithClient(ctx, activity, user, inputs, nil, doNotRetry)
+func (p *SpotifyTracks) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	return p.EnrichWithClient(ctx, logger, activity, user, inputs, nil, doNotRetry)
 }
 
 // EnrichWithClient allows HTTP client injection for testing
-func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, httpClient *http.Client, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// 1. Check Credentials
 	if user.Integrations == nil || user.Integrations.Spotify == nil || !user.Integrations.Spotify.Enabled {
-		slog.Info("Spotify integration not enabled, skipping")
+		logger.Info("Spotify integration not enabled, skipping")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"spotify_status": "skipped",
@@ -122,7 +122,7 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, activity *pb.Stand
 
 	// 6. Process Tracks
 	if len(recentlyPlayed.Items) == 0 {
-		slog.Info("No tracks played during activity time window")
+		logger.Info("No tracks played during activity time window")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"spotify_status": "success",
@@ -198,7 +198,7 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, activity *pb.Stand
 	// Append to existing description
 	newDescription := summaryText
 
-	slog.Info("Spotify tracks enrichment complete",
+	logger.Info("Spotify tracks enrichment complete",
 		"track_count", len(recentlyPlayed.Items),
 		"top_track", topTrack,
 		"playlist", playlistName,

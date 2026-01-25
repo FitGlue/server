@@ -2,6 +2,7 @@ package condition_matcher
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -34,7 +35,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			"activity_type":  "run", // Case insensitive check
 			"title_template": "Matched Run",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected match")
 		}
@@ -48,7 +49,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 		inputs := map[string]string{
 			"activity_type": "run",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected result with failure metadata, got nil")
 		}
@@ -67,7 +68,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			"days":           "Sat,Sun",
 			"title_template": "Weekend Warrior",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected match")
 		}
@@ -79,7 +80,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 		inputs := map[string]string{
 			"days": "Sat,Sun",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected result with failure metadata, got nil")
 		}
@@ -110,7 +111,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			"radius_m":       "1000",
 			"title_template": "Bushy Park",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected match")
 		}
@@ -137,7 +138,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			"location_long": "-0.34",
 			"radius_m":      "1000",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected result with failure metadata, got nil")
 		}
@@ -157,7 +158,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			"time_end":       "09:30",
 			"title_template": "Morning Run",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected match")
 		}
@@ -170,7 +171,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			"days_of_week":   "0", // Sunday
 			"title_template": "Sunday Run",
 		}
-		res, _ := provider.Enrich(ctx, act, nil, inputs, false)
+		res, _ := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if res == nil {
 			t.Fatal("Expected match for numeric day '0'")
 		}
@@ -181,7 +182,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 		inputs := map[string]string{
 			"location_lat": "51.41",
 		}
-		_, err := provider.Enrich(ctx, act, nil, inputs, false)
+		_, err := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if err == nil {
 			t.Fatal("Expected error when location_long is missing")
 		}
@@ -214,7 +215,7 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 			"location_radius": "500",
 			"title_template":  "Alias Match",
 		}
-		res, err := provider.Enrich(ctx, act, nil, inputs, false)
+		res, err := provider.Enrich(ctx, slog.Default(), act, nil, inputs, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}

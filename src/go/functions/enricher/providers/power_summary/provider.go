@@ -36,7 +36,8 @@ func (p *PowerSummary) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY
 }
 
-func (p *PowerSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *PowerSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("power_summary: starting", "activity_name", activity.Name)
 	// Collect all power values from the activity (watts)
 	var powers []int32
 
@@ -51,7 +52,7 @@ func (p *PowerSummary) Enrich(ctx context.Context, activity *pb.StandardizedActi
 	}
 
 	if len(powers) == 0 {
-		slog.Info("No power data found for power summary enricher")
+		logger.Info("No power data found for power summary enricher")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"power_summary_status": "skipped",
@@ -73,7 +74,7 @@ func (p *PowerSummary) Enrich(ctx context.Context, activity *pb.StandardizedActi
 
 	avgPower := float64(sumPower) / float64(len(powers))
 
-	slog.Info("Power summary calculated",
+	logger.Info("Power summary calculated",
 		"avg_power", avgPower,
 		"max_power", maxPower,
 		"sample_count", len(powers),

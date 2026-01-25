@@ -3,6 +3,7 @@ package parkrun
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"strings"
 	"time"
@@ -77,10 +78,21 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pb.Standar
 	return result, nil
 }
 
-func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	hasParkrunIntegration := user != nil && user.Integrations != nil && user.Integrations.Parkrun != nil && user.Integrations.Parkrun.Enabled
+	logger.Debug("parkrun: starting",
+		"activity_type", activity.Type.String(),
+		"activity_name", activity.Name,
+		"start_time", activity.StartTime.AsTime().Format(time.RFC3339),
+		"has_parkrun_integration", hasParkrunIntegration,
+	)
 
 	// 0. Ensure locations are loaded
 	if err := p.locationService.EnsureLoaded(ctx); err != nil {
+		logger.Debug("parkrun: failed to load locations",
+			"error", err.Error(),
+			"do_not_retry", doNotRetry,
+		)
 		if doNotRetry {
 			return &providers.EnrichmentResult{
 				Metadata: map[string]string{
@@ -92,6 +104,8 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 		}
 		return nil, providers.NewRetryableError(err, 5*time.Minute, "failed to load Parkrun locations")
 	}
+
+	logger.Debug("parkrun: locations loaded successfully")
 
 	// 1. Parse Inputs
 	enableTitling := inputs["enable_titling"] != "false" // Default true
@@ -112,6 +126,9 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 	if activity.Type != pb.ActivityType_ACTIVITY_TYPE_RUN &&
 		activity.Type != pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN &&
 		activity.Type != pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN {
+		logger.Debug("parkrun: skipping - not a run activity",
+			"activity_type", activity.Type.String(),
+		)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "not_run_activity_type", "activity_type": activity.Type.String()},
 		}, nil
@@ -120,14 +137,21 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 	// 3. Location Check
 	lat, long, found := getStartLocation(activity)
 	if !found {
+		logger.Debug("parkrun: skipping - no GPS data")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_gps_data"},
 		}, nil
 	}
 
+	logger.Debug("parkrun: found GPS coordinates",
+		"latitude", lat,
+		"longitude", long,
+	)
+
 	// 4. Time Check
 	startTime := activity.StartTime.AsTime()
 	if startTime.IsZero() {
+		logger.Debug("parkrun: error - zero start time")
 		return nil, fmt.Errorf("invalid start time: zero")
 	}
 
@@ -135,6 +159,10 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 	matchedLocation := p.locationService.FindNearest(lat, long, 5000.0)
 
 	if matchedLocation == nil {
+		logger.Debug("parkrun: skipping - no parkrun within 5km",
+			"latitude", lat,
+			"longitude", long,
+		)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":        "skipped",
@@ -146,7 +174,16 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 	}
 
 	dist := distanceMeters(lat, long, matchedLocation.Latitude, matchedLocation.Longitude)
+	logger.Debug("parkrun: found nearest location",
+		"parkrun_name", matchedLocation.Name,
+		"parkrun_slug", matchedLocation.EventSlug,
+		"distance_meters", dist,
+	)
+
 	if dist > 1500.0 {
+		logger.Debug("parkrun: skipping - too far from parkrun (>1500m)",
+			"distance_meters", dist,
+		)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status":          "skipped",
@@ -168,7 +205,16 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 	specialDay := getSpecialDay(estimatedLocalTime)
 	isSpecial := specialDay != ""
 
+	logger.Debug("parkrun: checking day",
+		"estimated_local_time", estimatedLocalTime.Format(time.RFC3339),
+		"weekday", estimatedLocalTime.Weekday().String(),
+		"is_saturday", isSaturday,
+		"is_special", isSpecial,
+		"special_day", specialDay,
+	)
+
 	if !isSaturday && !isSpecial {
+		logger.Debug("parkrun: skipping - not parkrun day")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status": "skipped",
@@ -187,6 +233,10 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 	endWindow := 9*60 + 15   // 09:15
 
 	if totalMinutes < startWindow || totalMinutes > endWindow {
+		logger.Debug("parkrun: skipping - outside time window",
+			"local_time", fmt.Sprintf("%02d:%02d", hour, minute),
+			"window", "08:45-09:15",
+		)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"status": "skipped",
@@ -195,6 +245,13 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 			},
 		}, nil
 	}
+
+	logger.Debug("parkrun: MATCHED - activity is a parkrun!",
+		"parkrun_name", matchedLocation.Name,
+		"parkrun_slug", matchedLocation.EventSlug,
+		"distance_meters", dist,
+		"local_time", fmt.Sprintf("%02d:%02d", hour, minute),
+	)
 
 	// 9. Match Found! Build result
 	result := &providers.EnrichmentResult{
@@ -252,7 +309,8 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, activity *pb.StandardizedA
 				AutoDeadline:               timestamppb.New(autoDeadline),
 				LinkedActivityId:           stableID, // Link to this activity
 				OriginalPayload: &pb.ActivityPayload{
-					UserId: user.UserId,
+					UserId:               user.UserId,
+					StandardizedActivity: activity, // Include full activity for resume
 					Metadata: map[string]string{
 						"parkrun_event_slug":   matchedLocation.EventSlug,
 						"parkrun_event_name":   matchedLocation.Name,

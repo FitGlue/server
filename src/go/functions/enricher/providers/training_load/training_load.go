@@ -37,7 +37,8 @@ func (p *TrainingLoad) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD
 }
 
-func (p *TrainingLoad) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *TrainingLoad) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("training_load: starting", "activity_name", activity.Name)
 	// Config defaults
 	maxHR := 190.0
 	restHR := 60.0
@@ -64,7 +65,7 @@ func (p *TrainingLoad) Enrich(ctx context.Context, activity *pb.StandardizedActi
 
 	hrRange := maxHR - restHR
 	if hrRange <= 0 {
-		slog.Warn("Invalid HR range (max_hr <= rest_hr)", "max_hr", maxHR, "rest_hr", restHR)
+		logger.Warn("Invalid HR range (max_hr <= rest_hr)", "max_hr", maxHR, "rest_hr", restHR)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"training_load_status": "skipped",
@@ -125,7 +126,7 @@ func (p *TrainingLoad) Enrich(ctx context.Context, activity *pb.StandardizedActi
 	zone := getTrainingLoadZone(totalTRIMP)
 	summaryText := fmt.Sprintf("\n\n💪 Training Load: %.0f (%s)", totalTRIMP, zone)
 
-	slog.Info("Training Load calculated", "trimp", totalTRIMP, "zone", zone)
+	logger.Info("Training Load calculated", "trimp", totalTRIMP, "zone", zone)
 
 	return &providers.EnrichmentResult{
 		Description: summaryText,

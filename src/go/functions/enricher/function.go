@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -74,9 +73,6 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 	}
 	svcOnce.Do(func() {
 		svc, svcErr = bootstrap.NewService(ctx)
-		if svcErr != nil {
-			slog.Error("Failed to initialize service", "error", svcErr)
-		}
 	})
 	return svc, svcErr
 }
@@ -97,7 +93,6 @@ func EnrichActivityHTTP(w http.ResponseWriter, r *http.Request) {
 
 	svc, err := initService(ctx)
 	if err != nil {
-		slog.Error("Service init failed", "error", err)
 		http.Error(w, fmt.Sprintf("service init failed: %v", err), http.StatusInternalServerError)
 		return
 	}
@@ -109,7 +104,6 @@ func EnrichActivityHTTP(w http.ResponseWriter, r *http.Request) {
 		// Fall back to Pub/Sub push message format
 		event, err = parseCloudEventFromPubSubPush(r)
 		if err != nil {
-			slog.Error("Failed to parse event from request", "error", err)
 			http.Error(w, fmt.Sprintf("failed to parse event: %v", err), http.StatusBadRequest)
 			return
 		}
@@ -120,7 +114,6 @@ func EnrichActivityHTTP(w http.ResponseWriter, r *http.Request) {
 
 	if handlerErr != nil {
 		// Return HTTP 500 to trigger Pub/Sub NACK and retry
-		slog.Error("Handler failed, returning 500 for retry", "error", handlerErr)
 		http.Error(w, handlerErr.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -242,7 +235,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 	}
 
 	// Process
-	processResult, err := orchestrator.Process(ctx, &rawEvent, fwCtx.ExecutionID, *pipelineExecID, doNotRetry)
+	processResult, err := orchestrator.Process(ctx, fwCtx.Logger, &rawEvent, fwCtx.ExecutionID, *pipelineExecID, doNotRetry)
 
 	if err != nil {
 		// Check if the error is retryable (e.g. data lag)

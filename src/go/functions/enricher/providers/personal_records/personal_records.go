@@ -45,7 +45,7 @@ func (p *PersonalRecordsProvider) ProviderType() pb.EnricherProviderType {
 }
 
 // Enrich processes the activity and detects any new personal records
-func (p *PersonalRecordsProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Parse config options
 	trackCardio := inputs["cardio_records"] != "false"     // Default true
 	trackStrength := inputs["strength_records"] != "false" // Default true
@@ -56,9 +56,9 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, activity *pb.Stand
 
 	// Check cardio records
 	if trackCardio && IsCardioActivity(activity.Type) {
-		cardioPRs, err := p.checkCardioRecords(ctx, activity, userID)
+		cardioPRs, err := p.checkCardioRecords(ctx, logger, activity, userID)
 		if err != nil {
-			slog.Warn("Failed to check cardio records", "error", err)
+			logger.Warn("Failed to check cardio records", "error", err)
 		} else {
 			newPRs = append(newPRs, cardioPRs...)
 		}
@@ -66,9 +66,9 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, activity *pb.Stand
 
 	// Check strength records
 	if trackStrength && IsStrengthActivity(activity.Type) {
-		strengthPRs, err := p.checkStrengthRecords(ctx, activity, userID)
+		strengthPRs, err := p.checkStrengthRecords(ctx, logger, activity, userID)
 		if err != nil {
-			slog.Warn("Failed to check strength records", "error", err)
+			logger.Warn("Failed to check strength records", "error", err)
 		} else {
 			newPRs = append(newPRs, strengthPRs...)
 		}
@@ -103,7 +103,7 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, activity *pb.Stand
 		result.Name = "🎉 " + activity.Name
 	}
 
-	slog.Info("Personal records detected",
+	logger.Info("Personal records detected",
 		"pr_count", len(newPRs),
 		"activity_type", activity.Type.String(),
 	)
@@ -112,7 +112,7 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, activity *pb.Stand
 }
 
 // checkCardioRecords checks for cardio PRs and persists them to Firestore
-func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, activity *pb.StandardizedActivity, userID string) ([]NewPRResult, error) {
+func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, userID string) ([]NewPRResult, error) {
 	var results []NewPRResult
 
 	// Calculate total distance and duration
@@ -136,7 +136,7 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, activi
 			if time5K > 0 {
 				pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordFastest5K), time5K, "seconds", activity, true)
 				if err != nil {
-					slog.Warn("Failed to check 5K record", "error", err)
+					logger.Warn("Failed to check 5K record", "error", err)
 				} else if pr != nil {
 					results = append(results, *pr)
 				}
@@ -149,7 +149,7 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, activi
 			if time10K > 0 {
 				pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordFastest10K), time10K, "seconds", activity, true)
 				if err != nil {
-					slog.Warn("Failed to check 10K record", "error", err)
+					logger.Warn("Failed to check 10K record", "error", err)
 				} else if pr != nil {
 					results = append(results, *pr)
 				}
@@ -162,7 +162,7 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, activi
 			if timeHM > 0 {
 				pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordFastestHalfMarathon), timeHM, "seconds", activity, true)
 				if err != nil {
-					slog.Warn("Failed to check half marathon record", "error", err)
+					logger.Warn("Failed to check half marathon record", "error", err)
 				} else if pr != nil {
 					results = append(results, *pr)
 				}
@@ -172,7 +172,7 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, activi
 		// Longest Run
 		pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordLongestRun), totalDistanceM, "meters", activity, false)
 		if err != nil {
-			slog.Warn("Failed to check longest run record", "error", err)
+			logger.Warn("Failed to check longest run record", "error", err)
 		} else if pr != nil {
 			results = append(results, *pr)
 		}
@@ -182,7 +182,7 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, activi
 	if IsCyclingActivity(activity.Type) {
 		pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordLongestRide), totalDistanceM, "meters", activity, false)
 		if err != nil {
-			slog.Warn("Failed to check longest ride record", "error", err)
+			logger.Warn("Failed to check longest ride record", "error", err)
 		} else if pr != nil {
 			results = append(results, *pr)
 		}
@@ -192,7 +192,7 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, activi
 }
 
 // checkStrengthRecords checks for strength PRs and persists them to Firestore
-func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, activity *pb.StandardizedActivity, userID string) ([]NewPRResult, error) {
+func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, userID string) ([]NewPRResult, error) {
 	var results []NewPRResult
 
 	// Group sets by normalized exercise name
@@ -241,7 +241,7 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, acti
 			recordType := exerciseName + string(Suffix1RM)
 			pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, data.Best1RM, "kg", activity, false)
 			if err != nil {
-				slog.Warn("Failed to check 1RM record", "error", err, "exercise", exerciseName)
+				logger.Warn("Failed to check 1RM record", "error", err, "exercise", exerciseName)
 			} else if pr != nil {
 				results = append(results, *pr)
 			}
@@ -252,7 +252,7 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, acti
 			recordType := exerciseName + string(SuffixVolume)
 			pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, data.TotalVolume, "kg", activity, false)
 			if err != nil {
-				slog.Warn("Failed to check volume record", "error", err, "exercise", exerciseName)
+				logger.Warn("Failed to check volume record", "error", err, "exercise", exerciseName)
 			} else if pr != nil {
 				results = append(results, *pr)
 			}
@@ -263,7 +263,7 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, acti
 			recordType := exerciseName + string(SuffixReps)
 			pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, float64(data.MaxReps), "reps", activity, false)
 			if err != nil {
-				slog.Warn("Failed to check reps record", "error", err, "exercise", exerciseName)
+				logger.Warn("Failed to check reps record", "error", err, "exercise", exerciseName)
 			} else if pr != nil {
 				results = append(results, *pr)
 			}

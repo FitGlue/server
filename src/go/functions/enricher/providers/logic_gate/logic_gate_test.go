@@ -3,6 +3,7 @@ package logic_gate
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -20,7 +21,7 @@ func TestLogicGate_AllMatchContinue(t *testing.T) {
 	cfgBytes, _ := json.Marshal(cfg)
 	inputs := map[string]string{"logic_config": string(cfgBytes)}
 	act := &pb.StandardizedActivity{Type: pb.ActivityType_ACTIVITY_TYPE_RUN, StartTime: timestamppb.New(time.Now())}
-	res, err := NewLogicGateProvider().Enrich(context.Background(), act, nil, inputs, false)
+	res, err := NewLogicGateProvider().Enrich(context.Background(), slog.Default(), act, nil, inputs, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -42,7 +43,7 @@ func TestLogicGate_NegatedTimeHalt(t *testing.T) {
 	// activity at 10:00
 	start := time.Date(2026, 1, 18, 10, 0, 0, 0, time.UTC)
 	act := &pb.StandardizedActivity{StartTime: timestamppb.New(start)}
-	res, err := NewLogicGateProvider().Enrich(context.Background(), act, nil, inputs, false)
+	res, err := NewLogicGateProvider().Enrich(context.Background(), slog.Default(), act, nil, inputs, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -61,7 +62,7 @@ func TestLogicGate_AnyMatchContinue(t *testing.T) {
 	cfgBytes, _ := json.Marshal(cfg)
 	inputs := map[string]string{"logic_config": string(cfgBytes)}
 	act := &pb.StandardizedActivity{Name: "Morning Run", Type: pb.ActivityType_ACTIVITY_TYPE_RUN, StartTime: timestamppb.New(time.Now())}
-	res, err := NewLogicGateProvider().Enrich(context.Background(), act, nil, inputs, false)
+	res, err := NewLogicGateProvider().Enrich(context.Background(), slog.Default(), act, nil, inputs, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -80,7 +81,7 @@ func TestLogicGate_NoneMatchContinue(t *testing.T) {
 	cfgBytes, _ := json.Marshal(cfg)
 	inputs := map[string]string{"logic_config": string(cfgBytes)}
 	act := &pb.StandardizedActivity{Type: pb.ActivityType_ACTIVITY_TYPE_RUN, StartTime: timestamppb.New(time.Now())}
-	res, err := NewLogicGateProvider().Enrich(context.Background(), act, nil, inputs, false)
+	res, err := NewLogicGateProvider().Enrich(context.Background(), slog.Default(), act, nil, inputs, false)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

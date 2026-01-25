@@ -71,7 +71,7 @@ type ProviderExecution struct {
 }
 
 // Process executes the enrichment pipelines for the activity
-func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload, parentExecutionID string, basePipelineExecutionID string, doNotRetry bool) (*ProcessResult, error) {
+func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload *pb.ActivityPayload, parentExecutionID string, basePipelineExecutionID string, doNotRetry bool) (*ProcessResult, error) {
 	// 1. Fetch User Config
 	userRec, err := o.database.GetUser(ctx, payload.UserId)
 	if err != nil {
@@ -82,17 +82,17 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 	if tier.ShouldResetSyncCount(userRec) {
 		// Reset monthly counter
 		if err := o.database.ResetSyncCount(ctx, payload.UserId); err != nil {
-			slog.Warn("Failed to reset sync count", "error", err, "userId", payload.UserId)
+			logger.Warn("Failed to reset sync count", "error", err, "userId", payload.UserId)
 		}
 		userRec.SyncCountThisMonth = 0
 	}
 
 	allowed, reason := tier.CanSync(userRec)
 	if !allowed {
-		slog.Info("Sync blocked by tier limit", "userId", payload.UserId, "reason", reason)
+		logger.Info("Sync blocked by tier limit", "userId", payload.UserId, "reason", reason)
 		// Track prevented sync
 		if err := o.database.IncrementPreventedSyncCount(ctx, payload.UserId); err != nil {
-			slog.Warn("Failed to increment prevented sync count", "error", err, "userId", payload.UserId)
+			logger.Warn("Failed to increment prevented sync count", "error", err, "userId", payload.UserId)
 		}
 		return &ProcessResult{
 			Events:             []*pb.EnrichedActivityEvent{},
@@ -106,17 +106,17 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		return nil, fmt.Errorf("standardized activity is nil")
 	}
 	if len(payload.StandardizedActivity.Sessions) != 1 {
-		slog.Error("Activity does not have exactly one session", "count", len(payload.StandardizedActivity.Sessions))
+		logger.Error("Activity does not have exactly one session", "count", len(payload.StandardizedActivity.Sessions))
 		return nil, fmt.Errorf("multiple sessions not supported")
 	}
 	if payload.StandardizedActivity.Sessions[0].TotalElapsedTime == 0 {
-		slog.Error("Activity session has 0 elapsed time")
+		logger.Error("Activity session has 0 elapsed time")
 		return nil, fmt.Errorf("session total elapsed time is 0")
 	}
 
 	// 2. Resolve Pipelines
-	pipelines := o.resolvePipelines(payload.Source, userRec)
-	slog.Info("Resolved pipelines", "count", len(pipelines), "source", payload.Source)
+	pipelines := o.resolvePipelines(payload.Source, userRec, logger)
+	logger.Info("Resolved pipelines", "count", len(pipelines), "source", payload.Source)
 
 	// 2.1 Handle Resume Mode
 	// If is_resume=true, we're resuming after a pending input was resolved
@@ -125,7 +125,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 	useUpdateMethod := payload.UseUpdateMethod
 
 	if isResumeMode {
-		slog.Info("Resume mode activated",
+		logger.Info("Resume mode activated",
 			"resume_only_enrichers", resumeOnlyEnrichers,
 			"use_update_method", useUpdateMethod,
 			"resume_pending_input_id", payload.ResumePendingInputId)
@@ -161,7 +161,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 	for _, pipeline := range pipelines {
 		// Generate unique per-pipeline execution ID for trace isolation
 		pipelineExecutionID := fmt.Sprintf("%s-%s", basePipelineExecutionID, pipeline.ID)
-		slog.Info("Executing pipeline", "id", pipeline.ID, "pipelineExecutionId", pipelineExecutionID)
+		logger.Info("Executing pipeline", "id", pipeline.ID, "pipelineExecutionId", pipelineExecutionID)
 
 		// 3a. Execute Enrichers Sequentially
 		configs := pipeline.Enrichers
@@ -187,7 +187,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			// Lookup by Type
 			provider, ok = o.providersByType[cfg.ProviderType]
 			if !ok {
-				slog.Warn("Provider not found for type", "type", cfg.ProviderType)
+				logger.Warn("Provider not found for type", "type", cfg.ProviderType)
 				providerExecs = append(providerExecs, ProviderExecution{
 					ProviderName: fmt.Sprintf("TYPE:%s", cfg.ProviderType),
 					Status:       "SKIPPED",
@@ -198,7 +198,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 			// Skip temporarily unavailable enrichers
 			if temporarilyUnavailableEnrichers[cfg.ProviderType] {
-				slog.Info("Skipping temporarily unavailable enricher", "type", cfg.ProviderType, "name", provider.Name())
+				logger.Info("Skipping temporarily unavailable enricher", "type", cfg.ProviderType, "name", provider.Name())
 				providerExecs = append(providerExecs, ProviderExecution{
 					ProviderName: provider.Name(),
 					Status:       "SKIPPED",
@@ -218,7 +218,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 					}
 				}
 				if !shouldRun {
-					slog.Debug("Skipping enricher in resume mode", "name", provider.Name())
+					logger.Debug("Skipping enricher in resume mode", "name", provider.Name())
 					providerExecs = append(providerExecs, ProviderExecution{
 						ProviderName: provider.Name(),
 						Status:       "SKIPPED",
@@ -245,12 +245,14 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 
 			// Execute
-			res, err := provider.Enrich(ctx, currentActivity, userRec, enricherConfig, doNotRetry)
+			// TODO: Get logger from FrameworkContext when orchestrator is refactored
+			providerLogger := slog.Default().With("provider", provider.Name())
+			res, err := provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
 			duration := time.Since(startTime).Milliseconds()
 			pe.DurationMs = duration
 
 			if err != nil {
-				slog.Error(fmt.Sprintf("Provider failed: %v", provider.Name()), "name", provider.Name(), "error", err, "duration_ms", duration, "execution_id", execID)
+				logger.Error(fmt.Sprintf("Provider failed: %v", provider.Name()), "name", provider.Name(), "error", err, "duration_ms", duration, "execution_id", execID)
 				// Check for retryable/wait errors
 				if retryErr, ok := err.(*providers.RetryableError); ok {
 					pe.Status = "RETRY"
@@ -273,7 +275,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 						"required_fields": strings.Join(waitErr.RequiredFields, ","),
 					}
 					providerExecs = append(providerExecs, pe)
-					return o.handleWaitError(ctx, payload, append(allProviderExecutions, providerExecs...), waitErr)
+					return o.handleWaitError(ctx, logger, payload, append(allProviderExecutions, providerExecs...), waitErr)
 				}
 
 				pe.Status = "FAILED"
@@ -288,7 +290,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			}
 
 			if res == nil {
-				slog.Warn(fmt.Sprintf("Provider returned nil result: %v", provider.Name()), "name", provider.Name())
+				logger.Warn(fmt.Sprintf("Provider returned nil result: %v", provider.Name()), "name", provider.Name())
 				pe.Status = "SKIPPED"
 				pe.Error = "nil result"
 				providerExecs = append(providerExecs, pe)
@@ -297,7 +299,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 
 			// Check if provider wants to halt the pipeline
 			if res.HaltPipeline {
-				slog.Info(fmt.Sprintf("Provider halted pipeline: %v", provider.Name()), "name", provider.Name(), "reason", res.HaltReason)
+				logger.Info(fmt.Sprintf("Provider halted pipeline: %v", provider.Name()), "name", provider.Name(), "reason", res.HaltReason)
 				pe.Status = "SKIPPED"
 				pe.Metadata = res.Metadata
 				if res.HaltReason != "" {
@@ -319,7 +321,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			results[i] = res
 			providerExecs = append(providerExecs, pe)
 
-			slog.Info(fmt.Sprintf("Provider completed: %v", provider.Name()), "name", provider.Name(), "duration_ms", duration, "execution_id", execID)
+			logger.Info(fmt.Sprintf("Provider completed: %v", provider.Name()), "name", provider.Name(), "duration_ms", duration, "execution_id", execID)
 
 			// Apply changes to currentActivity immediately so next provider sees them
 			if res.Name != "" {
@@ -336,7 +338,7 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 			}
 
 			// Apply description immediately (append with separator if not empty)
-			slog.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name(), "description", res.Description)
+			logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name(), "description", res.Description)
 			if res.Description != "" {
 				trimmed := strings.TrimSpace(res.Description)
 				if trimmed != "" {
@@ -407,11 +409,12 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		brandingApplied := false
 		// Run branding provider last (only for Hobbyist tier)
 		if brandingProvider, ok := o.providersByName["branding"]; ok && tier.GetEffectiveTier(userRec) == tier.TierHobbyist {
-			brandingRes, err := brandingProvider.Enrich(ctx, currentActivity, userRec, map[string]string{}, doNotRetry)
+			brandingLogger := slog.Default().With("provider", "branding")
+			brandingRes, err := brandingProvider.Enrich(ctx, brandingLogger, currentActivity, userRec, map[string]string{}, doNotRetry)
 			if err != nil {
-				slog.Warn("Branding provider failed", "error", err)
+				logger.Warn("Branding provider failed", "error", err)
 			} else if brandingRes != nil && brandingRes.Description != "" {
-				slog.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", brandingProvider.Name(), len(brandingRes.Description)), "name", brandingProvider.Name(), "description", brandingRes.Description)
+				logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", brandingProvider.Name(), len(brandingRes.Description)), "name", brandingProvider.Name(), "description", brandingRes.Description)
 				trimmed := strings.TrimSpace(brandingRes.Description)
 				if trimmed != "" {
 					if descriptionBuilder.Len() > 0 {
@@ -477,11 +480,11 @@ func (o *Orchestrator) Process(ctx context.Context, payload *pb.ActivityPayload,
 		// Generate FIT file artifact
 		fitBytes, err := fit.GenerateFitFile(currentActivity)
 		if err != nil {
-			slog.Error("Failed to generate FIT file", "error", err) // Don't fail the whole event, just log
+			logger.Error("Failed to generate FIT file", "error", err) // Don't fail the whole event, just log
 		} else if len(fitBytes) > 0 {
 			objName := fmt.Sprintf("activities/%s/%s.fit", payload.UserId, finalEvent.ActivityId)
 			if err := o.storage.Write(ctx, o.bucketName, objName, fitBytes); err != nil {
-				slog.Error("Failed to write FIT file artifact", "error", err)
+				logger.Error("Failed to write FIT file artifact", "error", err)
 			} else {
 				finalEvent.FitFileUri = fmt.Sprintf("gs://%s/%s", o.bucketName, objName)
 			}
@@ -508,21 +511,21 @@ type configuredEnricher struct {
 	TypedConfig  map[string]string
 }
 
-func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.UserRecord) []configuredPipeline {
+func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.UserRecord, logger *slog.Logger) []configuredPipeline {
 	var pipelines []configuredPipeline
 	sourceName := source.String()
 
 	// Query pipelines from sub-collection
 	userPipelines, err := o.database.GetUserPipelines(context.Background(), userRec.UserId)
 	if err != nil {
-		slog.Error("Failed to get user pipelines", "error", err, "user_id", userRec.UserId)
+		logger.Error("Failed to get user pipelines", "error", err, "user_id", userRec.UserId)
 		return pipelines
 	}
 
 	for _, p := range userPipelines {
 		// Skip disabled pipelines
 		if p.Disabled {
-			slog.Info("Skipping disabled pipeline", "id", p.Id, "name", p.Name, "source", p.Source)
+			logger.Info("Skipping disabled pipeline", "id", p.Id, "name", p.Name, "source", p.Source)
 			continue
 		}
 
@@ -546,8 +549,8 @@ func (o *Orchestrator) resolvePipelines(source pb.ActivitySource, userRec *pb.Us
 	return pipelines
 }
 
-func (o *Orchestrator) handleWaitError(ctx context.Context, payload *pb.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError) (*ProcessResult, error) {
-	slog.Warn("Provider requested user input", "activity_id", waitErr.ActivityID)
+func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pb.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError) (*ProcessResult, error) {
+	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID)
 	// Create Pending Input in DB
 	pi := &pb.PendingInput{
 		ActivityId:      waitErr.ActivityID,
@@ -559,7 +562,7 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, payload *pb.Activity
 		UpdatedAt:       timestamppb.Now(),
 	}
 	if err := o.database.CreatePendingInput(ctx, pi); err != nil {
-		slog.Warn("Failed to create pending input (might already exist)", "error", err)
+		logger.Warn("Failed to create pending input (might already exist)", "error", err)
 	}
 
 	// Trigger Push Notification
@@ -574,7 +577,7 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, payload *pb.Activity
 				"type":        "PENDING_INPUT",
 			}
 			if err := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); err != nil {
-				slog.Error("Failed to send push notification", "error", err, "user_id", payload.UserId)
+				logger.Error("Failed to send push notification", "error", err, "user_id", payload.UserId)
 			}
 		}
 	}

@@ -1,6 +1,7 @@
 package providers
 
 import (
+	"log/slog"
 	"testing"
 	"time"
 )
@@ -18,7 +19,7 @@ func TestAlignTimeSeries_PerfectMatch(t *testing.T) {
 		hrSamples[i] = TimedSample{Timestamp: ts, Value: 120 + i}
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -63,7 +64,7 @@ func TestAlignTimeSeries_SmallDrift_0_5_Percent(t *testing.T) {
 		}
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -113,7 +114,7 @@ func TestAlignTimeSeries_LargeDrift_2_Percent(t *testing.T) {
 		}
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -157,7 +158,7 @@ func TestAlignTimeSeries_OffsetStart(t *testing.T) {
 		}
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -193,7 +194,7 @@ func TestAlignTimeSeries_MissingStartHR(t *testing.T) {
 		}
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -228,7 +229,7 @@ func TestAlignTimeSeries_MissingEndHR(t *testing.T) {
 		}
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -251,7 +252,7 @@ func TestAlignTimeSeries_EmptyHR(t *testing.T) {
 		gpsTimestamps[i] = baseTime.Add(time.Duration(i) * time.Second)
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, []TimedSample{}, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, []TimedSample{}, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -283,7 +284,7 @@ func TestAlignTimeSeries_EmptyGPS(t *testing.T) {
 		}
 	}
 
-	result, err := AlignTimeSeries([]time.Time{}, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries([]time.Time{}, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -368,7 +369,7 @@ func TestAlignTimeSeries_Gaps(t *testing.T) {
 		})
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -489,7 +490,7 @@ func TestAlignTimeSeries_RealWorldDrift(t *testing.T) {
 		}
 	}
 
-	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig)
+	result, err := AlignTimeSeries(gpsTimestamps, hrSamples, DefaultAlignmentConfig, slog.Default())
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}

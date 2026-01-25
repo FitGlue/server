@@ -49,10 +49,11 @@ type MuscleScore struct {
 	Color      string   // Hex color
 }
 
-func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("muscle_heatmap_image: starting", "activity_name", activity.Name)
 	// Tier check - Athlete only
 	if tier.GetEffectiveTier(user) != tier.TierAthlete {
-		slog.Info("Skipping muscle heatmap image - Athlete tier required")
+		logger.Info("Skipping muscle heatmap image - Athlete tier required")
 		return &providers.EnrichmentResult{}, nil
 	}
 
@@ -114,7 +115,7 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, activity *pb.St
 
 		objectPath := fmt.Sprintf("%s/muscle-heatmap.svg", assetFolderID)
 		if err := p.service.Store.Write(ctx, bucketName, objectPath, []byte(svgContent)); err != nil {
-			slog.Warn("Failed to store SVG asset", "error", err)
+			logger.Warn("Failed to store SVG asset", "error", err)
 		} else {
 			// Build URL using custom domain if configured, otherwise raw GCS URL
 			// ASSETS_BASE_URL should be set per environment:

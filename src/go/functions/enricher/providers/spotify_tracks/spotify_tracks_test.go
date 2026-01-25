@@ -2,6 +2,7 @@ package spotify_tracks
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -46,7 +47,7 @@ func TestSpotifyTracks_IntegrationDisabled(t *testing.T) {
 		},
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, user, map[string]string{}, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, map[string]string{}, false)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -94,7 +95,7 @@ func TestSpotifyTracks_NoTracksPlayed(t *testing.T) {
 		},
 	}
 
-	result, err := provider.EnrichWithClient(context.Background(), activity, user, map[string]string{}, mockClient, false)
+	result, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, map[string]string{}, mockClient, false)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}
@@ -179,7 +180,7 @@ func TestSpotifyTracks_SuccessfulEnrichment(t *testing.T) {
 		},
 	}
 
-	result, err := provider.EnrichWithClient(context.Background(), activity, user, map[string]string{}, mockClient, false)
+	result, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, map[string]string{}, mockClient, false)
 	if err != nil {
 		t.Fatalf("Expected no error, got %v", err)
 	}

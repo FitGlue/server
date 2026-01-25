@@ -2,6 +2,7 @@ package user_input
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -24,7 +25,7 @@ func TestUserInput_Enrich(t *testing.T) {
 		activity := &pb.StandardizedActivity{Source: "HEVY", ExternalId: "123"}
 		inputs := map[string]string{}
 
-		_, err := provider.Enrich(ctx, activity, nil, inputs, false)
+		_, err := provider.Enrich(ctx, slog.Default(), activity, nil, inputs, false)
 
 		if err == nil {
 			t.Fatal("Expected error, got nil")
@@ -52,7 +53,7 @@ func TestUserInput_Enrich(t *testing.T) {
 
 		activity := &pb.StandardizedActivity{Source: "HEVY", ExternalId: "123"}
 
-		_, err := provider.Enrich(ctx, activity, nil, nil, false)
+		_, err := provider.Enrich(ctx, slog.Default(), activity, nil, nil, false)
 		if err == nil {
 			t.Fatal("Expected error, got nil")
 		}
@@ -79,7 +80,7 @@ func TestUserInput_Enrich(t *testing.T) {
 
 		activity := &pb.StandardizedActivity{Source: "HEVY", ExternalId: "123"}
 
-		res, err := provider.Enrich(ctx, activity, nil, nil, false)
+		res, err := provider.Enrich(ctx, slog.Default(), activity, nil, nil, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}

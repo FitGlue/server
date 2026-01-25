@@ -2,6 +2,7 @@ package virtual_gps
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"testing"
 	"time"
@@ -33,7 +34,7 @@ func TestVirtualGPS_GeneratesDescription(t *testing.T) {
 		"route": "london",
 	}
 
-	result, err := provider.Enrich(context.Background(), activity, &pb.UserRecord{}, config, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, &pb.UserRecord{}, config, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}

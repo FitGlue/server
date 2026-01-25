@@ -39,7 +39,7 @@ func (p *Weather) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER
 }
 
-func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *Weather) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Extract GPS coordinates from first record
 	var latitude, longitude float64
 	var hasGPS bool
@@ -64,7 +64,7 @@ func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity,
 	}
 
 	if !hasGPS {
-		slog.Info("No GPS data found for weather enricher, skipping")
+		logger.Info("No GPS data found for weather enricher, skipping")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"weather_status": "skipped",
@@ -83,7 +83,7 @@ func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity,
 		latitude, longitude, dateStr, dateStr,
 	)
 
-	slog.Info("Fetching weather data",
+	logger.Info("Fetching weather data",
 		"latitude", latitude,
 		"longitude", longitude,
 		"date", dateStr,
@@ -92,21 +92,21 @@ func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity,
 
 	resp, err := http.Get(url)
 	if err != nil {
-		slog.Error("Failed to fetch weather data", "error", err)
+		logger.Error("Failed to fetch weather data", "error", err)
 		return nil, &providers.RetryableError{Err: fmt.Errorf("weather API request failed: %w", err)}
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		slog.Error("Weather API returned non-200 status", "status", resp.StatusCode, "body", string(body))
+		logger.Error("Weather API returned non-200 status", "status", resp.StatusCode, "body", string(body))
 		return nil, &providers.RetryableError{Err: fmt.Errorf("weather API returned status %d", resp.StatusCode)}
 	}
 
 	// Parse response
 	var weatherResp OpenMeteoResponse
 	if err := json.NewDecoder(resp.Body).Decode(&weatherResp); err != nil {
-		slog.Error("Failed to decode weather response", "error", err)
+		logger.Error("Failed to decode weather response", "error", err)
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"weather_status": "skipped",
@@ -118,7 +118,7 @@ func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity,
 	// Find closest hourly data to activity start time
 	closestIdx := findClosestHourIndex(weatherResp.Hourly.Time, startTime)
 	if closestIdx == -1 || closestIdx >= len(weatherResp.Hourly.Temperature) {
-		slog.Warn("No weather data found for activity time")
+		logger.Warn("No weather data found for activity time")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"weather_status": "skipped",
@@ -152,7 +152,7 @@ func (p *Weather) Enrich(ctx context.Context, activity *pb.StandardizedActivity,
 			temperature, weatherDesc)
 	}
 
-	slog.Info("Weather summary generated",
+	logger.Info("Weather summary generated",
 		"temperature", temperature,
 		"weather_code", weatherCode,
 		"weather_desc", weatherDesc,

@@ -34,7 +34,12 @@ func (p *HeartRateSummary) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY
 }
 
-func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("heart_rate_summary: starting",
+		"activity_name", activity.Name,
+		"session_count", len(activity.Sessions),
+	)
+
 	// Collect all heart rate values from the activity
 	var heartRates []int32
 
@@ -49,7 +54,7 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.Standardized
 	}
 
 	if len(heartRates) == 0 {
-		slog.Info("No heart rate data found for heart rate summary enricher")
+		logger.Debug("heart_rate_summary: skipping - no heart rate data found")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"hr_summary_status": "skipped",
@@ -74,7 +79,7 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, activity *pb.Standardized
 
 	avgHR := float64(sumHR) / float64(len(heartRates))
 
-	slog.Info("Heart rate summary calculated",
+	logger.Info("Heart rate summary calculated",
 		"min_hr", minHR,
 		"avg_hr", avgHR,
 		"max_hr", maxHR,

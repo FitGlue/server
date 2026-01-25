@@ -2,6 +2,7 @@ package power_summary
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -38,7 +39,7 @@ func TestPowerSummary_Enrich_Success(t *testing.T) {
 
 	user := &pb.UserRecord{UserId: "test-user"}
 
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}
@@ -95,7 +96,7 @@ func TestPowerSummary_Enrich_NoPowerData(t *testing.T) {
 
 	user := &pb.UserRecord{UserId: "test-user"}
 
-	result, err := provider.Enrich(context.Background(), activity, user, nil, false)
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
 	if err != nil {
 		t.Fatalf("Enrich failed: %v", err)
 	}

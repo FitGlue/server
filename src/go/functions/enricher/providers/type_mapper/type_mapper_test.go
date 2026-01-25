@@ -2,6 +2,7 @@ package type_mapper
 
 import (
 	"context"
+	"log/slog"
 	"testing"
 
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
@@ -91,7 +92,7 @@ func TestTypeMapperProvider_Enrich(t *testing.T) {
 				config["type_rules"] = tt.typeRules
 			}
 
-			res, err := provider.Enrich(ctx, act, nil, config, false)
+			res, err := provider.Enrich(ctx, slog.Default(), act, nil, config, false)
 			if err != nil {
 				t.Fatalf("Enrich failed: %v", err)
 			}

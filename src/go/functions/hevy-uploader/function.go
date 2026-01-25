@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"sync"
 	"time"
@@ -41,7 +40,7 @@ func initService(ctx context.Context) (*bootstrap.Service, error) {
 	svcOnce.Do(func() {
 		baseSvc, err := bootstrap.NewService(ctx)
 		if err != nil {
-			slog.Error("Failed to initialize service", "error", err)
+			// Error returned to caller
 			svcErr = err
 			return
 		}

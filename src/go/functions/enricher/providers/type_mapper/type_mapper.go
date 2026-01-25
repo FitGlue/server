@@ -3,6 +3,7 @@ package type_mapper
 import (
 	"context"
 	"encoding/json"
+	"log/slog"
 	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -34,7 +35,14 @@ type TypeMapperRule struct {
 	TargetType string `json:"target_type"`
 }
 
-func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *TypeMapperProvider) Enrich(ctx context.Context, logger *slog.Logger, act *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("type_mapper: starting",
+		"activity_type", act.Type.String(),
+		"activity_title", act.Name,
+		"has_type_rules", inputConfig["type_rules"] != "",
+		"has_rules", inputConfig["rules"] != "",
+	)
+
 	var rules []TypeMapperRule
 
 	// Check for type_rules JSON map (from web UI: {"title substring": "ACTIVITY_TYPE_..."})
@@ -50,6 +58,13 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 					})
 				}
 			}
+			logger.Debug("type_mapper: parsed type_rules",
+				"rule_count", len(rules),
+			)
+		} else {
+			logger.Debug("type_mapper: failed to parse type_rules JSON",
+				"error", err.Error(),
+			)
 		}
 	}
 
@@ -59,11 +74,16 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 		var jsonRules []TypeMapperRule
 		if err := json.Unmarshal([]byte(rulesJson), &jsonRules); err == nil {
 			rules = append(rules, jsonRules...)
+			logger.Debug("type_mapper: parsed rules array",
+				"additional_rules", len(jsonRules),
+				"total_rules", len(rules),
+			)
 		}
 	}
 
 	// No rules configured, nothing to do
 	if len(rules) == 0 {
+		logger.Debug("type_mapper: skipping - no rules configured")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_rules_configured"},
 		}, nil
@@ -72,6 +92,7 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 	// Get the current activity title
 	activityTitle := act.Name
 	if activityTitle == "" {
+		logger.Debug("type_mapper: skipping - no activity title")
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{"status": "skipped", "reason": "no_activity_title"},
 		}, nil
@@ -81,8 +102,14 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 	originalType := act.Type
 	originalTypeName := activity.GetStravaActivityType(originalType)
 
+	logger.Debug("type_mapper: checking rules against title",
+		"title", activityTitle,
+		"original_type", originalTypeName,
+		"rule_count", len(rules),
+	)
+
 	// Check each rule - first match wins
-	for _, rule := range rules {
+	for i, rule := range rules {
 		if rule.Substring == "" {
 			continue
 		}
@@ -92,6 +119,12 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 			newType := activity.ParseActivityTypeFromString(rule.TargetType)
 			if newType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
 				act.Type = newType
+				logger.Debug("type_mapper: matched rule - changing type",
+					"rule_index", i,
+					"matched_substring", rule.Substring,
+					"original_type", originalTypeName,
+					"new_type", activity.GetStravaActivityType(newType),
+				)
 				return &providers.EnrichmentResult{
 					Metadata: map[string]string{
 						"original_type":   originalTypeName,
@@ -100,11 +133,21 @@ func (p *TypeMapperProvider) Enrich(ctx context.Context, act *pb.StandardizedAct
 						"matched_pattern": rule.Substring,
 					},
 				}, nil
+			} else {
+				logger.Debug("type_mapper: rule matched but target type invalid",
+					"rule_index", i,
+					"matched_substring", rule.Substring,
+					"target_type", rule.TargetType,
+				)
 			}
 		}
 	}
 
 	// No matching rule found
+	logger.Debug("type_mapper: no rules matched",
+		"title", activityTitle,
+		"rules_checked", len(rules),
+	)
 	return &providers.EnrichmentResult{
 		Metadata: map[string]string{"status": "skipped", "reason": "no_matching_rule", "title": activityTitle},
 	}, nil

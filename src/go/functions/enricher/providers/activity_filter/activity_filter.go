@@ -3,6 +3,7 @@ package activity_filter
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -29,7 +30,12 @@ func (p *ActivityFilterProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER
 }
 
-func (p *ActivityFilterProvider) Enrich(ctx context.Context, act *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+func (p *ActivityFilterProvider) Enrich(ctx context.Context, logger *slog.Logger, act *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	logger.Debug("activity_filter: starting",
+		"activity_type", act.Type.String(),
+		"activity_name", act.Name,
+	)
+
 	// Check exclude_activity_types
 	if excludeTypes := inputs["exclude_activity_types"]; excludeTypes != "" {
 		actType := act.Type.String()
@@ -38,6 +44,9 @@ func (p *ActivityFilterProvider) Enrich(ctx context.Context, act *pb.Standardize
 			// Match by name (e.g., "WALK", "YOGA") or full enum name
 			if strings.EqualFold(t, actType) ||
 				strings.EqualFold("ACTIVITY_TYPE_"+t, actType) {
+				logger.Debug("activity_filter: halting - activity type excluded",
+					"excluded_type", t,
+				)
 				return &providers.EnrichmentResult{
 					HaltPipeline: true,
 					HaltReason:   fmt.Sprintf("Activity type %s is excluded", actType),
