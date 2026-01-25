@@ -224,6 +224,8 @@ func checkExistingActivity(ctx context.Context, fwCtx *framework.FrameworkContex
 
 // handleHevyUpdate updates an existing workout in Hevy (PUT /v1/workouts/{workoutId})
 // Used in resume mode for delayed enrichment or when activity already exists
+// CRITICAL: Hevy PUT API requires the FULL workout payload (same as POST), not partial updates.
+// We must GET the existing workout, merge only title/description, then PUT the entire workout back.
 func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActivityEvent, workoutID string, fwCtx *framework.FrameworkContext) (interface{}, error) {
 	fwCtx.Logger.Info("Starting Hevy UPDATE",
 		"workoutId", workoutID,
@@ -231,7 +233,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 	client := oauth.NewClientWithErrorLogging(fwCtx.Logger, "hevy", 30*time.Second)
 
-	// 1. GET current workout from Hevy to get existing description
+	// 1. GET the FULL current workout from Hevy (including exercises)
 	getURL := fmt.Sprintf("https://api.hevyapp.com/v1/workouts/%s", workoutID)
 	getReq, err := http.NewRequestWithContext(ctx, "GET", getURL, nil)
 	if err != nil {
@@ -251,23 +253,67 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		return nil, fmt.Errorf("GET workout failed: status %d, body: %s", getResp.StatusCode, errorBody.String())
 	}
 
-	var existingWorkout struct {
-		ID          string `json:"id"`
-		Title       string `json:"title"`
-		Description string `json:"description"`
+	// Parse the FULL workout response including exercises
+	// Using a struct that matches the Hevy API GET response
+	type HevySet struct {
+		CustomMetric    *float32 `json:"custom_metric"`
+		DistanceMeters  *float32 `json:"distance_meters"`
+		DurationSeconds *float32 `json:"duration_seconds"`
+		Index           *float32 `json:"index,omitempty"`
+		Reps            *float32 `json:"reps"`
+		Rpe             *float32 `json:"rpe"`
+		Type            *string  `json:"type,omitempty"`
+		WeightKg        *float32 `json:"weight_kg"`
 	}
+	type HevyExercise struct {
+		ExerciseTemplateId *string    `json:"exercise_template_id,omitempty"`
+		Index              *float32   `json:"index,omitempty"`
+		Notes              *string    `json:"notes,omitempty"`
+		Sets               *[]HevySet `json:"sets,omitempty"`
+		SupersetId         *float32   `json:"superset_id"`
+		Title              *string    `json:"title,omitempty"`
+	}
+	type HevyWorkoutFull struct {
+		ID          *string         `json:"id,omitempty"`
+		Title       *string         `json:"title,omitempty"`
+		Description *string         `json:"description,omitempty"`
+		StartTime   *string         `json:"start_time,omitempty"`
+		EndTime     *string         `json:"end_time,omitempty"`
+		IsPrivate   *bool           `json:"is_private,omitempty"`
+		Exercises   *[]HevyExercise `json:"exercises,omitempty"`
+		RoutineId   *string         `json:"routine_id,omitempty"`
+		CreatedAt   *string         `json:"created_at,omitempty"`
+		UpdatedAt   *string         `json:"updated_at,omitempty"`
+	}
+
+	var existingWorkout HevyWorkoutFull
 	if err := json.NewDecoder(getResp.Body).Decode(&existingWorkout); err != nil {
 		return nil, fmt.Errorf("failed to decode existing workout: %w", err)
 	}
 
+	existingTitle := ""
+	if existingWorkout.Title != nil {
+		existingTitle = *existingWorkout.Title
+	}
+	existingDesc := ""
+	if existingWorkout.Description != nil {
+		existingDesc = *existingWorkout.Description
+	}
+
+	exerciseCount := 0
+	if existingWorkout.Exercises != nil {
+		exerciseCount = len(*existingWorkout.Exercises)
+	}
+
 	fwCtx.Logger.Debug("Fetched existing Hevy workout",
 		"workoutId", workoutID,
-		"existingTitle", existingWorkout.Title,
-		"existingDescLength", len(existingWorkout.Description))
+		"existingTitle", existingTitle,
+		"existingDescLength", len(existingDesc),
+		"exerciseCount", exerciseCount)
 
 	// 2. Merge description: use DESTINATION's description as base (fetched via GET above)
 	// then apply section replacement with the enricher's new content
-	mergedDescription := existingWorkout.Description // From destination API, NOT event
+	mergedDescription := existingDesc // From destination API, NOT event
 	if event.Description != "" {
 		// Check for section header in metadata (signals replaceable section)
 		sectionHeader := ""
@@ -290,17 +336,19 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		}
 	}
 
-	// 3. Build update payload
-	updateBody := map[string]interface{}{}
-	if event.Name != "" && event.Name != existingWorkout.Title {
-		updateBody["title"] = event.Name
+	// 3. Determine what changed (for logging/response only)
+	updatedFields := map[string]interface{}{}
+	newTitle := existingTitle
+	if event.Name != "" && event.Name != existingTitle {
+		newTitle = event.Name
+		updatedFields["title"] = event.Name
 	}
-	if mergedDescription != existingWorkout.Description {
-		updateBody["description"] = mergedDescription
+	if mergedDescription != existingDesc {
+		updatedFields["description"] = "updated"
 	}
 
 	// If no changes, skip the PUT
-	if len(updateBody) == 0 {
+	if len(updatedFields) == 0 {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
 		return map[string]interface{}{
 			"status":         "SUCCESS",
@@ -315,12 +363,105 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		}, nil
 	}
 
-	// 4. PUT to Hevy
-	bodyJSON, err := json.Marshal(updateBody)
+	// 4. Build the FULL workout payload for PUT (Hevy requires complete workout, not partial)
+	// Convert exercises from GET response format to POST/PUT request format
+	type PutSet struct {
+		CustomMetric    *float32 `json:"custom_metric"`
+		DistanceMeters  *int     `json:"distance_meters"`
+		DurationSeconds *int     `json:"duration_seconds"`
+		Reps            *int     `json:"reps"`
+		Rpe             *float32 `json:"rpe"`
+		Type            *string  `json:"type,omitempty"`
+		WeightKg        *float32 `json:"weight_kg"`
+	}
+	type PutExercise struct {
+		ExerciseTemplateId *string   `json:"exercise_template_id,omitempty"`
+		Notes              *string   `json:"notes"`
+		Sets               *[]PutSet `json:"sets,omitempty"`
+		SupersetId         *int      `json:"superset_id"`
+	}
+	type PutWorkout struct {
+		Title       *string        `json:"title,omitempty"`
+		Description *string        `json:"description"`
+		StartTime   *string        `json:"start_time,omitempty"`
+		EndTime     *string        `json:"end_time,omitempty"`
+		IsPrivate   *bool          `json:"is_private,omitempty"`
+		Exercises   *[]PutExercise `json:"exercises,omitempty"`
+	}
+	type PutWorkoutRequest struct {
+		Workout *PutWorkout `json:"workout,omitempty"`
+	}
+
+	// Convert exercises from GET format to PUT format
+	var putExercises []PutExercise
+	if existingWorkout.Exercises != nil {
+		for _, ex := range *existingWorkout.Exercises {
+			var putSets []PutSet
+			if ex.Sets != nil {
+				for _, s := range *ex.Sets {
+					putSet := PutSet{
+						CustomMetric: s.CustomMetric,
+						Rpe:          s.Rpe,
+						Type:         s.Type,
+						WeightKg:     s.WeightKg,
+					}
+					// Convert float32 pointers to int pointers (API schema difference)
+					if s.DistanceMeters != nil {
+						v := int(*s.DistanceMeters)
+						putSet.DistanceMeters = &v
+					}
+					if s.DurationSeconds != nil {
+						v := int(*s.DurationSeconds)
+						putSet.DurationSeconds = &v
+					}
+					if s.Reps != nil {
+						v := int(*s.Reps)
+						putSet.Reps = &v
+					}
+					putSets = append(putSets, putSet)
+				}
+			}
+
+			putEx := PutExercise{
+				ExerciseTemplateId: ex.ExerciseTemplateId,
+				Notes:              ex.Notes,
+			}
+			if len(putSets) > 0 {
+				putEx.Sets = &putSets
+			}
+			// Convert superset_id from float32 to int
+			if ex.SupersetId != nil {
+				v := int(*ex.SupersetId)
+				putEx.SupersetId = &v
+			}
+			putExercises = append(putExercises, putEx)
+		}
+	}
+
+	// Build the full PUT payload
+	putPayload := PutWorkoutRequest{
+		Workout: &PutWorkout{
+			Title:       &newTitle,
+			Description: &mergedDescription,
+			StartTime:   existingWorkout.StartTime,
+			EndTime:     existingWorkout.EndTime,
+			IsPrivate:   existingWorkout.IsPrivate,
+		},
+	}
+	if len(putExercises) > 0 {
+		putPayload.Workout.Exercises = &putExercises
+	}
+
+	bodyJSON, err := json.Marshal(putPayload)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal update body: %w", err)
 	}
 
+	fwCtx.Logger.Debug("PUT payload prepared",
+		"payloadLength", len(bodyJSON),
+		"exerciseCount", len(putExercises))
+
+	// 5. PUT the FULL workout to Hevy
 	putURL := fmt.Sprintf("https://api.hevyapp.com/v1/workouts/%s", workoutID)
 	putReq, err := http.NewRequestWithContext(ctx, "PUT", putURL, bytes.NewReader(bodyJSON))
 	if err != nil {
@@ -331,8 +472,9 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 	fwCtx.Logger.Info("Updating Hevy workout (PUT)",
 		"workoutId", workoutID,
-		"updatedFields", updateBody,
-		"descriptionLength", len(mergedDescription))
+		"updatedFields", updatedFields,
+		"descriptionLength", len(mergedDescription),
+		"exerciseCount", len(putExercises))
 
 	putResp, err := client.Do(putReq)
 	if err != nil {
@@ -348,9 +490,9 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 	fwCtx.Logger.Info("Successfully updated Hevy workout",
 		"workoutId", workoutID,
-		"updatedFields", updateBody)
+		"updatedFields", updatedFields)
 
-	// 5. Update SynchronizedActivity with merged description
+	// 6. Update SynchronizedActivity with merged description
 	if err := svc.DB.UpdateSynchronizedActivity(ctx, event.UserId, event.ActivityId, map[string]interface{}{
 		"description": mergedDescription,
 	}); err != nil {
@@ -363,7 +505,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		"hevy_id":        workoutID,
 		"activity_id":    event.ActivityId,
 		"mode":           "UPDATE",
-		"updated_fields": updateBody,
+		"updated_fields": updatedFields,
 		"activity_name":  event.Name,
 		"activity_type":  event.ActivityType.String(),
 	}, nil

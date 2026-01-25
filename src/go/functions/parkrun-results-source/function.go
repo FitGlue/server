@@ -11,6 +11,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -181,6 +183,10 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 			if input.PipelineId != "" {
 				resumePayload.PipelineId = &input.PipelineId
 			}
+
+			// Generate a fresh pipeline execution ID for this resume flow
+			newPipelineExecID := fmt.Sprintf("parkrun-results-%s", uuid.NewString())
+			resumePayload.PipelineExecutionId = &newPipelineExecID
 
 			eventData, err := protojson.Marshal(resumePayload)
 			if err != nil {
