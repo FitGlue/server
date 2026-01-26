@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.4.0](https://github.com/FitGlue/server/compare/v9.3.1...v9.4.0) (2026-01-26)
+
+
+### Features
+
+* allow parkrun-fetcher more time to get results, add debugging to ai-banner, add skip reasons to strava-uploader ([354c80b](https://github.com/FitGlue/server/commit/354c80b1387429ab1deab9ab878db9fd056309b0))
+
+
+### Bug Fixes
+
+* generate activity_id for pending inputs correctly ([5515f18](https://github.com/FitGlue/server/commit/5515f184f94e4f2800502a7442a5327c0d307e9d))
+
 ### [9.3.1](https://github.com/FitGlue/server/compare/v9.3.0...v9.3.1) (2026-01-26)
 
 
