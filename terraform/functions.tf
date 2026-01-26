@@ -224,6 +224,7 @@ resource "google_cloudfunctions2_function" "enricher" {
       SENTRY_ORG             = var.sentry_org
       SENTRY_PROJECT         = var.sentry_project
       SENTRY_DSN             = var.sentry_dsn
+      PARKRUN_FETCHER_URL    = google_cloud_run_v2_service.parkrun_fetcher.uri
     }
 
     secret_environment_variables {
