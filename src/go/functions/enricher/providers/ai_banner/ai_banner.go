@@ -164,11 +164,13 @@ type ImagenParameters struct {
 	AspectRatio      string `json:"aspectRatio"`
 	AddWatermark     bool   `json:"addWatermark"`
 	PersonGeneration string `json:"personGeneration"`
+	IncludeRaiReason bool   `json:"includeRaiReason"`
 }
 
 // ImagenResponse represents the response from Vertex AI Imagen API
 type ImagenResponse struct {
-	Predictions []ImagenPrediction `json:"predictions"`
+	Predictions       []ImagenPrediction `json:"predictions"`
+	RaiFilteredReason string             `json:"raiFilteredReason,omitempty"`
 }
 
 type ImagenPrediction struct {
@@ -210,6 +212,7 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 			AspectRatio:      "3:4",        // Standard photograph ratio
 			AddWatermark:     false,        // Disable watermark for cleaner banners
 			PersonGeneration: "dont_allow", // No people/faces in abstract banners
+			IncludeRaiReason: true,         // Include RAI filtering reasons for debugging
 		},
 	}
 
@@ -264,10 +267,12 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 	}
 
 	if len(imagenResp.Predictions) == 0 {
-		// Log the full response to help debug content moderation or other issues
-		// Note: Using fmt.Errorf with error message since we don't have logger in this scope
-		// The error will be logged by the caller (Enrich function) which has access to logger
-		return nil, fmt.Errorf("no predictions in response (possible content moderation)")
+		// Include RAI filter reason and full response for debugging
+		raiReason := imagenResp.RaiFilteredReason
+		if raiReason == "" {
+			raiReason = "unknown"
+		}
+		return nil, fmt.Errorf("no predictions in response (RAI reason: %s, full response: %s)", raiReason, string(respBody))
 	}
 
 	// Decode base64 image data

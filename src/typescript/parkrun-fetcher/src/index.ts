@@ -70,14 +70,45 @@ app.post('/fetch', async (req: Request<{}, FetchResponse, FetchRequest>, res: Re
     });
     const page = await context.newPage();
 
-    // Navigate and wait for content to load
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    // Navigate with 'domcontentloaded' first as it's more reliable for redirecting pages
+    await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
 
-    // Wait a bit extra for any JavaScript rendering
-    await page.waitForTimeout(2000);
+    // Wait for network to be idle (max 10s, don't fail if timeout)
+    try {
+      await page.waitForLoadState('networkidle', { timeout: 10000 });
+    } catch {
+      console.log('[parkrun-fetcher] Network idle timeout, continuing anyway');
+    }
 
-    // Get the full HTML content
-    const html = await page.content();
+    // Wait for the results table to appear (parkrun-specific selector)
+    try {
+      await page.waitForSelector('table tbody tr', { timeout: 5000 });
+      console.log('[parkrun-fetcher] Results table found');
+    } catch {
+      console.log('[parkrun-fetcher] Results table selector timeout, continuing');
+    }
+
+    // Extra settle time for any JS rendering
+    await page.waitForTimeout(1000);
+
+    // Get the full HTML content with retry for navigation errors
+    let html = '';
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        html = await page.content();
+        break;
+      } catch (contentError) {
+        const msg = contentError instanceof Error ? contentError.message : '';
+        if (msg.includes('navigating') && retries > 1) {
+          console.log(`[parkrun-fetcher] Page still navigating, waiting 1s and retrying (${retries - 1} left)`);
+          await page.waitForTimeout(1000);
+          retries--;
+        } else {
+          throw contentError;
+        }
+      }
+    }
 
     await context.close();
 

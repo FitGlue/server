@@ -331,15 +331,48 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 	// 1. Lookup SynchronizedActivity to get Strava activity ID
 	syncActivity, err := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get synchronized activity: %w", err)
+		// Activity not found is expected in resume mode if original upload failed before storing
+		// Return SKIPPED (not error) to prevent Sentry noise
+		fwCtx.Logger.Info("Synchronized activity not found for UPDATE - skipping",
+			"activity_id", eventPayload.ActivityId,
+			"error", err,
+		)
+		return map[string]interface{}{
+			"status":      "SKIPPED",
+			"skip_reason": "activity_not_found",
+			"activity_id": eventPayload.ActivityId,
+			"pipeline_id": eventPayload.PipelineId,
+			"mode":        "UPDATE",
+			"details":     "Original upload may have failed before storing synchronized activity",
+		}, nil
 	}
 	if syncActivity == nil {
-		return nil, fmt.Errorf("synchronized activity not found for activity_id: %s", eventPayload.ActivityId)
+		fwCtx.Logger.Info("Synchronized activity is nil for UPDATE - skipping",
+			"activity_id", eventPayload.ActivityId,
+		)
+		return map[string]interface{}{
+			"status":      "SKIPPED",
+			"skip_reason": "activity_not_found",
+			"activity_id": eventPayload.ActivityId,
+			"pipeline_id": eventPayload.PipelineId,
+			"mode":        "UPDATE",
+		}, nil
 	}
 
 	stravaIDStr, ok := syncActivity.Destinations["strava"]
 	if !ok || stravaIDStr == "" {
-		return nil, fmt.Errorf("no Strava destination found in synchronized activity")
+		fwCtx.Logger.Info("No Strava destination in synchronized activity for UPDATE - skipping",
+			"activity_id", eventPayload.ActivityId,
+			"destinations", syncActivity.Destinations,
+		)
+		return map[string]interface{}{
+			"status":      "SKIPPED",
+			"skip_reason": "no_strava_destination",
+			"activity_id": eventPayload.ActivityId,
+			"pipeline_id": eventPayload.PipelineId,
+			"mode":        "UPDATE",
+			"details":     "Activity was synced to other destinations but not Strava",
+		}, nil
 	}
 
 	fwCtx.Logger.Info("Found existing Strava activity", "strava_activity_id", stravaIDStr)
