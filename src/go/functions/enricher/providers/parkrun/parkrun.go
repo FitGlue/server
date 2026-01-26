@@ -10,6 +10,7 @@ import (
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	parkrunutil "github.com/fitglue/server/src/go/pkg/parkrun"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -286,64 +287,110 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 		}
 	}
 
-	// 12. Results Enrichment: Create auto-populated pending input if enabled
+	// 12. Results Enrichment: Attempt immediate fetch, fall back to pending input if not available
 	// Default to true unless explicitly set to "false"
 	fetchResults := inputs["fetch_results"] != "false"
 
-	if fetchResults && p.service != nil {
+	if fetchResults {
 		// Check if user has Parkrun integration configured
-		if user.Integrations != nil && user.Integrations.Parkrun != nil && user.Integrations.Parkrun.Enabled {
-			// Create an auto-populated pending input to be resolved later by parkrun-results-source
-			stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
+		if user != nil && user.Integrations != nil && user.Integrations.Parkrun != nil && user.Integrations.Parkrun.Enabled {
+			integration := user.Integrations.Parkrun
 
-			// Calculate auto deadline (48 hours from now - Parkrun results usually come within 24h)
-			autoDeadline := time.Now().Add(48 * time.Hour)
+			// Step 1: Attempt IMMEDIATE fetch of results
+			logger.Debug("parkrun: attempting immediate results fetch",
+				"athlete_id", integration.AthleteId,
+				"event_slug", matchedLocation.EventSlug)
 
-			pendingInput := &pb.PendingInput{
-				ActivityId:                 stableID,
-				UserId:                     user.UserId,
-				Status:                     pb.PendingInput_STATUS_WAITING,
-				RequiredFields:             []string{"description", "position", "time", "age_grade"},
-				AutoPopulated:              true,
-				ContinuedWithoutResolution: true,
-				EnricherProviderId:         "parkrun",
-				AutoDeadline:               timestamppb.New(autoDeadline),
-				LinkedActivityId:           stableID,              // Link to this activity
-				PipelineId:                 inputs["pipeline_id"], // For resume mode
-				OriginalPayload: &pb.ActivityPayload{
-					UserId:               user.UserId,
-					StandardizedActivity: activity, // Include full activity for resume
-					Metadata: map[string]string{
-						"parkrun_event_slug":   matchedLocation.EventSlug,
-						"parkrun_event_name":   matchedLocation.Name,
-						"parkrun_country":      matchedLocation.CountryURL,
-						"source_activity_id":   activity.ExternalId,
-						"source_activity_type": activity.Source,
+			parkrunResults, fetchErr := parkrunutil.FetchResultsForAthlete(
+				ctx, logger,
+				integration.AthleteId,
+				integration.CountryUrl,
+				matchedLocation.EventSlug,
+			)
+
+			if fetchErr != nil {
+				logger.Debug("parkrun: immediate fetch failed, will poll later",
+					"error", fetchErr.Error())
+				result.Metadata["immediate_fetch_error"] = fetchErr.Error()
+			}
+
+			if parkrunResults != nil {
+				// SUCCESS: Results are immediately available!
+				logger.Info("parkrun: immediate results found!",
+					"position", parkrunResults.Position,
+					"time", parkrunResults.Time,
+					"age_grade", parkrunResults.AgeGrade)
+
+				desc := parkrunutil.FormatResultsDescription(parkrunResults, matchedLocation.Name)
+				result.Description = desc
+				result.SectionHeader = "🏃 Parkrun Results:"
+
+				result.Metadata["parkrun_results_state"] = "IMMEDIATE"
+				result.Metadata["parkrun_position"] = fmt.Sprintf("%d", parkrunResults.Position)
+				result.Metadata["parkrun_time"] = parkrunResults.Time
+				result.Metadata["parkrun_age_grade"] = parkrunResults.AgeGrade
+				result.Metadata["results_source"] = "immediate_fetch"
+			} else if p.service != nil {
+				// Step 2: Results not available yet - create pending input for background polling
+				logger.Debug("parkrun: results not yet available, creating pending input")
+
+				stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
+
+				// Calculate auto deadline (48 hours from now - Parkrun results usually come within 24h)
+				autoDeadline := time.Now().Add(48 * time.Hour)
+
+				pendingInput := &pb.PendingInput{
+					ActivityId:                 stableID,
+					UserId:                     user.UserId,
+					Status:                     pb.PendingInput_STATUS_WAITING,
+					RequiredFields:             []string{"description", "position", "time", "age_grade"},
+					AutoPopulated:              true,
+					ContinuedWithoutResolution: true,
+					EnricherProviderId:         "parkrun",
+					AutoDeadline:               timestamppb.New(autoDeadline),
+					LinkedActivityId:           stableID,              // Link to this activity
+					PipelineId:                 inputs["pipeline_id"], // For resume mode
+					OriginalPayload: &pb.ActivityPayload{
+						UserId:               user.UserId,
+						StandardizedActivity: activity, // Include full activity for resume
+						Metadata: map[string]string{
+							"parkrun_event_slug":   matchedLocation.EventSlug,
+							"parkrun_event_name":   matchedLocation.Name,
+							"parkrun_country":      matchedLocation.CountryURL,
+							"source_activity_id":   activity.ExternalId,
+							"source_activity_type": activity.Source,
+						},
 					},
-				},
-				CreatedAt: timestamppb.Now(),
-				UpdatedAt: timestamppb.Now(),
-			}
+					CreatedAt: timestamppb.Now(),
+					UpdatedAt: timestamppb.Now(),
+				}
 
-			if err := p.service.DB.CreatePendingInput(ctx, pendingInput); err != nil {
-				// Log but don't fail - we can still continue without results enrichment
-				// slog would be nice here but we don't have access to logger
-				result.Metadata["results_pending_input_error"] = err.Error()
+				if err := p.service.DB.CreatePendingInput(ctx, pendingInput); err != nil {
+					// Log but don't fail - we can still continue without results enrichment
+					logger.Warn("parkrun: failed to create pending input", "error", err)
+					result.Metadata["results_pending_input_error"] = err.Error()
+				} else {
+					result.Metadata["results_pending_input_created"] = "true"
+					result.Metadata["results_auto_deadline"] = autoDeadline.Format(time.RFC3339)
+				}
+
+				// Add placeholder description for destinations while waiting for official results
+				result.Description = "🏃 Parkrun Results:\nWaiting for results to be released..."
+				result.SectionHeader = "🏃 Parkrun Results:"
+
+				result.Metadata["parkrun_results_state"] = "PENDING"
 			} else {
-				result.Metadata["results_pending_input_created"] = "true"
-				result.Metadata["results_auto_deadline"] = autoDeadline.Format(time.RFC3339)
+				// No service available for pending input creation, skip results enrichment
+				logger.Debug("parkrun: results not available and no service for pending input")
+				result.Metadata["parkrun_results_state"] = "UNAVAILABLE"
 			}
-
-			// Add placeholder description for destinations while waiting for official results
-			result.Description = "🏃 Parkrun Results:\nWaiting for results to be released..."
-			result.SectionHeader = "🏃 Parkrun Results:"
-
-			result.Metadata["parkrun_results_state"] = "PENDING"
 		} else {
 			result.Metadata["parkrun_results_state"] = "DISABLED"
 			result.Metadata["results_enrichment_skipped"] = "no_parkrun_integration"
 			// Debug: Show what's missing
-			if user.Integrations == nil {
+			if user == nil {
+				result.Metadata["debug_user_nil"] = "true"
+			} else if user.Integrations == nil {
 				result.Metadata["debug_integration_nil"] = "true"
 			} else if user.Integrations.Parkrun == nil {
 				result.Metadata["debug_parkrun_nil"] = "true"
@@ -352,7 +399,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 			}
 		}
 	} else {
-		// Results enrichment not enabled or no service - mark as immediate (no pending results)
+		// Results enrichment not enabled - mark as immediate (no pending results)
 		result.Metadata["parkrun_results_state"] = "IMMEDIATE"
 	}
 

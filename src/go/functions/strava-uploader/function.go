@@ -186,6 +186,29 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 
 	fwCtx.Logger.Info("Upload complete", "upload_id", uploadResp.ID, "activity_id", uploadResp.ActivityID, "status", uploadResp.Status)
 
+	// Check for duplicate activity (common during testing - not a true error)
+	// Strava returns this in the error field when the FIT file was already uploaded
+	if uploadResp.Error != "" && strings.Contains(strings.ToLower(uploadResp.Error), "duplicate") {
+		fwCtx.Logger.Info("Strava duplicate activity detected - skipping",
+			"upload_error", uploadResp.Error,
+			"activity_id", eventPayload.ActivityId,
+			"pipeline_id", eventPayload.PipelineId,
+		)
+		// Return SKIPPED status without error - this prevents Sentry capture
+		// and shows as "skipped" in the UI rather than "failed"
+		return map[string]interface{}{
+			"status":           "SKIPPED",
+			"skip_reason":      "duplicate_activity",
+			"strava_error":     uploadResp.Error,
+			"strava_upload_id": uploadResp.ID,
+			"activity_id":      eventPayload.ActivityId,
+			"pipeline_id":      eventPayload.PipelineId,
+			"fit_file_uri":     eventPayload.FitFileUri,
+			"activity_name":    eventPayload.Name,
+			"activity_type":    activity.GetStravaActivityType(eventPayload.ActivityType),
+		}, nil
+	}
+
 	// Persist SynchronizedActivity if successful
 	if uploadResp.ActivityID != 0 {
 		stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)

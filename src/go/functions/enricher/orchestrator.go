@@ -240,7 +240,36 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		// Execute
 		// TODO: Get logger from FrameworkContext when orchestrator is refactored
 		providerLogger := slog.Default().With("provider", provider.Name())
-		res, err := provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
+
+		var res *providers.EnrichmentResult
+		var err error
+
+		// Resume Mode: Check if provider supports EnrichResume and we have a pending input to resolve
+		if isResumeMode && payload.ResumePendingInputId != nil && *payload.ResumePendingInputId != "" {
+			if resumable, ok := provider.(providers.ResumableProvider); ok {
+				// Fetch the resolved pending input from database
+				pendingInput, fetchErr := o.database.GetPendingInput(ctx, *payload.ResumePendingInputId)
+				if fetchErr != nil {
+					logger.Warn("Failed to fetch pending input for resume", "error", fetchErr, "pending_input_id", *payload.ResumePendingInputId)
+					// Fall back to regular Enrich
+					res, err = provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
+				} else if pendingInput == nil || pendingInput.Status != pb.PendingInput_STATUS_COMPLETED {
+					logger.Warn("Pending input not found or not completed", "pending_input_id", *payload.ResumePendingInputId, "status", pendingInput.GetStatus())
+					// Fall back to regular Enrich
+					res, err = provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
+				} else {
+					// Call EnrichResume with the resolved pending input
+					logger.Info("Calling EnrichResume with resolved pending input", "provider", provider.Name(), "pending_input_id", *payload.ResumePendingInputId)
+					res, err = resumable.EnrichResume(ctx, currentActivity, userRec, pendingInput)
+				}
+			} else {
+				// Provider doesn't support resume mode, use regular Enrich
+				res, err = provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
+			}
+		} else {
+			// Normal mode: call regular Enrich
+			res, err = provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
+		}
 		duration := time.Since(startTime).Milliseconds()
 		pe.DurationMs = duration
 

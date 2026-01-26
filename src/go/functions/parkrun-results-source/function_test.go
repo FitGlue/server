@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	parkrunutil "github.com/fitglue/server/src/go/pkg/parkrun"
 )
 
 // discardLogger returns a logger that discards all output (for tests)
@@ -33,7 +35,7 @@ func loadExampleHTML(t *testing.T) string {
 func TestParseAthleteResultsBySlug_NewarkLatestRun(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(discardLogger, html, "newark")
+	result, err := parkrunutil.ParseAthleteResultsBySlug(discardLogger, html, "newark")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -80,7 +82,7 @@ func TestParseAthleteResultsBySlug_NewarkLatestRun(t *testing.T) {
 func TestParseAthleteResultsBySlug_Colwick(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(discardLogger, html, "colwick")
+	result, err := parkrunutil.ParseAthleteResultsBySlug(discardLogger, html, "colwick")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -105,7 +107,7 @@ func TestParseAthleteResultsBySlug_Colwick(t *testing.T) {
 func TestParseAthleteResultsBySlug_RobertsPark(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(discardLogger, html, "robertspark")
+	result, err := parkrunutil.ParseAthleteResultsBySlug(discardLogger, html, "robertspark")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -133,7 +135,7 @@ func TestParseAthleteResultsBySlug_RobertsPark(t *testing.T) {
 func TestParseAthleteResultsBySlug_Lancaster(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(discardLogger, html, "lancaster")
+	result, err := parkrunutil.ParseAthleteResultsBySlug(discardLogger, html, "lancaster")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -158,7 +160,7 @@ func TestParseAthleteResultsBySlug_Lancaster(t *testing.T) {
 func TestParseAthleteResultsBySlug_NonExistentEvent(t *testing.T) {
 	html := loadExampleHTML(t)
 
-	result, err := parseAthleteResultsBySlug(discardLogger, html, "bushypark")
+	result, err := parkrunutil.ParseAthleteResultsBySlug(discardLogger, html, "bushypark")
 	if err != nil {
 		t.Fatalf("Unexpected error: %v", err)
 	}
@@ -197,55 +199,15 @@ func TestOrdinal(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		got := ordinal(tt.n)
+		got := parkrunutil.Ordinal(tt.n)
 		if got != tt.want {
 			t.Errorf("ordinal(%d) = %q, want %q", tt.n, got, tt.want)
 		}
 	}
 }
 
-func TestParseTimeToSeconds(t *testing.T) {
-	tests := []struct {
-		input string
-		want  int
-	}{
-		{"23:50", 23*60 + 50},
-		{"24:36", 24*60 + 36},
-		{"31:07", 31*60 + 7},
-		{"1:05:30", 1*3600 + 5*60 + 30},
-		{"", 0},
-		{"invalid", 0},
-	}
-
-	for _, tt := range tests {
-		got := parseTimeToSeconds(tt.input)
-		if got != tt.want {
-			t.Errorf("parseTimeToSeconds(%q) = %d, want %d", tt.input, got, tt.want)
-		}
-	}
-}
-
-func TestParseAgeGrade(t *testing.T) {
-	tests := []struct {
-		input string
-		want  float64
-	}{
-		{"54.76%", 54.76},
-		{"44.74%", 44.74},
-		{"50.00", 50.00},
-		{"", 0},
-	}
-
-	for _, tt := range tests {
-		got := parseAgeGrade(tt.input)
-		if got != tt.want {
-			t.Errorf("parseAgeGrade(%q) = %f, want %f", tt.input, got, tt.want)
-		}
-	}
-}
-
 func TestFormatResultsDescription(t *testing.T) {
-	result := &ParkrunResult{
+	result := &parkrunutil.Result{
 		Time:               "23:50",
 		Position:           30,
 		AgeGrade:           "54.76%",
@@ -261,42 +223,38 @@ func TestFormatResultsDescription(t *testing.T) {
 		EventName:          "Newark",
 	}
 
-	desc := formatResultsDescription(result, "Newark")
-	if desc == nil {
-		t.Fatal("Expected description, got nil")
+	desc := parkrunutil.FormatResultsDescription(result, "Newark")
+	if desc == "" {
+		t.Fatal("Expected description, got empty string")
 	}
 
 	// Check that key elements are present
-	if len(*desc) == 0 {
-		t.Error("Description is empty")
-	}
-
 	// Should contain ordinal position
-	if !containsStr(*desc, "30th") {
+	if !containsStr(desc, "30th") {
 		t.Error("Description should contain '30th'")
 	}
 
 	// Should contain time
-	if !containsStr(*desc, "23:50") {
+	if !containsStr(desc, "23:50") {
 		t.Error("Description should contain time '23:50'")
 	}
 
 	// Should contain PB badges for time (all-time and this-year)
-	if !containsStr(*desc, "🏆") {
+	if !containsStr(desc, "🏆") {
 		t.Error("Description should contain all-time PB emoji 🏆")
 	}
-	if !containsStr(*desc, "🏅") {
+	if !containsStr(desc, "🏅") {
 		t.Error("Description should contain this-year PB emoji 🏅")
 	}
 
 	// Should contain location count
-	if !containsStr(*desc, "15th Parkrun here") {
+	if !containsStr(desc, "15th Parkrun here") {
 		t.Error("Description should contain '15th Parkrun here'")
 	}
 }
 
 func TestFormatResultsDescription_FirstAtLocation(t *testing.T) {
-	result := &ParkrunResult{
+	result := &parkrunutil.Result{
 		Time:            "28:00",
 		Position:        142,
 		AgeGrade:        "46.61%",
@@ -306,24 +264,24 @@ func TestFormatResultsDescription_FirstAtLocation(t *testing.T) {
 		EventName:       "Roberts Park",
 	}
 
-	desc := formatResultsDescription(result, "Roberts Park")
-	if desc == nil {
-		t.Fatal("Expected description, got nil")
+	desc := parkrunutil.FormatResultsDescription(result, "Roberts Park")
+	if desc == "" {
+		t.Fatal("Expected description, got empty string")
 	}
 
 	// Should contain first-time badge
-	if !containsStr(*desc, "🌟") {
+	if !containsStr(desc, "🌟") {
 		t.Error("Description should contain first-time emoji 🌟")
 	}
-	if !containsStr(*desc, "First time at this location") {
+	if !containsStr(desc, "First time at this location") {
 		t.Error("Description should mention first time at location")
 	}
 }
 
 func TestFormatResultsDescription_Nil(t *testing.T) {
-	desc := formatResultsDescription(nil, "Newark")
-	if desc != nil {
-		t.Errorf("Expected nil for nil input, got %q", *desc)
+	desc := parkrunutil.FormatResultsDescription(nil, "Newark")
+	if desc != "" {
+		t.Errorf("Expected empty string for nil input, got %q", desc)
 	}
 }
 

@@ -56,3 +56,14 @@ type Provider interface {
 	// doNotRetry indicates if the provider should return partial/success data instead of RetryableError on lag.
 	Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*EnrichmentResult, error)
 }
+
+// ResumableProvider is an optional interface for providers that support resume mode.
+// When the orchestrator is in resume mode and the provider is in the resume_only_enrichers list,
+// if the provider implements this interface, EnrichResume will be called instead of Enrich.
+// This allows providers to apply resolved pending input data directly.
+type ResumableProvider interface {
+	Provider
+	// EnrichResume is called during resume mode to apply resolved pending input data.
+	// The pendingInput contains the resolved InputData from the background polling service.
+	EnrichResume(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, pendingInput *pb.PendingInput) (*EnrichmentResult, error)
+}
