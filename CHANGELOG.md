@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.3.0](https://github.com/FitGlue/server/compare/v9.2.0...v9.3.0) (2026-01-26)
+
+
+### Features
+
+* fix strava uploader erroring on duplicate upload, fix parkrun not attempting enrichresume or initial fetching of results ([d28a393](https://github.com/FitGlue/server/commit/d28a393370e0db8ac22ae3195bcc1e5f49aca94b))
+
+
+### Bug Fixes
+
+* add PARKRUN_FETCHER_URL to enricher func ([dd52f46](https://github.com/FitGlue/server/commit/dd52f46bdd5170f67fbc7440e41e846ce74346e6))
+
 ## [9.2.0](https://github.com/FitGlue/server/compare/v9.1.0...v9.2.0) (2026-01-26)
 
 
