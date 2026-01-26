@@ -51,6 +51,21 @@ func TestEnrichActivity(t *testing.T) {
 				UserId: id,
 			}, nil
 		},
+		GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+			return []*pb.PipelineConfig{
+				{
+					Id:           "test-pipeline-1",
+					Source:       "SOURCE_HEVY",
+					Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
+					Enrichers: []*pb.EnricherConfig{
+						{
+							ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+							TypedConfig:  map[string]string{},
+						},
+					},
+				},
+			}, nil
+		},
 	}
 	mockPub := &mocks.MockPublisher{
 		PublishCloudEventFunc: func(ctx context.Context, topic string, e cloudevents.Event) (string, error) {
@@ -93,10 +108,12 @@ func TestEnrichActivity(t *testing.T) {
 	}
 
 	// Prepare Input
+	pipelineID := "test-pipeline-1"
 	activity := pb.ActivityPayload{
-		Source:    pb.ActivitySource_SOURCE_HEVY,
-		UserId:    "user_123",
-		Timestamp: timestamppb.New(time.Now()),
+		Source:     pb.ActivitySource_SOURCE_HEVY,
+		UserId:     "user_123",
+		PipelineId: &pipelineID, // Required by Rule E25
+		Timestamp:  timestamppb.New(time.Now()),
 		StandardizedActivity: &pb.StandardizedActivity{
 			StartTime: timestamppb.New(time.Now()),
 			Type:      pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,

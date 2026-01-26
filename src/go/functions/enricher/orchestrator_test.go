@@ -199,10 +199,12 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 		orchestrator.Register(mockProvider)
 
+		pipelineID := "pipeline-1"
 		payload := &pb.ActivityPayload{
-			UserId:    "user-123",
-			Source:    pb.ActivitySource_SOURCE_HEVY,
-			Timestamp: timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+			UserId:     "user-123",
+			Source:     pb.ActivitySource_SOURCE_HEVY,
+			PipelineId: &pipelineID, // Required by Rule E25
+			Timestamp:  timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 			StandardizedActivity: &pb.StandardizedActivity{
 				Name: "Original Run",
 				Sessions: []*pb.Session{
@@ -240,29 +242,28 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 	})
 
-	t.Run("Returns empty events if no pipelines match", func(t *testing.T) {
-		// After removing legacy fallback, the orchestrator should return 0 events
-		// when no pipelines are configured for the source.
-		// The webhook handler now prevents this situation by checking pipelines first.
+	t.Run("Returns skipped if targeted pipeline not found", func(t *testing.T) {
+		// With mandatory pipeline_id, if the targeted pipeline is not found,
+		// the orchestrator should return STATUS_SKIPPED.
 		mockDB := &MockDatabase{
 			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
 				return &pb.UserRecord{
 					UserId: id,
-					Integrations: &pb.UserIntegrations{
-						Strava: &pb.StravaIntegration{
-							Enabled: true,
-						},
-					},
-					// No pipelines configured
 				}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+				// Return no pipelines
+				return []*pb.PipelineConfig{}, nil
 			},
 		}
 
 		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
 
+		nonExistentPipelineID := "non-existent-pipeline"
 		payload := &pb.ActivityPayload{
-			UserId: "user-123",
-			Source: pb.ActivitySource_SOURCE_HEVY,
+			UserId:     "user-123",
+			Source:     pb.ActivitySource_SOURCE_HEVY,
+			PipelineId: &nonExistentPipelineID,
 			StandardizedActivity: &pb.StandardizedActivity{
 				Name: "Run",
 				Sessions: []*pb.Session{
@@ -278,11 +279,11 @@ func TestOrchestrator_Process(t *testing.T) {
 		result, err := orchestrator.Process(ctx, slog.Default(), payload, "test-parent-exec-id", "test-pipeline-id", false)
 
 		if err != nil {
-			t.Fatalf("Process should not error on no pipelines, got: %v", err)
+			t.Fatalf("Process should not error when pipeline not found, got: %v", err)
 		}
 
 		if len(result.Events) != 0 {
-			t.Fatalf("Expected 0 events when no pipelines match, got %d", len(result.Events))
+			t.Fatalf("Expected 0 events when pipeline not found, got %d", len(result.Events))
 		}
 		if result.Status != pb.ExecutionStatus_STATUS_SKIPPED {
 			t.Errorf("Expected STATUS_SKIPPED, got %v", result.Status)
@@ -359,9 +360,11 @@ func TestOrchestrator_Process(t *testing.T) {
 		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
 		orchestrator.Register(mockProvider)
 
+		pipelineID := "p1"
 		payload := &pb.ActivityPayload{ // Set source explicitly
-			Source: pb.ActivitySource_SOURCE_HEVY,
-			UserId: "u1",
+			Source:     pb.ActivitySource_SOURCE_HEVY,
+			UserId:     "u1",
+			PipelineId: &pipelineID, // Required by Rule E25
 			StandardizedActivity: &pb.StandardizedActivity{
 				StartTime: timestamppb.New(time.Date(2024, 1, 1, 10, 0, 0, 0, time.UTC)),
 				Sessions: []*pb.Session{
@@ -407,8 +410,9 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 	})
 
-	t.Run("Multi-pipeline isolation - no cross-pipeline state leakage", func(t *testing.T) {
-		// Setup: Two pipelines from same source, each with an enricher that adds descriptions
+	t.Run("Single pipeline execution - targeted by pipeline_id", func(t *testing.T) {
+		// With the Pipeline Splitter Architecture (Rule E25), each enricher invocation
+		// processes exactly one pipeline. Verify that only the targeted pipeline is executed.
 		mockDB := &MockDatabase{
 			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
 				return &pb.UserRecord{
@@ -467,10 +471,13 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 		orchestrator.Register(mockProvider)
 
+		// Target pipeline-A specifically
+		pipelineID := "pipeline-A"
 		payload := &pb.ActivityPayload{
-			UserId:    "user-123",
-			Source:    pb.ActivitySource_SOURCE_HEVY,
-			Timestamp: timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+			UserId:     "user-123",
+			Source:     pb.ActivitySource_SOURCE_HEVY,
+			PipelineId: &pipelineID, // Targeting only pipeline-A
+			Timestamp:  timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
 			StandardizedActivity: &pb.StandardizedActivity{
 				Name:        "Original Run",
 				Description: "", // Start with empty description
@@ -489,49 +496,29 @@ func TestOrchestrator_Process(t *testing.T) {
 			t.Fatalf("Process failed: %v", err)
 		}
 
-		// Should produce 2 events (one per pipeline)
-		if len(result.Events) != 2 {
-			t.Fatalf("Expected 2 events, got %d", len(result.Events))
+		// Should produce exactly 1 event (only the targeted pipeline)
+		if len(result.Events) != 1 {
+			t.Fatalf("Expected 1 event (single pipeline), got %d", len(result.Events))
 		}
 
-		// Find events by pipeline ID
-		var eventA, eventB *pb.EnrichedActivityEvent
-		for _, e := range result.Events {
-			if e.PipelineId == "pipeline-A" {
-				eventA = e
-			} else if e.PipelineId == "pipeline-B" {
-				eventB = e
-			}
-		}
+		event := result.Events[0]
 
-		if eventA == nil || eventB == nil {
-			t.Fatal("Expected events for both pipeline-A and pipeline-B")
+		// Verify it's the targeted pipeline
+		if event.PipelineId != "pipeline-A" {
+			t.Errorf("Expected pipeline-A, got '%s'", event.PipelineId)
 		}
 
 		// Verify Pipeline A contains ONLY its own description
-		if eventA.Description != "Description from pipeline A" {
-			t.Errorf("Pipeline A: expected 'Description from pipeline A', got '%s'", eventA.Description)
+		if event.Description != "Description from pipeline A" {
+			t.Errorf("Pipeline A: expected 'Description from pipeline A', got '%s'", event.Description)
 		}
 
-		// Verify Pipeline B contains ONLY its own description (NOT merged with A)
-		if eventB.Description != "Description from pipeline B" {
-			t.Errorf("Pipeline B: expected 'Description from pipeline B', got '%s'", eventB.Description)
+		// Verify execution ID contains the pipeline ID
+		if event.PipelineExecutionId == nil {
+			t.Fatal("Expected event to have pipelineExecutionId")
 		}
-
-		// Verify each event has a unique pipelineExecutionId
-		if eventA.PipelineExecutionId == nil || eventB.PipelineExecutionId == nil {
-			t.Fatal("Expected both events to have pipelineExecutionId")
-		}
-		if *eventA.PipelineExecutionId == *eventB.PipelineExecutionId {
-			t.Errorf("Expected unique pipelineExecutionIds, but both are '%s'", *eventA.PipelineExecutionId)
-		}
-
-		// Verify execution IDs contain the pipeline ID
-		if !strings.Contains(*eventA.PipelineExecutionId, "pipeline-A") {
-			t.Errorf("Pipeline A execution ID should contain 'pipeline-A', got '%s'", *eventA.PipelineExecutionId)
-		}
-		if !strings.Contains(*eventB.PipelineExecutionId, "pipeline-B") {
-			t.Errorf("Pipeline B execution ID should contain 'pipeline-B', got '%s'", *eventB.PipelineExecutionId)
+		if !strings.Contains(*event.PipelineExecutionId, "pipeline-A") {
+			t.Errorf("Execution ID should contain 'pipeline-A', got '%s'", *event.PipelineExecutionId)
 		}
 	})
 }

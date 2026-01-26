@@ -24,6 +24,7 @@ type MockDatabase struct {
 	SetCounterFunc              func(ctx context.Context, userId string, counter *pb.Counter) error
 	ListCountersFunc            func(ctx context.Context, userId string) ([]*pb.Counter, error)
 	SetSynchronizedActivityFunc func(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
+	GetUserPipelinesFunc        func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -176,6 +177,9 @@ func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, rec
 // --- Pipelines (Sub-collection) ---
 
 func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+	if m.GetUserPipelinesFunc != nil {
+		return m.GetUserPipelinesFunc(ctx, userId)
+	}
 	// No-op for tests by default - return empty slice
 	return []*pb.PipelineConfig{}, nil
 }
