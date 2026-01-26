@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.2.0](https://github.com/FitGlue/server/compare/v9.1.0...v9.2.0) (2026-01-26)
+
+
+### Features
+
+* new parkrun-fetcher for playwright ([12b3b87](https://github.com/FitGlue/server/commit/12b3b87ee33106ac8e526ed6bfa4bbdd1783e199))
+
+
+### Bug Fixes
+
+* actually pass pipeline_id from/to firestore ([94b02ca](https://github.com/FitGlue/server/commit/94b02ca75dd42af33b21c065c0f0ae89b3645ff8))
+* attempt manual deployment of parkrun-fetcher ([f284dd5](https://github.com/FitGlue/server/commit/f284dd53362e2f0153fdef02050fb3c5d69ab0d1))
+* auth for internal call from parkrun results source to parkrun fetcher ([b39bbe7](https://github.com/FitGlue/server/commit/b39bbe7dcd0b82bf9ddbacedf2c9c4c80c4bc957))
+* CICD prepare for parkrun-fetcher ([b68c527](https://github.com/FitGlue/server/commit/b68c527e93c15f3f7323d66a18134908297635af))
+* deletion_protection false ([da29178](https://github.com/FitGlue/server/commit/da291780e51ba3427b536648faf8f05df109cde6))
+* enricher only processes one pipeline now ([c99fc6c](https://github.com/FitGlue/server/commit/c99fc6c68507ca08db07e9dbe45e95530cc7e846))
+* hevy update pathway now functional, parkrun results now generates unique pipeline execution ID ([c8a39d7](https://github.com/FitGlue/server/commit/c8a39d7b0f2cf05e4052a7db00248a0eda388b4f))
+* more attempting to call the fetcher successfully ([ebbe765](https://github.com/FitGlue/server/commit/ebbe765d87050b56d394f059b90d801dda63e170))
+* orchestrator to get all pipelines when in resume mode ([0bfe1a0](https://github.com/FitGlue/server/commit/0bfe1a0afca5bf783c1960f729717d1ce1d425b2))
+* parkrun provider to correctly set pipeline_id in resume payload ([befaa7a](https://github.com/FitGlue/server/commit/befaa7a2ee5259cb4e3fd0398c693424b2ba9336))
+* terraform build failure ([680730c](https://github.com/FitGlue/server/commit/680730cc5e0dc4b81bfa21aa6231116219b88fcc))
+* typescript converter update [skip ci] ([09a7d9d](https://github.com/FitGlue/server/commit/09a7d9de49c6f45d8e6bce0f0fff30aaf0e438c5))
+
 ## [9.1.0](https://github.com/FitGlue/server/compare/v9.0.0...v9.1.0) (2026-01-25)
 
 
