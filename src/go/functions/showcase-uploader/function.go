@@ -186,10 +186,23 @@ func showcaseHandler() framework.HandlerFunc {
 			startTime = time.Now()
 		}
 
-		// Generate human-readable showcase ID
-		showcaseID, err := generateShowcaseID(ctx, svc, eventPayload.Name, startTime)
-		if err != nil {
-			return nil, fmt.Errorf("failed to generate showcase ID: %w", err)
+		// Check if this activity already has a showcase ID (resume/update scenario)
+		var showcaseID string
+		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
+		if existingActivity != nil && existingActivity.Destinations != nil {
+			if existingID, ok := existingActivity.Destinations["showcase"]; ok && existingID != "" {
+				showcaseID = existingID
+				fwCtx.Logger.Info("Reusing existing showcase ID for update", "showcase_id", showcaseID)
+			}
+		}
+
+		// Only generate new ID if we don't have an existing one
+		if showcaseID == "" {
+			var err error
+			showcaseID, err = generateShowcaseID(ctx, svc, eventPayload.Name, startTime)
+			if err != nil {
+				return nil, fmt.Errorf("failed to generate showcase ID: %w", err)
+			}
 		}
 
 		// Calculate expiration
@@ -253,7 +266,7 @@ func showcaseHandler() framework.HandlerFunc {
 		// Persist SynchronizedActivity record
 		// Check if activity already exists (e.g., repost scenario)
 		// If it does, only update destinations to preserve original pipelineExecutionId
-		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
+		// Note: existingActivity was fetched earlier when checking for existing showcase ID
 		if existingActivity != nil {
 			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
 			// Use nested map structure so MergeAll properly merges into destinations

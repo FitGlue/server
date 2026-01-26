@@ -462,7 +462,7 @@ func FormatResultsDescription(results *Result, eventName string) string {
 	}
 
 	var sb strings.Builder
-	sb.WriteString("🏃♂️ Parkrun Results:\n")
+	sb.WriteString("🏃 Parkrun Results:\n")
 
 	// Position line with PB badges
 	sb.WriteString(fmt.Sprintf("Position: %s", Ordinal(results.Position)))

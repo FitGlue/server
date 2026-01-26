@@ -64,7 +64,7 @@ func (p *ParkrunProvider) EnrichResume(ctx context.Context, activity *pb.Standar
 	ageGrade := pendingInput.InputData["age_grade"]
 
 	result := &providers.EnrichmentResult{
-		Description:   "🏃 Parkrun Results:\n" + description,
+		Description:   description, // description already contains the header from FormatResultsDescription
 		SectionHeader: "🏃 Parkrun Results:",
 		Metadata: map[string]string{
 			"status":                "success",
