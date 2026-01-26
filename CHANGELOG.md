@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [9.3.1](https://github.com/FitGlue/server/compare/v9.3.0...v9.3.1) (2026-01-26)
+
+
+### Bug Fixes
+
+* parkrun matching failure and showcase not handling updates correctly ([8071c8f](https://github.com/FitGlue/server/commit/8071c8fce1a5e5a98b05529968e01b0188a952e6))
+
 ## [9.3.0](https://github.com/FitGlue/server/compare/v9.2.0...v9.3.0) (2026-01-26)
 
 
