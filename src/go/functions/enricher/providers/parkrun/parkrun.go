@@ -334,13 +334,23 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 				// Step 2: Results not available yet - create pending input for background polling
 				logger.Debug("parkrun: results not yet available, creating pending input")
 
+				// stableID is used as the pending input document ID (unique per source activity)
 				stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
+
+				// Use the pre-generated activity_id from orchestrator for LinkedActivityId
+				// This is the UUID that will be used for the synchronized activity
+				linkedActivityId := inputs["activity_id"]
+				if linkedActivityId == "" {
+					// activity_id must be provided by orchestrator - this is a bug if missing
+					logger.Error("parkrun: activity_id not in inputs - orchestrator bug")
+					return nil, fmt.Errorf("activity_id not provided in enricher inputs")
+				}
 
 				// Calculate auto deadline (48 hours from now - Parkrun results usually come within 24h)
 				autoDeadline := time.Now().Add(48 * time.Hour)
 
 				pendingInput := &pb.PendingInput{
-					ActivityId:                 stableID,
+					ActivityId:                 stableID, // Document ID stays as stableID for uniqueness
 					UserId:                     user.UserId,
 					Status:                     pb.PendingInput_STATUS_WAITING,
 					RequiredFields:             []string{"description", "position", "time", "age_grade"},
@@ -348,7 +358,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 					ContinuedWithoutResolution: true,
 					EnricherProviderId:         "parkrun",
 					AutoDeadline:               timestamppb.New(autoDeadline),
-					LinkedActivityId:           stableID,              // Link to this activity
+					LinkedActivityId:           linkedActivityId,      // Now uses the correct UUID!
 					PipelineId:                 inputs["pipeline_id"], // For resume mode
 					OriginalPayload: &pb.ActivityPayload{
 						UserId:               user.UserId,

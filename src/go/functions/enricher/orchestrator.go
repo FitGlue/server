@@ -157,6 +157,19 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	pipelineExecutionID := fmt.Sprintf("%s-%s", basePipelineExecutionID, pipeline.ID)
 	logger.Info("Executing pipeline", "id", pipeline.ID, "pipelineExecutionId", pipelineExecutionID)
 
+	// Pre-generate ActivityId so enrichers can use it for pending input linking
+	// In resume mode, use the provided ActivityId; otherwise generate a new one
+	var activityId string
+	if isResumeMode {
+		if payload.ActivityId == nil || *payload.ActivityId == "" {
+			return nil, fmt.Errorf("resume mode requires activity_id to be set")
+		}
+		activityId = *payload.ActivityId
+	} else {
+		activityId = uuid.NewString()
+	}
+	logger.Debug("Activity ID for pipeline", "activity_id", activityId, "is_resume", isResumeMode)
+
 	// 3a. Execute Enrichers Sequentially
 	configs := pipeline.Enrichers
 	results := make([]*providers.EnrichmentResult, len(configs))
@@ -229,13 +242,14 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			Status:       "STARTED",
 		}
 
-		// Merge pipelineExecutionID and pipelineID into config for asset-generating providers
+		// Merge pipelineExecutionID, pipelineID, and activityId into config for providers
 		enricherConfig := make(map[string]string)
 		for k, v := range cfg.TypedConfig {
 			enricherConfig[k] = v
 		}
 		enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 		enricherConfig["pipeline_id"] = pipeline.ID
+		enricherConfig["activity_id"] = activityId // For pending input linking
 
 		// Execute
 		// TODO: Get logger from FrameworkContext when orchestrator is refactored
@@ -454,7 +468,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	finalEvent := &pb.EnrichedActivityEvent{
 		UserId:              payload.UserId,
 		Source:              payload.Source,
-		ActivityId:          uuid.NewString(),
+		ActivityId:          activityId,      // Use pre-generated ID (or preserved resume ID)
 		ActivityData:        currentActivity, // Already fully enriched
 		ActivityType:        currentActivity.Type,
 		Name:                currentActivity.Name,
@@ -467,13 +481,10 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		StartTime:           currentActivity.Sessions[0].StartTime,
 	}
 
-	// Resume Mode: Add update metadata and use original activity ID
+	// Resume Mode: Add update metadata
 	if isResumeMode {
 		if useUpdateMethod {
 			finalEvent.EnrichmentMetadata["use_update_method"] = "true"
-		}
-		if payload.ActivityId != nil && *payload.ActivityId != "" {
-			finalEvent.ActivityId = *payload.ActivityId
 		}
 	}
 
