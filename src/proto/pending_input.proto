@@ -42,4 +42,7 @@ message PendingInput {
   // Auto-population mode - system will auto-fill, not user
   bool auto_populated = 14;
   google.protobuf.Timestamp auto_deadline = 15;  // If not auto-resolved by deadline, prompt user
+
+  // Provider metadata - context data from the enricher for the UI (e.g., lap info for hybrid race tagger)
+  map<string, string> provider_metadata = 16;
 }

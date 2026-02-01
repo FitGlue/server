@@ -1285,6 +1285,65 @@ When your activity has GPS data (from a phone app or watch), FitGlue uses an "El
   popularityScore: 80,
 });
 
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE, {
+  id: 'fit-file-heart-rate',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'FIT File Heart Rate',
+  description: 'Upload a FIT file to add heart rate data to your activity with smart GPS alignment',
+  icon: '💓',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'force',
+      label: 'Force Overwrite',
+      description: 'Overwrite existing heart rate data if present',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+  ],
+  marketingDescription: `
+### Merge Heart Rate from FIT Files
+Upload a FIT file from another device or activity to merge heart rate data into your current activity. Perfect for activities where HR was recorded on a separate device.
+
+### How it works
+When an activity is imported without heart rate data (e.g., treadmill or Pool swim), FitGlue creates a pending input request for a FIT file upload. You can then upload the FIT file containing HR data (e.g., from a chest strap syncing to a different device or from Peloton). FitGlue extracts the heart rate samples and merges them with your activity.
+
+### Smart GPS Alignment
+When your activity has GPS data, FitGlue uses an "Elastic Match" algorithm to align the uploaded heart rate data with your GPS timestamps. This handles minor clock drift between devices automatically, ensuring your HR matches the correct location points.
+  `,
+  features: [
+    '✅ Upload FIT files with heart rate data',
+    '✅ Smart GPS alignment handles clock drift between devices',
+    '✅ Perfect for activities where HR was recorded separately',
+    '✅ Supports chest straps, smartwatches, and indoor equipment',
+    '✅ Linear interpolation for precise timestamp matching',
+  ],
+  transformations: [
+    {
+      field: 'heartRateStream',
+      label: 'Heart Rate Data',
+      before: '(no heart rate)',
+      after: '',
+      visualType: 'hr-graph',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Add heart rate from Peloton to indoor workouts',
+    'Merge chest strap HR with phone-tracked activities',
+    'Combine HR from one device with GPS from another',
+    'Complete heart rate data on pool swims',
+  ],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 75,
+});
+
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS, {
   id: 'virtual-gps',
@@ -2663,6 +2722,55 @@ When your activity has GPS data, this enricher uses OpenStreetMap's Nominatim AP
   sortOrder: 3,
   isPremium: false,
   popularityScore: 68,
+});
+
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER, {
+  id: 'hybrid_race_tagger',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Hybrid Race Tagger',
+  description: 'Tag and merge laps for hybrid races like Hyrox, ATHX, and multi-sport events',
+  icon: '🏁',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Hybrid Race Lap Tagging
+Properly categorize each segment of your hybrid race. Smartwatches often record multi-sport events (Hyrox, ATHX, etc.) as a single activity type, but each lap is a different exercise.
+
+### How it works
+When this enricher is active, your activity pipeline will pause and ask you to tag each lap with the correct exercise (e.g., "SkiErg", "Sled Push", "Running"). You can also merge adjacent laps that belong together (e.g., a 1km run split across multiple watch laps).
+
+### Hevy Integration
+Tagged laps are automatically mapped to Hevy exercises using Hevy's exercise library. If an exact match isn't found, Hevy's fuzzy matching or custom exercise creation handles it.
+  `,
+  features: [
+    '✅ Tag individual laps with exercise names',
+    '✅ Merge adjacent laps into logical segments',
+    '✅ Works with Hyrox, ATHX, and custom events',
+    '✅ Automatic Hevy exercise mapping via fuzzy match',
+    '✅ Per-lap distance and duration tracking',
+  ],
+  transformations: [
+    {
+      field: 'laps',
+      label: 'Lap Exercise Names',
+      before: '19 laps (all "Run")',
+      after: 'SkiErg (1 lap), 1km Run (2 laps merged), Sled Push (1 lap), ...',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Track Hyrox workouts with correct exercise tagging',
+    'Segment ATHX events into individual stations',
+    'Create accurate Hevy logs from multi-sport activities',
+    'Properly categorize triathlon or duathlon segments',
+  ],
+  // UX Organization
+  category: 'transformation',
+  sortOrder: 10,
+  isPremium: false,
+  popularityScore: 70,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {

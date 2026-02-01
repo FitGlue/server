@@ -74,6 +74,17 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 		}
 	}
 
+	// Check hybrid race records (detects from tags/enrichment metadata)
+	hybridRaceType := detectHybridRaceType(activity)
+	if hybridRaceType != "" {
+		hybridPRs, err := p.checkHybridRaceRecords(ctx, logger, activity, userID, hybridRaceType)
+		if err != nil {
+			logger.Warn("Failed to check hybrid race records", "error", err)
+		} else {
+			newPRs = append(newPRs, hybridPRs...)
+		}
+	}
+
 	if len(newPRs) == 0 {
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
@@ -273,6 +284,123 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 	return results, nil
 }
 
+// detectHybridRaceType checks activity tags for hybrid race type indicators
+func detectHybridRaceType(activity *pb.StandardizedActivity) string {
+	// Check tags for hybrid race indicators
+	for _, tag := range activity.Tags {
+		lowerTag := strings.ToLower(tag)
+		if strings.Contains(lowerTag, "hyrox") {
+			return "hyrox"
+		}
+		if strings.Contains(lowerTag, "athx") {
+			return "athx"
+		}
+	}
+
+	// Check activity name
+	lowerName := strings.ToLower(activity.Name)
+	if strings.Contains(lowerName, "hyrox") {
+		return "hyrox"
+	}
+	if strings.Contains(lowerName, "athx") {
+		return "athx"
+	}
+
+	// Check if activity has hybrid race stations in StrengthSets
+	for _, session := range activity.Sessions {
+		for _, set := range session.StrengthSets {
+			exerciseLower := strings.ToLower(set.ExerciseName)
+			// Hyrox-specific exercises
+			if strings.Contains(exerciseLower, "sled push") ||
+				strings.Contains(exerciseLower, "sled pull") ||
+				strings.Contains(exerciseLower, "wall balls") ||
+				strings.Contains(exerciseLower, "sandbag lunge") ||
+				strings.Contains(exerciseLower, "burpee broad") {
+				return "hyrox" // Default to Hyrox if detecting hybrid race exercises
+			}
+		}
+	}
+
+	return ""
+}
+
+// checkHybridRaceRecords checks for hybrid race PRs (total time and individual stations)
+func (p *PersonalRecordsProvider) checkHybridRaceRecords(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, userID, raceType string) ([]NewPRResult, error) {
+	var results []NewPRResult
+
+	// Calculate total activity time
+	var totalDurationSec float64
+	for _, session := range activity.Sessions {
+		totalDurationSec += session.TotalElapsedTime
+	}
+
+	// Check total race time PR
+	if totalDurationSec > 0 {
+		recordType := FormatHybridRaceRecordType(raceType, "total_time")
+		pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, totalDurationSec, "seconds", activity, true)
+		if err != nil {
+			logger.Warn("Failed to check hybrid race total time", "error", err)
+		} else if pr != nil {
+			results = append(results, *pr)
+		}
+	}
+
+	// Check individual station PRs (from StrengthSets)
+	for _, session := range activity.Sessions {
+		for _, set := range session.StrengthSets {
+			if set.DurationSeconds <= 0 {
+				continue
+			}
+
+			// Normalize station name for record key
+			stationKey := normalizeStationName(set.ExerciseName)
+			if stationKey == "" {
+				continue
+			}
+
+			recordType := FormatHybridRaceRecordType(raceType, stationKey)
+			pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, float64(set.DurationSeconds), "seconds", activity, true)
+			if err != nil {
+				logger.Warn("Failed to check hybrid race station PR", "error", err, "station", stationKey)
+			} else if pr != nil {
+				results = append(results, *pr)
+			}
+		}
+	}
+
+	logger.Info("Checked hybrid race records",
+		"race_type", raceType,
+		"prs_found", len(results),
+	)
+
+	return results, nil
+}
+
+// normalizeStationName converts exercise names to station keys for PRs
+func normalizeStationName(exerciseName string) string {
+	lower := strings.ToLower(exerciseName)
+	switch {
+	case strings.Contains(lower, "skierg"):
+		return "skierg"
+	case strings.Contains(lower, "sled push"):
+		return "sled_push"
+	case strings.Contains(lower, "sled pull"):
+		return "sled_pull"
+	case strings.Contains(lower, "burpee"):
+		return "burpee_broad_jump"
+	case strings.Contains(lower, "row"):
+		return "rowing"
+	case strings.Contains(lower, "farmer"):
+		return "farmers_carry"
+	case strings.Contains(lower, "sandbag"), strings.Contains(lower, "lunge"):
+		return "sandbag_lunges"
+	case strings.Contains(lower, "wall ball"):
+		return "wall_balls"
+	default:
+		return ""
+	}
+}
+
 // checkAndUpdateRecord compares the new value with the existing record and updates if it's a PR
 func (p *PersonalRecordsProvider) checkAndUpdateRecord(ctx context.Context, userID, recordType string, newValue float64, unit string, activity *pb.StandardizedActivity, lowerIsBetter bool) (*NewPRResult, error) {
 	// Get existing record from Firestore
@@ -442,6 +570,19 @@ func formatRecordTypeForDisplay(recordType string) string {
 	if strings.HasSuffix(recordType, string(SuffixReps)) {
 		exerciseName := strings.TrimSuffix(recordType, string(SuffixReps))
 		return formatExerciseName(exerciseName) + " Max Reps"
+	}
+
+	// Handle hybrid race record types
+	if strings.HasPrefix(recordType, "hybrid_race_") {
+		raceType, category := ParseHybridRaceRecordType(recordType)
+		if raceType != "" && category != "" {
+			raceDisplay := strings.ToUpper(raceType) // HYROX, ATHX
+			categoryDisplay := formatExerciseName(category)
+			if category == "total_time" {
+				return raceDisplay + " Total Time"
+			}
+			return raceDisplay + " " + categoryDisplay
+		}
 	}
 
 	// Fallback: convert snake_case to Title Case

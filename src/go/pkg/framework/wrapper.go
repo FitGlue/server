@@ -158,7 +158,7 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 			TriggerType:         triggerType,
 			PipelineExecutionID: pipelineExecutionID,
 		}
-		if err := execution.LogStart(ctx, svc.DB, execID, inputs, startOpts); err != nil {
+		if err := execution.LogStart(ctx, svc.DB, userID, execID, inputs, startOpts); err != nil {
 			logger.Warn("Failed to log execution start", "error", err)
 		}
 		// Log start with context tag as it denotes start of business logic? No, start of function execution is framework.
@@ -192,7 +192,7 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 
 				// Use the context we hopefully created, or the parent context if not
 				logCtx := ctx
-				if logErr := execution.LogFailure(logCtx, svc.DB, execID, panicErr, nil); logErr != nil {
+				if logErr := execution.LogFailure(logCtx, svc.DB, userID, execID, panicErr, nil); logErr != nil {
 					logger.Warn("Failed to log execution failure after panic", "error", logErr)
 				}
 			}
@@ -213,7 +213,7 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 				"trigger_type": triggerType,
 			}, logger)
 
-			if logErr := execution.LogFailure(ctx, svc.DB, execID, handlerErr, outputs); logErr != nil {
+			if logErr := execution.LogFailure(ctx, svc.DB, userID, execID, handlerErr, outputs); logErr != nil {
 				logger.Warn("Failed to log execution failure", "error", logErr)
 			}
 
@@ -246,11 +246,11 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 				logger.Warn("Unknown custom status returned", "status", customStatus)
 			}
 
-			if logErr := execution.LogExecutionStatus(ctx, svc.DB, execID, statusEnum, outputs); logErr != nil {
+			if logErr := execution.LogExecutionStatus(ctx, svc.DB, userID, execID, statusEnum, outputs); logErr != nil {
 				logger.Warn("Failed to log execution status", "error", logErr)
 			}
 		} else {
-			if logErr := execution.LogSuccess(ctx, svc.DB, execID, outputs); logErr != nil {
+			if logErr := execution.LogSuccess(ctx, svc.DB, userID, execID, outputs); logErr != nil {
 				logger.Warn("Failed to log execution success", "error", logErr)
 			}
 		}

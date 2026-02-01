@@ -262,7 +262,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		if isResumeMode && payload.ResumePendingInputId != nil && *payload.ResumePendingInputId != "" {
 			if resumable, ok := provider.(providers.ResumableProvider); ok {
 				// Fetch the resolved pending input from database
-				pendingInput, fetchErr := o.database.GetPendingInput(ctx, *payload.ResumePendingInputId)
+				pendingInput, fetchErr := o.database.GetPendingInput(ctx, payload.UserId, *payload.ResumePendingInputId)
 				if fetchErr != nil {
 					logger.Warn("Failed to fetch pending input for resume", "error", fetchErr, "pending_input_id", *payload.ResumePendingInputId)
 					// Fall back to regular Enrich
@@ -580,15 +580,16 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID)
 	// Create Pending Input in DB
 	pi := &pb.PendingInput{
-		ActivityId:      waitErr.ActivityID,
-		UserId:          payload.UserId,
-		Status:          pb.PendingInput_STATUS_WAITING,
-		RequiredFields:  waitErr.RequiredFields,
-		OriginalPayload: payload, // Full payload for re-publish
-		CreatedAt:       timestamppb.Now(),
-		UpdatedAt:       timestamppb.Now(),
+		ActivityId:       waitErr.ActivityID,
+		UserId:           payload.UserId,
+		Status:           pb.PendingInput_STATUS_WAITING,
+		RequiredFields:   waitErr.RequiredFields,
+		OriginalPayload:  payload, // Full payload for re-publish
+		CreatedAt:        timestamppb.Now(),
+		UpdatedAt:        timestamppb.Now(),
+		ProviderMetadata: waitErr.Metadata, // Pass provider context to UI
 	}
-	if err := o.database.CreatePendingInput(ctx, pi); err != nil {
+	if err := o.database.CreatePendingInput(ctx, payload.UserId, pi); err != nil {
 		logger.Warn("Failed to create pending input (might already exist)", "error", err)
 	}
 

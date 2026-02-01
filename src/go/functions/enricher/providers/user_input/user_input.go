@@ -14,6 +14,7 @@ import (
 type WaitForInputError struct {
 	ActivityID     string
 	RequiredFields []string
+	Metadata       map[string]string // Optional metadata to store with pending input (e.g., lap info)
 }
 
 func (e *WaitForInputError) Error() string {
@@ -58,7 +59,7 @@ func (p *UserInputProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 	}
 
 	// Check DB
-	pending, err := p.service.DB.GetPendingInput(ctx, stableID)
+	pending, err := p.service.DB.GetPendingInput(ctx, user.UserId, stableID)
 	if err == nil && pending != nil {
 		logger.Debug("user_input: found pending input",
 			"status", pending.Status.String(),

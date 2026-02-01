@@ -8,8 +8,8 @@ export class InputService {
     private authorization?: AuthorizationService
   ) { }
 
-  async getPendingInput(activityId: string): Promise<PendingInput | null> {
-    return this.store.getPending(activityId);
+  async getPendingInput(userId: string, activityId: string): Promise<PendingInput | null> {
+    return this.store.getPending(userId, activityId);
   }
 
   async listPendingInputs(userId: string): Promise<PendingInput[]> {
@@ -20,8 +20,8 @@ export class InputService {
    * Resolve a pending input.
    * Validates ownership: requesting user must own the input OR be admin.
    */
-  async resolveInput(activityId: string, requestingUserId: string, inputData: Record<string, string>): Promise<void> {
-    const pending = await this.store.getPending(activityId);
+  async resolveInput(userId: string, activityId: string, requestingUserId: string, inputData: Record<string, string>): Promise<void> {
+    const pending = await this.store.getPending(userId, activityId);
     if (!pending) {
       throw new Error(`Pending input ${activityId} not found`);
     }
@@ -43,15 +43,15 @@ export class InputService {
       throw new Error('Input already resolved or invalid status');
     }
 
-    await this.store.resolve(activityId, inputData);
+    await this.store.resolve(userId, activityId, inputData);
   }
 
   /**
    * Dismiss a pending input.
    * Validates ownership: requesting user must own the input OR be admin.
    */
-  async dismissInput(activityId: string, requestingUserId: string): Promise<void> {
-    const pending = await this.store.getPending(activityId);
+  async dismissInput(userId: string, activityId: string, requestingUserId: string): Promise<void> {
+    const pending = await this.store.getPending(userId, activityId);
     if (!pending) {
       // Idempotent success if already gone
       return;
@@ -70,6 +70,6 @@ export class InputService {
       }
     }
 
-    await this.store.delete(activityId);
+    await this.store.delete(userId, activityId);
   }
 }

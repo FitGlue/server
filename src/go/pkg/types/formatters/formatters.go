@@ -341,6 +341,10 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Route Thumbnail"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER:
 		return "Ai Banner"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE:
+		return "Fit File Heart Rate"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER:
+		return "Hybrid Race Tagger"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:

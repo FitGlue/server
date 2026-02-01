@@ -92,6 +92,16 @@ message StandardizedActivity {
   string description = 8; // User notes
   repeated string tags = 9;
   string notes = 10;
+
+  // Time markers for graph visualization (e.g., station transitions in hybrid races)
+  repeated TimeMarker time_markers = 11;
+}
+
+// TimeMarker represents a labeled point in time for graph visualization
+message TimeMarker {
+  google.protobuf.Timestamp timestamp = 1;
+  string label = 2;       // e.g., "SkiErg Start", "Run 3"
+  string marker_type = 3; // "station_start", "run_start", "segment_end"
 }
 
 message Session {
@@ -115,6 +125,7 @@ message Lap {
   double total_elapsed_time = 2; // seconds
   double total_distance = 3;     // meters
   repeated Record records = 4;
+  string exercise_name = 5;      // Override exercise name for this lap (e.g., "SkiErg", "Sled Push")
 }
 
 // Record represents a single data point in time (1Hz is typical)

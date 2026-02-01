@@ -44,11 +44,12 @@ export const addInputsCommands = (program: Command) => {
     });
 
   program.command('inputs:get')
+    .argument('<userId>', 'User ID who owns the pending input')
     .argument('<activityId>', 'Activity ID (Pending Input ID)')
     .description('Get details of a specific pending input')
-    .action(async (activityId) => {
+    .action(async (userId, activityId) => {
       try {
-        const input = await service.getPendingInput(activityId);
+        const input = await service.getPendingInput(userId, activityId);
         if (!input) {
           console.error('Pending input not found');
           process.exit(1);
@@ -79,13 +80,14 @@ export const addInputsCommands = (program: Command) => {
     });
 
   program.command('inputs:resolve')
+    .argument('<userId>', 'User ID who owns the pending input')
     .argument('<activityId>', 'Activity ID')
     .option('--data <json>', 'JSON string of input data (e.g. \'{"title":"Run"}\')')
     .description('Resolve a pending input and resume the pipeline')
-    .action(async (activityId, options) => {
+    .action(async (userId, activityId, options) => {
       try {
         let inputData: Record<string, string>;
-        const input = await service.getPendingInput(activityId);
+        const input = await service.getPendingInput(userId, activityId);
 
         if (!input) {
           console.error('Pending input not found');
@@ -113,8 +115,8 @@ export const addInputsCommands = (program: Command) => {
         console.log(`Resolving input for ${activityId}...`);
 
         // Update via Service (validates status)
-        // Pass userId from input because CLI is admin (impersonating user)
-        await service.resolveInput(activityId, input.userId, inputData);
+        // Admin CLI always passes the owner's userId for sub-collection access
+        await service.resolveInput(userId, activityId, userId, inputData);
 
         // Publish to PubSub (This logic stays in CLI/Handler, service just updates DB state?)
         // The implementation plan says "API Handler ... re-publishes".

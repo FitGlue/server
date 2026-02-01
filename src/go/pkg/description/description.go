@@ -119,6 +119,16 @@ func ReplaceSection(description, headerPrefix, newContent string) string {
 	return result.String()
 }
 
+// ExtractSection extracts the content of a section (from header to next section or EOF).
+// Returns the section content if found, empty string otherwise.
+func ExtractSection(description, headerPrefix string) string {
+	start, end, found := FindSection(description, headerPrefix)
+	if !found {
+		return ""
+	}
+	return strings.TrimSpace(description[start:end])
+}
+
 // RemoveSection removes a section entirely from the description.
 func RemoveSection(description, headerPrefix string) string {
 	start, end, found := FindSection(description, headerPrefix)

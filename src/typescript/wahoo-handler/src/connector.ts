@@ -209,6 +209,7 @@ export class WahooConnector extends BaseConnector<WahooConnectorConfig> {
       externalId: workoutId,
       userId: userId,
       startTime,
+      timeMarkers: [],
       name: workout.name || 'Wahoo Workout',
       type: mapWahooWorkoutType(workout.workout_type_id),
       description: '',

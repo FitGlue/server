@@ -13,7 +13,7 @@ import (
 // Database interface for Firestore operations
 type Database interface {
 	SetExecution(ctx context.Context, record *pb.ExecutionRecord) error
-	UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error
+	UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error
 }
 
 // ExecutionOptions contains optional fields for execution logging
@@ -67,7 +67,7 @@ func LogPending(ctx context.Context, db Database, service string, opts Execution
 }
 
 // LogStart updates an execution record to STARTED status and adds inputs/metadata
-func LogStart(ctx context.Context, db Database, execID string, inputs interface{}, opts *ExecutionOptions) error {
+func LogStart(ctx context.Context, db Database, userId string, execID string, inputs interface{}, opts *ExecutionOptions) error {
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
@@ -99,7 +99,7 @@ func LogStart(ctx context.Context, db Database, execID string, inputs interface{
 		}
 	}
 
-	if err := db.UpdateExecution(ctx, execID, updates); err != nil {
+	if err := db.UpdateExecution(ctx, userId, execID, updates); err != nil {
 		return fmt.Errorf("failed to log execution start: %w", err)
 	}
 
@@ -140,7 +140,7 @@ func LogChildExecutionStart(ctx context.Context, db Database, service string, pi
 }
 
 // LogSuccess updates an execution record with SUCCESS status
-func LogSuccess(ctx context.Context, db Database, execID string, outputs interface{}) error {
+func LogSuccess(ctx context.Context, db Database, userId string, execID string, outputs interface{}) error {
 	now := timestamppb.Now()
 
 	// Update using snake_case keys manually as we use map[string]interface{}
@@ -158,7 +158,7 @@ func LogSuccess(ctx context.Context, db Database, execID string, outputs interfa
 		}
 	}
 
-	if err := db.UpdateExecution(ctx, execID, updates); err != nil {
+	if err := db.UpdateExecution(ctx, userId, execID, updates); err != nil {
 		return fmt.Errorf("failed to log execution success: %w", err)
 	}
 
@@ -166,7 +166,7 @@ func LogSuccess(ctx context.Context, db Database, execID string, outputs interfa
 }
 
 // LogFailure updates an execution record with FAILED status
-func LogFailure(ctx context.Context, db Database, execID string, err error, outputs interface{}) error {
+func LogFailure(ctx context.Context, db Database, userId string, execID string, err error, outputs interface{}) error {
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
@@ -184,7 +184,7 @@ func LogFailure(ctx context.Context, db Database, execID string, err error, outp
 		}
 	}
 
-	if updateErr := db.UpdateExecution(ctx, execID, updates); updateErr != nil {
+	if updateErr := db.UpdateExecution(ctx, userId, execID, updates); updateErr != nil {
 		return fmt.Errorf("failed to log execution failure: %w", updateErr)
 	}
 
@@ -192,7 +192,7 @@ func LogFailure(ctx context.Context, db Database, execID string, err error, outp
 }
 
 // LogExecutionStatus updates an execution record with a custom status
-func LogExecutionStatus(ctx context.Context, db Database, execID string, status pb.ExecutionStatus, outputs interface{}) error {
+func LogExecutionStatus(ctx context.Context, db Database, userId string, execID string, status pb.ExecutionStatus, outputs interface{}) error {
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
@@ -209,7 +209,7 @@ func LogExecutionStatus(ctx context.Context, db Database, execID string, status 
 		}
 	}
 
-	if err := db.UpdateExecution(ctx, execID, updates); err != nil {
+	if err := db.UpdateExecution(ctx, userId, execID, updates); err != nil {
 		return fmt.Errorf("failed to log execution status %v: %w", status, err)
 	}
 

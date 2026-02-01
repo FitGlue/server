@@ -126,7 +126,8 @@ export const mapTCXToStandardized = (tcxXml: string, logData: LogData, userId: s
       startTime: new Date(tcxLap['@_StartTime']),
       totalElapsedTime: parseFloat(tcxLap.TotalTimeSeconds || '0'),
       totalDistance: parseFloat(tcxLap.DistanceMeters || '0'),
-      records: records
+      records: records,
+      exerciseName: '' // Default empty - can be set by hybrid race tagger
     };
 
     totalDistanceToCheck += lap.totalDistance;
@@ -157,6 +158,7 @@ export const mapTCXToStandardized = (tcxXml: string, logData: LogData, userId: s
     type: mapTcxSportToActivityType(sport || ''),
     description: data?.description || '',
     sessions: [session],
+    timeMarkers: [],
     tags: [],
     notes: ''
   };

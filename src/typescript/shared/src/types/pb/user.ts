@@ -63,8 +63,12 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE = 26,
   /** ENRICHER_PROVIDER_ROUTE_THUMBNAIL - Config inputs: "width", "height", "style", "line_color", "line_width" - generates static map image of GPS route - Athlete tier only */
   ENRICHER_PROVIDER_ROUTE_THUMBNAIL = 27,
-  /** ENRICHER_PROVIDER_AI_BANNER - Config inputs: "style" (vibrant/minimal/dramatic) - generates AI banner image for Showcase - Athlete tier only */
+  /** ENRICHER_PROVIDER_AI_BANNER - Config inputs: \"style\" (vibrant/minimal/dramatic) - generates AI banner image for Showcase - Athlete tier only */
   ENRICHER_PROVIDER_AI_BANNER = 28,
+  /** ENRICHER_PROVIDER_FIT_FILE_HEART_RATE - Config inputs: none (requests FIT file upload via pending input, extracts HR data for merging) */
+  ENRICHER_PROVIDER_FIT_FILE_HEART_RATE = 29,
+  /** ENRICHER_PROVIDER_HYBRID_RACE_TAGGER - Config inputs: none (allows tagging and merging laps for hybrid races like Hyrox, ATHX) */
+  ENRICHER_PROVIDER_HYBRID_RACE_TAGGER = 30,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

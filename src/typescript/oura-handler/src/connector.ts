@@ -187,6 +187,7 @@ export class OuraConnector extends BaseConnector<OuraConnectorConfig> {
       externalId: workoutId,
       userId: userId,
       startTime: startTime,
+      timeMarkers: [],
       name: workout.label || `${this.formatActivityName(workout.activity)} Workout`,
       type: mapOuraActivityType(workout.activity),
       description: '',

@@ -28,19 +28,19 @@ func (m *MockDatabase) GetUser(ctx context.Context, id string) (*pb.UserRecord, 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
 	return nil
 }
-func (m *MockDatabase) UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDatabase) UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return nil
 }
 func (m *MockDatabase) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
 	return nil
 }
-func (m *MockDatabase) CreatePendingInput(ctx context.Context, input *pb.PendingInput) error {
+func (m *MockDatabase) CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error {
 	return nil
 }
-func (m *MockDatabase) GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error) {
+func (m *MockDatabase) GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
 	return nil, nil
 }
-func (m *MockDatabase) UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDatabase) UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return nil
 }
 func (m *MockDatabase) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
@@ -54,6 +54,9 @@ func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *p
 }
 func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
 	return nil, nil
+}
+func (m *MockDatabase) DeleteCounter(ctx context.Context, userId string, id string) error {
+	return nil
 }
 
 func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
@@ -93,6 +96,12 @@ func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, rec
 	return nil, nil
 }
 func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+	return nil
+}
+func (m *MockDatabase) ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error) {
+	return nil, nil
+}
+func (m *MockDatabase) DeletePersonalRecord(ctx context.Context, userId string, recordType string) error {
 	return nil
 }
 func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {

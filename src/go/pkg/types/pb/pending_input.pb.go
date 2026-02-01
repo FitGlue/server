@@ -95,8 +95,10 @@ type PendingInput struct {
 	// Auto-population mode - system will auto-fill, not user
 	AutoPopulated bool                 `protobuf:"varint,14,opt,name=auto_populated,json=autoPopulated,proto3" json:"auto_populated,omitempty"`
 	AutoDeadline  *timestamp.Timestamp `protobuf:"bytes,15,opt,name=auto_deadline,json=autoDeadline,proto3" json:"auto_deadline,omitempty"` // If not auto-resolved by deadline, prompt user
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Provider metadata - context data from the enricher for the UI (e.g., lap info for hybrid race tagger)
+	ProviderMetadata map[string]string `protobuf:"bytes,16,rep,name=provider_metadata,json=providerMetadata,proto3" json:"provider_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *PendingInput) Reset() {
@@ -234,11 +236,18 @@ func (x *PendingInput) GetAutoDeadline() *timestamp.Timestamp {
 	return nil
 }
 
+func (x *PendingInput) GetProviderMetadata() map[string]string {
+	if x != nil {
+		return x.ProviderMetadata
+	}
+	return nil
+}
+
 var File_pending_input_proto protoreflect.FileDescriptor
 
 const file_pending_input_proto_rawDesc = "" +
 	"\n" +
-	"\x13pending_input.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0eactivity.proto\"\x9b\a\n" +
+	"\x13pending_input.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0eactivity.proto\"\xba\b\n" +
 	"\fPendingInput\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -260,8 +269,12 @@ const file_pending_input_proto_rawDesc = "" +
 	"pipelineId\x120\n" +
 	"\x14enricher_provider_id\x18\r \x01(\tR\x12enricherProviderId\x12%\n" +
 	"\x0eauto_populated\x18\x0e \x01(\bR\rautoPopulated\x12?\n" +
-	"\rauto_deadline\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\fautoDeadline\x1a<\n" +
+	"\rauto_deadline\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\fautoDeadline\x12X\n" +
+	"\x11provider_metadata\x18\x10 \x03(\v2+.fitglue.PendingInput.ProviderMetadataEntryR\x10providerMetadata\x1a<\n" +
 	"\x0eInputDataEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aC\n" +
+	"\x15ProviderMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"J\n" +
 	"\x06Status\x12\x16\n" +
@@ -282,27 +295,29 @@ func file_pending_input_proto_rawDescGZIP() []byte {
 }
 
 var file_pending_input_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_pending_input_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_pending_input_proto_msgTypes = make([]protoimpl.MessageInfo, 3)
 var file_pending_input_proto_goTypes = []any{
 	(PendingInput_Status)(0),    // 0: fitglue.PendingInput.Status
 	(*PendingInput)(nil),        // 1: fitglue.PendingInput
 	nil,                         // 2: fitglue.PendingInput.InputDataEntry
-	(*ActivityPayload)(nil),     // 3: fitglue.ActivityPayload
-	(*timestamp.Timestamp)(nil), // 4: google.protobuf.Timestamp
+	nil,                         // 3: fitglue.PendingInput.ProviderMetadataEntry
+	(*ActivityPayload)(nil),     // 4: fitglue.ActivityPayload
+	(*timestamp.Timestamp)(nil), // 5: google.protobuf.Timestamp
 }
 var file_pending_input_proto_depIdxs = []int32{
 	0, // 0: fitglue.PendingInput.status:type_name -> fitglue.PendingInput.Status
 	2, // 1: fitglue.PendingInput.input_data:type_name -> fitglue.PendingInput.InputDataEntry
-	3, // 2: fitglue.PendingInput.original_payload:type_name -> fitglue.ActivityPayload
-	4, // 3: fitglue.PendingInput.created_at:type_name -> google.protobuf.Timestamp
-	4, // 4: fitglue.PendingInput.updated_at:type_name -> google.protobuf.Timestamp
-	4, // 5: fitglue.PendingInput.completed_at:type_name -> google.protobuf.Timestamp
-	4, // 6: fitglue.PendingInput.auto_deadline:type_name -> google.protobuf.Timestamp
-	7, // [7:7] is the sub-list for method output_type
-	7, // [7:7] is the sub-list for method input_type
-	7, // [7:7] is the sub-list for extension type_name
-	7, // [7:7] is the sub-list for extension extendee
-	0, // [0:7] is the sub-list for field type_name
+	4, // 2: fitglue.PendingInput.original_payload:type_name -> fitglue.ActivityPayload
+	5, // 3: fitglue.PendingInput.created_at:type_name -> google.protobuf.Timestamp
+	5, // 4: fitglue.PendingInput.updated_at:type_name -> google.protobuf.Timestamp
+	5, // 5: fitglue.PendingInput.completed_at:type_name -> google.protobuf.Timestamp
+	5, // 6: fitglue.PendingInput.auto_deadline:type_name -> google.protobuf.Timestamp
+	3, // 7: fitglue.PendingInput.provider_metadata:type_name -> fitglue.PendingInput.ProviderMetadataEntry
+	8, // [8:8] is the sub-list for method output_type
+	8, // [8:8] is the sub-list for method input_type
+	8, // [8:8] is the sub-list for extension type_name
+	8, // [8:8] is the sub-list for extension extendee
+	0, // [0:8] is the sub-list for field type_name
 }
 
 func init() { file_pending_input_proto_init() }
@@ -317,7 +332,7 @@ func file_pending_input_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_pending_input_proto_rawDesc), len(file_pending_input_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   2,
+			NumMessages:   3,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

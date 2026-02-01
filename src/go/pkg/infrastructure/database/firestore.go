@@ -24,13 +24,23 @@ func NewFirestoreAdapter(client *firestore.Client) *FirestoreAdapter {
 }
 
 func (a *FirestoreAdapter) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
-	// Use typed storage
-	return a.storage.Executions().Doc(record.ExecutionId).Set(ctx, record)
+	userId := record.GetUserId()
+	if userId == "" {
+		// ORPHANED: No userId - this is a code smell that should be investigated
+		// Store in orphaned_executions collection for alerting
+		return a.storage.OrphanedExecutions().Doc(record.ExecutionId).Set(ctx, record)
+	}
+	// Use typed storage with user sub-collection for direct Firestore client access
+	return a.storage.UserExecutions(userId).Doc(record.ExecutionId).Set(ctx, record)
 }
 
-func (a *FirestoreAdapter) UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error {
-	// Use untyped update on connection
-	return a.storage.Executions().Doc(id).Update(ctx, data)
+func (a *FirestoreAdapter) UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error {
+	if userId == "" {
+		// ORPHANED: No userId - update in orphaned_executions collection
+		return a.storage.OrphanedExecutions().Doc(id).Update(ctx, data)
+	}
+	// Use user sub-collection for direct Firestore client access
+	return a.storage.UserExecutions(userId).Doc(id).Update(ctx, data)
 }
 
 func (a *FirestoreAdapter) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
@@ -73,32 +83,27 @@ func (a *FirestoreAdapter) ResetSyncCount(ctx context.Context, userID string) er
 
 // --- Pending Inputs ---
 
-func (a *FirestoreAdapter) GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error) {
-	doc, err := a.storage.PendingInputs().Doc(id).Get(ctx)
+func (a *FirestoreAdapter) GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
+	doc, err := a.storage.UserPendingInputs(userId).Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return doc, nil
 }
 
-func (a *FirestoreAdapter) CreatePendingInput(ctx context.Context, input *pb.PendingInput) error {
+func (a *FirestoreAdapter) CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error {
 	// Use Set to handle potential retries/race conditions
-	return a.storage.PendingInputs().Doc(input.ActivityId).Set(ctx, input)
-
+	// Store in user sub-collection for direct Firestore client access
+	return a.storage.UserPendingInputs(userId).Doc(input.ActivityId).Set(ctx, input)
 }
 
-func (a *FirestoreAdapter) UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error {
-	return a.storage.PendingInputs().Doc(id).Update(ctx, data)
+func (a *FirestoreAdapter) UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error {
+	return a.storage.UserPendingInputs(userId).Doc(id).Update(ctx, data)
 }
 
 func (a *FirestoreAdapter) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
-	// Query: where("user_id", "==", userID).where("status", "==", STATUS_WAITING)
-	// We need to use the raw client for queries as our storage wrapper might not support generic queries yet?
-	// Looking at `server/src/go/pkg/storage/firestore/collection.go` (inferred), usually wrapper has basic CRUD.
-	// `client.go` exposes `Users()` which returns `*Collection`.
-	// Let's use the raw client exposed in Adapter if needed, or check if Collection supports Where.
-	// Assuming raw client usage for queries for now to be safe.
-	iter := a.Client.Collection("pending_inputs").Where("user_id", "==", userID).Documents(ctx)
+	// Query user sub-collection directly - no need for where clause on user_id
+	iter := a.Client.Collection("users").Doc(userID).Collection("pending_inputs").Documents(ctx)
 	docs, err := iter.GetAll()
 	if err != nil {
 		return nil, err
@@ -154,6 +159,12 @@ func (a *FirestoreAdapter) ListCounters(ctx context.Context, userId string) ([]*
 	return counters, nil
 }
 
+// DeleteCounter removes a counter by ID
+func (a *FirestoreAdapter) DeleteCounter(ctx context.Context, userId string, id string) error {
+	_, err := a.Client.Collection("users").Doc(userId).Collection("counters").Doc(id).Delete(ctx)
+	return err
+}
+
 // --- Personal Records ---
 
 // GetPersonalRecord retrieves a personal record by type
@@ -169,6 +180,32 @@ func (a *FirestoreAdapter) GetPersonalRecord(ctx context.Context, userId string,
 // SetPersonalRecord creates or updates a personal record
 func (a *FirestoreAdapter) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
 	return a.storage.PersonalRecords(userId).Doc(record.RecordType).Set(ctx, record)
+}
+
+// ListPersonalRecords returns all personal records for a user
+func (a *FirestoreAdapter) ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error) {
+	iter := a.Client.Collection("users").Doc(userId).Collection("personal_records").Documents(ctx)
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	var records []*pb.PersonalRecord
+	for _, d := range docs {
+		m := d.Data()
+		record := storage.FirestoreToPersonalRecord(m)
+		if record.RecordType == "" {
+			record.RecordType = d.Ref.ID
+		}
+		records = append(records, record)
+	}
+	return records, nil
+}
+
+// DeletePersonalRecord removes a personal record by type
+func (a *FirestoreAdapter) DeletePersonalRecord(ctx context.Context, userId string, recordType string) error {
+	_, err := a.Client.Collection("users").Doc(userId).Collection("personal_records").Doc(recordType).Delete(ctx)
+	return err
 }
 
 // --- Activities ---

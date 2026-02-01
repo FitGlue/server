@@ -375,7 +375,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 					UpdatedAt: timestamppb.Now(),
 				}
 
-				if err := p.service.DB.CreatePendingInput(ctx, pendingInput); err != nil {
+				if err := p.service.DB.CreatePendingInput(ctx, user.UserId, pendingInput); err != nil {
 					// Log but don't fail - we can still continue without results enrichment
 					logger.Warn("parkrun: failed to create pending input", "error", err)
 					result.Metadata["results_pending_input_error"] = err.Error()

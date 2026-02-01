@@ -418,9 +418,15 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		}
 
 		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-			// Replace the existing section with the new content
-			mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, eventPayload.Description)
-			fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+			// Extract just the section content from eventPayload.Description
+			// The payload contains the full description, but we only want the specific section
+			newSectionContent := description.ExtractSection(eventPayload.Description, sectionHeader)
+			if newSectionContent != "" {
+				mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
+				fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+			} else {
+				fwCtx.Logger.Warn("Section header found in metadata but content not found in payload", "header", sectionHeader)
+			}
 		} else if mergedDescription != "" {
 			// Fallback to append
 			mergedDescription += "\n\n" + eventPayload.Description
@@ -430,10 +436,10 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 	}
 
 	// 4. Build update payload
+	// In UPDATE mode, we intentionally do NOT update the title.
+	// The activity already exists on Strava, and the user may have customized the title there.
+	// We only update the description with new enrichment content.
 	updateBody := map[string]interface{}{}
-	if eventPayload.Name != "" && eventPayload.Name != existingActivity.Name {
-		updateBody["name"] = eventPayload.Name
-	}
 	if mergedDescription != existingActivity.Description {
 		updateBody["description"] = mergedDescription
 	}

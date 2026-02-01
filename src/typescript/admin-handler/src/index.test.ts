@@ -315,11 +315,13 @@ describe('admin-handler', () => {
       // Mock pipelineStore.list to return empty array
       ctx.services.user.pipelineStore.list.mockResolvedValue([]);
 
-      // Mock pending inputs query (single where, filter in memory)
+      // Mock pending inputs query (now in user sub-collection)
       (mockDb.collection as jest.Mock).mockReturnValue({
-        where: jest.fn().mockReturnValue({
-          get: jest.fn().mockResolvedValue({
-            docs: [{ data: () => ({ activity_id: 'act-1', status: 1 }) }],
+        doc: jest.fn().mockReturnValue({
+          collection: jest.fn().mockReturnValue({
+            get: jest.fn().mockResolvedValue({
+              docs: [{ data: () => ({ activity_id: 'act-1', status: 1 }) }],
+            }),
           }),
         }),
       });

@@ -143,3 +143,8 @@ exports.polarWebhookHandler = (req, res) => {
   const polar = require('./polar-handler/dist/index');
   return polar.polarWebhookHandler(req, res);
 };
+
+exports.userDataHandler = (req, res) => {
+  const userData = require('./user-data-handler/dist/index');
+  return userData.userDataHandler(req, res);
+};

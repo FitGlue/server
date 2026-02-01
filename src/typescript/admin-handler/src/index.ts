@@ -137,8 +137,8 @@ type PendingInputInfo = { activityId: string; status: string; enricherProviderId
 
 async function fetchPendingInputs(targetUserId: string, logger: FrameworkContext['logger']): Promise<PendingInputInfo[]> {
   try {
-    const snapshot = await db.collection('pending_inputs')
-      .where('user_id', '==', targetUserId)
+    // Use user sub-collection for pending inputs
+    const snapshot = await db.collection('users').doc(targetUserId).collection('pending_inputs')
       .get();
 
     return snapshot.docs
@@ -340,11 +340,12 @@ async function handleDeletePendingInputs(match: RouteMatch, adminUserId: string,
 
   const batchSize = 50;
   let deletedCount = 0;
+  // Use user sub-collection for pending inputs
+  const collectionRef = db.collection('users').doc(targetUserId).collection('pending_inputs');
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const snapshot = await db.collection('pending_inputs')
-      .where('user_id', '==', targetUserId)
+    const snapshot = await collectionRef
       .limit(batchSize)
       .get();
     if (snapshot.empty) break;

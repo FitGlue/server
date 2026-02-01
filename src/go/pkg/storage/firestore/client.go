@@ -25,6 +25,9 @@ func (c *Client) Users() *Collection[pb.UserRecord] {
 	}
 }
 
+// Executions returns the legacy root-level collection.
+// DEPRECATED: Use UserExecutions(userId) for new code.
+// This remains for backward compatibility during migration.
 func (c *Client) Executions() *Collection[pb.ExecutionRecord] {
 	return &Collection[pb.ExecutionRecord]{
 		Ref:           c.fs.Collection("executions"),
@@ -33,9 +36,40 @@ func (c *Client) Executions() *Collection[pb.ExecutionRecord] {
 	}
 }
 
+// UserExecutions are sub-collections of Users: users/{uid}/executions/{id}
+// PREFERRED: Use this instead of Executions() for new code
+func (c *Client) UserExecutions(userId string) *Collection[pb.ExecutionRecord] {
+	return &Collection[pb.ExecutionRecord]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("executions"),
+		ToFirestore:   ExecutionToFirestore,
+		FromFirestore: FirestoreToExecution,
+	}
+}
+
+// OrphanedExecutions stores executions without a userId.
+// These are code smells and should be investigated.
+// Consider setting up alerts on this collection's write activity.
+func (c *Client) OrphanedExecutions() *Collection[pb.ExecutionRecord] {
+	return &Collection[pb.ExecutionRecord]{
+		Ref:           c.fs.Collection("orphaned_executions"),
+		ToFirestore:   ExecutionToFirestore,
+		FromFirestore: FirestoreToExecution,
+	}
+}
+
 func (c *Client) PendingInputs() *Collection[pb.PendingInput] {
 	return &Collection[pb.PendingInput]{
 		Ref:           c.fs.Collection("pending_inputs"),
+		ToFirestore:   PendingInputToFirestore,
+		FromFirestore: FirestoreToPendingInput,
+	}
+}
+
+// UserPendingInputs are sub-collections of Users: users/{uid}/pending_inputs/{id}
+// PREFERRED: Use this instead of PendingInputs() for new code
+func (c *Client) UserPendingInputs(userId string) *Collection[pb.PendingInput] {
+	return &Collection[pb.PendingInput]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("pending_inputs"),
 		ToFirestore:   PendingInputToFirestore,
 		FromFirestore: FirestoreToPendingInput,
 	}

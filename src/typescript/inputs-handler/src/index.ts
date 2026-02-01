@@ -75,13 +75,13 @@ export const handler: FrameworkHandler = async (req, ctx) => {
     }
 
     try {
-      const input = await inputService.getPendingInput(body.activityId);
+      const input = await inputService.getPendingInput(ctx.userId, body.activityId);
       if (!input) {
         throw new HttpError(404, 'Not found');
       }
 
       // Service validates ownership and status
-      await inputService.resolveInput(body.activityId, ctx.userId, body.inputData);
+      await inputService.resolveInput(ctx.userId, body.activityId, ctx.userId, body.inputData);
 
       // Re-publish Original Payload
       // Re-fetch (or use cached if service returns updated obj, but service returns void currently)
@@ -136,7 +136,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
 
     const activityId = decodeURIComponent(rawId);
 
-    await inputService.dismissInput(activityId, ctx.userId);
+    await inputService.dismissInput(ctx.userId, activityId, ctx.userId);
     ctx.logger.info('Dismissed input', { activityId });
     return { success: true };
   }

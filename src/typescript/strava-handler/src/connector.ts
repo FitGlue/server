@@ -230,6 +230,7 @@ export class StravaConnector extends BaseConnector<StravaConnectorConfig> {
       externalId: activityId,
       userId: userId,
       startTime: activity.start_date ? new Date(activity.start_date) : new Date(),
+      timeMarkers: [],
       name: activity.name || 'Strava Activity',
       type: mapStravaActivityType(activity.type),
       description: activity.description || '',

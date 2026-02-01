@@ -153,6 +153,7 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
       externalId: workout.id || 'unknown',
       userId: userId,
       startTime: startTime,
+      timeMarkers: [],
       name: workout.title || 'Hevy Workout',
       type: ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
       description: workout.description || '',

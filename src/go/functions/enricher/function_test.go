@@ -24,7 +24,7 @@ func TestEnrichActivity(t *testing.T) {
 		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
 			return nil
 		},
-		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		UpdateExecutionFunc: func(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 			// Verify rich output structure
 			if outputsJSON, ok := data["outputs_json"].(string); ok {
 				var outputs map[string]interface{}

@@ -15,7 +15,7 @@ func TestUserInput_Enrich(t *testing.T) {
 
 	t.Run("Returns WaitError if no pending input", func(t *testing.T) {
 		mockDB := &mocks.MockDatabase{
-			GetPendingInputFunc: func(ctx context.Context, id string) (*pb.PendingInput, error) {
+			GetPendingInputFunc: func(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
 				return nil, nil // Not found
 			},
 		}
@@ -23,9 +23,10 @@ func TestUserInput_Enrich(t *testing.T) {
 		provider.SetService(&bootstrap.Service{DB: mockDB})
 
 		activity := &pb.StandardizedActivity{Source: "HEVY", ExternalId: "123"}
+		user := &pb.UserRecord{UserId: "test-user-1"}
 		inputs := map[string]string{}
 
-		_, err := provider.Enrich(ctx, slog.Default(), activity, nil, inputs, false)
+		_, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
 
 		if err == nil {
 			t.Fatal("Expected error, got nil")
@@ -41,7 +42,7 @@ func TestUserInput_Enrich(t *testing.T) {
 
 	t.Run("Returns WaitError if status WAITING", func(t *testing.T) {
 		mockDB := &mocks.MockDatabase{
-			GetPendingInputFunc: func(ctx context.Context, id string) (*pb.PendingInput, error) {
+			GetPendingInputFunc: func(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
 				return &pb.PendingInput{
 					ActivityId: id,
 					Status:     pb.PendingInput_STATUS_WAITING,
@@ -52,8 +53,9 @@ func TestUserInput_Enrich(t *testing.T) {
 		provider.SetService(&bootstrap.Service{DB: mockDB})
 
 		activity := &pb.StandardizedActivity{Source: "HEVY", ExternalId: "123"}
+		user := &pb.UserRecord{UserId: "test-user-1"}
 
-		_, err := provider.Enrich(ctx, slog.Default(), activity, nil, nil, false)
+		_, err := provider.Enrich(ctx, slog.Default(), activity, user, nil, false)
 		if err == nil {
 			t.Fatal("Expected error, got nil")
 		}
@@ -64,7 +66,7 @@ func TestUserInput_Enrich(t *testing.T) {
 
 	t.Run("Returns Result if status COMPLETED", func(t *testing.T) {
 		mockDB := &mocks.MockDatabase{
-			GetPendingInputFunc: func(ctx context.Context, id string) (*pb.PendingInput, error) {
+			GetPendingInputFunc: func(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
 				return &pb.PendingInput{
 					ActivityId: id,
 					Status:     pb.PendingInput_STATUS_COMPLETED,
@@ -79,8 +81,9 @@ func TestUserInput_Enrich(t *testing.T) {
 		provider.SetService(&bootstrap.Service{DB: mockDB})
 
 		activity := &pb.StandardizedActivity{Source: "HEVY", ExternalId: "123"}
+		user := &pb.UserRecord{UserId: "test-user-1"}
 
-		res, err := provider.Enrich(ctx, slog.Default(), activity, nil, nil, false)
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, nil, false)
 		if err != nil {
 			t.Fatalf("Unexpected error: %v", err)
 		}

@@ -151,7 +151,8 @@ describe('inputs-handler', () => {
 
       const result = await handler(req, ctx);
 
-      expect(mockInputService.resolveInput).toHaveBeenCalledWith('act-1', 'user-1', { title: 'New Title' });
+      expect(mockInputService.getPendingInput).toHaveBeenCalledWith('user-1', 'act-1');
+      expect(mockInputService.resolveInput).toHaveBeenCalledWith('user-1', 'act-1', 'user-1', { title: 'New Title' });
       expect(mockPublish).toHaveBeenCalledWith(mockPayload);
       expect(result).toEqual({ success: true });
     });
@@ -194,7 +195,7 @@ describe('inputs-handler', () => {
 
     it('calls dismissInput and returns success', async () => {
       const result = await handler(req, ctx);
-      expect(mockInputService.dismissInput).toHaveBeenCalledWith('act-1', 'user-1');
+      expect(mockInputService.dismissInput).toHaveBeenCalledWith('user-1', 'act-1', 'user-1');
       expect(result).toEqual({ success: true });
     });
 
@@ -206,7 +207,7 @@ describe('inputs-handler', () => {
     it('handles encoded IDs', async () => {
       req.path = '/api/inputs/FITBIT%3A123';
       const result = await handler(req, ctx);
-      expect(mockInputService.dismissInput).toHaveBeenCalledWith('FITBIT:123', 'user-1');
+      expect(mockInputService.dismissInput).toHaveBeenCalledWith('user-1', 'FITBIT:123', 'user-1');
       expect(result).toEqual({ success: true });
     });
 

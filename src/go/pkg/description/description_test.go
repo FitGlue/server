@@ -102,6 +102,49 @@ func TestReplaceSection(t *testing.T) {
 	}
 }
 
+func TestExtractSection(t *testing.T) {
+	tests := []struct {
+		name         string
+		description  string
+		headerPrefix string
+		expected     string
+	}{
+		{
+			name:         "Extract section at start",
+			description:  "🏃 Parkrun Results:\nWaiting for results...",
+			headerPrefix: "🏃 Parkrun Results:",
+			expected:     "🏃 Parkrun Results:\nWaiting for results...",
+		},
+		{
+			name:         "Extract section from middle",
+			description:  "Original description\n\n🏃 Parkrun Results:\n42nd place, 23:45\n\n❤️ Heart Rate:\n150 bpm avg",
+			headerPrefix: "🏃 Parkrun Results:",
+			expected:     "🏃 Parkrun Results:\n42nd place, 23:45",
+		},
+		{
+			name:         "Section not found",
+			description:  "Some description without the section",
+			headerPrefix: "🏃 Parkrun Results:",
+			expected:     "",
+		},
+		{
+			name:         "Empty description",
+			description:  "",
+			headerPrefix: "🏃 Parkrun Results:",
+			expected:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := ExtractSection(tt.description, tt.headerPrefix)
+			if result != tt.expected {
+				t.Errorf("ExtractSection() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestRemoveSection(t *testing.T) {
 	tests := []struct {
 		name         string

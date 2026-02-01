@@ -15,7 +15,7 @@ import (
 // MockDB for Wrapper Test
 type MockDB struct {
 	SetExecutionFunc            func(ctx context.Context, record *pb.ExecutionRecord) error
-	UpdateExecutionFunc         func(ctx context.Context, id string, data map[string]interface{}) error
+	UpdateExecutionFunc         func(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	SetSynchronizedActivityFunc func(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
 }
 
@@ -25,9 +25,9 @@ func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) e
 	}
 	return nil
 }
-func (m *MockDB) UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDB) UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	if m.UpdateExecutionFunc != nil {
-		return m.UpdateExecutionFunc(ctx, id, data)
+		return m.UpdateExecutionFunc(ctx, userId, id, data)
 	}
 	return nil
 }
@@ -37,13 +37,13 @@ func (m *MockDB) GetUser(ctx context.Context, id string) (*pb.UserRecord, error)
 func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
 	return nil
 }
-func (m *MockDB) CreatePendingInput(ctx context.Context, input *pb.PendingInput) error {
+func (m *MockDB) CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error {
 	return nil
 }
-func (m *MockDB) GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error) {
+func (m *MockDB) GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
 	return nil, nil
 }
-func (m *MockDB) UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDB) UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return nil
 }
 func (m *MockDB) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
@@ -57,6 +57,9 @@ func (m *MockDB) SetCounter(ctx context.Context, userId string, counter *pb.Coun
 }
 func (m *MockDB) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
 	return nil, nil
+}
+func (m *MockDB) DeleteCounter(ctx context.Context, userId string, id string) error {
+	return nil
 }
 func (m *MockDB) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
 	return nil
@@ -97,6 +100,12 @@ func (m *MockDB) GetPersonalRecord(ctx context.Context, userId string, recordTyp
 func (m *MockDB) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
 	return nil
 }
+func (m *MockDB) ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error) {
+	return nil, nil
+}
+func (m *MockDB) DeletePersonalRecord(ctx context.Context, userId string, recordType string) error {
+	return nil
+}
 func (m *MockDB) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
 	return []*pb.PipelineConfig{}, nil
 }
@@ -116,7 +125,7 @@ func TestWrapCloudEvent(t *testing.T) {
 			}
 			return nil
 		},
-		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		UpdateExecutionFunc: func(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 			status, ok := data["status"].(int32)
 			if !ok {
 				// Check for metadata updates
@@ -169,7 +178,7 @@ func TestWrapCloudEvent_Failure(t *testing.T) {
 			}
 			return nil
 		},
-		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		UpdateExecutionFunc: func(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 			status, ok := data["status"].(int32)
 			if !ok {
 				return nil

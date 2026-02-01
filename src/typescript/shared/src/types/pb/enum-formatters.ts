@@ -880,6 +880,14 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'AI_BANNER': 'Ai Banner',
     'Ai Banner': 'Ai Banner',
     '28': 'Ai Banner',
+    'ENRICHER_PROVIDER_FIT_FILE_HEART_RATE': 'Fit File Heart Rate',
+    'FIT_FILE_HEART_RATE': 'Fit File Heart Rate',
+    'Fit File Heart Rate': 'Fit File Heart Rate',
+    '29': 'Fit File Heart Rate',
+    'ENRICHER_PROVIDER_HYBRID_RACE_TAGGER': 'Hybrid Race Tagger',
+    'HYBRID_RACE_TAGGER': 'Hybrid Race Tagger',
+    'Hybrid Race Tagger': 'Hybrid Race Tagger',
+    '30': 'Hybrid Race Tagger',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -933,6 +941,8 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE: return 'Muscle Heatmap Image';
     case EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL: return 'Route Thumbnail';
     case EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER: return 'Ai Banner';
+    case EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE: return 'Fit File Heart Rate';
+    case EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER: return 'Hybrid Race Tagger';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }

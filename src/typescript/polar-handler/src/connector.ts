@@ -383,6 +383,7 @@ export class PolarConnector extends BaseConnector<PolarConnectorConfig> {
       name: exercise.detailed_sport_info || exercise.sport || 'Polar Activity',
       description: `Polar ${exercise.sport || 'Activity'} - ${exercise.device || 'Unknown Device'}`,
       startTime: startTime,
+      timeMarkers: [],
       tags: ['polar', exercise.sport?.toLowerCase() || 'workout'].filter(Boolean),
       notes: '',
       sessions: [{

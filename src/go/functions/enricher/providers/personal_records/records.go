@@ -142,3 +142,48 @@ func IsStrengthActivity(activityType pb.ActivityType) bool {
 		return false
 	}
 }
+
+// HybridRaceType identifies the type of hybrid race from activity metadata
+type HybridRaceType string
+
+const (
+	HybridRaceHyrox HybridRaceType = "hyrox"
+	HybridRaceATHX  HybridRaceType = "athx"
+)
+
+// HybridRaceStations lists the trackable stations for hybrid races
+var HybridRaceStations = []string{
+	"skierg",
+	"sled_push",
+	"sled_pull",
+	"burpee_broad_jump",
+	"rowing",
+	"farmers_carry",
+	"sandbag_lunges",
+	"wall_balls",
+}
+
+// FormatHybridRaceRecordType creates a record type key for hybrid race PRs
+// Format: hybrid_race_{race_type}_{category}
+// Examples: hybrid_race_hyrox_total_time, hybrid_race_hyrox_skierg
+func FormatHybridRaceRecordType(raceType, category string) string {
+	return "hybrid_race_" + raceType + "_" + category
+}
+
+// ParseHybridRaceRecordType parses a hybrid race record type into components
+// Returns empty strings if not a hybrid race record
+func ParseHybridRaceRecordType(recordType string) (raceType, category string) {
+	prefix := "hybrid_race_"
+	if len(recordType) <= len(prefix) {
+		return "", ""
+	}
+	suffix := recordType[len(prefix):]
+
+	// Find the race type (first segment)
+	for _, rt := range []string{"hyrox", "athx"} {
+		if len(suffix) > len(rt)+1 && suffix[:len(rt)+1] == rt+"_" {
+			return rt, suffix[len(rt)+1:]
+		}
+	}
+	return "", ""
+}

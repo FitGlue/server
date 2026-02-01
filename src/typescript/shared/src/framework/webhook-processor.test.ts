@@ -2,6 +2,7 @@ import { createWebhookProcessor } from './webhook-processor';
 import { Connector, ConnectorConfig } from './connector';
 import { CloudEventSource } from '../types/pb/events';
 import { ActivitySource } from '../types/pb/activity';
+import { ActivityType, StandardizedActivity } from '../types/pb/standardized_activity';
 
 // Mocks
 const mockExtractId = jest.fn();
@@ -90,8 +91,16 @@ describe('createWebhookProcessor', () => {
     mockFetchAndMap.mockResolvedValue([{
       source: 'TEST',
       externalId: 'evt-123',
-      userId: 'user-1'
-    }]);
+      userId: 'user-1',
+      startTime: new Date(),
+      name: 'Test Activity',
+      type: ActivityType.ACTIVITY_TYPE_WORKOUT,
+      description: '',
+      sessions: [],
+      timeMarkers: [],
+      tags: [],
+      notes: ''
+    } as StandardizedActivity]);
   });
 
   it('should process a valid webhook successfully', async () => {

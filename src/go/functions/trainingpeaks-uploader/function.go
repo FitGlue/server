@@ -240,9 +240,15 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 		}
 
 		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-			// Replace the existing section with the new content
-			mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, eventPayload.Description)
-			fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+			// Extract just the section content from eventPayload.Description
+			// The payload contains the full description, but we only want the specific section
+			newSectionContent := description.ExtractSection(eventPayload.Description, sectionHeader)
+			if newSectionContent != "" {
+				mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
+				fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+			} else {
+				fwCtx.Logger.Warn("Section header found in metadata but content not found in payload", "header", sectionHeader)
+			}
 		} else if mergedDescription != "" {
 			// Fallback to append
 			mergedDescription += "\n\n" + eventPayload.Description
@@ -251,13 +257,11 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 		}
 	}
 
+	// In UPDATE mode, we intentionally do NOT update the title.
+	// The activity already exists on TrainingPeaks, and the user may have customized the title there.
 	updatePayload := &TrainingPeaksWorkout{}
 	hasChanges := false
 
-	if eventPayload.Name != "" && eventPayload.Name != syncActivity.Title {
-		updatePayload.Title = eventPayload.Name
-		hasChanges = true
-	}
 	if mergedDescription != existingDescription {
 		updatePayload.Description = mergedDescription
 		hasChanges = true

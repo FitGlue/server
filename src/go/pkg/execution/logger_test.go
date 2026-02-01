@@ -11,7 +11,7 @@ import (
 
 type MockDB struct {
 	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
-	UpdateExecutionFunc func(ctx context.Context, id string, data map[string]interface{}) error
+	UpdateExecutionFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
 }
 
 func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -20,9 +20,9 @@ func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) e
 	}
 	return nil
 }
-func (m *MockDB) UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDB) UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	if m.UpdateExecutionFunc != nil {
-		return m.UpdateExecutionFunc(ctx, id, data)
+		return m.UpdateExecutionFunc(ctx, userId, id, data)
 	}
 	return nil
 }
@@ -65,7 +65,7 @@ func TestLogPending(t *testing.T) {
 
 func TestLogStart(t *testing.T) {
 	mockDB := &MockDB{
-		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		UpdateExecutionFunc: func(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_STARTED {
 				t.Errorf("Expected STATUS_STARTED, got %v", data["status"])
 			}
@@ -84,7 +84,7 @@ func TestLogStart(t *testing.T) {
 	opts := &execution.ExecutionOptions{
 		UserID: "user-updated",
 	}
-	err := execution.LogStart(context.Background(), mockDB, "exec-1", inputs, opts)
+	err := execution.LogStart(context.Background(), mockDB, "user-updated", "exec-1", inputs, opts)
 	if err != nil {
 		t.Fatalf("LogStart failed: %v", err)
 	}
@@ -92,7 +92,7 @@ func TestLogStart(t *testing.T) {
 
 func TestLogSuccess(t *testing.T) {
 	mockDB := &MockDB{
-		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		UpdateExecutionFunc: func(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_SUCCESS {
 				t.Errorf("Expected STATUS_SUCCESS, got %v", data["status"])
 			}
@@ -100,7 +100,7 @@ func TestLogSuccess(t *testing.T) {
 		},
 	}
 
-	err := execution.LogSuccess(context.Background(), mockDB, "exec-1", nil)
+	err := execution.LogSuccess(context.Background(), mockDB, "test-user", "exec-1", nil)
 	if err != nil {
 		t.Fatalf("LogSuccess failed: %v", err)
 	}
@@ -108,7 +108,7 @@ func TestLogSuccess(t *testing.T) {
 
 func TestLogFailure(t *testing.T) {
 	mockDB := &MockDB{
-		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		UpdateExecutionFunc: func(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_FAILED {
 				t.Errorf("Expected STATUS_FAILED, got %v", data["status"])
 			}
@@ -119,7 +119,7 @@ func TestLogFailure(t *testing.T) {
 		},
 	}
 
-	err := execution.LogFailure(context.Background(), mockDB, "exec-1", &simpleError{}, nil)
+	err := execution.LogFailure(context.Background(), mockDB, "test-user", "exec-1", &simpleError{}, nil)
 	if err != nil {
 		t.Fatalf("LogFailure failed: %v", err)
 	}
@@ -127,7 +127,7 @@ func TestLogFailure(t *testing.T) {
 
 func TestLogFailureWithOutputs(t *testing.T) {
 	mockDB := &MockDB{
-		UpdateExecutionFunc: func(ctx context.Context, id string, data map[string]interface{}) error {
+		UpdateExecutionFunc: func(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 			if status, ok := data["status"].(int32); !ok || pb.ExecutionStatus(status) != pb.ExecutionStatus_STATUS_FAILED {
 				t.Errorf("Expected STATUS_FAILED, got %v", data["status"])
 			}
@@ -142,7 +142,7 @@ func TestLogFailureWithOutputs(t *testing.T) {
 	}
 
 	outputs := map[string]string{"foo": "bar"}
-	err := execution.LogFailure(context.Background(), mockDB, "exec-1", &simpleError{}, outputs)
+	err := execution.LogFailure(context.Background(), mockDB, "test-user", "exec-1", &simpleError{}, outputs)
 	if err != nil {
 		t.Fatalf("LogFailure failed: %v", err)
 	}

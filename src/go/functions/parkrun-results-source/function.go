@@ -152,7 +152,7 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 
 			// Update the pending input with the resolved data
 			resultDescription := parkrunutil.FormatResultsDescription(results, eventName)
-			err = fwCtx.Service.DB.UpdatePendingInput(ctx, input.ActivityId, map[string]interface{}{
+			err = fwCtx.Service.DB.UpdatePendingInput(ctx, input.UserId, input.ActivityId, map[string]interface{}{
 				"status":       int32(pb.PendingInput_STATUS_COMPLETED),
 				"completed_at": timestamppb.Now(),
 				"input_data": map[string]string{

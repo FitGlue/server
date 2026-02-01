@@ -223,8 +223,8 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       logger.info('Deleted API keys', { count: apiKeySnapshot.size, userId });
     }
 
-    // 4. Delete all execution records for this user (using collection query)
-    const executionRef = db.collection('executions').where('user_id', '==', userId);
+    // 4. Delete all execution records for this user (now in user sub-collection)
+    const executionRef = db.collection('users').doc(userId).collection('executions');
     const executionSnapshot = await executionRef.get();
     const executionDeleteBatch = db.batch();
     executionSnapshot.forEach(doc => executionDeleteBatch.delete(doc.ref));
@@ -233,8 +233,8 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       logger.info('Deleted execution records', { count: executionSnapshot.size, userId });
     }
 
-    // 5. Delete pending inputs (stored in top-level 'pending_inputs' collection)
-    const pendingInputsRef = db.collection('pending_inputs').where('user_id', '==', userId);
+    // 5. Delete pending inputs (now in user sub-collection)
+    const pendingInputsRef = db.collection('users').doc(userId).collection('pending_inputs');
     const pendingInputsSnapshot = await pendingInputsRef.get();
     const pendingDeleteBatch = db.batch();
     pendingInputsSnapshot.forEach(doc => pendingDeleteBatch.delete(doc.ref));

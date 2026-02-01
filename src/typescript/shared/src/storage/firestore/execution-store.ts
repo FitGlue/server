@@ -195,8 +195,11 @@ export class ExecutionStore {
    * Batch load execution traces for multiple pipeline IDs in a single query.
    * Solves the N+1 query problem when loading activity list with execution traces.
    *
+   * OPTIMIZED: Uses projection queries to exclude massive inputsJson/outputsJson fields
+   * which can be megabytes each. For dashboard display, we only need status/service/timestamps.
+   *
    * @param pipelineIds Array of pipeline execution IDs to fetch
-   * @returns Map of pipelineId -> array of executions
+   * @returns Map of pipelineId -> array of executions (without inputsJson/outputsJson)
    */
   async batchListByPipelines(pipelineIds: string[]): Promise<Map<string, { id: string, data: ExecutionRecord }[]>> {
     if (pipelineIds.length === 0) {
@@ -211,14 +214,39 @@ export class ExecutionStore {
     for (let i = 0; i < pipelineIds.length; i += chunkSize) {
       const chunk = pipelineIds.slice(i, i + chunkSize);
 
-      const query = this.collection()
+      // Use projection to only fetch fields needed for display
+      // Excludes inputsJson/outputsJson which can be megabytes each
+      const query = this.db.collection('executions')
         .where('pipeline_execution_id', 'in', chunk)
-        .orderBy('timestamp', 'asc');
+        .orderBy('timestamp', 'asc')
+        .select(
+          'pipeline_execution_id',
+          'service',
+          'status',
+          'timestamp',
+          'start_time',
+          'end_time',
+          'error_message',
+          'trigger_type'
+        );
 
       const snapshot = await query.get();
 
       for (const doc of snapshot.docs) {
-        const data = doc.data() as ExecutionRecord;
+        const rawData = doc.data();
+        // Manually map snake_case fields since we bypassed the converter
+        const data: ExecutionRecord = {
+          executionId: doc.id,
+          service: rawData.service || '',
+          status: rawData.status,
+          triggerType: rawData.trigger_type || '',
+          pipelineExecutionId: rawData.pipeline_execution_id,
+          timestamp: rawData.timestamp?.toDate?.() || rawData.timestamp,
+          startTime: rawData.start_time?.toDate?.() || rawData.start_time,
+          endTime: rawData.end_time?.toDate?.() || rawData.end_time,
+          errorMessage: rawData.error_message,
+          // Explicitly omit inputsJson/outputsJson for performance
+        };
         const pipelineId = data.pipelineExecutionId;
 
         if (pipelineId) {

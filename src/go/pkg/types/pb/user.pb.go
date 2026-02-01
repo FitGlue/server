@@ -118,9 +118,13 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE EnricherProviderType = 26
 	// Config inputs: "width", "height", "style", "line_color", "line_width" - generates static map image of GPS route - Athlete tier only
 	EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL EnricherProviderType = 27
-	// Config inputs: "style" (vibrant/minimal/dramatic) - generates AI banner image for Showcase - Athlete tier only
+	// Config inputs: \"style\" (vibrant/minimal/dramatic) - generates AI banner image for Showcase - Athlete tier only
 	EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER EnricherProviderType = 28
-	EnricherProviderType_ENRICHER_PROVIDER_MOCK      EnricherProviderType = 99
+	// Config inputs: none (requests FIT file upload via pending input, extracts HR data for merging)
+	EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE EnricherProviderType = 29
+	// Config inputs: none (allows tagging and merging laps for hybrid races like Hyrox, ATHX)
+	EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER EnricherProviderType = 30
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK               EnricherProviderType = 99
 )
 
 // Enum value maps for EnricherProviderType.
@@ -154,6 +158,8 @@ var (
 		26: "ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE",
 		27: "ENRICHER_PROVIDER_ROUTE_THUMBNAIL",
 		28: "ENRICHER_PROVIDER_AI_BANNER",
+		29: "ENRICHER_PROVIDER_FIT_FILE_HEART_RATE",
+		30: "ENRICHER_PROVIDER_HYBRID_RACE_TAGGER",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -185,6 +191,8 @@ var (
 		"ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE": 26,
 		"ENRICHER_PROVIDER_ROUTE_THUMBNAIL":      27,
 		"ENRICHER_PROVIDER_AI_BANNER":            28,
+		"ENRICHER_PROVIDER_FIT_FILE_HEART_RATE":  29,
+		"ENRICHER_PROVIDER_HYBRID_RACE_TAGGER":   30,
 		"ENRICHER_PROVIDER_MOCK":                 99,
 	}
 )
@@ -2772,7 +2780,7 @@ const file_user_proto_rawDesc = "" +
 	"\bUserTier\x12\x19\n" +
 	"\x15USER_TIER_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_TIER_HOBBYIST\x10\x01\x12\x15\n" +
-	"\x11USER_TIER_ATHLETE\x10\x02*\xc6\b\n" +
+	"\x11USER_TIER_ATHLETE\x10\x02*\x9b\t\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -2802,7 +2810,9 @@ const file_user_proto_rawDesc = "" +
 	"!ENRICHER_PROVIDER_LOCATION_NAMING\x10\x19\x12*\n" +
 	"&ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE\x10\x1a\x12%\n" +
 	"!ENRICHER_PROVIDER_ROUTE_THUMBNAIL\x10\x1b\x12\x1f\n" +
-	"\x1bENRICHER_PROVIDER_AI_BANNER\x10\x1c\x12\x1a\n" +
+	"\x1bENRICHER_PROVIDER_AI_BANNER\x10\x1c\x12)\n" +
+	"%ENRICHER_PROVIDER_FIT_FILE_HEART_RATE\x10\x1d\x12(\n" +
+	"$ENRICHER_PROVIDER_HYBRID_RACE_TAGGER\x10\x1e\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

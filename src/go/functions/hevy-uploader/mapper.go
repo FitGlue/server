@@ -98,8 +98,29 @@ func mapToHevyWorkout(ctx context.Context, event *pb.EnrichedActivityEvent, reso
 			workout.Workout.Exercises = append(workout.Workout.Exercises, exercises...)
 		}
 
-		// Handle cardio activities (runs, rides, etc.) that don't have strength sets
-		if len(session.StrengthSets) == 0 && (session.TotalDistance > 0 || session.TotalElapsedTime > 0) {
+		// Check if laps have individual exercise names (hybrid race tagging)
+		hasLapExerciseNames := false
+		for _, lap := range session.Laps {
+			if lap.ExerciseName != "" {
+				hasLapExerciseNames = true
+				break
+			}
+		}
+
+		if hasLapExerciseNames {
+			// Map each lap as a separate exercise (Hyrox, ATHX, etc.)
+			for _, lap := range session.Laps {
+				lapExercise, err := mapLapToExercise(ctx, lap, event.ActivityType, resolver)
+				if err != nil {
+					fwCtx.Logger.Warn("Failed to map lap to exercise",
+						"error", err,
+						"exercise_name", lap.ExerciseName)
+					continue
+				}
+				workout.Workout.Exercises = append(workout.Workout.Exercises, lapExercise)
+			}
+		} else if len(session.StrengthSets) == 0 && (session.TotalDistance > 0 || session.TotalElapsedTime > 0) {
+			// Handle cardio activities (runs, rides, etc.) as a single exercise
 			cardioExercise, err := mapCardioSessionToExercise(ctx, event.ActivityType, session, resolver)
 			if err != nil {
 				return nil, fmt.Errorf("failed to map cardio session: %w", err)
@@ -229,6 +250,33 @@ func mapCardioSessionToExercise(ctx context.Context, activityType pb.ActivityTyp
 
 	distance := int(session.TotalDistance)
 	duration := int(session.TotalElapsedTime)
+
+	return HevyExercise{
+		ExerciseTemplateID: templateID,
+		Sets: []HevySet{{
+			Type:            "normal",
+			DistanceMeters:  &distance,
+			DurationSeconds: &duration,
+		}},
+	}, nil
+}
+
+// mapLapToExercise maps a single lap to a Hevy exercise (for hybrid race tagging)
+func mapLapToExercise(ctx context.Context, lap *pb.Lap, fallbackActivityType pb.ActivityType, resolver *TemplateResolver) (HevyExercise, error) {
+	// Use lap's exercise name if set, otherwise fall back to activity type
+	exerciseName := lap.ExerciseName
+	if exerciseName == "" {
+		exerciseName = getCardioExerciseName(fallbackActivityType)
+	}
+
+	// Resolve to a real template ID via Hevy's API
+	templateID, err := resolver.ResolveTemplateID(ctx, exerciseName)
+	if err != nil {
+		return HevyExercise{}, fmt.Errorf("failed to resolve lap template for %q: %w", exerciseName, err)
+	}
+
+	distance := int(lap.TotalDistance)
+	duration := int(lap.TotalElapsedTime)
 
 	return HevyExercise{
 		ExerciseTemplateID: templateID,

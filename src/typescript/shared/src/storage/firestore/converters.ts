@@ -408,6 +408,7 @@ export const FirestoreToPendingInput = (data: Record<string, unknown>): PendingI
     enricherProviderId: data.enricher_provider_id as string ?? '',
     autoPopulated: data.auto_populated as boolean ?? false,
     autoDeadline: toDate(data.auto_deadline),
+    providerMetadata: (data.provider_metadata as Record<string, string>) || {},
   };
 };
 

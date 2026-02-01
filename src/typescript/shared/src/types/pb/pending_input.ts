@@ -39,7 +39,11 @@ export interface PendingInput {
   /** Auto-population mode - system will auto-fill, not user */
   autoPopulated: boolean;
   /** If not auto-resolved by deadline, prompt user */
-  autoDeadline?: Date | undefined;
+  autoDeadline?:
+    | Date
+    | undefined;
+  /** Provider metadata - context data from the enricher for the UI (e.g., lap info for hybrid race tagger) */
+  providerMetadata: { [key: string]: string };
 }
 
 export enum PendingInput_Status {
@@ -50,6 +54,11 @@ export enum PendingInput_Status {
 }
 
 export interface PendingInput_InputDataEntry {
+  key: string;
+  value: string;
+}
+
+export interface PendingInput_ProviderMetadataEntry {
   key: string;
   value: string;
 }

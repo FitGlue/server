@@ -121,6 +121,19 @@ export interface StandardizedActivity {
   description: string;
   tags: string[];
   notes: string;
+  /** Time markers for graph visualization (e.g., station transitions in hybrid races) */
+  timeMarkers: TimeMarker[];
+}
+
+/** TimeMarker represents a labeled point in time for graph visualization */
+export interface TimeMarker {
+  timestamp?:
+    | Date
+    | undefined;
+  /** e.g., "SkiErg Start", "Run 3" */
+  label: string;
+  /** "station_start", "run_start", "segment_end" */
+  markerType: string;
 }
 
 export interface Session {
@@ -148,6 +161,8 @@ export interface Lap {
   /** meters */
   totalDistance: number;
   records: Record[];
+  /** Override exercise name for this lap (e.g., "SkiErg", "Sled Push") */
+  exerciseName: string;
 }
 
 /** Record represents a single data point in time (1Hz is typical) */

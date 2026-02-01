@@ -11,13 +11,13 @@ import (
 // --- Mock Database ---
 type MockDatabase struct {
 	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
-	UpdateExecutionFunc func(ctx context.Context, id string, data map[string]interface{}) error
+	UpdateExecutionFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	GetUserFunc         func(ctx context.Context, id string) (*pb.UserRecord, error)
 	UpdateUserFunc      func(ctx context.Context, id string, data map[string]interface{}) error
 
-	CreatePendingInputFunc func(ctx context.Context, input *pb.PendingInput) error
-	GetPendingInputFunc    func(ctx context.Context, id string) (*pb.PendingInput, error)
-	UpdatePendingInputFunc func(ctx context.Context, id string, data map[string]interface{}) error
+	CreatePendingInputFunc func(ctx context.Context, userId string, input *pb.PendingInput) error
+	GetPendingInputFunc    func(ctx context.Context, userId string, id string) (*pb.PendingInput, error)
+	UpdatePendingInputFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	ListPendingInputsFunc  func(ctx context.Context, userID string) ([]*pb.PendingInput, error)
 
 	GetCounterFunc              func(ctx context.Context, userId string, id string) (*pb.Counter, error)
@@ -33,9 +33,9 @@ func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRec
 	}
 	return nil
 }
-func (m *MockDatabase) UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDatabase) UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	if m.UpdateExecutionFunc != nil {
-		return m.UpdateExecutionFunc(ctx, id, data)
+		return m.UpdateExecutionFunc(ctx, userId, id, data)
 	}
 	return nil
 }
@@ -52,23 +52,23 @@ func (m *MockDatabase) UpdateUser(ctx context.Context, id string, data map[strin
 	return nil
 }
 
-func (m *MockDatabase) CreatePendingInput(ctx context.Context, input *pb.PendingInput) error {
+func (m *MockDatabase) CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error {
 	if m.CreatePendingInputFunc != nil {
-		return m.CreatePendingInputFunc(ctx, input)
+		return m.CreatePendingInputFunc(ctx, userId, input)
 	}
 	return nil
 }
 
-func (m *MockDatabase) GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error) {
+func (m *MockDatabase) GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
 	if m.GetPendingInputFunc != nil {
-		return m.GetPendingInputFunc(ctx, id)
+		return m.GetPendingInputFunc(ctx, userId, id)
 	}
 	return nil, nil
 }
 
-func (m *MockDatabase) UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error {
+func (m *MockDatabase) UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	if m.UpdatePendingInputFunc != nil {
-		return m.UpdatePendingInputFunc(ctx, id, data)
+		return m.UpdatePendingInputFunc(ctx, userId, id, data)
 	}
 	return nil
 }
@@ -99,6 +99,11 @@ func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pb.C
 		return m.ListCountersFunc(ctx, userId)
 	}
 	return nil, nil
+}
+
+func (m *MockDatabase) DeleteCounter(ctx context.Context, userId string, id string) error {
+	// No-op for tests by default
+	return nil
 }
 
 func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
@@ -170,6 +175,16 @@ func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, rec
 }
 
 func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
+func (m *MockDatabase) DeletePersonalRecord(ctx context.Context, userId string, recordType string) error {
 	// No-op for tests by default
 	return nil
 }

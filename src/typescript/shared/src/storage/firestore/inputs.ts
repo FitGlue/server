@@ -5,8 +5,15 @@ import { FirestoreToPendingInput } from './converters';
 export class InputStore {
   constructor(private db: Firestore) { }
 
-  async getPending(activityId: string): Promise<PendingInput | null> {
-    const doc = await this.db.collection('pending_inputs').doc(activityId).get();
+  /**
+   * Get the pending_inputs sub-collection for a specific user.
+   */
+  private userPendingInputs(userId: string) {
+    return this.db.collection('users').doc(userId).collection('pending_inputs');
+  }
+
+  async getPending(userId: string, activityId: string): Promise<PendingInput | null> {
+    const doc = await this.userPendingInputs(userId).doc(activityId).get();
     if (!doc.exists) return null;
     return FirestoreToPendingInput(doc.data() as Record<string, unknown>);
   }
@@ -19,8 +26,7 @@ export class InputStore {
    * - autoPopulated: true, deadline passed → "Action Required" (editable, action required)
    */
   async listPending(userId: string): Promise<PendingInput[]> {
-    const snapshot = await this.db.collection('pending_inputs')
-      .where('user_id', '==', userId)
+    const snapshot = await this.userPendingInputs(userId)
       .where('status', '==', 1) // STATUS_WAITING
       .orderBy('created_at', 'desc')
       .get();
@@ -29,15 +35,15 @@ export class InputStore {
       .map(doc => FirestoreToPendingInput(doc.data() as Record<string, unknown>));
   }
 
-  async resolve(activityId: string, inputData: Record<string, string>): Promise<void> {
-    await this.db.collection('pending_inputs').doc(activityId).update({
+  async resolve(userId: string, activityId: string, inputData: Record<string, string>): Promise<void> {
+    await this.userPendingInputs(userId).doc(activityId).update({
       status: 2, // STATUS_COMPLETED
       input_data: inputData,
       updated_at: new Date()
     });
   }
 
-  async delete(activityId: string): Promise<void> {
-    await this.db.collection('pending_inputs').doc(activityId).delete();
+  async delete(userId: string, activityId: string): Promise<void> {
+    await this.userPendingInputs(userId).doc(activityId).delete();
   }
 }

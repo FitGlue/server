@@ -325,9 +325,15 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		}
 
 		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-			// Replace the existing section with the new content
-			mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, event.Description)
-			fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+			// Extract just the section content from event.Description
+			// The payload contains the full description, but we only want the specific section
+			newSectionContent := description.ExtractSection(event.Description, sectionHeader)
+			if newSectionContent != "" {
+				mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
+				fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+			} else {
+				fwCtx.Logger.Warn("Section header found in metadata but content not found in payload", "header", sectionHeader)
+			}
 		} else if mergedDescription != "" {
 			// Fallback to append
 			mergedDescription += "\n\n" + event.Description
@@ -337,12 +343,9 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	}
 
 	// 3. Determine what changed (for logging/response only)
+	// In UPDATE mode, we intentionally do NOT update the title.
+	// The activity already exists on Hevy, and the user may have customized the title there.
 	updatedFields := map[string]interface{}{}
-	newTitle := existingTitle
-	if event.Name != "" && event.Name != existingTitle {
-		newTitle = event.Name
-		updatedFields["title"] = event.Name
-	}
 	if mergedDescription != existingDesc {
 		updatedFields["description"] = "updated"
 	}
@@ -441,7 +444,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	// Build the full PUT payload
 	putPayload := PutWorkoutRequest{
 		Workout: &PutWorkout{
-			Title:       &newTitle,
+			Title:       &existingTitle, // Preserve existing title, don't update
 			Description: &mergedDescription,
 			StartTime:   existingWorkout.StartTime,
 			EndTime:     existingWorkout.EndTime,

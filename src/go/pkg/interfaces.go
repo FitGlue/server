@@ -11,7 +11,7 @@ import (
 
 type Database interface {
 	SetExecution(ctx context.Context, record *pb.ExecutionRecord) error
-	UpdateExecution(ctx context.Context, id string, data map[string]interface{}) error
+	UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	GetUser(ctx context.Context, id string) (*pb.UserRecord, error)
 	UpdateUser(ctx context.Context, id string, data map[string]interface{}) error
 
@@ -21,20 +21,23 @@ type Database interface {
 	ResetSyncCount(ctx context.Context, userID string) error
 
 	// Pending Inputs
-	GetPendingInput(ctx context.Context, id string) (*pb.PendingInput, error)
-	CreatePendingInput(ctx context.Context, input *pb.PendingInput) error
-	UpdatePendingInput(ctx context.Context, id string, data map[string]interface{}) error
-	ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) // Optional: for web list
+	GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error)
+	CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error
+	UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error
+	ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error)
 	ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error)
 
 	// Counters
 	GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error)
 	SetCounter(ctx context.Context, userId string, counter *pb.Counter) error
 	ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error)
+	DeleteCounter(ctx context.Context, userId string, id string) error
 
 	// Personal Records
 	GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error)
 	SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error
+	ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error)
+	DeletePersonalRecord(ctx context.Context, userId string, recordType string) error
 
 	// Activities
 	SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
