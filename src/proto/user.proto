@@ -357,6 +357,9 @@ message ShowcasedActivity {
 
   // Public attribution
   string owner_display_name = 17;  // User's display name for public attribution
+
+  // GCS URI for pre-parsed activity JSON (avoids Firestore 1MB limit)
+  string activity_data_uri = 18;
 }
 
 // PipelineRun tracks a complete pipeline execution lifecycle.
@@ -389,14 +392,14 @@ message PipelineRun {
   // Destination Outcomes
   repeated DestinationOutcome destinations = 14;
 
-  // Error/Pending tracking
-  optional string error_message = 15;
+  // Status tracking
+  optional string status_message = 15;  // General message for any status (success/skip/fail/etc)
   optional string pending_input_id = 16;
 
   // For repost/retry functionality (replaces executions.inputsJson)
-  // These store the full payloads so repost-handler can reconstruct events
   fitglue.events.EnrichedActivityEvent enriched_event = 20;
-  ActivityPayload original_payload = 21;
+  reserved 21;  // was original_payload (exceeds 1MB Firestore limit)
+  string original_payload_uri = 22;  // GCS URI: gs://{bucket}/payloads/{userId}/{activityId}.json
 }
 
 // PipelineRunStatus tracks the overall state of a pipeline execution.

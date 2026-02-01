@@ -91,11 +91,13 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 		if user.Integrations == nil || user.Integrations.Intervals == nil || !user.Integrations.Intervals.Enabled {
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Intervals integration not enabled", fwCtx.Logger)
 			return nil, fmt.Errorf("Intervals integration not enabled for user")
 		}
 
 		intervalsIntegration := user.Integrations.Intervals
 		if intervalsIntegration.ApiKey == "" || intervalsIntegration.AthleteId == "" {
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "missing API key or athlete ID", fwCtx.Logger)
 			return nil, fmt.Errorf("Intervals credentials incomplete: missing API key or athlete ID")
 		}
 
@@ -128,6 +130,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	fileData, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
 	if err != nil {
 		fwCtx.Logger.Error("GCS Read Error", "error", err)
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("GCS error: %s", err), fwCtx.Logger)
 		return nil, fmt.Errorf("GCS Read Error: %w", err)
 	}
 
@@ -159,6 +162,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	if resp.StatusCode >= 400 {
 		err := httputil.WrapResponseError(resp, "Intervals upload failed")
 		fwCtx.Logger.Error("Intervals upload failed", "status", resp.StatusCode, "error", err)
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error (HTTP %d): %s", resp.StatusCode, err), fwCtx.Logger)
 		return nil, err
 	}
 

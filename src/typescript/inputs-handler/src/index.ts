@@ -1,4 +1,7 @@
 import { createCloudFunction, db, InputStore, InputService, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore, ForbiddenError, HttpError, FrameworkHandler, TOPICS } from '@fitglue/shared';
+import { Storage } from '@google-cloud/storage';
+
+const storage = new Storage();
 
 // PubSub topic for resume: PIPELINE_ACTIVITY (bypasses splitter since pipelineId is already set)
 const TOPIC = TOPICS.PIPELINE_ACTIVITY;
@@ -83,13 +86,21 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       // Service validates ownership and status
       await inputService.resolveInput(ctx.userId, body.activityId, ctx.userId, body.inputData);
 
-      // Re-publish Original Payload
-      // Re-fetch (or use cached if service returns updated obj, but service returns void currently)
-      // Since we didn't change payload, 'input' var has it.
-      if (!input.originalPayload) {
-        ctx.logger.error('Original payload missing', { activityId: body.activityId });
-        throw new HttpError(500, 'Original payload missing, cannot resume');
+      // Fetch Original Payload from GCS for re-publish
+      if (!input.originalPayloadUri) {
+        ctx.logger.error('Original payload URI missing', { activityId: body.activityId });
+        throw new HttpError(500, 'Original payload URI missing, cannot resume');
       }
+
+      // Parse GCS URI and fetch payload
+      const uriMatch = input.originalPayloadUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+      if (!uriMatch) {
+        throw new HttpError(500, `Invalid GCS URI: ${input.originalPayloadUri}`);
+      }
+      const [, bucket, objectPath] = uriMatch;
+
+      const [payloadBuffer] = await storage.bucket(bucket).file(objectPath).download();
+      const payload = JSON.parse(payloadBuffer.toString('utf-8')) as ActivityPayload;
 
       // Re-publish using CloudEventPublisher
       const publisher = new CloudEventPublisher<ActivityPayload>(
@@ -100,7 +111,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
         ctx.logger
       );
 
-      await publisher.publish(input.originalPayload);
+      await publisher.publish(payload);
 
       ctx.logger.info('Resolved and re-published activity to enricher', { activityId: body.activityId, topic: TOPIC });
       return { success: true };

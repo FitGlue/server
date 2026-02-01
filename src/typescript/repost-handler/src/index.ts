@@ -11,9 +11,11 @@ import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getEffecti
 import { TOPICS } from '@fitglue/shared/dist/config';
 import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
 import { PubSub } from '@google-cloud/pubsub';
+import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
 
 const pubsub = new PubSub();
+const storage = new Storage();
 
 /**
  * Create a CloudEvent envelope matching the Go enricher format.
@@ -376,15 +378,24 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     throw new HttpError(500, 'Activity missing pipelineId - cannot re-run pipeline');
   }
 
-  // Try to get original payload from PipelineRun first (new architecture)
+  // Try to get original payload from GCS via PipelineRun (new architecture)
   // Fall back to executions for backwards compatibility with existing data
   let originalPayload: Record<string, unknown> | null = null;
 
   const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
-  if (pipelineRun?.originalPayload) {
-    // Converter already parses JSON to object
-    originalPayload = pipelineRun.originalPayload as unknown as Record<string, unknown>;
-    ctx.logger.info('Retrieved original payload from PipelineRun', { pipelineExecutionId: activity.pipelineExecutionId });
+  if (pipelineRun?.originalPayloadUri) {
+    // Fetch from GCS using URI
+    const uriMatch = pipelineRun.originalPayloadUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+    if (uriMatch) {
+      const [, bucket, objectPath] = uriMatch;
+      try {
+        const [payloadBuffer] = await storage.bucket(bucket).file(objectPath).download();
+        originalPayload = JSON.parse(payloadBuffer.toString('utf-8')) as Record<string, unknown>;
+        ctx.logger.info('Retrieved original payload from GCS', { uri: pipelineRun.originalPayloadUri });
+      } catch (err) {
+        ctx.logger.warn('Failed to fetch payload from GCS', { uri: pipelineRun.originalPayloadUri, error: err });
+      }
+    }
   }
 
   // Fallback to executions collection (backwards compatibility)

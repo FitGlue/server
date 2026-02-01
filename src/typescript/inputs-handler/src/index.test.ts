@@ -28,6 +28,20 @@ jest.mock('@fitglue/shared', () => {
   };
 });
 
+// Mock GCS for payload fetching - use factory pattern to avoid Jest hoisting
+const mockGcsDownload = jest.fn();
+jest.mock('@google-cloud/storage', () => {
+  return {
+    Storage: jest.fn().mockImplementation(() => ({
+      bucket: jest.fn().mockReturnValue({
+        file: jest.fn().mockReturnValue({
+          download: jest.fn().mockImplementation(() => mockGcsDownload())
+        })
+      })
+    }))
+  };
+});
+
 describe('inputs-handler', () => {
   let req: any;
 
@@ -146,21 +160,23 @@ describe('inputs-handler', () => {
       const mockPayload = { source: 'HEVY' };
       mockInputService.getPendingInput.mockResolvedValue({
         activityId: 'act-1',
-        originalPayload: mockPayload
+        originalPayloadUri: 'gs://test-bucket/pending/user-1/act-1.json'
       });
+      mockGcsDownload.mockResolvedValue([Buffer.from(JSON.stringify(mockPayload))]);
 
       const result = await handler(req, ctx);
 
       expect(mockInputService.getPendingInput).toHaveBeenCalledWith('user-1', 'act-1');
       expect(mockInputService.resolveInput).toHaveBeenCalledWith('user-1', 'act-1', 'user-1', { title: 'New Title' });
+      expect(mockGcsDownload).toHaveBeenCalled();
       expect(mockPublish).toHaveBeenCalledWith(mockPayload);
       expect(result).toEqual({ success: true });
     });
 
-    it('returns 500 if original payload missing', async () => {
+    it('returns 500 if original payload URI missing', async () => {
       mockInputService.getPendingInput.mockResolvedValue({
         activityId: 'act-1',
-        originalPayload: null
+        originalPayloadUri: null
       });
 
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 500 }));
@@ -169,7 +185,10 @@ describe('inputs-handler', () => {
     });
 
     it('handles conflict errors', async () => {
-      mockInputService.getPendingInput.mockResolvedValue({ activityId: 'act-1' });
+      mockInputService.getPendingInput.mockResolvedValue({
+        activityId: 'act-1',
+        originalPayloadUri: 'gs://test-bucket/pending/user-1/act-1.json'
+      });
       mockInputService.resolveInput.mockRejectedValue(new Error('Wait status required'));
 
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 409 }));
@@ -177,7 +196,10 @@ describe('inputs-handler', () => {
 
     it('handles ForbiddenError from authorization', async () => {
       const { ForbiddenError } = jest.requireMock('@fitglue/shared');
-      mockInputService.getPendingInput.mockResolvedValue({ activityId: 'act-1' });
+      mockInputService.getPendingInput.mockResolvedValue({
+        activityId: 'act-1',
+        originalPayloadUri: 'gs://test-bucket/pending/user-1/act-1.json'
+      });
       mockInputService.resolveInput.mockRejectedValue(new ForbiddenError('You do not have permission'));
 
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }));

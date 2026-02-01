@@ -5,7 +5,6 @@
 // source: pending_input.proto
 
 /* eslint-disable */
-import type { ActivityPayload } from "./activity";
 
 export const protobufPackage = "fitglue";
 
@@ -21,8 +20,8 @@ export interface PendingInput {
   requiredFields: string[];
   /** Data provided by the user or auto-populated (filled when status=COMPLETED) */
   inputData: { [key: string]: string };
-  /** The original payload to be re-published once input is provided */
-  originalPayload?: ActivityPayload | undefined;
+  /** GCS URI for large payloads: gs://{bucket}/payloads/{userId}/{activityId}.json */
+  originalPayloadUri: string;
   createdAt?: Date | undefined;
   updatedAt?: Date | undefined;
   completedAt?:

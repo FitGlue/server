@@ -90,6 +90,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 
 		if user.Integrations == nil || user.Integrations.Google == nil || !user.Integrations.Google.Enabled {
 			fwCtx.Logger.Warn("User has no Google integration configured", "userId", eventPayload.UserId)
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Google integration not configured", fwCtx.Logger)
 			return map[string]interface{}{
 				"status": "FAILED",
 				"reason": "no_google_integration",
@@ -118,6 +119,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		}
 
 		if spreadsheetID == "" {
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "spreadsheet_id not configured", fwCtx.Logger)
 			return nil, fmt.Errorf("spreadsheet_id not configured in metadata")
 		}
 
@@ -146,6 +148,7 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 	// Append to Google Sheets
 	rowNumber, err := appendToSheet(ctx, httpClient, spreadsheetID, sheetName, row, fwCtx)
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), fwCtx.Logger)
 		return nil, fmt.Errorf("failed to append to Google Sheets: %w", err)
 	}
 

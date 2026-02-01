@@ -1,8 +1,6 @@
 package firestore
 
 import (
-	"encoding/json"
-	"log"
 	"time"
 
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
@@ -541,12 +539,13 @@ func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {
 		m["auto_deadline"] = p.AutoDeadline.AsTime()
 	}
 
-	// Serialize original_payload to JSON string (not binary proto) so TypeScript can republish it
-	if p.OriginalPayload != nil {
-		jsonBytes, err := protojson.Marshal(p.OriginalPayload)
-		if err == nil {
-			m["original_payload"] = string(jsonBytes)
-		}
+	if p.OriginalPayloadUri != "" {
+		m["original_payload_uri"] = p.OriginalPayloadUri
+	}
+
+	// Provider metadata
+	if len(p.ProviderMetadata) > 0 {
+		m["provider_metadata"] = p.ProviderMetadata
 	}
 	return m
 }
@@ -593,6 +592,7 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 		AutoDeadline:               getTime(m, "auto_deadline"),
 		LinkedActivityId:           getString(m, "linked_activity_id"),
 		PipelineId:                 getString(m, "pipeline_id"),
+		OriginalPayloadUri:         getString(m, "original_payload_uri"),
 	}
 
 	if v, ok := m["status"]; ok {
@@ -604,33 +604,14 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 		}
 	}
 
-	if v, ok := m["original_payload"]; ok {
-		var jsonStr string
-		switch val := v.(type) {
-		case string:
-			jsonStr = val
-		case []byte:
-			jsonStr = string(val)
-		}
-		if jsonStr != "" {
-			var payload pb.ActivityPayload
-			if err := protojson.Unmarshal([]byte(jsonStr), &payload); err != nil {
-				// protojson failed - try fallback: parse as generic JSON and extract metadata manually
-				// This handles payloads created by TypeScript that may not match proto format exactly
-				var genericPayload struct {
-					UserId   string            `json:"userId"`
-					Metadata map[string]string `json:"metadata"`
-				}
-				if jsonErr := json.Unmarshal([]byte(jsonStr), &genericPayload); jsonErr == nil {
-					// Successfully parsed as generic JSON - populate what we can
-					payload.UserId = genericPayload.UserId
-					payload.Metadata = genericPayload.Metadata
-					p.OriginalPayload = &payload
-				} else {
-					log.Printf("[converter] WARNING: Failed to parse original_payload: protojson=%v, json=%v", err, jsonErr)
-				}
-			} else {
-				p.OriginalPayload = &payload
+	// Note: original_payload is now stored in GCS via original_payload_uri
+
+	// Provider metadata
+	if v, ok := m["provider_metadata"].(map[string]interface{}); ok {
+		p.ProviderMetadata = make(map[string]string)
+		for k, val := range v {
+			if str, ok := val.(string); ok {
+				p.ProviderMetadata[k] = str
 			}
 		}
 	}
@@ -751,12 +732,10 @@ func ShowcasedActivityToFirestore(s *pb.ShowcasedActivity) map[string]interface{
 		m["pipeline_execution_id"] = *s.PipelineExecutionId
 	}
 
-	// Serialize StandardizedActivity to JSON for easy TypeScript consumption
-	if s.ActivityData != nil {
-		jsonBytes, err := protojson.Marshal(s.ActivityData)
-		if err == nil {
-			m["activity_data"] = string(jsonBytes)
-		}
+	// Activity data is stored in GCS, not inline (avoids Firestore 1MB field limit)
+	// Only store the URI reference
+	if s.ActivityDataUri != "" {
+		m["activity_data_uri"] = s.ActivityDataUri
 	}
 
 	return m
@@ -770,6 +749,7 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 		Title:               getString(m, "title"),
 		Description:         getString(m, "description"),
 		FitFileUri:          getString(m, "fit_file_uri"),
+		ActivityDataUri:     getString(m, "activity_data_uri"), // GCS URI for activity JSON
 		StartTime:           getTime(m, "start_time"),
 		CreatedAt:           getTime(m, "created_at"),
 		ExpiresAt:           getTime(m, "expires_at"),
@@ -934,11 +914,14 @@ func PipelineRunToFirestore(p *pb.PipelineRun) map[string]interface{} {
 	if p.UpdatedAt != nil {
 		m["updated_at"] = p.UpdatedAt.AsTime()
 	}
-	if p.ErrorMessage != nil {
-		m["error_message"] = *p.ErrorMessage
+	if p.StatusMessage != nil {
+		m["status_message"] = *p.StatusMessage
 	}
 	if p.PendingInputId != nil {
 		m["pending_input_id"] = *p.PendingInputId
+	}
+	if p.OriginalPayloadUri != "" {
+		m["original_payload_uri"] = p.OriginalPayloadUri
 	}
 
 	// Serialize boosters
@@ -988,30 +971,26 @@ func PipelineRunToFirestore(p *pb.PipelineRun) map[string]interface{} {
 			m["enriched_event"] = string(jsonBytes)
 		}
 	}
-	if p.OriginalPayload != nil {
-		jsonBytes, err := protojson.Marshal(p.OriginalPayload)
-		if err == nil {
-			m["original_payload"] = string(jsonBytes)
-		}
-	}
+	// Note: original_payload is now stored in GCS via original_payload_uri
 
 	return m
 }
 
 func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
 	p := &pb.PipelineRun{
-		Id:               getString(m, "id"),
-		PipelineId:       getString(m, "pipeline_id"),
-		ActivityId:       getString(m, "activity_id"),
-		Source:           getString(m, "source"),
-		SourceActivityId: getString(m, "source_activity_id"),
-		Title:            getString(m, "title"),
-		Description:      getString(m, "description"),
-		StartTime:        getTime(m, "start_time"),
-		CreatedAt:        getTime(m, "created_at"),
-		UpdatedAt:        getTime(m, "updated_at"),
-		ErrorMessage:     stringPtrOrNil(getString(m, "error_message")),
-		PendingInputId:   stringPtrOrNil(getString(m, "pending_input_id")),
+		Id:                 getString(m, "id"),
+		PipelineId:         getString(m, "pipeline_id"),
+		ActivityId:         getString(m, "activity_id"),
+		Source:             getString(m, "source"),
+		SourceActivityId:   getString(m, "source_activity_id"),
+		Title:              getString(m, "title"),
+		Description:        getString(m, "description"),
+		StartTime:          getTime(m, "start_time"),
+		CreatedAt:          getTime(m, "created_at"),
+		UpdatedAt:          getTime(m, "updated_at"),
+		StatusMessage:      stringPtrOrNil(getString(m, "status_message")),
+		PendingInputId:     stringPtrOrNil(getString(m, "pending_input_id")),
+		OriginalPayloadUri: getString(m, "original_payload_uri"),
 	}
 
 	// Type
@@ -1116,15 +1095,7 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
 		}
 	}
 
-	// OriginalPayload
-	if v, ok := m["original_payload"]; ok {
-		if jsonStr, ok := v.(string); ok && jsonStr != "" {
-			var payload pb.ActivityPayload
-			if err := protojson.Unmarshal([]byte(jsonStr), &payload); err == nil {
-				p.OriginalPayload = &payload
-			}
-		}
-	}
+	// Note: original_payload is now stored in GCS via original_payload_uri
 
 	return p
 }

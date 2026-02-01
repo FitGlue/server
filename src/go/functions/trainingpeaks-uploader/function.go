@@ -92,6 +92,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 
 		if user.Integrations == nil || user.Integrations.Trainingpeaks == nil || !user.Integrations.Trainingpeaks.Enabled {
 			fwCtx.Logger.Warn("User has no TrainingPeaks integration configured", "userId", eventPayload.UserId)
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "TrainingPeaks integration not configured", fwCtx.Logger)
 			return map[string]interface{}{
 				"status": "FAILED",
 				"reason": "no_trainingpeaks_integration",
@@ -124,6 +125,7 @@ func handleTrainingPeaksCreate(ctx context.Context, httpClient *http.Client, eve
 	// POST to TrainingPeaks API
 	workoutID, err := createTrainingPeaksWorkout(ctx, httpClient, athleteID, workout, fwCtx)
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), fwCtx.Logger)
 		return nil, fmt.Errorf("failed to create TrainingPeaks workout: %w", err)
 	}
 

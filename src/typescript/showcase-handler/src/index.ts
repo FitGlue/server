@@ -85,6 +85,24 @@ async function handleApiShowcase(
   const userData = user.data() as UserRecord;
   const effectiveTier = getEffectiveTier(userData);
 
+  // Fetch activity data from GCS if stored there, otherwise use inline data (legacy)
+  let activityData: StandardizedActivity | undefined = data.activityData;
+  if (!activityData && data.activityDataUri) {
+    try {
+      // Parse GCS URI: gs://bucket-name/path/to/file
+      const gcsMatch = data.activityDataUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+      if (gcsMatch) {
+        const [, bucketName, filePath] = gcsMatch;
+        const bucket = admin.storage().bucket(bucketName);
+        const [contents] = await bucket.file(filePath).download();
+        activityData = JSON.parse(contents.toString()) as StandardizedActivity;
+      }
+    } catch (err) {
+      console.error('Failed to fetch activity data from GCS', { error: err, uri: data.activityDataUri });
+      // Continue without activity data - page will show partial content
+    }
+  }
+
   // Build the public API response, stripping sensitive fields
   const response: ShowcaseResponse = {
     isAthlete: effectiveTier === 'athlete',
@@ -94,7 +112,7 @@ async function handleApiShowcase(
     activityType: data.activityType,
     source: data.source,
     startTime: data.startTime?.toISOString(),
-    activityData: data.activityData,
+    activityData: activityData,
     appliedEnrichments: data.appliedEnrichments || [],
     enrichmentMetadata: data.enrichmentMetadata || {},
     registry: (data.appliedEnrichments || []).reduce((acc: Record<string, { name: string; icon: string; description: string }>, e: string) => {
@@ -127,6 +145,7 @@ async function handleApiShowcase(
     }
   });
 }
+
 
 async function handleHtmlShowcase(
   showcaseId: string,

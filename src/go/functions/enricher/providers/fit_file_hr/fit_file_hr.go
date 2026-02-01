@@ -97,13 +97,10 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 		EnricherProviderId:         "fit-file-heart-rate",
 		LinkedActivityId:           linkedActivityId,
 		PipelineId:                 inputs["pipeline_id"],
-		OriginalPayload: &pb.ActivityPayload{
-			UserId:               user.UserId,
-			StandardizedActivity: activity,
-			Metadata: map[string]string{
-				"source_activity_id":   activity.ExternalId,
-				"source_activity_type": activity.Source,
-			},
+		// OriginalPayload is now stored in GCS via original_payload_uri (set by orchestrator)
+		ProviderMetadata: map[string]string{
+			"source_activity_id":   activity.ExternalId,
+			"source_activity_type": activity.Source,
 		},
 		CreatedAt: timestamppb.Now(),
 		UpdatedAt: timestamppb.Now(),

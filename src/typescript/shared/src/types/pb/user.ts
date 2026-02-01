@@ -5,7 +5,7 @@
 // source: user.proto
 
 /* eslint-disable */
-import type { ActivityPayload, ActivitySource } from "./activity";
+import type { ActivitySource } from "./activity";
 import type { Destination, EnrichedActivityEvent } from "./events";
 import type { ActivityType, StandardizedActivity } from "./standardized_activity";
 
@@ -481,6 +481,8 @@ export interface ShowcasedActivity {
     | undefined;
   /** Public attribution */
   ownerDisplayName: string;
+  /** GCS URI for pre-parsed activity JSON (avoids Firestore 1MB limit) */
+  activityDataUri: string;
 }
 
 export interface ShowcasedActivity_EnrichmentMetadataEntry {
@@ -522,17 +524,17 @@ export interface PipelineRun {
   boosters: BoosterExecution[];
   /** Destination Outcomes */
   destinations: DestinationOutcome[];
-  /** Error/Pending tracking */
-  errorMessage?: string | undefined;
+  /** Status tracking */
+  statusMessage?: string | undefined;
   pendingInputId?:
     | string
     | undefined;
-  /**
-   * For repost/retry functionality (replaces executions.inputsJson)
-   * These store the full payloads so repost-handler can reconstruct events
-   */
-  enrichedEvent?: EnrichedActivityEvent | undefined;
-  originalPayload?: ActivityPayload | undefined;
+  /** For repost/retry functionality (replaces executions.inputsJson) */
+  enrichedEvent?:
+    | EnrichedActivityEvent
+    | undefined;
+  /** GCS URI: gs://{bucket}/payloads/{userId}/{activityId}.json */
+  originalPayloadUri: string;
 }
 
 /** BoosterExecution tracks a single enricher provider's execution. */

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -106,17 +107,14 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 				continue
 			}
 
-			// Extract event info from pending input metadata
-			eventSlug := ""
-			eventName := ""
-			if input.OriginalPayload != nil && input.OriginalPayload.Metadata != nil {
-				eventSlug = input.OriginalPayload.Metadata["parkrun_event_slug"]
-				eventName = input.OriginalPayload.Metadata["parkrun_event_name"]
-			} else {
-				// This is an error - the payload should always have metadata
-				fwCtx.Logger.Error("Pending input missing OriginalPayload or Metadata",
+			// Extract event info from pending input ProviderMetadata (was OriginalPayload.Metadata)
+			eventSlug := input.ProviderMetadata["parkrun_event_slug"]
+			eventName := input.ProviderMetadata["parkrun_event_name"]
+
+			if eventSlug == "" {
+				fwCtx.Logger.Error("Required field missing: parkrun_event_slug is empty",
 					"input_id", input.ActivityId,
-					"has_original_payload", input.OriginalPayload != nil)
+					"event_name", eventName)
 				continue
 			}
 
@@ -168,16 +166,42 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 				continue
 			}
 
-			// Trigger pipeline resume by using the original payload with resume flags
-			// The OriginalPayload contains the full ActivityPayload including StandardizedActivity
-			// which the enricher requires to function
-			resumePayload := input.OriginalPayload
-			if resumePayload == nil {
-				fwCtx.Logger.Error("No OriginalPayload in pending input", "activity_id", input.ActivityId)
+			// Trigger pipeline resume - fetch original payload from GCS
+			if input.OriginalPayloadUri == "" {
+				fwCtx.Logger.Error("No OriginalPayloadUri in pending input", "activity_id", input.ActivityId)
 				failed++
 				continue
 			}
-			// Add resume flags to the original payload
+
+			// Fetch payload from GCS
+			// Parse GCS URI (gs://bucket/path/to/object)
+			uri := input.OriginalPayloadUri
+			if len(uri) < 6 || uri[:5] != "gs://" {
+				fwCtx.Logger.Error("Invalid GCS URI", "uri", uri, "activity_id", input.ActivityId)
+				failed++
+				continue
+			}
+			parts := strings.SplitN(uri[5:], "/", 2)
+			if len(parts) != 2 {
+				fwCtx.Logger.Error("Invalid GCS URI format", "uri", uri, "activity_id", input.ActivityId)
+				failed++
+				continue
+			}
+			bucket, object := parts[0], parts[1]
+			payloadBytes, err := fwCtx.Service.Store.Read(ctx, bucket, object)
+			if err != nil {
+				fwCtx.Logger.Error("Failed to fetch payload from GCS", "uri", input.OriginalPayloadUri, "error", err)
+				failed++
+				continue
+			}
+
+			var resumePayload pb.ActivityPayload
+			if err := protojson.Unmarshal(payloadBytes, &resumePayload); err != nil {
+				fwCtx.Logger.Error("Failed to unmarshal resume payload", "error", err)
+				failed++
+				continue
+			}
+			// Add resume flags to the payload
 			resumePayload.IsResume = true
 			resumePayload.ResumeOnlyEnrichers = []string{"parkrun"}
 			resumePayload.UseUpdateMethod = true
@@ -200,7 +224,7 @@ func pollHandler(httpClient *http.Client) framework.HandlerFunc {
 			newPipelineExecID := fmt.Sprintf("parkrun-results-%s", uuid.NewString())
 			resumePayload.PipelineExecutionId = &newPipelineExecID
 
-			eventData, err := protojson.Marshal(resumePayload)
+			eventData, err := protojson.Marshal(&resumePayload)
 			if err != nil {
 				fwCtx.Logger.Error("Failed to marshal resume payload", "error", err)
 				failed++

@@ -91,6 +91,7 @@ func uploadHandler() framework.HandlerFunc {
 
 		if user.Integrations == nil || user.Integrations.Hevy == nil || user.Integrations.Hevy.ApiKey == "" {
 			fwCtx.Logger.Warn("User has no Hevy API key configured", "userId", eventPayload.UserId)
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "no Hevy API key configured", fwCtx.Logger)
 			return map[string]interface{}{
 				"status": "FAILED",
 				"reason": "no_hevy_api_key",
@@ -113,12 +114,14 @@ func uploadHandler() framework.HandlerFunc {
 		// 5. Map to Hevy workout format
 		workout, err := mapToHevyWorkout(ctx, &eventPayload, resolver, fwCtx)
 		if err != nil {
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to map to Hevy format: %s", err), fwCtx.Logger)
 			return nil, fmt.Errorf("failed to map activity to Hevy format: %w", err)
 		}
 
 		// 6. POST to Hevy API
 		workoutID, err := createHevyWorkout(ctx, apiKey, workout, fwCtx)
 		if err != nil {
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), fwCtx.Logger)
 			return nil, fmt.Errorf("failed to create Hevy workout: %w", err)
 		}
 

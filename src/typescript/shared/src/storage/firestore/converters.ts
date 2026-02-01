@@ -377,13 +377,11 @@ export const PendingInputToFirestore = (model: PendingInput): Record<string, unk
     enricher_provider_id: model.enricherProviderId,
     auto_populated: model.autoPopulated,
     auto_deadline: model.autoDeadline,
+    provider_metadata: model.providerMetadata,
   };
-  // If we had original_payload exposed in TS, we'd map it here, but it's often binary or complex structure
-  // For now, allow passthrough if it exists on model (duck typing)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  if ((model as any).originalPayload) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    data.original_payload = (model as any).originalPayload;
+  // GCS URI for large payloads
+  if (model.originalPayloadUri) {
+    data.original_payload_uri = model.originalPayloadUri;
   }
   return data;
 };
@@ -395,9 +393,8 @@ export const FirestoreToPendingInput = (data: Record<string, unknown>): PendingI
     status: data.status as PendingInput_Status,
     requiredFields: (data.required_fields as string[]) || [],
     inputData: (data.input_data as Record<string, string>) || {},
-    originalPayload: typeof data.original_payload === 'string'
-      ? JSON.parse(data.original_payload)
-      : data.original_payload, // Handle both JSON string and object
+    // GCS URI for large payloads (original_payload is now stored in GCS)
+    originalPayloadUri: data.original_payload_uri as string || '',
     createdAt: toDate(data.created_at),
     updatedAt: toDate(data.updated_at),
     completedAt: toDate(data.completed_at),
@@ -466,7 +463,10 @@ export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): imp
     activityType: (data.activity_type as number) || 0,
     source: (data.source as number) || 0,
     startTime: toDate(data.start_time),
+    // Legacy: inline activity_data (will be removed after migration)
     activityData: data.activity_data ? JSON.parse(data.activity_data as string) : undefined,
+    // New: GCS URI for activity JSON (avoids Firestore 1MB limit)
+    activityDataUri: data.activity_data_uri as string || '',
     fitFileUri: data.fit_file_uri as string || '',
     appliedEnrichments: (data.applied_enrichments as string[]) || [],
     enrichmentMetadata: (data.enrichment_metadata as Record<string, string>) || {},
@@ -477,6 +477,7 @@ export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): imp
     ownerDisplayName: data.owner_display_name as string || '',
   };
 };
+
 
 // --- PipelineRun Converter (lifecycle tracking) ---
 
@@ -500,8 +501,9 @@ export const pipelineRunConverter: FirestoreDataConverter<PipelineRun> = {
     if (model.startTime) data.start_time = model.startTime;
     if (model.createdAt) data.created_at = model.createdAt;
     if (model.updatedAt) data.updated_at = model.updatedAt;
-    if (model.errorMessage) data.error_message = model.errorMessage;
+    if (model.statusMessage) data.status_message = model.statusMessage;
     if (model.pendingInputId) data.pending_input_id = model.pendingInputId;
+    if (model.originalPayloadUri) data.original_payload_uri = model.originalPayloadUri;
 
     // Serialize boosters
     if (model.boosters?.length > 0) {
@@ -525,12 +527,9 @@ export const pipelineRunConverter: FirestoreDataConverter<PipelineRun> = {
       }));
     }
 
-    // Store enriched_event and original_payload as JSON strings
+    // Store enriched_event as JSON string (original_payload now in GCS)
     if (model.enrichedEvent) {
       data.enriched_event = JSON.stringify(model.enrichedEvent);
-    }
-    if (model.originalPayload) {
-      data.original_payload = JSON.stringify(model.originalPayload);
     }
 
     return data;
@@ -579,12 +578,12 @@ export const pipelineRunConverter: FirestoreDataConverter<PipelineRun> = {
       startTime: toDate(data.start_time),
       createdAt: toDate(data.created_at),
       updatedAt: toDate(data.updated_at),
-      errorMessage: data.error_message,
-      pendingInputId: data.pending_input_id,
+      statusMessage: data.status_message as string | undefined,
+      pendingInputId: data.pending_input_id as string | undefined,
+      originalPayloadUri: data.original_payload_uri as string || '',
       boosters,
       destinations,
       enrichedEvent: data.enriched_event ? JSON.parse(data.enriched_event) : undefined,
-      originalPayload: data.original_payload ? JSON.parse(data.original_payload) : undefined,
     };
   }
 };

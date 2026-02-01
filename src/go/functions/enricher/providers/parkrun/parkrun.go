@@ -360,16 +360,13 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 					AutoDeadline:               timestamppb.New(autoDeadline),
 					LinkedActivityId:           linkedActivityId,      // Now uses the correct UUID!
 					PipelineId:                 inputs["pipeline_id"], // For resume mode
-					OriginalPayload: &pb.ActivityPayload{
-						UserId:               user.UserId,
-						StandardizedActivity: activity, // Include full activity for resume
-						Metadata: map[string]string{
-							"parkrun_event_slug":   matchedLocation.EventSlug,
-							"parkrun_event_name":   matchedLocation.Name,
-							"parkrun_country":      matchedLocation.CountryURL,
-							"source_activity_id":   activity.ExternalId,
-							"source_activity_type": activity.Source,
-						},
+					// OriginalPayload is now stored in GCS via original_payload_uri (set by orchestrator)
+					ProviderMetadata: map[string]string{
+						"parkrun_event_slug":   matchedLocation.EventSlug,
+						"parkrun_event_name":   matchedLocation.Name,
+						"parkrun_country":      matchedLocation.CountryURL,
+						"source_activity_id":   activity.ExternalId,
+						"source_activity_type": activity.Source,
 					},
 					CreatedAt: timestamppb.Now(),
 					UpdatedAt: timestamppb.Now(),

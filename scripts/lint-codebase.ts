@@ -58,7 +58,7 @@ const ERROR_RULES = new Set([
   // Infrastructure
   'I1', 'I2', 'I3', 'I4', 'I5', 'R1',
   // Go
-  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14',
+  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14', 'G15',
   // TypeScript
   'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14', 'T15', 'T16', 'T17', 'T51', 'T52', 'T53',
   // Cross-Language
@@ -1582,6 +1582,69 @@ function checkUploaderDescriptionSectionReplacement(): CheckResult {
 
   return {
     name: 'Uploader Description Section Replacement (G14)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 15: Go Provider Import Coverage (G15)
+// ============================================================================
+
+/**
+ * Validates that all Go enricher provider packages in the providers/ directory
+ * have corresponding blank imports in function.go.
+ *
+ * Go providers register themselves via init() functions, which only run when
+ * the package is imported. If a provider package exists but isn't imported,
+ * the provider will silently fail to register with "provider not registered" errors.
+ */
+function checkGoProviderImports(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const providersDir = path.join(GO_SRC_DIR, 'functions/enricher/providers');
+  const functionGoPath = path.join(GO_SRC_DIR, 'functions/enricher/function.go');
+
+  if (!fs.existsSync(providersDir)) {
+    warnings.push('Go providers directory not found');
+    return { name: 'Go Provider Imports', passed: true, errors, warnings };
+  }
+
+  if (!fs.existsSync(functionGoPath)) {
+    errors.push('enricher/function.go not found');
+    return { name: 'Go Provider Imports', passed: false, errors, warnings };
+  }
+
+  // Get all provider directories (exclude files like registry.go, errors.go)
+  const providerDirs = getDirectories(providersDir);
+
+  // Read function.go and extract imported providers
+  const functionContent = fs.readFileSync(functionGoPath, 'utf-8');
+  const importPattern = /_\s+"github\.com\/fitglue\/server\/src\/go\/functions\/enricher\/providers\/(\w+)"/g;
+  const importedProviders = new Set<string>();
+  let match;
+  while ((match = importPattern.exec(functionContent)) !== null) {
+    importedProviders.add(match[1]);
+  }
+
+  // Check each provider directory is imported
+  for (const dir of providerDirs) {
+    if (!importedProviders.has(dir)) {
+      errors.push(`Go provider '${dir}' not imported in function.go (init() will not run, provider will fail with "not registered")`);
+    }
+  }
+
+  // Check for orphaned imports (imports without corresponding directories)
+  for (const imported of importedProviders) {
+    if (!providerDirs.includes(imported)) {
+      warnings.push(`Import '${imported}' in function.go has no corresponding provider directory`);
+    }
+  }
+
+  return {
+    name: 'Go Provider Imports (G15)',
     passed: errors.length === 0,
     errors,
     warnings
@@ -4551,6 +4614,7 @@ function main(): void {
         { id: 'G12', fn: () => ({ ...checkDestinationUrlTemplates(), name: 'G12: Destination URL Templates' }) },
         { id: 'G13', fn: () => ({ ...checkEnricherProviderArchitecture(), name: 'G13: Enricher Provider Architecture' }) },
         { id: 'G14', fn: () => ({ ...checkUploaderDescriptionSectionReplacement(), name: 'G14: Uploader Description Section Replacement' }) },
+        { id: 'G15', fn: () => ({ ...checkGoProviderImports(), name: 'G15: Go Provider Import Coverage' }) },
       ]
     },
     {

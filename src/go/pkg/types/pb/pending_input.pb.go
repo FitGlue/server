@@ -82,11 +82,11 @@ type PendingInput struct {
 	RequiredFields []string `protobuf:"bytes,4,rep,name=required_fields,json=requiredFields,proto3" json:"required_fields,omitempty"`
 	// Data provided by the user or auto-populated (filled when status=COMPLETED)
 	InputData map[string]string `protobuf:"bytes,5,rep,name=input_data,json=inputData,proto3" json:"input_data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	// The original payload to be re-published once input is provided
-	OriginalPayload *ActivityPayload     `protobuf:"bytes,6,opt,name=original_payload,json=originalPayload,proto3" json:"original_payload,omitempty"`
-	CreatedAt       *timestamp.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt       *timestamp.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	CompletedAt     *timestamp.Timestamp `protobuf:"bytes,9,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
+	// GCS URI for large payloads: gs://{bucket}/payloads/{userId}/{activityId}.json
+	OriginalPayloadUri string               `protobuf:"bytes,17,opt,name=original_payload_uri,json=originalPayloadUri,proto3" json:"original_payload_uri,omitempty"`
+	CreatedAt          *timestamp.Timestamp `protobuf:"bytes,7,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt          *timestamp.Timestamp `protobuf:"bytes,8,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	CompletedAt        *timestamp.Timestamp `protobuf:"bytes,9,opt,name=completed_at,json=completedAt,proto3" json:"completed_at,omitempty"`
 	// For "continue anyway" enrichers (e.g., Parkrun) - pipeline continues despite pending input
 	ContinuedWithoutResolution bool   `protobuf:"varint,10,opt,name=continued_without_resolution,json=continuedWithoutResolution,proto3" json:"continued_without_resolution,omitempty"`
 	LinkedActivityId           string `protobuf:"bytes,11,opt,name=linked_activity_id,json=linkedActivityId,proto3" json:"linked_activity_id,omitempty"`       // Activity that was created while pending
@@ -166,11 +166,11 @@ func (x *PendingInput) GetInputData() map[string]string {
 	return nil
 }
 
-func (x *PendingInput) GetOriginalPayload() *ActivityPayload {
+func (x *PendingInput) GetOriginalPayloadUri() string {
 	if x != nil {
-		return x.OriginalPayload
+		return x.OriginalPayloadUri
 	}
-	return nil
+	return ""
 }
 
 func (x *PendingInput) GetCreatedAt() *timestamp.Timestamp {
@@ -247,7 +247,7 @@ var File_pending_input_proto protoreflect.FileDescriptor
 
 const file_pending_input_proto_rawDesc = "" +
 	"\n" +
-	"\x13pending_input.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0eactivity.proto\"\xba\b\n" +
+	"\x13pending_input.proto\x12\afitglue\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x0eactivity.proto\"\xad\b\n" +
 	"\fPendingInput\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -255,8 +255,8 @@ const file_pending_input_proto_rawDesc = "" +
 	"\x06status\x18\x03 \x01(\x0e2\x1c.fitglue.PendingInput.StatusR\x06status\x12'\n" +
 	"\x0frequired_fields\x18\x04 \x03(\tR\x0erequiredFields\x12C\n" +
 	"\n" +
-	"input_data\x18\x05 \x03(\v2$.fitglue.PendingInput.InputDataEntryR\tinputData\x12C\n" +
-	"\x10original_payload\x18\x06 \x01(\v2\x18.fitglue.ActivityPayloadR\x0foriginalPayload\x129\n" +
+	"input_data\x18\x05 \x03(\v2$.fitglue.PendingInput.InputDataEntryR\tinputData\x120\n" +
+	"\x14original_payload_uri\x18\x11 \x01(\tR\x12originalPayloadUri\x129\n" +
 	"\n" +
 	"created_at\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
@@ -280,7 +280,7 @@ const file_pending_input_proto_rawDesc = "" +
 	"\x06Status\x12\x16\n" +
 	"\x12STATUS_UNSPECIFIED\x10\x00\x12\x12\n" +
 	"\x0eSTATUS_WAITING\x10\x01\x12\x14\n" +
-	"\x10STATUS_COMPLETED\x10\x02B/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
+	"\x10STATUS_COMPLETED\x10\x02J\x04\b\x06\x10\aB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 
 var (
 	file_pending_input_proto_rawDescOnce sync.Once
@@ -301,23 +301,21 @@ var file_pending_input_proto_goTypes = []any{
 	(*PendingInput)(nil),        // 1: fitglue.PendingInput
 	nil,                         // 2: fitglue.PendingInput.InputDataEntry
 	nil,                         // 3: fitglue.PendingInput.ProviderMetadataEntry
-	(*ActivityPayload)(nil),     // 4: fitglue.ActivityPayload
-	(*timestamp.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*timestamp.Timestamp)(nil), // 4: google.protobuf.Timestamp
 }
 var file_pending_input_proto_depIdxs = []int32{
 	0, // 0: fitglue.PendingInput.status:type_name -> fitglue.PendingInput.Status
 	2, // 1: fitglue.PendingInput.input_data:type_name -> fitglue.PendingInput.InputDataEntry
-	4, // 2: fitglue.PendingInput.original_payload:type_name -> fitglue.ActivityPayload
-	5, // 3: fitglue.PendingInput.created_at:type_name -> google.protobuf.Timestamp
-	5, // 4: fitglue.PendingInput.updated_at:type_name -> google.protobuf.Timestamp
-	5, // 5: fitglue.PendingInput.completed_at:type_name -> google.protobuf.Timestamp
-	5, // 6: fitglue.PendingInput.auto_deadline:type_name -> google.protobuf.Timestamp
-	3, // 7: fitglue.PendingInput.provider_metadata:type_name -> fitglue.PendingInput.ProviderMetadataEntry
-	8, // [8:8] is the sub-list for method output_type
-	8, // [8:8] is the sub-list for method input_type
-	8, // [8:8] is the sub-list for extension type_name
-	8, // [8:8] is the sub-list for extension extendee
-	0, // [0:8] is the sub-list for field type_name
+	4, // 2: fitglue.PendingInput.created_at:type_name -> google.protobuf.Timestamp
+	4, // 3: fitglue.PendingInput.updated_at:type_name -> google.protobuf.Timestamp
+	4, // 4: fitglue.PendingInput.completed_at:type_name -> google.protobuf.Timestamp
+	4, // 5: fitglue.PendingInput.auto_deadline:type_name -> google.protobuf.Timestamp
+	3, // 6: fitglue.PendingInput.provider_metadata:type_name -> fitglue.PendingInput.ProviderMetadataEntry
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_pending_input_proto_init() }

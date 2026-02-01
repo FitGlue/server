@@ -129,14 +129,18 @@ func (h *ComponentHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 // InitLogger configures structured logging with Cloud Logging compatible keys
+// Logger chain: JSONHandler -> ComponentHandler -> SentryHandler
 func InitLogger() {
 	opts := GetSlogHandlerOptions(slog.LevelInfo)
-	handler := slog.NewJSONHandler(os.Stdout, opts)
-	logger := slog.New(&ComponentHandler{Handler: handler})
+	jsonHandler := slog.NewJSONHandler(os.Stdout, opts)
+	compHandler := &ComponentHandler{Handler: jsonHandler}
+	sentryHandler := sentryPkg.NewSentryHandler(compHandler)
+	logger := slog.New(sentryHandler)
 	slog.SetDefault(logger)
 }
 
 // NewLogger creates a configured logger instance
+// Logger chain: JSONHandler -> ComponentHandler -> SentryHandler
 func NewLogger(serviceName string, isDev bool) *slog.Logger {
 	logLevelStr := os.Getenv("LOG_LEVEL")
 	var level slog.Level
@@ -152,8 +156,10 @@ func NewLogger(serviceName string, isDev bool) *slog.Logger {
 	}
 
 	opts := GetSlogHandlerOptions(level)
-	handler := slog.NewJSONHandler(os.Stdout, opts)
-	return slog.New(&ComponentHandler{Handler: handler}).With("service", serviceName)
+	jsonHandler := slog.NewJSONHandler(os.Stdout, opts)
+	compHandler := &ComponentHandler{Handler: jsonHandler}
+	sentryHandler := sentryPkg.NewSentryHandler(compHandler)
+	return slog.New(sentryHandler).With("service", serviceName)
 }
 
 // NewService initializes all standard dependencies

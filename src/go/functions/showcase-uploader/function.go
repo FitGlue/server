@@ -202,6 +202,7 @@ func showcaseHandler() framework.HandlerFunc {
 			var err error
 			showcaseID, err = generateShowcaseID(ctx, svc, eventPayload.Name, startTime)
 			if err != nil {
+				destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to generate ID: %s", err), fwCtx.Logger)
 				return nil, fmt.Errorf("failed to generate showcase ID: %w", err)
 			}
 		}
@@ -212,15 +213,16 @@ func showcaseHandler() framework.HandlerFunc {
 
 		// Create the showcased activity document
 		showcasedActivity := &pb.ShowcasedActivity{
-			ShowcaseId:          showcaseID,
-			ActivityId:          eventPayload.ActivityId,
-			UserId:              eventPayload.UserId,
-			Title:               eventPayload.Name,
-			Description:         eventPayload.Description,
-			ActivityType:        eventPayload.ActivityType,
-			Source:              eventPayload.Source,
-			StartTime:           eventPayload.StartTime,
-			ActivityData:        eventPayload.ActivityData,
+			ShowcaseId:   showcaseID,
+			ActivityId:   eventPayload.ActivityId,
+			UserId:       eventPayload.UserId,
+			Title:        eventPayload.Name,
+			Description:  eventPayload.Description,
+			ActivityType: eventPayload.ActivityType,
+			Source:       eventPayload.Source,
+			StartTime:    eventPayload.StartTime,
+			// ActivityData is stored in GCS, not inline (avoids Firestore 1MB limit)
+			ActivityData:        nil,
 			FitFileUri:          eventPayload.FitFileUri,
 			AppliedEnrichments:  eventPayload.AppliedEnrichments,
 			EnrichmentMetadata:  eventPayload.EnrichmentMetadata,
@@ -230,9 +232,27 @@ func showcaseHandler() framework.HandlerFunc {
 			ExpiresAt:           nil, // Will be set below
 		}
 
+		// Upload activity data to GCS (avoids Firestore 1MB field limit)
+		if eventPayload.ActivityData != nil {
+			jsonBytes, err := protojson.Marshal(eventPayload.ActivityData)
+			if err != nil {
+				fwCtx.Logger.Error("Failed to marshal activity data to JSON", "error", err)
+			} else {
+				bucketName := "fitglue-showcase-assets"
+				gcsPath := fmt.Sprintf("%s/activity.json", showcaseID)
+				if err := svc.Store.Write(ctx, bucketName, gcsPath, jsonBytes); err != nil {
+					fwCtx.Logger.Error("Failed to upload activity data to GCS", "error", err, "bucket", bucketName, "path", gcsPath)
+				} else {
+					showcasedActivity.ActivityDataUri = fmt.Sprintf("gs://%s/%s", bucketName, gcsPath)
+					fwCtx.Logger.Info("Uploaded activity data to GCS", "uri", showcasedActivity.ActivityDataUri, "size_bytes", len(jsonBytes))
+				}
+			}
+		}
+
 		if expiresAt != nil {
 			showcasedActivity.ExpiresAt = timestamppb.New(*expiresAt)
 		}
+
 		// Fetch user display name from Firebase Auth for public attribution
 		if svc.Auth != nil {
 			authUser, err := svc.Auth.GetUser(ctx, eventPayload.UserId)
@@ -261,6 +281,7 @@ func showcaseHandler() framework.HandlerFunc {
 		// Persist to Firestore
 		if err := svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
 			fwCtx.Logger.Error("Failed to persist showcased activity", "error", err)
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("persist failed: %s", err), fwCtx.Logger)
 			return nil, fmt.Errorf("failed to persist showcased activity: %w", err)
 		}
 
@@ -278,6 +299,7 @@ func showcaseHandler() framework.HandlerFunc {
 				"synced_at": timestamppb.Now().AsTime(),
 			}); err != nil {
 				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
+				destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("sync update failed: %s", err), fwCtx.Logger)
 				return nil, fmt.Errorf("failed to update synchronized activity: %w", err)
 			}
 			fwCtx.Logger.Info("Updated synchronized activity destinations (preserved execution ID)", "activity_id", eventPayload.ActivityId)
@@ -300,6 +322,7 @@ func showcaseHandler() framework.HandlerFunc {
 
 			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
 				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
+				destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("sync persist failed: %s", err), fwCtx.Logger)
 				return nil, fmt.Errorf("failed to persist synchronized activity: %w", err)
 			}
 		}

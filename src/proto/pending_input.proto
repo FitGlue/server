@@ -26,8 +26,10 @@ message PendingInput {
   // Data provided by the user or auto-populated (filled when status=COMPLETED)
   map<string, string> input_data = 5;
 
-  // The original payload to be re-published once input is provided
-  ActivityPayload original_payload = 6;
+  // Field 6 was original_payload (exceeds 1MB Firestore limit)
+  reserved 6;
+  // GCS URI for large payloads: gs://{bucket}/payloads/{userId}/{activityId}.json
+  string original_payload_uri = 17;
 
   google.protobuf.Timestamp created_at = 7;
   google.protobuf.Timestamp updated_at = 8;

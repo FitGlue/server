@@ -1,10 +1,21 @@
 import { Command } from 'commander';
 import { db, InputStore, InputService } from '@fitglue/shared';
 import { PubSub } from '@google-cloud/pubsub';
+import { Storage } from '@google-cloud/storage';
 import inquirer from 'inquirer';
 
 const pubsub = new PubSub();
+const storage = new Storage();
 const TOPIC = process.env.PUBSUB_TOPIC || 'activity-updates';
+
+// Helper to fetch text from GCS URI (gs://bucket/path)
+const fetchFromGcs = async (uri: string): Promise<string> => {
+  const match = uri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+  if (!match) throw new Error(`Invalid GCS URI: ${uri}`);
+  const [, bucket, path] = match;
+  const [contents] = await storage.bucket(bucket).file(path).download();
+  return contents.toString('utf-8');
+};
 
 const store = new InputStore(db);
 const service = new InputService(store);
@@ -65,7 +76,7 @@ export const addInputsCommands = (program: Command) => {
         if (input.inputData) {
           console.log(`Input Data: ${JSON.stringify(input.inputData, null, 2)}`);
         }
-        console.log(`Original Payload: ${input.originalPayload ? '(Present)' : '(Missing)'}`);
+        console.log(`Original Payload URI: ${input.originalPayloadUri || '(Missing)'}`);
         console.log('--------------------------------------------------\n');
 
       } catch (error: unknown) {
@@ -124,15 +135,19 @@ export const addInputsCommands = (program: Command) => {
         // But InputService currently only has InputStore.
         // Let's keep pubsub usage here for now, but retrieve payload from input object.
 
-        // Re-fetch to be sure? We already fetched 'input'.
-        if (!input.originalPayload) {
-          console.error('Original payload missing, cannot resume');
+        // Fetch payload from GCS if URI is present
+        if (!input.originalPayloadUri) {
+          console.error('Original payload URI missing, cannot resume');
           process.exit(1);
         }
 
-        // originalPayload type in TS is generic/duck-typed in converter
-        // In proto it is bytes or object. Converter says "Pass through, might be buffer/bytes"
-        const payloadStr = typeof input.originalPayload === 'string' ? input.originalPayload : JSON.stringify(input.originalPayload);
+        console.log(`Fetching payload from GCS: ${input.originalPayloadUri}`);
+        const payloadStr = await fetchFromGcs(input.originalPayloadUri);
+        if (!payloadStr) {
+          console.error('Failed to fetch payload from GCS');
+          process.exit(1);
+        }
+
         const dataBuffer = Buffer.from(payloadStr);
         await pubsub.topic(TOPIC).publishMessage({ data: dataBuffer });
 

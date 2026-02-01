@@ -10,11 +10,13 @@ import (
 	shared "github.com/fitglue/server/src/go/pkg"
 	fit "github.com/fitglue/server/src/go/pkg/domain/file_generators"
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
+	infrasentry "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/functions/enricher/providers/user_input"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -193,6 +195,17 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		provider, ok = o.providersByType[cfg.ProviderType]
 		if !ok {
 			logger.Warn("Provider not found for type", "type", cfg.ProviderType)
+			// Send Sentry warning - this is a configuration issue that should be investigated
+			infrasentry.CaptureMessage(
+				fmt.Sprintf("Enricher provider not registered: %s", cfg.ProviderType),
+				"warning",
+				map[string]interface{}{
+					"provider_type": cfg.ProviderType.String(),
+					"pipeline_id":   pipeline.ID,
+					"user_id":       payload.UserId,
+				},
+				logger,
+			)
 			providerExecutions = append(providerExecutions, ProviderExecution{
 				ProviderName: fmt.Sprintf("TYPE:%s", cfg.ProviderType),
 				Status:       "SKIPPED",
@@ -581,16 +594,32 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 
 func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pb.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError) (*ProcessResult, error) {
 	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID)
+
+	// Upload original payload to GCS for later retrieval
+	payloadUri := ""
+	if o.storage != nil && o.bucketName != "" {
+		payloadPath := fmt.Sprintf("payloads/%s/%s.json", payload.UserId, waitErr.ActivityID)
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			logger.Warn("Failed to marshal payload for GCS", "error", err)
+		} else if err := o.storage.Write(ctx, o.bucketName, payloadPath, payloadBytes); err != nil {
+			logger.Warn("Failed to upload payload to GCS", "error", err)
+		} else {
+			payloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
+			logger.Debug("Uploaded payload to GCS", "uri", payloadUri)
+		}
+	}
+
 	// Create Pending Input in DB
 	pi := &pb.PendingInput{
-		ActivityId:       waitErr.ActivityID,
-		UserId:           payload.UserId,
-		Status:           pb.PendingInput_STATUS_WAITING,
-		RequiredFields:   waitErr.RequiredFields,
-		OriginalPayload:  payload, // Full payload for re-publish
-		CreatedAt:        timestamppb.Now(),
-		UpdatedAt:        timestamppb.Now(),
-		ProviderMetadata: waitErr.Metadata, // Pass provider context to UI
+		ActivityId:         waitErr.ActivityID,
+		UserId:             payload.UserId,
+		Status:             pb.PendingInput_STATUS_WAITING,
+		RequiredFields:     waitErr.RequiredFields,
+		OriginalPayloadUri: payloadUri, // GCS URI for payload retrieval
+		CreatedAt:          timestamppb.Now(),
+		UpdatedAt:          timestamppb.Now(),
+		ProviderMetadata:   waitErr.Metadata, // Pass provider context to UI
 	}
 	if err := o.database.CreatePendingInput(ctx, payload.UserId, pi); err != nil {
 		logger.Warn("Failed to create pending input (might already exist)", "error", err)
@@ -646,23 +675,38 @@ func (o *Orchestrator) createPipelineRun(ctx context.Context, logger *slog.Logge
 		})
 	}
 
+	// Upload original payload to GCS for Magic Actions (retry/repost)
+	payloadUri := ""
+	if o.storage != nil && o.bucketName != "" {
+		payloadPath := fmt.Sprintf("payloads/%s/%s.json", userId, event.ActivityId)
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			logger.Warn("Failed to marshal payload for GCS", "error", err)
+		} else if err := o.storage.Write(ctx, o.bucketName, payloadPath, payloadBytes); err != nil {
+			logger.Warn("Failed to upload payload to GCS", "error", err)
+		} else {
+			payloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
+			logger.Debug("Uploaded original payload to GCS", "uri", payloadUri)
+		}
+	}
+
 	// Create PipelineRun
 	pipelineRun := &pb.PipelineRun{
-		Id:               *event.PipelineExecutionId,
-		PipelineId:       event.PipelineId,
-		ActivityId:       event.ActivityId,
-		Source:           event.Source.String(),
-		SourceActivityId: "", // Source activity ID not available in ActivityPayload
-		Title:            event.Name,
-		Description:      event.Description,
-		Type:             event.ActivityType,
-		StartTime:        event.StartTime,
-		Status:           pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
-		CreatedAt:        timestamppb.Now(),
-		UpdatedAt:        timestamppb.Now(),
-		Boosters:         boosters,
-		Destinations:     destinations,
-		OriginalPayload:  payload,
+		Id:                 *event.PipelineExecutionId,
+		PipelineId:         event.PipelineId,
+		ActivityId:         event.ActivityId,
+		Source:             event.Source.String(),
+		SourceActivityId:   payload.GetStandardizedActivity().GetExternalId(), // External ID from source platform (e.g., Strava activity ID)
+		Title:              event.Name,
+		Description:        event.Description,
+		Type:               event.ActivityType,
+		StartTime:          event.StartTime,
+		Status:             pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+		CreatedAt:          timestamppb.Now(),
+		UpdatedAt:          timestamppb.Now(),
+		Boosters:           boosters,
+		Destinations:       destinations,
+		OriginalPayloadUri: payloadUri, // GCS URI for payload retrieval
 	}
 
 	if err := o.database.CreatePipelineRun(ctx, userId, pipelineRun); err != nil {
