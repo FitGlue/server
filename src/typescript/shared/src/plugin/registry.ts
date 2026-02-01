@@ -2773,6 +2773,42 @@ Tagged laps are automatically mapped to Hevy exercises using Hevy's exercise lib
   popularityScore: 70,
 });
 
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS, {
+  id: 'running-dynamics',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Running Dynamics',
+  description: 'Summarize Running Dynamics data (GCT, Stride, Vertical Oscillation)',
+  icon: '👟',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### Running Dynamics Booster
+Automatically summarizes advanced running telemetry for compatible devices.
+
+### Metrics Included
+- **Ground Contact Time (GCT)**: How much time your foot spends on the ground.
+- **Stride Length**: The distance between each step.
+- **Vertical Oscillation**: How much you "bounce" while running.
+
+### How it works
+This booster extracts the telemetry from your activity file and appends a single-line summary to your activity description.
+  `,
+  features: [
+    '✅ Summarize Ground Contact Time',
+    '✅ Summarize Stride Length',
+    '✅ Summarize Vertical Oscillation',
+    '✅ Automatically activates for compatible data',
+  ],
+  transformations: [],
+  useCases: [],
+  // UX Organization
+  category: 'stats',
+  sortOrder: 10,
+  isPremium: true,
+  popularityScore: 90,
+});
+
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   id: 'mock',
   type: PluginType.PLUGIN_TYPE_ENRICHER,

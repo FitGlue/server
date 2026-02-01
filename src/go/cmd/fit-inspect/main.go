@@ -117,14 +117,21 @@ func main() {
 	}
 
 	stats := map[string]*FieldStats{
-		"heart_rate":    NewFieldStats("HeartRate"),
-		"power":         NewFieldStats("Power"),
-		"cadence":       NewFieldStats("Cadence"),
-		"speed":         NewFieldStats("Speed"),
-		"distance":      NewFieldStats("Distance"),
-		"altitude":      NewFieldStats("Altitude"),
-		"position_lat":  NewFieldStats("PositionLat"),
-		"position_long": NewFieldStats("PositionLong"),
+		"heart_rate":           NewFieldStats("HeartRate"),
+		"power":                NewFieldStats("Power"),
+		"cadence":              NewFieldStats("Cadence"),
+		"speed":                NewFieldStats("Speed"),
+		"enhanced_speed":       NewFieldStats("EnhancedSpeed"),
+		"distance":             NewFieldStats("Distance"),
+		"altitude":             NewFieldStats("Altitude"),
+		"enhanced_altitude":    NewFieldStats("EnhancedAltitude"),
+		"position_lat":         NewFieldStats("PositionLat"),
+		"position_long":        NewFieldStats("PositionLong"),
+		"stance_time":          NewFieldStats("GroundContactTime"),
+		"vertical_oscillation": NewFieldStats("VerticalOscillation"),
+		"vertical_ratio":       NewFieldStats("VerticalRatio"),
+		"step_length":          NewFieldStats("StepLength"),
+		"accumulated_power":    NewFieldStats("AccumulatedPower"),
 	}
 
 	recordCount := 0

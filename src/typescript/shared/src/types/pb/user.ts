@@ -69,6 +69,8 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_FIT_FILE_HEART_RATE = 29,
   /** ENRICHER_PROVIDER_HYBRID_RACE_TAGGER - Config inputs: none (allows tagging and merging laps for hybrid races like Hyrox, ATHX) */
   ENRICHER_PROVIDER_HYBRID_RACE_TAGGER = 30,
+  /** ENRICHER_PROVIDER_RUNNING_DYNAMICS - Config inputs: none (summarizes ground contact time, vertical oscillation, etc.) - Athlete tier only */
+  ENRICHER_PROVIDER_RUNNING_DYNAMICS = 31,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

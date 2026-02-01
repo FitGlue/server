@@ -42,6 +42,7 @@ import (
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/personal_records"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/power_summary"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/route_thumbnail"
+	_ "github.com/fitglue/server/src/go/functions/enricher/providers/running_dynamics"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/source_link"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/speed_summary"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/spotify_tracks"

@@ -183,6 +183,20 @@ export interface Record {
   /** Location */
   positionLat: number;
   positionLong: number;
+  /** Running Dynamics */
+  groundContactTime?:
+    | number
+    | undefined;
+  /** mm (stored as mm in FIT, we'll keep as mm) */
+  verticalOscillation?:
+    | number
+    | undefined;
+  /** % (stored as 0.1% in FIT, we'll convert to float or keep int? user screenshot shows 8.4%) */
+  verticalRatio?:
+    | number
+    | undefined;
+  /** meters */
+  stepLength?: number | undefined;
 }
 
 /**

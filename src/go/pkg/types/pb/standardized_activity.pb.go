@@ -705,10 +705,15 @@ type Record struct {
 	Speed     float64 `protobuf:"fixed64,5,opt,name=speed,proto3" json:"speed,omitempty"`                         // m/s
 	Altitude  float64 `protobuf:"fixed64,6,opt,name=altitude,proto3" json:"altitude,omitempty"`                   // meters
 	// Location
-	PositionLat   float64 `protobuf:"fixed64,7,opt,name=position_lat,json=positionLat,proto3" json:"position_lat,omitempty"`
-	PositionLong  float64 `protobuf:"fixed64,8,opt,name=position_long,json=positionLong,proto3" json:"position_long,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	PositionLat  float64 `protobuf:"fixed64,7,opt,name=position_lat,json=positionLat,proto3" json:"position_lat,omitempty"`
+	PositionLong float64 `protobuf:"fixed64,8,opt,name=position_long,json=positionLong,proto3" json:"position_long,omitempty"`
+	// Running Dynamics
+	GroundContactTime   *int32   `protobuf:"varint,9,opt,name=ground_contact_time,json=groundContactTime,proto3,oneof" json:"ground_contact_time,omitempty"`      // ms
+	VerticalOscillation *int32   `protobuf:"varint,10,opt,name=vertical_oscillation,json=verticalOscillation,proto3,oneof" json:"vertical_oscillation,omitempty"` // mm (stored as mm in FIT, we'll keep as mm)
+	VerticalRatio       *int32   `protobuf:"varint,11,opt,name=vertical_ratio,json=verticalRatio,proto3,oneof" json:"vertical_ratio,omitempty"`                   // % (stored as 0.1% in FIT, we'll convert to float or keep int? user screenshot shows 8.4%)
+	StepLength          *float64 `protobuf:"fixed64,12,opt,name=step_length,json=stepLength,proto3,oneof" json:"step_length,omitempty"`                           // meters
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *Record) Reset() {
@@ -793,6 +798,34 @@ func (x *Record) GetPositionLat() float64 {
 func (x *Record) GetPositionLong() float64 {
 	if x != nil {
 		return x.PositionLong
+	}
+	return 0
+}
+
+func (x *Record) GetGroundContactTime() int32 {
+	if x != nil && x.GroundContactTime != nil {
+		return *x.GroundContactTime
+	}
+	return 0
+}
+
+func (x *Record) GetVerticalOscillation() int32 {
+	if x != nil && x.VerticalOscillation != nil {
+		return *x.VerticalOscillation
+	}
+	return 0
+}
+
+func (x *Record) GetVerticalRatio() int32 {
+	if x != nil && x.VerticalRatio != nil {
+		return *x.VerticalRatio
+	}
+	return 0
+}
+
+func (x *Record) GetStepLength() float64 {
+	if x != nil && x.StepLength != nil {
+		return *x.StepLength
 	}
 	return 0
 }
@@ -989,7 +1022,7 @@ const file_standardized_activity_proto_rawDesc = "" +
 	"\x12total_elapsed_time\x18\x02 \x01(\x01R\x10totalElapsedTime\x12%\n" +
 	"\x0etotal_distance\x18\x03 \x01(\x01R\rtotalDistance\x12)\n" +
 	"\arecords\x18\x04 \x03(\v2\x0f.fitglue.RecordR\arecords\x12#\n" +
-	"\rexercise_name\x18\x05 \x01(\tR\fexerciseName\"\x8b\x02\n" +
+	"\rexercise_name\x18\x05 \x01(\tR\fexerciseName\"\x9e\x04\n" +
 	"\x06Record\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x1d\n" +
 	"\n" +
@@ -999,7 +1032,17 @@ const file_standardized_activity_proto_rawDesc = "" +
 	"\x05speed\x18\x05 \x01(\x01R\x05speed\x12\x1a\n" +
 	"\baltitude\x18\x06 \x01(\x01R\baltitude\x12!\n" +
 	"\fposition_lat\x18\a \x01(\x01R\vpositionLat\x12#\n" +
-	"\rposition_long\x18\b \x01(\x01R\fpositionLong\"\xda\x03\n" +
+	"\rposition_long\x18\b \x01(\x01R\fpositionLong\x123\n" +
+	"\x13ground_contact_time\x18\t \x01(\x05H\x00R\x11groundContactTime\x88\x01\x01\x126\n" +
+	"\x14vertical_oscillation\x18\n" +
+	" \x01(\x05H\x01R\x13verticalOscillation\x88\x01\x01\x12*\n" +
+	"\x0evertical_ratio\x18\v \x01(\x05H\x02R\rverticalRatio\x88\x01\x01\x12$\n" +
+	"\vstep_length\x18\f \x01(\x01H\x03R\n" +
+	"stepLength\x88\x01\x01B\x16\n" +
+	"\x14_ground_contact_timeB\x17\n" +
+	"\x15_vertical_oscillationB\x11\n" +
+	"\x0f_vertical_ratioB\x0e\n" +
+	"\f_step_length\"\xda\x03\n" +
 	"\vStrengthSet\x12#\n" +
 	"\rexercise_name\x18\x01 \x01(\tR\fexerciseName\x12\x12\n" +
 	"\x04reps\x18\x02 \x01(\x05R\x04reps\x12\x1b\n" +
@@ -1161,6 +1204,7 @@ func file_standardized_activity_proto_init() {
 		return
 	}
 	file_standardized_activity_proto_msgTypes[2].OneofWrappers = []any{}
+	file_standardized_activity_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

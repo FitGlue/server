@@ -300,13 +300,19 @@ func parseRecord(msg *proto.Message) *pb.Record {
 	}
 
 	// Speed (FIT uses mm/s, we want m/s)
+	// Fallback to EnhancedSpeed if Speed is 0xFFFF (invalid)
 	if recordMsg.Speed != 0xFFFF {
 		record.Speed = float64(recordMsg.Speed) / 1000
+	} else if recordMsg.EnhancedSpeed != 0xFFFFFFFF {
+		record.Speed = float64(recordMsg.EnhancedSpeed) / 1000
 	}
 
 	// Altitude (FIT uses 5 * (altitude + 500) scale)
+	// Fallback to EnhancedAltitude if Altitude is 0xFFFF
 	if recordMsg.Altitude != 0xFFFF {
 		record.Altitude = (float64(recordMsg.Altitude) / 5) - 500
+	} else if recordMsg.EnhancedAltitude != 0xFFFFFFFF {
+		record.Altitude = (float64(recordMsg.EnhancedAltitude) / 5) - 500
 	}
 
 	// Position (FIT uses semicircles, convert to decimal degrees)
@@ -314,6 +320,35 @@ func parseRecord(msg *proto.Message) *pb.Record {
 		const semicircleConst = 11930464.7111 // 2^31 / 180
 		record.PositionLat = float64(recordMsg.PositionLat) / semicircleConst
 		record.PositionLong = float64(recordMsg.PositionLong) / semicircleConst
+	}
+
+	// Garmin Running Dynamics
+	// Stance Time (Ground Contact Time) - FIT unit is 0.1ms
+	if recordMsg.StanceTime != 0xFFFF {
+		gct := int32(recordMsg.StanceTime / 10) // Convert to ms
+		record.GroundContactTime = &gct
+	}
+
+	// Vertical Oscillation - FIT unit is 0.1mm
+	if recordMsg.VerticalOscillation != 0xFFFF {
+		vo := int32(recordMsg.VerticalOscillation / 10) // Convert to mm
+		record.VerticalOscillation = &vo
+	}
+
+	// Vertical Ratio - FIT unit is 0.01%
+	if recordMsg.VerticalRatio != 0xFFFF {
+		vr := int32(recordMsg.VerticalRatio / 10) // Convert to 0.1% (or keep as int?)
+		// Actually, let's store it such that it matches the user's "8.4%"
+		// If FIT gives 840 for 8.4%, then recordMsg.VerticalRatio / 10 is 84.
+		// Let's check the user screenshot. It says 8.4%.
+		// If we store 84, we can format as 8.4 in the UI.
+		record.VerticalRatio = &vr
+	}
+
+	// Step Length (Stride Length) - FIT unit is mm
+	if recordMsg.StepLength != 0xFFFF {
+		sl := float64(recordMsg.StepLength) / 1000 // Convert to meters
+		record.StepLength = &sl
 	}
 
 	return record

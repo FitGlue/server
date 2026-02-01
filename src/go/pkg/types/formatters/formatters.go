@@ -345,6 +345,8 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Fit File Heart Rate"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER:
 		return "Hybrid Race Tagger"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS:
+		return "Running Dynamics"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:

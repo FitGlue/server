@@ -142,6 +142,12 @@ message Record {
   // Location
   double position_lat = 7;
   double position_long = 8;
+
+  // Running Dynamics
+  optional int32 ground_contact_time = 9;   // ms
+  optional int32 vertical_oscillation = 10; // mm (stored as mm in FIT, we'll keep as mm)
+  optional int32 vertical_ratio = 11;       // % (stored as 0.1% in FIT, we'll convert to float or keep int? user screenshot shows 8.4%)
+  optional double step_length = 12;         // meters
 }
 
 // StrengthSet represents a discrete set of an exercise (common in weightlifting)

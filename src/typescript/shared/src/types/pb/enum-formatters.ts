@@ -888,6 +888,10 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'HYBRID_RACE_TAGGER': 'Hybrid Race Tagger',
     'Hybrid Race Tagger': 'Hybrid Race Tagger',
     '30': 'Hybrid Race Tagger',
+    'ENRICHER_PROVIDER_RUNNING_DYNAMICS': 'Running Dynamics',
+    'RUNNING_DYNAMICS': 'Running Dynamics',
+    'Running Dynamics': 'Running Dynamics',
+    '31': 'Running Dynamics',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -943,6 +947,7 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER: return 'Ai Banner';
     case EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE: return 'Fit File Heart Rate';
     case EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER: return 'Hybrid Race Tagger';
+    case EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS: return 'Running Dynamics';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }
