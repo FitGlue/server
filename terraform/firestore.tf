@@ -200,4 +200,21 @@ resource "google_firestore_index" "pending_inputs_enricher_status" {
   }
 }
 
+# Index for pending_inputs subcollection (users/{userId}/pending_inputs)
+# Used by useRealtimeInputs for real-time dashboard queries
+resource "google_firestore_index" "pending_inputs_subcollection_status_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pending_inputs"
+  query_scope = "COLLECTION"
 
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
