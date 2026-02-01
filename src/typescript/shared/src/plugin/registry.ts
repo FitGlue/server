@@ -935,7 +935,7 @@ FitGlue analyzes your sets, reps, and weight data, identifies your primary muscl
     },
   ],
   useCases: [
-    'Share detailed strength logs on Strava',
+    'Share detailed strength logs on your favorite platforms',
     'Track progressive overload with volume stats',
     'Celebrate personal records automatically',
   ],
@@ -1023,7 +1023,7 @@ Our database includes 100+ canonical exercises with fuzzy matching, so even cust
   ],
   useCases: [
     'Visualize muscle balance in your program',
-    'Show training focus areas on Strava',
+    'Show training focus areas on your activity feed',
     'Identify lagging muscle groups',
     'Track custom exercises with automatic muscle mapping',
   ],
@@ -1249,7 +1249,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE, {
 Sync your heart rate data from your Fitbit device and overlay it onto your imported activities. This is perfect for when you track a workout (like weightlifting) on one app but wear your Fitbit for health monitoring.
 
 ### How it works
-When an activity is imported (e.g., from Hevy), FitGlue checks your Fitbit account for heart rate data recorded during that time window. It creates a second-by-second heart rate stream and attaches it to the activity before sending it to Strava or other destinations.
+When an activity is imported (e.g., from a strength training app), FitGlue checks your Fitbit account for heart rate data recorded during that time window. It creates a second-by-second heart rate stream and attaches it to the activity before sending it to your activity feed or other destinations.
 
 ### Smart GPS Alignment
 When your activity has GPS data (from a phone app or watch), FitGlue uses an "Elastic Match" algorithm to align Fitbit heart rate data with your GPS timestamps. This handles minor clock drift between devices automatically, ensuring your HR matches the correct location points within ±2 seconds accuracy.
@@ -1273,7 +1273,7 @@ When your activity has GPS data (from a phone app or watch), FitGlue uses an "El
     },
   ],
   useCases: [
-    'Add heart rate to Hevy gym workouts',
+    'Add heart rate to gym workouts',
     'Merge Fitbit HR with phone GPS running data',
     'Complete activity data on Strava',
     'Track training intensity across all activities',
@@ -1332,7 +1332,7 @@ When your activity has GPS data, FitGlue uses an "Elastic Match" algorithm to al
     },
   ],
   useCases: [
-    'Add heart rate from Peloton to indoor workouts',
+    'Add heart rate from indoor bikes to indoor workouts',
     'Merge chest strap HR with phone-tracked activities',
     'Combine HR from one device with GPS from another',
     'Complete heart rate data on pool swims',
@@ -1378,14 +1378,14 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS, {
   ],
   marketingDescription: `
 ### Virtual GPS for Indoor Workouts
-Add GPS coordinates to indoor activities so they appear with a map on Strava. Choose from preset routes in famous locations like London’s Hyde Park or NYC’s Central Park.
+Add GPS coordinates to indoor activities so they appear with a map on your activity feed. Choose from preset routes in famous locations like London’s Hyde Park or NYC’s Central Park.
 
 ### How it works
 When an activity is processed, Virtual GPS overlays a pre-defined GPS route onto the activity. The route is scaled to match your workout duration, giving your indoor session a scenic virtual location.
   `,
   features: [
     '✅ Adds GPS to indoor/gym activities',
-    '✅ Activities appear with a map on Strava',
+    '✅ Activities appear with a map on your activity feed',
     '✅ Choice of scenic routes (London, NYC)',
     '✅ Route scaled to match workout duration',
   ],
@@ -1408,7 +1408,7 @@ When an activity is processed, Virtual GPS overlays a pre-defined GPS route onto
     },
   ],
   useCases: [
-    'Get indoor activities on your Strava heatmap',
+    'Get indoor activities on your activity heatmap',
     'Add visual interest to home gym sessions',
     'Virtual touring while on the treadmill',
   ],
@@ -1433,7 +1433,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK, {
 Automatically appends a deep link to the original activity in your workout description. Great for cross-referencing your data.
 
 ### How it works
-When activities are imported from sources like Hevy or Fitbit, Source Link adds a clickable URL pointing back to the original activity. This makes it easy to see the full details in the source app.
+When activities are imported from sources, Source Link adds a clickable URL pointing back to the original activity. This makes it easy to see the full details in the source app.
   `,
   features: [
     '✅ Adds a link to the original activity',
@@ -1445,7 +1445,7 @@ When activities are imported from sources like Hevy or Fitbit, Source Link adds 
       field: 'description',
       label: 'Activity Description',
       before: 'Upper Body Workout',
-      after: 'Upper Body Workout\n\n🔗 View in Hevy: https://hevy.app/workout/abc123',
+      after: 'Upper Body Workout\n\n🔗 View in Source App: https://example.com/activity/abc123',
       visualType: '',
       afterHtml: '',
     },
@@ -1466,7 +1466,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER, {
   id: 'type-mapper',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Type Mapper',
-  description: 'Maps activity types based on title keywords (e.g., title containing "Zwift" → Virtual Ride)',
+  description: 'Maps activity types based on title keywords (e.g., title containing "Indoor Bike" → Virtual Ride)',
   icon: '🏷️',
   enabled: true,
   requiredIntegrations: [],
@@ -1538,19 +1538,19 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER, {
 Automatically change an activity's type based on keywords in the title. Perfect for when your source app doesn't correctly categorize your workouts.
 
 ### How it works
-Define matching rules like "title contains 'Zwift'" → "Virtual Ride" or "title contains 'Treadmill'" → "Run". When activities are processed, their type is automatically updated if the title matches your pattern.
+Define matching rules like "title contains 'Virtual Ride'" → "Virtual Ride" or "title contains 'Treadmill'" → "Run". When activities are processed, their type is automatically updated if the title matches your pattern.
   `,
   features: [
     '✅ Match activity titles with keywords',
-    '✅ Full Strava activity type dropdown',
+    '✅ Full activity type dropdown',
     '✅ Case-insensitive matching',
     '✅ Multiple rules per enricher',
   ],
   transformations: [
-    { field: 'activityType', label: 'Activity Type', before: 'Workout (from source)', after: 'Virtual Ride (matched "Zwift" in title)', visualType: '', afterHtml: '' },
+    { field: 'activityType', label: 'Activity Type', before: 'Workout (from source)', after: 'Virtual Ride (matched "Virtual Ride" in title)', visualType: '', afterHtml: '' },
   ],
   useCases: [
-    'Categorize indoor cycling as Virtual Ride',
+    'Categorize indoor cycling sessions',
     'Mark treadmill runs correctly',
     'Fix incorrect activity types from source apps',
   ],
@@ -2061,7 +2061,7 @@ When your activity has heart rate data (from Fitbit, Apple Watch, or any source)
     },
   ],
   useCases: [
-    'Quick HR overview on Strava',
+    'Quick HR overview on your activity feed',
     'Track training zones summary',
     'Share intensity without graphs',
   ],
@@ -2110,7 +2110,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION, {
 Let AI craft engaging titles and descriptions for your workouts. Turn raw data into compelling stories.
 
 ### How it works
-When enabled, this Booster uses a large language model to analyze your activity data—type, duration, distance, heart rate, exercises—and generates a human-like title and/or description. Perfect for making your Strava feed more interesting!
+When enabled, this Booster uses a large language model to analyze your activity data—type, duration, distance, heart rate, exercises—and generates a human-like title and/or description. Perfect for making your activity feed more interesting!
 
 ### Configurable Summaries
 You can choose whether to include a "✨ AI Summary:" header. This is useful if you want to keep your own description and add the AI-generated one below it.
@@ -2144,7 +2144,7 @@ This premium feature is exclusively available to Athlete tier subscribers.
     },
   ],
   useCases: [
-    'Make Strava posts more engaging',
+    'Make activity posts more engaging',
     'Save time writing descriptions',
     'Add personality to workout logs',
   ],
@@ -2188,7 +2188,7 @@ When your activity has speed data (from GPS or sensors), this enricher converts 
     },
   ],
   useCases: [
-    'Quick pace overview on Strava',
+    'Quick pace overview on your activity feed',
     'Track running performance',
     'Share pace without complex stats',
   ],
@@ -2276,7 +2276,7 @@ When your activity has power data (from a power meter), this enricher calculates
     },
   ],
   useCases: [
-    'Quick power overview on Strava',
+    'Quick power overview on your activity feed',
     'Track cycling power output',
     'Share power stats easily',
   ],
@@ -2320,7 +2320,7 @@ When your activity has speed data (from GPS or sensors), this enricher calculate
     },
   ],
   useCases: [
-    'Quick speed overview on Strava',
+    'Quick speed overview on your activity feed',
     'Track cycling speed',
     'Monitor activity performance',
   ],
@@ -2399,7 +2399,7 @@ TRIMP is cumulative, meaning a long easy session can have the same load as a sho
     },
   ],
   useCases: [
-    'Track total training stress on Strava',
+    'Track total training stress on your activity feed',
     'Compare intensity between different activities',
     'Monitor recovery needs based on load',
     'Celebrate your hardest training sessions',
@@ -2486,7 +2486,7 @@ All records are stored in Firestore, so your PRs persist across time.
   useCases: [
     'Celebrate running PRs automatically',
     'Track strength progression over time',
-    'Share PR achievements on Strava',
+    'Share PR achievements on your activity feed',
     'Know immediately when you hit a new max',
   ],
   // UX Organization
@@ -2590,7 +2590,7 @@ When your activity has GPS data, this enricher fetches historical weather data f
   useCases: [
     'Track weather conditions for training analysis',
     'Remember what the weather was like',
-    'Share outdoor conditions on Strava',
+    'Share outdoor conditions on your activity feed',
   ],
   // UX Organization
   category: 'location',
@@ -2635,7 +2635,7 @@ When you complete an activity, FitGlue checks your Spotify listening history for
   ],
   useCases: [
     'Track your workout music preferences',
-    'Share your activity soundtrack on Strava',
+    'Share your activity soundtrack on your activity feed',
     'Discover which playlists motivate you most',
   ],
   // UX Organization
@@ -2715,7 +2715,7 @@ When your activity has GPS data, this enricher uses OpenStreetMap's Nominatim AP
   useCases: [
     'Give runs and rides meaningful location names',
     'Track which parks and venues you visit',
-    'Share location context on Strava',
+    'Share location context on your activity feed',
   ],
   // UX Organization
   category: 'location',
@@ -2740,14 +2740,14 @@ Properly categorize each segment of your hybrid race. Smartwatches often record 
 ### How it works
 When this enricher is active, your activity pipeline will pause and ask you to tag each lap with the correct exercise (e.g., "SkiErg", "Sled Push", "Running"). You can also merge adjacent laps that belong together (e.g., a 1km run split across multiple watch laps).
 
-### Hevy Integration
-Tagged laps are automatically mapped to Hevy exercises using Hevy's exercise library. If an exact match isn't found, Hevy's fuzzy matching or custom exercise creation handles it.
+### Strength App Integration
+Tagged laps can be automatically mapped to exercises in your connected strength apps. If an exact match isn't found, fuzzy matching or custom exercise creation handles it.
   `,
   features: [
     '✅ Tag individual laps with exercise names',
     '✅ Merge adjacent laps into logical segments',
     '✅ Works with Hyrox, ATHX, and custom events',
-    '✅ Automatic Hevy exercise mapping via fuzzy match',
+    '✅ Automatic exercise mapping via fuzzy match',
     '✅ Per-lap distance and duration tracking',
   ],
   transformations: [
@@ -2763,7 +2763,7 @@ Tagged laps are automatically mapped to Hevy exercises using Hevy's exercise lib
   useCases: [
     'Track Hyrox workouts with correct exercise tagging',
     'Segment ATHX events into individual stations',
-    'Create accurate Hevy logs from multi-sport activities',
+    'Create accurate records for multi-sport activities',
     'Properly categorize triathlon or duathlon segments',
   ],
   // UX Organization
@@ -2800,7 +2800,16 @@ This booster extracts the telemetry from your activity file and appends a single
     '✅ Summarize Vertical Oscillation',
     '✅ Automatically activates for compatible data',
   ],
-  transformations: [],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: 'Morning Run\n\n👟 Running Dynamics:\nGround Contact Time: 242ms • Stride Length: 1.12m • Vertical Oscillation: 8.4cm',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
   useCases: [],
   // UX Organization
   category: 'stats',
