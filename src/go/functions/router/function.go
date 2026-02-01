@@ -8,6 +8,7 @@ import (
 	"github.com/GoogleCloudPlatform/functions-framework-go/functions"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/framework"
@@ -136,6 +137,18 @@ func routeHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fra
 	}
 
 	fwCtx.Logger.Info("Routing complete", "routed_count", len(routedDestinations))
+
+	// Update PipelineRun with enriched_event for repost functionality
+	if eventPayload.UserId != "" && pipelineExecID != "" {
+		updateData := map[string]interface{}{
+			"enriched_event": &eventPayload,
+			"updated_at":     protojson.Format(timestamppb.Now()),
+		}
+		if err := fwCtx.Service.DB.UpdatePipelineRun(ctx, eventPayload.UserId, pipelineExecID, updateData); err != nil {
+			fwCtx.Logger.Error("Failed to update pipeline run with enriched event", "error", err, "pipeline_run_id", pipelineExecID)
+		}
+	}
+
 	return map[string]interface{}{
 		"status":              "SUCCESS",
 		"activity_id":         eventPayload.ActivityId,

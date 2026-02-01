@@ -211,6 +211,23 @@ func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, d
 	return nil, nil
 }
 
+// --- Pipeline Runs (lifecycle tracking) ---
+
+func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
+func (m *MockDatabase) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
+	// No-op for tests by default
+	return nil
+}
+
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)

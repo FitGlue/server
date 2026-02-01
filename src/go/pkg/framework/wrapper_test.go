@@ -115,6 +115,15 @@ func (m *MockDB) SetUploadedActivity(ctx context.Context, userId string, record 
 func (m *MockDB) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
 	return nil, nil
 }
+func (m *MockDB) CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error {
+	return nil
+}
+func (m *MockDB) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
+	return nil, nil
+}
+func (m *MockDB) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
+	return nil
+}
 
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {

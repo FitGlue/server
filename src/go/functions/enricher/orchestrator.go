@@ -525,6 +525,9 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
+	// Create PipelineRun document for lifecycle tracking
+	o.createPipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, payload)
+
 	return &ProcessResult{
 		Events:             []*pb.EnrichedActivityEvent{finalEvent},
 		ProviderExecutions: providerExecutions,
@@ -615,4 +618,56 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 		ProviderExecutions: allExecs,
 		Status:             pb.ExecutionStatus_STATUS_WAITING,
 	}, nil
+}
+
+// createPipelineRun creates a PipelineRun document with the current state
+func (o *Orchestrator) createPipelineRun(ctx context.Context, logger *slog.Logger, userId string, event *pb.EnrichedActivityEvent, providerExecs []ProviderExecution, payload *pb.ActivityPayload) {
+	// Convert ProviderExecutions to BoosterExecutions
+	boosters := make([]*pb.BoosterExecution, 0, len(providerExecs))
+	for _, pe := range providerExecs {
+		booster := &pb.BoosterExecution{
+			ProviderName: pe.ProviderName,
+			Status:       pe.Status,
+			DurationMs:   pe.DurationMs,
+			Metadata:     pe.Metadata,
+		}
+		if pe.Error != "" {
+			booster.Error = &pe.Error
+		}
+		boosters = append(boosters, booster)
+	}
+
+	// Build destination outcomes (all pending at this point)
+	destinations := make([]*pb.DestinationOutcome, 0, len(event.Destinations))
+	for _, dest := range event.Destinations {
+		destinations = append(destinations, &pb.DestinationOutcome{
+			Destination: dest,
+			Status:      pb.DestinationStatus_DESTINATION_STATUS_PENDING,
+		})
+	}
+
+	// Create PipelineRun
+	pipelineRun := &pb.PipelineRun{
+		Id:               *event.PipelineExecutionId,
+		PipelineId:       event.PipelineId,
+		ActivityId:       event.ActivityId,
+		Source:           event.Source.String(),
+		SourceActivityId: "", // Source activity ID not available in ActivityPayload
+		Title:            event.Name,
+		Description:      event.Description,
+		Type:             event.ActivityType,
+		StartTime:        event.StartTime,
+		Status:           pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+		CreatedAt:        timestamppb.Now(),
+		UpdatedAt:        timestamppb.Now(),
+		Boosters:         boosters,
+		Destinations:     destinations,
+		OriginalPayload:  payload,
+	}
+
+	if err := o.database.CreatePipelineRun(ctx, userId, pipelineRun); err != nil {
+		logger.Error("Failed to create pipeline run", "error", err, "pipeline_run_id", pipelineRun.Id)
+	} else {
+		logger.Debug("Created pipeline run", "pipeline_run_id", pipelineRun.Id, "activity_id", event.ActivityId)
+	}
 }

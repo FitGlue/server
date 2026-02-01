@@ -5,8 +5,8 @@
 // source: user.proto
 
 /* eslint-disable */
-import type { ActivitySource } from "./activity";
-import type { Destination } from "./events";
+import type { ActivityPayload, ActivitySource } from "./activity";
+import type { Destination, EnrichedActivityEvent } from "./events";
 import type { ActivityType, StandardizedActivity } from "./standardized_activity";
 
 export const protobufPackage = "fitglue";
@@ -132,6 +132,37 @@ export enum ParkrunResultsState {
   PARKRUN_RESULTS_STATE_EXPIRED = 3,
   /** PARKRUN_RESULTS_STATE_IMMEDIATE - Results found during initial enrichment (no pending input) */
   PARKRUN_RESULTS_STATE_IMMEDIATE = 4,
+  UNRECOGNIZED = -1,
+}
+
+/** PipelineRunStatus tracks the overall state of a pipeline execution. */
+export enum PipelineRunStatus {
+  PIPELINE_RUN_STATUS_UNSPECIFIED = 0,
+  /** PIPELINE_RUN_STATUS_RUNNING - In progress */
+  PIPELINE_RUN_STATUS_RUNNING = 1,
+  /** PIPELINE_RUN_STATUS_SYNCED - All destinations succeeded */
+  PIPELINE_RUN_STATUS_SYNCED = 2,
+  /** PIPELINE_RUN_STATUS_PARTIAL - Some destinations failed */
+  PIPELINE_RUN_STATUS_PARTIAL = 3,
+  /** PIPELINE_RUN_STATUS_FAILED - All destinations failed */
+  PIPELINE_RUN_STATUS_FAILED = 4,
+  /** PIPELINE_RUN_STATUS_PENDING - Waiting for pending input */
+  PIPELINE_RUN_STATUS_PENDING = 5,
+  /** PIPELINE_RUN_STATUS_SKIPPED - Halted by filter/logic gate */
+  PIPELINE_RUN_STATUS_SKIPPED = 6,
+  /** PIPELINE_RUN_STATUS_ARCHIVED - Older than TTL, hidden from default views */
+  PIPELINE_RUN_STATUS_ARCHIVED = 7,
+  UNRECOGNIZED = -1,
+}
+
+/** DestinationStatus tracks the status of a single destination upload. */
+export enum DestinationStatus {
+  DESTINATION_STATUS_UNSPECIFIED = 0,
+  DESTINATION_STATUS_PENDING = 1,
+  DESTINATION_STATUS_SUCCESS = 2,
+  DESTINATION_STATUS_FAILED = 3,
+  /** DESTINATION_STATUS_SKIPPED - Not in pipeline config or filtered */
+  DESTINATION_STATUS_SKIPPED = 4,
   UNRECOGNIZED = -1,
 }
 
@@ -455,4 +486,78 @@ export interface ShowcasedActivity {
 export interface ShowcasedActivity_EnrichmentMetadataEntry {
   key: string;
   value: string;
+}
+
+/**
+ * PipelineRun tracks a complete pipeline execution lifecycle.
+ * This is the primary entity for user-facing activity views, replacing the
+ * old SynchronizedActivity + executions pattern.
+ * Stored in: users/{userId}/pipeline_runs/{pipelineRunId}
+ */
+export interface PipelineRun {
+  /** pipelineExecutionId */
+  id: string;
+  /** Which pipeline config */
+  pipelineId: string;
+  /** Generated activity ID */
+  activityId: string;
+  /** Source Info */
+  source: string;
+  /** External ID from source */
+  sourceActivityId: string;
+  /** Activity Summary (denormalized for list display) */
+  title: string;
+  description: string;
+  type: ActivityType;
+  startTime?:
+    | Date
+    | undefined;
+  /** Pipeline Status */
+  status: PipelineRunStatus;
+  createdAt?: Date | undefined;
+  updatedAt?:
+    | Date
+    | undefined;
+  /** Booster Executions */
+  boosters: BoosterExecution[];
+  /** Destination Outcomes */
+  destinations: DestinationOutcome[];
+  /** Error/Pending tracking */
+  errorMessage?: string | undefined;
+  pendingInputId?:
+    | string
+    | undefined;
+  /**
+   * For repost/retry functionality (replaces executions.inputsJson)
+   * These store the full payloads so repost-handler can reconstruct events
+   */
+  enrichedEvent?: EnrichedActivityEvent | undefined;
+  originalPayload?: ActivityPayload | undefined;
+}
+
+/** BoosterExecution tracks a single enricher provider's execution. */
+export interface BoosterExecution {
+  /** e.g., "parkrun-results", "workout-summary" */
+  providerName: string;
+  /** SUCCESS, SKIPPED, FAILED, WAITING */
+  status: string;
+  durationMs: number;
+  /** Provider-specific output (e.g., skip_reason) */
+  metadata: { [key: string]: string };
+  error?: string | undefined;
+}
+
+export interface BoosterExecution_MetadataEntry {
+  key: string;
+  value: string;
+}
+
+/** DestinationOutcome tracks the result of sending to a single destination. */
+export interface DestinationOutcome {
+  destination: Destination;
+  status: DestinationStatus;
+  /** ID from destination platform */
+  externalId?: string | undefined;
+  error?: string | undefined;
+  completedAt?: Date | undefined;
 }

@@ -168,6 +168,35 @@ const ENUM_CONFIGS: EnumConfig[] = [
     prefix: 'STATUS_',
     defaultValue: 'Waiting',
   },
+  {
+    file: 'user.ts',
+    enumName: 'PipelineRunStatus',
+    prefix: 'PIPELINE_RUN_STATUS_',
+    displayNameOverrides: {
+      'UNSPECIFIED': 'Unknown',
+      'RUNNING': 'In Progress',
+      'SYNCED': 'Synced',
+      'PARTIAL': 'Partial',
+      'FAILED': 'Failed',
+      'PENDING': 'Pending',
+      'SKIPPED': 'Skipped',
+      'ARCHIVED': 'Archived',
+    },
+    defaultValue: 'Unknown',
+  },
+  {
+    file: 'user.ts',
+    enumName: 'DestinationStatus',
+    prefix: 'DESTINATION_STATUS_',
+    displayNameOverrides: {
+      'UNSPECIFIED': 'Unknown',
+      'PENDING': 'Pending',
+      'SUCCESS': 'Success',
+      'FAILED': 'Failed',
+      'SKIPPED': 'Skipped',
+    },
+    defaultValue: 'Unknown',
+  },
 ];
 
 // Parse enum values from generated TypeScript file
@@ -311,6 +340,8 @@ import {
   ParkrunResultsState,
   VirtualGPSRoute,
   WorkoutSummaryFormat,
+  PipelineRunStatus,
+  DestinationStatus,
 } from './user';
 import { ExecutionStatus } from './execution';
 import { ConfigFieldType, IntegrationAuthType, PluginType } from './plugin';

@@ -19,6 +19,7 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
+	"github.com/fitglue/server/src/go/pkg/destination"
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
@@ -240,6 +241,9 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
 		fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
 	}
+
+	// Update PipelineRun destination as synced
+	destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, intervalsDestID, "", fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":                "SUCCESS",

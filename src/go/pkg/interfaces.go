@@ -56,6 +56,11 @@ type Database interface {
 	// Uploaded Activities (for loop prevention - tracks what we've posted to destinations)
 	SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error
 	GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error)
+
+	// Pipeline Runs (lifecycle tracking)
+	CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error
+	GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error)
+	UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error
 }
 
 // --- Messaging Interfaces ---

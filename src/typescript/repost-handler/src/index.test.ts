@@ -48,6 +48,9 @@ describe('repost-handler', () => {
           getRouterExecution: jest.fn(),
           getEnricherExecution: jest.fn(),
         },
+        pipelineRuns: {
+          get: jest.fn().mockResolvedValue(null), // Fallback to executions
+        },
       },
     };
   });

@@ -218,3 +218,64 @@ resource "google_firestore_index" "pending_inputs_subcollection_status_created" 
     order      = "DESCENDING"
   }
 }
+
+# -------------------------------------------------------------------
+# Pipeline Runs Indexes
+# -------------------------------------------------------------------
+
+# Index for listing pipeline runs by status + created_at
+# Used by usePipelineRuns for dashboard activity list
+resource "google_firestore_index" "pipeline_runs_status_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
+# Index for filtering by source + created_at
+# Used for filtering activities by source (e.g., "From Hevy")
+resource "google_firestore_index" "pipeline_runs_source_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "source"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
+# Index for filtering by pipeline_id + created_at
+# Used for viewing runs from a specific pipeline config
+resource "google_firestore_index" "pipeline_runs_pipeline_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "pipeline_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}

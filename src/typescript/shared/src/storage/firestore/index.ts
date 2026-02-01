@@ -7,3 +7,4 @@ export { ActivityStore } from './activity-store';
 export { InputStore } from './inputs';
 export { ShowcaseStore } from './showcase-store';
 export { PipelineStore } from './pipeline-store';
+export { PipelineRunStore } from './pipeline-runs-store';

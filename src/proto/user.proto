@@ -358,3 +358,82 @@ message ShowcasedActivity {
   // Public attribution
   string owner_display_name = 17;  // User's display name for public attribution
 }
+
+// PipelineRun tracks a complete pipeline execution lifecycle.
+// This is the primary entity for user-facing activity views, replacing the
+// old SynchronizedActivity + executions pattern.
+// Stored in: users/{userId}/pipeline_runs/{pipelineRunId}
+message PipelineRun {
+  string id = 1;                           // pipelineExecutionId
+  string pipeline_id = 2;                  // Which pipeline config
+  string activity_id = 3;                  // Generated activity ID
+
+  // Source Info
+  string source = 4;                       // SOURCE_HEVY, SOURCE_STRAVA, etc.
+  string source_activity_id = 5;           // External ID from source
+
+  // Activity Summary (denormalized for list display)
+  string title = 6;
+  string description = 7;
+  ActivityType type = 8;
+  google.protobuf.Timestamp start_time = 9;
+
+  // Pipeline Status
+  PipelineRunStatus status = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+
+  // Booster Executions
+  repeated BoosterExecution boosters = 13;
+
+  // Destination Outcomes
+  repeated DestinationOutcome destinations = 14;
+
+  // Error/Pending tracking
+  optional string error_message = 15;
+  optional string pending_input_id = 16;
+
+  // For repost/retry functionality (replaces executions.inputsJson)
+  // These store the full payloads so repost-handler can reconstruct events
+  fitglue.events.EnrichedActivityEvent enriched_event = 20;
+  ActivityPayload original_payload = 21;
+}
+
+// PipelineRunStatus tracks the overall state of a pipeline execution.
+enum PipelineRunStatus {
+  PIPELINE_RUN_STATUS_UNSPECIFIED = 0;
+  PIPELINE_RUN_STATUS_RUNNING = 1;      // In progress
+  PIPELINE_RUN_STATUS_SYNCED = 2;       // All destinations succeeded
+  PIPELINE_RUN_STATUS_PARTIAL = 3;      // Some destinations failed
+  PIPELINE_RUN_STATUS_FAILED = 4;       // All destinations failed
+  PIPELINE_RUN_STATUS_PENDING = 5;      // Waiting for pending input
+  PIPELINE_RUN_STATUS_SKIPPED = 6;      // Halted by filter/logic gate
+  PIPELINE_RUN_STATUS_ARCHIVED = 7;     // Older than TTL, hidden from default views
+}
+
+// BoosterExecution tracks a single enricher provider's execution.
+message BoosterExecution {
+  string provider_name = 1;              // e.g., "parkrun-results", "workout-summary"
+  string status = 2;                     // SUCCESS, SKIPPED, FAILED, WAITING
+  int64 duration_ms = 3;
+  map<string, string> metadata = 4;      // Provider-specific output (e.g., skip_reason)
+  optional string error = 5;
+}
+
+// DestinationOutcome tracks the result of sending to a single destination.
+message DestinationOutcome {
+  fitglue.events.Destination destination = 1;
+  DestinationStatus status = 2;
+  optional string external_id = 3;       // ID from destination platform
+  optional string error = 4;
+  google.protobuf.Timestamp completed_at = 5;
+}
+
+// DestinationStatus tracks the status of a single destination upload.
+enum DestinationStatus {
+  DESTINATION_STATUS_UNSPECIFIED = 0;
+  DESTINATION_STATUS_PENDING = 1;
+  DESTINATION_STATUS_SUCCESS = 2;
+  DESTINATION_STATUS_FAILED = 3;
+  DESTINATION_STATUS_SKIPPED = 4;        // Not in pipeline config or filtered
+}

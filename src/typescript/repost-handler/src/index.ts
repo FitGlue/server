@@ -161,15 +161,28 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     throw new HttpError(400, `Activity already synced to ${destKey}`);
   }
 
-  // Get router execution to retrieve EnrichedActivityEvent
-  const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
-  if (!routerExec || !routerExec.data.inputsJson) {
-    throw new HttpError(500, 'Unable to retrieve original activity data from execution logs');
+  // Try to get enriched event from PipelineRun first (new architecture)
+  // Fall back to executions for backwards compatibility with existing data
+  let enrichedEvent: Record<string, unknown> | null = null;
+
+  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
+  if (pipelineRun?.enrichedEvent) {
+    // Converter already parses JSON to object
+    enrichedEvent = pipelineRun.enrichedEvent as unknown as Record<string, unknown>;
+    ctx.logger.info('Retrieved enriched event from PipelineRun', { pipelineExecutionId: activity.pipelineExecutionId });
   }
 
-  const enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
+  // Fallback to executions collection (backwards compatibility)
   if (!enrichedEvent) {
-    throw new HttpError(500, 'Failed to parse activity data from execution logs');
+    const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
+    if (routerExec?.data.inputsJson) {
+      enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
+      ctx.logger.info('Retrieved enriched event from executions (fallback)', { pipelineExecutionId: activity.pipelineExecutionId });
+    }
+  }
+
+  if (!enrichedEvent) {
+    throw new HttpError(500, 'Unable to retrieve original activity data from execution logs');
   }
 
   // Generate new execution ID
@@ -257,15 +270,28 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
   // (but we allow retry even if status was success - user might want to update)
   const destKey = getDestinationName(destEnum);
 
-  // Get router execution to retrieve EnrichedActivityEvent
-  const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
-  if (!routerExec || !routerExec.data.inputsJson) {
-    throw new HttpError(500, 'Unable to retrieve original activity data from execution logs');
+  // Try to get enriched event from PipelineRun first (new architecture)
+  // Fall back to executions for backwards compatibility with existing data
+  let enrichedEvent: Record<string, unknown> | null = null;
+
+  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
+  if (pipelineRun?.enrichedEvent) {
+    // Converter already parses JSON to object
+    enrichedEvent = pipelineRun.enrichedEvent as unknown as Record<string, unknown>;
+    ctx.logger.info('Retrieved enriched event from PipelineRun', { pipelineExecutionId: activity.pipelineExecutionId });
   }
 
-  const enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
+  // Fallback to executions collection (backwards compatibility)
   if (!enrichedEvent) {
-    throw new HttpError(500, 'Failed to parse activity data from execution logs');
+    const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
+    if (routerExec?.data.inputsJson) {
+      enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
+      ctx.logger.info('Retrieved enriched event from executions (fallback)', { pipelineExecutionId: activity.pipelineExecutionId });
+    }
+  }
+
+  if (!enrichedEvent) {
+    throw new HttpError(500, 'Unable to retrieve original activity data from execution logs');
   }
 
   // Generate new execution ID
@@ -350,17 +376,32 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     throw new HttpError(500, 'Activity missing pipelineId - cannot re-run pipeline');
   }
 
-  // Get enricher execution to retrieve original ActivityPayload/inputs
-  const enricherExec = await ctx.stores.executions.getEnricherExecution(activity.pipelineExecutionId);
-  if (!enricherExec || !enricherExec.data.inputsJson) {
-    throw new HttpError(500, 'Unable to retrieve original activity payload from execution logs');
+  // Try to get original payload from PipelineRun first (new architecture)
+  // Fall back to executions for backwards compatibility with existing data
+  let originalPayload: Record<string, unknown> | null = null;
+
+  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
+  if (pipelineRun?.originalPayload) {
+    // Converter already parses JSON to object
+    originalPayload = pipelineRun.originalPayload as unknown as Record<string, unknown>;
+    ctx.logger.info('Retrieved original payload from PipelineRun', { pipelineExecutionId: activity.pipelineExecutionId });
   }
 
-  let originalPayload;
-  try {
-    originalPayload = JSON.parse(enricherExec.data.inputsJson);
-  } catch {
-    throw new HttpError(500, 'Failed to parse original activity payload');
+  // Fallback to executions collection (backwards compatibility)
+  if (!originalPayload) {
+    const enricherExec = await ctx.stores.executions.getEnricherExecution(activity.pipelineExecutionId);
+    if (enricherExec?.data.inputsJson) {
+      try {
+        originalPayload = JSON.parse(enricherExec.data.inputsJson);
+        ctx.logger.info('Retrieved original payload from executions (fallback)', { pipelineExecutionId: activity.pipelineExecutionId });
+      } catch {
+        throw new HttpError(500, 'Failed to parse original activity payload');
+      }
+    }
+  }
+
+  if (!originalPayload) {
+    throw new HttpError(500, 'Unable to retrieve original activity payload from execution logs');
   }
 
   // Generate new execution ID

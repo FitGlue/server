@@ -408,3 +408,28 @@ func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId strin
 	}
 	return record, nil
 }
+
+// --- Pipeline Runs (lifecycle tracking) ---
+
+// CreatePipelineRun creates a new pipeline run document
+func (a *FirestoreAdapter) CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error {
+	return a.storage.PipelineRuns(userId).Doc(run.Id).Set(ctx, run)
+}
+
+// GetPipelineRun retrieves a pipeline run by ID
+func (a *FirestoreAdapter) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
+	run, err := a.storage.PipelineRuns(userId).Doc(id).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Ensure ID is set
+	if run != nil && run.Id == "" {
+		run.Id = id
+	}
+	return run, nil
+}
+
+// UpdatePipelineRun updates specific fields on a pipeline run
+func (a *FirestoreAdapter) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
+	return a.storage.PipelineRuns(userId).Doc(id).Update(ctx, data)
+}

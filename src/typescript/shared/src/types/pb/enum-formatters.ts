@@ -12,6 +12,8 @@ import {
   ParkrunResultsState,
   VirtualGPSRoute,
   WorkoutSummaryFormat,
+  PipelineRunStatus,
+  DestinationStatus,
 } from './user';
 import { ExecutionStatus } from './execution';
 import { ConfigFieldType, IntegrationAuthType, PluginType } from './plugin';
@@ -1490,5 +1492,122 @@ export function formatPendingInput_Status(value: PendingInput_Status | number | 
     case PendingInput_Status.STATUS_WAITING: return 'Waiting';
     case PendingInput_Status.STATUS_COMPLETED: return 'Completed';
     default: return 'Waiting';
+  }
+}
+
+const PipelineRunStatusNames: Record<string, string> = {
+    'PIPELINE_RUN_STATUS_UNSPECIFIED': 'Unknown',
+    'UNSPECIFIED': 'Unknown',
+    'Unknown': 'Unknown',
+    '0': 'Unknown',
+    'PIPELINE_RUN_STATUS_RUNNING': 'In Progress',
+    'RUNNING': 'In Progress',
+    'In Progress': 'In Progress',
+    '1': 'In Progress',
+    'PIPELINE_RUN_STATUS_SYNCED': 'Synced',
+    'SYNCED': 'Synced',
+    'Synced': 'Synced',
+    '2': 'Synced',
+    'PIPELINE_RUN_STATUS_PARTIAL': 'Partial',
+    'PARTIAL': 'Partial',
+    'Partial': 'Partial',
+    '3': 'Partial',
+    'PIPELINE_RUN_STATUS_FAILED': 'Failed',
+    'FAILED': 'Failed',
+    'Failed': 'Failed',
+    '4': 'Failed',
+    'PIPELINE_RUN_STATUS_PENDING': 'Pending',
+    'PENDING': 'Pending',
+    'Pending': 'Pending',
+    '5': 'Pending',
+    'PIPELINE_RUN_STATUS_SKIPPED': 'Skipped',
+    'SKIPPED': 'Skipped',
+    'Skipped': 'Skipped',
+    '6': 'Skipped',
+    'PIPELINE_RUN_STATUS_ARCHIVED': 'Archived',
+    'ARCHIVED': 'Archived',
+    'Archived': 'Archived',
+    '7': 'Archived',
+};
+
+export function formatPipelineRunStatus(value: PipelineRunStatus | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Unknown';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (PipelineRunStatusNames[value]) return PipelineRunStatusNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_UNSPECIFIED: return 'Unknown';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_RUNNING: return 'In Progress';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_SYNCED: return 'Synced';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_PARTIAL: return 'Partial';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_FAILED: return 'Failed';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_PENDING: return 'Pending';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_SKIPPED: return 'Skipped';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_ARCHIVED: return 'Archived';
+    default: return 'Unknown';
+  }
+}
+
+const DestinationStatusNames: Record<string, string> = {
+    'DESTINATION_STATUS_UNSPECIFIED': 'Unknown',
+    'UNSPECIFIED': 'Unknown',
+    'Unknown': 'Unknown',
+    '0': 'Unknown',
+    'DESTINATION_STATUS_PENDING': 'Pending',
+    'PENDING': 'Pending',
+    'Pending': 'Pending',
+    '1': 'Pending',
+    'DESTINATION_STATUS_SUCCESS': 'Success',
+    'SUCCESS': 'Success',
+    'Success': 'Success',
+    '2': 'Success',
+    'DESTINATION_STATUS_FAILED': 'Failed',
+    'FAILED': 'Failed',
+    'Failed': 'Failed',
+    '3': 'Failed',
+    'DESTINATION_STATUS_SKIPPED': 'Skipped',
+    'SKIPPED': 'Skipped',
+    'Skipped': 'Skipped',
+    '4': 'Skipped',
+};
+
+export function formatDestinationStatus(value: DestinationStatus | number | string | undefined | null): string {
+  if (value === undefined || value === null) return 'Unknown';
+
+  if (typeof value === 'string') {
+    // 1. Check mapping for enum names, normalized names, or already formatted names
+    if (DestinationStatusNames[value]) return DestinationStatusNames[value];
+
+    // 2. Handle numeric strings not found in mapping
+    const parsed = parseInt(value, 10);
+    if (!isNaN(parsed)) {
+      value = parsed;
+    } else {
+      // 3. Last resort: internal humanizer
+      return value.replace(/[_-]/g, ' ').replace(/([A-Z])/g, ' $1').replace(/\s+/g, ' ').trim()
+        .split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    }
+  }
+
+  switch (value) {
+    case DestinationStatus.DESTINATION_STATUS_UNSPECIFIED: return 'Unknown';
+    case DestinationStatus.DESTINATION_STATUS_PENDING: return 'Pending';
+    case DestinationStatus.DESTINATION_STATUS_SUCCESS: return 'Success';
+    case DestinationStatus.DESTINATION_STATUS_FAILED: return 'Failed';
+    case DestinationStatus.DESTINATION_STATUS_SKIPPED: return 'Skipped';
+    default: return 'Unknown';
   }
 }

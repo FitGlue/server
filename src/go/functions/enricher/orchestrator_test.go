@@ -116,6 +116,15 @@ func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, r
 func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
 	return nil, nil
 }
+func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error {
+	return nil
+}
+func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
+	return nil, nil
+}
+func (m *MockDatabase) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
+	return nil
+}
 
 type MockBlobStore struct {
 	WriteFunc func(ctx context.Context, bucket, object string, data []byte) error

@@ -909,3 +909,222 @@ func FirestoreToUploadedActivity(m map[string]interface{}) *pb.UploadedActivityR
 
 	return r
 }
+
+// --- PipelineRun Converters ---
+
+func PipelineRunToFirestore(p *pb.PipelineRun) map[string]interface{} {
+	m := map[string]interface{}{
+		"id":                 p.Id,
+		"pipeline_id":        p.PipelineId,
+		"activity_id":        p.ActivityId,
+		"source":             p.Source,
+		"source_activity_id": p.SourceActivityId,
+		"title":              p.Title,
+		"description":        p.Description,
+		"type":               int32(p.Type),
+		"status":             int32(p.Status),
+	}
+
+	if p.StartTime != nil {
+		m["start_time"] = p.StartTime.AsTime()
+	}
+	if p.CreatedAt != nil {
+		m["created_at"] = p.CreatedAt.AsTime()
+	}
+	if p.UpdatedAt != nil {
+		m["updated_at"] = p.UpdatedAt.AsTime()
+	}
+	if p.ErrorMessage != nil {
+		m["error_message"] = *p.ErrorMessage
+	}
+	if p.PendingInputId != nil {
+		m["pending_input_id"] = *p.PendingInputId
+	}
+
+	// Serialize boosters
+	if len(p.Boosters) > 0 {
+		boosters := make([]map[string]interface{}, len(p.Boosters))
+		for i, b := range p.Boosters {
+			booster := map[string]interface{}{
+				"provider_name": b.ProviderName,
+				"status":        b.Status,
+				"duration_ms":   b.DurationMs,
+				"metadata":      b.Metadata,
+			}
+			if b.Error != nil {
+				booster["error"] = *b.Error
+			}
+			boosters[i] = booster
+		}
+		m["boosters"] = boosters
+	}
+
+	// Serialize destinations
+	if len(p.Destinations) > 0 {
+		dests := make([]map[string]interface{}, len(p.Destinations))
+		for i, d := range p.Destinations {
+			dest := map[string]interface{}{
+				"destination": int32(d.Destination),
+				"status":      int32(d.Status),
+			}
+			if d.ExternalId != nil {
+				dest["external_id"] = *d.ExternalId
+			}
+			if d.Error != nil {
+				dest["error"] = *d.Error
+			}
+			if d.CompletedAt != nil {
+				dest["completed_at"] = d.CompletedAt.AsTime()
+			}
+			dests[i] = dest
+		}
+		m["destinations"] = dests
+	}
+
+	// Serialize enriched_event and original_payload as JSON for repost functionality
+	if p.EnrichedEvent != nil {
+		jsonBytes, err := protojson.Marshal(p.EnrichedEvent)
+		if err == nil {
+			m["enriched_event"] = string(jsonBytes)
+		}
+	}
+	if p.OriginalPayload != nil {
+		jsonBytes, err := protojson.Marshal(p.OriginalPayload)
+		if err == nil {
+			m["original_payload"] = string(jsonBytes)
+		}
+	}
+
+	return m
+}
+
+func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
+	p := &pb.PipelineRun{
+		Id:               getString(m, "id"),
+		PipelineId:       getString(m, "pipeline_id"),
+		ActivityId:       getString(m, "activity_id"),
+		Source:           getString(m, "source"),
+		SourceActivityId: getString(m, "source_activity_id"),
+		Title:            getString(m, "title"),
+		Description:      getString(m, "description"),
+		StartTime:        getTime(m, "start_time"),
+		CreatedAt:        getTime(m, "created_at"),
+		UpdatedAt:        getTime(m, "updated_at"),
+		ErrorMessage:     stringPtrOrNil(getString(m, "error_message")),
+		PendingInputId:   stringPtrOrNil(getString(m, "pending_input_id")),
+	}
+
+	// Type
+	if v, ok := m["type"]; ok {
+		switch val := v.(type) {
+		case int64:
+			p.Type = pb.ActivityType(val)
+		case int:
+			p.Type = pb.ActivityType(int32(val))
+		case float64:
+			p.Type = pb.ActivityType(int32(val))
+		}
+	}
+
+	// Status
+	if v, ok := m["status"]; ok {
+		switch val := v.(type) {
+		case int64:
+			p.Status = pb.PipelineRunStatus(val)
+		case int:
+			p.Status = pb.PipelineRunStatus(int32(val))
+		case float64:
+			p.Status = pb.PipelineRunStatus(int32(val))
+		}
+	}
+
+	// Boosters
+	if bList, ok := m["boosters"].([]interface{}); ok {
+		p.Boosters = make([]*pb.BoosterExecution, len(bList))
+		for i, bRaw := range bList {
+			if bMap, ok := bRaw.(map[string]interface{}); ok {
+				booster := &pb.BoosterExecution{
+					ProviderName: getString(bMap, "provider_name"),
+					Status:       getString(bMap, "status"),
+					Error:        stringPtrOrNil(getString(bMap, "error")),
+				}
+				if v, ok := bMap["duration_ms"]; ok {
+					switch n := v.(type) {
+					case int64:
+						booster.DurationMs = n
+					case int:
+						booster.DurationMs = int64(n)
+					case float64:
+						booster.DurationMs = int64(n)
+					}
+				}
+				if meta, ok := bMap["metadata"].(map[string]interface{}); ok {
+					booster.Metadata = make(map[string]string)
+					for k, v := range meta {
+						if s, ok := v.(string); ok {
+							booster.Metadata[k] = s
+						}
+					}
+				}
+				p.Boosters[i] = booster
+			}
+		}
+	}
+
+	// Destinations
+	if dList, ok := m["destinations"].([]interface{}); ok {
+		p.Destinations = make([]*pb.DestinationOutcome, len(dList))
+		for i, dRaw := range dList {
+			if dMap, ok := dRaw.(map[string]interface{}); ok {
+				dest := &pb.DestinationOutcome{
+					ExternalId:  stringPtrOrNil(getString(dMap, "external_id")),
+					Error:       stringPtrOrNil(getString(dMap, "error")),
+					CompletedAt: getTime(dMap, "completed_at"),
+				}
+				if v, ok := dMap["destination"]; ok {
+					switch val := v.(type) {
+					case int64:
+						dest.Destination = pb.Destination(val)
+					case int:
+						dest.Destination = pb.Destination(int32(val))
+					case float64:
+						dest.Destination = pb.Destination(int32(val))
+					}
+				}
+				if v, ok := dMap["status"]; ok {
+					switch val := v.(type) {
+					case int64:
+						dest.Status = pb.DestinationStatus(val)
+					case int:
+						dest.Status = pb.DestinationStatus(int32(val))
+					case float64:
+						dest.Status = pb.DestinationStatus(int32(val))
+					}
+				}
+				p.Destinations[i] = dest
+			}
+		}
+	}
+
+	// EnrichedEvent
+	if v, ok := m["enriched_event"]; ok {
+		if jsonStr, ok := v.(string); ok && jsonStr != "" {
+			var event pb.EnrichedActivityEvent
+			if err := protojson.Unmarshal([]byte(jsonStr), &event); err == nil {
+				p.EnrichedEvent = &event
+			}
+		}
+	}
+
+	// OriginalPayload
+	if v, ok := m["original_payload"]; ok {
+		if jsonStr, ok := v.(string); ok && jsonStr != "" {
+			var payload pb.ActivityPayload
+			if err := protojson.Unmarshal([]byte(jsonStr), &payload); err == nil {
+				p.OriginalPayload = &payload
+			}
+		}
+	}
+
+	return p
+}

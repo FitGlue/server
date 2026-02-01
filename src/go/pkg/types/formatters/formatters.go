@@ -532,3 +532,43 @@ func FormatPendingInputStatus(value pb.PendingInput_Status) string {
 		return "Waiting"
 	}
 }
+
+func FormatPipelineRunStatus(value pb.PipelineRunStatus) string {
+	switch value {
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED:
+		return "Unknown"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING:
+		return "In Progress"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED:
+		return "Synced"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL:
+		return "Partial"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED:
+		return "Failed"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING:
+		return "Pending"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED:
+		return "Skipped"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED:
+		return "Archived"
+	default:
+		return "Unknown"
+	}
+}
+
+func FormatDestinationStatus(value pb.DestinationStatus) string {
+	switch value {
+	case pb.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED:
+		return "Unknown"
+	case pb.DestinationStatus_DESTINATION_STATUS_PENDING:
+		return "Pending"
+	case pb.DestinationStatus_DESTINATION_STATUS_SUCCESS:
+		return "Success"
+	case pb.DestinationStatus_DESTINATION_STATUS_FAILED:
+		return "Failed"
+	case pb.DestinationStatus_DESTINATION_STATUS_SKIPPED:
+		return "Skipped"
+	default:
+		return "Unknown"
+	}
+}

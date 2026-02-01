@@ -456,8 +456,6 @@ export const synchronizedActivityConverter: FirestoreDataConverter<import('../..
   }
 };
 
-// --- ShowcasedActivity Converter (for public showcase pages) ---
-
 export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): import('../../types/pb/user').ShowcasedActivity => {
   return {
     showcaseId: data.showcase_id as string || '',
@@ -478,4 +476,115 @@ export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): imp
     expiresAt: toDate(data.expires_at),
     ownerDisplayName: data.owner_display_name as string || '',
   };
+};
+
+// --- PipelineRun Converter (lifecycle tracking) ---
+
+import { PipelineRun, PipelineRunStatus, BoosterExecution, DestinationOutcome, DestinationStatus } from '../../types/pb/user';
+import { Destination } from '../../types/pb/events';
+
+export const pipelineRunConverter: FirestoreDataConverter<PipelineRun> = {
+  toFirestore(model: PipelineRun): FirebaseFirestore.DocumentData {
+    const data: FirebaseFirestore.DocumentData = {
+      id: model.id,
+      pipeline_id: model.pipelineId,
+      activity_id: model.activityId,
+      source: model.source,
+      source_activity_id: model.sourceActivityId,
+      title: model.title,
+      description: model.description,
+      type: model.type,
+      status: model.status,
+    };
+
+    if (model.startTime) data.start_time = model.startTime;
+    if (model.createdAt) data.created_at = model.createdAt;
+    if (model.updatedAt) data.updated_at = model.updatedAt;
+    if (model.errorMessage) data.error_message = model.errorMessage;
+    if (model.pendingInputId) data.pending_input_id = model.pendingInputId;
+
+    // Serialize boosters
+    if (model.boosters?.length > 0) {
+      data.boosters = model.boosters.map(b => ({
+        provider_name: b.providerName,
+        status: b.status,
+        duration_ms: b.durationMs,
+        metadata: b.metadata,
+        error: b.error,
+      }));
+    }
+
+    // Serialize destinations
+    if (model.destinations?.length > 0) {
+      data.destinations = model.destinations.map(d => ({
+        destination: d.destination,
+        status: d.status,
+        external_id: d.externalId,
+        error: d.error,
+        completed_at: d.completedAt,
+      }));
+    }
+
+    // Store enriched_event and original_payload as JSON strings
+    if (model.enrichedEvent) {
+      data.enriched_event = JSON.stringify(model.enrichedEvent);
+    }
+    if (model.originalPayload) {
+      data.original_payload = JSON.stringify(model.originalPayload);
+    }
+
+    return data;
+  },
+  fromFirestore(snapshot: QueryDocumentSnapshot): PipelineRun {
+    const data = snapshot.data();
+
+    // Parse boosters
+    const boosters: BoosterExecution[] = [];
+    if (Array.isArray(data.boosters)) {
+      for (const b of data.boosters) {
+        boosters.push({
+          providerName: b.provider_name || '',
+          status: b.status || '',
+          durationMs: b.duration_ms || 0,
+          metadata: b.metadata || {},
+          error: b.error,
+        });
+      }
+    }
+
+    // Parse destinations
+    const destinations: DestinationOutcome[] = [];
+    if (Array.isArray(data.destinations)) {
+      for (const d of data.destinations) {
+        destinations.push({
+          destination: d.destination as Destination || 0,
+          status: d.status as DestinationStatus || 0,
+          externalId: d.external_id,
+          error: d.error,
+          completedAt: toDate(d.completed_at),
+        });
+      }
+    }
+
+    return {
+      id: data.id || '',
+      pipelineId: data.pipeline_id || '',
+      activityId: data.activity_id || '',
+      source: data.source || '',
+      sourceActivityId: data.source_activity_id || '',
+      title: data.title || '',
+      description: data.description || '',
+      type: data.type || 0,
+      status: data.status as PipelineRunStatus || 0,
+      startTime: toDate(data.start_time),
+      createdAt: toDate(data.created_at),
+      updatedAt: toDate(data.updated_at),
+      errorMessage: data.error_message,
+      pendingInputId: data.pending_input_id,
+      boosters,
+      destinations,
+      enrichedEvent: data.enriched_event ? JSON.parse(data.enriched_event) : undefined,
+      originalPayload: data.original_payload ? JSON.parse(data.original_payload) : undefined,
+    };
+  }
 };

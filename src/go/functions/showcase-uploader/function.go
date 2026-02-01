@@ -17,6 +17,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/destination"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
@@ -313,6 +314,9 @@ func showcaseHandler() framework.HandlerFunc {
 			"showcase_id", showcaseID,
 			"expires_at", expiresAt,
 		)
+
+		// Update PipelineRun destination as synced
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, showcaseID, "", fwCtx.Logger)
 
 		return map[string]interface{}{
 			"status":        "SUCCESS",

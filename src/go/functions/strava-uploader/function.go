@@ -21,6 +21,7 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
+	"github.com/fitglue/server/src/go/pkg/destination"
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
@@ -315,8 +316,14 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		if errMsg == "" {
 			errMsg = fmt.Sprintf("status=%s, activity_id=%d", status, uploadResp.ActivityID)
 		}
+		// Update PipelineRun destination as failed
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, fwCtx.Logger)
 		return result, fmt.Errorf("strava upload incomplete: %s", errMsg)
 	}
+
+	// Update PipelineRun destination as synced
+	stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)
+	destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, stravaDestID, "", fwCtx.Logger)
 
 	return result, nil
 }

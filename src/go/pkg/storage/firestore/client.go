@@ -120,3 +120,13 @@ func (c *Client) UploadedActivities(userId string) *Collection[pb.UploadedActivi
 		FromFirestore: FirestoreToUploadedActivity,
 	}
 }
+
+// PipelineRuns are sub-collections of Users: users/{uid}/pipeline_runs/{id}
+// Tracks complete pipeline execution lifecycle including boosters and destinations
+func (c *Client) PipelineRuns(userId string) *Collection[pb.PipelineRun] {
+	return &Collection[pb.PipelineRun]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("pipeline_runs"),
+		ToFirestore:   PipelineRunToFirestore,
+		FromFirestore: FirestoreToPipelineRun,
+	}
+}

@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	"github.com/fitglue/server/src/go/pkg/destination"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
@@ -212,6 +213,9 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
 		fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
 	}
+
+	// Update PipelineRun destination as synced
+	destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, googlesheetsDestID, "", fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":         "SUCCESS",

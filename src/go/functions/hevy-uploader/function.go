@@ -18,6 +18,7 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
+	"github.com/fitglue/server/src/go/pkg/destination"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
@@ -191,6 +192,9 @@ func uploadHandler() framework.HandlerFunc {
 		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
 			fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
 		}
+
+		// Update PipelineRun destination as synced
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", fwCtx.Logger)
 
 		return map[string]interface{}{
 			"status":        "SUCCESS",

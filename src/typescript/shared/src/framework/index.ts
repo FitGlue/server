@@ -9,7 +9,7 @@ export * from './webhook-processor';
 export * from './errors';
 import { PubSub } from '@google-cloud/pubsub';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
-import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore, PipelineStore } from '../storage/firestore';
+import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore, PipelineStore, PipelineRunStore } from '../storage/firestore';
 import { UserService, ApiKeyService, ExecutionService } from '../domain/services';
 import { AuthorizationService } from '../domain/services/authorization';
 import * as SentryModule from '../infrastructure/sentry';
@@ -173,6 +173,7 @@ export interface FrameworkContext {
     integrationIdentities: import('../storage/firestore').IntegrationIdentityStore;
     activities: import('../storage/firestore').ActivityStore;
     pipelines: import('../storage/firestore').PipelineStore;
+    pipelineRuns: import('../storage/firestore').PipelineRunStore;
   };
   pubsub: PubSub;
   secrets: SecretsHelper;
@@ -441,7 +442,8 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
       apiKeys: new ApiKeyStore(db),
       integrationIdentities: new IntegrationIdentityStore(db),
       activities: new ActivityStore(db),
-      pipelines: new PipelineStore(db)
+      pipelines: new PipelineStore(db),
+      pipelineRuns: new PipelineRunStore(db)
     };
 
     // Initialize services
