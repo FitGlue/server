@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.5.0](https://github.com/FitGlue/server/compare/v9.4.0...v9.5.0) (2026-02-01)
+
+
+### Features
+
+* add running dynamics support and new enricher ([6fee6e2](https://github.com/FitGlue/server/commit/6fee6e2c40379d3bd706a37bd3e9d43e867e592e))
+* **server:** implement user-data-handler and migrate to user sub-collections ([9d39b54](https://github.com/FitGlue/server/commit/9d39b54a0a2d6943dbce33b0ee5f04d2fcd1a80e))
+
+
+### Bug Fixes
+
+* add pending_inputs index ([a824ebc](https://github.com/FitGlue/server/commit/a824ebca5485d664aa9d332aacacc727bab2b630))
+* update wording of multiple plugins in registry ([b0bfd07](https://github.com/FitGlue/server/commit/b0bfd079140686e08a56a8f678c135921500674b))
+
 ## [9.4.0](https://github.com/FitGlue/server/compare/v9.3.1...v9.4.0) (2026-01-26)
 
 
