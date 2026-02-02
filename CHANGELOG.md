@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.6.0](https://github.com/FitGlue/server/compare/v9.5.0...v9.6.0) (2026-02-02)
+
+
+### Features
+
+* Introduce PipelineRun entity and status tracking for pipeline executions. ([31695bf](https://github.com/FitGlue/server/commit/31695bfc6be8db128919afc934a4a8019ab36f61))
+* **pipeline:** implement GCS payload storage and destination failure tracking ([51a3ff1](https://github.com/FitGlue/server/commit/51a3ff13b5e3dc9f650594cb9a48e6e65ec214f9))
+
 ## [9.5.0](https://github.com/FitGlue/server/compare/v9.4.0...v9.5.0) (2026-02-01)
 
 
