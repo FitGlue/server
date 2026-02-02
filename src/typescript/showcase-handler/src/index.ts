@@ -10,6 +10,11 @@ import { EnricherProviderType, UserRecord } from '@fitglue/shared/types';
 import * as admin from 'firebase-admin';
 import { Request } from 'express';
 
+// Initialize Firebase if not already done (idempotent)
+if (admin.apps.length === 0) {
+  admin.initializeApp();
+}
+
 /**
  * Public showcase handler - serves activity data for shareable URLs.
  * Routes:
@@ -40,7 +45,7 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
       method: 'GET',
       pattern: '/api/showcase/:id',
       handler: async (match) => {
-        return await handleApiShowcase(match.params.id, showcaseStore, db, corsHeaders);
+        return await handleApiShowcase(match.params.id, showcaseStore, db, corsHeaders, ctx.logger);
       }
     },
     {
@@ -56,11 +61,46 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
   skipExecutionLogging: true
 });
 
+/**
+ * Fetch activity data from GCS URI.
+ * Handles both old format (direct StandardizedActivity) and new format (EnrichedActivityEvent wrapper).
+ */
+async function fetchActivityDataFromGcs(
+  uri: string | undefined,
+  logger: import('winston').Logger
+): Promise<StandardizedActivity | undefined> {
+  if (!uri) return undefined;
+
+  try {
+    // Parse GCS URI: gs://bucket-name/path/to/file
+    const gcsMatch = uri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+    if (!gcsMatch) return undefined;
+
+    const [, bucketName, filePath] = gcsMatch;
+    const bucket = admin.storage().bucket(bucketName);
+    const [contents] = await bucket.file(filePath).download();
+    const parsed = JSON.parse(contents.toString());
+
+    // New format (EnrichedActivityEvent): extract activity_data from nested field
+    if (parsed.activity_data || parsed.activityData) {
+      return parsed.activity_data || parsed.activityData;
+    }
+    // Old format: the file IS the StandardizedActivity
+    if (parsed.sessions) {
+      return parsed as StandardizedActivity;
+    }
+    return undefined;
+  } catch (err) {
+    logger.error('Failed to fetch activity data from GCS', { error: err, uri });
+    return undefined;
+  }
+}
 async function handleApiShowcase(
   showcaseId: string,
   showcaseStore: ShowcaseStore,
   db: admin.firestore.Firestore,
-  corsHeaders: Record<string, string>
+  corsHeaders: Record<string, string>,
+  logger: import('winston').Logger
 ): Promise<FrameworkResponse> {
   // Fetch from Firestore using ShowcaseStore
   const data = await showcaseStore.get(showcaseId);
@@ -79,36 +119,8 @@ async function handleApiShowcase(
   const userData = user.data() as UserRecord;
   const effectiveTier = getEffectiveTier(userData);
 
-  // Fetch activity data from GCS
-  // New format: URI points to enriched_events/{userId}/{pipelineExecutionId}.json (EnrichedActivityEvent)
-  // Old format: URI points to showcase-assets/{showcaseId}/activity.json (just StandardizedActivity)
-  let activityData: StandardizedActivity | undefined = data.activityData;
-  if (!activityData && data.activityDataUri) {
-    try {
-      // Parse GCS URI: gs://bucket-name/path/to/file
-      const gcsMatch = data.activityDataUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
-      if (gcsMatch) {
-        const [, bucketName, filePath] = gcsMatch;
-        const bucket = admin.storage().bucket(bucketName);
-        const [contents] = await bucket.file(filePath).download();
-        const parsed = JSON.parse(contents.toString());
-        
-        // Handle both formats:
-        // 1. New format (EnrichedActivityEvent): extract activity_data from nested field
-        // 2. Old format (StandardizedActivity): use parsed object directly (has sessions field)
-        if (parsed.activity_data || parsed.activityData) {
-          // New format - extract nested activity_data
-          activityData = parsed.activity_data || parsed.activityData;
-        } else if (parsed.sessions) {
-          // Old format - the file IS the StandardizedActivity
-          activityData = parsed as StandardizedActivity;
-        }
-      }
-    } catch (err) {
-      console.error('Failed to fetch activity data from GCS', { error: err, uri: data.activityDataUri });
-      // Continue without activity data - page will show partial content
-    }
-  }
+  // Fetch activity data from GCS if not inline
+  const activityData = data.activityData ?? await fetchActivityDataFromGcs(data.activityDataUri, logger);
 
   // Compute summary from activity data
   const summary = activityData ? computeSummary(activityData) : undefined;
@@ -240,6 +252,30 @@ interface ShowcaseResponse {
 }
 
 /**
+ * Collect heart rates from activity sessions
+ */
+function collectHeartRates(activity: StandardizedActivity): number[] {
+  const heartRates: number[] = [];
+
+  for (const session of activity.sessions || []) {
+    // Collect from lap records
+    for (const lap of session.laps || []) {
+      for (const record of lap.records || []) {
+        if (record.heartRate && record.heartRate > 0) {
+          heartRates.push(record.heartRate);
+        }
+      }
+    }
+    // Also check session-level HR
+    if (session.avgHeartRate && session.avgHeartRate > 0) {
+      heartRates.push(session.avgHeartRate);
+    }
+  }
+
+  return heartRates;
+}
+
+/**
  * Compute summary statistics from activity data
  */
 function computeSummary(activity: StandardizedActivity): ActivitySummary {
@@ -248,7 +284,6 @@ function computeSummary(activity: StandardizedActivity): ActivitySummary {
   let totalCalories = 0;
   let lapCount = 0;
   let strengthSetCount = 0;
-  const heartRates: number[] = [];
 
   for (const session of activity.sessions || []) {
     totalDuration += session.totalElapsedTime || 0;
@@ -256,22 +291,9 @@ function computeSummary(activity: StandardizedActivity): ActivitySummary {
     totalCalories += session.totalCalories || 0;
     lapCount += (session.laps || []).length;
     strengthSetCount += (session.strengthSets || []).length;
-
-    // Collect heart rates from records
-    for (const lap of session.laps || []) {
-      for (const record of lap.records || []) {
-        if (record.heartRate && record.heartRate > 0) {
-          heartRates.push(record.heartRate);
-        }
-      }
-    }
-
-    // Also check session-level HR
-    if (session.avgHeartRate && session.avgHeartRate > 0) {
-      heartRates.push(session.avgHeartRate);
-    }
   }
 
+  const heartRates = collectHeartRates(activity);
   const avgHeartRate = heartRates.length > 0
     ? Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length)
     : undefined;
