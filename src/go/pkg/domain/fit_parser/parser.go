@@ -61,11 +61,25 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 
 			case typedef.MesgNumLap:
 				lapMsg := mesgdef.NewLap(&msg)
-				lapInfos = append(lapInfos, lapInfo{
+				li := lapInfo{
 					startTime:        lapMsg.StartTime.UTC(),
 					totalElapsedTime: float64(lapMsg.TotalElapsedTime) / 1000,
 					totalDistance:    float64(lapMsg.TotalDistance) / 100,
-				})
+				}
+
+				// Extract workout step index for auto-detecting lap groups
+				if lapMsg.WktStepIndex != typedef.MessageIndexInvalid {
+					idx := int32(lapMsg.WktStepIndex)
+					li.wktStepIndex = &idx
+				}
+
+				// Extract lap trigger for understanding lap boundaries
+				if lapMsg.LapTrigger != typedef.LapTriggerInvalid {
+					trigger := lapMsg.LapTrigger.String()
+					li.lapTrigger = &trigger
+				}
+
+				lapInfos = append(lapInfos, li)
 
 			case typedef.MesgNumSession:
 				sessionMsg := mesgdef.NewSession(&msg)
@@ -124,6 +138,8 @@ type lapInfo struct {
 	startTime        time.Time
 	totalElapsedTime float64
 	totalDistance    float64
+	wktStepIndex     *int32  // Workout step index - laps with same index belong together
+	lapTrigger       *string // What triggered this lap (manual, distance, time, etc.)
 }
 
 type sessionInfo struct {
@@ -181,9 +197,13 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 		}}
 	}
 
+	// Merge consecutive laps with the same workout step index
+	// This handles cases where Garmin records multiple sub-laps per interval (e.g., 1km auto-laps within a Hyrox station)
+	mergedLapInfos := mergeLapInfosByWorkoutStep(lapInfos)
+
 	// Assign records to laps based on timestamps
-	laps := make([]*pb.Lap, len(lapInfos))
-	for i, li := range lapInfos {
+	laps := make([]*pb.Lap, len(mergedLapInfos))
+	for i, li := range mergedLapInfos {
 		laps[i] = &pb.Lap{
 			StartTime:        timestamppb.New(li.startTime),
 			TotalElapsedTime: li.totalElapsedTime,
@@ -192,14 +212,14 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 		}
 	}
 
-	// Assign each record to the appropriate lap
+	// Assign each record to the appropriate lap (using merged lap infos)
 	for _, record := range records {
 		rt := record.Timestamp.AsTime()
 		assigned := false
 
-		for i := len(lapInfos) - 1; i >= 0; i-- {
-			lapStart := lapInfos[i].startTime
-			lapEnd := lapStart.Add(time.Duration(lapInfos[i].totalElapsedTime) * time.Second)
+		for i := len(mergedLapInfos) - 1; i >= 0; i-- {
+			lapStart := mergedLapInfos[i].startTime
+			lapEnd := lapStart.Add(time.Duration(mergedLapInfos[i].totalElapsedTime) * time.Second)
 
 			// Record belongs to this lap if it falls within its time range
 			if (rt.Equal(lapStart) || rt.After(lapStart)) && (rt.Before(lapEnd) || rt.Equal(lapEnd)) {
@@ -211,8 +231,8 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 
 		// If not assigned (edge case), put in first lap that starts before this record
 		if !assigned {
-			for i := len(lapInfos) - 1; i >= 0; i-- {
-				if !rt.Before(lapInfos[i].startTime) {
+			for i := len(mergedLapInfos) - 1; i >= 0; i-- {
+				if !rt.Before(mergedLapInfos[i].startTime) {
 					laps[i].Records = append(laps[i].Records, record)
 					assigned = true
 					break
@@ -269,6 +289,81 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 	}
 
 	return sessions
+}
+
+// mergeLapInfosByWorkoutStep merges consecutive laps that share the same workout step index.
+// This handles Garmin's behavior of recording multiple sub-laps per workout interval
+// (e.g., 1km auto-laps within a Hyrox station that should be a single interval).
+func mergeLapInfosByWorkoutStep(lapInfos []lapInfo) []lapInfo {
+	if len(lapInfos) == 0 {
+		return lapInfos
+	}
+
+	// Check if any laps have workout step data
+	hasStepData := false
+	for _, li := range lapInfos {
+		if li.wktStepIndex != nil {
+			hasStepData = true
+			break
+		}
+	}
+	if !hasStepData {
+		// No workout step data - return original laps unchanged
+		return lapInfos
+	}
+
+	var result []lapInfo
+	var currentGroup []lapInfo
+	var currentStepIndex *int32
+
+	for _, li := range lapInfos {
+		// Check if this lap continues the current group (same workout step)
+		if currentStepIndex != nil && li.wktStepIndex != nil && *li.wktStepIndex == *currentStepIndex {
+			// Same step index - add to current group
+			currentGroup = append(currentGroup, li)
+		} else {
+			// Different step index - finalize current group
+			if len(currentGroup) > 0 {
+				result = append(result, mergeConsecutiveLapInfos(currentGroup))
+			}
+			// Start new group
+			currentGroup = []lapInfo{li}
+			currentStepIndex = li.wktStepIndex
+		}
+	}
+
+	// Don't forget the last group
+	if len(currentGroup) > 0 {
+		result = append(result, mergeConsecutiveLapInfos(currentGroup))
+	}
+
+	return result
+}
+
+// mergeConsecutiveLapInfos merges a group of consecutive lap infos into a single lap info.
+// Uses the start time of the first lap, and sums the elapsed time and distance.
+func mergeConsecutiveLapInfos(group []lapInfo) lapInfo {
+	if len(group) == 0 {
+		return lapInfo{}
+	}
+	if len(group) == 1 {
+		return group[0]
+	}
+
+	merged := lapInfo{
+		startTime:        group[0].startTime,
+		totalElapsedTime: 0,
+		totalDistance:    0,
+		wktStepIndex:     group[0].wktStepIndex,
+		lapTrigger:       group[0].lapTrigger,
+	}
+
+	for _, li := range group {
+		merged.totalElapsedTime += li.totalElapsedTime
+		merged.totalDistance += li.totalDistance
+	}
+
+	return merged
 }
 
 // parseRecord extracts record data from a FIT message
