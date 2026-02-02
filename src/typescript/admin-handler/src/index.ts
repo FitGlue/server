@@ -12,6 +12,8 @@ import {
   ExecutionStatus,
   formatExecutionStatus,
   formatDestination,
+  formatActivitySource,
+  formatPipelineRunStatus,
   PendingInput_Status,
   routeRequest,
   RouteMatch,
@@ -418,6 +420,214 @@ async function handleGetExecutionDetails(match: RouteMatch, ctx: FrameworkContex
 }
 
 // ========================================
+// Pipeline Runs Handlers
+// ========================================
+
+interface PipelineRunDoc {
+  id: string;
+  pipeline_id?: string;
+  activity_id?: string;
+  source?: number;
+  source_activity_id?: string;
+  title?: string;
+  description?: string;
+  type?: number;
+  start_time?: admin.firestore.Timestamp;
+  status?: number;
+  status_message?: string;
+  boosters?: Array<{
+    provider_name?: string;
+    status?: string;
+    duration_ms?: number;
+    metadata?: Record<string, string>;
+    error?: string;
+  }>;
+  destinations?: Array<{
+    destination?: number;
+    status?: number;
+    external_id?: string;
+    error?: string;
+    completed_at?: admin.firestore.Timestamp;
+  }>;
+  created_at?: admin.firestore.Timestamp;
+  updated_at?: admin.firestore.Timestamp;
+}
+
+async function handleListPipelineRuns(match: RouteMatch, ctx: FrameworkContext) {
+  const { logger } = ctx;
+
+  const status = match.query.status as string | undefined;
+  const source = match.query.source as string | undefined;
+  const userIdFilter = match.query.userId as string | undefined;
+  const limit = Math.min(parseInt(match.query.limit as string || '50', 10), 200);
+  const cursor = match.query.cursor as string | undefined;
+
+  // Use collection group query to get pipeline_runs across all users
+  let q: admin.firestore.Query = db.collectionGroup('pipeline_runs');
+
+  // Apply status filter
+  if (status) {
+    const statusNum = parseInt(status, 10);
+    if (!isNaN(statusNum)) {
+      q = q.where('status', '==', statusNum);
+    }
+  }
+
+  // Apply source filter
+  if (source) {
+    const sourceNum = parseInt(source, 10);
+    if (!isNaN(sourceNum)) {
+      q = q.where('source', '==', sourceNum);
+    }
+  }
+
+  // Apply source filter
+  if (source) {
+    const sourceNum = parseInt(source, 10);
+    if (!isNaN(sourceNum)) {
+      q = q.where('source', '==', sourceNum);
+    }
+  }
+
+  // Order by created_at desc
+  q = q.orderBy('created_at', 'desc');
+
+  // Apply cursor for pagination
+  if (cursor) {
+    try {
+      const cursorDate = new Date(cursor);
+      q = q.startAfter(cursorDate);
+    } catch (e) {
+      logger.warn('Invalid cursor', { cursor, error: e });
+    }
+  }
+
+  q = q.limit(limit + 1); // Fetch one extra to check if there are more
+
+  const snapshot = await q.get();
+  const docs = snapshot.docs;
+  const hasMore = docs.length > limit;
+  const resultDocs = hasMore ? docs.slice(0, limit) : docs;
+
+  // Extract user IDs from document paths
+  const runs = resultDocs.map(doc => {
+    const data = doc.data() as PipelineRunDoc;
+    // Path is: users/{userId}/pipeline_runs/{runId}
+    const pathParts = doc.ref.path.split('/');
+    const docUserId = pathParts[1]; // users/{userId}/...
+
+    return {
+      id: doc.id,
+      userId: docUserId,
+      pipelineId: data.pipeline_id || '',
+      activityId: data.activity_id || '',
+      source: formatActivitySource(data.source),
+      sourceActivityId: data.source_activity_id || '',
+      title: data.title || 'Untitled Activity',
+      description: data.description || '',
+      type: data.type?.toString() || 'unknown',
+      startTime: data.start_time?.toDate?.()?.toISOString() || null,
+      status: formatPipelineRunStatus(data.status),
+      statusMessage: data.status_message || null,
+      boosters: (data.boosters || []).map(b => ({
+        providerName: b.provider_name || '',
+        status: b.status || 'UNKNOWN',
+        durationMs: b.duration_ms || 0,
+        metadata: b.metadata || {},
+        error: b.error || null,
+      })),
+      destinations: (data.destinations || []).map(d => ({
+        destination: formatDestination(d.destination),
+        status: d.status?.toString() || 'UNKNOWN',
+        externalId: d.external_id || null,
+        error: d.error || null,
+        completedAt: d.completed_at?.toDate?.()?.toISOString() || null,
+      })),
+      createdAt: data.created_at?.toDate?.()?.toISOString() || null,
+      updatedAt: data.updated_at?.toDate?.()?.toISOString() || null,
+    };
+  });
+
+  // Filter by userId if provided (post-query filter since collectionGroup can't filter by path)
+  const filteredRuns = userIdFilter 
+    ? runs.filter(run => run.userId === userIdFilter)
+    : runs;
+
+  // Compute stats from recent runs (just from this batch for performance)
+  const stats = {
+    total: filteredRuns.length,
+    byStatus: {} as Record<string, number>,
+    bySource: {} as Record<string, number>,
+  };
+
+  for (const run of filteredRuns) {
+    stats.byStatus[run.status] = (stats.byStatus[run.status] || 0) + 1;
+    stats.bySource[run.source] = (stats.bySource[run.source] || 0) + 1;
+  }
+
+  // Get last doc's created_at for next cursor
+  const lastDoc = resultDocs[resultDocs.length - 1];
+  const nextCursor = hasMore && lastDoc
+    ? (lastDoc.data() as PipelineRunDoc).created_at?.toDate?.()?.toISOString()
+    : undefined;
+
+  return {
+    runs: filteredRuns,
+    stats,
+    hasMore,
+    nextCursor,
+  };
+}
+
+async function handleGetPipelineRunDetails(match: RouteMatch, ctx: FrameworkContext) {
+  const userId = match.query.userId as string;
+  const runId = match.params.id;
+
+  if (!userId) {
+    throw new HttpError(400, 'userId query parameter is required');
+  }
+
+  const doc = await db.collection('users').doc(userId).collection('pipeline_runs').doc(runId).get();
+
+  if (!doc.exists) {
+    throw new HttpError(404, 'Pipeline run not found');
+  }
+
+  const data = doc.data() as PipelineRunDoc;
+
+  return {
+    id: doc.id,
+    userId,
+    pipelineId: data.pipeline_id || '',
+    activityId: data.activity_id || '',
+    source: formatActivitySource(data.source),
+    sourceActivityId: data.source_activity_id || '',
+    title: data.title || 'Untitled Activity',
+    description: data.description || '',
+    type: data.type?.toString() || 'unknown',
+    startTime: data.start_time?.toDate?.()?.toISOString() || null,
+    status: formatPipelineRunStatus(data.status),
+    statusMessage: data.status_message || null,
+    boosters: (data.boosters || []).map(b => ({
+      providerName: b.provider_name || '',
+      status: b.status || 'UNKNOWN',
+      durationMs: b.duration_ms || 0,
+      metadata: b.metadata || {},
+      error: b.error || null,
+    })),
+    destinations: (data.destinations || []).map(d => ({
+      destination: formatDestination(d.destination),
+      status: d.status?.toString() || 'UNKNOWN',
+      externalId: d.external_id || null,
+      error: d.error || null,
+      completedAt: d.completed_at?.toDate?.()?.toISOString() || null,
+    })),
+    createdAt: data.created_at?.toDate?.()?.toISOString() || null,
+    updatedAt: data.updated_at?.toDate?.()?.toISOString() || null,
+  };
+}
+
+// ========================================
 // Main Handler
 // ========================================
 
@@ -504,6 +714,18 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       method: 'GET',
       pattern: '/api/admin/executions/:id',
       handler: async (match: RouteMatch) => await handleGetExecutionDetails(match, ctx)
+    },
+    // Pipeline runs list (cross-user)
+    {
+      method: 'GET',
+      pattern: '/api/admin/pipeline-runs',
+      handler: async (match: RouteMatch) => await handleListPipelineRuns(match, ctx)
+    },
+    // Pipeline run details
+    {
+      method: 'GET',
+      pattern: '/api/admin/pipeline-runs/:id',
+      handler: async (match: RouteMatch) => await handleGetPipelineRunDetails(match, ctx)
     },
   ]);
 };

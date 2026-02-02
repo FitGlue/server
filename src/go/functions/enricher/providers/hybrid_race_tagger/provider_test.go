@@ -53,9 +53,9 @@ func TestApplyMerges_PreservesChronologicalOrder(t *testing.T) {
 	// Scenario: 4 laps where laps 1 and 2 should be merged
 	// The merged lap should appear at position 1 (where lap 1 was)
 	laps := []*pb.Lap{
-		makeLap(1000, 300, 0),            // Lap 0: Run 1
-		makeLap(500, 200, 5*time.Minute), // Lap 1: SkiErg part 1
-		makeLap(500, 200, 8*time.Minute), // Lap 2: SkiErg part 2
+		makeLap(1000, 300, 0),              // Lap 0: Run 1
+		makeLap(500, 200, 5*time.Minute),   // Lap 1: SkiErg part 1
+		makeLap(500, 200, 8*time.Minute),   // Lap 2: SkiErg part 2
 		makeLap(1000, 350, 12*time.Minute), // Lap 3: Run 2
 	}
 
@@ -218,10 +218,10 @@ func TestApplyMerges_OutOfOrderIndices(t *testing.T) {
 func TestApplyMerges_ThreeLapMerge(t *testing.T) {
 	// Scenario: Merge three consecutive laps
 	laps := []*pb.Lap{
-		makeLap(1000, 300, 0),             // 0: Run
-		makeLap(300, 100, 5*time.Minute),  // 1: Station part 1
-		makeLap(400, 120, 7*time.Minute),  // 2: Station part 2
-		makeLap(300, 80, 9*time.Minute),   // 3: Station part 3
+		makeLap(1000, 300, 0),              // 0: Run
+		makeLap(300, 100, 5*time.Minute),   // 1: Station part 1
+		makeLap(400, 120, 7*time.Minute),   // 2: Station part 2
+		makeLap(300, 80, 9*time.Minute),    // 3: Station part 3
 		makeLap(1000, 350, 12*time.Minute), // 4: Run
 	}
 
@@ -387,13 +387,13 @@ func TestApplyMerges_HyroxScenario(t *testing.T) {
 	// Simulate a Hyrox race where watch recorded extra laps for some stations
 	// Real scenario: Run1, SkiErg(2 laps), Run2, SledPush(3 laps), Run3, ...
 	laps := []*pb.Lap{
-		makeLap(1000, 300, 0),             // 0: Run 1
-		makeLap(500, 180, 5*time.Minute),  // 1: SkiErg part 1
-		makeLap(500, 170, 8*time.Minute),  // 2: SkiErg part 2
+		makeLap(1000, 300, 0),              // 0: Run 1
+		makeLap(500, 180, 5*time.Minute),   // 1: SkiErg part 1
+		makeLap(500, 170, 8*time.Minute),   // 2: SkiErg part 2
 		makeLap(1000, 280, 12*time.Minute), // 3: Run 2
-		makeLap(100, 60, 17*time.Minute),  // 4: Sled Push part 1
-		makeLap(100, 55, 18*time.Minute),  // 5: Sled Push part 2
-		makeLap(50, 45, 19*time.Minute),   // 6: Sled Push part 3
+		makeLap(100, 60, 17*time.Minute),   // 4: Sled Push part 1
+		makeLap(100, 55, 18*time.Minute),   // 5: Sled Push part 2
+		makeLap(50, 45, 19*time.Minute),    // 6: Sled Push part 3
 		makeLap(1000, 310, 22*time.Minute), // 7: Run 3
 	}
 
