@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [9.7.0](https://github.com/FitGlue/server/compare/v9.6.1...v9.7.0) (2026-02-02)
+
+
+### Features
+
+* **pipeline:** enhance pipeline run lifecycle tracking and error handling ([dd39c86](https://github.com/FitGlue/server/commit/dd39c86a38198106df75f99da0d56f0fac20271f))
+
 ### [9.6.1](https://github.com/FitGlue/server/compare/v9.6.0...v9.6.1) (2026-02-02)
 
 
