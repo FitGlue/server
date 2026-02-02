@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [10.0.1](https://github.com/FitGlue/server/compare/v10.0.0...v10.0.1) (2026-02-02)
+
+
+### Bug Fixes
+
+* initialise firebase admin, make it an error if can't retrieve from GCS ([743a892](https://github.com/FitGlue/server/commit/743a892066291a5c88e93e477975973d0fe949ba))
+
 ## [10.0.0](https://github.com/FitGlue/server/compare/v9.7.1...v10.0.0) (2026-02-02)
 
 
