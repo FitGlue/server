@@ -85,6 +85,26 @@ function parseEnrichedActivityEvent(inputsJson: string): Record<string, unknown>
   }
 }
 
+/**
+ * Fetch enriched event from GCS using URI.
+ * @param gcsUri - GCS URI in format gs://bucket/path
+ * @returns Parsed enriched event object or null if fetch failed
+ */
+async function fetchEnrichedEventFromGCS(gcsUri: string): Promise<Record<string, unknown> | null> {
+  const uriMatch = gcsUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+  if (!uriMatch) {
+    return null;
+  }
+
+  const [, bucket, objectPath] = uriMatch;
+  try {
+    const [buffer] = await storage.bucket(bucket).file(objectPath).download();
+    return JSON.parse(buffer.toString('utf-8')) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
+
 export const handler: FrameworkHandler = async (req, ctx) => {
   // CORS handled by gateway
 
@@ -163,15 +183,19 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     throw new HttpError(400, `Activity already synced to ${destKey}`);
   }
 
-  // Try to get enriched event from PipelineRun first (new architecture)
+  // Try to get enriched event from GCS via PipelineRun (new architecture)
   // Fall back to executions for backwards compatibility with existing data
   let enrichedEvent: Record<string, unknown> | null = null;
 
   const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
-  if (pipelineRun?.enrichedEvent) {
-    // Converter already parses JSON to object
-    enrichedEvent = pipelineRun.enrichedEvent as unknown as Record<string, unknown>;
-    ctx.logger.info('Retrieved enriched event from PipelineRun', { pipelineExecutionId: activity.pipelineExecutionId });
+  if (pipelineRun?.enrichedEventUri) {
+    // Fetch from GCS using URI (avoids 1MB Firestore limit)
+    enrichedEvent = await fetchEnrichedEventFromGCS(pipelineRun.enrichedEventUri);
+    if (enrichedEvent) {
+      ctx.logger.info('Retrieved enriched event from GCS', { uri: pipelineRun.enrichedEventUri });
+    } else {
+      ctx.logger.warn('Failed to fetch enriched event from GCS', { uri: pipelineRun.enrichedEventUri });
+    }
   }
 
   // Fallback to executions collection (backwards compatibility)
@@ -272,15 +296,19 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
   // (but we allow retry even if status was success - user might want to update)
   const destKey = getDestinationName(destEnum);
 
-  // Try to get enriched event from PipelineRun first (new architecture)
+  // Try to get enriched event from GCS via PipelineRun (new architecture)
   // Fall back to executions for backwards compatibility with existing data
   let enrichedEvent: Record<string, unknown> | null = null;
 
   const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
-  if (pipelineRun?.enrichedEvent) {
-    // Converter already parses JSON to object
-    enrichedEvent = pipelineRun.enrichedEvent as unknown as Record<string, unknown>;
-    ctx.logger.info('Retrieved enriched event from PipelineRun', { pipelineExecutionId: activity.pipelineExecutionId });
+  if (pipelineRun?.enrichedEventUri) {
+    // Fetch from GCS using URI (avoids 1MB Firestore limit)
+    enrichedEvent = await fetchEnrichedEventFromGCS(pipelineRun.enrichedEventUri);
+    if (enrichedEvent) {
+      ctx.logger.info('Retrieved enriched event from GCS', { uri: pipelineRun.enrichedEventUri });
+    } else {
+      ctx.logger.warn('Failed to fetch enriched event from GCS', { uri: pipelineRun.enrichedEventUri });
+    }
   }
 
   // Fallback to executions collection (backwards compatibility)

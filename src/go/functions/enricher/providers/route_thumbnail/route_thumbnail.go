@@ -86,7 +86,7 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, logger *slog.Logger
 	// Upload to GCS - use dedicated showcase assets bucket
 	bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
 	if bucketName == "" {
-		bucketName = "fitglue-showcase-assets" // Default bucket name
+		bucketName = "fitglue-server-dev-showcase-assets" // Fallback for local development
 	}
 
 	// Use pipeline_execution_id for asset storage path (unique per pipeline execution)

@@ -182,14 +182,10 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	// Add time markers to activity
 	activity.TimeMarkers = timeMarkers
 
-	// Append to existing description
-	if activity.Description != "" {
-		activity.Description = activity.Description + "\n\n" + description
-	} else {
-		activity.Description = description
-	}
-
+	// Return description in EnrichmentResult so orchestrator can merge it properly
+	// (don't modify activity.Description directly - orchestrator overwrites it)
 	return &providers.EnrichmentResult{
+		Description: description,
 		Metadata: map[string]string{
 			"status":        "success",
 			"preset":        preset.Name,

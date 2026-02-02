@@ -16,6 +16,7 @@ import (
 
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	activityPkg "github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
@@ -210,7 +211,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 	// Initialize Orchestrator
 	bucketName := fwCtx.Service.Config.GCSArtifactBucket
 	if bucketName == "" {
-		bucketName = "fitglue-artifacts"
+		bucketName = "fitglue-server-dev-artifacts" // Fallback for local development
 	}
 
 	orchestrator := NewOrchestrator(fwCtx.Service.DB, fwCtx.Service.Store, bucketName, fwCtx.Service.Notifications)
@@ -311,7 +312,22 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 		// Propagate pipeline execution ID
 		event.PipelineExecutionId = pipelineExecID
 
-		resultEvent, err := infrapubsub.NewCloudEvent("/enricher", "com.fitglue.activity.enriched", event)
+		// Check if activity data should be offloaded to GCS (for large payloads)
+		eventToPublish := event
+		bucketName := fwCtx.Service.Config.GCSArtifactBucket
+		if bucketName != "" {
+			preparedEvent, uploadedSize, err := activityPkg.PrepareForPublish(ctx, event, fwCtx.Service.Store, bucketName)
+			if err != nil {
+				fwCtx.Logger.Warn("Failed to offload activity data to GCS, publishing inline", "error", err)
+			} else if uploadedSize > 0 {
+				eventToPublish = preparedEvent
+				fwCtx.Logger.Info("Offloaded activity data to GCS",
+					"uri", preparedEvent.ActivityDataUri,
+					"size_bytes", uploadedSize)
+			}
+		}
+
+		resultEvent, err := infrapubsub.NewCloudEvent("/enricher", "com.fitglue.activity.enriched", eventToPublish)
 		if err != nil {
 			fwCtx.Logger.Error("Failed to create result event", "error", err)
 			continue

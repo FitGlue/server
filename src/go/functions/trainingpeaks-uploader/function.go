@@ -19,6 +19,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
 	"github.com/fitglue/server/src/go/pkg/destination"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
@@ -73,6 +74,11 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		}
 		if err := unmarshaler.Unmarshal(e.Data(), &eventPayload); err != nil {
 			return nil, fmt.Errorf("protojson.Unmarshal: %w", err)
+		}
+
+		// Resolve activity data from GCS if needed (for large payloads offloaded by enricher)
+		if err := activity.ResolveEnrichedEvent(ctx, &eventPayload, fwCtx.Service.Store); err != nil {
+			fwCtx.Logger.Warn("Failed to resolve activity data from GCS", "error", err)
 		}
 
 		fwCtx.Logger.Info("Starting TrainingPeaks upload",

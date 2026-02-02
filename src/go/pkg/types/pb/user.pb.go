@@ -2686,11 +2686,10 @@ type PipelineRun struct {
 	// Destination Outcomes
 	Destinations []*DestinationOutcome `protobuf:"bytes,14,rep,name=destinations,proto3" json:"destinations,omitempty"`
 	// Status tracking
-	StatusMessage  *string `protobuf:"bytes,15,opt,name=status_message,json=statusMessage,proto3,oneof" json:"status_message,omitempty"` // General message for any status (success/skip/fail/etc)
-	PendingInputId *string `protobuf:"bytes,16,opt,name=pending_input_id,json=pendingInputId,proto3,oneof" json:"pending_input_id,omitempty"`
-	// For repost/retry functionality (replaces executions.inputsJson)
-	EnrichedEvent      *EnrichedActivityEvent `protobuf:"bytes,20,opt,name=enriched_event,json=enrichedEvent,proto3" json:"enriched_event,omitempty"`
-	OriginalPayloadUri string                 `protobuf:"bytes,22,opt,name=original_payload_uri,json=originalPayloadUri,proto3" json:"original_payload_uri,omitempty"` // GCS URI: gs://{bucket}/payloads/{userId}/{activityId}.json
+	StatusMessage      *string `protobuf:"bytes,15,opt,name=status_message,json=statusMessage,proto3,oneof" json:"status_message,omitempty"` // General message for any status (success/skip/fail/etc)
+	PendingInputId     *string `protobuf:"bytes,16,opt,name=pending_input_id,json=pendingInputId,proto3,oneof" json:"pending_input_id,omitempty"`
+	OriginalPayloadUri string  `protobuf:"bytes,22,opt,name=original_payload_uri,json=originalPayloadUri,proto3" json:"original_payload_uri,omitempty"` // GCS URI: gs://{bucket}/payloads/{userId}/{activityId}.json
+	EnrichedEventUri   string  `protobuf:"bytes,23,opt,name=enriched_event_uri,json=enrichedEventUri,proto3" json:"enriched_event_uri,omitempty"`       // GCS URI: gs://{bucket}/enriched_events/{userId}/{pipelineRunId}.json
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2837,16 +2836,16 @@ func (x *PipelineRun) GetPendingInputId() string {
 	return ""
 }
 
-func (x *PipelineRun) GetEnrichedEvent() *EnrichedActivityEvent {
-	if x != nil {
-		return x.EnrichedEvent
-	}
-	return nil
-}
-
 func (x *PipelineRun) GetOriginalPayloadUri() string {
 	if x != nil {
 		return x.OriginalPayloadUri
+	}
+	return ""
+}
+
+func (x *PipelineRun) GetEnrichedEventUri() string {
+	if x != nil {
+		return x.EnrichedEventUri
 	}
 	return ""
 }
@@ -3256,7 +3255,7 @@ const file_user_proto_rawDesc = "" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_pipeline_execution_id\"\xee\x06\n" +
+	"\x16_pipeline_execution_id\"\xd4\x06\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
@@ -3279,11 +3278,11 @@ const file_user_proto_rawDesc = "" +
 	"\bboosters\x18\r \x03(\v2\x19.fitglue.BoosterExecutionR\bboosters\x12?\n" +
 	"\fdestinations\x18\x0e \x03(\v2\x1b.fitglue.DestinationOutcomeR\fdestinations\x12*\n" +
 	"\x0estatus_message\x18\x0f \x01(\tH\x00R\rstatusMessage\x88\x01\x01\x12-\n" +
-	"\x10pending_input_id\x18\x10 \x01(\tH\x01R\x0ependingInputId\x88\x01\x01\x12L\n" +
-	"\x0eenriched_event\x18\x14 \x01(\v2%.fitglue.events.EnrichedActivityEventR\renrichedEvent\x120\n" +
-	"\x14original_payload_uri\x18\x16 \x01(\tR\x12originalPayloadUriB\x11\n" +
+	"\x10pending_input_id\x18\x10 \x01(\tH\x01R\x0ependingInputId\x88\x01\x01\x120\n" +
+	"\x14original_payload_uri\x18\x16 \x01(\tR\x12originalPayloadUri\x12,\n" +
+	"\x12enriched_event_uri\x18\x17 \x01(\tR\x10enrichedEventUriB\x11\n" +
 	"\x0f_status_messageB\x13\n" +
-	"\x11_pending_input_idJ\x04\b\x15\x10\x16\"\x97\x02\n" +
+	"\x11_pending_input_idJ\x04\b\x14\x10\x15J\x04\b\x15\x10\x16\"\x97\x02\n" +
 	"\x10BoosterExecution\x12#\n" +
 	"\rprovider_name\x18\x01 \x01(\tR\fproviderName\x12\x16\n" +
 	"\x06status\x18\x02 \x01(\tR\x06status\x12\x1f\n" +
@@ -3441,7 +3440,6 @@ var file_user_proto_goTypes = []any{
 	(ActivityType)(0),                // 40: fitglue.ActivityType
 	(ActivitySource)(0),              // 41: fitglue.ActivitySource
 	(*StandardizedActivity)(nil),     // 42: fitglue.StandardizedActivity
-	(*EnrichedActivityEvent)(nil),    // 43: fitglue.events.EnrichedActivityEvent
 }
 var file_user_proto_depIdxs = []int32{
 	38, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
@@ -3522,16 +3520,15 @@ var file_user_proto_depIdxs = []int32{
 	38, // 75: fitglue.PipelineRun.updated_at:type_name -> google.protobuf.Timestamp
 	32, // 76: fitglue.PipelineRun.boosters:type_name -> fitglue.BoosterExecution
 	33, // 77: fitglue.PipelineRun.destinations:type_name -> fitglue.DestinationOutcome
-	43, // 78: fitglue.PipelineRun.enriched_event:type_name -> fitglue.events.EnrichedActivityEvent
-	37, // 79: fitglue.BoosterExecution.metadata:type_name -> fitglue.BoosterExecution.MetadataEntry
-	39, // 80: fitglue.DestinationOutcome.destination:type_name -> fitglue.events.Destination
-	8,  // 81: fitglue.DestinationOutcome.status:type_name -> fitglue.DestinationStatus
-	38, // 82: fitglue.DestinationOutcome.completed_at:type_name -> google.protobuf.Timestamp
-	83, // [83:83] is the sub-list for method output_type
-	83, // [83:83] is the sub-list for method input_type
-	83, // [83:83] is the sub-list for extension type_name
-	83, // [83:83] is the sub-list for extension extendee
-	0,  // [0:83] is the sub-list for field type_name
+	37, // 78: fitglue.BoosterExecution.metadata:type_name -> fitglue.BoosterExecution.MetadataEntry
+	39, // 79: fitglue.DestinationOutcome.destination:type_name -> fitglue.events.Destination
+	8,  // 80: fitglue.DestinationOutcome.status:type_name -> fitglue.DestinationStatus
+	38, // 81: fitglue.DestinationOutcome.completed_at:type_name -> google.protobuf.Timestamp
+	82, // [82:82] is the sub-list for method output_type
+	82, // [82:82] is the sub-list for method input_type
+	82, // [82:82] is the sub-list for extension type_name
+	82, // [82:82] is the sub-list for extension extendee
+	0,  // [0:82] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }

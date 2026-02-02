@@ -964,12 +964,9 @@ func PipelineRunToFirestore(p *pb.PipelineRun) map[string]interface{} {
 		m["destinations"] = dests
 	}
 
-	// Serialize enriched_event and original_payload as JSON for repost functionality
-	if p.EnrichedEvent != nil {
-		jsonBytes, err := protojson.Marshal(p.EnrichedEvent)
-		if err == nil {
-			m["enriched_event"] = string(jsonBytes)
-		}
+	// Note: enriched_event is now stored in GCS via enriched_event_uri
+	if p.EnrichedEventUri != "" {
+		m["enriched_event_uri"] = p.EnrichedEventUri
 	}
 	// Note: original_payload is now stored in GCS via original_payload_uri
 
@@ -1085,15 +1082,8 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
 		}
 	}
 
-	// EnrichedEvent
-	if v, ok := m["enriched_event"]; ok {
-		if jsonStr, ok := v.(string); ok && jsonStr != "" {
-			var event pb.EnrichedActivityEvent
-			if err := protojson.Unmarshal([]byte(jsonStr), &event); err == nil {
-				p.EnrichedEvent = &event
-			}
-		}
-	}
+	// Note: enriched_event is now stored in GCS via enriched_event_uri
+	p.EnrichedEventUri = getString(m, "enriched_event_uri")
 
 	// Note: original_payload is now stored in GCS via original_payload_uri
 

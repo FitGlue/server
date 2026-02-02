@@ -6,7 +6,7 @@
 
 /* eslint-disable */
 import type { ActivitySource } from "./activity";
-import type { Destination, EnrichedActivityEvent } from "./events";
+import type { Destination } from "./events";
 import type { ActivityType, StandardizedActivity } from "./standardized_activity";
 
 export const protobufPackage = "fitglue";
@@ -529,12 +529,10 @@ export interface PipelineRun {
   pendingInputId?:
     | string
     | undefined;
-  /** For repost/retry functionality (replaces executions.inputsJson) */
-  enrichedEvent?:
-    | EnrichedActivityEvent
-    | undefined;
   /** GCS URI: gs://{bucket}/payloads/{userId}/{activityId}.json */
   originalPayloadUri: string;
+  /** GCS URI: gs://{bucket}/enriched_events/{userId}/{pipelineRunId}.json */
+  enrichedEventUri: string;
 }
 
 /** BoosterExecution tracks a single enricher provider's execution. */

@@ -397,9 +397,10 @@ message PipelineRun {
   optional string pending_input_id = 16;
 
   // For repost/retry functionality (replaces executions.inputsJson)
-  fitglue.events.EnrichedActivityEvent enriched_event = 20;
+  reserved 20;  // was enriched_event (exceeds 1MB Firestore limit for long activities)
   reserved 21;  // was original_payload (exceeds 1MB Firestore limit)
   string original_payload_uri = 22;  // GCS URI: gs://{bucket}/payloads/{userId}/{activityId}.json
+  string enriched_event_uri = 23;    // GCS URI: gs://{bucket}/enriched_events/{userId}/{pipelineRunId}.json
 }
 
 // PipelineRunStatus tracks the overall state of a pipeline execution.

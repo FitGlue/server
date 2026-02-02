@@ -89,7 +89,15 @@ export interface EnrichedActivityEvent {
   destinations: Destination[];
   tags: string[];
   /** Execution tracing */
-  pipelineExecutionId?: string | undefined;
+  pipelineExecutionId?:
+    | string
+    | undefined;
+  /**
+   * GCS URI for activity_data when too large for Pub/Sub (>5MB)
+   * When set, activity_data field is empty and consumers should fetch from GCS
+   * Format: gs://{bucket}/enriched_events/{userId}/{pipelineExecutionId}.json
+   */
+  activityDataUri: string;
 }
 
 export interface EnrichedActivityEvent_EnrichmentMetadataEntry {

@@ -369,7 +369,6 @@ resource "google_cloudfunctions2_function" "router" {
     environment_variables = {
       GOOGLE_CLOUD_PROJECT = var.project_id
       GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
-      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
       LOG_LEVEL            = var.log_level
       SENTRY_ORG           = var.sentry_org
       SENTRY_PROJECT       = var.sentry_project
@@ -558,11 +557,12 @@ resource "google_cloudfunctions2_function" "showcase_uploader" {
     available_memory = "256Mi"
     timeout_seconds  = 60
     environment_variables = {
-      GOOGLE_CLOUD_PROJECT = var.project_id
-      LOG_LEVEL            = var.log_level
-      SENTRY_ORG           = var.sentry_org
-      SENTRY_PROJECT       = var.sentry_project
-      SENTRY_DSN           = var.sentry_dsn
+      GOOGLE_CLOUD_PROJECT   = var.project_id
+      SHOWCASE_ASSETS_BUCKET = google_storage_bucket.showcase_assets_bucket.name
+      LOG_LEVEL              = var.log_level
+      SENTRY_ORG             = var.sentry_org
+      SENTRY_PROJECT         = var.sentry_project
+      SENTRY_DSN             = var.sentry_dsn
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }

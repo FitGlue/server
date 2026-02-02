@@ -122,11 +122,11 @@ export class PipelineRunStore {
     }
 
     /**
-     * Set the enriched event on a pipeline run (called by router).
+     * Set the enriched event URI on a pipeline run (called by router after GCS upload).
      */
-    async setEnrichedEvent(userId: string, pipelineRunId: string, enrichedEvent: unknown): Promise<void> {
+    async setEnrichedEventUri(userId: string, pipelineRunId: string, enrichedEventUri: string): Promise<void> {
         await this.collection(userId).doc(pipelineRunId).update({
-            enriched_event: JSON.stringify(enrichedEvent),
+            enriched_event_uri: enrichedEventUri,
             updated_at: new Date(),
         });
     }

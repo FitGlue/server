@@ -118,7 +118,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 	// Store image in Cloud Storage
 	bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
 	if bucketName == "" {
-		bucketName = "fitglue-showcase-assets" // Default bucket name
+		bucketName = "fitglue-server-dev-showcase-assets" // Fallback for local development
 	}
 
 	objectPath := fmt.Sprintf("%s/banner.png", assetFolderID)

@@ -138,14 +138,38 @@ func routeHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fra
 
 	fwCtx.Logger.Info("Routing complete", "routed_count", len(routedDestinations))
 
-	// Update PipelineRun with enriched_event for repost functionality
+	// Store enriched_event_uri for repost functionality
+	// If enricher offloaded to GCS (activity_data_uri set), reuse that URI
+	// The GCS blob contains the full EnrichedActivityEvent, so it works for repost
 	if eventPayload.UserId != "" && pipelineExecID != "" {
 		updateData := map[string]interface{}{
-			"enriched_event": &eventPayload,
-			"updated_at":     protojson.Format(timestamppb.Now()),
+			"updated_at": protojson.Format(timestamppb.Now()),
 		}
+
+		// Reuse activity_data_uri as enriched_event_uri (same blob contains full event)
+		if eventPayload.ActivityDataUri != "" {
+			updateData["enriched_event_uri"] = eventPayload.ActivityDataUri
+			fwCtx.Logger.Debug("Reusing activity_data_uri for enriched_event_uri", "uri", eventPayload.ActivityDataUri)
+		} else {
+			// Fallback: upload full event to GCS if enricher didn't offload
+			// (for small events that didn't exceed threshold)
+			bucketName := fwCtx.Service.Config.GCSArtifactBucket
+			if bucketName != "" {
+				gcsPath := fmt.Sprintf("enriched_events/%s/%s.json", eventPayload.UserId, pipelineExecID)
+				jsonBytes, err := protojson.Marshal(&eventPayload)
+				if err != nil {
+					fwCtx.Logger.Warn("Failed to marshal enriched event for GCS", "error", err)
+				} else if err := fwCtx.Service.Store.Write(ctx, bucketName, gcsPath, jsonBytes); err != nil {
+					fwCtx.Logger.Warn("Failed to upload enriched event to GCS", "error", err)
+				} else {
+					updateData["enriched_event_uri"] = fmt.Sprintf("gs://%s/%s", bucketName, gcsPath)
+					fwCtx.Logger.Debug("Uploaded enriched event to GCS", "uri", updateData["enriched_event_uri"])
+				}
+			}
+		}
+
 		if err := fwCtx.Service.DB.UpdatePipelineRun(ctx, eventPayload.UserId, pipelineExecID, updateData); err != nil {
-			fwCtx.Logger.Error("Failed to update pipeline run with enriched event", "error", err, "pipeline_run_id", pipelineExecID)
+			fwCtx.Logger.Error("Failed to update pipeline run with enriched event URI", "error", err, "pipeline_run_id", pipelineExecID)
 		}
 	}
 

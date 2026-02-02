@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -18,6 +19,7 @@ import (
 
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/destination"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
@@ -163,6 +165,11 @@ func showcaseHandler() framework.HandlerFunc {
 			return nil, fmt.Errorf("protojson.Unmarshal: %w", err)
 		}
 
+		// Resolve activity data from GCS if needed (for large payloads offloaded by enricher)
+		if err := activity.ResolveEnrichedEvent(ctx, &eventPayload, fwCtx.Service.Store); err != nil {
+			fwCtx.Logger.Warn("Failed to resolve activity data from GCS", "error", err)
+		}
+
 		fwCtx.Logger.Info("Showcase upload received",
 			"activity_id", eventPayload.ActivityId,
 			"pipeline_id", eventPayload.PipelineId,
@@ -238,7 +245,11 @@ func showcaseHandler() framework.HandlerFunc {
 			if err != nil {
 				fwCtx.Logger.Error("Failed to marshal activity data to JSON", "error", err)
 			} else {
-				bucketName := "fitglue-showcase-assets"
+				bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
+				if bucketName == "" {
+					fwCtx.Logger.Error("SHOWCASE_ASSETS_BUCKET env var not set")
+					return nil, fmt.Errorf("SHOWCASE_ASSETS_BUCKET env var not set")
+				}
 				gcsPath := fmt.Sprintf("%s/activity.json", showcaseID)
 				if err := svc.Store.Write(ctx, bucketName, gcsPath, jsonBytes); err != nil {
 					fwCtx.Logger.Error("Failed to upload activity data to GCS", "error", err, "bucket", bucketName, "path", gcsPath)

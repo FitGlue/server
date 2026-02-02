@@ -80,6 +80,11 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			return nil, fmt.Errorf("protojson.Unmarshal: %w", err)
 		}
 
+		// Resolve activity data from GCS if needed (for large payloads offloaded by enricher)
+		if err := activity.ResolveEnrichedEvent(ctx, &eventPayload, fwCtx.Service.Store); err != nil {
+			fwCtx.Logger.Warn("Failed to resolve activity data from GCS", "error", err)
+		}
+
 		fwCtx.Logger.Info("Starting upload", "activity_id", eventPayload.ActivityId, "pipeline_id", eventPayload.PipelineId)
 
 		// Note: Loop prevention is handled at source-handler level (isBounceback check)
@@ -123,7 +128,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	// Download FIT from GCS
 	bucketName := fwCtx.Service.Config.GCSArtifactBucket
 	if bucketName == "" {
-		bucketName = "fitglue-artifacts"
+		bucketName = "fitglue-server-dev-artifacts" // Fallback for local development
 	}
 	objectName := strings.TrimPrefix(eventPayload.FitFileUri, "gs://"+bucketName+"/")
 

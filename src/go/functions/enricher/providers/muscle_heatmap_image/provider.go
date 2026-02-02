@@ -100,7 +100,7 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, logger *slog.Lo
 		// Use dedicated showcase assets bucket
 		bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
 		if bucketName == "" {
-			bucketName = "fitglue-showcase-assets" // Default bucket name
+			bucketName = "fitglue-server-dev-showcase-assets" // Fallback for local development
 		}
 
 		// Use pipeline_execution_id for asset storage path (unique per pipeline execution)

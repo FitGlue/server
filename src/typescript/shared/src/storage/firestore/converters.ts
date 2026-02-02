@@ -527,9 +527,9 @@ export const pipelineRunConverter: FirestoreDataConverter<PipelineRun> = {
       }));
     }
 
-    // Store enriched_event as JSON string (original_payload now in GCS)
-    if (model.enrichedEvent) {
-      data.enriched_event = JSON.stringify(model.enrichedEvent);
+    // Note: enriched_event is now stored in GCS via enriched_event_uri
+    if (model.enrichedEventUri) {
+      data.enriched_event_uri = model.enrichedEventUri;
     }
 
     return data;
@@ -581,9 +581,9 @@ export const pipelineRunConverter: FirestoreDataConverter<PipelineRun> = {
       statusMessage: data.status_message as string | undefined,
       pendingInputId: data.pending_input_id as string | undefined,
       originalPayloadUri: data.original_payload_uri as string || '',
+      enrichedEventUri: data.enriched_event_uri as string || '',
       boosters,
       destinations,
-      enrichedEvent: data.enriched_event ? JSON.parse(data.enriched_event) : undefined,
     };
   }
 };

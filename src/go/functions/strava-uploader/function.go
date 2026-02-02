@@ -83,6 +83,12 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			return nil, fmt.Errorf("protojson.Unmarshal: %w", err)
 		}
 
+		// Resolve activity data from GCS if needed (for large payloads offloaded by enricher)
+		if err := activity.ResolveEnrichedEvent(ctx, &eventPayload, fwCtx.Service.Store); err != nil {
+			fwCtx.Logger.Warn("Failed to resolve activity data from GCS", "error", err)
+			// Continue anyway - activity_data may not be needed for all operations
+		}
+
 		fwCtx.Logger.Info("Starting upload", "activity_id", eventPayload.ActivityId, "pipeline_id", eventPayload.PipelineId)
 
 		// Note: Loop prevention is handled at source-handler level (isBounceback check)
@@ -110,7 +116,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	// Download FIT from GCS
 	bucketName := fwCtx.Service.Config.GCSArtifactBucket
 	if bucketName == "" {
-		bucketName = "fitglue-artifacts"
+		bucketName = "fitglue-server-dev-artifacts" // Fallback for local development
 	}
 	objectName := strings.TrimPrefix(eventPayload.FitFileUri, "gs://"+bucketName+"/")
 
@@ -590,7 +596,7 @@ func truncateString(s string, maxLen int) string {
 func uploadPhotosToStrava(ctx context.Context, httpClient *http.Client, activityID int64, metadata map[string]string, fwCtx *framework.FrameworkContext) error {
 	bucketName := fwCtx.Service.Config.GCSArtifactBucket
 	if bucketName == "" {
-		bucketName = "fitglue-artifacts"
+		bucketName = "fitglue-server-dev-artifacts" // Fallback for local development
 	}
 
 	var uploadErrors []string

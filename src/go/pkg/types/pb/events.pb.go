@@ -268,8 +268,12 @@ type EnrichedActivityEvent struct {
 	Tags               []string              `protobuf:"bytes,14,rep,name=tags,proto3" json:"tags,omitempty"`
 	// Execution tracing
 	PipelineExecutionId *string `protobuf:"bytes,15,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	// GCS URI for activity_data when too large for Pub/Sub (>5MB)
+	// When set, activity_data field is empty and consumers should fetch from GCS
+	// Format: gs://{bucket}/enriched_events/{userId}/{pipelineExecutionId}.json
+	ActivityDataUri string `protobuf:"bytes,16,opt,name=activity_data_uri,json=activityDataUri,proto3" json:"activity_data_uri,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *EnrichedActivityEvent) Reset() {
@@ -407,6 +411,13 @@ func (x *EnrichedActivityEvent) GetPipelineExecutionId() string {
 	return ""
 }
 
+func (x *EnrichedActivityEvent) GetActivityDataUri() string {
+	if x != nil {
+		return x.ActivityDataUri
+	}
+	return ""
+}
+
 type MessagePublishedData struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Data          []byte                 `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
@@ -516,7 +527,7 @@ var File_events_proto protoreflect.FileDescriptor
 
 const file_events_proto_rawDesc = "" +
 	"\n" +
-	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\"\xc6\x06\n" +
+	"\fevents.proto\x12\x0efitglue.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1bstandardized_activity.proto\x1a\x0eactivity.proto\"\xf2\x06\n" +
 	"\x15EnrichedActivityEvent\x12\x1f\n" +
 	"\vactivity_id\x18\x01 \x01(\tR\n" +
 	"activityId\x12\x17\n" +
@@ -537,7 +548,8 @@ const file_events_proto_rawDesc = "" +
 	"\x13enrichment_metadata\x18\f \x03(\v2=.fitglue.events.EnrichedActivityEvent.EnrichmentMetadataEntryR\x12enrichmentMetadata\x12?\n" +
 	"\fdestinations\x18\r \x03(\x0e2\x1b.fitglue.events.DestinationR\fdestinations\x12\x12\n" +
 	"\x04tags\x18\x0e \x03(\tR\x04tags\x127\n" +
-	"\x15pipeline_execution_id\x18\x0f \x01(\tH\x00R\x13pipelineExecutionId\x88\x01\x01\x1aE\n" +
+	"\x15pipeline_execution_id\x18\x0f \x01(\tH\x00R\x13pipelineExecutionId\x88\x01\x01\x12*\n" +
+	"\x11activity_data_uri\x18\x10 \x01(\tR\x0factivityDataUri\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
