@@ -35,8 +35,11 @@ func TestUserInput_Enrich(t *testing.T) {
 		if !ok {
 			t.Fatalf("Expected WaitForInputError, got %T", err)
 		}
-		if waitErr.ActivityID != "HEVY:123" {
-			t.Errorf("Expected ActivityID 'HEVY:123', got %s", waitErr.ActivityID)
+		if waitErr.ActivityID != "HEVY:123:user_input" {
+			t.Errorf("Expected ActivityID 'HEVY:123:user_input', got %s", waitErr.ActivityID)
+		}
+		if waitErr.EnricherProviderID != "user_input" {
+			t.Errorf("Expected EnricherProviderID 'user_input', got %s", waitErr.EnricherProviderID)
 		}
 	})
 

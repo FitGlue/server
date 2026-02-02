@@ -8,17 +8,19 @@ import (
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	pendinginput "github.com/fitglue/server/src/go/pkg/pending_input"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 type WaitForInputError struct {
-	ActivityID     string
-	RequiredFields []string
-	Metadata       map[string]string // Optional metadata to store with pending input (e.g., lap info)
+	ActivityID         string
+	RequiredFields     []string
+	Metadata           map[string]string // Optional metadata to store with pending input (e.g., lap info)
+	EnricherProviderID string            // The enricher that created this pending input
 }
 
 func (e *WaitForInputError) Error() string {
-	return fmt.Sprintf("wait for input: %s", e.ActivityID)
+	return fmt.Sprintf("wait for input: %s (enricher: %s)", e.ActivityID, e.EnricherProviderID)
 }
 
 type UserInputProvider struct {
@@ -46,7 +48,7 @@ func (p *UserInputProvider) ProviderType() pb.EnricherProviderType {
 }
 
 func (p *UserInputProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
-	stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
+	stableID := pendinginput.GenerateID(activity.Source, activity.ExternalId, p.Name())
 
 	logger.Debug("user_input: starting",
 		"stable_id", stableID,
@@ -85,8 +87,9 @@ func (p *UserInputProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 			// Still waiting
 			logger.Debug("user_input: still waiting for user input")
 			return nil, &WaitForInputError{
-				ActivityID:     stableID, // Pass stable ID to orchestrator (redundant if orchestration calculates it too)
-				RequiredFields: parseFields(inputs["fields"]),
+				ActivityID:         stableID, // Pass stable ID to orchestrator (redundant if orchestration calculates it too)
+				RequiredFields:     parseFields(inputs["fields"]),
+				EnricherProviderID: p.Name(),
 			}
 		}
 	}
@@ -97,8 +100,9 @@ func (p *UserInputProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 		"required_fields", requiredFields,
 	)
 	return nil, &WaitForInputError{
-		ActivityID:     stableID,
-		RequiredFields: requiredFields,
+		ActivityID:         stableID,
+		RequiredFields:     requiredFields,
+		EnricherProviderID: p.Name(),
 	}
 }
 

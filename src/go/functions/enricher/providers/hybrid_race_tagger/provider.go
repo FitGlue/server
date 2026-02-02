@@ -11,6 +11,7 @@ import (
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/functions/enricher/providers/user_input"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
+	pendinginput "github.com/fitglue/server/src/go/pkg/pending_input"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -116,8 +117,9 @@ func (p *HybridRaceTaggerProvider) Enrich(ctx context.Context, logger *slog.Logg
 
 	// Return WaitForInputError to trigger pending input flow
 	return nil, &user_input.WaitForInputError{
-		ActivityID:     fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId),
-		RequiredFields: []string{"race_selection"},
+		ActivityID:         pendinginput.GenerateID(activity.Source, activity.ExternalId, p.Name()),
+		RequiredFields:     []string{"race_selection"},
+		EnricherProviderID: p.Name(),
 		Metadata: map[string]string{
 			"laps":      string(lapInfoJSON),
 			"lap_count": fmt.Sprintf("%d", len(laps)),

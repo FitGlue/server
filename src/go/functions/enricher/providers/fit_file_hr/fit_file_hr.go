@@ -10,6 +10,7 @@ import (
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/fit_parser"
+	pendinginput "github.com/fitglue/server/src/go/pkg/pending_input"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -63,7 +64,7 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 		return nil, fmt.Errorf("service not initialized")
 	}
 
-	stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
+	stableID := pendinginput.GenerateID(activity.Source, activity.ExternalId, p.Name())
 
 	// Check if there's already a pending input for this activity
 	pending, err := p.service.DB.GetPendingInput(ctx, user.UserId, stableID)

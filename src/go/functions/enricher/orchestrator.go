@@ -668,6 +668,7 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 		Status:             pb.PendingInput_STATUS_WAITING,
 		RequiredFields:     waitErr.RequiredFields,
 		OriginalPayloadUri: payloadUri, // GCS URI for payload retrieval
+		EnricherProviderId: waitErr.EnricherProviderID,
 		CreatedAt:          timestamppb.Now(),
 		UpdatedAt:          timestamppb.Now(),
 		ProviderMetadata:   waitErr.Metadata,    // Pass provider context to UI

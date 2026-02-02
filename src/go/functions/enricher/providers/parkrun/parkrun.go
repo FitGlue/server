@@ -11,6 +11,7 @@ import (
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	parkrunutil "github.com/fitglue/server/src/go/pkg/parkrun"
+	pendinginput "github.com/fitglue/server/src/go/pkg/pending_input"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -334,8 +335,8 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 				// Step 2: Results not available yet - create pending input for background polling
 				logger.Debug("parkrun: results not yet available, creating pending input")
 
-				// stableID is used as the pending input document ID (unique per source activity)
-				stableID := fmt.Sprintf("%s:%s", activity.Source, activity.ExternalId)
+				// stableID is used as the pending input document ID (unique per source activity + enricher)
+				stableID := pendinginput.GenerateID(activity.Source, activity.ExternalId, p.Name())
 
 				// Use the pre-generated activity_id from orchestrator for LinkedActivityId
 				// This is the UUID that will be used for the synchronized activity
