@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [9.7.1](https://github.com/FitGlue/server/compare/v9.7.0...v9.7.1) (2026-02-02)
+
+
+### Bug Fixes
+
+* **lint:** re-add 'W15' to ERROR_RULES and update exclusions for specific components ([671199a](https://github.com/FitGlue/server/commit/671199a0f404e9197786d9a9cd6fe7111d1cb768))
+
 ## [9.7.0](https://github.com/FitGlue/server/compare/v9.6.1...v9.7.0) (2026-02-02)
 
 
