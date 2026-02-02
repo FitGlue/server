@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -295,38 +296,77 @@ func formatDuration(seconds float64) string {
 	return fmt.Sprintf("%d:%02d", mins, secs)
 }
 
-// applyMerges combines laps according to merge groups
+// applyMerges combines laps according to merge groups while preserving chronological order.
+// Each merge group is placed at the position of its first (lowest index) lap.
+// Merge groups must contain contiguous lap indices.
 func applyMerges(laps []*pb.Lap, mergeGroups [][]int) []*pb.Lap {
 	if len(mergeGroups) == 0 {
 		return laps
 	}
 
-	// Track which laps have been merged
-	merged := make(map[int]bool)
-	result := make([]*pb.Lap, 0)
+	// Build a map from lap index to its merge group (if any)
+	// Key: lap index, Value: index of merge group in mergeGroups
+	lapToGroup := make(map[int]int)
+	for groupIdx, group := range mergeGroups {
+		for _, lapIdx := range group {
+			lapToGroup[lapIdx] = groupIdx
+		}
+	}
 
-	for _, group := range mergeGroups {
+	// Find the minimum index in each merge group and validate contiguity
+	groupMinIdx := make(map[int]int)
+	for groupIdx, group := range mergeGroups {
 		if len(group) == 0 {
 			continue
 		}
 
-		// Mark all laps in this group as merged
-		for _, idx := range group {
-			merged[idx] = true
+		// Sort indices to check contiguity
+		sortedGroup := make([]int, len(group))
+		copy(sortedGroup, group)
+		sort.Ints(sortedGroup)
+
+		// Check that indices are contiguous (each index is exactly 1 more than previous)
+		for i := 1; i < len(sortedGroup); i++ {
+			if sortedGroup[i] != sortedGroup[i-1]+1 {
+				// Non-contiguous indices - return original laps unchanged
+				// This shouldn't happen if UI enforces contiguous selection
+				return laps
+			}
 		}
 
-		// Merge the laps in this group
-		mergedLap := mergeLaps(laps, group)
-		if mergedLap != nil {
-			result = append(result, mergedLap)
-		}
+		groupMinIdx[groupIdx] = sortedGroup[0]
 	}
 
-	// Add any unmerged laps in order
+	// Track which merge groups we've already processed
+	processedGroups := make(map[int]bool)
+
+	result := make([]*pb.Lap, 0, len(laps))
+
 	for i, lap := range laps {
-		if !merged[i] {
+		groupIdx, isInGroup := lapToGroup[i]
+
+		if !isInGroup {
+			// This lap is not part of any merge group - add it as-is
 			result = append(result, lap)
+			continue
 		}
+
+		if processedGroups[groupIdx] {
+			// This lap is part of a group we've already merged - skip it
+			continue
+		}
+
+		// This is the first time we're seeing this merge group
+		// Check if this is the minimum index for the group (where we insert)
+		if i == groupMinIdx[groupIdx] {
+			// Merge all laps in this group and insert here
+			mergedLap := mergeLaps(laps, mergeGroups[groupIdx])
+			if mergedLap != nil {
+				result = append(result, mergedLap)
+			}
+			processedGroups[groupIdx] = true
+		}
+		// If i != groupMinIdx[groupIdx], we'll process this group when we hit the min index
 	}
 
 	return result
@@ -398,14 +438,20 @@ func mapLapsToPreset(laps []*pb.Lap, preset RacePreset) ([]*pb.Lap, []*pb.Streng
 	return newLaps, strengthSets, stationResults
 }
 
-// mergeLaps merges multiple laps into one, combining records and summing totals
+// mergeLaps merges multiple laps into one, combining records and summing totals.
+// Indices are sorted to ensure StartTime comes from the earliest lap.
 func mergeLaps(allLaps []*pb.Lap, indices []int) *pb.Lap {
 	if len(indices) == 0 {
 		return nil
 	}
 
-	// Sort indices and validate
-	firstIdx := indices[0]
+	// Sort indices to ensure chronological order
+	sortedIndices := make([]int, len(indices))
+	copy(sortedIndices, indices)
+	sort.Ints(sortedIndices)
+
+	// Validate first index
+	firstIdx := sortedIndices[0]
 	if firstIdx < 0 || firstIdx >= len(allLaps) {
 		return nil
 	}
@@ -417,7 +463,7 @@ func mergeLaps(allLaps []*pb.Lap, indices []int) *pb.Lap {
 		Records:          make([]*pb.Record, 0),
 	}
 
-	for _, idx := range indices {
+	for _, idx := range sortedIndices {
 		if idx < 0 || idx >= len(allLaps) {
 			continue
 		}

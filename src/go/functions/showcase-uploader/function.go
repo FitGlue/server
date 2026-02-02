@@ -165,9 +165,26 @@ func showcaseHandler() framework.HandlerFunc {
 			return nil, fmt.Errorf("protojson.Unmarshal: %w", err)
 		}
 
+		// Log initial state for debugging data flow issues
+		fwCtx.Logger.Debug("Event payload after unmarshal",
+			"has_activity_data", eventPayload.ActivityData != nil,
+			"activity_data_uri", eventPayload.ActivityDataUri,
+		)
+
 		// Resolve activity data from GCS if needed (for large payloads offloaded by enricher)
 		if err := activity.ResolveEnrichedEvent(ctx, &eventPayload, fwCtx.Service.Store); err != nil {
-			fwCtx.Logger.Warn("Failed to resolve activity data from GCS", "error", err)
+			fwCtx.Logger.Error("Failed to resolve activity data from GCS - showcase will be missing rich data",
+				"error", err,
+				"activity_data_uri", eventPayload.ActivityDataUri,
+			)
+		}
+
+		// Log state after resolution attempt
+		if eventPayload.ActivityData == nil {
+			fwCtx.Logger.Warn("Activity data is nil after resolution - showcase will be missing rich data",
+				"activity_data_uri", eventPayload.ActivityDataUri,
+				"activity_id", eventPayload.ActivityId,
+			)
 		}
 
 		fwCtx.Logger.Info("Showcase upload received",
@@ -240,17 +257,19 @@ func showcaseHandler() framework.HandlerFunc {
 		}
 
 		// Upload activity data to GCS (avoids Firestore 1MB field limit)
+		bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
+		if bucketName == "" {
+			fwCtx.Logger.Error("SHOWCASE_ASSETS_BUCKET env var not set")
+			return nil, fmt.Errorf("SHOWCASE_ASSETS_BUCKET env var not set")
+		}
+		gcsPath := fmt.Sprintf("%s/activity.json", showcaseID)
+
 		if eventPayload.ActivityData != nil {
+			// Normal path: marshal activity data and upload
 			jsonBytes, err := protojson.Marshal(eventPayload.ActivityData)
 			if err != nil {
 				fwCtx.Logger.Error("Failed to marshal activity data to JSON", "error", err)
 			} else {
-				bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
-				if bucketName == "" {
-					fwCtx.Logger.Error("SHOWCASE_ASSETS_BUCKET env var not set")
-					return nil, fmt.Errorf("SHOWCASE_ASSETS_BUCKET env var not set")
-				}
-				gcsPath := fmt.Sprintf("%s/activity.json", showcaseID)
 				if err := svc.Store.Write(ctx, bucketName, gcsPath, jsonBytes); err != nil {
 					fwCtx.Logger.Error("Failed to upload activity data to GCS", "error", err, "bucket", bucketName, "path", gcsPath)
 				} else {
@@ -258,6 +277,58 @@ func showcaseHandler() framework.HandlerFunc {
 					fwCtx.Logger.Info("Uploaded activity data to GCS", "uri", showcasedActivity.ActivityDataUri, "size_bytes", len(jsonBytes))
 				}
 			}
+		} else if eventPayload.ActivityDataUri != "" {
+			// Fallback: ActivityData is nil but we have a URI from enricher
+			// Try to copy the data directly from the enricher's GCS location
+			fwCtx.Logger.Warn("ActivityData is nil, attempting fallback copy from enricher GCS",
+				"source_uri", eventPayload.ActivityDataUri,
+			)
+			srcBucket, srcPath, ok := activity.ParseGCSURI(eventPayload.ActivityDataUri)
+			if !ok {
+				fwCtx.Logger.Error("Failed to parse ActivityDataUri for fallback copy",
+					"uri", eventPayload.ActivityDataUri,
+				)
+			} else {
+				// Read from source bucket
+				srcData, err := svc.Store.Read(ctx, srcBucket, srcPath)
+				if err != nil {
+					fwCtx.Logger.Error("Failed to read activity data from enricher GCS for fallback",
+						"error", err,
+						"bucket", srcBucket,
+						"path", srcPath,
+					)
+				} else {
+					// The enricher stores the full EnrichedActivityEvent, extract just activity_data
+					var fullEvent pb.EnrichedActivityEvent
+					if err := protojson.Unmarshal(srcData, &fullEvent); err != nil {
+						fwCtx.Logger.Error("Failed to unmarshal enricher event for fallback", "error", err)
+					} else if fullEvent.ActivityData == nil {
+						fwCtx.Logger.Error("Enricher event in GCS has no activity_data")
+					} else {
+						// Marshal just the activity data
+						activityJson, err := protojson.Marshal(fullEvent.ActivityData)
+						if err != nil {
+							fwCtx.Logger.Error("Failed to marshal activity data from fallback", "error", err)
+						} else {
+							// Write to showcase bucket
+							if err := svc.Store.Write(ctx, bucketName, gcsPath, activityJson); err != nil {
+								fwCtx.Logger.Error("Failed to write activity data to showcase GCS", "error", err)
+							} else {
+								showcasedActivity.ActivityDataUri = fmt.Sprintf("gs://%s/%s", bucketName, gcsPath)
+								fwCtx.Logger.Info("Fallback copy successful - uploaded activity data to GCS",
+									"uri", showcasedActivity.ActivityDataUri,
+									"size_bytes", len(activityJson),
+								)
+							}
+						}
+					}
+				}
+			}
+		} else {
+			fwCtx.Logger.Error("Cannot upload activity data to GCS - ActivityData is nil and no ActivityDataUri available",
+				"showcase_id", showcaseID,
+				"activity_id", eventPayload.ActivityId,
+			)
 		}
 
 		if expiresAt != nil {
