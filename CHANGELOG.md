@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [10.0.0](https://github.com/FitGlue/server/compare/v9.7.1...v10.0.0) (2026-02-02)
+
+
+### ⚠ BREAKING CHANGES
+
+* enhance shared modules architecture and CI/CD integration
+
+### Features
+
+* auto-merge laps that should be treated as one based on fit file data ([15e69ae](https://github.com/FitGlue/server/commit/15e69ae0b9b20f51c6f663ed08611ecf355ddd0b))
+* enhance shared modules architecture and CI/CD integration ([846496f](https://github.com/FitGlue/server/commit/846496f44ac6fb22651ed48e4e62d383a4ed15b6))
+* **enricher:** implement GCS offloading for large activity data and update enriched event handling ([5386aca](https://github.com/FitGlue/server/commit/5386aca674def450e938565470b7f61f010fda07))
+* ensure pending inputs use enricher scoped document IDs ([2a37db2](https://github.com/FitGlue/server/commit/2a37db264203253d8798d829b5fdc37666d084e1))
+* **pipeline:** add handlers for listing and retrieving pipeline runs ([c1dd3eb](https://github.com/FitGlue/server/commit/c1dd3eb88534adc8afbd4c1f7c2cec7c90f4000a))
+* **tests:** refactor test mocks to use framework module ([18dde3c](https://github.com/FitGlue/server/commit/18dde3c2ad6614924bf08ef05b4263b909ea9575))
+
+
+### Bug Fixes
+
+* always offload activity data to GCS ([87e1b38](https://github.com/FitGlue/server/commit/87e1b3836601ef9ad692fe5a64f4226a7ad50a57))
+* merge laps with 0 duration ([b67af28](https://github.com/FitGlue/server/commit/b67af28adf7a88977421cd201d9d4fe91abbd05f))
+* missing barrel exports for typescript pruning ([0bc32a5](https://github.com/FitGlue/server/commit/0bc32a52e01f1c7d1c8866a85ba7ca527b82b62b))
+* typescript pruning fun ([794dd24](https://github.com/FitGlue/server/commit/794dd246bef179ab2b8919299772f0a77c4bf61a))
+* update lint requirements post-changes ([77485b3](https://github.com/FitGlue/server/commit/77485b3b0292ed4599082ab85993b512f954cc79))
+
 ### [9.7.1](https://github.com/FitGlue/server/compare/v9.7.0...v9.7.1) (2026-02-02)
 
 
