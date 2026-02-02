@@ -64,8 +64,7 @@ const ERROR_RULES = new Set([
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
-  // TODO: Re-add 'W15' to ERROR_RULES after all pages are migrated to use component library
-  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13',
+  'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13', 'W15',
   // Enum
   'E1', 'E2', 'E3', 'E4', 'E5', 'E6', 'E7',
 ]);
@@ -104,8 +103,12 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   // ActivityDetailPage fetches image assets (SVGs), not API calls
   'W1': [/usePluginRegistry/, /ActivityDetailPage/],
-  // W15: Bare HTML allowed in UI primitives, forms, layout, and admin page
-  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/],
+  // W15: Bare HTML allowed in UI primitives, forms, layout, admin page, and specific components with legitimate needs
+  // - EnricherTimeline: Timeline visualization divs
+  // - RefreshControl: Animated loading indicator
+  // - EnrichedActivityCard: Complex card layout
+  // - ActivityDetailPage: SvgAsset helper for SVG injection requires img/div
+  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/, /EnricherTimeline/, /RefreshControl/, /EnrichedActivityCard/, /ActivityDetailPage/],
 };
 
 // ============================================================================

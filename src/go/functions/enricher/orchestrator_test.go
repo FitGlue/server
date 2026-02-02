@@ -508,7 +508,9 @@ func TestOrchestrator_Process(t *testing.T) {
 			},
 		}
 
-		result, err := orchestrator.Process(ctx, slog.Default(), payload, "parent-exec", "base-pipeline-exec", false)
+		// Note: In production, pipeline-splitter already appends the pipeline ID to the execution ID
+		// so we simulate that here (base-pipeline-exec-pipeline-A)
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "parent-exec", "base-pipeline-exec-pipeline-A", false)
 
 		if err != nil {
 			t.Fatalf("Process failed: %v", err)

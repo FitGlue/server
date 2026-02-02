@@ -156,7 +156,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	var providerExecutions []ProviderExecution
 
 	// 3. Execute the Pipeline (Single Pipeline Mode)
-	pipelineExecutionID := fmt.Sprintf("%s-%s", basePipelineExecutionID, pipeline.ID)
+	// Note: basePipelineExecutionID already contains the pipeline ID (appended by pipeline-splitter)
+	pipelineExecutionID := basePipelineExecutionID
 	logger.Info("Executing pipeline", "id", pipeline.ID, "pipelineExecutionId", pipelineExecutionID)
 
 	// Pre-generate ActivityId so enrichers can use it for pending input linking
@@ -740,24 +741,12 @@ func (o *Orchestrator) createInitialPipelineRun(ctx context.Context, logger *slo
 
 // updatePipelineRunStatus updates the pipeline run with a new status and optional message
 func (o *Orchestrator) updatePipelineRunStatus(ctx context.Context, logger *slog.Logger, userId string, pipelineRunId string, status pb.PipelineRunStatus, statusMessage string, providerExecs []ProviderExecution) {
-	// Convert ProviderExecutions to BoosterExecutions
-	boosters := make([]*pb.BoosterExecution, 0, len(providerExecs))
-	for _, pe := range providerExecs {
-		booster := &pb.BoosterExecution{
-			ProviderName: pe.ProviderName,
-			Status:       pe.Status,
-			DurationMs:   pe.DurationMs,
-			Metadata:     pe.Metadata,
-		}
-		if pe.Error != "" {
-			booster.Error = &pe.Error
-		}
-		boosters = append(boosters, booster)
-	}
+	// Convert ProviderExecutions to snake_case maps for Firestore
+	boosters := boostersToFirestoreMaps(providerExecs)
 
 	updateData := map[string]interface{}{
-		"status":     status,
-		"updated_at": timestamppb.Now(),
+		"status":     int32(status),
+		"updated_at": time.Now(),
 		"boosters":   boosters,
 	}
 	if statusMessage != "" {
@@ -773,27 +762,15 @@ func (o *Orchestrator) updatePipelineRunStatus(ctx context.Context, logger *slog
 
 // finalizePipelineRun updates the pipeline run with final enriched data on success
 func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Logger, userId string, event *pb.EnrichedActivityEvent, providerExecs []ProviderExecution, payload *pb.ActivityPayload) {
-	// Convert ProviderExecutions to BoosterExecutions
-	boosters := make([]*pb.BoosterExecution, 0, len(providerExecs))
-	for _, pe := range providerExecs {
-		booster := &pb.BoosterExecution{
-			ProviderName: pe.ProviderName,
-			Status:       pe.Status,
-			DurationMs:   pe.DurationMs,
-			Metadata:     pe.Metadata,
-		}
-		if pe.Error != "" {
-			booster.Error = &pe.Error
-		}
-		boosters = append(boosters, booster)
-	}
+	// Convert ProviderExecutions to snake_case maps for Firestore
+	boosters := boostersToFirestoreMaps(providerExecs)
 
-	// Build destination outcomes (all pending at this point)
-	destinations := make([]*pb.DestinationOutcome, 0, len(event.Destinations))
+	// Build destination outcomes as snake_case maps (all pending at this point)
+	destinations := make([]map[string]interface{}, 0, len(event.Destinations))
 	for _, dest := range event.Destinations {
-		destinations = append(destinations, &pb.DestinationOutcome{
-			Destination: dest,
-			Status:      pb.DestinationStatus_DESTINATION_STATUS_PENDING,
+		destinations = append(destinations, map[string]interface{}{
+			"destination": int32(dest),
+			"status":      int32(pb.DestinationStatus_DESTINATION_STATUS_PENDING),
 		})
 	}
 
@@ -816,9 +793,9 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 	updateData := map[string]interface{}{
 		"title":                event.Name,
 		"description":          event.Description,
-		"type":                 event.ActivityType,
-		"start_time":           event.StartTime,
-		"updated_at":           timestamppb.Now(),
+		"type":                 int32(event.ActivityType),
+		"start_time":           event.StartTime.AsTime(),
+		"updated_at":           time.Now(),
 		"boosters":             boosters,
 		"destinations":         destinations,
 		"original_payload_uri": payloadUri,
@@ -829,4 +806,23 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 	} else {
 		logger.Debug("Finalized pipeline run", "pipeline_run_id", *event.PipelineExecutionId, "activity_id", event.ActivityId)
 	}
+}
+
+// boostersToFirestoreMaps converts ProviderExecutions to snake_case maps for Firestore storage
+// This ensures field names match what the web UI expects (provider_name, duration_ms, etc.)
+func boostersToFirestoreMaps(providerExecs []ProviderExecution) []map[string]interface{} {
+	boosters := make([]map[string]interface{}, 0, len(providerExecs))
+	for _, pe := range providerExecs {
+		booster := map[string]interface{}{
+			"provider_name": pe.ProviderName,
+			"status":        pe.Status,
+			"duration_ms":   pe.DurationMs,
+			"metadata":      pe.Metadata,
+		}
+		if pe.Error != "" {
+			booster["error"] = pe.Error
+		}
+		boosters = append(boosters, booster)
+	}
+	return boosters
 }
