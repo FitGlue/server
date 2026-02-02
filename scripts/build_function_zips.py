@@ -191,10 +191,8 @@ def main():
     src_dir = script_dir.parent / "src" / "go"
     output_dir = Path("/tmp/fitglue-function-zips")
 
-    # Clean and create output directory
-    if output_dir.exists():
-        shutil.rmtree(output_dir)
-    output_dir.mkdir(parents=True)
+    # Create output directory (don't clean - TS zips may already be there from parallel run)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     if not prune:
         print("Smart pruning DISABLED - including all pkg/ in each zip\n")

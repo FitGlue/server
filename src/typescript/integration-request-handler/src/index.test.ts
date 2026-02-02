@@ -1,6 +1,6 @@
 import { handler } from './index';
 import * as admin from 'firebase-admin';
-import { FrameworkContext } from '@fitglue/shared';
+import { FrameworkContext } from '@fitglue/shared/dist/framework';
 
 // Mock firebase-admin
 jest.mock('firebase-admin', () => {

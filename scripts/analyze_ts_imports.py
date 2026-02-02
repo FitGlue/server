@@ -155,6 +155,11 @@ def resolve_modules(
         else:
             required.add(barrel_modules)
 
+    # Add always-include modules first (so their deps are resolved)
+    for mod_id, mod_config in modules.items():
+        if mod_config.get("always_include", False):
+            required.add(mod_id)
+
     # Resolve transitive dependencies (iterate until no changes)
     changed = True
     iterations = 0
@@ -173,11 +178,6 @@ def resolve_modules(
                 if dep not in required:
                     required.add(dep)
                     changed = True
-
-    # Add always-include modules
-    for mod_id, mod_config in modules.items():
-        if mod_config.get("always_include", False):
-            required.add(mod_id)
 
     return required
 

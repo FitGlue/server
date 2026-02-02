@@ -1,5 +1,5 @@
 import { handler } from './index';
-import { CloudEventPublisher } from '@fitglue/shared';
+import { CloudEventPublisher } from '@fitglue/shared/dist/infrastructure/pubsub';
 
 // Mock shared dependencies
 jest.mock('@fitglue/shared', () => {

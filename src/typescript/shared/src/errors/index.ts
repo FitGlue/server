@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { FitGlueError, ErrUserNotFound, ErrorCode } from '@fitglue/shared';
+ * import { FitGlueError, ErrUserNotFound, ErrorCode } from '@fitglue/shared/dist/errors';
  *
  * // Use a pre-defined error
  * throw ErrUserNotFound;

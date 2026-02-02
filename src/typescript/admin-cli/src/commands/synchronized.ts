@@ -1,5 +1,7 @@
 import { Command } from 'commander';
-import { db, ActivityStore, ExecutionService, ExecutionStore } from '@fitglue/shared';
+import { db } from '@fitglue/shared/dist/framework';
+import { ActivityStore, ExecutionStore } from '@fitglue/shared/dist/storage/firestore';
+import { ExecutionService } from '@fitglue/shared/dist/domain/services';
 
 const activityStore = new ActivityStore(db);
 const executionService = new ExecutionService(new ExecutionStore(db));

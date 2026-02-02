@@ -1,5 +1,5 @@
 
-import { ActivityType } from '@fitglue/shared';
+import { ActivityType } from '@fitglue/shared/dist/types/pb/standardized_activity';
 import { mapFitbitActivityType } from './connector';
 
 describe('mapFitbitActivityType', () => {

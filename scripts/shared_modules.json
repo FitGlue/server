@@ -4,10 +4,15 @@
     "core": {
       "paths": [
         "src/errors",
-        "src/config.ts",
-        "src/index.ts"
+        "src/config.ts"
       ],
       "always_include": true,
+      "depends_on": ["framework-errors"]
+    },
+    "framework-errors": {
+      "paths": [
+        "src/framework/errors.ts"
+      ],
       "depends_on": []
     },
     "types-pb": {
@@ -24,6 +29,15 @@
       ],
       "depends_on": [
         "types-pb"
+      ]
+    },
+    "types-barrel": {
+      "paths": [
+        "src/types/index.ts"
+      ],
+      "depends_on": [
+        "types-pb",
+        "types-other"
       ]
     },
     "infra-secrets": {
@@ -64,7 +78,8 @@
         "src/infrastructure/pubsub"
       ],
       "depends_on": [
-        "types-pb"
+        "types-pb",
+        "infra-sentry"
       ]
     },
     "execution": {
@@ -80,7 +95,8 @@
         "src/storage"
       ],
       "depends_on": [
-        "types-pb"
+        "types-pb",
+        "types-other"
       ]
     },
     "domain-tier": {
@@ -107,7 +123,8 @@
         "storage",
         "types-pb",
         "execution",
-        "infra-pubsub"
+        "infra-pubsub",
+        "infra-oauth"
       ]
     },
     "routing": {
@@ -153,14 +170,9 @@
         "src/integrations/factory.ts"
       ],
       "depends_on": [
-        "int-fitbit",
-        "int-hevy",
-        "int-strava",
-        "int-oura",
-        "int-polar",
-        "int-spotify",
-        "int-wahoo",
-        "int-trainingpeaks"
+        "services",
+        "infra-http",
+        "infra-oauth"
       ]
     },
     "int-fitbit": {
@@ -168,6 +180,7 @@
         "src/integrations/fitbit"
       ],
       "depends_on": [
+        "int-factory",
         "infra-oauth",
         "infra-http"
       ]
@@ -185,6 +198,7 @@
         "src/integrations/strava"
       ],
       "depends_on": [
+        "int-factory",
         "infra-oauth",
         "infra-http"
       ]
@@ -194,6 +208,7 @@
         "src/integrations/oura"
       ],
       "depends_on": [
+        "int-factory",
         "infra-oauth",
         "infra-http"
       ]
@@ -203,6 +218,7 @@
         "src/integrations/polar"
       ],
       "depends_on": [
+        "int-factory",
         "infra-oauth",
         "infra-http"
       ]
@@ -212,6 +228,7 @@
         "src/integrations/spotify"
       ],
       "depends_on": [
+        "int-factory",
         "infra-oauth",
         "infra-http"
       ]
@@ -221,6 +238,7 @@
         "src/integrations/wahoo"
       ],
       "depends_on": [
+        "int-factory",
         "infra-oauth",
         "infra-http"
       ]
@@ -230,6 +248,7 @@
         "src/integrations/trainingpeaks"
       ],
       "depends_on": [
+        "int-factory",
         "infra-oauth",
         "infra-http"
       ]
@@ -262,8 +281,7 @@
       "services"
     ],
     "@fitglue/shared/types": [
-      "types-pb",
-      "types-other"
+      "types-barrel"
     ],
     "@fitglue/shared/infrastructure": [
       "infra-secrets",
@@ -395,28 +413,6 @@
     ],
     "@fitglue/shared/dist/integrations/trainingpeaks": [
       "int-trainingpeaks"
-    ],
-    "@fitglue/shared": [
-      "framework",
-      "types-pb",
-      "types-other",
-      "storage",
-      "services",
-      "plugin",
-      "routing",
-      "domain-tier",
-      "infra-oauth",
-      "int-fitbit",
-      "int-hevy",
-      "int-strava",
-      "int-oura",
-      "int-polar",
-      "int-spotify",
-      "int-wahoo",
-      "int-trainingpeaks",
-      "domain-parsers",
-      "execution",
-      "activity-counters"
     ]
   }
 }

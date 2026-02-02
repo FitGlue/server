@@ -1,5 +1,6 @@
 import { Command } from 'commander';
-import { ExecutionStore, db } from '@fitglue/shared';
+import { db } from '@fitglue/shared/dist/framework';
+import { ExecutionStore } from '@fitglue/shared/dist/storage/firestore';
 import { execSync } from 'child_process';
 import axios from 'axios';
 import * as readline from 'readline';
