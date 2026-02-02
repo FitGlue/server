@@ -294,6 +294,7 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 // mergeLapInfosByWorkoutStep merges consecutive laps that share the same workout step index.
 // This handles Garmin's behavior of recording multiple sub-laps per workout interval
 // (e.g., 1km auto-laps within a Hyrox station that should be a single interval).
+// Also merges zero-duration laps with adjacent laps (these are transition markers).
 func mergeLapInfosByWorkoutStep(lapInfos []lapInfo) []lapInfo {
 	if len(lapInfos) == 0 {
 		return lapInfos
@@ -308,8 +309,8 @@ func mergeLapInfosByWorkoutStep(lapInfos []lapInfo) []lapInfo {
 		}
 	}
 	if !hasStepData {
-		// No workout step data - return original laps unchanged
-		return lapInfos
+		// No workout step data - still merge zero-duration laps
+		return mergeZeroDurationLaps(lapInfos)
 	}
 
 	var result []lapInfo
@@ -317,9 +318,13 @@ func mergeLapInfosByWorkoutStep(lapInfos []lapInfo) []lapInfo {
 	var currentStepIndex *int32
 
 	for _, li := range lapInfos {
-		// Check if this lap continues the current group (same workout step)
-		if currentStepIndex != nil && li.wktStepIndex != nil && *li.wktStepIndex == *currentStepIndex {
-			// Same step index - add to current group
+		// Very short laps (< 2 seconds) are transition markers - always merge with current group
+		isTransitionLap := li.totalElapsedTime < 2.0
+
+		// Check if this lap continues the current group (same workout step OR transition lap)
+		sameStep := currentStepIndex != nil && li.wktStepIndex != nil && *li.wktStepIndex == *currentStepIndex
+		if sameStep || (isTransitionLap && len(currentGroup) > 0) {
+			// Same step index or transition lap - add to current group
 			currentGroup = append(currentGroup, li)
 		} else {
 			// Different step index - finalize current group
@@ -335,6 +340,31 @@ func mergeLapInfosByWorkoutStep(lapInfos []lapInfo) []lapInfo {
 	// Don't forget the last group
 	if len(currentGroup) > 0 {
 		result = append(result, mergeConsecutiveLapInfos(currentGroup))
+	}
+
+	return result
+}
+
+// mergeTransitionLaps merges very short laps (< 2 seconds) with their preceding lap.
+// Used when there's no workout step data but we still want to clean up transition markers.
+func mergeZeroDurationLaps(lapInfos []lapInfo) []lapInfo {
+	if len(lapInfos) == 0 {
+		return lapInfos
+	}
+
+	var result []lapInfo
+	for i, li := range lapInfos {
+		isTransition := li.totalElapsedTime < 2.0
+		if isTransition && len(result) > 0 {
+			// Merge transition lap with previous
+			result[len(result)-1] = mergeConsecutiveLapInfos([]lapInfo{result[len(result)-1], li})
+		} else if isTransition && i < len(lapInfos)-1 {
+			// Transition at start - will be merged when we add the next lap
+			// Skip for now, handle in next iteration
+			continue
+		} else {
+			result = append(result, li)
+		}
 	}
 
 	return result
