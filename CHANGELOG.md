@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [9.6.1](https://github.com/FitGlue/server/compare/v9.6.0...v9.6.1) (2026-02-02)
+
+
+### Bug Fixes
+
+* pending inputs resume ([909a26b](https://github.com/FitGlue/server/commit/909a26b62e481a3c7f5d8f56f7b7cab42c0a3efb))
+* test now expects resume fields ([dd5c588](https://github.com/FitGlue/server/commit/dd5c5883f2ca29d3a0c2d21a7c47ef105d1138b0))
+
 ## [9.6.0](https://github.com/FitGlue/server/compare/v9.5.0...v9.6.0) (2026-02-02)
 
 
