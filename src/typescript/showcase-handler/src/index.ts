@@ -79,7 +79,9 @@ async function handleApiShowcase(
   const userData = user.data() as UserRecord;
   const effectiveTier = getEffectiveTier(userData);
 
-  // Fetch activity data from GCS if stored there, otherwise use inline data (legacy)
+  // Fetch activity data from GCS
+  // New format: URI points to enriched_events/{userId}/{pipelineExecutionId}.json (EnrichedActivityEvent)
+  // Old format: URI points to showcase-assets/{showcaseId}/activity.json (just StandardizedActivity)
   let activityData: StandardizedActivity | undefined = data.activityData;
   if (!activityData && data.activityDataUri) {
     try {
@@ -89,13 +91,29 @@ async function handleApiShowcase(
         const [, bucketName, filePath] = gcsMatch;
         const bucket = admin.storage().bucket(bucketName);
         const [contents] = await bucket.file(filePath).download();
-        activityData = JSON.parse(contents.toString()) as StandardizedActivity;
+        const parsed = JSON.parse(contents.toString());
+        
+        // Handle both formats:
+        // 1. New format (EnrichedActivityEvent): extract activity_data from nested field
+        // 2. Old format (StandardizedActivity): use parsed object directly (has sessions field)
+        if (parsed.activity_data || parsed.activityData) {
+          // New format - extract nested activity_data
+          activityData = parsed.activity_data || parsed.activityData;
+        } else if (parsed.sessions) {
+          // Old format - the file IS the StandardizedActivity
+          activityData = parsed as StandardizedActivity;
+        }
       }
     } catch (err) {
       console.error('Failed to fetch activity data from GCS', { error: err, uri: data.activityDataUri });
       // Continue without activity data - page will show partial content
     }
   }
+
+  // Compute summary from activity data
+  const summary = activityData ? computeSummary(activityData) : undefined;
+  const laps = activityData ? extractLaps(activityData) : undefined;
+  const timeMarkers = activityData ? extractTimeMarkers(activityData) : undefined;
 
   // Build the public API response, stripping sensitive fields
   const response: ShowcaseResponse = {
@@ -107,6 +125,9 @@ async function handleApiShowcase(
     source: data.source,
     startTime: data.startTime?.toISOString(),
     activityData: activityData,
+    summary,
+    laps,
+    timeMarkers,
     appliedEnrichments: data.appliedEnrichments || [],
     enrichmentMetadata: data.enrichmentMetadata || {},
     registry: (data.appliedEnrichments || []).reduce((acc: Record<string, { name: string; icon: string; description: string }>, e: string) => {
@@ -172,6 +193,31 @@ async function handleHtmlShowcase(
 // Note: functions-framework .http() registration might still be needed if createCloudFunction
 // doesn't handle the registration itself, but usually it returns the function to be exported.
 
+// Summary computed from activity data
+interface ActivitySummary {
+  totalDurationSeconds: number;
+  totalDistanceMeters: number;
+  totalCalories?: number;
+  avgHeartRate?: number;
+  maxHeartRate?: number;
+  lapCount: number;
+  strengthSetCount: number;
+}
+
+// Lap summary for display
+interface LapSummary {
+  exerciseName: string;
+  durationSeconds: number;
+  distanceMeters: number;
+}
+
+// Time marker for charts
+interface TimeMarkerSummary {
+  timestamp?: string;
+  label: string;
+  markerType: string;
+}
+
 // Public API response (sanitized, no sensitive data)
 interface ShowcaseResponse {
   isAthlete: boolean;
@@ -182,10 +228,96 @@ interface ShowcaseResponse {
   source: ActivitySource;
   startTime?: string;
   activityData?: StandardizedActivity;
+  summary?: ActivitySummary;
+  laps?: LapSummary[];
+  timeMarkers?: TimeMarkerSummary[];
   appliedEnrichments: string[];
   enrichmentMetadata: { [key: string]: string };
   registry: { [key: string]: { name: string; icon: string; description: string } };
   tags: string[];
   createdAt?: string;
   ownerDisplayName?: string;  // Public attribution - owner's display name or email prefix
+}
+
+/**
+ * Compute summary statistics from activity data
+ */
+function computeSummary(activity: StandardizedActivity): ActivitySummary {
+  let totalDuration = 0;
+  let totalDistance = 0;
+  let totalCalories = 0;
+  let lapCount = 0;
+  let strengthSetCount = 0;
+  const heartRates: number[] = [];
+
+  for (const session of activity.sessions || []) {
+    totalDuration += session.totalElapsedTime || 0;
+    totalDistance += session.totalDistance || 0;
+    totalCalories += session.totalCalories || 0;
+    lapCount += (session.laps || []).length;
+    strengthSetCount += (session.strengthSets || []).length;
+
+    // Collect heart rates from records
+    for (const lap of session.laps || []) {
+      for (const record of lap.records || []) {
+        if (record.heartRate && record.heartRate > 0) {
+          heartRates.push(record.heartRate);
+        }
+      }
+    }
+
+    // Also check session-level HR
+    if (session.avgHeartRate && session.avgHeartRate > 0) {
+      heartRates.push(session.avgHeartRate);
+    }
+  }
+
+  const avgHeartRate = heartRates.length > 0
+    ? Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length)
+    : undefined;
+  const maxHeartRate = heartRates.length > 0
+    ? Math.max(...heartRates)
+    : undefined;
+
+  return {
+    totalDurationSeconds: totalDuration,
+    totalDistanceMeters: totalDistance,
+    totalCalories: totalCalories > 0 ? totalCalories : undefined,
+    avgHeartRate,
+    maxHeartRate,
+    lapCount,
+    strengthSetCount,
+  };
+}
+
+/**
+ * Extract lap summaries for display
+ */
+function extractLaps(activity: StandardizedActivity): LapSummary[] {
+  const laps: LapSummary[] = [];
+
+  for (const session of activity.sessions || []) {
+    for (const lap of session.laps || []) {
+      laps.push({
+        exerciseName: lap.exerciseName || 'Lap',
+        durationSeconds: lap.totalElapsedTime || 0,
+        distanceMeters: lap.totalDistance || 0,
+      });
+    }
+  }
+
+  return laps;
+}
+
+/**
+ * Extract time markers for chart visualization
+ */
+function extractTimeMarkers(activity: StandardizedActivity): TimeMarkerSummary[] {
+  return (activity.timeMarkers || []).map(marker => ({
+    timestamp: marker.timestamp instanceof Date
+      ? marker.timestamp.toISOString()
+      : (marker.timestamp as string | undefined),
+    label: marker.label || '',
+    markerType: marker.markerType || '',
+  }));
 }

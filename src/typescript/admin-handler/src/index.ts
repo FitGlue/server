@@ -544,7 +544,7 @@ async function handleListPipelineRuns(match: RouteMatch, ctx: FrameworkContext) 
   });
 
   // Filter by userId if provided (post-query filter since collectionGroup can't filter by path)
-  const filteredRuns = userIdFilter 
+  const filteredRuns = userIdFilter
     ? runs.filter(run => run.userId === userIdFilter)
     : runs;
 

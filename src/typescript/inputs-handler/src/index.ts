@@ -118,9 +118,9 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       // Transfer linkedActivityId to activityId - the enricher requires this in resume mode
       // to look up the existing activity record created during initial enrichment
       if (!input.linkedActivityId) {
-        ctx.logger.error('Missing linkedActivityId on pending input - cannot resume', { 
+        ctx.logger.error('Missing linkedActivityId on pending input - cannot resume', {
           activityId: body.activityId,
-          pipelineId: input.pipelineId 
+          pipelineId: input.pipelineId
         });
         throw new HttpError(500, 'Pending input missing linkedActivityId, cannot resume');
       }

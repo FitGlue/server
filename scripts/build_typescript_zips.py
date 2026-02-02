@@ -87,7 +87,7 @@ def copy_shared_modules(
 ):
     """
     Copy only the required modules from shared/ to the destination.
-    
+
     This is the key optimization - instead of copying all of shared/,
     we only copy the paths that the handler actually imports.
     """
@@ -97,15 +97,15 @@ def copy_shared_modules(
         if src.exists():
             dest_dir.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src, dest_dir / config_file)
-    
+
     # Copy each required path
     for rel_path in required_paths:
         src_path = shared_dir / rel_path
         dst_path = dest_dir / rel_path
-        
+
         if not src_path.exists():
             continue
-        
+
         if src_path.is_file():
             dst_path.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(src_path, dst_path)
@@ -132,15 +132,15 @@ def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path, mo
 
     # Analyze handler imports and determine required shared modules
     shared_dir = ts_src_dir / 'shared'
-    
+
     if ENABLE_PRUNING and modules_config is not None and shared_dir.exists():
         # SMART PRUNING: Only copy modules the handler actually uses
         deep_imports, barrel_symbols = get_handler_imports(handler_dir)
         required_modules = resolve_modules(deep_imports, barrel_symbols, modules_config)
         required_paths = get_module_paths(required_modules, modules_config)
-        
+
         print(f"  {handler_name}: {len(required_modules)} modules, {len(required_paths)} paths")
-        
+
         copy_shared_modules(shared_dir, temp_dir / 'shared', required_paths, modules_config)
     elif shared_dir.exists():
         # FALLBACK: Copy entire shared/ (original behavior)
@@ -226,12 +226,12 @@ module.exports = handler;
 
 def main():
     global ENABLE_PRUNING
-    
+
     # Parse command line arguments
     if '--no-prune' in sys.argv:
         ENABLE_PRUNING = False
         print("Pruning DISABLED via --no-prune flag")
-    
+
     script_dir = Path(__file__).parent
     ts_src_dir = script_dir.parent / "src" / "typescript"
     output_dir = Path("/tmp/fitglue-function-zips")

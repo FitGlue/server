@@ -2,167 +2,421 @@
   "_comment": "Module definitions for TypeScript shared package pruning. Each module defines paths and dependencies.",
   "modules": {
     "core": {
-      "paths": ["src/errors", "src/config.ts", "src/index.ts"],
+      "paths": [
+        "src/errors",
+        "src/config.ts",
+        "src/index.ts"
+      ],
       "always_include": true,
       "depends_on": []
     },
     "types-pb": {
-      "paths": ["src/types/pb"],
+      "paths": [
+        "src/types/pb"
+      ],
       "depends_on": []
     },
     "types-other": {
-      "paths": ["src/types/events-helper.ts", "src/types/integrations.ts", "src/types/activity-counters.ts"],
-      "depends_on": ["types-pb"]
+      "paths": [
+        "src/types/events-helper.ts",
+        "src/types/integrations.ts",
+        "src/types/activity-counters.ts"
+      ],
+      "depends_on": [
+        "types-pb"
+      ]
     },
     "infra-secrets": {
-      "paths": ["src/infrastructure/secrets"],
+      "paths": [
+        "src/infrastructure/secrets"
+      ],
       "depends_on": []
     },
     "infra-crypto": {
-      "paths": ["src/infrastructure/crypto"],
+      "paths": [
+        "src/infrastructure/crypto"
+      ],
       "depends_on": []
     },
     "infra-sentry": {
-      "paths": ["src/infrastructure/sentry"],
+      "paths": [
+        "src/infrastructure/sentry"
+      ],
       "depends_on": []
     },
     "infra-http": {
-      "paths": ["src/infrastructure/http"],
+      "paths": [
+        "src/infrastructure/http"
+      ],
       "depends_on": []
     },
     "infra-oauth": {
-      "paths": ["src/infrastructure/oauth"],
-      "depends_on": ["infra-secrets", "infra-http"]
+      "paths": [
+        "src/infrastructure/oauth"
+      ],
+      "depends_on": [
+        "infra-secrets",
+        "infra-http"
+      ]
     },
     "infra-pubsub": {
-      "paths": ["src/infrastructure/pubsub"],
-      "depends_on": ["types-pb"]
+      "paths": [
+        "src/infrastructure/pubsub"
+      ],
+      "depends_on": [
+        "types-pb"
+      ]
     },
     "execution": {
-      "paths": ["src/execution"],
-      "depends_on": ["types-pb"]
+      "paths": [
+        "src/execution"
+      ],
+      "depends_on": [
+        "types-pb"
+      ]
     },
     "storage": {
-      "paths": ["src/storage"],
-      "depends_on": ["types-pb"]
+      "paths": [
+        "src/storage"
+      ],
+      "depends_on": [
+        "types-pb"
+      ]
     },
     "domain-tier": {
-      "paths": ["src/domain/tier.ts"],
-      "depends_on": ["types-pb"]
+      "paths": [
+        "src/domain/tier.ts"
+      ],
+      "depends_on": [
+        "types-pb"
+      ]
     },
     "domain-parsers": {
-      "paths": ["src/domain/file-parsers"],
-      "depends_on": ["types-pb"]
+      "paths": [
+        "src/domain/file-parsers"
+      ],
+      "depends_on": [
+        "types-pb"
+      ]
     },
     "services": {
-      "paths": ["src/domain/services"],
-      "depends_on": ["storage", "types-pb", "execution", "infra-pubsub"]
+      "paths": [
+        "src/domain/services"
+      ],
+      "depends_on": [
+        "storage",
+        "types-pb",
+        "execution",
+        "infra-pubsub"
+      ]
     },
     "routing": {
-      "paths": ["src/routing"],
+      "paths": [
+        "src/routing"
+      ],
       "depends_on": []
     },
     "plugin": {
-      "paths": ["src/plugin"],
-      "depends_on": ["types-pb", "infra-secrets"]
+      "paths": [
+        "src/plugin"
+      ],
+      "depends_on": [
+        "types-pb",
+        "infra-secrets"
+      ]
     },
     "activity-counters": {
-      "paths": ["src/services"],
-      "depends_on": ["types-pb", "storage"]
+      "paths": [
+        "src/services"
+      ],
+      "depends_on": [
+        "types-pb",
+        "storage"
+      ]
     },
     "framework": {
-      "paths": ["src/framework"],
-      "depends_on": ["types-pb", "storage", "services", "execution", "infra-sentry", "infra-secrets", "infra-pubsub"]
+      "paths": [
+        "src/framework"
+      ],
+      "depends_on": [
+        "types-pb",
+        "storage",
+        "services",
+        "execution",
+        "infra-sentry",
+        "infra-secrets",
+        "infra-pubsub"
+      ]
     },
     "int-factory": {
-      "paths": ["src/integrations/factory.ts"],
-      "depends_on": ["int-fitbit", "int-hevy", "int-strava", "int-oura", "int-polar", "int-spotify", "int-wahoo", "int-trainingpeaks"]
+      "paths": [
+        "src/integrations/factory.ts"
+      ],
+      "depends_on": [
+        "int-fitbit",
+        "int-hevy",
+        "int-strava",
+        "int-oura",
+        "int-polar",
+        "int-spotify",
+        "int-wahoo",
+        "int-trainingpeaks"
+      ]
     },
     "int-fitbit": {
-      "paths": ["src/integrations/fitbit"],
-      "depends_on": ["infra-oauth", "infra-http"]
+      "paths": [
+        "src/integrations/fitbit"
+      ],
+      "depends_on": [
+        "infra-oauth",
+        "infra-http"
+      ]
     },
     "int-hevy": {
-      "paths": ["src/integrations/hevy"],
-      "depends_on": ["infra-http"]
+      "paths": [
+        "src/integrations/hevy"
+      ],
+      "depends_on": [
+        "infra-http"
+      ]
     },
     "int-strava": {
-      "paths": ["src/integrations/strava"],
-      "depends_on": ["infra-oauth", "infra-http"]
+      "paths": [
+        "src/integrations/strava"
+      ],
+      "depends_on": [
+        "infra-oauth",
+        "infra-http"
+      ]
     },
     "int-oura": {
-      "paths": ["src/integrations/oura"],
-      "depends_on": ["infra-oauth", "infra-http"]
+      "paths": [
+        "src/integrations/oura"
+      ],
+      "depends_on": [
+        "infra-oauth",
+        "infra-http"
+      ]
     },
     "int-polar": {
-      "paths": ["src/integrations/polar"],
-      "depends_on": ["infra-oauth", "infra-http"]
+      "paths": [
+        "src/integrations/polar"
+      ],
+      "depends_on": [
+        "infra-oauth",
+        "infra-http"
+      ]
     },
     "int-spotify": {
-      "paths": ["src/integrations/spotify"],
-      "depends_on": ["infra-oauth", "infra-http"]
+      "paths": [
+        "src/integrations/spotify"
+      ],
+      "depends_on": [
+        "infra-oauth",
+        "infra-http"
+      ]
     },
     "int-wahoo": {
-      "paths": ["src/integrations/wahoo"],
-      "depends_on": ["infra-oauth", "infra-http"]
+      "paths": [
+        "src/integrations/wahoo"
+      ],
+      "depends_on": [
+        "infra-oauth",
+        "infra-http"
+      ]
     },
     "int-trainingpeaks": {
-      "paths": ["src/integrations/trainingpeaks"],
-      "depends_on": ["infra-oauth", "infra-http"]
+      "paths": [
+        "src/integrations/trainingpeaks"
+      ],
+      "depends_on": [
+        "infra-oauth",
+        "infra-http"
+      ]
     }
   },
   "import_patterns": {
-    "@fitglue/shared/framework": ["framework"],
-    "@fitglue/shared/storage": ["storage"],
-    "@fitglue/shared/errors": ["core"],
-    "@fitglue/shared/execution": ["execution"],
-    "@fitglue/shared/routing": ["routing"],
-    "@fitglue/shared/plugin": ["plugin"],
-    "@fitglue/shared/domain": ["services", "domain-tier"],
-    "@fitglue/shared/domain/services": ["services"],
-    "@fitglue/shared/types": ["types-pb", "types-other"],
-    "@fitglue/shared/infrastructure": ["infra-secrets", "infra-crypto", "infra-sentry", "infra-http", "infra-oauth", "infra-pubsub"],
-    "@fitglue/shared/infrastructure/oauth": ["infra-oauth"],
-    "@fitglue/shared/infrastructure/pubsub": ["infra-pubsub"],
-    "@fitglue/shared/infrastructure/secrets": ["infra-secrets"],
-    "@fitglue/shared/integrations/strava": ["int-strava"],
-    "@fitglue/shared/integrations/fitbit": ["int-fitbit"],
-    "@fitglue/shared/integrations/hevy": ["int-hevy"],
-    "@fitglue/shared/integrations/oura": ["int-oura"],
-    "@fitglue/shared/integrations/polar": ["int-polar"],
-    "@fitglue/shared/integrations/spotify": ["int-spotify"],
-    "@fitglue/shared/integrations/wahoo": ["int-wahoo"],
-    "@fitglue/shared/integrations/trainingpeaks": ["int-trainingpeaks"],
-    "@fitglue/shared/dist/types/pb": ["types-pb"],
-    "@fitglue/shared/dist/types/events-helper": ["types-other"],
-    "@fitglue/shared/dist/types/integrations": ["types-other"],
-    "@fitglue/shared/dist/types/activity-counters": ["types-other"],
-    "@fitglue/shared/dist/storage/firestore": ["storage"],
-    "@fitglue/shared/dist/storage": ["storage"],
-    "@fitglue/shared/dist/domain/services": ["services"],
-    "@fitglue/shared/dist/domain/tier": ["domain-tier"],
-    "@fitglue/shared/dist/domain/file-parsers": ["domain-parsers"],
-    "@fitglue/shared/dist/execution": ["execution"],
-    "@fitglue/shared/dist/infrastructure/secrets": ["infra-secrets"],
-    "@fitglue/shared/dist/infrastructure/crypto": ["infra-crypto"],
-    "@fitglue/shared/dist/infrastructure/oauth": ["infra-oauth"],
-    "@fitglue/shared/dist/infrastructure/pubsub": ["infra-pubsub"],
-    "@fitglue/shared/dist/infrastructure/sentry": ["infra-sentry"],
-    "@fitglue/shared/dist/infrastructure/http": ["infra-http"],
-    "@fitglue/shared/dist/framework": ["framework"],
-    "@fitglue/shared/dist/routing": ["routing"],
-    "@fitglue/shared/dist/plugin": ["plugin"],
-    "@fitglue/shared/dist/config": ["core"],
-    "@fitglue/shared/dist/errors": ["core"],
-    "@fitglue/shared/dist/integrations/factory": ["int-factory"],
-    "@fitglue/shared/dist/integrations/fitbit": ["int-fitbit"],
-    "@fitglue/shared/dist/integrations/hevy": ["int-hevy"],
-    "@fitglue/shared/dist/integrations/strava": ["int-strava"],
-    "@fitglue/shared/dist/integrations/oura": ["int-oura"],
-    "@fitglue/shared/dist/integrations/polar": ["int-polar"],
-    "@fitglue/shared/dist/integrations/spotify": ["int-spotify"],
-    "@fitglue/shared/dist/integrations/wahoo": ["int-wahoo"],
-    "@fitglue/shared/dist/integrations/trainingpeaks": ["int-trainingpeaks"],
-    "@fitglue/shared": ["framework", "types-pb", "types-other", "storage", "services", "plugin", "routing", "domain-tier", "infra-oauth", "int-fitbit", "int-hevy", "int-strava", "int-oura", "int-polar", "int-spotify", "int-wahoo", "int-trainingpeaks", "domain-parsers", "execution", "activity-counters"]
+    "@fitglue/shared/framework": [
+      "framework"
+    ],
+    "@fitglue/shared/storage": [
+      "storage"
+    ],
+    "@fitglue/shared/errors": [
+      "core"
+    ],
+    "@fitglue/shared/execution": [
+      "execution"
+    ],
+    "@fitglue/shared/routing": [
+      "routing"
+    ],
+    "@fitglue/shared/plugin": [
+      "plugin"
+    ],
+    "@fitglue/shared/domain": [
+      "services",
+      "domain-tier"
+    ],
+    "@fitglue/shared/domain/services": [
+      "services"
+    ],
+    "@fitglue/shared/types": [
+      "types-pb",
+      "types-other"
+    ],
+    "@fitglue/shared/infrastructure": [
+      "infra-secrets",
+      "infra-crypto",
+      "infra-sentry",
+      "infra-http",
+      "infra-oauth",
+      "infra-pubsub"
+    ],
+    "@fitglue/shared/infrastructure/oauth": [
+      "infra-oauth"
+    ],
+    "@fitglue/shared/infrastructure/pubsub": [
+      "infra-pubsub"
+    ],
+    "@fitglue/shared/infrastructure/secrets": [
+      "infra-secrets"
+    ],
+    "@fitglue/shared/integrations/strava": [
+      "int-strava"
+    ],
+    "@fitglue/shared/integrations/fitbit": [
+      "int-fitbit"
+    ],
+    "@fitglue/shared/integrations/hevy": [
+      "int-hevy"
+    ],
+    "@fitglue/shared/integrations/oura": [
+      "int-oura"
+    ],
+    "@fitglue/shared/integrations/polar": [
+      "int-polar"
+    ],
+    "@fitglue/shared/integrations/spotify": [
+      "int-spotify"
+    ],
+    "@fitglue/shared/integrations/wahoo": [
+      "int-wahoo"
+    ],
+    "@fitglue/shared/integrations/trainingpeaks": [
+      "int-trainingpeaks"
+    ],
+    "@fitglue/shared/dist/types/pb": [
+      "types-pb"
+    ],
+    "@fitglue/shared/dist/types/events-helper": [
+      "types-other"
+    ],
+    "@fitglue/shared/dist/types/integrations": [
+      "types-other"
+    ],
+    "@fitglue/shared/dist/types/activity-counters": [
+      "types-other"
+    ],
+    "@fitglue/shared/dist/storage/firestore": [
+      "storage"
+    ],
+    "@fitglue/shared/dist/storage": [
+      "storage"
+    ],
+    "@fitglue/shared/dist/domain/services": [
+      "services"
+    ],
+    "@fitglue/shared/dist/domain/tier": [
+      "domain-tier"
+    ],
+    "@fitglue/shared/dist/domain/file-parsers": [
+      "domain-parsers"
+    ],
+    "@fitglue/shared/dist/execution": [
+      "execution"
+    ],
+    "@fitglue/shared/dist/infrastructure/secrets": [
+      "infra-secrets"
+    ],
+    "@fitglue/shared/dist/infrastructure/crypto": [
+      "infra-crypto"
+    ],
+    "@fitglue/shared/dist/infrastructure/oauth": [
+      "infra-oauth"
+    ],
+    "@fitglue/shared/dist/infrastructure/pubsub": [
+      "infra-pubsub"
+    ],
+    "@fitglue/shared/dist/infrastructure/sentry": [
+      "infra-sentry"
+    ],
+    "@fitglue/shared/dist/infrastructure/http": [
+      "infra-http"
+    ],
+    "@fitglue/shared/dist/framework": [
+      "framework"
+    ],
+    "@fitglue/shared/dist/routing": [
+      "routing"
+    ],
+    "@fitglue/shared/dist/plugin": [
+      "plugin"
+    ],
+    "@fitglue/shared/dist/config": [
+      "core"
+    ],
+    "@fitglue/shared/dist/errors": [
+      "core"
+    ],
+    "@fitglue/shared/dist/integrations/factory": [
+      "int-factory"
+    ],
+    "@fitglue/shared/dist/integrations/fitbit": [
+      "int-fitbit"
+    ],
+    "@fitglue/shared/dist/integrations/hevy": [
+      "int-hevy"
+    ],
+    "@fitglue/shared/dist/integrations/strava": [
+      "int-strava"
+    ],
+    "@fitglue/shared/dist/integrations/oura": [
+      "int-oura"
+    ],
+    "@fitglue/shared/dist/integrations/polar": [
+      "int-polar"
+    ],
+    "@fitglue/shared/dist/integrations/spotify": [
+      "int-spotify"
+    ],
+    "@fitglue/shared/dist/integrations/wahoo": [
+      "int-wahoo"
+    ],
+    "@fitglue/shared/dist/integrations/trainingpeaks": [
+      "int-trainingpeaks"
+    ],
+    "@fitglue/shared": [
+      "framework",
+      "types-pb",
+      "types-other",
+      "storage",
+      "services",
+      "plugin",
+      "routing",
+      "domain-tier",
+      "infra-oauth",
+      "int-fitbit",
+      "int-hevy",
+      "int-strava",
+      "int-oura",
+      "int-polar",
+      "int-spotify",
+      "int-wahoo",
+      "int-trainingpeaks",
+      "domain-parsers",
+      "execution",
+      "activity-counters"
+    ]
   }
 }

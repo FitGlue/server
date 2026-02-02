@@ -25,15 +25,15 @@ MODULE_PREFIX = "github.com/fitglue/server/src/go/pkg"
 def get_pkg_dependencies(function_name: str, src_dir: Path) -> Set[str]:
     """
     Get all pkg/ subdirectories that a function depends on (directly or transitively).
-    
+
     Uses `go list -deps` to get the full dependency tree, then filters to just
     internal pkg/ packages.
-    
+
     Returns:
         Set of package paths relative to pkg/, e.g. {"bootstrap", "types/pb"}
     """
     function_path = f"./functions/{function_name}/..."
-    
+
     try:
         result = subprocess.run(
             ["go", "list", "-f", "{{.ImportPath}}", "-deps", function_path],
@@ -45,7 +45,7 @@ def get_pkg_dependencies(function_name: str, src_dir: Path) -> Set[str]:
     except subprocess.CalledProcessError as e:
         print(f"Warning: Could not analyze {function_name}, including all pkg/: {e.stderr}")
         return None  # Signal to include everything
-    
+
     pkg_deps = set()
     for line in result.stdout.strip().split("\n"):
         if line.startswith(MODULE_PREFIX):
@@ -53,14 +53,14 @@ def get_pkg_dependencies(function_name: str, src_dir: Path) -> Set[str]:
             relative_path = line[len(MODULE_PREFIX):].lstrip("/")
             if relative_path:  # Skip the root pkg itself
                 pkg_deps.add(relative_path)
-    
+
     return pkg_deps
 
 
 def copy_pruned_pkg(src_pkg: Path, dest_pkg: Path, needed_packages: Set[str]):
     """
     Copy only the needed packages from pkg/ to the destination.
-    
+
     Handles nested packages correctly - if we need "infrastructure/pubsub",
     we copy the entire infrastructure/pubsub/ directory.
     """
@@ -69,12 +69,12 @@ def copy_pruned_pkg(src_pkg: Path, dest_pkg: Path, needed_packages: Set[str]):
         if item.is_file() and item.suffix == ".go" and not item.name.endswith("_test.go"):
             dest_pkg.mkdir(parents=True, exist_ok=True)
             shutil.copy2(item, dest_pkg / item.name)
-    
+
     # Copy needed package directories
     for pkg_path in needed_packages:
         src_path = src_pkg / pkg_path
         dest_path = dest_pkg / pkg_path
-        
+
         if src_path.exists():
             if src_path.is_dir():
                 shutil.copytree(
@@ -90,7 +90,7 @@ def copy_pruned_pkg(src_pkg: Path, dest_pkg: Path, needed_packages: Set[str]):
 
 def create_function_zip(function_name: str, src_dir: Path, output_dir: Path, prune: bool = True):
     """Create a deployment zip for a Go Cloud Function"""
-    
+
     # Analyze dependencies if pruning is enabled
     needed_packages = None
     if prune:
@@ -186,7 +186,7 @@ def create_function_zip(function_name: str, src_dir: Path, output_dir: Path, pru
 def main():
     # Parse arguments
     prune = "--no-prune" not in sys.argv
-    
+
     script_dir = Path(__file__).parent
     src_dir = script_dir.parent / "src" / "go"
     output_dir = Path("/tmp/fitglue-function-zips")
@@ -216,7 +216,7 @@ def main():
         "intervals-uploader",
         "googlesheets-uploader",
     ]
-    
+
     for function_name in functions:
         create_function_zip(function_name, src_dir, output_dir, prune=prune)
 

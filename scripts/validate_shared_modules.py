@@ -57,14 +57,14 @@ def get_defined_paths(modules_config: dict) -> Set[str]:
 def get_actual_paths(shared_src_dir: Path) -> Set[str]:
     """
     Scan shared/src/ and return paths that should have module definitions.
-    
+
     Returns paths like 'src/framework', 'src/integrations/strava', etc.
     """
     paths = set()
-    
+
     if not shared_src_dir.exists():
         return paths
-    
+
     def should_ignore(name: str) -> bool:
         if name.startswith('.'):
             return True
@@ -73,15 +73,15 @@ def get_actual_paths(shared_src_dir: Path) -> Set[str]:
         if name.endswith('.test.ts') or name.endswith('.spec.ts'):
             return True
         return False
-    
+
     def scan_dir(dir_path: Path, rel_prefix: str):
         """Recursively scan directory and add significant paths."""
         for item in sorted(dir_path.iterdir()):
             if should_ignore(item.name):
                 continue
-            
+
             rel_path = f"{rel_prefix}/{item.name}" if rel_prefix else item.name
-            
+
             if item.is_dir():
                 # Add directory as a path
                 paths.add(f"src/{rel_path}")
@@ -92,7 +92,7 @@ def get_actual_paths(shared_src_dir: Path) -> Set[str]:
                 # Only add standalone .ts files at src/ root level
                 if '/' not in rel_path and item.name not in ROOT_CONFIG_FILES:
                     paths.add(f"src/{rel_path}")
-    
+
     scan_dir(shared_src_dir, '')
     return paths
 
@@ -100,27 +100,27 @@ def get_actual_paths(shared_src_dir: Path) -> Set[str]:
 def get_top_level_modules(shared_src_dir: Path) -> Set[str]:
     """Get top-level directories that should be modules."""
     modules = set()
-    
+
     if not shared_src_dir.exists():
         return modules
-    
+
     for item in shared_src_dir.iterdir():
         if item.is_dir() and not item.name.startswith('.'):
             modules.add(item.name)
-    
+
     return modules
 
 
 def validate_paths_exist(modules_config: dict, shared_dir: Path) -> list[str]:
     """Check that all paths in config actually exist."""
     errors = []
-    
+
     for mod_name, mod_config in modules_config.get('modules', {}).items():
         for path in mod_config.get('paths', []):
             full_path = shared_dir / path
             if not full_path.exists():
                 errors.append(f"Module '{mod_name}' references non-existent path: {path}")
-    
+
     return errors
 
 
@@ -128,12 +128,12 @@ def validate_dependencies_exist(modules_config: dict) -> list[str]:
     """Check that all dependency references are valid module names."""
     errors = []
     module_names = set(modules_config.get('modules', {}).keys())
-    
+
     for mod_name, mod_config in modules_config.get('modules', {}).items():
         for dep in mod_config.get('depends_on', []):
             if dep not in module_names:
                 errors.append(f"Module '{mod_name}' depends on unknown module: {dep}")
-    
+
     return errors
 
 
@@ -141,14 +141,14 @@ def validate_import_patterns(modules_config: dict) -> list[str]:
     """Check that import patterns reference valid modules."""
     errors = []
     module_names = set(modules_config.get('modules', {}).keys())
-    
+
     for pattern, modules in modules_config.get('import_patterns', {}).items():
         if isinstance(modules, str):
             modules = [modules]
         for mod in modules:
             if mod not in module_names:
                 errors.append(f"Import pattern '{pattern}' references unknown module: {mod}")
-    
+
     return errors
 
 
@@ -156,21 +156,21 @@ def find_uncovered_directories(modules_config: dict, shared_src_dir: Path) -> li
     """Find directories in shared/src/ that don't have module definitions."""
     warnings = []
     defined_paths = get_defined_paths(modules_config)
-    
+
     # Check top-level directories
     for item in sorted(shared_src_dir.iterdir()):
         if item.is_dir() and not item.name.startswith('.'):
             dir_path = f"src/{item.name}"
-            
+
             # Check if this directory or any of its contents is covered
             is_covered = any(
                 p == dir_path or p.startswith(f"{dir_path}/")
                 for p in defined_paths
             )
-            
+
             if not is_covered:
                 warnings.append(f"Directory '{dir_path}' has no module definition")
-            
+
             # Check subdirectories (one level deep for integrations, etc.)
             if item.name == 'integrations':
                 for subitem in sorted(item.iterdir()):
@@ -182,7 +182,7 @@ def find_uncovered_directories(modules_config: dict, shared_src_dir: Path) -> li
                         )
                         if not is_sub_covered:
                             warnings.append(f"Integration '{subdir_path}' has no module definition")
-    
+
     return warnings
 
 
@@ -190,11 +190,11 @@ def main():
     script_dir = Path(__file__).parent
     shared_dir = script_dir.parent / "src" / "typescript" / "shared"
     shared_src_dir = shared_dir / "src"
-    
+
     print("Validating shared_modules.json...")
     print(f"  Shared directory: {shared_dir}")
     print()
-    
+
     # Load config
     try:
         modules_config = load_modules_config(script_dir)
@@ -206,42 +206,42 @@ def main():
     except json.JSONDecodeError as e:
         print(f"ERROR: Invalid JSON in shared_modules.json: {e}")
         sys.exit(1)
-    
+
     print()
-    
+
     # Run validations
     all_errors = []
     all_warnings = []
-    
+
     # Check paths exist
     errors = validate_paths_exist(modules_config, shared_dir)
     all_errors.extend(errors)
-    
+
     # Check dependencies are valid
     errors = validate_dependencies_exist(modules_config)
     all_errors.extend(errors)
-    
+
     # Check import patterns reference valid modules
     errors = validate_import_patterns(modules_config)
     all_errors.extend(errors)
-    
+
     # Find uncovered directories (warnings, not errors)
     warnings = find_uncovered_directories(modules_config, shared_src_dir)
     all_warnings.extend(warnings)
-    
+
     # Report results
     if all_errors:
         print("ERRORS:")
         for error in all_errors:
             print(f"  ❌ {error}")
         print()
-    
+
     if all_warnings:
         print("WARNINGS (new code may need module definitions):")
         for warning in all_warnings:
             print(f"  ⚠️  {warning}")
         print()
-    
+
     if all_errors:
         print(f"FAILED: {len(all_errors)} error(s) found")
         print()
@@ -250,13 +250,13 @@ def main():
         print("  2. Add missing paths or remove stale references")
         print("  3. Ensure all dependencies reference valid module names")
         sys.exit(1)
-    
+
     if all_warnings:
         print(f"PASSED with {len(all_warnings)} warning(s)")
         print("Consider adding module definitions for new directories.")
     else:
         print("PASSED: All validations successful!")
-    
+
     sys.exit(0)
 
 

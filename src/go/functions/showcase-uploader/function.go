@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -256,76 +255,16 @@ func showcaseHandler() framework.HandlerFunc {
 			ExpiresAt:           nil, // Will be set below
 		}
 
-		// Upload activity data to GCS (avoids Firestore 1MB field limit)
-		bucketName := os.Getenv("SHOWCASE_ASSETS_BUCKET")
-		if bucketName == "" {
-			fwCtx.Logger.Error("SHOWCASE_ASSETS_BUCKET env var not set")
-			return nil, fmt.Errorf("SHOWCASE_ASSETS_BUCKET env var not set")
-		}
-		gcsPath := fmt.Sprintf("%s/activity.json", showcaseID)
-
-		if eventPayload.ActivityData != nil {
-			// Normal path: marshal activity data and upload
-			jsonBytes, err := protojson.Marshal(eventPayload.ActivityData)
-			if err != nil {
-				fwCtx.Logger.Error("Failed to marshal activity data to JSON", "error", err)
-			} else {
-				if err := svc.Store.Write(ctx, bucketName, gcsPath, jsonBytes); err != nil {
-					fwCtx.Logger.Error("Failed to upload activity data to GCS", "error", err, "bucket", bucketName, "path", gcsPath)
-				} else {
-					showcasedActivity.ActivityDataUri = fmt.Sprintf("gs://%s/%s", bucketName, gcsPath)
-					fwCtx.Logger.Info("Uploaded activity data to GCS", "uri", showcasedActivity.ActivityDataUri, "size_bytes", len(jsonBytes))
-				}
-			}
-		} else if eventPayload.ActivityDataUri != "" {
-			// Fallback: ActivityData is nil but we have a URI from enricher
-			// Try to copy the data directly from the enricher's GCS location
-			fwCtx.Logger.Warn("ActivityData is nil, attempting fallback copy from enricher GCS",
-				"source_uri", eventPayload.ActivityDataUri,
+		// Store the enriched event URI directly (points to enriched_events/{userId}/{pipelineExecutionId}.json)
+		// The enricher/router guarantees this file exists in GCS with the full EnrichedActivityEvent
+		if eventPayload.ActivityDataUri != "" {
+			showcasedActivity.ActivityDataUri = eventPayload.ActivityDataUri
+			fwCtx.Logger.Info("Stored enriched event URI",
+				"uri", eventPayload.ActivityDataUri,
+				"showcase_id", showcaseID,
 			)
-			srcBucket, srcPath, ok := activity.ParseGCSURI(eventPayload.ActivityDataUri)
-			if !ok {
-				fwCtx.Logger.Error("Failed to parse ActivityDataUri for fallback copy",
-					"uri", eventPayload.ActivityDataUri,
-				)
-			} else {
-				// Read from source bucket
-				srcData, err := svc.Store.Read(ctx, srcBucket, srcPath)
-				if err != nil {
-					fwCtx.Logger.Error("Failed to read activity data from enricher GCS for fallback",
-						"error", err,
-						"bucket", srcBucket,
-						"path", srcPath,
-					)
-				} else {
-					// The enricher stores the full EnrichedActivityEvent, extract just activity_data
-					var fullEvent pb.EnrichedActivityEvent
-					if err := protojson.Unmarshal(srcData, &fullEvent); err != nil {
-						fwCtx.Logger.Error("Failed to unmarshal enricher event for fallback", "error", err)
-					} else if fullEvent.ActivityData == nil {
-						fwCtx.Logger.Error("Enricher event in GCS has no activity_data")
-					} else {
-						// Marshal just the activity data
-						activityJson, err := protojson.Marshal(fullEvent.ActivityData)
-						if err != nil {
-							fwCtx.Logger.Error("Failed to marshal activity data from fallback", "error", err)
-						} else {
-							// Write to showcase bucket
-							if err := svc.Store.Write(ctx, bucketName, gcsPath, activityJson); err != nil {
-								fwCtx.Logger.Error("Failed to write activity data to showcase GCS", "error", err)
-							} else {
-								showcasedActivity.ActivityDataUri = fmt.Sprintf("gs://%s/%s", bucketName, gcsPath)
-								fwCtx.Logger.Info("Fallback copy successful - uploaded activity data to GCS",
-									"uri", showcasedActivity.ActivityDataUri,
-									"size_bytes", len(activityJson),
-								)
-							}
-						}
-					}
-				}
-			}
 		} else {
-			fwCtx.Logger.Error("Cannot upload activity data to GCS - ActivityData is nil and no ActivityDataUri available",
+			fwCtx.Logger.Warn("No ActivityDataUri available - showcase will be missing activity data",
 				"showcase_id", showcaseID,
 				"activity_id", eventPayload.ActivityId,
 			)

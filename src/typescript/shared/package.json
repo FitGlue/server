@@ -96,27 +96,69 @@
   },
   "typesVersions": {
     "*": {
-      "framework": ["dist/framework/index.d.ts"],
-      "storage": ["dist/storage/index.d.ts"],
-      "errors": ["dist/errors/index.d.ts"],
-      "execution": ["dist/execution/index.d.ts"],
-      "routing": ["dist/routing/index.d.ts"],
-      "plugin": ["dist/plugin/index.d.ts"],
-      "domain": ["dist/domain/index.d.ts"],
-      "domain/services": ["dist/domain/services/index.d.ts"],
-      "types": ["dist/types/index.d.ts"],
-      "infrastructure": ["dist/infrastructure/index.d.ts"],
-      "infrastructure/oauth": ["dist/infrastructure/oauth/index.d.ts"],
-      "infrastructure/pubsub": ["dist/infrastructure/pubsub/index.d.ts"],
-      "infrastructure/secrets": ["dist/infrastructure/secrets/index.d.ts"],
-      "integrations/strava": ["dist/integrations/strava/index.d.ts"],
-      "integrations/fitbit": ["dist/integrations/fitbit/index.d.ts"],
-      "integrations/hevy": ["dist/integrations/hevy/index.d.ts"],
-      "integrations/oura": ["dist/integrations/oura/index.d.ts"],
-      "integrations/polar": ["dist/integrations/polar/index.d.ts"],
-      "integrations/spotify": ["dist/integrations/spotify/index.d.ts"],
-      "integrations/wahoo": ["dist/integrations/wahoo/index.d.ts"],
-      "integrations/trainingpeaks": ["dist/integrations/trainingpeaks/index.d.ts"]
+      "framework": [
+        "dist/framework/index.d.ts"
+      ],
+      "storage": [
+        "dist/storage/index.d.ts"
+      ],
+      "errors": [
+        "dist/errors/index.d.ts"
+      ],
+      "execution": [
+        "dist/execution/index.d.ts"
+      ],
+      "routing": [
+        "dist/routing/index.d.ts"
+      ],
+      "plugin": [
+        "dist/plugin/index.d.ts"
+      ],
+      "domain": [
+        "dist/domain/index.d.ts"
+      ],
+      "domain/services": [
+        "dist/domain/services/index.d.ts"
+      ],
+      "types": [
+        "dist/types/index.d.ts"
+      ],
+      "infrastructure": [
+        "dist/infrastructure/index.d.ts"
+      ],
+      "infrastructure/oauth": [
+        "dist/infrastructure/oauth/index.d.ts"
+      ],
+      "infrastructure/pubsub": [
+        "dist/infrastructure/pubsub/index.d.ts"
+      ],
+      "infrastructure/secrets": [
+        "dist/infrastructure/secrets/index.d.ts"
+      ],
+      "integrations/strava": [
+        "dist/integrations/strava/index.d.ts"
+      ],
+      "integrations/fitbit": [
+        "dist/integrations/fitbit/index.d.ts"
+      ],
+      "integrations/hevy": [
+        "dist/integrations/hevy/index.d.ts"
+      ],
+      "integrations/oura": [
+        "dist/integrations/oura/index.d.ts"
+      ],
+      "integrations/polar": [
+        "dist/integrations/polar/index.d.ts"
+      ],
+      "integrations/spotify": [
+        "dist/integrations/spotify/index.d.ts"
+      ],
+      "integrations/wahoo": [
+        "dist/integrations/wahoo/index.d.ts"
+      ],
+      "integrations/trainingpeaks": [
+        "dist/integrations/trainingpeaks/index.d.ts"
+      ]
     }
   },
   "scripts": {

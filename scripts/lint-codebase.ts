@@ -2475,8 +2475,10 @@ function checkProtoImportPath(): CheckResult {
         if (!usesType) continue;
 
         const hasGoodImport = content.includes(`from '@fitglue/shared'`) ||
+          content.includes(`from '@fitglue/shared/types'`) ||
           content.includes(`from '../shared'`) ||
-          content.includes(`types/pb`);
+          content.includes(`types/pb`) ||
+          content.includes(`events-helper`);
 
         if (usesType && !hasGoodImport) {
           warnings.push(`${path.relative(SERVER_ROOT, file)}: Uses '${typeName}' but may not import from shared/types/pb`);
@@ -3003,11 +3005,11 @@ function checkSharedImportResolution(): CheckResult {
 
 /**
  * Ensures handlers use module-level imports instead of the root barrel.
- * 
+ *
  * Root barrel imports (`from '@fitglue/shared'`) include ALL modules,
  * defeating the smart pruning optimization. Handlers should use specific
  * module imports like `from '@fitglue/shared/framework'`.
- * 
+ *
  * This enables CI/CD optimization where changing one module doesn't
  * rebuild handlers that don't use it.
  */
@@ -3067,10 +3069,10 @@ function checkNoRootBarrelImports(): CheckResult {
 
 /**
  * Ensures each shared module has an index.ts barrel export.
- * 
+ *
  * Module barrel exports enable clean imports like `@fitglue/shared/framework`
  * instead of deep imports like `@fitglue/shared/dist/framework/index`.
- * 
+ *
  * This is required for the smart pruning system to work correctly.
  */
 function checkModuleBarrelExports(): CheckResult {

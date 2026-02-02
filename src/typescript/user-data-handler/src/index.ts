@@ -5,12 +5,12 @@ import { Timestamp } from 'firebase-admin/firestore';
 
 /**
  * User Data Handler - CRUD operations for enricher-stored data
- * 
+ *
  * Endpoints:
  * - GET  /counters              - List all counters
  * - POST /counters              - Create or update a counter
  * - DELETE /counters/:id        - Delete a counter
- * - GET  /personal-records      - List all personal records  
+ * - GET  /personal-records      - List all personal records
  * - POST /personal-records      - Create or update a personal record
  * - DELETE /personal-records/:type - Delete a personal record
  */
