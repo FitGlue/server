@@ -41,14 +41,10 @@ generate:
 		if [ -d "$$dir" ]; then \
 			SERVICE=$$(basename $$dir); \
 			echo "Processing $$SERVICE..."; \
-			\
-			# TypeScript Generation \
 			echo "  [TS] Generating schema.ts for $$SERVICE..."; \
 			mkdir -p $(TS_SRC_DIR)/shared/src/integrations/$${SERVICE}; \
 			cd $(TS_SRC_DIR)/shared && npx openapi-typescript ../../../$$dir/swagger.json -o src/integrations/$${SERVICE}/schema.ts; \
 			cd ../../..; \
-			\
-			# Go Generation \
 			echo "  [GO] Generating client for $$SERVICE..."; \
 			mkdir -p $(GO_SRC_DIR)/pkg/integrations/$$SERVICE; \
 			oapi-codegen -package $$SERVICE -generate types,client \
