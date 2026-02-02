@@ -176,8 +176,10 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 	client := oauth.NewClientWithErrorLogging(r.logger, "hevy", 30*time.Second)
 
 	payload := map[string]interface{}{
-		"title": exerciseName,
-		"type":  "weight_reps", // default to weight/reps for strength
+		"exercise": map[string]interface{}{
+			"title":         exerciseName,
+			"exercise_type": "weight_reps", // default to weight/reps for strength
+		},
 	}
 	body, err := json.Marshal(payload)
 	if err != nil {
@@ -224,6 +226,18 @@ func normalizeExerciseName(name string) string {
 	// Common substitutions
 	name = strings.ReplaceAll(name, "-", " ")
 	name = strings.ReplaceAll(name, "_", " ")
+	name = strings.ReplaceAll(name, "'", "") // farmer's -> farmers
+	name = strings.ReplaceAll(name, "'", "") // curly apostrophe
+
+	// Normalize synonyms for better matching
+	name = strings.ReplaceAll(name, "carry", "walk")   // farmer carry -> farmer walk
+	name = strings.ReplaceAll(name, "carries", "walk") // farmers carries -> farmers walk
+
+	// Hyrox-specific normalizations
+	name = strings.ReplaceAll(name, "skierg", "ski erg")           // SkiErg -> Ski Erg
+	name = strings.ReplaceAll(name, "wall balls", "wall ball")     // Wall Balls -> Wall Ball
+	name = strings.ReplaceAll(name, "burpee broad jump", "burpee") // Simplified to base exercise
+	name = strings.ReplaceAll(name, "sandbag lunges", "lunges")    // Simplified to base exercise
 
 	// Remove common suffixes that vary between platforms
 	suffixes := []string{"(barbell)", "(dumbbell)", "(machine)", "(cable)", "(smith)", "(outdoor)", "(treadmill)"}
