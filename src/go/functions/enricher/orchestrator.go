@@ -301,9 +301,10 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		pe.DurationMs = duration
 
 		if err != nil {
-			logger.Error(fmt.Sprintf("Provider failed: %v", provider.Name()), "name", provider.Name(), "error", err, "duration_ms", duration, "execution_id", execID)
-			// Check for retryable/wait errors
+			// Check for expected control flow errors BEFORE logging at ERROR level
+			// to prevent Sentry from capturing them as exceptions.
 			if retryErr, ok := err.(*providers.RetryableError); ok {
+				logger.Info(fmt.Sprintf("Provider requires retry: %v", provider.Name()), "name", provider.Name(), "reason", retryErr.Reason, "retry_after", retryErr.RetryAfter, "duration_ms", duration, "execution_id", execID)
 				pe.Status = "RETRY"
 				pe.Error = retryErr.Reason
 				pe.Metadata = map[string]string{
@@ -318,6 +319,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				}, retryErr
 			}
 			if waitErr, ok := err.(*user_input.WaitForInputError); ok {
+				logger.Info(fmt.Sprintf("Provider waiting for user input: %v", provider.Name()), "name", provider.Name(), "activity_id", waitErr.ActivityID, "required_fields", waitErr.RequiredFields, "duration_ms", duration, "execution_id", execID)
 				pe.Status = "WAITING"
 				pe.Metadata = map[string]string{
 					"activity_id":     waitErr.ActivityID,
@@ -327,6 +329,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr)
 			}
 
+			// This is a genuine error - log at ERROR level for Sentry capture
+			logger.Error(fmt.Sprintf("Provider failed: %v", provider.Name()), "name", provider.Name(), "error", err, "duration_ms", duration, "execution_id", execID)
 			pe.Status = "FAILED"
 			pe.Error = err.Error()
 			providerExecutions = append(providerExecutions, pe)
@@ -594,6 +598,22 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 
 func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pb.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError) (*ProcessResult, error) {
 	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID)
+
+	// SAFETY CHECK: Verify that we're not overwriting a completed pending input
+	// This can happen when resume mode falls back to regular Enrich due to status mismatch
+	existingInput, fetchErr := o.database.GetPendingInput(ctx, payload.UserId, waitErr.ActivityID)
+	if fetchErr == nil && existingInput != nil && existingInput.Status == pb.PendingInput_STATUS_COMPLETED {
+		logger.Warn("Pending input already exists and is completed - skipping creation to prevent overwrite",
+			"activity_id", waitErr.ActivityID,
+			"existing_status", existingInput.Status.String())
+		// Return WAITING status to halt pipeline, but don't overwrite the completed input
+		// This indicates a logic issue upstream that should be investigated
+		return &ProcessResult{
+			Events:             []*pb.EnrichedActivityEvent{},
+			ProviderExecutions: allExecs,
+			Status:             pb.ExecutionStatus_STATUS_WAITING,
+		}, nil
+	}
 
 	// Upload original payload to GCS for later retrieval
 	payloadUri := ""

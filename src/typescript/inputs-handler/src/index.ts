@@ -102,6 +102,11 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       const [payloadBuffer] = await storage.bucket(bucket).file(objectPath).download();
       const payload = JSON.parse(payloadBuffer.toString('utf-8')) as ActivityPayload;
 
+      // Set resume mode flags so the enricher calls EnrichResume instead of Enrich
+      // Without these, the enricher runs in normal mode and recreates the pending input
+      payload.isResume = true;
+      payload.resumePendingInputId = body.activityId;
+
       // Re-publish using CloudEventPublisher
       const publisher = new CloudEventPublisher<ActivityPayload>(
         ctx.pubsub,
