@@ -312,7 +312,8 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 		// Propagate pipeline execution ID
 		event.PipelineExecutionId = pipelineExecID
 
-		// Check if activity data should be offloaded to GCS (for large payloads)
+		// Always offload activity data to GCS for consistent behavior
+		// This ensures all destinations (especially Showcase) have access to the data
 		eventToPublish := event
 		bucketName := fwCtx.Service.Config.GCSArtifactBucket
 		if bucketName != "" {

@@ -121,18 +121,20 @@ func ShouldOffloadActivityData(activityData *pb.StandardizedActivity) bool {
 	return len(jsonBytes) > ActivityDataThreshold
 }
 
-// PrepareForPublish uploads the FULL EnrichedActivityEvent to GCS if activity_data
-// exceeds the threshold, and returns a copy of the event with activity_data_uri set
-// and activity_data cleared. The original event is not modified.
+// PrepareForPublish uploads the FULL EnrichedActivityEvent to GCS and returns a copy
+// with activity_data_uri set and activity_data cleared. The original event is not modified.
 //
 // The GCS blob contains the FULL event (including activity_data), so it can be used
 // for both Pub/Sub efficiency (consumers fetch full event) and repost functionality
 // (enriched_event_uri points to the same blob).
 //
+// We always offload to GCS to ensure consistent behavior across all activity types
+// and destinations. The minor storage/latency cost is worth the simplified logic.
+//
 // Returns the (possibly modified) event and the size uploaded (0 if not uploaded).
 func PrepareForPublish(ctx context.Context, event *pb.EnrichedActivityEvent, store shared.BlobStore, bucketName string) (*pb.EnrichedActivityEvent, int, error) {
-	if event.ActivityData == nil || !ShouldOffloadActivityData(event.ActivityData) {
-		// No offload needed, return original
+	if event.ActivityData == nil {
+		// No data to offload
 		return event, 0, nil
 	}
 
