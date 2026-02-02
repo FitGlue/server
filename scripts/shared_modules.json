@@ -7,7 +7,9 @@
         "src/config.ts"
       ],
       "always_include": true,
-      "depends_on": ["framework-errors"]
+      "depends_on": [
+        "framework-errors"
+      ]
     },
     "framework-errors": {
       "paths": [
@@ -113,6 +115,29 @@
       ],
       "depends_on": [
         "types-pb"
+      ]
+    },
+    "domain-barrel": {
+      "paths": [
+        "src/domain/index.ts"
+      ],
+      "depends_on": [
+        "services",
+        "domain-tier",
+        "domain-parsers"
+      ]
+    },
+    "infra-barrel": {
+      "paths": [
+        "src/infrastructure/index.ts"
+      ],
+      "depends_on": [
+        "infra-secrets",
+        "infra-crypto",
+        "infra-sentry",
+        "infra-http",
+        "infra-oauth",
+        "infra-pubsub"
       ]
     },
     "services": {
@@ -274,8 +299,7 @@
       "plugin"
     ],
     "@fitglue/shared/domain": [
-      "services",
-      "domain-tier"
+      "domain-barrel"
     ],
     "@fitglue/shared/domain/services": [
       "services"
@@ -284,12 +308,7 @@
       "types-barrel"
     ],
     "@fitglue/shared/infrastructure": [
-      "infra-secrets",
-      "infra-crypto",
-      "infra-sentry",
-      "infra-http",
-      "infra-oauth",
-      "infra-pubsub"
+      "infra-barrel"
     ],
     "@fitglue/shared/infrastructure/oauth": [
       "infra-oauth"

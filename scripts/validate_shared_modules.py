@@ -152,6 +152,68 @@ def validate_import_patterns(modules_config: dict) -> list[str]:
     return errors
 
 
+def validate_barrel_exports(modules_config: dict, shared_dir: Path) -> list[str]:
+    """
+    Check that package.json subpath exports have corresponding barrel modules.
+    
+    For each export like "./domain", we need to ensure src/domain/index.ts is
+    included in some module's paths. Otherwise, the pruned ZIP will be missing
+    the barrel file and TypeScript will fail to resolve the import.
+    """
+    errors = []
+    
+    # Load package.json
+    package_json_path = shared_dir / 'package.json'
+    if not package_json_path.exists():
+        return errors
+    
+    with open(package_json_path, 'r') as f:
+        package_json = json.load(f)
+    
+    exports = package_json.get('exports', {})
+    defined_paths = get_defined_paths(modules_config)
+    
+    # Subpaths that use dist/* wildcard pattern - these don't need barrel coverage
+    wildcard_patterns = [k for k in exports.keys() if '*' in k]
+    
+    for subpath, export_config in exports.items():
+        # Skip root export and wildcard patterns
+        if subpath == '.' or '*' in subpath:
+            continue
+        
+        # Extract the subpath (e.g., "./domain" -> "domain")
+        clean_subpath = subpath.lstrip('./')
+        
+        # Determine expected barrel file path
+        barrel_path = f"src/{clean_subpath}/index.ts"
+        
+        # Check if this barrel file exists on disk
+        barrel_file = shared_dir / barrel_path
+        if not barrel_file.exists():
+            # It might be a direct file export, not a directory with barrel
+            # Check if export points to a specific file
+            if isinstance(export_config, dict):
+                types_path = export_config.get('types', '')
+                if types_path and not types_path.endswith('/index.d.ts'):
+                    continue  # Direct file export, not a barrel
+            continue
+        
+        # Check if this barrel path is included in any module
+        barrel_in_modules = barrel_path in defined_paths
+        
+        # Also check if the directory is covered (some modules define the dir, not the file)
+        dir_path = f"src/{clean_subpath}"
+        dir_in_modules = dir_path in defined_paths
+        
+        if not barrel_in_modules and not dir_in_modules:
+            errors.append(
+                f"Package.json export '{subpath}' needs barrel module: "
+                f"'{barrel_path}' is not included in any module's paths"
+            )
+    
+    return errors
+
+
 def find_uncovered_directories(modules_config: dict, shared_src_dir: Path) -> list[str]:
     """Find directories in shared/src/ that don't have module definitions."""
     warnings = []
@@ -223,6 +285,10 @@ def main():
 
     # Check import patterns reference valid modules
     errors = validate_import_patterns(modules_config)
+    all_errors.extend(errors)
+
+    # Check package.json exports have corresponding barrel modules
+    errors = validate_barrel_exports(modules_config, shared_dir)
     all_errors.extend(errors)
 
     # Find uncovered directories (warnings, not errors)
