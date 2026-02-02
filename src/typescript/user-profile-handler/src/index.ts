@@ -1,13 +1,7 @@
-import {
-  createCloudFunction,
-  db,
-  FirebaseAuthStrategy,
-  ForbiddenError,
-  INTEGRATIONS,
-  IntegrationAuthType,
-  HttpError,
-  FrameworkHandler
-} from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
+import { HttpError, ForbiddenError } from '@fitglue/shared/errors';
+import { INTEGRATIONS, IntegrationAuthType } from '@fitglue/shared/types';
 
 
 

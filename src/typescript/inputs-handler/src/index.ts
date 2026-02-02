@@ -1,4 +1,12 @@
-import { createCloudFunction, db, InputStore, InputService, CloudEventPublisher, getCloudEventType, CloudEventType, getCloudEventSource, CloudEventSource, ActivityPayload, FirebaseAuthStrategy, UserStore, ForbiddenError, HttpError, FrameworkHandler, TOPICS } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
+import { HttpError, ForbiddenError } from '@fitglue/shared/errors';
+import { InputStore, UserStore } from '@fitglue/shared/storage';
+import { InputService } from '@fitglue/shared/domain/services';
+import { CloudEventPublisher } from '@fitglue/shared/infrastructure/pubsub';
+import { ActivityPayload, CloudEventType, CloudEventSource } from '@fitglue/shared/types';
+import { getCloudEventType, getCloudEventSource } from '@fitglue/shared/dist/types/events-helper';
+import { TOPICS } from '@fitglue/shared/dist/config';
 import { Storage } from '@google-cloud/storage';
 
 const storage = new Storage();

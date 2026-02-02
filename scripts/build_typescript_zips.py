@@ -4,24 +4,41 @@ Build per-handler TypeScript ZIPs for Cloud Functions deployment.
 
 Creates deterministic ZIPs with SOURCE files (Cloud Build compiles):
 - Handler's source files (src/, package.json, tsconfig.json)
-- shared/ source files
+- shared/ source files (PRUNED to only include required modules)
 - Root package.json + package-lock.json
 
 Excludes: node_modules, dist, build, coverage (Cloud Build handles these)
 
-Usage: python3 scripts/build_typescript_zips.py
+Smart Pruning:
+- Analyzes each handler's imports from @fitglue/shared
+- Only includes shared/ modules that the handler actually uses
+- Reduces ZIP sizes and prevents unnecessary rebuilds when unrelated shared code changes
+
+Usage: python3 scripts/build_typescript_zips.py [--no-prune]
 """
 import os
+import sys
 import shutil
 import zipfile
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+# Import the module analyzer
+from analyze_ts_imports import (
+    load_modules_config,
+    get_handler_imports,
+    resolve_modules,
+    get_module_paths
+)
 
 # Handlers excluded from ZIP generation (not Cloud Functions)
 EXCLUDED_DIRS = {'shared', 'admin-cli', 'mcp-server', 'node_modules', 'parkrun-fetcher'}
 
 # Patterns to exclude from ZIPs (same as Terraform archive_file)
 EXCLUDE_PATTERNS = {'node_modules', 'dist', 'build', 'coverage', '.DS_Store'}
+
+# Global flag to disable pruning (for debugging)
+ENABLE_PRUNING = True
 
 
 def get_handler_dirs(ts_src_dir: Path) -> list[str]:
@@ -62,7 +79,41 @@ def copy_filtered(src: Path, dst: Path):
             copy_filtered(item, dst_path)
 
 
-def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path) -> str:
+def copy_shared_modules(
+    shared_dir: Path,
+    dest_dir: Path,
+    required_paths: set[str],
+    modules_config: dict
+):
+    """
+    Copy only the required modules from shared/ to the destination.
+    
+    This is the key optimization - instead of copying all of shared/,
+    we only copy the paths that the handler actually imports.
+    """
+    # Always copy package.json and tsconfig.json (needed for npm workspace)
+    for config_file in ['package.json', 'tsconfig.json', 'jest.config.js', 'jest.config.base.js']:
+        src = shared_dir / config_file
+        if src.exists():
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest_dir / config_file)
+    
+    # Copy each required path
+    for rel_path in required_paths:
+        src_path = shared_dir / rel_path
+        dst_path = dest_dir / rel_path
+        
+        if not src_path.exists():
+            continue
+        
+        if src_path.is_file():
+            dst_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src_path, dst_path)
+        elif src_path.is_dir():
+            copy_filtered(src_path, dst_path)
+
+
+def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path, modules_config: dict | None = None) -> str:
     """Create a deployment zip for a TypeScript Cloud Function handler."""
     print(f"Creating zip for {handler_name}...")
 
@@ -79,9 +130,21 @@ def create_handler_zip(handler_name: str, ts_src_dir: Path, output_dir: Path) ->
     handler_dest = temp_dir / handler_name
     copy_filtered(handler_dir, handler_dest)
 
-    # Copy shared/ source files
+    # Analyze handler imports and determine required shared modules
     shared_dir = ts_src_dir / 'shared'
-    if shared_dir.exists():
+    
+    if ENABLE_PRUNING and modules_config is not None and shared_dir.exists():
+        # SMART PRUNING: Only copy modules the handler actually uses
+        deep_imports, barrel_symbols = get_handler_imports(handler_dir)
+        required_modules = resolve_modules(deep_imports, barrel_symbols, modules_config)
+        required_paths = get_module_paths(required_modules, modules_config)
+        
+        print(f"  {handler_name}: {len(required_modules)} modules, {len(required_paths)} paths")
+        
+        copy_shared_modules(shared_dir, temp_dir / 'shared', required_paths, modules_config)
+    elif shared_dir.exists():
+        # FALLBACK: Copy entire shared/ (original behavior)
+        print(f"  {handler_name}: pruning disabled, copying full shared/")
         copy_filtered(shared_dir, temp_dir / 'shared')
 
     # Generate custom package.json for this ZIP with only handler + shared as workspaces
@@ -162,9 +225,26 @@ module.exports = handler;
 
 
 def main():
+    global ENABLE_PRUNING
+    
+    # Parse command line arguments
+    if '--no-prune' in sys.argv:
+        ENABLE_PRUNING = False
+        print("Pruning DISABLED via --no-prune flag")
+    
     script_dir = Path(__file__).parent
     ts_src_dir = script_dir.parent / "src" / "typescript"
     output_dir = Path("/tmp/fitglue-function-zips")
+
+    # Load modules config for pruning
+    modules_config = None
+    if ENABLE_PRUNING:
+        try:
+            modules_config = load_modules_config(script_dir)
+            print(f"Loaded module config with {len(modules_config.get('modules', {}))} modules")
+        except Exception as e:
+            print(f"WARNING: Failed to load modules config, disabling pruning: {e}")
+            ENABLE_PRUNING = False
 
     # Discover handlers
     handlers = get_handler_dirs(ts_src_dir)
@@ -176,10 +256,11 @@ def main():
     # Create zips in parallel
     max_workers = min(8, len(handlers))  # Cap at 8 threads
     print(f"Creating ZIPs with {max_workers} parallel workers...")
+    print(f"Smart pruning: {'ENABLED' if ENABLE_PRUNING else 'DISABLED'}\n")
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {
-            executor.submit(create_handler_zip, handler, ts_src_dir, output_dir): handler
+            executor.submit(create_handler_zip, handler, ts_src_dir, output_dir, modules_config): handler
             for handler in handlers
         }
 
@@ -189,6 +270,8 @@ def main():
                 future.result()
             except Exception as e:
                 print(f"  ERROR creating {handler}: {e}")
+                import traceback
+                traceback.print_exc()
 
     print(f"\nAll {len(handlers)} TypeScript function zips created in {output_dir}")
 

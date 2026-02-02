@@ -1,4 +1,13 @@
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, generateOAuthState, getSecret, canAddConnection, countActiveConnections, HttpError, routeRequest, RouteMatch, getRegistry, IntegrationAuthType, FrameworkHandler, createHevyClient } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, FrameworkHandler } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch } from '@fitglue/shared/routing';
+import { getRegistry } from '@fitglue/shared/plugin';
+import { IntegrationAuthType } from '@fitglue/shared/types';
+import { generateOAuthState } from '@fitglue/shared/infrastructure/oauth';
+import { getSecret } from '@fitglue/shared/infrastructure';
+import { canAddConnection, countActiveConnections } from '@fitglue/shared/domain';
+import { createHevyClient } from '@fitglue/shared/integrations/hevy';
 
 
 export const handler: FrameworkHandler = async (req, ctx) => {

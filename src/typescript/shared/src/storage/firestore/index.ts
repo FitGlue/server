@@ -8,3 +8,6 @@ export { InputStore } from './inputs';
 export { ShowcaseStore } from './showcase-store';
 export { PipelineStore } from './pipeline-store';
 export { PipelineRunStore } from './pipeline-runs-store';
+
+// Export converters for advanced use cases (e.g., admin queries)
+export { userConverter } from './converters';

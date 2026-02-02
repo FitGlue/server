@@ -1,5 +1,8 @@
-import { createCloudFunction, FirebaseAuthStrategy, HttpError, ExecutionStatus, formatExecutionStatus, formatActivityType, formatActivitySource, routeRequest, RouteMatch, FrameworkHandler, FrameworkContext, RouteHandler } from '@fitglue/shared';
-import { SynchronizedActivity } from '@fitglue/shared/dist/types/pb/user';
+// Module-level imports for smart pruning
+import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, FrameworkContext } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch, RouteHandler } from '@fitglue/shared/routing';
+import { ExecutionStatus, formatExecutionStatus, formatActivityType, formatActivitySource, SynchronizedActivity } from '@fitglue/shared/types';
 
 // Helpers are now using generated formatters
 const activityTypeToString = (type: number | string | undefined | null) => formatActivityType(type);

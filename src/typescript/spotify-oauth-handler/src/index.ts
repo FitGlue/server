@@ -1,4 +1,6 @@
-import { createCloudFunction, FrameworkContext, validateOAuthState, storeOAuthTokens } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FrameworkContext } from '@fitglue/shared/framework';
+import { validateOAuthState, storeOAuthTokens } from '@fitglue/shared/infrastructure/oauth';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {

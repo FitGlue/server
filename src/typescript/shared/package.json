@@ -3,6 +3,122 @@
   "version": "1.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./framework": {
+      "types": "./dist/framework/index.d.ts",
+      "default": "./dist/framework/index.js"
+    },
+    "./storage": {
+      "types": "./dist/storage/index.d.ts",
+      "default": "./dist/storage/index.js"
+    },
+    "./errors": {
+      "types": "./dist/errors/index.d.ts",
+      "default": "./dist/errors/index.js"
+    },
+    "./execution": {
+      "types": "./dist/execution/index.d.ts",
+      "default": "./dist/execution/index.js"
+    },
+    "./routing": {
+      "types": "./dist/routing/index.d.ts",
+      "default": "./dist/routing/index.js"
+    },
+    "./plugin": {
+      "types": "./dist/plugin/index.d.ts",
+      "default": "./dist/plugin/index.js"
+    },
+    "./domain": {
+      "types": "./dist/domain/index.d.ts",
+      "default": "./dist/domain/index.js"
+    },
+    "./domain/services": {
+      "types": "./dist/domain/services/index.d.ts",
+      "default": "./dist/domain/services/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
+    },
+    "./infrastructure": {
+      "types": "./dist/infrastructure/index.d.ts",
+      "default": "./dist/infrastructure/index.js"
+    },
+    "./infrastructure/oauth": {
+      "types": "./dist/infrastructure/oauth/index.d.ts",
+      "default": "./dist/infrastructure/oauth/index.js"
+    },
+    "./infrastructure/pubsub": {
+      "types": "./dist/infrastructure/pubsub/index.d.ts",
+      "default": "./dist/infrastructure/pubsub/index.js"
+    },
+    "./infrastructure/secrets": {
+      "types": "./dist/infrastructure/secrets/index.d.ts",
+      "default": "./dist/infrastructure/secrets/index.js"
+    },
+    "./integrations/strava": {
+      "types": "./dist/integrations/strava/index.d.ts",
+      "default": "./dist/integrations/strava/index.js"
+    },
+    "./integrations/fitbit": {
+      "types": "./dist/integrations/fitbit/index.d.ts",
+      "default": "./dist/integrations/fitbit/index.js"
+    },
+    "./integrations/hevy": {
+      "types": "./dist/integrations/hevy/index.d.ts",
+      "default": "./dist/integrations/hevy/index.js"
+    },
+    "./integrations/oura": {
+      "types": "./dist/integrations/oura/index.d.ts",
+      "default": "./dist/integrations/oura/index.js"
+    },
+    "./integrations/polar": {
+      "types": "./dist/integrations/polar/index.d.ts",
+      "default": "./dist/integrations/polar/index.js"
+    },
+    "./integrations/spotify": {
+      "types": "./dist/integrations/spotify/index.d.ts",
+      "default": "./dist/integrations/spotify/index.js"
+    },
+    "./integrations/wahoo": {
+      "types": "./dist/integrations/wahoo/index.d.ts",
+      "default": "./dist/integrations/wahoo/index.js"
+    },
+    "./integrations/trainingpeaks": {
+      "types": "./dist/integrations/trainingpeaks/index.d.ts",
+      "default": "./dist/integrations/trainingpeaks/index.js"
+    },
+    "./dist/*": "./dist/*"
+  },
+  "typesVersions": {
+    "*": {
+      "framework": ["dist/framework/index.d.ts"],
+      "storage": ["dist/storage/index.d.ts"],
+      "errors": ["dist/errors/index.d.ts"],
+      "execution": ["dist/execution/index.d.ts"],
+      "routing": ["dist/routing/index.d.ts"],
+      "plugin": ["dist/plugin/index.d.ts"],
+      "domain": ["dist/domain/index.d.ts"],
+      "domain/services": ["dist/domain/services/index.d.ts"],
+      "types": ["dist/types/index.d.ts"],
+      "infrastructure": ["dist/infrastructure/index.d.ts"],
+      "infrastructure/oauth": ["dist/infrastructure/oauth/index.d.ts"],
+      "infrastructure/pubsub": ["dist/infrastructure/pubsub/index.d.ts"],
+      "infrastructure/secrets": ["dist/infrastructure/secrets/index.d.ts"],
+      "integrations/strava": ["dist/integrations/strava/index.d.ts"],
+      "integrations/fitbit": ["dist/integrations/fitbit/index.d.ts"],
+      "integrations/hevy": ["dist/integrations/hevy/index.d.ts"],
+      "integrations/oura": ["dist/integrations/oura/index.d.ts"],
+      "integrations/polar": ["dist/integrations/polar/index.d.ts"],
+      "integrations/spotify": ["dist/integrations/spotify/index.d.ts"],
+      "integrations/wahoo": ["dist/integrations/wahoo/index.d.ts"],
+      "integrations/trainingpeaks": ["dist/integrations/trainingpeaks/index.d.ts"]
+    }
+  },
   "scripts": {
     "test": "jest",
     "lint": "eslint src --ext .ts",

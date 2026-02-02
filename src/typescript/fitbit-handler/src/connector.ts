@@ -1,4 +1,8 @@
-import { BaseConnector, ConnectorConfig, IngestStrategy, StandardizedActivity, CloudEventSource, ActivitySource, createFitbitClient, mapTCXToStandardized, FrameworkContext, ActivityType, FrameworkResponse } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { BaseConnector, ConnectorConfig, IngestStrategy, FrameworkContext, FrameworkResponse } from '@fitglue/shared/framework';
+import { StandardizedActivity, CloudEventSource, ActivitySource, ActivityType } from '@fitglue/shared/types';
+import { createFitbitClient } from '@fitglue/shared/integrations/fitbit';
+import { mapTCXToStandardized } from '@fitglue/shared/domain';
 
 interface FitbitNotification {
   collectionType: string;

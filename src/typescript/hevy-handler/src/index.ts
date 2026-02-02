@@ -1,4 +1,5 @@
-import { createCloudFunction, createWebhookProcessor, ApiKeyStrategy } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, createWebhookProcessor, ApiKeyStrategy } from '@fitglue/shared/framework';
 import { HevyConnector } from './connector';
 
 // The HevyConnector encapsulates specific logic (ID extraction, API interaction, Mapping).

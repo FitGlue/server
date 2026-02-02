@@ -1,4 +1,5 @@
-import { AuthStrategy, AuthResult, FrameworkContext } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { AuthStrategy, AuthResult, FrameworkContext } from '@fitglue/shared/framework';
 
 
 export class FitbitVerificationStrategy implements AuthStrategy {

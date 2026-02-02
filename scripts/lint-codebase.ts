@@ -61,6 +61,8 @@ const ERROR_RULES = new Set([
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14', 'G15',
   // TypeScript
   'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14', 'T15', 'T16', 'T17', 'T51', 'T52', 'T53',
+  'T20', // Module barrel exports required for smart pruning
+  // Note: T19 (No Root Barrel) is WARNING only to allow gradual migration
   // Cross-Language
   'X1', 'X2', 'X3', 'X4',
   // Web
@@ -2995,6 +2997,130 @@ function checkSharedImportResolution(): CheckResult {
   };
 }
 
+// ============================================================================
+// Check T19: No Root Barrel Imports
+// ============================================================================
+
+/**
+ * Ensures handlers use module-level imports instead of the root barrel.
+ * 
+ * Root barrel imports (`from '@fitglue/shared'`) include ALL modules,
+ * defeating the smart pruning optimization. Handlers should use specific
+ * module imports like `from '@fitglue/shared/framework'`.
+ * 
+ * This enables CI/CD optimization where changing one module doesn't
+ * rebuild handlers that don't use it.
+ */
+function checkNoRootBarrelImports(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Get all handler directories
+  const handlerDirs = getDirectories(TS_SRC_DIR).filter(
+    d => !NON_FUNCTION_PACKAGES.includes(d)
+  );
+
+  // Pattern for root barrel imports (not followed by /)
+  const rootBarrelPattern = /from\s+['"]@fitglue\/shared['"](?!\s*\/)/g;
+
+  for (const dir of handlerDirs) {
+    const srcDir = path.join(TS_SRC_DIR, dir, 'src');
+    if (!fs.existsSync(srcDir)) continue;
+
+    const tsFiles = getFilesRecursive(srcDir, '.ts');
+    for (const file of tsFiles) {
+      // Skip test files
+      if (file.endsWith('.test.ts') || file.endsWith('.spec.ts')) continue;
+
+      const content = fs.readFileSync(file, 'utf-8');
+      const lines = content.split('\n');
+
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        // Skip comments
+        if (line.trim().startsWith('//')) continue;
+
+        if (rootBarrelPattern.test(line)) {
+          const relativePath = path.relative(TS_SRC_DIR, file);
+          warnings.push(
+            `${relativePath}:${i + 1}: Uses root barrel import '@fitglue/shared'. ` +
+            `Use module imports like '@fitglue/shared/framework' for smart pruning.`
+          );
+        }
+        // Reset regex lastIndex
+        rootBarrelPattern.lastIndex = 0;
+      }
+    }
+  }
+
+  return {
+    name: 'No Root Barrel Imports (T19)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check T20: Module Barrel Exports
+// ============================================================================
+
+/**
+ * Ensures each shared module has an index.ts barrel export.
+ * 
+ * Module barrel exports enable clean imports like `@fitglue/shared/framework`
+ * instead of deep imports like `@fitglue/shared/dist/framework/index`.
+ * 
+ * This is required for the smart pruning system to work correctly.
+ */
+function checkModuleBarrelExports(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const sharedSrcDir = path.join(TS_SRC_DIR, 'shared/src');
+  if (!fs.existsSync(sharedSrcDir)) {
+    return { name: 'Module Barrel Exports (T20)', passed: true, errors, warnings: ['shared/src not found'] };
+  }
+
+  // Modules that MUST have barrel exports (from shared_modules.json)
+  const requiredModules = [
+    'framework',
+    'storage',
+    'errors',
+    'execution',
+    'routing',
+    'plugin',
+    'domain',
+    'domain/services',
+    'types',
+    'infrastructure',
+    'infrastructure/oauth',
+    'infrastructure/pubsub',
+    'infrastructure/secrets',
+    'integrations/strava',
+    'integrations/fitbit',
+    'integrations/hevy',
+    'integrations/oura',
+    'integrations/polar',
+    'integrations/spotify',
+    'integrations/wahoo',
+    'integrations/trainingpeaks',
+  ];
+
+  for (const modulePath of requiredModules) {
+    const indexPath = path.join(sharedSrcDir, modulePath, 'index.ts');
+    if (!fs.existsSync(indexPath)) {
+      errors.push(`shared/src/${modulePath}/index.ts missing - required for module imports`);
+    }
+  }
+
+  return {
+    name: 'Module Barrel Exports (T20)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
 
 function checkDateHandling(): CheckResult {
   const errors: string[] = [];
@@ -4645,6 +4771,8 @@ function main(): void {
         { id: 'T51', fn: () => ({ ...checkHandlerPackageJsonProperties(), name: 'T51: Handler package.json Properties' }) },
         { id: 'T52', fn: () => ({ ...checkHandlerTsConfigExactMatch(), name: 'T52: Handler tsconfig.json Exact Match' }) },
         { id: 'T53', fn: () => ({ ...checkHandlerJestConfigExactMatch(), name: 'T53: Handler jest.config.js Exact Match' }) },
+        { id: 'T19', fn: () => ({ ...checkNoRootBarrelImports(), name: 'T19: No Root Barrel Imports' }) },
+        { id: 'T20', fn: () => ({ ...checkModuleBarrelExports(), name: 'T20: Module Barrel Exports' }) },
       ]
     },
     {

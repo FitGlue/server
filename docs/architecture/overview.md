@@ -241,6 +241,7 @@ All function executions are logged to Firestore for debugging:
 
 - [Plugin System](plugin-system.md) - How plugins work
 - [Services & Stores](services-and-stores.md) - Business logic architecture
+- [Shared Modules](shared-modules.md) - TypeScript shared package architecture
 - [Execution Logging](execution-logging.md) - Observability framework
 - [Security](security.md) - Authorization and access control
 - [Connectors](connectors.md) - Source integration patterns

@@ -1,4 +1,7 @@
-import { BaseConnector, ConnectorConfig, IngestStrategy, StandardizedActivity, Session, StrengthSet, MuscleGroup, CloudEventSource, ActivitySource, createHevyClient, FrameworkContext, ActivityType } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { BaseConnector, ConnectorConfig, IngestStrategy, FrameworkContext } from '@fitglue/shared/framework';
+import { StandardizedActivity, Session, StrengthSet, MuscleGroup, CloudEventSource, ActivitySource, ActivityType } from '@fitglue/shared/types';
+import { createHevyClient } from '@fitglue/shared/integrations/hevy';
 import type { components } from '@fitglue/shared/dist/integrations/hevy/schema';
 
 // Define Hevy-specific types

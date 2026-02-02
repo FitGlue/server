@@ -1,4 +1,6 @@
-import { createCloudFunction, FirebaseAuthStrategy, HttpError, FrameworkHandler, db } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
 import { Timestamp } from 'firebase-admin/firestore';
 
 /**

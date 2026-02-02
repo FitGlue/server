@@ -3,10 +3,14 @@ import * as winston from 'winston';
 import { Request } from 'express';
 import { logExecutionStart, logExecutionSuccess, logExecutionFailure, logExecutionPending } from '../execution/logger';
 import { AuthStrategy } from './auth';
+
+// Re-export framework components
 export * from './connector';
 export * from './base-connector';
 export * from './webhook-processor';
 export * from './errors';
+export * from './auth';
+export * from './auth-strategies';
 import { PubSub } from '@google-cloud/pubsub';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore, PipelineStore, PipelineRunStore } from '../storage/firestore';

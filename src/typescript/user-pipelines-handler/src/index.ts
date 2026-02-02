@@ -1,6 +1,8 @@
-import { createCloudFunction, FirebaseAuthStrategy, HttpError, routeRequest, RouteMatch, FrameworkHandler, FrameworkContext } from '@fitglue/shared';
-import { PipelineConfig, EnricherConfig } from '@fitglue/shared/dist/types/pb/user';
-import { Destination } from '@fitglue/shared/dist/types/pb/events';
+// Module-level imports for smart pruning
+import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, FrameworkContext } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch } from '@fitglue/shared/routing';
+import { PipelineConfig, EnricherConfig, Destination } from '@fitglue/shared/types';
 
 export const handler: FrameworkHandler = async (req, ctx) => {
   const userId = ctx.userId;

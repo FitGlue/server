@@ -1,19 +1,13 @@
-import {
-  ShowcaseStore,
-  type StandardizedActivity,
-  type ActivityType,
-  type ActivitySource,
-  getEnricherManifest,
-  getEffectiveTier,
-  createCloudFunction,
-  FrameworkResponse,
-  HttpError,
-  FrameworkContext,
-  routeRequest,
-  db
-} from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FrameworkContext, FrameworkResponse, db } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest } from '@fitglue/shared/routing';
+import { ShowcaseStore } from '@fitglue/shared/storage';
+import { getEnricherManifest } from '@fitglue/shared/plugin';
+import { getEffectiveTier } from '@fitglue/shared/domain';
+import type { StandardizedActivity, ActivityType, ActivitySource } from '@fitglue/shared/types';
+import { EnricherProviderType, UserRecord } from '@fitglue/shared/types';
 import * as admin from 'firebase-admin';
-import { EnricherProviderType, UserRecord } from '@fitglue/shared/dist/types/pb/user';
 import { Request } from 'express';
 
 /**

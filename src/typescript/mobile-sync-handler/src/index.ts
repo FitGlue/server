@@ -6,13 +6,9 @@
  * stores them directly, and triggers async processing.
  */
 
-import {
-  createCloudFunction,
-  FrameworkContext,
-  FirebaseAuthStrategy,
-  db,
-  HttpError,
-} from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, db } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
 import { Request } from 'express';
 import {
   MobileSyncRequest,

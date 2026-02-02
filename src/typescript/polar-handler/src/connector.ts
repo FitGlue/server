@@ -1,14 +1,6 @@
-import {
-  BaseConnector,
-  ConnectorConfig,
-  IngestStrategy,
-  StandardizedActivity,
-  CloudEventSource,
-  ActivitySource,
-  FrameworkContext,
-  ActivityType,
-  FrameworkResponse
-} from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { BaseConnector, ConnectorConfig, IngestStrategy, FrameworkContext, FrameworkResponse } from '@fitglue/shared/framework';
+import { StandardizedActivity, CloudEventSource, ActivitySource, ActivityType } from '@fitglue/shared/types';
 
 /**
  * Polar webhook notification payload structure.

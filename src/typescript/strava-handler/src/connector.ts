@@ -1,15 +1,7 @@
-import {
-  BaseConnector,
-  ConnectorConfig,
-  IngestStrategy,
-  StandardizedActivity,
-  CloudEventSource,
-  ActivitySource,
-  createStravaClient,
-  FrameworkContext,
-  ActivityType,
-  FrameworkResponse
-} from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { BaseConnector, ConnectorConfig, IngestStrategy, FrameworkContext, FrameworkResponse } from '@fitglue/shared/framework';
+import { StandardizedActivity, CloudEventSource, ActivitySource, ActivityType } from '@fitglue/shared/types';
+import { createStravaClient } from '@fitglue/shared/integrations/strava';
 
 /**
  * Strava Webhook Event payload structure

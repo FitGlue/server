@@ -1,29 +1,24 @@
 import { Command } from 'commander';
 import inquirer from 'inquirer';
+// Module-level imports for smart pruning
+import { db } from '@fitglue/shared/framework';
+import { UserStore, ActivityStore, ApiKeyStore, ExecutionStore, PipelineStore } from '@fitglue/shared/storage';
+import { UserService, ApiKeyService, ExecutionService } from '@fitglue/shared/domain/services';
 import {
-    UserService,
-    ApiKeyService,
-    ExecutionService,
-    UserStore,
-    ActivityStore,
-    ApiKeyStore,
-    ExecutionStore,
-    PipelineStore,
     EnricherProviderType,
     Destination,
-    db,
-    createFitbitClient,
     UserRecord,
     ExecutionStatus,
     ActivityType,
     EnricherConfig,
     PipelineConfig,
     ExecutionRecord,
-    INTEGRATIONS,
     UserIntegrations,
     formatActivityType,
     formatDestination,
-} from '@fitglue/shared';
+} from '@fitglue/shared/types';
+import { INTEGRATIONS } from '@fitglue/shared/plugin';
+import { createFitbitClient } from '@fitglue/shared/integrations/fitbit';
 
 
 import * as admin from 'firebase-admin';
@@ -531,7 +526,7 @@ program.command('users:get')
         }
     });
 
-import { generateOAuthState } from '@fitglue/shared';
+import { generateOAuthState } from '@fitglue/shared/infrastructure/oauth';
 
 program.command('users:connect')
     .argument('<userId>', 'User ID to connect')

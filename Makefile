@@ -11,7 +11,7 @@ GO_SRC_DIR=src/go
 TS_SRC_DIR=src/typescript
 
 # --- Phony Targets ---
-.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase tools build-tools-go build-tools-ts
+.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase lint-shared-modules tools build-tools-go build-tools-ts prepare prepare-go prepare-ts
 
 all: generate clean lint build test
 
@@ -194,7 +194,7 @@ test:
 
 # P3: Parallel lint - Go, TS, and codebase checks can run concurrently
 lint:
-	@$(MAKE) -j4 lint-go lint-ts lint-codebase
+	@$(MAKE) -j4 lint-go lint-ts lint-codebase lint-shared-modules
 
 prepare: prepare-go
 # P4: Parallel clean
@@ -212,6 +212,12 @@ lint-verbose:
 	@echo "Running codebase consistency checks (verbose)..."
 	@npm install --silent
 	@npx ts-node scripts/lint-codebase.ts --verbose
+
+# --- Shared Modules Validation ---
+# Ensures shared_modules.json stays in sync with the codebase
+lint-shared-modules:
+	@echo "Validating shared_modules.json..."
+	@python3 scripts/validate_shared_modules.py
 
 
 # --- Plugin Scaffolding ---

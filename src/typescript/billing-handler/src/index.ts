@@ -1,4 +1,8 @@
-import { createCloudFunction, FirebaseAuthStrategy, db, UserTier, FrameworkHandler, HttpError, routeRequest, RouteMatch, FrameworkContext, RoutableRequest } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, FrameworkContext, db } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch, RoutableRequest } from '@fitglue/shared/routing';
+import { UserTier } from '@fitglue/shared/types';
 import Stripe from 'stripe';
 
 let stripe: Stripe;

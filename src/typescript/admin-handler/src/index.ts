@@ -1,23 +1,18 @@
+// Module-level imports for smart pruning
+import { createCloudFunction, FirebaseAuthStrategy, FrameworkContext, FrameworkHandler, db } from '@fitglue/shared/framework';
+import { HttpError, ForbiddenError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch } from '@fitglue/shared/routing';
+import { userConverter } from '@fitglue/shared/storage';
 import {
-  createCloudFunction,
-  FirebaseAuthStrategy,
-  FrameworkContext,
-  FrameworkHandler,
-  ForbiddenError,
-  db,
-  userConverter,
   UserTier,
   UserRecord,
-  HttpError,
   ExecutionStatus,
   formatExecutionStatus,
   formatDestination,
   formatActivitySource,
   formatPipelineRunStatus,
   PendingInput_Status,
-  routeRequest,
-  RouteMatch,
-} from '@fitglue/shared';
+} from '@fitglue/shared/types';
 import * as admin from 'firebase-admin';
 
 /**

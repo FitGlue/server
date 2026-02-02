@@ -30,6 +30,64 @@ The `lint-codebase` step runs automated consistency checks:
 
 See `scripts/lint-codebase.ts` for implementation details.
 
+### Shared Modules Linter
+
+The `lint-shared-modules` step validates that `shared_modules.json` is in sync with the codebase:
+
+| Check | Description |
+|-------|-------------|
+| Paths Exist | All defined module paths actually exist |
+| Valid Dependencies | All module dependencies reference valid modules |
+| Import Patterns | All import patterns reference valid modules |
+| Coverage | Warns if new directories lack module definitions |
+
+See `scripts/validate_shared_modules.py` for implementation details.
+
+### Smart Pruning
+
+Both Go and TypeScript function ZIPs use **smart pruning** to minimize unnecessary rebuilds by only including the shared code each function actually needs.
+
+#### TypeScript Pruning
+
+TypeScript handlers are analyzed to determine which `@fitglue/shared` modules they import:
+
+1. **Analysis**: Each handler's imports are analyzed by `analyze_ts_imports.py`
+2. **Module Resolution**: Imports map to modules defined in `shared_modules.json`
+3. **Selective Copying**: Only required shared modules are included in the ZIP
+4. **Deterministic Hashing**: Terraform's `filemd5()` detects actual changes
+
+**Requirements**: Handlers should use module-level imports for maximum benefit:
+```typescript
+// ✅ Enables pruning
+import { createCloudFunction } from '@fitglue/shared/framework';
+
+// ⚠️ Includes everything (no pruning benefit)
+import { createCloudFunction } from '@fitglue/shared';
+```
+
+See [Shared Modules Architecture](../architecture/shared-modules.md) for details.
+
+#### Go Pruning
+
+Go functions are analyzed using `go list -deps` to determine which `pkg/` packages they import:
+
+1. **Analysis**: Each function's transitive dependencies are resolved via `go list`
+2. **Filtering**: Only `pkg/` imports are considered (external dependencies come from `go.mod`)
+3. **Selective Copying**: Only required `pkg/` subdirectories are included in the ZIP
+4. **Deterministic Hashing**: Terraform's `filemd5()` detects actual changes
+
+**Impact**: Go ZIP sizes reduced by ~67% (4.8 MB → 1.6 MB total across 12 functions).
+
+| Function | Without Pruning | With Pruning | Reduction |
+|----------|----------------|--------------|-----------|
+| `fit-parser-handler` | 388 KB | 103 KB | 73% |
+| `router` | 388 KB | 105 KB | 73% |
+| `enricher` | 546 KB | 329 KB | 40% |
+
+Scripts:
+- `scripts/analyze_go_imports.py` - Analyze Go function dependencies
+- `scripts/build_function_zips.py` - Build Go ZIPs with pruning (use `--no-prune` to disable)
+
 All three environments (Dev, Test, Prod) are configured with OIDC authentication.
 
 ## Setting Up OIDC for a New Environment

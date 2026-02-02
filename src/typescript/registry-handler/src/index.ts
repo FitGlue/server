@@ -1,4 +1,8 @@
-import { createCloudFunction, getRegistry, PROJECT_ID, HttpError, FrameworkHandler } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FrameworkHandler } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
+import { getRegistry } from '@fitglue/shared/plugin';
+import { PROJECT_ID } from '@fitglue/shared/dist/config';
 
 /**
  * Registry Handler

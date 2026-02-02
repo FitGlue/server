@@ -1,14 +1,7 @@
-import {
-  BaseConnector,
-  ConnectorConfig,
-  IngestStrategy,
-  StandardizedActivity,
-  CloudEventSource,
-  ActivitySource,
-  FrameworkContext,
-  ActivityType,
-  createOuraClient
-} from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { BaseConnector, ConnectorConfig, IngestStrategy, FrameworkContext } from '@fitglue/shared/framework';
+import { StandardizedActivity, CloudEventSource, ActivitySource, ActivityType } from '@fitglue/shared/types';
+import { createOuraClient } from '@fitglue/shared/integrations/oura';
 
 /**
  * Oura Webhook Event payload structure

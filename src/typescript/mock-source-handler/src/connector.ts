@@ -1,4 +1,6 @@
-import { BaseConnector, ConnectorConfig, IngestStrategy, StandardizedActivity, CloudEventSource, ActivitySource, FrameworkContext, ActivityType } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { BaseConnector, ConnectorConfig, IngestStrategy, FrameworkContext } from '@fitglue/shared/framework';
+import { StandardizedActivity, CloudEventSource, ActivitySource, ActivityType } from '@fitglue/shared/types';
 
 // Mock specific config (none needed beyond base for now)
 export interface MockConnectorConfig extends ConnectorConfig {

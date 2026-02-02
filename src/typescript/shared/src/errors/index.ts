@@ -19,6 +19,12 @@
  * ```
  */
 
+// Re-export HTTP-level errors from framework
+export { HttpError } from '../framework/errors';
+
+// Re-export domain-level errors
+export { ForbiddenError } from '../domain/services/authorization';
+
 /**
  * Error codes matching the Go implementation.
  * Use these as stable identifiers for error categorization.

@@ -1,4 +1,5 @@
-import { createCloudFunction, createWebhookProcessor, PayloadUserStrategy } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, createWebhookProcessor, PayloadUserStrategy } from '@fitglue/shared/framework';
 import { OuraConnector, OuraWebhookEvent } from './connector';
 
 export const ouraWebhookHandler = createCloudFunction(

@@ -1,4 +1,6 @@
-import { createCloudFunction, HttpError, FrameworkHandler } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FrameworkHandler } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
 import * as admin from 'firebase-admin';
 
 // Initialize Firebase Admin (Wrapped in createCloudFunction but good to have if side effects used)

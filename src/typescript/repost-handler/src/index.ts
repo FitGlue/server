@@ -7,7 +7,10 @@
  * - POST /api/repost/full-pipeline      - Full pipeline re-execution
  */
 
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, getEffectiveTier, HttpError, FrameworkHandler } from '@fitglue/shared';
+// Module-level imports for smart pruning
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, FrameworkHandler } from '@fitglue/shared/framework';
+import { HttpError } from '@fitglue/shared/errors';
+import { getEffectiveTier } from '@fitglue/shared/domain';
 import { TOPICS } from '@fitglue/shared/dist/config';
 import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
 import { PubSub } from '@google-cloud/pubsub';
