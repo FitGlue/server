@@ -169,7 +169,11 @@ describe('inputs-handler', () => {
       expect(mockInputService.getPendingInput).toHaveBeenCalledWith('user-1', 'act-1');
       expect(mockInputService.resolveInput).toHaveBeenCalledWith('user-1', 'act-1', 'user-1', { title: 'New Title' });
       expect(mockGcsDownload).toHaveBeenCalled();
-      expect(mockPublish).toHaveBeenCalledWith(mockPayload);
+      expect(mockPublish).toHaveBeenCalledWith({
+        ...mockPayload,
+        isResume: true,
+        resumePendingInputId: 'act-1',
+      });
       expect(result).toEqual({ success: true });
     });
 
