@@ -1,7 +1,7 @@
 import { Command } from 'commander';
-import { db } from '@fitglue/shared/dist/framework';
-import { InputStore } from '@fitglue/shared/dist/storage/firestore';
-import { InputService } from '@fitglue/shared/dist/domain/services';
+import { db } from '@fitglue/shared/framework';
+import { InputStore } from '@fitglue/shared/storage';
+import { InputService } from '@fitglue/shared/domain/services';
 import { PubSub } from '@google-cloud/pubsub';
 import { Storage } from '@google-cloud/storage';
 import inquirer from 'inquirer';

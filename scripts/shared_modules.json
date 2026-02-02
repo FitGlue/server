@@ -3,8 +3,7 @@
   "modules": {
     "core": {
       "paths": [
-        "src/errors",
-        "src/config.ts"
+        "src/errors"
       ],
       "always_include": true,
       "depends_on": [

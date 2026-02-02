@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { UserService } from '@fitglue/shared/dist/domain/services/user';
+import { UserService } from '@fitglue/shared/domain/services';
 
 export function addActivitiesCommands(program: Command, userService: UserService) {
   program.command('activities:list-processed <userId>')

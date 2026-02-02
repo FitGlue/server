@@ -17,7 +17,7 @@ import {
     formatActivityType,
     formatDestination,
 } from '@fitglue/shared/types';
-import { INTEGRATIONS } from '@fitglue/shared/plugin';
+import { INTEGRATIONS, ConfigurableField } from '@fitglue/shared/types';
 import { createFitbitClient } from '@fitglue/shared/integrations/fitbit';
 
 
@@ -213,7 +213,7 @@ program.command('users:configure-integration')
 
             // Dynamic prompts
             if (definition.configurableFields.length > 0) {
-                const prompts = definition.configurableFields.map(field => ({
+                const prompts = definition.configurableFields.map((field: ConfigurableField) => ({
                     type: field.type === 'password' ? 'password' : (field.type === 'boolean' ? 'confirm' : 'input'),
                     name: field.field,
                     message: `${field.name}:`,
@@ -379,6 +379,9 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE]: 'Muscle Heatmap Image',
         [EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL]: 'Route Thumbnail',
         [EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER]: 'AI Banner',
+        [EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE]: 'FIT File Heart Rate',
+        [EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER]: 'Hybrid Race Tagger',
+        [EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS]: 'Running Dynamics',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };

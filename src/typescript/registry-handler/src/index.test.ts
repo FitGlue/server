@@ -39,11 +39,6 @@ jest.mock('@fitglue/shared/plugin', () => ({
   })),
 }));
 
-// Mock @fitglue/shared/dist/config
-jest.mock('@fitglue/shared/dist/config', () => ({
-  PROJECT_ID: 'fitglue-server-dev',
-}));
-
 // Import FrameworkContext type
 import type { FrameworkContext } from '@fitglue/shared/framework';
 

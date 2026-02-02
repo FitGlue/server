@@ -1,11 +1,11 @@
 import { CloudEvent } from 'cloudevents';
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-import { UserService } from '@fitglue/shared/dist/domain/services/user';
+import { UserService } from '@fitglue/shared/domain/services';
 
 // Initialize Firebase Admin
 initializeApp();
-import { UserStore, ActivityStore, PipelineStore } from '@fitglue/shared/dist/storage/firestore';
+import { UserStore, ActivityStore, PipelineStore } from '@fitglue/shared/storage';
 
 
 // Initialize Firebase Admin

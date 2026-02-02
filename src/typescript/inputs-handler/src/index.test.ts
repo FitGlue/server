@@ -50,22 +50,13 @@ jest.mock('@fitglue/shared/infrastructure/pubsub', () => ({
   CloudEventPublisher: jest.fn(),
 }));
 
-// Mock @fitglue/shared/types
+// Mock @fitglue/shared/types - includes events helper functions
 jest.mock('@fitglue/shared/types', () => ({
   ActivityPayload: {},
-  CloudEventType: { ACTIVITY_ENRICHMENT: 1 },
-  CloudEventSource: { FITGLUE_INPUT_RESUME: 1 },
-}));
-
-// Mock @fitglue/shared/dist/types/events-helper
-jest.mock('@fitglue/shared/dist/types/events-helper', () => ({
+  CloudEventType: { CLOUD_EVENT_TYPE_INPUT_RESOLVED: 1 },
+  CloudEventSource: { CLOUD_EVENT_SOURCE_INPUTS_HANDLER: 1 },
   getCloudEventType: jest.fn(() => 'activity-enrichment'),
   getCloudEventSource: jest.fn(() => 'fitglue-input-resume'),
-}));
-
-// Mock @fitglue/shared/dist/config
-jest.mock('@fitglue/shared/dist/config', () => ({
-  TOPICS: { PIPELINE_ACTIVITY: 'pipeline-activity' },
 }));
 
 import { CloudEventPublisher } from '@fitglue/shared/infrastructure/pubsub';

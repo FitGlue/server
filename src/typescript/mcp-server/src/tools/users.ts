@@ -1,9 +1,8 @@
 
 import * as admin from 'firebase-admin';
 import { adminDb as db } from '../firebase';
-import { UserService } from '@fitglue/shared/dist/domain/services/user';
-import { ApiKeyService } from '@fitglue/shared/dist/domain/services/apikey';
-import { UserStore, ActivityStore, ApiKeyStore, PipelineStore } from '@fitglue/shared/dist/storage/firestore';
+import { UserService, ApiKeyService } from '@fitglue/shared/domain/services';
+import { UserStore, ActivityStore, ApiKeyStore, PipelineStore } from '@fitglue/shared/storage';
 import { generateOAuthState } from '@fitglue/shared/infrastructure/oauth';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';

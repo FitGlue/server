@@ -11,8 +11,7 @@
 import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, FrameworkHandler } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { getEffectiveTier } from '@fitglue/shared/domain';
-import { TOPICS } from '@fitglue/shared/dist/config';
-import { parseDestination, getDestinationName } from '@fitglue/shared/dist/types/events-helper';
+import { parseDestination, getDestinationName } from '@fitglue/shared/types';
 import { PubSub } from '@google-cloud/pubsub';
 import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
@@ -248,7 +247,7 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
   // Wrap in CloudEvent envelope matching Go enricher format
   const cloudEvent = createCloudEvent(repostData);
   const messageData = Buffer.from(JSON.stringify(cloudEvent));
-  await pubsub.topic(TOPICS.ENRICHED_ACTIVITY).publishMessage({
+  await pubsub.topic('topic-enriched-activity').publishMessage({
     data: messageData,
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
@@ -358,7 +357,7 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
   // Wrap in CloudEvent envelope matching Go enricher format
   const cloudEvent = createCloudEvent(repostData);
   const messageData = Buffer.from(JSON.stringify(cloudEvent));
-  await pubsub.topic(TOPICS.ENRICHED_ACTIVITY).publishMessage({
+  await pubsub.topic('topic-enriched-activity').publishMessage({
     data: messageData,
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
@@ -476,7 +475,7 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
   // Wrap in CloudEvent envelope matching Go enricher format
   const cloudEvent = createCloudEvent(repostPayload, 'com.fitglue.activity.pipeline');
   const messageData = Buffer.from(JSON.stringify(cloudEvent));
-  await pubsub.topic(TOPICS.PIPELINE_ACTIVITY).publishMessage({
+  await pubsub.topic('topic-pipeline-activity').publishMessage({
     data: messageData,
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,

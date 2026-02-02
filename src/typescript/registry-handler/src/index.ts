@@ -2,7 +2,9 @@
 import { createCloudFunction, FrameworkHandler } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { getRegistry } from '@fitglue/shared/plugin';
-import { PROJECT_ID } from '@fitglue/shared/dist/config';
+
+// Get project ID for environment detection
+const projectId = process.env.GCP_PROJECT || 'fitglue-server-dev';
 
 /**
  * Registry Handler
@@ -21,10 +23,10 @@ import { PROJECT_ID } from '@fitglue/shared/dist/config';
  * - prod: fitglue.tech
  */
 function getShowcaseBaseUrl(): string {
-  if (PROJECT_ID.includes('-dev')) {
+  if (projectId.includes('-dev')) {
     return 'https://dev.fitglue.tech';
   }
-  if (PROJECT_ID.includes('-test')) {
+  if (projectId.includes('-test')) {
     return 'https://test.fitglue.tech';
   }
   // Production (no suffix or unknown)

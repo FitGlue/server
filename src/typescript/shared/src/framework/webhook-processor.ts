@@ -6,7 +6,6 @@ import { CloudEventPublisher } from '../infrastructure/pubsub/cloud-event-publis
 import { CloudEventType } from '../types/pb/events';
 import { ExecutionStatus } from '../types/pb/execution';
 import { getCloudEventSource, getCloudEventType, getCorrespondingDestination } from '../types/events-helper';
-import { TOPICS } from '../config';
 
 /**
  * ConnectorConstructor defines the static shape of a Connector class.
@@ -206,7 +205,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
 
       const publisher = new CloudEventPublisher<ActivityPayload>(
         ctx.pubsub,
-        TOPICS.RAW_ACTIVITY,
+        'topic-raw-activity',
         getCloudEventSource(connector.cloudEventSource),
         getCloudEventType(CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_CREATED),
         logger

@@ -4,15 +4,13 @@ import { HttpError, ForbiddenError } from '@fitglue/shared/errors';
 import { InputStore, UserStore } from '@fitglue/shared/storage';
 import { InputService } from '@fitglue/shared/domain/services';
 import { CloudEventPublisher } from '@fitglue/shared/infrastructure/pubsub';
-import { ActivityPayload, CloudEventType, CloudEventSource } from '@fitglue/shared/types';
-import { getCloudEventType, getCloudEventSource } from '@fitglue/shared/dist/types/events-helper';
-import { TOPICS } from '@fitglue/shared/dist/config';
+import { ActivityPayload, CloudEventType, CloudEventSource, getCloudEventType, getCloudEventSource } from '@fitglue/shared/types';
 import { Storage } from '@google-cloud/storage';
 
 const storage = new Storage();
 
-// PubSub topic for resume: PIPELINE_ACTIVITY (bypasses splitter since pipelineId is already set)
-const TOPIC = TOPICS.PIPELINE_ACTIVITY;
+// PubSub topic for resume: Pipeline activity topic (bypasses splitter since pipelineId is already set)
+const RESUME_TOPIC = 'topic-pipeline-activity';
 
 
 interface ResolveInputRequest {
@@ -129,7 +127,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       // Re-publish using CloudEventPublisher
       const publisher = new CloudEventPublisher<ActivityPayload>(
         ctx.pubsub,
-        TOPIC,
+        RESUME_TOPIC,
         getCloudEventSource(CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER), // Source
         getCloudEventType(CloudEventType.CLOUD_EVENT_TYPE_INPUT_RESOLVED), // Type
         ctx.logger
@@ -137,7 +135,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
 
       await publisher.publish(payload);
 
-      ctx.logger.info('Resolved and re-published activity to enricher', { activityId: body.activityId, topic: TOPIC });
+      ctx.logger.info('Resolved and re-published activity to enricher', { activityId: body.activityId, topic: RESUME_TOPIC });
       return { success: true };
 
     } catch (e: unknown) {
