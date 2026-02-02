@@ -2,10 +2,8 @@ import { handler } from './index';
 import { CloudEventPublisher } from '@fitglue/shared/dist/infrastructure/pubsub';
 
 // Mock shared dependencies
-jest.mock('@fitglue/shared', () => {
-  const original = jest.requireActual('@fitglue/shared');
+jest.mock('@fitglue/shared/dist/infrastructure/pubsub', () => {
   return {
-    ...original,
     CloudEventPublisher: jest.fn(),
   };
 });

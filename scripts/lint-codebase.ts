@@ -2830,35 +2830,14 @@ function checkGoTestCoverage(): CheckResult {
 // ============================================================================
 
 function checkSharedExports(): CheckResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
-  const sharedIndexPath = path.join(TS_SRC_DIR, 'shared/src/index.ts');
-  if (!fs.existsSync(sharedIndexPath)) {
-    return { name: 'Shared Exports (T2)', passed: true, errors, warnings: ['shared/src/index.ts not found'] };
-  }
-
-  const indexContent = fs.readFileSync(sharedIndexPath, 'utf-8');
-
-  // Key exports that should be in index.ts
-  const requiredExports = [
-    'converters',
-    'types/pb',
-    'framework',
-    'config',
-  ];
-
-  for (const exp of requiredExports) {
-    if (!indexContent.includes(exp)) {
-      warnings.push(`shared/src/index.ts should export '${exp}'`);
-    }
-  }
-
+  // NOTE: We no longer use a root barrel file (shared/src/index.ts).
+  // Handlers use deep imports like @fitglue/shared/types, @fitglue/shared/framework, etc.
+  // This check is now a no-op but kept for backwards compatibility.
   return {
     name: 'Shared Exports (T2)',
     passed: true,
-    errors,
-    warnings
+    errors: [],
+    warnings: []
   };
 }
 
@@ -2877,13 +2856,16 @@ function checkSharedExports(): CheckResult {
  * This prevents runtime errors where a symbol exists in shared but isn't exported.
  */
 function checkSharedImportResolution(): CheckResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
+  // NOTE: We no longer use a root barrel file (shared/src/index.ts).
+  // Handlers use deep imports like @fitglue/shared/types, @fitglue/shared/framework, etc.
+  // which are validated by TypeScript compilation. This check is now a no-op.
   const sharedIndexPath = path.join(TS_SRC_DIR, 'shared/src/index.ts');
   if (!fs.existsSync(sharedIndexPath)) {
-    return { name: 'Shared Import Resolution (T14)', passed: true, errors, warnings: ['shared/src/index.ts not found'] };
+    return { name: 'Shared Import Resolution (T14)', passed: true, errors: [], warnings: [] };
   }
+
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
   // Parse all exports from shared/src/index.ts
   const indexContent = fs.readFileSync(sharedIndexPath, 'utf-8');
