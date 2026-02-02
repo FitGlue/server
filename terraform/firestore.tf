@@ -279,3 +279,46 @@ resource "google_firestore_index" "pipeline_runs_pipeline_created" {
     order      = "DESCENDING"
   }
 }
+
+# -------------------------------------------------------------------
+# Admin Pipeline Runs - Collection Group Indexes
+# Used by admin handler to query pipeline_runs across all users
+# -------------------------------------------------------------------
+
+# Collection group index for status + created_at
+# Used by admin handler when filtering by status
+resource "google_firestore_index" "pipeline_runs_cg_status_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION_GROUP"
+
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
+# Collection group index for source + created_at
+# Used by admin handler when filtering by source
+resource "google_firestore_index" "pipeline_runs_cg_source_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION_GROUP"
+
+  fields {
+    field_path = "source"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}

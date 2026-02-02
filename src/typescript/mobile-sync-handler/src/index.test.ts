@@ -1,16 +1,30 @@
 import { handler } from './index';
-import { db } from '@fitglue/shared';
 
-// Mock shared dependencies
-jest.mock('@fitglue/shared', () => {
-  const original = jest.requireActual('@fitglue/shared');
-  return {
-    ...original,
-    db: {
-      collection: jest.fn(),
-    },
-  };
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: jest.fn((handler: any) => handler),
+  FrameworkContext: jest.fn(),
+  FirebaseAuthStrategy: jest.fn(),
+  db: {
+    collection: jest.fn(),
+  },
+}));
+
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+  return { HttpError };
 });
+
+// Get db from mocked module
+import { db } from '@fitglue/shared/framework';
 
 describe('mobile-sync-handler', () => {
 

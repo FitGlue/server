@@ -1,25 +1,93 @@
 import { handler } from './index';
-import { FrameworkContext } from '@fitglue/shared';
+import type { FrameworkContext } from '@fitglue/shared/framework';
 
-// Mock shared dependencies
-jest.mock('@fitglue/shared', () => {
-  const original = jest.requireActual('@fitglue/shared');
-  return {
-    ...original,
-    db: {
-      collection: jest.fn(() => ({
-        doc: jest.fn(() => ({
-          update: jest.fn(),
-        })),
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: (handler: any, _opts?: any) => handler,
+  FirebaseAuthStrategy: jest.fn(),
+  FrameworkHandler: jest.fn(),
+  FrameworkContext: jest.fn(),
+  db: {
+    collection: jest.fn(() => ({
+      doc: jest.fn(() => ({
+        update: jest.fn(),
       })),
-    },
-    UserTier: {
-      USER_TIER_UNSPECIFIED: 0,
-      USER_TIER_HOBBYIST: 1,
-      USER_TIER_ATHLETE: 2,
-    },
+    })),
+  },
+}));
+
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+  return { HttpError };
+});
+
+// Mock @fitglue/shared/routing
+jest.mock('@fitglue/shared/routing', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+
+  async function routeRequest(
+    req: { method: string; path: string; query: Record<string, unknown> },
+    ctx: unknown,
+    routes: Array<{ method: string; pattern: string; handler: (match: { params: Record<string, string>; query: Record<string, string> }, req: unknown, ctx: unknown) => Promise<unknown> }>
+  ): Promise<unknown> {
+    for (const route of routes) {
+      if (route.method !== req.method) continue;
+
+      const patternParts = route.pattern.split('/').filter(Boolean);
+      const pathParts = req.path.split('/').filter(Boolean);
+
+      if (patternParts.length !== pathParts.length) continue;
+
+      const params: Record<string, string> = {};
+      let matched = true;
+
+      for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i].startsWith(':')) {
+          params[patternParts[i].slice(1)] = pathParts[i];
+        } else if (patternParts[i] !== pathParts[i]) {
+          matched = false;
+          break;
+        }
+      }
+
+      if (matched) {
+        return await route.handler({ params, query: req.query as Record<string, string> }, req, ctx);
+      }
+    }
+
+    throw new HttpError(404, 'Not found');
+  }
+
+  return {
+    routeRequest,
+    RouteMatch: jest.fn(),
+    RoutableRequest: jest.fn(),
   };
 });
+
+// Mock @fitglue/shared/types
+jest.mock('@fitglue/shared/types', () => ({
+  UserTier: {
+    USER_TIER_UNSPECIFIED: 0,
+    USER_TIER_HOBBYIST: 1,
+    USER_TIER_ATHLETE: 2,
+  },
+}));
 
 // Mock Stripe
 const mockStripeCheckoutSessionsCreate = jest.fn();
@@ -44,7 +112,7 @@ jest.mock('stripe', () => {
   }));
 });
 
-import { db } from '@fitglue/shared';
+import { db } from '@fitglue/shared/framework';
 
 // Helper to create request objects - casts to handler's expected request type
 const createRequest = (overrides: Record<string, unknown> = {}): Parameters<typeof handler>[0] => ({

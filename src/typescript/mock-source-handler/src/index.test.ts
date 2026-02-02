@@ -1,9 +1,9 @@
 // Basic wiring test
 import { mockSourceHandler } from './index';
-import * as shared from '@fitglue/shared';
+import * as framework from '@fitglue/shared/framework';
 
-// Mock shared
-jest.mock('@fitglue/shared', () => ({
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
   createCloudFunction: (handler: any) => handler,
   createWebhookProcessor: jest.fn(() => async () => ({ status: 'Mocked Processor Run' })),
   ApiKeyStrategy: jest.fn()
@@ -17,7 +17,7 @@ jest.mock('./connector', () => ({
 describe('mockSourceHandler', () => {
   it('should utilize createWebhookProcessor with MockConnector', () => {
     // Check if createWebhookProcessor was called
-    expect(shared.createWebhookProcessor).toHaveBeenCalled();
+    expect(framework.createWebhookProcessor).toHaveBeenCalled();
   });
 
   it('should act as a handler', async () => {

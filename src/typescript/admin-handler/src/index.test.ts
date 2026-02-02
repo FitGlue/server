@@ -1,9 +1,13 @@
 import { handler } from './index';
 import { ExecutionStatus } from '@fitglue/shared/dist/types/pb/execution';
 
-// Mock @fitglue/shared
-jest.mock('@fitglue/shared', () => {
-  const mockDb = {
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: jest.fn((fn) => fn),
+  FrameworkContext: jest.fn(),
+  FrameworkHandler: jest.fn(),
+  FirebaseAuthStrategy: jest.fn(),
+  db: {
     collection: jest.fn().mockReturnThis(),
     doc: jest.fn().mockReturnThis(),
     get: jest.fn(),
@@ -15,8 +19,11 @@ jest.mock('@fitglue/shared', () => {
     orderBy: jest.fn().mockReturnThis(),
     batch: jest.fn(),
     withConverter: jest.fn().mockReturnThis(),
-  };
+  },
+}));
 
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => {
   class HttpError extends Error {
     statusCode: number;
     details?: unknown;
@@ -26,6 +33,31 @@ jest.mock('@fitglue/shared', () => {
       this.details = details;
       this.name = 'HttpError';
       Object.setPrototypeOf(this, HttpError.prototype);
+    }
+  }
+
+  class ForbiddenError extends Error {
+    statusCode: number;
+    constructor(message: string) {
+      super(message);
+      this.name = 'ForbiddenError';
+      this.statusCode = 403;
+      Object.setPrototypeOf(this, ForbiddenError.prototype);
+    }
+  }
+
+  return { HttpError, ForbiddenError };
+});
+
+// Mock @fitglue/shared/routing
+jest.mock('@fitglue/shared/routing', () => {
+  // Define HttpError locally to avoid hoisting issues
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
     }
   }
 
@@ -65,51 +97,49 @@ jest.mock('@fitglue/shared', () => {
   }
 
   return {
-    createCloudFunction: jest.fn((fn) => fn),
-    FrameworkContext: jest.fn(),
-    FrameworkHandler: jest.fn(),
-    FirebaseAuthStrategy: jest.fn(),
-    ForbiddenError: class ForbiddenError extends Error {
-      constructor(message: string) {
-        super(message);
-        this.name = 'ForbiddenError';
-      }
-    },
-    HttpError,
     routeRequest,
     RouteMatch: jest.fn(),
-    db: mockDb,
-    userConverter: {
-      toFirestore: jest.fn(),
-      fromFirestore: jest.fn(),
-    },
-    UserTier: {
-      USER_TIER_UNSPECIFIED: 0,
-      USER_TIER_HOBBYIST: 1,
-      USER_TIER_ATHLETE: 2,
-    },
-    formatExecutionStatus: (status: number | string | undefined | null) => {
-      if (status === 2) return 'SUCCESS';
-      if (status === 3) return 'FAILED';
-      if (status === 1) return 'STARTED';
-      return 'UNKNOWN';
-    },
-    formatDestination: (dest: unknown) => String(dest),
-    ExecutionStatus: {
-      STATUS_UNKNOWN: 0,
-      STATUS_STARTED: 1,
-      STATUS_SUCCESS: 2,
-      STATUS_FAILED: 3,
-      STATUS_PENDING: 4,
-      STATUS_WAITING: 5,
-    },
-    PendingInput_Status: {
-      STATUS_UNSPECIFIED: 0,
-      STATUS_WAITING: 1,
-      STATUS_COMPLETED: 2,
-    },
   };
 });
+
+// Mock @fitglue/shared/storage
+jest.mock('@fitglue/shared/storage', () => ({
+  userConverter: {
+    toFirestore: jest.fn(),
+    fromFirestore: jest.fn(),
+  },
+}));
+
+// Mock @fitglue/shared/types
+jest.mock('@fitglue/shared/types', () => ({
+  UserTier: {
+    USER_TIER_UNSPECIFIED: 0,
+    USER_TIER_HOBBYIST: 1,
+    USER_TIER_ATHLETE: 2,
+  },
+  formatExecutionStatus: (status: number | string | undefined | null) => {
+    if (status === 2) return 'SUCCESS';
+    if (status === 3) return 'FAILED';
+    if (status === 1) return 'STARTED';
+    return 'UNKNOWN';
+  },
+  formatDestination: (dest: unknown) => String(dest),
+  formatActivitySource: (source: unknown) => String(source),
+  formatPipelineRunStatus: (status: unknown) => String(status),
+  ExecutionStatus: {
+    STATUS_UNKNOWN: 0,
+    STATUS_STARTED: 1,
+    STATUS_SUCCESS: 2,
+    STATUS_FAILED: 3,
+    STATUS_PENDING: 4,
+    STATUS_WAITING: 5,
+  },
+  PendingInput_Status: {
+    STATUS_UNSPECIFIED: 0,
+    STATUS_WAITING: 1,
+    STATUS_COMPLETED: 2,
+  },
+}));
 
 // Mock firebase-admin
 jest.mock('firebase-admin', () => ({
@@ -118,9 +148,12 @@ jest.mock('firebase-admin', () => ({
   }))
 }));
 
-// Get the mocked db
-import { db, ForbiddenError } from '@fitglue/shared';
+// Get the mocked db from the framework module
+import { db } from '@fitglue/shared/framework';
 const mockDb = db as jest.Mocked<typeof db>;
+
+// Get ForbiddenError from the mocked errors module for use in tests
+import { ForbiddenError } from '@fitglue/shared/errors';
 
 // Helper to create mock request - casts to handler's expected request type
 function createMockRequest(overrides: Record<string, unknown> = {}): Parameters<typeof handler>[0] {

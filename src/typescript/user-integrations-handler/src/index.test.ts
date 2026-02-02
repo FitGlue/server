@@ -1,14 +1,121 @@
 import { handler } from './index';
 
-// Mock shared dependencies
-jest.mock('@fitglue/shared', () => {
-  const original = jest.requireActual('@fitglue/shared');
-  return {
-    ...original,
-    getSecret: jest.fn().mockResolvedValue('mock-client-id'),
-    generateOAuthState: jest.fn().mockResolvedValue('mock-state-token'),
-  };
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: (handler: any, _opts?: any) => handler,
+  FrameworkContext: jest.fn(),
+  FirebaseAuthStrategy: jest.fn(),
+  FrameworkHandler: jest.fn(),
+}));
+
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+  return { HttpError };
 });
+
+// Mock @fitglue/shared/routing
+jest.mock('@fitglue/shared/routing', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+
+  async function routeRequest(
+    req: { method: string; path: string; query?: Record<string, unknown>; body?: unknown },
+    ctx: unknown,
+    routes: Array<{ method: string; pattern: string; handler: (match: { params: Record<string, string>; query: Record<string, string> }, req: unknown, ctx: unknown) => Promise<unknown> }>
+  ): Promise<unknown> {
+    for (const route of routes) {
+      if (route.method !== req.method) continue;
+
+      const patternParts = route.pattern.split('/').filter(Boolean);
+      const pathParts = req.path.split('/').filter(Boolean);
+
+      if (patternParts.length !== pathParts.length) continue;
+
+      const params: Record<string, string> = {};
+      let matched = true;
+
+      for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i].startsWith(':')) {
+          params[patternParts[i].slice(1)] = pathParts[i];
+        } else if (patternParts[i] !== pathParts[i]) {
+          matched = false;
+          break;
+        }
+      }
+
+      if (matched) {
+        return await route.handler({ params, query: (req.query || {}) as Record<string, string> }, req, ctx);
+      }
+    }
+
+    throw new HttpError(404, 'Not found');
+  }
+
+  return { routeRequest, RouteMatch: jest.fn() };
+});
+
+// Mock @fitglue/shared/plugin
+jest.mock('@fitglue/shared/plugin', () => ({
+  getRegistry: jest.fn(() => ({
+    integrations: [
+      { id: 'strava', authType: 'oauth2', icon: '🏃', name: 'Strava' },
+      { id: 'fitbit', authType: 'oauth2', icon: '💪', name: 'Fitbit' },
+      { id: 'hevy', authType: 'api_key', icon: '🏋️', name: 'Hevy' },
+      { id: 'polar', authType: 'oauth2', icon: '❄️', name: 'Polar' },
+      { id: 'oura', authType: 'oauth2', icon: '💍', name: 'Oura' },
+      { id: 'wahoo', authType: 'oauth2', icon: '🚴', name: 'Wahoo' },
+      { id: 'spotify', authType: 'oauth2', icon: '🎵', name: 'Spotify' },
+      { id: 'trainingpeaks', authType: 'oauth2', icon: '📊', name: 'TrainingPeaks' },
+      { id: 'google_sheets', authType: 'oauth2', icon: '📋', name: 'Google Sheets' },
+    ],
+  })),
+}));
+
+// Mock @fitglue/shared/types
+jest.mock('@fitglue/shared/types', () => ({
+  IntegrationAuthType: {
+    AUTH_TYPE_UNSPECIFIED: 0,
+    AUTH_TYPE_OAUTH2: 1,
+    AUTH_TYPE_API_KEY: 2,
+  },
+}));
+
+// Mock @fitglue/shared/infrastructure/oauth
+jest.mock('@fitglue/shared/infrastructure/oauth', () => ({
+  generateOAuthState: jest.fn().mockResolvedValue('mock-state-token'),
+}));
+
+// Mock @fitglue/shared/infrastructure
+jest.mock('@fitglue/shared/infrastructure', () => ({
+  getSecret: jest.fn().mockResolvedValue('mock-client-id'),
+}));
+
+// Mock @fitglue/shared/domain
+jest.mock('@fitglue/shared/domain', () => ({
+  canAddConnection: jest.fn(() => ({ allowed: true, reason: null })),
+  countActiveConnections: jest.fn(() => 0),
+}));
+
+// Mock @fitglue/shared/integrations/hevy
+jest.mock('@fitglue/shared/integrations/hevy', () => ({
+  createHevyClient: jest.fn(() => ({
+    getUser: jest.fn(),
+  })),
+}));
 
 describe('user-integrations-handler', () => {
   let req: any;

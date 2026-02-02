@@ -1,15 +1,23 @@
-
 import { fitbitWebhookHandler } from './index';
+import * as framework from '@fitglue/shared/framework';
 
-// Mock shared library
-jest.mock('@fitglue/shared', () => {
-  const originalModule = jest.requireActual('@fitglue/shared');
-  return {
-    ...originalModule,
-    createCloudFunction: jest.fn().mockImplementation((handler) => handler),
-    createWebhookProcessor: jest.fn().mockReturnValue((_req: any, _res: any, _ctx: any) => Promise.resolve()),
-  };
-});
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: jest.fn().mockImplementation((handler) => handler),
+  createWebhookProcessor: jest.fn().mockReturnValue((_req: any, _res: any, _ctx: any) => Promise.resolve()),
+  PayloadUserStrategy: jest.fn(),
+}));
+
+// Mock connector
+jest.mock('./connector', () => ({
+  FitbitConnector: jest.fn(),
+  FitbitBody: jest.fn(),
+}));
+
+// Mock auth
+jest.mock('./auth', () => ({
+  FitbitVerificationStrategy: jest.fn(),
+}));
 
 describe('fitbitWebhookHandler', () => {
   it('should be defined', () => {
@@ -17,7 +25,6 @@ describe('fitbitWebhookHandler', () => {
   });
 
   it('should be created via createCloudFunction', () => {
-    const { createCloudFunction } = require('@fitglue/shared');
-    expect(createCloudFunction).toHaveBeenCalled();
+    expect(framework.createCloudFunction).toHaveBeenCalled();
   });
 });

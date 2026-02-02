@@ -1,34 +1,61 @@
 import { handler } from './index';
 
-// Mock shared dependencies
-jest.mock('@fitglue/shared', () => {
-  const original = jest.requireActual('@fitglue/shared');
-  return {
-    ...original,
-    db: {
-      collection: jest.fn().mockReturnThis(),
-      doc: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      get: jest.fn().mockResolvedValue({ empty: true, size: 0, forEach: jest.fn(), docs: [] }),
-      batch: jest.fn().mockReturnValue({
-        delete: jest.fn(),
-        commit: jest.fn().mockResolvedValue(undefined)
-      }),
-      update: jest.fn().mockResolvedValue(undefined)
-    },
-    UserStore: jest.fn(),
-    UserService: jest.fn(),
-    ActivityStore: jest.fn(),
-    ForbiddenError: class ForbiddenError extends Error {
-      constructor(message: string = 'Access denied') {
-        super(message);
-        this.name = 'ForbiddenError';
-      }
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: jest.fn((handler: any) => handler),
+  FirebaseAuthStrategy: jest.fn(),
+  FrameworkHandler: jest.fn(),
+  db: {
+    collection: jest.fn().mockReturnThis(),
+    doc: jest.fn().mockReturnThis(),
+    where: jest.fn().mockReturnThis(),
+    get: jest.fn().mockResolvedValue({ empty: true, size: 0, forEach: jest.fn(), docs: [] }),
+    batch: jest.fn().mockReturnValue({
+      delete: jest.fn(),
+      commit: jest.fn().mockResolvedValue(undefined)
+    }),
+    update: jest.fn().mockResolvedValue(undefined)
+  },
+}));
+
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
     }
-  };
+  }
+  class ForbiddenError extends Error {
+    statusCode: number;
+    constructor(message: string = 'Access denied') {
+      super(message);
+      this.name = 'ForbiddenError';
+      this.statusCode = 403;
+    }
+  }
+  return { HttpError, ForbiddenError };
 });
 
-import { UserService } from '@fitglue/shared';
+// Mock @fitglue/shared/types
+jest.mock('@fitglue/shared/types', () => ({
+  INTEGRATIONS: {
+    strava: { authType: 1, externalUserIdField: 'athleteId' },
+    fitbit: { authType: 1, externalUserIdField: 'userId' },
+    hevy: { authType: 2, externalUserIdField: 'apiKey' },
+    polar: { authType: 1, externalUserIdField: 'userId' },
+    oura: { authType: 1, externalUserIdField: 'userId' },
+    wahoo: { authType: 1, externalUserIdField: 'userId' },
+    spotify: { authType: 1, externalUserIdField: 'userId' },
+  },
+  IntegrationAuthType: {
+    INTEGRATION_AUTH_TYPE_UNSPECIFIED: 0,
+    INTEGRATION_AUTH_TYPE_OAUTH2: 1,
+    INTEGRATION_AUTH_TYPE_API_KEY: 2,
+  },
+}));
 
 describe('user-profile-handler', () => {
   let req: any;
@@ -51,7 +78,6 @@ describe('user-profile-handler', () => {
       isAdmin: jest.fn(),
       canAccessUser: jest.fn()
     };
-    (UserService as any).mockImplementation(() => mockUserService);
 
     req = {
       method: 'GET',
@@ -118,14 +144,14 @@ describe('user-profile-handler', () => {
     });
 
     it('returns 403 if not admin', async () => {
-      const { ForbiddenError: FE } = jest.requireMock('@fitglue/shared');
+      const { ForbiddenError: FE } = jest.requireMock('@fitglue/shared/errors');
       mockAuthorizationService.requireAdmin.mockRejectedValue(new FE('Admin access required'));
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 403 }));
     });
 
     it('returns user list for admin', async () => {
       mockAuthorizationService.requireAdmin.mockResolvedValue(undefined);
-      const { db } = jest.requireMock('@fitglue/shared');
+      const { db } = jest.requireMock('@fitglue/shared/framework');
       db.get.mockResolvedValue({
         docs: [
           { id: 'user-1', data: () => ({ tier: 2, isAdmin: true }) }, // USER_TIER_ATHLETE
@@ -156,7 +182,7 @@ describe('user-profile-handler', () => {
       req.method = 'DELETE';
       req.path = '/users/me';
       // Reset db.get to return empty collections for cascade delete
-      const { db } = jest.requireMock('@fitglue/shared');
+      const { db } = jest.requireMock('@fitglue/shared/framework');
       db.get.mockResolvedValue({ empty: true, size: 0, forEach: jest.fn(), docs: [] });
     });
 

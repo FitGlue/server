@@ -67,7 +67,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --no-cache python3 py3-pip curl bash make nodejs npm
+            apk add --no-cache python3 py3-pip curl bash make nodejs npm go
       - run:
           name: Authenticate with GCP via OIDC
           command: |

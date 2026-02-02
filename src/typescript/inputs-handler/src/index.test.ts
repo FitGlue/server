@@ -1,32 +1,74 @@
 import { handler } from './index';
-import { CloudEventPublisher } from '@fitglue/shared';
 
-// Mock shared dependencies
-jest.mock('@fitglue/shared', () => {
-  const original = jest.requireActual('@fitglue/shared');
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: jest.fn((handler: any) => handler),
+  FirebaseAuthStrategy: jest.fn(),
+  FrameworkHandler: jest.fn(),
+  db: {},
+}));
 
-  // Create a mock InputService class that accepts authorization
-  const MockInputService = jest.fn().mockImplementation(() => ({
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+  class ForbiddenError extends Error {
+    statusCode: number;
+    constructor(message: string = 'Access denied') {
+      super(message);
+      this.name = 'ForbiddenError';
+      this.statusCode = 403;
+    }
+  }
+  return { HttpError, ForbiddenError };
+});
+
+// Mock @fitglue/shared/storage
+jest.mock('@fitglue/shared/storage', () => ({
+  InputStore: jest.fn(),
+  UserStore: jest.fn(),
+}));
+
+// Mock @fitglue/shared/domain/services
+jest.mock('@fitglue/shared/domain/services', () => ({
+  InputService: jest.fn().mockImplementation(() => ({
     listPendingInputs: jest.fn(),
     getPendingInput: jest.fn(),
     resolveInput: jest.fn(),
     dismissInput: jest.fn(),
-  }));
+  })),
+}));
 
-  return {
-    ...original,
-    InputStore: jest.fn(),
-    InputService: MockInputService,
-    CloudEventPublisher: jest.fn(),
-    db: {}, // Mock db object
-    ForbiddenError: class ForbiddenError extends Error {
-      constructor(message: string = 'Access denied') {
-        super(message);
-        this.name = 'ForbiddenError';
-      }
-    }
-  };
-});
+// Mock @fitglue/shared/infrastructure/pubsub
+jest.mock('@fitglue/shared/infrastructure/pubsub', () => ({
+  CloudEventPublisher: jest.fn(),
+}));
+
+// Mock @fitglue/shared/types
+jest.mock('@fitglue/shared/types', () => ({
+  ActivityPayload: {},
+  CloudEventType: { ACTIVITY_ENRICHMENT: 1 },
+  CloudEventSource: { FITGLUE_INPUT_RESUME: 1 },
+}));
+
+// Mock @fitglue/shared/dist/types/events-helper
+jest.mock('@fitglue/shared/dist/types/events-helper', () => ({
+  getCloudEventType: jest.fn(() => 'activity-enrichment'),
+  getCloudEventSource: jest.fn(() => 'fitglue-input-resume'),
+}));
+
+// Mock @fitglue/shared/dist/config
+jest.mock('@fitglue/shared/dist/config', () => ({
+  TOPICS: { PIPELINE_ACTIVITY: 'pipeline-activity' },
+}));
+
+import { CloudEventPublisher } from '@fitglue/shared/infrastructure/pubsub';
 
 // Mock GCS for payload fetching - use factory pattern to avoid Jest hoisting
 const mockGcsDownload = jest.fn();
@@ -51,14 +93,14 @@ describe('inputs-handler', () => {
 
   beforeEach(() => {
     // Get mocked InputService and reset it
-    const { InputService } = jest.requireMock('@fitglue/shared');
+    const { InputService: MockedInputService } = jest.requireMock('@fitglue/shared/domain/services');
     mockInputService = {
       listPendingInputs: jest.fn(),
       getPendingInput: jest.fn(),
       resolveInput: jest.fn(),
       dismissInput: jest.fn(),
     };
-    InputService.mockImplementation(() => mockInputService);
+    MockedInputService.mockImplementation(() => mockInputService);
 
     mockPublish = jest.fn();
     (CloudEventPublisher as any).mockImplementation(() => ({
@@ -219,7 +261,7 @@ describe('inputs-handler', () => {
     });
 
     it('handles ForbiddenError from authorization', async () => {
-      const { ForbiddenError } = jest.requireMock('@fitglue/shared');
+      const { ForbiddenError } = jest.requireMock('@fitglue/shared/errors');
       mockInputService.getPendingInput.mockResolvedValue({
         activityId: 'act-1',
         originalPayloadUri: 'gs://test-bucket/pending/user-1/act-1.json'
@@ -258,7 +300,7 @@ describe('inputs-handler', () => {
     });
 
     it('handles ForbiddenError from authorization', async () => {
-      const { ForbiddenError } = jest.requireMock('@fitglue/shared');
+      const { ForbiddenError } = jest.requireMock('@fitglue/shared/errors');
       const error = new ForbiddenError('Access denied');
       mockInputService.dismissInput.mockRejectedValue(error);
 

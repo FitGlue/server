@@ -196,7 +196,6 @@ test:
 lint:
 	@$(MAKE) -j4 lint-go lint-ts lint-codebase lint-shared-modules
 
-prepare: prepare-go
 # P4: Parallel clean
 clean:
 	@$(MAKE) -j2 clean-go clean-ts

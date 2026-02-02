@@ -7,9 +7,14 @@ jest.mock('firebase-admin', () => ({
   })),
 }));
 
-// Mock the shared package
-jest.mock('@fitglue/shared', () => ({
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
   createCloudFunction: (handler: any) => handler,
+  FrameworkContext: jest.fn(),
+}));
+
+// Mock @fitglue/shared/infrastructure/oauth
+jest.mock('@fitglue/shared/infrastructure/oauth', () => ({
   validateOAuthState: jest.fn(),
   storeOAuthTokens: jest.fn(),
 }));
@@ -25,7 +30,7 @@ describe('spotifyOAuthHandler', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    const { validateOAuthState, storeOAuthTokens } = require('@fitglue/shared');
+    const { validateOAuthState, storeOAuthTokens } = require('@fitglue/shared/infrastructure/oauth');
     mockValidateOAuthState = validateOAuthState as jest.Mock;
     mockStoreOAuthTokens = storeOAuthTokens as jest.Mock;
 

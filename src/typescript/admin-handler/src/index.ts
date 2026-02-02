@@ -468,16 +468,8 @@ async function handleListPipelineRuns(match: RouteMatch, ctx: FrameworkContext) 
     }
   }
 
-  // Apply source filter
-  if (source) {
-    const sourceNum = parseInt(source, 10);
-    if (!isNaN(sourceNum)) {
-      q = q.where('source', '==', sourceNum);
-    }
-  }
-
-  // Apply source filter
-  if (source) {
+  // Apply source filter (only if no status filter - avoid needing complex composite indexes)
+  if (source && !status) {
     const sourceNum = parseInt(source, 10);
     if (!isNaN(sourceNum)) {
       q = q.where('source', '==', sourceNum);
@@ -499,9 +491,32 @@ async function handleListPipelineRuns(match: RouteMatch, ctx: FrameworkContext) 
 
   q = q.limit(limit + 1); // Fetch one extra to check if there are more
 
-  const snapshot = await q.get();
-  const docs = snapshot.docs;
-  const hasMore = docs.length > limit;
+  let docs: admin.firestore.QueryDocumentSnapshot[];
+  let hasMore = false;
+
+  try {
+    const snapshot = await q.get();
+    docs = snapshot.docs;
+    hasMore = docs.length > limit;
+  } catch (error: unknown) {
+    // Check for FAILED_PRECONDITION (missing index)
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorMessage.includes('FAILED_PRECONDITION') || errorMessage.includes('requires an index')) {
+      logger.warn('Pipeline runs query requires index, falling back to simple query', { error: errorMessage });
+
+      // Fallback: simple query without filters
+      const fallbackQuery = db.collectionGroup('pipeline_runs')
+        .orderBy('created_at', 'desc')
+        .limit(limit + 1);
+
+      const fallbackSnapshot = await fallbackQuery.get();
+      docs = fallbackSnapshot.docs;
+      hasMore = docs.length > limit;
+    } else {
+      throw error;
+    }
+  }
+
   const resultDocs = hasMore ? docs.slice(0, limit) : docs;
 
   // Extract user IDs from document paths

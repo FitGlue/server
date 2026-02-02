@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { FrameworkResponse, HttpError, ShowcaseStore, UserTier } from '@fitglue/shared';
 
 // Create mock objects that will be shared across mocks
 const mockUserDoc = {
@@ -46,57 +45,147 @@ jest.mock('firebase-admin', () => ({
   }),
 }));
 
-// Mock ShowcaseStore, createCloudFunction, and db
-jest.mock('@fitglue/shared', () => {
-  const actual = jest.requireActual('@fitglue/shared');
+// FrameworkResponse class for mocking - matches actual signature
+class FrameworkResponse {
+  options: { status?: number; body?: unknown; headers?: Record<string, string> };
+  constructor(options: { status?: number; body?: unknown; headers?: Record<string, string> }) {
+    this.options = options;
+  }
+}
 
-  // Create a mock firestore that matches the structure above
-  const mockUserDoc = {
+// HttpError class for mocking
+class HttpError extends Error {
+  statusCode: number;
+  constructor(statusCode: number, message: string) {
+    super(message);
+    this.statusCode = statusCode;
+    this.name = 'HttpError';
+  }
+}
+
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => {
+  const mockUserDocInner = {
     exists: true,
     data: jest.fn(() => ({
       tier: 1,
     })),
   };
 
-  const mockUserGet = jest.fn(() => Promise.resolve(mockUserDoc));
+  const mockUserGetInner = jest.fn(() => Promise.resolve(mockUserDocInner));
 
-  const mockDoc = {
-    get: mockUserGet,
+  const mockDocInner = {
+    get: mockUserGetInner,
   };
 
-  const mockShowcaseDoc = {
-    get: jest.fn(),
-  };
-
-  const mockCollection = jest.fn((collectionName: string) => {
+  const mockCollectionInner = jest.fn((collectionName: string) => {
     if (collectionName === 'users') {
       return {
-        doc: jest.fn(() => mockDoc),
+        doc: jest.fn(() => mockDocInner),
       };
     }
     return {
-      doc: jest.fn(() => mockShowcaseDoc),
+      doc: jest.fn(() => ({ get: jest.fn() })),
     };
   });
 
   const mockDb = {
-    collection: mockCollection,
+    collection: mockCollectionInner,
   };
 
   return {
-    ...actual,
     createCloudFunction: (handler: any) => handler,
-    ShowcaseStore: jest.fn(),
+    FrameworkContext: jest.fn(),
+    FrameworkResponse,
     db: mockDb,
-    _mockUserDoc: mockUserDoc, // Expose for test manipulation
+    _mockUserDoc: mockUserDocInner, // Expose for test manipulation
   };
 });
 
-import { showcaseHandler } from './index';
-import * as shared from '@fitglue/shared';
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => ({
+  HttpError,
+}));
 
-// Access the exposed mock from the mocked @fitglue/shared module
-const mockUserDocFromShared = (shared as any)._mockUserDoc;
+// Mock @fitglue/shared/routing with actual route processing
+jest.mock('@fitglue/shared/routing', () => {
+  async function routeRequest(
+    req: { method: string; path: string; query?: Record<string, unknown> },
+    ctx: unknown,
+    routes: Array<{ method: string; pattern: string; handler: (match: { params: Record<string, string>; query: Record<string, string> }) => Promise<unknown> }>
+  ): Promise<unknown> {
+    for (const route of routes) {
+      if (route.method !== req.method) continue;
+
+      const patternParts = route.pattern.split('/').filter(Boolean);
+      const pathParts = req.path.split('/').filter(Boolean);
+
+      if (patternParts.length !== pathParts.length) continue;
+
+      const params: Record<string, string> = {};
+      let matched = true;
+
+      for (let i = 0; i < patternParts.length; i++) {
+        if (patternParts[i].startsWith(':')) {
+          params[patternParts[i].slice(1)] = pathParts[i];
+        } else if (patternParts[i] !== pathParts[i]) {
+          matched = false;
+          break;
+        }
+      }
+
+      if (matched) {
+        return await route.handler({ params, query: (req.query || {}) as Record<string, string> });
+      }
+    }
+
+    throw new HttpError(404, 'Not found');
+  }
+
+  return { routeRequest };
+});
+
+// Mock @fitglue/shared/storage
+const MockShowcaseStore = jest.fn();
+jest.mock('@fitglue/shared/storage', () => ({
+  ShowcaseStore: MockShowcaseStore,
+}));
+
+// Mock @fitglue/shared/plugin
+jest.mock('@fitglue/shared/plugin', () => ({
+  getEnricherManifest: jest.fn(),
+}));
+
+// Mock @fitglue/shared/domain - returns tier based on user data
+jest.mock('@fitglue/shared/domain', () => ({
+  getEffectiveTier: jest.fn((userData: { tier?: number }) => {
+    // Return 'athlete' if tier is 2, otherwise 'hobbyist'
+    return userData?.tier === 2 ? 'athlete' : 'hobbyist';
+  }),
+}));
+
+// Mock @fitglue/shared/types
+const UserTier = {
+  USER_TIER_UNSPECIFIED: 0,
+  USER_TIER_HOBBYIST: 1,
+  USER_TIER_ATHLETE: 2,
+};
+
+jest.mock('@fitglue/shared/types', () => ({
+  EnricherProviderType: {},
+  UserTier: {
+    USER_TIER_UNSPECIFIED: 0,
+    USER_TIER_HOBBYIST: 1,
+    USER_TIER_ATHLETE: 2,
+  },
+}));
+
+import { showcaseHandler } from './index';
+import { ShowcaseStore } from '@fitglue/shared/storage';
+import * as framework from '@fitglue/shared/framework';
+
+// Access the exposed mock from the mocked @fitglue/shared/framework module
+const mockUserDocFromShared = (framework as any)._mockUserDoc;
 
 describe('showcase-handler', () => {
   let req: any;

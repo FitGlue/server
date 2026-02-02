@@ -1,9 +1,26 @@
 import { handler } from './index';
-import { FrameworkContext } from '@fitglue/shared';
 
-// Mock getRegistry
-jest.mock('@fitglue/shared', () => ({
-  ...jest.requireActual('@fitglue/shared'),
+// Mock @fitglue/shared/framework
+jest.mock('@fitglue/shared/framework', () => ({
+  createCloudFunction: jest.fn((handler: any) => handler),
+  FrameworkHandler: jest.fn(),
+}));
+
+// Mock @fitglue/shared/errors
+jest.mock('@fitglue/shared/errors', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+  return { HttpError };
+});
+
+// Mock @fitglue/shared/plugin
+jest.mock('@fitglue/shared/plugin', () => ({
   getRegistry: jest.fn(() => ({
     sources: [
       { id: 'hevy', name: 'Hevy', enabled: true },
@@ -20,8 +37,15 @@ jest.mock('@fitglue/shared', () => ({
       { id: 'fitbit', name: 'Fitbit', enabled: true },
     ],
   })),
-  createCloudFunction: jest.fn((handler) => handler),
 }));
+
+// Mock @fitglue/shared/dist/config
+jest.mock('@fitglue/shared/dist/config', () => ({
+  PROJECT_ID: 'fitglue-server-dev',
+}));
+
+// Import FrameworkContext type
+import type { FrameworkContext } from '@fitglue/shared/framework';
 
 describe('registry-handler', () => {
   let mockReq: Parameters<typeof handler>[0];
