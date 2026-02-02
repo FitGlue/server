@@ -107,6 +107,17 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       payload.isResume = true;
       payload.resumePendingInputId = body.activityId;
 
+      // Transfer linkedActivityId to activityId - the enricher requires this in resume mode
+      // to look up the existing activity record created during initial enrichment
+      if (!input.linkedActivityId) {
+        ctx.logger.error('Missing linkedActivityId on pending input - cannot resume', { 
+          activityId: body.activityId,
+          pipelineId: input.pipelineId 
+        });
+        throw new HttpError(500, 'Pending input missing linkedActivityId, cannot resume');
+      }
+      payload.activityId = input.linkedActivityId;
+
       // Re-publish using CloudEventPublisher
       const publisher = new CloudEventPublisher<ActivityPayload>(
         ctx.pubsub,

@@ -156,10 +156,11 @@ describe('inputs-handler', () => {
       await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
     });
 
-    it('resolves and republishes successfully', async () => {
+    it('resolves and republishes successfully with linkedActivityId', async () => {
       const mockPayload = { source: 'HEVY' };
       mockInputService.getPendingInput.mockResolvedValue({
         activityId: 'act-1',
+        linkedActivityId: 'linked-activity-uuid',
         originalPayloadUri: 'gs://test-bucket/pending/user-1/act-1.json'
       });
       mockGcsDownload.mockResolvedValue([Buffer.from(JSON.stringify(mockPayload))]);
@@ -169,12 +170,31 @@ describe('inputs-handler', () => {
       expect(mockInputService.getPendingInput).toHaveBeenCalledWith('user-1', 'act-1');
       expect(mockInputService.resolveInput).toHaveBeenCalledWith('user-1', 'act-1', 'user-1', { title: 'New Title' });
       expect(mockGcsDownload).toHaveBeenCalled();
+      // Verify linkedActivityId is transferred to activityId for resume mode
       expect(mockPublish).toHaveBeenCalledWith({
         ...mockPayload,
         isResume: true,
         resumePendingInputId: 'act-1',
+        activityId: 'linked-activity-uuid',
       });
       expect(result).toEqual({ success: true });
+    });
+
+    it('returns 500 if linkedActivityId is missing', async () => {
+      const mockPayload = { source: 'HEVY' };
+      mockInputService.getPendingInput.mockResolvedValue({
+        activityId: 'act-1',
+        // No linkedActivityId - this should now error
+        originalPayloadUri: 'gs://test-bucket/pending/user-1/act-1.json'
+      });
+      mockGcsDownload.mockResolvedValue([Buffer.from(JSON.stringify(mockPayload))]);
+
+      await expect(handler(req, ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 500 }));
+      expect(ctx.logger.error).toHaveBeenCalledWith(
+        'Missing linkedActivityId on pending input - cannot resume',
+        expect.objectContaining({ activityId: 'act-1' })
+      );
+      expect(mockPublish).not.toHaveBeenCalled();
     });
 
     it('returns 500 if original payload URI missing', async () => {

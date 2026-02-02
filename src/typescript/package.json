@@ -1,5 +1,8 @@
 {
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "workspaces": [
     "hevy-handler",
     "shared",

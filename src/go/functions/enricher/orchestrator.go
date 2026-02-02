@@ -172,6 +172,10 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	}
 	logger.Debug("Activity ID for pipeline", "activity_id", activityId, "is_resume", isResumeMode)
 
+	// Create initial pipeline run document for lifecycle tracking (RUNNING status)
+	// This ensures we track the pipeline execution even if it fails partway through
+	o.createInitialPipelineRun(ctx, logger, payload.UserId, pipelineExecutionID, pipeline.ID, activityId, payload, pipeline.Destinations)
+
 	// 3a. Execute Enrichers Sequentially
 	configs := pipeline.Enrichers
 	results := make([]*providers.EnrichmentResult, len(configs))
@@ -312,6 +316,11 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					"retry_reason": retryErr.Reason,
 				}
 				providerExecutions = append(providerExecutions, pe)
+				// Keep RUNNING status - retry is in progress, will be retried automatically
+				o.updatePipelineRunStatus(ctx, logger, payload.UserId, pipelineExecutionID,
+					pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+					fmt.Sprintf("Retry scheduled: %s", retryErr.Reason),
+					providerExecutions)
 				return &ProcessResult{
 					Events:             []*pb.EnrichedActivityEvent{},
 					ProviderExecutions: providerExecutions,
@@ -326,7 +335,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					"required_fields": strings.Join(waitErr.RequiredFields, ","),
 				}
 				providerExecutions = append(providerExecutions, pe)
-				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr)
+				// Update pipeline run to PENDING status - waiting for user input
+				o.updatePipelineRunStatus(ctx, logger, payload.UserId, pipelineExecutionID,
+					pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
+					fmt.Sprintf("Waiting for user input: %s", strings.Join(waitErr.RequiredFields, ", ")),
+					providerExecutions)
+				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr, activityId)
 			}
 
 			// This is a genuine error - log at ERROR level for Sentry capture
@@ -334,6 +348,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			pe.Status = "FAILED"
 			pe.Error = err.Error()
 			providerExecutions = append(providerExecutions, pe)
+
+			// Update pipeline run to FAILED status
+			o.updatePipelineRunStatus(ctx, logger, payload.UserId, pipelineExecutionID,
+				pb.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED,
+				fmt.Sprintf("Enricher failed: %s - %v", provider.Name(), err),
+				providerExecutions)
 
 			// Fail pipeline
 			return &ProcessResult{
@@ -359,6 +379,16 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				pe.Metadata["halt_reason"] = res.HaltReason
 			}
 			providerExecutions = append(providerExecutions, pe)
+
+			// Update pipeline run to SKIPPED status
+			statusMsg := fmt.Sprintf("Pipeline halted by %s", provider.Name())
+			if res.HaltReason != "" {
+				statusMsg = fmt.Sprintf("Pipeline halted by %s: %s", provider.Name(), res.HaltReason)
+			}
+			o.updatePipelineRunStatus(ctx, logger, payload.UserId, pipelineExecutionID,
+				pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED,
+				statusMsg,
+				providerExecutions)
 
 			// Skip remaining enrichers and don't publish events for this pipeline
 			return &ProcessResult{
@@ -542,8 +572,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
-	// Create PipelineRun document for lifecycle tracking
-	o.createPipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, payload)
+	// Finalize PipelineRun with enriched data (initial run was created at start)
+	o.finalizePipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, payload)
 
 	return &ProcessResult{
 		Events:             []*pb.EnrichedActivityEvent{finalEvent},
@@ -596,8 +626,8 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 	return nil, nil // Pipeline not found
 }
 
-func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pb.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError) (*ProcessResult, error) {
-	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID)
+func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger, payload *pb.ActivityPayload, allExecs []ProviderExecution, waitErr *user_input.WaitForInputError, linkedActivityId string) (*ProcessResult, error) {
+	logger.Warn("Provider requested user input", "activity_id", waitErr.ActivityID, "linked_activity_id", linkedActivityId)
 
 	// SAFETY CHECK: Verify that we're not overwriting a completed pending input
 	// This can happen when resume mode falls back to regular Enrich due to status mismatch
@@ -639,7 +669,9 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 		OriginalPayloadUri: payloadUri, // GCS URI for payload retrieval
 		CreatedAt:          timestamppb.Now(),
 		UpdatedAt:          timestamppb.Now(),
-		ProviderMetadata:   waitErr.Metadata, // Pass provider context to UI
+		ProviderMetadata:   waitErr.Metadata,    // Pass provider context to UI
+		LinkedActivityId:   linkedActivityId,    // Activity ID for resume mode
+		PipelineId:         *payload.PipelineId, // Pipeline that created this pending input
 	}
 	if err := o.database.CreatePendingInput(ctx, payload.UserId, pi); err != nil {
 		logger.Warn("Failed to create pending input (might already exist)", "error", err)
@@ -669,8 +701,78 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 	}, nil
 }
 
-// createPipelineRun creates a PipelineRun document with the current state
-func (o *Orchestrator) createPipelineRun(ctx context.Context, logger *slog.Logger, userId string, event *pb.EnrichedActivityEvent, providerExecs []ProviderExecution, payload *pb.ActivityPayload) {
+// createInitialPipelineRun creates a minimal PipelineRun document with RUNNING status
+// Called early in the pipeline execution to ensure lifecycle tracking even if pipeline fails
+func (o *Orchestrator) createInitialPipelineRun(ctx context.Context, logger *slog.Logger, userId string, pipelineExecutionID string, pipelineID string, activityId string, payload *pb.ActivityPayload, destinations []pb.Destination) {
+	activity := payload.GetStandardizedActivity()
+
+	// Build destination outcomes (all pending at this point)
+	destOutcomes := make([]*pb.DestinationOutcome, 0, len(destinations))
+	for _, dest := range destinations {
+		destOutcomes = append(destOutcomes, &pb.DestinationOutcome{
+			Destination: dest,
+			Status:      pb.DestinationStatus_DESTINATION_STATUS_PENDING,
+		})
+	}
+
+	pipelineRun := &pb.PipelineRun{
+		Id:               pipelineExecutionID,
+		PipelineId:       pipelineID,
+		ActivityId:       activityId,
+		Source:           payload.Source.String(),
+		SourceActivityId: activity.GetExternalId(),
+		Title:            activity.GetName(),
+		Description:      activity.GetDescription(),
+		Type:             activity.GetType(),
+		StartTime:        activity.GetSessions()[0].GetStartTime(),
+		Status:           pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+		CreatedAt:        timestamppb.Now(),
+		UpdatedAt:        timestamppb.Now(),
+		Destinations:     destOutcomes,
+	}
+
+	if err := o.database.CreatePipelineRun(ctx, userId, pipelineRun); err != nil {
+		logger.Error("Failed to create initial pipeline run", "error", err, "pipeline_run_id", pipelineRun.Id)
+	} else {
+		logger.Debug("Created initial pipeline run", "pipeline_run_id", pipelineRun.Id, "activity_id", activityId)
+	}
+}
+
+// updatePipelineRunStatus updates the pipeline run with a new status and optional message
+func (o *Orchestrator) updatePipelineRunStatus(ctx context.Context, logger *slog.Logger, userId string, pipelineRunId string, status pb.PipelineRunStatus, statusMessage string, providerExecs []ProviderExecution) {
+	// Convert ProviderExecutions to BoosterExecutions
+	boosters := make([]*pb.BoosterExecution, 0, len(providerExecs))
+	for _, pe := range providerExecs {
+		booster := &pb.BoosterExecution{
+			ProviderName: pe.ProviderName,
+			Status:       pe.Status,
+			DurationMs:   pe.DurationMs,
+			Metadata:     pe.Metadata,
+		}
+		if pe.Error != "" {
+			booster.Error = &pe.Error
+		}
+		boosters = append(boosters, booster)
+	}
+
+	updateData := map[string]interface{}{
+		"status":     status,
+		"updated_at": timestamppb.Now(),
+		"boosters":   boosters,
+	}
+	if statusMessage != "" {
+		updateData["status_message"] = statusMessage
+	}
+
+	if err := o.database.UpdatePipelineRun(ctx, userId, pipelineRunId, updateData); err != nil {
+		logger.Error("Failed to update pipeline run status", "error", err, "pipeline_run_id", pipelineRunId, "status", status)
+	} else {
+		logger.Debug("Updated pipeline run status", "pipeline_run_id", pipelineRunId, "status", status, "message", statusMessage)
+	}
+}
+
+// finalizePipelineRun updates the pipeline run with final enriched data on success
+func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Logger, userId string, event *pb.EnrichedActivityEvent, providerExecs []ProviderExecution, payload *pb.ActivityPayload) {
 	// Convert ProviderExecutions to BoosterExecutions
 	boosters := make([]*pb.BoosterExecution, 0, len(providerExecs))
 	for _, pe := range providerExecs {
@@ -710,28 +812,21 @@ func (o *Orchestrator) createPipelineRun(ctx context.Context, logger *slog.Logge
 		}
 	}
 
-	// Create PipelineRun
-	pipelineRun := &pb.PipelineRun{
-		Id:                 *event.PipelineExecutionId,
-		PipelineId:         event.PipelineId,
-		ActivityId:         event.ActivityId,
-		Source:             event.Source.String(),
-		SourceActivityId:   payload.GetStandardizedActivity().GetExternalId(), // External ID from source platform (e.g., Strava activity ID)
-		Title:              event.Name,
-		Description:        event.Description,
-		Type:               event.ActivityType,
-		StartTime:          event.StartTime,
-		Status:             pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
-		CreatedAt:          timestamppb.Now(),
-		UpdatedAt:          timestamppb.Now(),
-		Boosters:           boosters,
-		Destinations:       destinations,
-		OriginalPayloadUri: payloadUri, // GCS URI for payload retrieval
+	// Update pipeline run with final enriched data
+	updateData := map[string]interface{}{
+		"title":                event.Name,
+		"description":          event.Description,
+		"type":                 event.ActivityType,
+		"start_time":           event.StartTime,
+		"updated_at":           timestamppb.Now(),
+		"boosters":             boosters,
+		"destinations":         destinations,
+		"original_payload_uri": payloadUri,
 	}
 
-	if err := o.database.CreatePipelineRun(ctx, userId, pipelineRun); err != nil {
-		logger.Error("Failed to create pipeline run", "error", err, "pipeline_run_id", pipelineRun.Id)
+	if err := o.database.UpdatePipelineRun(ctx, userId, *event.PipelineExecutionId, updateData); err != nil {
+		logger.Error("Failed to finalize pipeline run", "error", err, "pipeline_run_id", *event.PipelineExecutionId)
 	} else {
-		logger.Debug("Created pipeline run", "pipeline_run_id", pipelineRun.Id, "activity_id", event.ActivityId)
+		logger.Debug("Finalized pipeline run", "pipeline_run_id", *event.PipelineExecutionId, "activity_id", event.ActivityId)
 	}
 }
