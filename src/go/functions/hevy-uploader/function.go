@@ -366,6 +366,8 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	// If no changes, skip the PUT
 	if len(updatedFields) == 0 {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
+		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
+		destination.UpdateStatus(ctx, svc.DB, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", fwCtx.Logger)
 		return map[string]interface{}{
 			"status":         "SUCCESS",
 			"hevy_id":        workoutID,

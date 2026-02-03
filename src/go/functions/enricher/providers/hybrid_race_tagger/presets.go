@@ -28,21 +28,44 @@ type RacePreset struct {
 	Stations    []Station // Ordered list of stations
 }
 
-// Hyrox standard weights by category
-const (
-	// Male Open
-	HyroxMaleSledPushKg = 152.0
-	HyroxMaleSledPullKg = 103.0
-	HyroxMaleFarmersKg  = 24.0 // Per hand (2x24kg)
-	HyroxMaleSandbagKg  = 20.0
-	HyroxMaleWallBallKg = 9.0
+// Hyrox weights by category and division
+// Reference: https://hyrox.com/race/ (official weight chart)
+// Note: Sled weights are "incl. sled" values
 
-	// Female Open
-	HyroxFemaleSledPushKg = 102.0
-	HyroxFemaleSledPullKg = 78.0
-	HyroxFemaleFarmersKg  = 16.0 // Per hand (2x16kg)
-	HyroxFemaleSandbagKg  = 10.0
-	HyroxFemaleWallBallKg = 6.0
+// Women's Open
+const (
+	HyroxWomenOpenSledPushKg = 102.0 // 50kg + 52kg sled
+	HyroxWomenOpenSledPullKg = 78.0  // 25kg + 53kg sled
+	HyroxWomenOpenFarmersKg  = 16.0  // Per hand (2x16kg)
+	HyroxWomenOpenSandbagKg  = 10.0  // Sandbag
+	HyroxWomenOpenWallBallKg = 4.0   // Wall Ball
+)
+
+// Women's Pro
+const (
+	HyroxWomenProSledPushKg = 152.0 // 100kg + 52kg sled
+	HyroxWomenProSledPullKg = 103.0 // 50kg + 53kg sled
+	HyroxWomenProFarmersKg  = 24.0  // Per hand (2x24kg)
+	HyroxWomenProSandbagKg  = 20.0  // Sandbag
+	HyroxWomenProWallBallKg = 6.0   // Wall Ball
+)
+
+// Men's Open
+const (
+	HyroxMenOpenSledPushKg = 152.0 // 100kg + 52kg sled
+	HyroxMenOpenSledPullKg = 103.0 // 50kg + 53kg sled
+	HyroxMenOpenFarmersKg  = 24.0  // Per hand (2x24kg)
+	HyroxMenOpenSandbagKg  = 20.0  // Sandbag
+	HyroxMenOpenWallBallKg = 6.0   // Wall Ball
+)
+
+// Men's Pro
+const (
+	HyroxMenProSledPushKg = 202.0 // 150kg + 52kg sled
+	HyroxMenProSledPullKg = 153.0 // 100kg + 53kg sled
+	HyroxMenProFarmersKg  = 32.0  // Per hand (2x32kg)
+	HyroxMenProSandbagKg  = 30.0  // Sandbag
+	HyroxMenProWallBallKg = 9.0   // Wall Ball
 )
 
 // hyroxStations creates the standard Hyrox station order with specified weights
@@ -69,33 +92,58 @@ func hyroxStations(sledPush, sledPull, farmers, sandbag, wallBall float64) []Sta
 
 // RacePresets contains all available hybrid race presets
 var RacePresets = map[string]RacePreset{
-	"hyrox_male_single": {
-		ID:          "hyrox_male_single",
-		Name:        "Hyrox - Male Single",
-		Description: "Standard Hyrox race for male athletes",
+	// Women's presets
+	"hyrox_women_open": {
+		ID:          "hyrox_women_open",
+		Name:        "Hyrox - Women's Open",
+		Description: "Standard Hyrox race for women (Open division)",
 		RaceType:    "hyrox",
-		Stations:    hyroxStations(HyroxMaleSledPushKg, HyroxMaleSledPullKg, HyroxMaleFarmersKg, HyroxMaleSandbagKg, HyroxMaleWallBallKg),
+		Stations:    hyroxStations(HyroxWomenOpenSledPushKg, HyroxWomenOpenSledPullKg, HyroxWomenOpenFarmersKg, HyroxWomenOpenSandbagKg, HyroxWomenOpenWallBallKg),
 	},
-	"hyrox_female_single": {
-		ID:          "hyrox_female_single",
-		Name:        "Hyrox - Female Single",
-		Description: "Standard Hyrox race for female athletes",
+	"hyrox_women_pro": {
+		ID:          "hyrox_women_pro",
+		Name:        "Hyrox - Women's Pro",
+		Description: "Hyrox race for women (Pro division)",
 		RaceType:    "hyrox",
-		Stations:    hyroxStations(HyroxFemaleSledPushKg, HyroxFemaleSledPullKg, HyroxFemaleFarmersKg, HyroxFemaleSandbagKg, HyroxFemaleWallBallKg),
+		Stations:    hyroxStations(HyroxWomenProSledPushKg, HyroxWomenProSledPullKg, HyroxWomenProFarmersKg, HyroxWomenProSandbagKg, HyroxWomenProWallBallKg),
 	},
-	"hyrox_doubles": {
-		ID:          "hyrox_doubles",
-		Name:        "Hyrox - Doubles",
-		Description: "Hyrox race with partner (same gender)",
+	// Men's presets
+	"hyrox_men_open": {
+		ID:          "hyrox_men_open",
+		Name:        "Hyrox - Men's Open",
+		Description: "Standard Hyrox race for men (Open division)",
 		RaceType:    "hyrox",
-		Stations:    hyroxStations(HyroxMaleSledPushKg, HyroxMaleSledPullKg, HyroxMaleFarmersKg, HyroxMaleSandbagKg, HyroxMaleWallBallKg),
+		Stations:    hyroxStations(HyroxMenOpenSledPushKg, HyroxMenOpenSledPullKg, HyroxMenOpenFarmersKg, HyroxMenOpenSandbagKg, HyroxMenOpenWallBallKg),
+	},
+	"hyrox_men_pro": {
+		ID:          "hyrox_men_pro",
+		Name:        "Hyrox - Men's Pro",
+		Description: "Hyrox race for men (Pro division)",
+		RaceType:    "hyrox",
+		Stations:    hyroxStations(HyroxMenProSledPushKg, HyroxMenProSledPullKg, HyroxMenProFarmersKg, HyroxMenProSandbagKg, HyroxMenProWallBallKg),
+	},
+	// Doubles presets
+	"hyrox_doubles_women": {
+		ID:          "hyrox_doubles_women",
+		Name:        "Hyrox - Women's Doubles",
+		Description: "Hyrox doubles race for women (uses Women's Pro weights)",
+		RaceType:    "hyrox",
+		Stations:    hyroxStations(HyroxWomenProSledPushKg, HyroxWomenProSledPullKg, HyroxWomenProFarmersKg, HyroxWomenProSandbagKg, HyroxWomenProWallBallKg),
+	},
+	"hyrox_doubles_men": {
+		ID:          "hyrox_doubles_men",
+		Name:        "Hyrox - Men's Doubles",
+		Description: "Hyrox doubles race for men (uses Men's Pro weights)",
+		RaceType:    "hyrox",
+		Stations:    hyroxStations(HyroxMenProSledPushKg, HyroxMenProSledPullKg, HyroxMenProFarmersKg, HyroxMenProSandbagKg, HyroxMenProWallBallKg),
 	},
 	"hyrox_mixed_doubles": {
 		ID:          "hyrox_mixed_doubles",
 		Name:        "Hyrox - Mixed Doubles",
-		Description: "Hyrox race with mixed gender partner",
+		Description: "Hyrox race with mixed gender partner (uses Men's Open weights)",
 		RaceType:    "hyrox",
-		Stations:    hyroxStations(127, 90.5, 20, 15, 7.5),
+		// Mixed doubles uses Men's Open weights
+		Stations: hyroxStations(HyroxMenOpenSledPushKg, HyroxMenOpenSledPullKg, HyroxMenOpenFarmersKg, HyroxMenOpenSandbagKg, HyroxMenOpenWallBallKg),
 	},
 }
 
@@ -104,16 +152,21 @@ func GetPresetList() []struct {
 	ID   string
 	Name string
 } {
-	list := []struct {
+	return []struct {
 		ID   string
 		Name string
 	}{
-		{ID: "hyrox_male_single", Name: "Hyrox - Male Single"},
-		{ID: "hyrox_female_single", Name: "Hyrox - Female Single"},
-		{ID: "hyrox_doubles", Name: "Hyrox - Doubles"},
+		// Women's categories
+		{ID: "hyrox_women_open", Name: "Hyrox - Women's Open"},
+		{ID: "hyrox_women_pro", Name: "Hyrox - Women's Pro"},
+		// Men's categories
+		{ID: "hyrox_men_open", Name: "Hyrox - Men's Open"},
+		{ID: "hyrox_men_pro", Name: "Hyrox - Men's Pro"},
+		// Doubles categories
+		{ID: "hyrox_doubles_women", Name: "Hyrox - Women's Doubles"},
+		{ID: "hyrox_doubles_men", Name: "Hyrox - Men's Doubles"},
 		{ID: "hyrox_mixed_doubles", Name: "Hyrox - Mixed Doubles"},
 	}
-	return list
 }
 
 // GetPreset retrieves a preset by ID

@@ -417,3 +417,80 @@ func TestFitBitHeartRate_Enrich_ForceOverwrite(t *testing.T) {
 		t.Errorf("Expected hr_source=fitbit with force=true, got %s", result.Metadata["hr_source"])
 	}
 }
+
+func TestFitBitHeartRate_Enrich_SpansMidnight(t *testing.T) {
+	var capturedURL string
+	mockHTTPClient := &http.Client{
+		Transport: &mockTransport{
+			DoFunc: func(req *http.Request) (*http.Response, error) {
+				capturedURL = req.URL.String()
+				mockResponse := `{
+					"activities-heart-intraday": {
+						"dataset": [
+							{"time": "23:58:00", "value": 120},
+							{"time": "23:59:00", "value": 125},
+							{"time": "00:00:00", "value": 130},
+							{"time": "00:05:00", "value": 135},
+							{"time": "00:10:00", "value": 140}
+						]
+					}
+				}`
+				return &http.Response{
+					StatusCode: 200,
+					Body:       io.NopCloser(bytes.NewBufferString(mockResponse)),
+				}, nil
+			},
+		},
+	}
+
+	provider := NewFitBitHeartRate()
+	provider.Service = &bootstrap.Service{}
+
+	// Activity starts at 23:58 on Jan 1 and ends at 00:10 on Jan 2 (12 minutes spanning midnight)
+	startTime := time.Date(2026, 1, 1, 23, 58, 0, 0, time.UTC)
+	activity := &pb.StandardizedActivity{
+		StartTime: timestamppb.New(startTime),
+		Sessions: []*pb.Session{
+			{TotalElapsedTime: 720}, // 12 minutes
+		},
+	}
+
+	user := &pb.UserRecord{
+		UserId: "test-user",
+		Integrations: &pb.UserIntegrations{
+			Fitbit: &pb.FitbitIntegration{
+				Enabled:     true,
+				AccessToken: "test-token",
+			},
+		},
+	}
+
+	result, err := provider.EnrichWithClient(context.Background(), slog.Default(), activity, user, nil, mockHTTPClient, false)
+	if err != nil {
+		t.Fatalf("Enrich failed for midnight-spanning activity: %v", err)
+	}
+
+	// Verify the date range API was called (URL should contain both dates)
+	if !bytes.Contains([]byte(capturedURL), []byte("2026-01-01")) {
+		t.Errorf("Expected URL to contain start date 2026-01-01, got: %s", capturedURL)
+	}
+	if !bytes.Contains([]byte(capturedURL), []byte("2026-01-02")) {
+		t.Errorf("Expected URL to contain end date 2026-01-02, got: %s", capturedURL)
+	}
+
+	// Verify metadata indicates this spanned midnight
+	if result.Metadata["spans_midnight"] != "true" {
+		t.Errorf("Expected spans_midnight=true, got %s", result.Metadata["spans_midnight"])
+	}
+	if result.Metadata["query_date"] != "2026-01-01" {
+		t.Errorf("Expected query_date=2026-01-01, got %s", result.Metadata["query_date"])
+	}
+	if result.Metadata["query_end_date"] != "2026-01-02" {
+		t.Errorf("Expected query_end_date=2026-01-02, got %s", result.Metadata["query_end_date"])
+	}
+
+	// Verify heart rate stream has data
+	if len(result.HeartRateStream) != 720 {
+		t.Errorf("Expected heart rate stream of 720 seconds, got %d", len(result.HeartRateStream))
+	}
+}

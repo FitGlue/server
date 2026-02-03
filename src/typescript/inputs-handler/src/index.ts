@@ -1,7 +1,7 @@
 // Module-level imports for smart pruning
 import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError, ForbiddenError } from '@fitglue/shared/errors';
-import { InputStore, UserStore } from '@fitglue/shared/storage';
+import { InputStore, UserStore, PipelineRunStore } from '@fitglue/shared/storage';
 import { InputService } from '@fitglue/shared/domain/services';
 import { CloudEventPublisher } from '@fitglue/shared/infrastructure/pubsub';
 import { ActivityPayload, CloudEventType, CloudEventSource, getCloudEventType, getCloudEventSource } from '@fitglue/shared/types';
@@ -24,7 +24,8 @@ interface ResolveInputRequest {
 export const handler: FrameworkHandler = async (req, ctx) => {
 
   const inputStore = new InputStore(db);
-  const inputService = new InputService(inputStore, ctx.services.authorization);
+  const pipelineRunStore = new PipelineRunStore(db);
+  const inputService = new InputService(inputStore, ctx.services.authorization, pipelineRunStore);
   const userStore = new UserStore(db);
 
   const path = req.path;

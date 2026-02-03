@@ -201,6 +201,8 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"activity_id", eventPayload.ActivityId,
 			"pipeline_id", eventPayload.PipelineId,
 		)
+		// Update PipelineRun destination as skipped (duplicate)
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "duplicate_activity", fwCtx.Logger)
 		// Return SKIPPED status without error - this prevents Sentry capture
 		// and shows as "skipped" in the UI rather than "failed"
 		return map[string]interface{}{
@@ -350,6 +352,8 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"activity_id", eventPayload.ActivityId,
 			"error", err,
 		)
+		// Update PipelineRun destination as skipped
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "activity_not_found",
@@ -363,6 +367,8 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		fwCtx.Logger.Info("Synchronized activity is nil for UPDATE - skipping",
 			"activity_id", eventPayload.ActivityId,
 		)
+		// Update PipelineRun destination as skipped
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "activity_not_found",
@@ -378,6 +384,8 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"activity_id", eventPayload.ActivityId,
 			"destinations", syncActivity.Destinations,
 		)
+		// Update PipelineRun destination as skipped
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "no_strava_destination", fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "no_strava_destination",
@@ -459,6 +467,8 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 
 	if len(updateBody) == 0 {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
+		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, stravaIDStr, "", fwCtx.Logger)
 		return map[string]interface{}{
 			"status":             "SUCCESS",
 			"strava_activity_id": stravaIDStr,

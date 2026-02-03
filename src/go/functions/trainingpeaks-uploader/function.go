@@ -281,6 +281,8 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 
 	if !hasChanges {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
+		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutIDStr, "", fwCtx.Logger)
 		return map[string]interface{}{
 			"status":           "SUCCESS",
 			"trainingpeaks_id": workoutIDStr,

@@ -33,6 +33,7 @@ jest.mock('@fitglue/shared/errors', () => {
 jest.mock('@fitglue/shared/storage', () => ({
   InputStore: jest.fn(),
   UserStore: jest.fn(),
+  PipelineRunStore: jest.fn(),
 }));
 
 // Mock @fitglue/shared/domain/services

@@ -155,6 +155,22 @@ export class PipelineRunStore {
     }
 
     /**
+     * Find a pipeline run by activity ID.
+     * Returns the first matching pipeline run, or null if not found.
+     */
+    async findByActivityId(userId: string, activityId: string): Promise<PipelineRun | null> {
+        const snapshot = await this.collection(userId)
+            .where('activity_id', '==', activityId)
+            .limit(1)
+            .get();
+
+        if (snapshot.empty) {
+            return null;
+        }
+        return snapshot.docs[0].data() || null;
+    }
+
+    /**
      * Delete a pipeline run.
      */
     async delete(userId: string, pipelineRunId: string): Promise<void> {

@@ -57,13 +57,14 @@ type UserSelection struct {
 
 // StationResult holds timing data for a processed station
 type StationResult struct {
-	Name      string
-	Icon      string
-	Duration  float64
-	Distance  float64
-	StartTime *timestamppb.Timestamp
-	IsRun     bool
-	Weight    float64
+	Name         string
+	Icon         string
+	Duration     float64
+	Distance     float64
+	StartTime    *timestamppb.Timestamp
+	IsRun        bool
+	Weight       float64
+	ExpectedReps int32 // Expected reps from preset (e.g., 100 for Wall Balls)
 }
 
 // Enrich is called on first run - returns WaitForInputError with lap metadata and preset options
@@ -224,6 +225,10 @@ func generateTimeMarkers(results []StationResult) []*pb.TimeMarker {
 }
 
 // generateDescription creates a formatted breakdown of the race
+// For hybrid races like Hyrox, distances are fixed (known), so we show:
+// - Runs: just duration (1km is always the distance)
+// - Stations with weight: duration + weight
+// - Stations with reps (e.g., Wall Balls): duration + reps + weight
 func generateDescription(preset RacePreset, results []StationResult) string {
 	var sb strings.Builder
 
@@ -243,13 +248,20 @@ func generateDescription(preset RacePreset, results []StationResult) string {
 		timeStr := formatDuration(result.Duration)
 
 		if result.IsRun {
+			// Runs: just show duration (distance is always 1km - known)
 			runCount++
-			sb.WriteString(fmt.Sprintf("%s Run %d: %s (%.1fkm)\n", icon, runCount, timeStr, result.Distance/1000))
+			sb.WriteString(fmt.Sprintf("%s Run %d: %s\n", icon, runCount, timeStr))
+		} else if result.ExpectedReps > 0 && result.Weight > 0 {
+			// Rep-based stations with weight (e.g., Wall Balls): show reps + weight
+			sb.WriteString(fmt.Sprintf("%s %s: %s (%d reps @ %.0fkg)\n", icon, result.Name, timeStr, result.ExpectedReps, result.Weight))
+		} else if result.ExpectedReps > 0 {
+			// Rep-based stations without weight: show reps only
+			sb.WriteString(fmt.Sprintf("%s %s: %s (%d reps)\n", icon, result.Name, timeStr, result.ExpectedReps))
 		} else if result.Weight > 0 {
-			sb.WriteString(fmt.Sprintf("%s %s: %s (%.0fm @ %.0fkg)\n", icon, result.Name, timeStr, result.Distance, result.Weight))
-		} else if result.Distance > 0 {
-			sb.WriteString(fmt.Sprintf("%s %s: %s (%.0fm)\n", icon, result.Name, timeStr, result.Distance))
+			// Distance-based stations with weight: show weight only (distance is known)
+			sb.WriteString(fmt.Sprintf("%s %s: %s (%.0fkg)\n", icon, result.Name, timeStr, result.Weight))
 		} else {
+			// Distance-based stations without weight: just show time (distance is known)
 			sb.WriteString(fmt.Sprintf("%s %s: %s\n", icon, result.Name, timeStr))
 		}
 	}
@@ -395,13 +407,14 @@ func mapLapsToPreset(laps []*pb.Lap, preset RacePreset) ([]*pb.Lap, []*pb.Streng
 
 		// Record station result for time markers and description
 		result := StationResult{
-			Name:      station.Name,
-			Icon:      station.Icon,
-			Duration:  lap.TotalElapsedTime,
-			Distance:  lap.TotalDistance,
-			StartTime: lap.StartTime,
-			IsRun:     station.Type == StationTypeRun,
-			Weight:    station.WeightKg,
+			Name:         station.Name,
+			Icon:         station.Icon,
+			Duration:     lap.TotalElapsedTime,
+			Distance:     lap.TotalDistance,
+			StartTime:    lap.StartTime,
+			IsRun:        station.Type == StationTypeRun,
+			Weight:       station.WeightKg,
+			ExpectedReps: station.Reps,
 		}
 		stationResults = append(stationResults, result)
 

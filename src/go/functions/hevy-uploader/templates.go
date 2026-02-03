@@ -1,7 +1,8 @@
 package hevyuploader
 
 // Exercise template handling for Hevy
-// This file provides template resolution via the Hevy API with fuzzy matching and caching
+// This file provides template resolution via the Hevy API with strict matching and caching
+// For Hyrox/ATHX/GymRace activities, we use strict matching to preserve exercise specificity
 
 import (
 	"bytes"
@@ -20,9 +21,71 @@ import (
 type HevyExerciseTemplate struct {
 	ID            string `json:"id"`
 	Title         string `json:"title"`
-	Type          string `json:"type"`           // strength, cardio, etc.
+	Type          string `json:"type"`           // weight_reps, distance_duration, etc.
 	PrimaryMuscle string `json:"primary_muscle"` // optional
 	IsCustom      bool   `json:"is_custom"`
+}
+
+// ExerciseTypeConfig holds the exercise type and muscle group for custom templates
+type ExerciseTypeConfig struct {
+	ExerciseType string // Hevy CustomExerciseType: weight_reps, distance_duration, weight_duration, etc.
+	MuscleGroup  string // Hevy MuscleGroup: full_body, quadriceps, etc.
+}
+
+// strictExerciseAliases maps normalized exercise names to acceptable alternatives
+// These are intentionally restrictive - only truly equivalent exercises should be listed
+// Key: normalized source name, Value: list of acceptable normalized Hevy names
+var strictExerciseAliases = map[string][]string{
+	"farmers carry":      {"farmers walk", "farmer walk", "farmer carry"},
+	"farmers walk":       {"farmers carry", "farmer walk", "farmer carry"},
+	"skierg":             {"ski erg"},
+	"ski erg":            {"skierg"},
+	"burpee broad jump":  {"burpee broad jumps"},
+	"burpee broad jumps": {"burpee broad jump"},
+	"sandbag lunges":     {"sandbag lunge", "weighted lunges", "weighted lunge"},
+	"sandbag lunge":      {"sandbag lunges", "weighted lunges", "weighted lunge"},
+	"sled push":          {"prowler push"},
+	"sled pull":          {"prowler pull"},
+	"wall balls":         {"wall ball"},
+	"wall ball":          {"wall balls"},
+	"rowing":             {"row", "rowing machine", "row machine"},
+	"row":                {"rowing", "rowing machine", "row machine"},
+}
+
+// getExerciseTypeConfig returns the appropriate exercise_type and muscle_group for an exercise name
+// This is used when creating custom templates to ensure the right measurement types are supported
+func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
+	normalized := strings.ToLower(exerciseName)
+
+	// Distance + Duration exercises (Hyrox cardio stations, carries, sleds, etc.)
+	// These exercises track distance covered and time taken
+	distanceDurationPatterns := []string{
+		"skierg", "ski erg",
+		"rowing", "row",
+		"sled push", "sled pull", "prowler",
+		"burpee broad jump",
+		"farmers carry", "farmers walk", "farmer carry", "farmer walk",
+		"sandbag lunges", "sandbag lunge", "weighted lunges", "weighted lunge",
+		"running", "cycling", "swimming", "walking",
+	}
+
+	for _, pattern := range distanceDurationPatterns {
+		if strings.Contains(normalized, pattern) {
+			return ExerciseTypeConfig{ExerciseType: "distance_duration", MuscleGroup: "full_body"}
+		}
+	}
+
+	// Weight + Duration exercises (Wall Balls - we track weight and time, with reps in notes)
+	// Hevy doesn't have reps+time+weight, so we use weight_duration and add reps to notes
+	weightDurationPatterns := []string{"wall ball"}
+	for _, pattern := range weightDurationPatterns {
+		if strings.Contains(normalized, pattern) {
+			return ExerciseTypeConfig{ExerciseType: "weight_duration", MuscleGroup: "full_body"}
+		}
+	}
+
+	// Default to weight_reps for unknown strength exercises
+	return ExerciseTypeConfig{ExerciseType: "weight_reps", MuscleGroup: "other"}
 }
 
 // TemplateResolver fetches, caches, and resolves exercise template IDs from Hevy
@@ -47,7 +110,7 @@ func NewTemplateResolver(apiKey string, logger *slog.Logger) *TemplateResolver {
 // It will:
 // 1. Check local cache first
 // 2. Fetch templates from API if not yet fetched
-// 3. Fuzzy match against fetched templates
+// 3. Strict match against fetched templates (exact or known aliases only)
 // 4. Create a custom template if no match found
 func (r *TemplateResolver) ResolveTemplateID(ctx context.Context, exerciseName string) (string, error) {
 	normalized := normalizeExerciseName(exerciseName)
@@ -69,8 +132,8 @@ func (r *TemplateResolver) ResolveTemplateID(ctx context.Context, exerciseName s
 		}
 	}
 
-	// Fuzzy match against fetched templates
-	if templateID := r.fuzzyMatch(normalized); templateID != "" {
+	// Strict match against fetched templates (exact or known aliases only)
+	if templateID := r.strictMatch(normalized); templateID != "" {
 		r.cache[normalized] = templateID
 		r.logger.Info("Template matched",
 			"exerciseName", exerciseName,
@@ -78,7 +141,7 @@ func (r *TemplateResolver) ResolveTemplateID(ctx context.Context, exerciseName s
 		return templateID, nil
 	}
 
-	// No match found - create custom template
+	// No match found - create custom template with appropriate exercise type
 	r.logger.Info("No template match, creating custom",
 		"exerciseName", exerciseName)
 	templateID, err := r.createCustomTemplate(ctx, exerciseName)
@@ -150,8 +213,9 @@ func (r *TemplateResolver) fetchAllTemplates(ctx context.Context) error {
 	return nil
 }
 
-// fuzzyMatch finds a template ID by matching against fetched templates
-func (r *TemplateResolver) fuzzyMatch(normalizedName string) string {
+// strictMatch finds a template ID using exact matching or known aliases only
+// This is intentionally restrictive to preserve exercise specificity for Hyrox/ATHX/GymRace
+func (r *TemplateResolver) strictMatch(normalizedName string) string {
 	// Exact match first
 	for _, t := range r.templates {
 		if normalizeExerciseName(t.Title) == normalizedName {
@@ -159,12 +223,18 @@ func (r *TemplateResolver) fuzzyMatch(normalizedName string) string {
 		}
 	}
 
-	// Partial/contains match
-	for _, t := range r.templates {
-		normalizedTitle := normalizeExerciseName(t.Title)
-		if strings.Contains(normalizedTitle, normalizedName) ||
-			strings.Contains(normalizedName, normalizedTitle) {
-			return t.ID
+	// Check known aliases (strict equivalents only)
+	if aliases, ok := strictExerciseAliases[normalizedName]; ok {
+		for _, alias := range aliases {
+			for _, t := range r.templates {
+				if normalizeExerciseName(t.Title) == alias {
+					r.logger.Debug("Matched via strict alias",
+						"source", normalizedName,
+						"alias", alias,
+						"templateTitle", t.Title)
+					return t.ID
+				}
+			}
 		}
 	}
 
@@ -172,15 +242,26 @@ func (r *TemplateResolver) fuzzyMatch(normalizedName string) string {
 }
 
 // createCustomTemplate creates a new custom exercise template in Hevy
+// Uses getExerciseTypeConfig to determine the appropriate exercise_type
 func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseName string) (string, error) {
 	client := oauth.NewClientWithErrorLogging(r.logger, "hevy", 30*time.Second)
+
+	// Get the appropriate exercise type for this exercise
+	config := getExerciseTypeConfig(exerciseName)
 
 	payload := map[string]interface{}{
 		"exercise": map[string]interface{}{
 			"title":         exerciseName,
-			"exercise_type": "weight_reps", // default to weight/reps for strength
+			"exercise_type": config.ExerciseType,
+			"muscle_group":  config.MuscleGroup,
 		},
 	}
+
+	r.logger.Debug("Creating custom template",
+		"exerciseName", exerciseName,
+		"exerciseType", config.ExerciseType,
+		"muscleGroup", config.MuscleGroup)
+
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return "", fmt.Errorf("marshal payload: %w", err)
@@ -219,27 +300,21 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 }
 
 // normalizeExerciseName normalizes an exercise name for comparison
+// This does NOT simplify Hyrox-specific exercises - we preserve their specificity
 func normalizeExerciseName(name string) string {
 	// Lowercase and trim
 	name = strings.ToLower(strings.TrimSpace(name))
 
-	// Common substitutions
+	// Common substitutions for punctuation/formatting only
 	name = strings.ReplaceAll(name, "-", " ")
 	name = strings.ReplaceAll(name, "_", " ")
 	name = strings.ReplaceAll(name, "'", "") // farmer's -> farmers
 	name = strings.ReplaceAll(name, "'", "") // curly apostrophe
 
-	// Normalize synonyms for better matching
-	name = strings.ReplaceAll(name, "carry", "walk")   // farmer carry -> farmer walk
-	name = strings.ReplaceAll(name, "carries", "walk") // farmers carries -> farmers walk
+	// Normalize plural/singular for common variations
+	name = strings.ReplaceAll(name, "carries", "carry")
 
-	// Hyrox-specific normalizations
-	name = strings.ReplaceAll(name, "skierg", "ski erg")           // SkiErg -> Ski Erg
-	name = strings.ReplaceAll(name, "wall balls", "wall ball")     // Wall Balls -> Wall Ball
-	name = strings.ReplaceAll(name, "burpee broad jump", "burpee") // Simplified to base exercise
-	name = strings.ReplaceAll(name, "sandbag lunges", "lunges")    // Simplified to base exercise
-
-	// Remove common suffixes that vary between platforms
+	// Remove common equipment suffixes that vary between platforms
 	suffixes := []string{"(barbell)", "(dumbbell)", "(machine)", "(cable)", "(smith)", "(outdoor)", "(treadmill)"}
 	for _, suffix := range suffixes {
 		name = strings.TrimSuffix(name, suffix)

@@ -81,6 +81,11 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 	// Format for Fitbit API
 	startTimeStr := startTime.Format("15:04")
 	endTimeStr := endTime.Format("15:04")
+	startDate := startTime.Format("2006-01-02")
+	endDate := endTime.Format("2006-01-02")
+
+	// Check if activity spans midnight (crosses day boundary)
+	spansMidnight := startDate != endDate
 
 	// 3. Initialize OAuth HTTP Client if not provided (for testing)
 	if httpClient == nil {
@@ -95,8 +100,14 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 	}
 
 	// 5. Request Data (Intraday HR)
-	date := startTime.Format("2006-01-02")
-	resp, err := client.GetHeartByDateTimestampIntraday(ctx, date, "1sec", startTimeStr, endTimeStr)
+	// Use date range API when activity spans midnight to avoid "start time after end time" error
+	var resp *http.Response
+	if spansMidnight {
+		logger.Info(fmt.Sprintf("Activity spans midnight, using date range API: %s %s to %s %s", startDate, startTimeStr, endDate, endTimeStr))
+		resp, err = client.GetHeartByDateRangeTimestampIntraday(ctx, startDate, endDate, "1sec", startTimeStr, endTimeStr)
+	} else {
+		resp, err = client.GetHeartByDateTimestampIntraday(ctx, startDate, "1sec", startTimeStr, endTimeStr)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("fitbit api request failed: %w", err)
 	}
@@ -218,13 +229,15 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 		Name:            "", // Don't wipe name
 		HeartRateStream: stream,
 		Metadata: mergeMetadata(map[string]string{
-			"hr_source":     "fitbit",
-			"query_date":    date,
-			"query_start":   startTimeStr,
-			"query_end":     endTimeStr,
-			"points_found":  fmt.Sprintf("%d", pointsFound),
-			"status_detail": "Success",
-			"do_not_retry":  fmt.Sprintf("%v", doNotRetry),
+			"hr_source":      "fitbit",
+			"query_date":     startDate,
+			"query_end_date": endDate,
+			"query_start":    startTimeStr,
+			"query_end":      endTimeStr,
+			"spans_midnight": fmt.Sprintf("%v", spansMidnight),
+			"points_found":   fmt.Sprintf("%d", pointsFound),
+			"status_detail":  "Success",
+			"do_not_retry":   fmt.Sprintf("%v", doNotRetry),
 		}, alignmentMetadata),
 	}, nil
 }

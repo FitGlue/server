@@ -357,6 +357,8 @@ func handleIntervalsUpdate(ctx context.Context, httpClient *http.Client, integra
 
 	if len(updateBody) == 0 {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
+		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, intervalsIDStr, "", fwCtx.Logger)
 		return map[string]interface{}{
 			"status":                "SUCCESS",
 			"intervals_activity_id": intervalsIDStr,

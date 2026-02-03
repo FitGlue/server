@@ -122,6 +122,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       trialEndsAt: user.trialEndsAt?.toISOString(),
       isAdmin: user.isAdmin || false,
       syncCountThisMonth: user.syncCountThisMonth || 0,
+      accessEnabled: user.accessEnabled || false,
       integrations: getIntegrationsSummary(user as unknown as { userId?: string; integrations?: unknown;[key: string]: unknown }),
       pipelines: pipelines.map(mapPipelineToResponse)
     };
