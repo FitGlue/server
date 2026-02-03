@@ -80,6 +80,11 @@ func (m *MockDatabase) ListPendingInputs(ctx context.Context, userID string) ([]
 	return nil, nil
 }
 
+func (m *MockDatabase) DeletePendingInput(ctx context.Context, userId string, id string) error {
+	// No-op for tests by default
+	return nil
+}
+
 func (m *MockDatabase) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
 	if m.GetCounterFunc != nil {
 		return m.GetCounterFunc(ctx, userId, id)

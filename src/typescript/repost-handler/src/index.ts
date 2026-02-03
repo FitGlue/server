@@ -389,6 +389,8 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
  * POST /api/repost/full-pipeline
  * Re-run the entire pipeline from the beginning with bypass_dedup.
  * Now publishes directly to PIPELINE_ACTIVITY with pipelineId set.
+ * 
+ * Supports re-running even when all destinations failed (activity not synced).
  */
 async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkContext, userId: string): Promise<RepostResponse> {
   const { activityId } = req.body;
@@ -397,14 +399,33 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     throw new HttpError(400, 'activityId is required');
   }
 
-  // Get synchronized activity
-  const activity = await ctx.stores.activities.getSynchronized(userId, activityId);
-  if (!activity) {
+  // Two-step lookup: first try synchronized collection, then fall back to pipeline_runs
+  // This allows re-running pipelines even when all destinations failed to sync
+  let pipelineId: string | undefined;
+  let pipelineExecutionId: string | undefined;
+
+  // Try synchronized activity first (fast path for successful syncs)
+  const syncedActivity = await ctx.stores.activities.getSynchronized(userId, activityId);
+  if (syncedActivity) {
+    pipelineId = syncedActivity.pipelineId;
+    pipelineExecutionId = syncedActivity.pipelineExecutionId;
+    ctx.logger.info('Found synchronized activity', { activityId, pipelineId, pipelineExecutionId });
+  } else {
+    // Fallback: find pipeline run by activity ID (for failed syncs)
+    const pipelineRun = await ctx.stores.pipelineRuns.findByActivityId(userId, activityId);
+    if (pipelineRun) {
+      pipelineId = pipelineRun.pipelineId;
+      pipelineExecutionId = pipelineRun.id;
+      ctx.logger.info('Found pipeline run (no synced activity)', { activityId, pipelineId, pipelineExecutionId });
+    }
+  }
+
+  if (!pipelineExecutionId) {
     throw new HttpError(404, 'Activity not found');
   }
 
-  // Verify the activity has a pipelineId (required for direct enricher publish)
-  if (!activity.pipelineId) {
+  // Verify we have a pipelineId (required for direct enricher publish)
+  if (!pipelineId) {
     throw new HttpError(500, 'Activity missing pipelineId - cannot re-run pipeline');
   }
 
@@ -412,7 +433,7 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
   // Fall back to executions for backwards compatibility with existing data
   let originalPayload: Record<string, unknown> | null = null;
 
-  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
+  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, pipelineExecutionId);
   if (pipelineRun?.originalPayloadUri) {
     // Fetch from GCS using URI
     const uriMatch = pipelineRun.originalPayloadUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
@@ -430,11 +451,11 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
 
   // Fallback to executions collection (backwards compatibility)
   if (!originalPayload) {
-    const enricherExec = await ctx.stores.executions.getEnricherExecution(activity.pipelineExecutionId);
+    const enricherExec = await ctx.stores.executions.getEnricherExecution(pipelineExecutionId);
     if (enricherExec?.data.inputsJson) {
       try {
         originalPayload = JSON.parse(enricherExec.data.inputsJson);
-        ctx.logger.info('Retrieved original payload from executions (fallback)', { pipelineExecutionId: activity.pipelineExecutionId });
+        ctx.logger.info('Retrieved original payload from executions (fallback)', { pipelineExecutionId });
       } catch {
         throw new HttpError(500, 'Failed to parse original activity payload');
       }
@@ -467,7 +488,7 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     ...rest,
     user_id: _uid || _uidAlt,
     activity_id: _aid || _aidAlt,
-    pipeline_id: activity.pipelineId, // USE THE ORIGINAL PIPELINE
+    pipeline_id: pipelineId, // USE THE ORIGINAL PIPELINE
     bypass_dedup: true,
     pipeline_execution_id: newPipelineExecutionId,
   };
@@ -480,16 +501,16 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
       repost_type: 'full_pipeline',
-      original_execution_id: activity.pipelineExecutionId,
+      original_execution_id: pipelineExecutionId,
       bypass_dedup: 'true',
     },
   });
 
   ctx.logger.info('Published full pipeline re-execution (direct to enricher)', {
     activityId,
-    pipelineId: activity.pipelineId,
+    pipelineId,
     newPipelineExecutionId,
-    originalExecutionId: activity.pipelineExecutionId,
+    originalExecutionId: pipelineExecutionId,
   });
 
   return {

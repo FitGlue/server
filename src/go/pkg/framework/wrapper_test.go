@@ -49,6 +49,9 @@ func (m *MockDB) UpdatePendingInput(ctx context.Context, userId string, id strin
 func (m *MockDB) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
 	return nil, nil
 }
+func (m *MockDB) DeletePendingInput(ctx context.Context, userId string, id string) error {
+	return nil
+}
 func (m *MockDB) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
 	return nil, nil
 }

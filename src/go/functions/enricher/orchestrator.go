@@ -11,6 +11,7 @@ import (
 	fit "github.com/fitglue/server/src/go/pkg/domain/file_generators"
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
 	infrasentry "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
+	pendinginput "github.com/fitglue/server/src/go/pkg/pending_input"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
@@ -177,6 +178,22 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// This ensures we track the pipeline execution even if it fails partway through
 	o.createInitialPipelineRun(ctx, logger, payload.UserId, pipelineExecutionID, pipeline.ID, activityId, payload, pipeline.Destinations)
 
+	// Upload original payload to GCS for Magic Actions (retry/repost) BEFORE any mutations
+	// This ensures the stored payload has the clean original description (Rule E22: Reset-on-Repost)
+	originalPayloadUri := ""
+	if o.storage != nil && o.bucketName != "" {
+		payloadPath := fmt.Sprintf("payloads/%s/%s.json", payload.UserId, activityId)
+		payloadBytes, err := protojson.Marshal(payload)
+		if err != nil {
+			logger.Warn("Failed to marshal original payload for GCS", "error", err)
+		} else if err := o.storage.Write(ctx, o.bucketName, payloadPath, payloadBytes); err != nil {
+			logger.Warn("Failed to upload original payload to GCS", "error", err)
+		} else {
+			originalPayloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
+			logger.Debug("Uploaded original payload to GCS", "uri", originalPayloadUri)
+		}
+	}
+
 	// 3a. Execute Enrichers Sequentially
 	configs := pipeline.Enrichers
 	results := make([]*providers.EnrichmentResult, len(configs))
@@ -268,6 +285,19 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 		enricherConfig["pipeline_id"] = pipeline.ID
 		enricherConfig["activity_id"] = activityId // For pending input linking
+
+		// Clear stale pending inputs when re-running (not resuming)
+		// This allows users to provide different input on a fresh re-run.
+		if !isResumeMode {
+			staleInputID := pendinginput.GenerateID(currentActivity.Source, currentActivity.ExternalId, provider.Name())
+			existingInput, fetchErr := o.database.GetPendingInput(ctx, payload.UserId, staleInputID)
+			if fetchErr == nil && existingInput != nil && existingInput.Status == pb.PendingInput_STATUS_WAITING {
+				logger.Info("Clearing stale pending input for re-run", "provider", provider.Name(), "pending_input_id", staleInputID)
+				if delErr := o.database.DeletePendingInput(ctx, payload.UserId, staleInputID); delErr != nil {
+					logger.Warn("Failed to delete stale pending input", "error", delErr, "pending_input_id", staleInputID)
+				}
+			}
+		}
 
 		// Execute
 		// TODO: Get logger from FrameworkContext when orchestrator is refactored
@@ -612,7 +642,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	}
 
 	// Finalize PipelineRun with enriched data (initial run was created at start)
-	o.finalizePipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, payload)
+	o.finalizePipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, originalPayloadUri)
 
 	return &ProcessResult{
 		Events:             []*pb.EnrichedActivityEvent{finalEvent},
@@ -800,7 +830,7 @@ func (o *Orchestrator) updatePipelineRunStatus(ctx context.Context, logger *slog
 }
 
 // finalizePipelineRun updates the pipeline run with final enriched data on success
-func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Logger, userId string, event *pb.EnrichedActivityEvent, providerExecs []ProviderExecution, payload *pb.ActivityPayload) {
+func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Logger, userId string, event *pb.EnrichedActivityEvent, providerExecs []ProviderExecution, originalPayloadUri string) {
 	// Convert ProviderExecutions to snake_case maps for Firestore
 	boosters := boostersToFirestoreMaps(providerExecs)
 
@@ -811,21 +841,6 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 			"destination": int32(dest),
 			"status":      int32(pb.DestinationStatus_DESTINATION_STATUS_PENDING),
 		})
-	}
-
-	// Upload original payload to GCS for Magic Actions (retry/repost)
-	payloadUri := ""
-	if o.storage != nil && o.bucketName != "" {
-		payloadPath := fmt.Sprintf("payloads/%s/%s.json", userId, event.ActivityId)
-		payloadBytes, err := protojson.Marshal(payload)
-		if err != nil {
-			logger.Warn("Failed to marshal payload for GCS", "error", err)
-		} else if err := o.storage.Write(ctx, o.bucketName, payloadPath, payloadBytes); err != nil {
-			logger.Warn("Failed to upload payload to GCS", "error", err)
-		} else {
-			payloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
-			logger.Debug("Uploaded original payload to GCS", "uri", payloadUri)
-		}
 	}
 
 	// Update pipeline run with final enriched data
@@ -842,7 +857,7 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 		"status_message":       nil, // Clear pending input message on successful resume
 		"boosters":             boosters,
 		"destinations":         destinations,
-		"original_payload_uri": payloadUri,
+		"original_payload_uri": originalPayloadUri,
 	}
 
 	if err := o.database.UpdatePipelineRun(ctx, userId, *event.PipelineExecutionId, updateData); err != nil {

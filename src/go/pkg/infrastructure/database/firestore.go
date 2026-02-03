@@ -101,6 +101,12 @@ func (a *FirestoreAdapter) UpdatePendingInput(ctx context.Context, userId string
 	return a.storage.UserPendingInputs(userId).Doc(id).Update(ctx, data)
 }
 
+// DeletePendingInput removes a pending input document
+func (a *FirestoreAdapter) DeletePendingInput(ctx context.Context, userId string, id string) error {
+	_, err := a.Client.Collection("users").Doc(userId).Collection("pending_inputs").Doc(id).Delete(ctx)
+	return err
+}
+
 func (a *FirestoreAdapter) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
 	// Query user sub-collection directly - no need for where clause on user_id
 	iter := a.Client.Collection("users").Doc(userID).Collection("pending_inputs").Documents(ctx)

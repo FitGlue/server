@@ -201,6 +201,14 @@ export class UserService {
     }
 
     async deleteUser(userId: string): Promise<void> {
+        // Delete Firebase Auth user FIRST to prevent orphan auth users
+        // If this fails, the user can still login and retry deletion
+        // If Firestore deletion fails after Auth deletion, cleanup is harder
+        // but at least the user can't login as an orphan
+        const admin = await import('firebase-admin');
+        await admin.auth().deleteUser(userId);
+
+        // Then delete Firestore user document
         return this.userStore.delete(userId);
     }
 

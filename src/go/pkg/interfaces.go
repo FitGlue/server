@@ -24,6 +24,7 @@ type Database interface {
 	GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error)
 	CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error
 	UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error
+	DeletePendingInput(ctx context.Context, userId string, id string) error
 	ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error)
 	ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error)
 
