@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [11.1.0](https://github.com/FitGlue/server/compare/v11.0.1...v11.1.0) (2026-02-03)
+
+
+### Features
+
+* Enhance pipeline re-run capabilities with original payload storage and stale pending input clearing, and improve user deletion robustness. ([40a222b](https://github.com/FitGlue/server/commit/40a222be91d76e9c61fbbb64a1dc0790a5edd648))
+
+
+### Bug Fixes
+
+* make all fail ([51b2374](https://github.com/FitGlue/server/commit/51b23748fed3b6c03077dd3aa03a757e1d1d28c6))
+
 ### [11.0.1](https://github.com/FitGlue/server/compare/v11.0.0...v11.0.1) (2026-02-03)
 
 
