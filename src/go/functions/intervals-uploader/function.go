@@ -93,6 +93,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// 1. Get user's Intervals integration credentials
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), fwCtx.Logger)
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 		if user.Integrations == nil || user.Integrations.Intervals == nil || !user.Integrations.Intervals.Enabled {
@@ -150,6 +151,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	uploadURL := fmt.Sprintf("%s/athlete/%s/activities", baseURL, integration.AthleteId)
 	req, err := http.NewRequestWithContext(ctx, "POST", uploadURL, bytes.NewBuffer(fileData))
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to create request: %s", err), fwCtx.Logger)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -160,6 +162,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		fwCtx.Logger.Error("Intervals API Error", "error", err)
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), fwCtx.Logger)
 		return nil, fmt.Errorf("Intervals API Error: %w", err)
 	}
 	defer resp.Body.Close()
@@ -173,6 +176,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 
 	var uploadResp intervalsActivityResponse
 	if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
+		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to decode response: %s", err), fwCtx.Logger)
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 

@@ -92,6 +92,7 @@ func uploadHandler() framework.HandlerFunc {
 		// 1. Get user's Hevy API key
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
+			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), fwCtx.Logger)
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 

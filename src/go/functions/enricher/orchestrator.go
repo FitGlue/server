@@ -479,37 +479,49 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 					enricherLap.Records = append(enricherLap.Records, &pb.Record{Timestamp: ts})
 				}
 			}
+		}
 
-			// Apply HR stream
-			if len(res.HeartRateStream) > 0 {
-				for idx, val := range res.HeartRateStream {
-					if idx < len(enricherLap.Records) && val > 0 {
-						enricherLap.Records[idx].HeartRate = int32(val)
-					}
-				}
-			}
+		// ALWAYS apply stream data when available - regardless of record expansion
+		// For activities with existing records (like FIT files), apply to those records
+		// For newly expanded activities, apply to the expanded placeholder records
+		if hasStreamData {
+			// Apply stream data to ALL laps' records using timestamp-based matching
+			// This handles both single-lap expanded activities and multi-lap FIT activities
+			activityStart := enricherSession.StartTime.AsTime()
 
-			// Apply Power stream
-			if len(res.PowerStream) > 0 {
-				for idx, val := range res.PowerStream {
-					if idx < len(enricherLap.Records) && val > 0 {
-						enricherLap.Records[idx].Power = int32(val)
+			for _, lap := range enricherSession.Laps {
+				for _, record := range lap.Records {
+					if record.Timestamp == nil {
+						continue
 					}
-				}
-			}
+					// Calculate the second offset from activity start
+					offsetSec := int(record.Timestamp.AsTime().Sub(activityStart).Seconds())
+					if offsetSec < 0 {
+						continue
+					}
 
-			// Apply GPS position streams
-			if len(res.PositionLatStream) > 0 {
-				for idx, val := range res.PositionLatStream {
-					if idx < len(enricherLap.Records) {
-						enricherLap.Records[idx].PositionLat = val
+					// Apply HR stream value at this offset
+					if len(res.HeartRateStream) > 0 && offsetSec < len(res.HeartRateStream) {
+						val := res.HeartRateStream[offsetSec]
+						if val > 0 {
+							record.HeartRate = int32(val)
+						}
 					}
-				}
-			}
-			if len(res.PositionLongStream) > 0 {
-				for idx, val := range res.PositionLongStream {
-					if idx < len(enricherLap.Records) {
-						enricherLap.Records[idx].PositionLong = val
+
+					// Apply Power stream value at this offset
+					if len(res.PowerStream) > 0 && offsetSec < len(res.PowerStream) {
+						val := res.PowerStream[offsetSec]
+						if val > 0 {
+							record.Power = int32(val)
+						}
+					}
+
+					// Apply GPS position streams at this offset
+					if len(res.PositionLatStream) > 0 && offsetSec < len(res.PositionLatStream) {
+						record.PositionLat = res.PositionLatStream[offsetSec]
+					}
+					if len(res.PositionLongStream) > 0 && offsetSec < len(res.PositionLongStream) {
+						record.PositionLong = res.PositionLongStream[offsetSec]
 					}
 				}
 			}
@@ -817,12 +829,17 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 	}
 
 	// Update pipeline run with final enriched data
+	// Note: status changes from PENDING -> RUNNING, and we clear any status_message
+	// (e.g., "Waiting for user input: ...") since the input has been resolved.
+	// The status will transition to SYNCED/PARTIAL/FAILED once destinations are processed.
 	updateData := map[string]interface{}{
 		"title":                event.Name,
 		"description":          event.Description,
 		"type":                 int32(event.ActivityType),
 		"start_time":           event.StartTime.AsTime(),
 		"updated_at":           time.Now(),
+		"status":               int32(pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING),
+		"status_message":       nil, // Clear pending input message on successful resume
 		"boosters":             boosters,
 		"destinations":         destinations,
 		"original_payload_uri": payloadUri,

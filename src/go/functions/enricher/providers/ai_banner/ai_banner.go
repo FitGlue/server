@@ -275,10 +275,21 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 		return nil, fmt.Errorf("no predictions in response (RAI reason: %s, full response: %s)", raiReason, string(respBody))
 	}
 
+	// Validate that we have actual image data
+	base64Data := imagenResp.Predictions[0].BytesBase64Encoded
+	if base64Data == "" {
+		return nil, fmt.Errorf("empty base64 image data in response (prediction has no image content)")
+	}
+
 	// Decode base64 image data
-	imageData, err := base64.StdEncoding.DecodeString(imagenResp.Predictions[0].BytesBase64Encoded)
+	imageData, err := base64.StdEncoding.DecodeString(base64Data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decode base64 image: %w", err)
+	}
+
+	// Validate decoded image has content
+	if len(imageData) == 0 {
+		return nil, fmt.Errorf("decoded image data is empty")
 	}
 
 	return imageData, nil
