@@ -442,49 +442,75 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				Records:          []*pb.Record{},
 			})
 		}
-		enricherLap := enricherSession.Laps[0]
 
-		// Ensure records are large enough for stream data
+		// Check if enricher provides any stream data that needs to be applied
+		hasStreamData := len(res.HeartRateStream) > 0 || len(res.PowerStream) > 0 ||
+			len(res.PositionLatStream) > 0 || len(res.PositionLongStream) > 0
+
+		// Count total existing records across ALL laps to detect multi-lap activities
+		// (e.g., from FIT file uploads where records are properly distributed)
+		totalExistingRecords := 0
+		for _, lap := range enricherSession.Laps {
+			totalExistingRecords += len(lap.Records)
+		}
+
+		// Only expand Laps[0] with placeholder records if:
+		// 1. An enricher provides stream data that needs to be applied, AND
+		// 2. The activity doesn't already have substantial records (less than 25% coverage)
+		//
+		// This protects multi-lap FIT file uploads from having their rich record data
+		// destroyed by placeholder expansion, while still supporting API-sourced activities
+		// (e.g., Strava) where HR/power streams need to be applied to sparse records.
 		enricherDuration := int(enricherSession.TotalElapsedTime)
-		enricherCurrentLen := len(enricherLap.Records)
-		if enricherCurrentLen < enricherDuration {
-			enricherStartTime := enricherSession.StartTime.AsTime()
-			for k := enricherCurrentLen; k < enricherDuration; k++ {
-				ts := timestamppb.New(enricherStartTime.Add(time.Duration(k) * time.Second))
-				enricherLap.Records = append(enricherLap.Records, &pb.Record{Timestamp: ts})
-			}
+		// Use max(duration/4, 1) to handle short durations properly
+		threshold := enricherDuration / 4
+		if threshold < 1 {
+			threshold = 1
 		}
+		needsRecordExpansion := hasStreamData && totalExistingRecords < threshold
 
-		// Apply HR stream
-		if len(res.HeartRateStream) > 0 {
-			for idx, val := range res.HeartRateStream {
-				if idx < len(enricherLap.Records) && val > 0 {
-					enricherLap.Records[idx].HeartRate = int32(val)
+		if needsRecordExpansion {
+			enricherLap := enricherSession.Laps[0]
+			enricherCurrentLen := len(enricherLap.Records)
+			if enricherCurrentLen < enricherDuration {
+				enricherStartTime := enricherSession.StartTime.AsTime()
+				for k := enricherCurrentLen; k < enricherDuration; k++ {
+					ts := timestamppb.New(enricherStartTime.Add(time.Duration(k) * time.Second))
+					enricherLap.Records = append(enricherLap.Records, &pb.Record{Timestamp: ts})
 				}
 			}
-		}
 
-		// Apply Power stream
-		if len(res.PowerStream) > 0 {
-			for idx, val := range res.PowerStream {
-				if idx < len(enricherLap.Records) && val > 0 {
-					enricherLap.Records[idx].Power = int32(val)
+			// Apply HR stream
+			if len(res.HeartRateStream) > 0 {
+				for idx, val := range res.HeartRateStream {
+					if idx < len(enricherLap.Records) && val > 0 {
+						enricherLap.Records[idx].HeartRate = int32(val)
+					}
 				}
 			}
-		}
 
-		// Apply GPS position streams
-		if len(res.PositionLatStream) > 0 {
-			for idx, val := range res.PositionLatStream {
-				if idx < len(enricherLap.Records) {
-					enricherLap.Records[idx].PositionLat = val
+			// Apply Power stream
+			if len(res.PowerStream) > 0 {
+				for idx, val := range res.PowerStream {
+					if idx < len(enricherLap.Records) && val > 0 {
+						enricherLap.Records[idx].Power = int32(val)
+					}
 				}
 			}
-		}
-		if len(res.PositionLongStream) > 0 {
-			for idx, val := range res.PositionLongStream {
-				if idx < len(enricherLap.Records) {
-					enricherLap.Records[idx].PositionLong = val
+
+			// Apply GPS position streams
+			if len(res.PositionLatStream) > 0 {
+				for idx, val := range res.PositionLatStream {
+					if idx < len(enricherLap.Records) {
+						enricherLap.Records[idx].PositionLat = val
+					}
+				}
+			}
+			if len(res.PositionLongStream) > 0 {
+				for idx, val := range res.PositionLongStream {
+					if idx < len(enricherLap.Records) {
+						enricherLap.Records[idx].PositionLong = val
+					}
 				}
 			}
 		}
