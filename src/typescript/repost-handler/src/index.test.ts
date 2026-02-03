@@ -50,6 +50,7 @@ describe('repost-handler', () => {
         },
         pipelineRuns: {
           get: jest.fn().mockResolvedValue(null), // Fallback to executions
+          findByActivityId: jest.fn().mockResolvedValue(null),
         },
       },
     };

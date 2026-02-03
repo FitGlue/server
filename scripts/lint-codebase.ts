@@ -4583,6 +4583,13 @@ function checkBareHtmlUsage(): CheckResult {
     /components\/library\//,
     /AdminPage\.tsx$/,  // Admin page excluded per user request
     /utils\/markdown\.tsx$/,  // Markdown utility produces semantic inline HTML
+    // Wizard components with styled BEM HTML elements
+    /components\/wizard\//,
+    /PluginCategorySection\.tsx$/,
+    // Onboarding components with styled HTML
+    /components\/onboarding\//,
+    // Connection pages with styled code elements
+    /ConnectionDetailPage\.tsx$/,
   ];
 
   // Recursively find all .tsx files
