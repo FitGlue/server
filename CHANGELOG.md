@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [11.0.0](https://github.com/FitGlue/server/compare/v10.0.3...v11.0.0) (2026-02-03)
+
+
+### ⚠ BREAKING CHANGES
+
+* InputService constructor now accepts optional
+PipelineRunStore parameter. Hevy exercise name normalization is less
+aggressive - existing mappings may resolve differently.
+
+Pipeline Status:
+- Mark pipeline runs as SKIPPED when pending inputs are dismissed
+- Add findByActivityId() to PipelineRunStore for activity lookups
+- Update InputService to set pipeline status when dismissing inputs
+- Fix uploaders (Strava, TrainingPeaks, Intervals, Hevy) to properly
+  update destination status on early skip conditions
+
+Hevy Uploader:
+- Reduce exercise name normalization aggressiveness (keep original casing)
+- Add explicit station-to-Hevy mappings for Hyrox activities
+- Map exercises to correct types (distance_duration, weight_duration)
+- Add custom exercise template support for unmapped exercises
+
+Fitbit HR Enricher:
+- Fix midnight-spanning activity bug for heart rate API calls
+- Add tests for activities that cross day boundaries
+
+### Bug Fixes
+
+* improve pipeline run status management and Hevy exercise mapping ([937b5ef](https://github.com/FitGlue/server/commit/937b5ef043c57f30a8bf9791119063f8f3fb674b))
+* **webhooks:** skip delete/update events gracefully, refactor FIT file HR pending input ([0674556](https://github.com/FitGlue/server/commit/0674556fd833f07bc463c10b39dc8cd73d4743a2))
+
 ### [10.0.3](https://github.com/FitGlue/server/compare/v10.0.2...v10.0.3) (2026-02-03)
 
 
