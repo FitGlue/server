@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [10.0.2](https://github.com/FitGlue/server/compare/v10.0.1...v10.0.2) (2026-02-03)
+
+
+### Bug Fixes
+
+* farmer's carry mapping for hevy ([e70842e](https://github.com/FitGlue/server/commit/e70842e4b3d5a064e07d3675861e5d6ae79a4dbf))
+
 ### [10.0.1](https://github.com/FitGlue/server/compare/v10.0.0...v10.0.1) (2026-02-02)
 
 
