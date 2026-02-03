@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [11.0.1](https://github.com/FitGlue/server/compare/v11.0.0...v11.0.1) (2026-02-03)
+
+
+### Bug Fixes
+
+* ensure all uploaders properly fail destinations on early errors ([6277841](https://github.com/FitGlue/server/commit/6277841c29be4f32056694f8db5582aa08a504fc))
+
 ## [11.0.0](https://github.com/FitGlue/server/compare/v10.0.3...v11.0.0) (2026-02-03)
 
 
