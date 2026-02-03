@@ -8,11 +8,11 @@ import (
 	"time"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
+	"github.com/fitglue/server/src/go/functions/enricher/providers/user_input"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/fit_parser"
 	pendinginput "github.com/fitglue/server/src/go/pkg/pending_input"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // FitFileHRProvider allows users to upload a FIT file containing heart rate data
@@ -87,47 +87,23 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 		return nil, fmt.Errorf("activity_id not provided in enricher inputs")
 	}
 
-	// Create pending input requesting FIT file upload
-	pendingInput := &pb.PendingInput{
-		ActivityId:                 stableID,
-		UserId:                     user.UserId,
-		Status:                     pb.PendingInput_STATUS_WAITING,
-		RequiredFields:             []string{"fit_file_base64"},
-		AutoPopulated:              false, // User must manually upload
-		ContinuedWithoutResolution: true,  // Pipeline continues, resume later
-		EnricherProviderId:         "fit-file-heart-rate",
-		LinkedActivityId:           linkedActivityId,
-		PipelineId:                 inputs["pipeline_id"],
-		// OriginalPayload is now stored in GCS via original_payload_uri (set by orchestrator)
-		ProviderMetadata: map[string]string{
-			"source_activity_id":   activity.ExternalId,
-			"source_activity_type": activity.Source,
-		},
-		CreatedAt: timestamppb.Now(),
-		UpdatedAt: timestamppb.Now(),
-	}
-
-	if err := p.service.DB.CreatePendingInput(ctx, user.UserId, pendingInput); err != nil {
-		logger.Warn("fit-file-hr: failed to create pending input", "error", err)
-		return &providers.EnrichmentResult{
-			Metadata: map[string]string{
-				"hr_source":                  "error",
-				"pending_input_create_error": err.Error(),
-			},
-		}, nil
-	}
-
-	logger.Info("fit-file-hr: created pending input for FIT file upload",
+	logger.Info("fit-file-hr: requesting FIT file upload via pending input",
 		"activity_id", stableID,
 		"linked_activity_id", linkedActivityId)
 
-	return &providers.EnrichmentResult{
+	// Return WaitForInputError to halt the pipeline - the orchestrator's handleWaitError
+	// will create the pending input with the original_payload_uri (GCS URI for payload retrieval)
+	return nil, &user_input.WaitForInputError{
+		ActivityID:         stableID,
+		RequiredFields:     []string{"fit_file_base64"},
+		EnricherProviderID: p.Name(),
 		Metadata: map[string]string{
-			"hr_source":             "pending",
-			"status_detail":         "Pending FIT file upload",
-			"pending_input_created": "true",
+			"source_activity_id":   activity.ExternalId,
+			"source_activity_type": activity.Source,
+			"linked_activity_id":   linkedActivityId,
+			"pipeline_id":          inputs["pipeline_id"],
 		},
-	}, nil
+	}
 }
 
 // EnrichResume is called during resume mode to apply resolved pending input data.

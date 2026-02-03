@@ -54,10 +54,11 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
     const externalId = connector.extractId(body);
 
     if (!externalId) {
-      logger.error(`[${connector.name}] Invalid payload: Missing external ID`, {
+      // This is expected for delete/update events - skip gracefully
+      logger.info(`[${connector.name}] Skipping event: no external ID (likely delete/update)`, {
         preview: JSON.stringify(body).substring(0, 200)
       });
-      throw new Error('Invalid payload: Missing external ID');
+      return { status: 'Skipped', reason: 'No external ID (delete/update event)' };
     }
 
     // 3. User Resolution & Config Lookup

@@ -52,7 +52,8 @@ jest.mock('../infrastructure/pubsub/cloud-event-publisher', () => ({
 
 jest.mock('../types/events-helper', () => ({
   getCloudEventSource: jest.fn(),
-  getCloudEventType: jest.fn()
+  getCloudEventType: jest.fn(),
+  getCorrespondingDestination: jest.fn().mockReturnValue(undefined) // No corresponding destination by default
 }));
 
 describe('createWebhookProcessor', () => {
@@ -113,6 +114,18 @@ describe('createWebhookProcessor', () => {
     expect(mockPublish).toHaveBeenCalled();
     expect(mockMarkActivityAsProcessed).toHaveBeenCalledWith('user-1', 'test-connector', 'evt-123', expect.anything());
     expect(result.status).toBe('Success');
+  });
+
+  it('should skip gracefully when extractId returns null (delete/update events)', async () => {
+    mockExtractId.mockReturnValue(null);
+    const result = await handler(req, ctx);
+
+    expect(mockExtractId).toHaveBeenCalledWith(req.body);
+    expect(result.status).toBe('Skipped');
+    expect(result.reason).toContain('delete/update');
+    expect(mockHasProcessedActivity).not.toHaveBeenCalled();
+    expect(mockFetchAndMap).not.toHaveBeenCalled();
+    expect(mockPublish).not.toHaveBeenCalled();
   });
 
   it('should throw Unauthorized if userId is missing', async () => {
