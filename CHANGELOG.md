@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [10.0.3](https://github.com/FitGlue/server/compare/v10.0.2...v10.0.3) (2026-02-03)
+
+
+### Bug Fixes
+
+* do not expand lap[0] when HR already covers ([cab6f43](https://github.com/FitGlue/server/commit/cab6f432d7711413a2be606bc096802db46e2385))
+
 ### [10.0.2](https://github.com/FitGlue/server/compare/v10.0.1...v10.0.2) (2026-02-03)
 
 
