@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.1.0](https://github.com/FitGlue/server/compare/v12.0.1...v12.1.0) (2026-02-04)
+
+
+### Features
+
+* allow configuration of ai banner subject ([1e194f9](https://github.com/FitGlue/server/commit/1e194f9e91082297f0a87639852d51cc40250b45))
+* use a text LLM to generate image prompt ([12934f1](https://github.com/FitGlue/server/commit/12934f16d30527da80f50c0624b6de0527ee085a))
+
+
+### Bug Fixes
+
+* actually pass workout information to original text llm generator pre image generation ([b15356d](https://github.com/FitGlue/server/commit/b15356d53e3288d8fe653c35a7b93747090188c0))
+* encourage AI generator to not do text and treat title and notes as context not verbatim ([856b69b](https://github.com/FitGlue/server/commit/856b69bfd69b85f6802aae3ae20f612faedf4ab6))
+
 ### [12.0.1](https://github.com/FitGlue/server/compare/v12.0.0...v12.0.1) (2026-02-04)
 
 
