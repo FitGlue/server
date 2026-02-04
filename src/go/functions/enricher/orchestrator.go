@@ -191,6 +191,14 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		} else {
 			originalPayloadUri = fmt.Sprintf("gs://%s/%s", o.bucketName, payloadPath)
 			logger.Debug("Uploaded original payload to GCS", "uri", originalPayloadUri)
+
+			// Update pipeline run with GCS URI immediately so it's available even if pipeline fails early
+			// This ensures full-pipeline repost can always retrieve the original payload
+			if err := o.database.UpdatePipelineRun(ctx, payload.UserId, pipelineExecutionID, map[string]interface{}{
+				"original_payload_uri": originalPayloadUri,
+			}); err != nil {
+				logger.Warn("Failed to update pipeline run with original payload URI", "error", err)
+			}
 		}
 	}
 
