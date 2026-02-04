@@ -223,7 +223,7 @@ resource "google_firestore_index" "pending_inputs_subcollection_status_created" 
 # Pipeline Runs Indexes
 # -------------------------------------------------------------------
 
-# Index for listing pipeline runs by status + created_at
+# Index for listing pipeline runs by status + created_at (descending)
 # Used by usePipelineRuns for dashboard activity list
 resource "google_firestore_index" "pipeline_runs_status_created" {
   project     = var.project_id
@@ -239,6 +239,25 @@ resource "google_firestore_index" "pipeline_runs_status_created" {
   fields {
     field_path = "created_at"
     order      = "DESCENDING"
+  }
+}
+
+# Index for counting pipeline runs by status + created_at (ascending)
+# Used by countSynced for stats queries with >= date filter
+resource "google_firestore_index" "pipeline_runs_status_created_asc" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "ASCENDING"
   }
 }
 

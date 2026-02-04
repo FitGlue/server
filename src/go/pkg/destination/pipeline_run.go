@@ -65,16 +65,37 @@ func UpdateStatus(ctx context.Context, db Database, userId string, pipelineRunId
 
 	newStatus := ComputePipelineRunStatus(outcomes)
 
-	// Update the parent pipeline run's overall status
+	// Convert outcomes to Firestore-compatible format for the inline destinations array
+	// This keeps the inline array in sync with the subcollection for UI consumers
+	destinationsData := make([]map[string]interface{}, len(outcomes))
+	for i, o := range outcomes {
+		destData := map[string]interface{}{
+			"destination": int32(o.Destination),
+			"status":      int32(o.Status),
+		}
+		if o.ExternalId != nil {
+			destData["external_id"] = *o.ExternalId
+		}
+		if o.Error != nil {
+			destData["error"] = *o.Error
+		}
+		if o.CompletedAt != nil {
+			destData["completed_at"] = o.CompletedAt.AsTime()
+		}
+		destinationsData[i] = destData
+	}
+
+	// Update the parent pipeline run's overall status AND inline destinations array
 	updateData := map[string]interface{}{
-		"status":     int32(newStatus),
-		"updated_at": timestamppb.Now(),
+		"status":       int32(newStatus),
+		"updated_at":   timestamppb.Now(),
+		"destinations": destinationsData,
 	}
 
 	if err := db.UpdatePipelineRun(ctx, userId, pipelineRunId, updateData); err != nil {
 		logger.Error("Failed to update pipeline run status", "error", err, "pipeline_run_id", pipelineRunId)
 	} else {
-		logger.Debug("Updated pipeline run status", "pipeline_run_id", pipelineRunId, "status", newStatus.String())
+		logger.Debug("Updated pipeline run status and destinations", "pipeline_run_id", pipelineRunId, "status", newStatus.String(), "destinations_count", len(destinationsData))
 	}
 }
 
