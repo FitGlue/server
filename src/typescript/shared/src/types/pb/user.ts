@@ -410,35 +410,6 @@ export interface PersonalRecord {
   improvement?: number | undefined;
 }
 
-export interface SynchronizedActivity {
-  activityId: string;
-  title: string;
-  description: string;
-  type: ActivityType;
-  /** e.g. "SOURCE_HEVY" */
-  source: string;
-  startTime?:
-    | Date
-    | undefined;
-  /** destination -> external_id */
-  destinations: { [key: string]: string };
-  syncedAt?: Date | undefined;
-  pipelineId: string;
-  pipelineExecutionId: string;
-  /** Parkrun results tracking */
-  parkrunResultsState: ParkrunResultsState;
-  /** e.g., "Newark Parkrun" */
-  parkrunEventName: string;
-  /** e.g., "newark" */
-  parkrunEventSlug: string;
-  parkrunPollingDeadline?: Date | undefined;
-}
-
-export interface SynchronizedActivity_DestinationsEntry {
-  key: string;
-  value: string;
-}
-
 /**
  * ShowcasedActivity represents a publicly shareable activity snapshot.
  * Stored in top-level showcased_activities/{showcase_id} collection.

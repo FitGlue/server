@@ -186,13 +186,19 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	// Add time markers to activity
 	activity.TimeMarkers = timeMarkers
 
+	// Determine the tag to add based on race type
+	// This allows personal_records enricher to detect Hyrox/ATHX events for PR tracking
+	raceTypeTag := strings.ToUpper(preset.RaceType) // "HYROX", "ATHX"
+
 	// Return description in EnrichmentResult so orchestrator can merge it properly
 	// (don't modify activity.Description directly - orchestrator overwrites it)
 	return &providers.EnrichmentResult{
 		Description: description,
+		Tags:        []string{raceTypeTag},
 		Metadata: map[string]string{
 			"status":        "success",
 			"preset":        preset.Name,
+			"race_type":     preset.RaceType,
 			"laps_count":    fmt.Sprintf("%d", len(newLaps)),
 			"strength_sets": fmt.Sprintf("%d", len(strengthSets)),
 			"time_markers":  fmt.Sprintf("%d", len(timeMarkers)),

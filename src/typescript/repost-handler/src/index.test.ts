@@ -83,10 +83,11 @@ describe('repost-handler', () => {
 
     it('allows athlete tier users', async () => {
       ctx.stores.users.get.mockResolvedValue({ tier: 2 }); // USER_TIER_ATHLETE
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: {},
+        pipelineId: 'pipeline-123',
+        destinations: [],
       });
       ctx.stores.executions.getRouterExecution.mockResolvedValue({
         id: 'exec-1',
@@ -104,10 +105,11 @@ describe('repost-handler', () => {
 
     it('allows admin users regardless of tier', async () => {
       ctx.stores.users.get.mockResolvedValue({ tier: 1, isAdmin: true }); // USER_TIER_HOBBYIST but admin
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: {},
+        pipelineId: 'pipeline-123',
+        destinations: [],
       });
       ctx.stores.executions.getRouterExecution.mockResolvedValue({
         id: 'exec-1',
@@ -127,10 +129,11 @@ describe('repost-handler', () => {
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 7);
       ctx.stores.users.get.mockResolvedValue({ tier: 1, trialEndsAt: futureDate }); // USER_TIER_HOBBYIST with trial
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: {},
+        pipelineId: 'pipeline-123',
+        destinations: [],
       });
       ctx.stores.executions.getRouterExecution.mockResolvedValue({
         id: 'exec-1',
@@ -149,10 +152,11 @@ describe('repost-handler', () => {
 
   describe('POST /missed-destination', () => {
     beforeEach(() => {
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: { strava: 'ext-123' },
+        pipelineId: 'pipeline-123',
+        destinations: [{ destination: 1, externalId: 'ext-123' }], // DESTINATION_STRAVA = 1
       });
       ctx.stores.executions.getRouterExecution.mockResolvedValue({
         id: 'exec-1',
@@ -200,7 +204,7 @@ describe('repost-handler', () => {
     });
 
     it('returns 404 if activity not found', async () => {
-      ctx.stores.activities.getSynchronized.mockResolvedValue(null);
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue(null);
 
       await expect(handler({
         method: 'POST',
@@ -211,10 +215,11 @@ describe('repost-handler', () => {
 
     it('publishes message to correct topic on success', async () => {
       // Activity has strava but not showcase
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: { strava: 'ext-123' },
+        pipelineId: 'pipeline-123',
+        destinations: [{ destination: 1, externalId: 'ext-123' }], // strava synced
       });
 
       const result: any = await handler({
@@ -233,10 +238,11 @@ describe('repost-handler', () => {
 
     it('handles snake_case field names from Go framework (activity_id/user_id)', async () => {
       // The Go framework stores CloudEvent data with snake_case field names
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: {},
+        pipelineId: 'pipeline-123',
+        destinations: [],
       });
       ctx.stores.executions.getRouterExecution.mockResolvedValue({
         id: 'exec-1',
@@ -265,10 +271,11 @@ describe('repost-handler', () => {
 
   describe('POST /retry-destination', () => {
     beforeEach(() => {
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: { strava: 'ext-123' },
+        pipelineId: 'pipeline-123',
+        destinations: [{ destination: 1, externalId: 'ext-123' }], // DESTINATION_STRAVA = 1
       });
       ctx.stores.executions.getRouterExecution.mockResolvedValue({
         id: 'exec-1',
@@ -305,10 +312,11 @@ describe('repost-handler', () => {
     });
 
     it('works for destination without existing external ID', async () => {
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
-        pipelineExecutionId: 'pipe-1',
-        destinations: {},
+        pipelineId: 'pipeline-123',
+        destinations: [],
       });
 
       await handler({
@@ -323,11 +331,11 @@ describe('repost-handler', () => {
 
   describe('POST /full-pipeline', () => {
     beforeEach(() => {
-      ctx.stores.activities.getSynchronized.mockResolvedValue({
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
         pipelineId: 'pipeline-123',
-        pipelineExecutionId: 'pipe-1',
-        destinations: { strava: 'ext-123' },
+        destinations: [{ destination: 1, externalId: 'ext-123' }],
       });
       ctx.stores.executions.getEnricherExecution.mockResolvedValue({
         id: 'exec-1',
@@ -350,7 +358,7 @@ describe('repost-handler', () => {
     });
 
     it('returns 404 if activity not found', async () => {
-      ctx.stores.activities.getSynchronized.mockResolvedValue(null);
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue(null);
 
       await expect(handler({
         method: 'POST',

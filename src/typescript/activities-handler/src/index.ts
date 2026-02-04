@@ -2,19 +2,49 @@
 import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, FrameworkContext } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { routeRequest, RouteMatch, RouteHandler } from '@fitglue/shared/routing';
-import { ExecutionStatus, formatExecutionStatus, formatActivityType, formatActivitySource, SynchronizedActivity } from '@fitglue/shared/types';
+import { formatExecutionStatus, formatActivityType, formatActivitySource, PipelineRun, PipelineRunStatus, formatPipelineRunStatus } from '@fitglue/shared/types';
 
 // Helpers are now using generated formatters
 const activityTypeToString = (type: number | string | undefined | null) => formatActivityType(type);
 const executionStatusToString = (status: number | string | undefined | null) => formatExecutionStatus(status);
 const activitySourceToString = (source: number | string | undefined | null) => formatActivitySource(source);
 
-// Transform activity to include readable enum strings
-const transformActivity = (activity: SynchronizedActivity): Omit<SynchronizedActivity, 'type' | 'source'> & { type: string; source: string } => {
+// Activity response type for API
+interface ActivityResponse {
+  activityId: string;
+  title: string;
+  description: string;
+  type: string;
+  source: string;
+  startTime?: Date;
+  destinations: { [key: string]: string };
+  syncedAt?: Date;
+  pipelineId: string;
+  pipelineExecutionId: string;
+}
+
+// Transform PipelineRun to activity response format
+const transformPipelineRun = (run: PipelineRun): ActivityResponse => {
+  // Convert destinations array to map format (dest enum -> externalId)
+  const destinationsMap: { [key: string]: string } = {};
+  for (const dest of run.destinations || []) {
+    if (dest.externalId) {
+      // Use the destination name as key (e.g., "DESTINATION_STRAVA")
+      destinationsMap[String(dest.destination)] = dest.externalId;
+    }
+  }
+
   return {
-    ...activity,
-    type: activityTypeToString(activity.type),
-    source: activitySourceToString(activity.source),
+    activityId: run.activityId,
+    title: run.title,
+    description: run.description,
+    type: activityTypeToString(run.type),
+    source: activitySourceToString(run.source),
+    startTime: run.startTime,
+    destinations: destinationsMap,
+    syncedAt: run.updatedAt, // Use updatedAt as syncedAt
+    pipelineId: run.pipelineId,
+    pipelineExecutionId: run.id,
   };
 };
 
@@ -57,7 +87,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
 };
 
 async function handleStats(userId: string, ctx: FrameworkContext) {
-  const activityStore = ctx.stores.activities;
+  const pipelineRuns = ctx.stores.pipelineRuns;
   const now = new Date();
   // Start of month
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -70,11 +100,11 @@ async function handleStats(userId: string, ctx: FrameworkContext) {
   startOfWeek.setDate(diff);
   startOfWeek.setHours(0, 0, 0, 0);
 
-  // Fetch all stats in parallel
+  // Fetch all stats in parallel using pipeline_runs
   const [totalSynced, monthlySynced, weeklySynced] = await Promise.all([
-    activityStore.countSynchronized(userId),
-    activityStore.countSynchronized(userId, startOfMonth),
-    activityStore.countSynchronized(userId, startOfWeek),
+    pipelineRuns.countSynced(userId),
+    pipelineRuns.countSynced(userId, startOfMonth),
+    pipelineRuns.countSynced(userId, startOfWeek),
   ]);
 
   return {
@@ -109,101 +139,73 @@ async function handleUnsynchronizedTrace(pipelineExecutionId: string, ctx: Frame
 }
 
 async function handleListUnsynchronized(userId: string, query: Record<string, unknown>, ctx: FrameworkContext) {
-  const activityStore = ctx.stores.activities;
+  const pipelineRuns = ctx.stores.pipelineRuns;
   const limit = parseInt(query.limit as string || '20', 10);
   const offset = parseInt(query.offset as string || '0', 10);
 
-  // OPTIMIZED: Use lightweight pipeline ID query (reduced from 3x to 2x multiplier)
-  // and projection queries reduce data transfer by ~90%
-  // Note: We fetch more than limit + offset to account for deduplication
-  const allPipelines = await ctx.stores.executions.listDistinctPipelines(userId, (limit + offset) * 2);
+  // Query pipeline runs that are failed or have failed destinations
+  // These are "unsynchronized" - they didn't complete successfully
+  const allRuns = await pipelineRuns.list(userId, { limit: (limit + offset) * 2 });
 
-  // Get synchronized pipeline IDs (already uses projection query)
-  const syncedPipelineIds = await activityStore.getSynchronizedPipelineIds(userId);
-
-  // Filter to unsynchronized (absence-based) AND not successful (to avoid historical false positives)
-  const unsyncedPipelines = allPipelines.filter(
-    p => p.data.pipelineExecutionId &&
-      !syncedPipelineIds.has(p.data.pipelineExecutionId) &&
-      p.data.status !== ExecutionStatus.STATUS_SUCCESS
+  // Filter to failed runs (status indicates failure or has failed destinations)
+  // DESTINATION_STATUS_FAILED = 4, PIPELINE_RUN_STATUS_FAILED = 4
+  const failedRuns = allRuns.filter(run =>
+    run.status === PipelineRunStatus.PIPELINE_RUN_STATUS_FAILED ||
+    run.destinations?.some(d => (d.status as number) === 4) // 4 = DESTINATION_STATUS_FAILED
   ).slice(offset, offset + limit);
 
-  // Synthesize meaningful entries from inputsJson
-  const executions = unsyncedPipelines.map(e => {
-    let title: string | undefined;
-    let activityType: string | undefined;
-    let source: string | undefined;
-
-    // Try to extract activity info from inputsJson
-    if (e.data.inputsJson) {
-      try {
-        const inputs = JSON.parse(e.data.inputsJson);
-        // Activity data could be nested in various ways
-        const activity = inputs.activity || inputs.standardizedActivity || inputs;
-        title = activity.title || activity.name;
-        if (activity.type !== undefined) {
-          activityType = activityTypeToString(activity.type);
-        }
-        source = activity.source ? activitySourceToString(activity.source) : undefined;
-      } catch {
-        // Ignore parse errors
-      }
-    }
-
-    return {
-      pipelineExecutionId: e.data.pipelineExecutionId,
-      title: title || 'Unknown Activity',
-      activityType: activityType || 'Unknown',
-      source: source || 'Unknown',
-      status: executionStatusToString(e.data.status),
-      errorMessage: e.data.errorMessage,
-      timestamp: e.data.timestamp ? new Date(e.data.timestamp as unknown as string).toISOString() : null
-    };
-  });
+  // Map to execution format for backwards compatibility with web UI
+  const executions = failedRuns.map(run => ({
+    pipelineExecutionId: run.id,
+    title: run.title || 'Unknown Activity',
+    activityType: activityTypeToString(run.type || 0),
+    source: run.source || 'Unknown',
+    status: formatPipelineRunStatus(run.status),
+    errorMessage: run.statusMessage,
+    timestamp: run.createdAt ? new Date(run.createdAt as unknown as string).toISOString() : null
+  }));
 
   return { executions };
 }
 
 async function handleGetActivity(userId: string, id: string, ctx: FrameworkContext) {
-  const activityStore = ctx.stores.activities;
-  const activity = await activityStore.getSynchronized(userId, id);
-  if (!activity) {
+  const pipelineRuns = ctx.stores.pipelineRuns;
+
+  // Try to find by activity ID first (most common case)
+  const run = await pipelineRuns.findByActivityId(userId, id);
+  if (!run) {
     throw new HttpError(404, 'Not found');
   }
 
-  const transformed = transformActivity(activity);
+  const transformed = transformPipelineRun(run);
 
-  // Fetch execution trace if pipelineExecutionId is present
-  if (activity.pipelineExecutionId) {
-    try {
-      const executions = await ctx.services.execution.listByPipeline(activity.pipelineExecutionId);
-      // Map to swagger schema
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (transformed as any).pipelineExecution = executions.map(e => ({
-        executionId: e.id,
-        service: e.data.service,
-        status: executionStatusToString(e.data.status),
-        timestamp: e.data.timestamp ? new Date(e.data.timestamp as unknown as string).toISOString() : null, // Handle Firestore/Proto timestamp quirks if needed, usually Date object in JS SDK
-        startTime: e.data.startTime ? new Date(e.data.startTime as unknown as string).toISOString() : null,
-        endTime: e.data.endTime ? new Date(e.data.endTime as unknown as string).toISOString() : null,
-        errorMessage: e.data.errorMessage,
-        triggerType: e.data.triggerType,
-        inputsJson: e.data.inputsJson,
-        outputsJson: e.data.outputsJson
-      }));
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (transformed as any).pipelineExecutionId = activity.pipelineExecutionId;
-    } catch (err) {
-      ctx.logger.error('Failed to fetch pipeline executions', { error: err });
-      // Don't fail the request, just omit the trace
-    }
+  // Fetch execution trace if we have a run ID
+  try {
+    const executions = await ctx.services.execution.listByPipeline(run.id);
+    // Map to swagger schema
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (transformed as any).pipelineExecution = executions.map(e => ({
+      executionId: e.id,
+      service: e.data.service,
+      status: executionStatusToString(e.data.status),
+      timestamp: e.data.timestamp ? new Date(e.data.timestamp as unknown as string).toISOString() : null,
+      startTime: e.data.startTime ? new Date(e.data.startTime as unknown as string).toISOString() : null,
+      endTime: e.data.endTime ? new Date(e.data.endTime as unknown as string).toISOString() : null,
+      errorMessage: e.data.errorMessage,
+      triggerType: e.data.triggerType,
+      inputsJson: e.data.inputsJson,
+      outputsJson: e.data.outputsJson
+    }));
+  } catch (err) {
+    ctx.logger.error('Failed to fetch pipeline executions', { error: err });
+    // Don't fail the request, just omit the trace
   }
 
   return { activity: transformed };
 }
 
 async function handleListActivities(userId: string, query: Record<string, unknown>, ctx: FrameworkContext) {
-  const activityStore = ctx.stores.activities;
+  const pipelineRuns = ctx.stores.pipelineRuns;
   const includeExecution = query.includeExecution === 'true';
   const offset = parseInt(query.offset as string || '0', 10);
 
@@ -212,28 +214,25 @@ async function handleListActivities(userId: string, query: Record<string, unknow
     ? Math.min(parseInt(query.limit as string || '20', 10), 50)
     : parseInt(query.limit as string || '20', 10);
 
-  const activities = await activityStore.listSynchronized(userId, limit, offset);
-  const transformedActivities = activities.map(transformActivity);
+  const runs = await pipelineRuns.listSynced(userId, limit, offset);
+  const transformedActivities = runs.map(transformPipelineRun);
 
   // OPTIMIZED: Batch load all pipeline executions in ONE query instead of N+1 queries
   // This eliminates the biggest performance bottleneck in the dashboard
   if (includeExecution && ctx.stores.executions) {
-    // Collect all pipeline IDs that have execution data
-    const pipelineIds = activities
-      .filter(a => a.pipelineExecutionId)
-      .map(a => a.pipelineExecutionId as string);
+    // Collect all pipeline IDs (run.id is the pipelineExecutionId)
+    const pipelineIds = runs.map(r => r.id);
 
     if (pipelineIds.length > 0) {
       // Single batch query instead of N individual queries
       const executionMap = await ctx.stores.executions.batchListByPipelines(pipelineIds);
 
       // Attach execution traces to each activity
-      for (const activity of transformedActivities) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const originalActivity = activities.find(a => a.activityId === (activity as any).activityId);
-        if (!originalActivity?.pipelineExecutionId) continue;
+      for (let i = 0; i < transformedActivities.length; i++) {
+        const run = runs[i];
+        const activity = transformedActivities[i];
 
-        const executions = executionMap.get(originalActivity.pipelineExecutionId);
+        const executions = executionMap.get(run.id);
         if (!executions) continue;
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -249,8 +248,6 @@ async function handleListActivities(userId: string, query: Record<string, unknow
           inputsJson: e.data.inputsJson,
           outputsJson: e.data.outputsJson
         }));
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (activity as any).pipelineExecutionId = originalActivity.pipelineExecutionId;
       }
     }
   }

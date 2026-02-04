@@ -34,8 +34,9 @@ export {
   EnricherConfig,
   ProcessedActivityRecord,
   PipelineConfig,
-  SynchronizedActivity,
-  ShowcasedActivity
+  ShowcasedActivity,
+  PipelineRun,
+  PipelineRunStatus
 } from './pb/user';
 
 // Fitbit types

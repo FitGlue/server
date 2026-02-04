@@ -93,15 +93,6 @@ func (c *Client) PersonalRecords(userId string) *Collection[pb.PersonalRecord] {
 	}
 }
 
-// Activities are sub-collections of Users: users/{uid}/activities/{id}
-func (c *Client) Activities(userId string) *Collection[pb.SynchronizedActivity] {
-	return &Collection[pb.SynchronizedActivity]{
-		Ref:           c.fs.Collection("users").Doc(userId).Collection("activities"),
-		ToFirestore:   SynchronizedActivityToFirestore,
-		FromFirestore: FirestoreToSynchronizedActivity,
-	}
-}
-
 // ShowcasedActivities is a top-level collection: showcased_activities/{showcase_id}
 func (c *Client) ShowcasedActivities() *Collection[pb.ShowcasedActivity] {
 	return &Collection[pb.ShowcasedActivity]{

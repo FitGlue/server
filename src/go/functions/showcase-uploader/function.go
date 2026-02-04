@@ -212,11 +212,14 @@ func showcaseHandler() framework.HandlerFunc {
 
 		// Check if this activity already has a showcase ID (resume/update scenario)
 		var showcaseID string
-		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
-		if existingActivity != nil && existingActivity.Destinations != nil {
-			if existingID, ok := existingActivity.Destinations["showcase"]; ok && existingID != "" {
-				showcaseID = existingID
-				fwCtx.Logger.Info("Reusing existing showcase ID for update", "showcase_id", showcaseID)
+		existingPipelineRun, _ := svc.DB.GetPipelineRunByActivityId(ctx, eventPayload.UserId, eventPayload.ActivityId)
+		if existingPipelineRun != nil && existingPipelineRun.Destinations != nil {
+			for _, dest := range existingPipelineRun.Destinations {
+				if dest.Destination == pb.Destination_DESTINATION_SHOWCASE && dest.ExternalId != nil && *dest.ExternalId != "" {
+					showcaseID = *dest.ExternalId
+					fwCtx.Logger.Info("Reusing existing showcase ID for update", "showcase_id", showcaseID)
+					break
+				}
 			}
 		}
 
@@ -306,47 +309,8 @@ func showcaseHandler() framework.HandlerFunc {
 			return nil, fmt.Errorf("failed to persist showcased activity: %w", err)
 		}
 
-		// Persist SynchronizedActivity record
-		// Check if activity already exists (e.g., repost scenario)
-		// If it does, only update destinations to preserve original pipelineExecutionId
-		// Note: existingActivity was fetched earlier when checking for existing showcase ID
-		if existingActivity != nil {
-			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
-			// Use nested map structure so MergeAll properly merges into destinations
-			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-				"destinations": map[string]interface{}{
-					"showcase": showcaseID,
-				},
-				"synced_at": timestamppb.Now().AsTime(),
-			}); err != nil {
-				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
-				destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("sync update failed: %s", err), fwCtx.Logger)
-				return nil, fmt.Errorf("failed to update synchronized activity: %w", err)
-			}
-			fwCtx.Logger.Info("Updated synchronized activity destinations (preserved execution ID)", "activity_id", eventPayload.ActivityId)
-		} else {
-			// New activity - create full record including pipelineExecutionId
-			syncedActivity := &pb.SynchronizedActivity{
-				ActivityId:          eventPayload.ActivityId,
-				Title:               eventPayload.Name,
-				Description:         eventPayload.Description,
-				Type:                eventPayload.ActivityType,
-				Source:              eventPayload.Source.String(),
-				StartTime:           eventPayload.StartTime,
-				SyncedAt:            timestamppb.Now(),
-				PipelineId:          eventPayload.PipelineId,
-				PipelineExecutionId: fwCtx.PipelineExecutionId,
-				Destinations: map[string]string{
-					"showcase": showcaseID,
-				},
-			}
-
-			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-				destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("sync persist failed: %s", err), fwCtx.Logger)
-				return nil, fmt.Errorf("failed to persist synchronized activity: %w", err)
-			}
-		}
+		// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+		// The destination.UpdateStatus call at the end of this function updates pipeline_runs with the externalId
 
 		// Increment sync count for billing (per successful destination sync)
 		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {

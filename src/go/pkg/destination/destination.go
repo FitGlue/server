@@ -15,9 +15,9 @@ type Destination interface {
 	Create(ctx context.Context, payload *pb.ActivityPayload, user *pb.UserRecord) (string, error)
 
 	// Update modifies an existing activity on the destination.
-	// Uses SynchronizedActivity to find the previously created activity.
+	// Uses PipelineRun to find the previously created activity via destinations[].external_id.
 	// Should fetch existing activity, merge new data, and PUT.
-	Update(ctx context.Context, payload *pb.ActivityPayload, user *pb.UserRecord, syncActivity *pb.SynchronizedActivity) error
+	Update(ctx context.Context, payload *pb.ActivityPayload, user *pb.UserRecord, pipelineRun *pb.PipelineRun) error
 
 	// Name returns the destination identifier (e.g., "strava", "mock").
 	Name() string

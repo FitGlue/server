@@ -173,24 +173,23 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     throw new HttpError(400, `Invalid destination: ${destination}`);
   }
 
-  // Get synchronized activity
-  const activity = await ctx.stores.activities.getSynchronized(userId, activityId);
-  if (!activity) {
+  // Get pipeline run for this activity
+  const pipelineRun = await ctx.stores.pipelineRuns.findByActivityId(userId, activityId);
+  if (!pipelineRun) {
     throw new HttpError(404, 'Activity not found');
   }
 
   // Check destination isn't already synced
   const destKey = getDestinationName(destEnum);
-  if (activity.destinations && activity.destinations[destKey]) {
+  const existingDest = pipelineRun.destinations?.find(d => d.destination === destEnum);
+  if (existingDest?.externalId) {
     throw new HttpError(400, `Activity already synced to ${destKey}`);
   }
 
-  // Try to get enriched event from GCS via PipelineRun (new architecture)
-  // Fall back to executions for backwards compatibility with existing data
+  // Try to get enriched event from GCS via PipelineRun
   let enrichedEvent: Record<string, unknown> | null = null;
 
-  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
-  if (pipelineRun?.enrichedEventUri) {
+  if (pipelineRun.enrichedEventUri) {
     // Fetch from GCS using URI (avoids 1MB Firestore limit)
     enrichedEvent = await fetchEnrichedEventFromGCS(pipelineRun.enrichedEventUri);
     if (enrichedEvent) {
@@ -202,10 +201,10 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
 
   // Fallback to executions collection (backwards compatibility)
   if (!enrichedEvent) {
-    const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
+    const routerExec = await ctx.stores.executions.getRouterExecution(pipelineRun.id);
     if (routerExec?.data.inputsJson) {
       enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
-      ctx.logger.info('Retrieved enriched event from executions (fallback)', { pipelineExecutionId: activity.pipelineExecutionId });
+      ctx.logger.info('Retrieved enriched event from executions (fallback)', { pipelineExecutionId: pipelineRun.id });
     }
   }
 
@@ -252,7 +251,7 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
       repost_type: 'missed_destination',
-      original_execution_id: activity.pipelineExecutionId,
+      original_execution_id: pipelineRun.id,
     },
   });
 
@@ -288,9 +287,9 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
     throw new HttpError(400, `Invalid destination: ${destination}`);
   }
 
-  // Get synchronized activity
-  const activity = await ctx.stores.activities.getSynchronized(userId, activityId);
-  if (!activity) {
+  // Get pipeline run for this activity
+  const pipelineRun = await ctx.stores.pipelineRuns.findByActivityId(userId, activityId);
+  if (!pipelineRun) {
     throw new HttpError(404, 'Activity not found');
   }
 
@@ -298,12 +297,10 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
   // (but we allow retry even if status was success - user might want to update)
   const destKey = getDestinationName(destEnum);
 
-  // Try to get enriched event from GCS via PipelineRun (new architecture)
-  // Fall back to executions for backwards compatibility with existing data
+  // Try to get enriched event from GCS via PipelineRun
   let enrichedEvent: Record<string, unknown> | null = null;
 
-  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, activity.pipelineExecutionId);
-  if (pipelineRun?.enrichedEventUri) {
+  if (pipelineRun.enrichedEventUri) {
     // Fetch from GCS using URI (avoids 1MB Firestore limit)
     enrichedEvent = await fetchEnrichedEventFromGCS(pipelineRun.enrichedEventUri);
     if (enrichedEvent) {
@@ -315,10 +312,10 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
 
   // Fallback to executions collection (backwards compatibility)
   if (!enrichedEvent) {
-    const routerExec = await ctx.stores.executions.getRouterExecution(activity.pipelineExecutionId);
+    const routerExec = await ctx.stores.executions.getRouterExecution(pipelineRun.id);
     if (routerExec?.data.inputsJson) {
       enrichedEvent = parseEnrichedActivityEvent(routerExec.data.inputsJson);
-      ctx.logger.info('Retrieved enriched event from executions (fallback)', { pipelineExecutionId: activity.pipelineExecutionId });
+      ctx.logger.info('Retrieved enriched event from executions (fallback)', { pipelineExecutionId: pipelineRun.id });
     }
   }
 
@@ -330,7 +327,8 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
   const newPipelineExecutionId = generateRepostExecutionId(activityId);
 
   // Check if destination already has an external ID (use update method)
-  const hasExistingId = activity.destinations && activity.destinations[destKey];
+  const existingDest = pipelineRun.destinations?.find(d => d.destination === destEnum);
+  const hasExistingId = !!existingDest?.externalId;
 
   // CRITICAL: Explicitly remove fields to prevent duplicate field errors in Go (camelCase vs snake_case)
   const {
@@ -362,9 +360,9 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
     attributes: {
       pipeline_execution_id: newPipelineExecutionId,
       repost_type: 'retry_destination',
-      original_execution_id: activity.pipelineExecutionId,
+      original_execution_id: pipelineRun.id,
       use_update_method: hasExistingId ? 'true' : 'false',
-      existing_external_id: hasExistingId ? activity.destinations[destKey] : '',
+      existing_external_id: existingDest?.externalId || '',
     },
   });
 
@@ -399,42 +397,20 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     throw new HttpError(400, 'activityId is required');
   }
 
-  // Two-step lookup: first try synchronized collection, then fall back to pipeline_runs
-  // This allows re-running pipelines even when all destinations failed to sync
-  let pipelineId: string | undefined;
-  let pipelineExecutionId: string | undefined;
-
-  // Try synchronized activity first (fast path for successful syncs)
-  const syncedActivity = await ctx.stores.activities.getSynchronized(userId, activityId);
-  if (syncedActivity) {
-    pipelineId = syncedActivity.pipelineId;
-    pipelineExecutionId = syncedActivity.pipelineExecutionId;
-    ctx.logger.info('Found synchronized activity', { activityId, pipelineId, pipelineExecutionId });
-  } else {
-    // Fallback: find pipeline run by activity ID (for failed syncs)
-    const pipelineRun = await ctx.stores.pipelineRuns.findByActivityId(userId, activityId);
-    if (pipelineRun) {
-      pipelineId = pipelineRun.pipelineId;
-      pipelineExecutionId = pipelineRun.id;
-      ctx.logger.info('Found pipeline run (no synced activity)', { activityId, pipelineId, pipelineExecutionId });
-    }
-  }
-
-  if (!pipelineExecutionId) {
+  // Find pipeline run by activity ID
+  const pipelineRun = await ctx.stores.pipelineRuns.findByActivityId(userId, activityId);
+  if (!pipelineRun) {
     throw new HttpError(404, 'Activity not found');
   }
 
-  // Verify we have a pipelineId (required for direct enricher publish)
-  if (!pipelineId) {
-    throw new HttpError(500, 'Activity missing pipelineId - cannot re-run pipeline');
-  }
+  const pipelineId = pipelineRun.pipelineId;
+  const pipelineExecutionId = pipelineRun.id;
+  ctx.logger.info('Found pipeline run', { activityId, pipelineId, pipelineExecutionId });
 
-  // Try to get original payload from GCS via PipelineRun (new architecture)
-  // Fall back to executions for backwards compatibility with existing data
+  // Try to get original payload from GCS via PipelineRun
   let originalPayload: Record<string, unknown> | null = null;
 
-  const pipelineRun = await ctx.stores.pipelineRuns.get(userId, pipelineExecutionId);
-  if (pipelineRun?.originalPayloadUri) {
+  if (pipelineRun.originalPayloadUri) {
     // Fetch from GCS using URI
     const uriMatch = pipelineRun.originalPayloadUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
     if (uriMatch) {

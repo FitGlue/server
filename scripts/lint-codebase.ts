@@ -1019,13 +1019,14 @@ function checkDestinationUploaderPattern(): CheckResult {
       }
     }
 
-    // Check for SynchronizedActivity persistence
-    const hasSyncPersistence =
-      content.includes('SetSynchronizedActivity') ||
-      content.includes('SynchronizedActivity');
+    // Check for pipeline run status update (new pattern: destination.UpdateStatus)
+    // This replaces the deprecated SynchronizedActivity persistence (Rule E37)
+    const hasPipelineRunUpdate =
+      content.includes('destination.UpdateStatus') ||
+      content.includes('UpdateStatus(');
 
-    if (!hasSyncPersistence) {
-      warnings.push(`Uploader '${dir}' may not persist SynchronizedActivity`);
+    if (!hasPipelineRunUpdate) {
+      errors.push(`Uploader '${dir}' missing destination.UpdateStatus call for pipeline_runs persistence`);
     }
 
     // Check for billing increment

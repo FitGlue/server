@@ -203,8 +203,8 @@ async function handleGetUserDetails(match: RouteMatch, ctx: FrameworkContext) {
     throw new HttpError(404, 'User not found');
   }
 
-  const [activityCount, pendingInputs, authInfo] = await Promise.all([
-    stores.activities.countSynchronized(targetUserId),
+  const [pipelineRunCount, pendingInputs, authInfo] = await Promise.all([
+    stores.pipelineRuns.list(targetUserId, { limit: 0 }).then(runs => runs.length),
     fetchPendingInputs(targetUserId, logger),
     fetchAuthUserInfo(targetUserId, logger),
   ]);
@@ -235,7 +235,7 @@ async function handleGetUserDetails(match: RouteMatch, ctx: FrameworkContext) {
     stripeCustomerId: user.stripeCustomerId || null,
     integrations,
     pipelines,
-    activityCount,
+    activityCount: pipelineRunCount,
     pendingInputCount: pendingInputs.length,
     pendingInputs,
   };
@@ -311,10 +311,10 @@ async function handleDeleteActivities(match: RouteMatch, adminUserId: string, ct
   const { logger } = ctx;
   const targetUserId = match.params.id;
 
-  // Batched deletion
+  // Delete pipeline runs
   const batchSize = 50;
   let deletedCount = 0;
-  const collectionRef = db.collection('users').doc(targetUserId).collection('synchronized_activities');
+  const collectionRef = db.collection('users').doc(targetUserId).collection('pipeline_runs');
 
   // eslint-disable-next-line no-constant-condition
   while (true) {

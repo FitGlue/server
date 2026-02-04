@@ -39,6 +39,12 @@ describe('activities-handler', () => {
           getSynchronized: jest.fn(),
           getSynchronizedPipelineIds: jest.fn(),
         },
+        pipelineRuns: {
+          list: jest.fn(),
+          countSynced: jest.fn(),
+          listSynced: jest.fn(),
+          findByActivityId: jest.fn(),
+        },
         executions: {
           listDistinctPipelines: jest.fn(),
           batchListByPipelines: jest.fn(),
@@ -64,39 +70,40 @@ describe('activities-handler', () => {
     });
 
     it('/ returns list of synchronized activities', async () => {
-      ctx.stores.activities.listSynchronized.mockResolvedValue([{
+      ctx.stores.pipelineRuns.listSynced.mockResolvedValue([{
+        id: 'pipe-1',
         activityId: 'a1',
+        pipelineId: 'pipeline-123',
         title: 'Activity 1',
         description: 'Description 1',
         type: 5, // ACTIVITY_TYPE_CROSSFIT
         source: 'SOURCE_HEVY',
+        destinations: [],
       }]);
 
-      const result = await handler(({
+      const result: any = await handler(({
         method: 'GET',
         body: {},
         query: {},
         path: '/api/activities',
       } as any), ctx);
 
-      expect(result).toEqual({
-        activities: [{
-          activityId: 'a1',
-          title: 'Activity 1',
-          description: 'Description 1',
-          type: 'Crossfit',
-          source: 'Hevy',
-        }]
-      });
+      expect(result.activities).toHaveLength(1);
+      expect(result.activities[0].activityId).toBe('a1');
+      expect(result.activities[0].title).toBe('Activity 1');
+      expect(result.activities[0].type).toBe('Crossfit');
+      expect(result.activities[0].source).toBe('Hevy');
     });
 
     it('/ with includeExecution=true returns activities with pipelineExecution', async () => {
-      ctx.stores.activities.listSynchronized.mockResolvedValue([{
+      ctx.stores.pipelineRuns.listSynced.mockResolvedValue([{
+        id: 'pipeline-123',
         activityId: 'a1',
+        pipelineId: 'pipeline-def-1',
         title: 'Enhanced Workout',
         type: 46,
         source: 'SOURCE_HEVY',
-        pipelineExecutionId: 'pipeline-123',
+        destinations: [],
       }]);
 
       const executionsMap = new Map();
@@ -122,11 +129,10 @@ describe('activities-handler', () => {
       expect(result.activities[0].pipelineExecution).toBeDefined();
       expect(result.activities[0].pipelineExecution).toHaveLength(1);
       expect(result.activities[0].pipelineExecution[0].service).toBe('enricher');
-      expect(result.activities[0].pipelineExecutionId).toBe('pipeline-123');
     });
 
     it('/stats returns a count of', async () => {
-      ctx.stores.activities.countSynchronized.mockResolvedValue(1);
+      ctx.stores.pipelineRuns.countSynced.mockResolvedValue(1);
 
       const result = await handler(({
         method: 'GET',
@@ -144,35 +150,33 @@ describe('activities-handler', () => {
     });
 
     it('/:id returns single activity', async () => {
-      const activity = {
+      ctx.stores.pipelineRuns.findByActivityId.mockResolvedValue({
+        id: 'pipe-1',
         activityId: 'a1',
+        pipelineId: 'pipeline-123',
         title: 'Activity 1',
         description: 'Description 1',
         type: 46, // ACTIVITY_TYPE_WEIGHT_TRAINING
         source: 'SOURCE_FITBIT',
-      };
-      ctx.stores.activities.getSynchronized.mockResolvedValue(activity);
+        destinations: [],
+      });
+      ctx.services.execution.listByPipeline.mockResolvedValue([]);
 
-      const result = await handler(({
+      const result: any = await handler(({
         method: 'GET',
         body: {},
         query: {},
         path: '/api/activities/a1',
       } as any), ctx);
 
-      expect(result).toEqual({
-        activity: {
-          activityId: 'a1',
-          title: 'Activity 1',
-          description: 'Description 1',
-          type: 'Weight Training',
-          source: 'Fitbit',
-        }
-      });
+      expect(result.activity.activityId).toBe('a1');
+      expect(result.activity.title).toBe('Activity 1');
+      expect(result.activity.type).toBe('Weight Training');
+      expect(result.activity.source).toBe('Fitbit');
     });
 
     it('handles errors', async () => {
-      ctx.stores.activities.listSynchronized.mockRejectedValue(new Error('db error'));
+      ctx.stores.pipelineRuns.listSynced.mockRejectedValue(new Error('db error'));
       await expect(handler(({
         method: 'GET',
         body: {},
@@ -196,19 +200,17 @@ describe('activities-handler', () => {
       });
 
       it('/unsynchronized returns list of unsynchronized executions', async () => {
-        // Mock: one pipeline execution that is NOT synchronized
-        ctx.stores.executions.listDistinctPipelines.mockResolvedValue([{
-          id: 'exec-1',
-          data: {
-            pipelineExecutionId: 'pipeline-1',
-            service: 'enricher',
-            status: 7, // STATUS_SKIPPED
-            timestamp: new Date('2026-01-01T12:00:00Z'),
-            errorMessage: 'Activity filter rejected',
-            inputsJson: JSON.stringify({ activity: { title: 'Morning Run', type: 27, source: 'SOURCE_FITBIT' } }),
-          },
+        // Mock: one pipeline run that is failed
+        ctx.stores.pipelineRuns.list.mockResolvedValue([{
+          id: 'pipeline-1',
+          title: 'Morning Run',
+          type: 27, // ACTIVITY_TYPE_RUN
+          source: 'Fitbit',
+          status: 4, // PIPELINE_RUN_STATUS_FAILED
+          statusMessage: 'Activity filter rejected',
+          destinations: [],
+          createdAt: new Date('2026-01-01T12:00:00Z'),
         }]);
-        ctx.stores.activities.getSynchronizedPipelineIds.mockResolvedValue(new Set());
 
         const result = await handler(({
           method: 'GET',
@@ -223,25 +225,24 @@ describe('activities-handler', () => {
             title: 'Morning Run',
             activityType: 'Run',
             source: 'Fitbit',
-            status: 'Skipped',
+            status: 'Failed',
             errorMessage: 'Activity filter rejected',
             timestamp: '2026-01-01T12:00:00.000Z',
           }],
         });
       });
 
-      it('/unsynchronized filters out synchronized pipelines', async () => {
-        ctx.stores.executions.listDistinctPipelines.mockResolvedValue([{
-          id: 'exec-1',
-          data: {
-            pipelineExecutionId: 'pipeline-synced',
-            service: 'enricher',
-            status: 2, // STATUS_SUCCESS
-            timestamp: new Date(),
-          },
+      it('/unsynchronized filters out successful pipelines', async () => {
+        // Mock: successful pipeline runs should be excluded
+        ctx.stores.pipelineRuns.list.mockResolvedValue([{
+          id: 'pipeline-synced',
+          title: 'Synced Activity',
+          type: 27,
+          source: 'Fitbit',
+          status: 2, // PIPELINE_RUN_STATUS_SUCCESS
+          destinations: [],
+          createdAt: new Date(),
         }]);
-        // This pipeline is synchronized
-        ctx.stores.activities.getSynchronizedPipelineIds.mockResolvedValue(new Set(['pipeline-synced']));
 
         const result = await handler(({
           method: 'GET',

@@ -14,9 +14,8 @@ import (
 
 // MockDB for Wrapper Test
 type MockDB struct {
-	SetExecutionFunc            func(ctx context.Context, record *pb.ExecutionRecord) error
-	UpdateExecutionFunc         func(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	SetSynchronizedActivityFunc func(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
+	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
+	UpdateExecutionFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
 }
 
 func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -64,9 +63,6 @@ func (m *MockDB) ListCounters(ctx context.Context, userId string) ([]*pb.Counter
 func (m *MockDB) DeleteCounter(ctx context.Context, userId string, id string) error {
 	return nil
 }
-func (m *MockDB) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
-	return nil
-}
 func (m *MockDB) IncrementSyncCount(ctx context.Context, userID string) error {
 	return nil
 }
@@ -75,15 +71,6 @@ func (m *MockDB) IncrementPreventedSyncCount(ctx context.Context, userID string)
 }
 func (m *MockDB) ResetSyncCount(ctx context.Context, userID string) error {
 	return nil
-}
-func (m *MockDB) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
-	return nil, nil, nil
-}
-func (m *MockDB) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
-	return nil
-}
-func (m *MockDB) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
-	return nil, nil
 }
 func (m *MockDB) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
 	return nil, nil
@@ -124,8 +111,17 @@ func (m *MockDB) CreatePipelineRun(ctx context.Context, userId string, run *pb.P
 func (m *MockDB) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
 	return nil, nil
 }
+func (m *MockDB) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error) {
+	return nil, nil
+}
 func (m *MockDB) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return nil
+}
+func (m *MockDB) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+	return nil
+}
+func (m *MockDB) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+	return nil, nil
 }
 
 // Update Wrapper Test to expect metadata in LogStart updates

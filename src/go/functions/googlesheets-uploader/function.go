@@ -185,39 +185,8 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 		fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
 	}
 
-	// Persist SynchronizedActivity
-	existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
-	if existingActivity != nil {
-		if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-			"destinations": map[string]interface{}{
-				"googlesheets": fmt.Sprintf("%d", rowNumber),
-			},
-			"synced_at": timestamppb.Now().AsTime(),
-		}); err != nil {
-			fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
-		} else {
-			fwCtx.Logger.Info("Updated synchronized activity destinations", "activity_id", eventPayload.ActivityId)
-		}
-	} else {
-		syncedActivity := &pb.SynchronizedActivity{
-			ActivityId:          eventPayload.ActivityId,
-			Title:               eventPayload.Name,
-			Description:         eventPayload.Description,
-			Type:                eventPayload.ActivityType,
-			Source:              eventPayload.Source.String(),
-			StartTime:           eventPayload.StartTime,
-			SyncedAt:            timestamppb.Now(),
-			PipelineId:          eventPayload.PipelineId,
-			PipelineExecutionId: fwCtx.PipelineExecutionId,
-			Destinations: map[string]string{
-				"googlesheets": fmt.Sprintf("%d", rowNumber),
-			},
-		}
-
-		if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-			fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-		}
-	}
+	// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+	// The destination.UpdateStatus call at the end of this function updates pipeline_runs with the externalId
 
 	// Increment sync count for billing
 	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {

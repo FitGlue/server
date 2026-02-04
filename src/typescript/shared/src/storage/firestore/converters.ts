@@ -410,49 +410,6 @@ export const FirestoreToPendingInput = (data: Record<string, unknown>): PendingI
 };
 
 
-export const synchronizedActivityConverter: FirestoreDataConverter<import('../../types/pb/user').SynchronizedActivity> = {
-  toFirestore(model: import('../../types/pb/user').SynchronizedActivity): FirebaseFirestore.DocumentData {
-    const data: FirebaseFirestore.DocumentData = {
-      activity_id: model.activityId,
-      title: model.title,
-      description: model.description,
-      type: model.type,
-      source: model.source,
-      start_time: model.startTime,
-      synced_at: model.syncedAt,
-      pipeline_id: model.pipelineId,
-      destinations: model.destinations,
-      pipeline_execution_id: model.pipelineExecutionId,
-      // Parkrun tracking fields
-      parkrun_results_state: model.parkrunResultsState,
-      parkrun_event_name: model.parkrunEventName,
-      parkrun_event_slug: model.parkrunEventSlug,
-      parkrun_polling_deadline: model.parkrunPollingDeadline
-    };
-    return data;
-  },
-  fromFirestore(snapshot: QueryDocumentSnapshot): import('../../types/pb/user').SynchronizedActivity {
-    const data = snapshot.data();
-    return {
-      activityId: data.activity_id,
-      title: data.title,
-      description: data.description,
-      type: data.type,
-      source: data.source,
-      startTime: toDate(data.start_time),
-      syncedAt: toDate(data.synced_at),
-      pipelineId: data.pipeline_id,
-      destinations: data.destinations || {},
-      pipelineExecutionId: data.pipeline_execution_id,
-      // Parkrun tracking fields
-      parkrunResultsState: data.parkrun_results_state || 0,
-      parkrunEventName: data.parkrun_event_name || '',
-      parkrunEventSlug: data.parkrun_event_slug || '',
-      parkrunPollingDeadline: toDate(data.parkrun_polling_deadline)
-    };
-  }
-};
-
 export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): import('../../types/pb/user').ShowcasedActivity => {
   return {
     showcaseId: data.showcase_id as string || '',

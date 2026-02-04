@@ -226,14 +226,6 @@ export class UserService {
     }
 
     /**
-     * Check if an external ID exists as a destination in any synchronized activity.
-     * Used for loop prevention - prevents infinite trigger chains.
-     */
-    async checkDestinationExists(userId: string, destinationKey: string, externalId: string): Promise<boolean> {
-        return this.activityStore.checkDestinationExists(userId, destinationKey, externalId);
-    }
-
-    /**
      * Check if an incoming activity is a "bounceback" from our own upload.
      * Used for source-level loop prevention - when a destination sends a webhook,
      * we check if we recently uploaded an activity with this destination + destinationId.

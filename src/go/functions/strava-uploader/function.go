@@ -222,7 +222,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		}, nil
 	}
 
-	// Persist SynchronizedActivity if successful
+	// Record upload for loop prevention if successful
 	if uploadResp.ActivityID != 0 {
 		stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)
 
@@ -246,45 +246,8 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 			fwCtx.Logger.Debug("Recorded upload for loop prevention", "id", uploadRecord.Id)
 		}
 
-		// Check if activity already exists (e.g., repost scenario)
-		// If it does, only update destinations to preserve original pipelineExecutionId
-		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
-		if existingActivity != nil {
-			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
-			// Use nested map structure so MergeAll properly merges into destinations
-			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-				"destinations": map[string]interface{}{
-					"strava": stravaDestID,
-				},
-				"synced_at": timestamppb.Now().AsTime(),
-			}); err != nil {
-				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
-			} else {
-				fwCtx.Logger.Info("Updated synchronized activity destinations (preserved execution ID)", "activity_id", eventPayload.ActivityId)
-			}
-		} else {
-			// New activity - create full record including pipelineExecutionId
-			syncedActivity := &pb.SynchronizedActivity{
-				ActivityId:          eventPayload.ActivityId,
-				Title:               eventPayload.Name,
-				Description:         eventPayload.Description,
-				Type:                eventPayload.ActivityType,
-				Source:              eventPayload.Source.String(), // Use original event source (FROM webhook trigger)
-				StartTime:           eventPayload.StartTime,
-				SyncedAt:            timestamppb.Now(),
-				PipelineId:          eventPayload.PipelineId,
-				PipelineExecutionId: fwCtx.PipelineExecutionId, // Link to execution trace
-				Destinations: map[string]string{
-					"strava": stravaDestID,
-				},
-			}
-			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-				// Don't fail the function, this is just recording history
-			} else {
-				fwCtx.Logger.Info("Persisted synchronized activity", "activity_id", eventPayload.ActivityId)
-			}
-		}
+		// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+		// The destination.UpdateStatus call at the end of this function updates pipeline_runs with the externalId
 
 		// Increment sync count for billing (per successful destination sync)
 		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
@@ -342,12 +305,12 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		"activity_id", eventPayload.ActivityId,
 		"user_id", eventPayload.UserId)
 
-	// 1. Lookup SynchronizedActivity to get Strava activity ID
-	syncActivity, err := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
+	// 1. Lookup PipelineRun to get Strava activity ID from destinations
+	pipelineRun, err := svc.DB.GetPipelineRunByActivityId(ctx, eventPayload.UserId, eventPayload.ActivityId)
 	if err != nil {
 		// Activity not found is expected in resume mode if original upload failed before storing
 		// Return SKIPPED (not error) to prevent Sentry noise
-		fwCtx.Logger.Info("Synchronized activity not found for UPDATE - skipping",
+		fwCtx.Logger.Info("Pipeline run not found for UPDATE - skipping",
 			"activity_id", eventPayload.ActivityId,
 			"error", err,
 		)
@@ -359,11 +322,11 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"activity_id": eventPayload.ActivityId,
 			"pipeline_id": eventPayload.PipelineId,
 			"mode":        "UPDATE",
-			"details":     "Original upload may have failed before storing synchronized activity",
+			"details":     "Original upload may have failed before storing pipeline run",
 		}, nil
 	}
-	if syncActivity == nil {
-		fwCtx.Logger.Info("Synchronized activity is nil for UPDATE - skipping",
+	if pipelineRun == nil {
+		fwCtx.Logger.Info("Pipeline run is nil for UPDATE - skipping",
 			"activity_id", eventPayload.ActivityId,
 		)
 		// Update PipelineRun destination as skipped
@@ -377,11 +340,19 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		}, nil
 	}
 
-	stravaIDStr, ok := syncActivity.Destinations["strava"]
-	if !ok || stravaIDStr == "" {
-		fwCtx.Logger.Info("No Strava destination in synchronized activity for UPDATE - skipping",
+	// Extract Strava external ID from destinations array
+	var stravaIDStr string
+	for _, dest := range pipelineRun.Destinations {
+		if dest.Destination == pb.Destination_DESTINATION_STRAVA && dest.ExternalId != nil && *dest.ExternalId != "" {
+			stravaIDStr = *dest.ExternalId
+			break
+		}
+	}
+
+	if stravaIDStr == "" {
+		fwCtx.Logger.Info("No Strava destination in pipeline run for UPDATE - skipping",
 			"activity_id", eventPayload.ActivityId,
-			"destinations", syncActivity.Destinations,
+			"destinations", pipelineRun.Destinations,
 		)
 		// Update PipelineRun destination as skipped
 		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "no_strava_destination", fwCtx.Logger)
@@ -514,12 +485,8 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		"strava_activity_id", stravaIDStr,
 		"updated_fields", updateBody)
 
-	// 6. Update SynchronizedActivity with new description
-	if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-		"description": mergedDescription,
-	}); err != nil {
-		fwCtx.Logger.Warn("Failed to update synchronized activity description", "error", err)
-	}
+	// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+	// We no longer update synchronized_activities here
 
 	// Increment sync count for billing (per successful destination sync)
 	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {

@@ -158,45 +158,8 @@ func uploadHandler() framework.HandlerFunc {
 			}
 		}
 
-		// 7. Persist SynchronizedActivity
-		// Check if activity already exists (e.g., repost scenario)
-		// If it does, only update destinations to preserve original pipelineExecutionId
-		existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
-		if existingActivity != nil {
-			// Activity exists - update only destinations (preserves original pipelineExecutionId for boosters display)
-			// Use nested map structure so MergeAll properly merges into destinations
-			if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-				"destinations": map[string]interface{}{
-					"hevy": workoutID,
-				},
-				"synced_at": timestamppb.Now().AsTime(),
-			}); err != nil {
-				fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
-			} else {
-				fwCtx.Logger.Info("Updated synchronized activity destinations (preserved execution ID)", "activity_id", eventPayload.ActivityId)
-			}
-		} else {
-			// New activity - create full record including pipelineExecutionId
-			syncedActivity := &pb.SynchronizedActivity{
-				ActivityId:          eventPayload.ActivityId,
-				Title:               eventPayload.Name,
-				Description:         eventPayload.Description,
-				Type:                eventPayload.ActivityType,
-				Source:              eventPayload.Source.String(),
-				StartTime:           eventPayload.StartTime,
-				SyncedAt:            timestamppb.Now(),
-				PipelineId:          eventPayload.PipelineId,
-				PipelineExecutionId: fwCtx.PipelineExecutionId,
-				Destinations: map[string]string{
-					"hevy": workoutID,
-				},
-			}
-
-			if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-				fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-				// Don't fail - just log
-			}
-		}
+		// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+		// The destination.UpdateStatus call at the end of this function updates pipeline_runs with the externalId
 
 		// 8. Increment sync count for billing
 		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
@@ -220,16 +183,18 @@ func uploadHandler() framework.HandlerFunc {
 
 // checkExistingActivity looks up if we've already synced this activity to Hevy
 func checkExistingActivity(ctx context.Context, fwCtx *framework.FrameworkContext, event *pb.EnrichedActivityEvent) string {
-	// Look up in SynchronizedActivity by internal activity ID
-	syncActivity, err := svc.DB.GetSynchronizedActivity(ctx, event.UserId, event.ActivityId)
+	// Look up in PipelineRun by internal activity ID
+	pipelineRun, err := svc.DB.GetPipelineRunByActivityId(ctx, event.UserId, event.ActivityId)
 	if err != nil {
-		fwCtx.Logger.Debug("No existing synchronized activity found", "activityId", event.ActivityId)
+		fwCtx.Logger.Debug("No existing pipeline run found", "activityId", event.ActivityId)
 		return ""
 	}
 
-	if syncActivity != nil && syncActivity.Destinations != nil {
-		if hevyID, ok := syncActivity.Destinations["hevy"]; ok && hevyID != "" {
-			return hevyID
+	if pipelineRun != nil && pipelineRun.Destinations != nil {
+		for _, dest := range pipelineRun.Destinations {
+			if dest.Destination == pb.Destination_DESTINATION_HEVY && dest.ExternalId != nil && *dest.ExternalId != "" {
+				return *dest.ExternalId
+			}
 		}
 	}
 
@@ -511,13 +476,8 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		"workoutId", workoutID,
 		"updatedFields", updatedFields)
 
-	// 6. Update SynchronizedActivity with merged description
-	if err := svc.DB.UpdateSynchronizedActivity(ctx, event.UserId, event.ActivityId, map[string]interface{}{
-		"description": mergedDescription,
-	}); err != nil {
-		fwCtx.Logger.Warn("Failed to update synchronized activity description", "error", err)
-		// Don't fail - just log
-	}
+	// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+	// We no longer update synchronized_activities here
 
 	return map[string]interface{}{
 		"status":         "SUCCESS",

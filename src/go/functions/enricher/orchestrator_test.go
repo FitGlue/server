@@ -61,10 +61,6 @@ func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pb.C
 func (m *MockDatabase) DeleteCounter(ctx context.Context, userId string, id string) error {
 	return nil
 }
-
-func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
-	return nil
-}
 func (m *MockDatabase) IncrementSyncCount(ctx context.Context, userID string) error {
 	return nil
 }
@@ -73,15 +69,6 @@ func (m *MockDatabase) IncrementPreventedSyncCount(ctx context.Context, userID s
 }
 func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error {
 	return nil
-}
-func (m *MockDatabase) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
-	return nil, nil, nil
-}
-func (m *MockDatabase) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
-	return nil
-}
-func (m *MockDatabase) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
-	return nil, nil
 }
 func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
 	return nil, nil
@@ -125,8 +112,17 @@ func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run
 func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
 	return nil, nil
 }
+func (m *MockDatabase) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error) {
+	return nil, nil
+}
 func (m *MockDatabase) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return nil
+}
+func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+	return nil
+}
+func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+	return nil, nil
 }
 
 type MockBlobStore struct {

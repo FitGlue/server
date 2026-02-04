@@ -12,11 +12,13 @@ import (
 // This matches the shared Database interface in interfaces.go
 type Database interface {
 	UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error)
+	SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error
+	GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error)
 }
 
-// UpdateStatus updates a single destination's status in the PipelineRun.
-// Uses additive-only updates to avoid race conditions between parallel uploaders.
+// UpdateStatus updates a single destination's status using the subcollection pattern.
+// Each destination is written as a separate document in the destination_outcomes subcollection,
+// eliminating race conditions between parallel uploaders.
 // Parameters:
 //   - db: the Database interface for Firestore operations
 //   - userId: the user's ID
@@ -31,49 +33,48 @@ func UpdateStatus(ctx context.Context, db Database, userId string, pipelineRunId
 		return // No pipeline run to update - legacy flow
 	}
 
-	// Fetch current PipelineRun
-	pipelineRun, err := db.GetPipelineRun(ctx, userId, pipelineRunId)
-	if err != nil || pipelineRun == nil {
-		logger.Warn("Failed to get pipeline run for destination update", "error", err, "pipeline_run_id", pipelineRunId)
+	// Build the outcome
+	outcome := &pb.DestinationOutcome{
+		Destination: dest,
+		Status:      status,
+		CompletedAt: timestamppb.Now(),
+	}
+	if externalId != "" {
+		outcome.ExternalId = &externalId
+	}
+	if errMsg != "" {
+		outcome.Error = &errMsg
+	}
+
+	// Write directly to subcollection - each destination has its own document
+	// No read-modify-write needed, eliminating race conditions
+	if err := db.SetDestinationOutcome(ctx, userId, pipelineRunId, outcome); err != nil {
+		logger.Error("Failed to set destination outcome", "error", err, "pipeline_run_id", pipelineRunId, "destination", dest.String())
 		return
 	}
 
-	// Find and update the matching destination (additive - only updates the specific destination)
-	found := false
-	for i, outcome := range pipelineRun.Destinations {
-		if outcome.Destination == dest {
-			pipelineRun.Destinations[i].Status = status
-			pipelineRun.Destinations[i].CompletedAt = timestamppb.Now()
-			if externalId != "" {
-				pipelineRun.Destinations[i].ExternalId = &externalId
-			}
-			if errMsg != "" {
-				pipelineRun.Destinations[i].Error = &errMsg
-			}
-			found = true
-			break
-		}
-	}
+	logger.Debug("Set destination outcome in subcollection", "pipeline_run_id", pipelineRunId, "destination", dest.String(), "status", status.String())
 
-	if !found {
-		logger.Warn("Destination not found in pipeline run", "destination", dest.String(), "pipeline_run_id", pipelineRunId)
+	// Now compute and update the overall pipeline status
+	// Read all destination outcomes from subcollection
+	outcomes, err := db.GetDestinationOutcomes(ctx, userId, pipelineRunId)
+	if err != nil {
+		logger.Warn("Failed to get destination outcomes for status computation", "error", err, "pipeline_run_id", pipelineRunId)
 		return
 	}
 
-	// Compute overall status based on all destinations
-	newStatus := ComputePipelineRunStatus(pipelineRun.Destinations)
+	newStatus := ComputePipelineRunStatus(outcomes)
 
-	// Update with the modified destinations array
+	// Update the parent pipeline run's overall status
 	updateData := map[string]interface{}{
-		"destinations": pipelineRun.Destinations,
-		"status":       int32(newStatus),
-		"updated_at":   timestamppb.Now(),
+		"status":     int32(newStatus),
+		"updated_at": timestamppb.Now(),
 	}
 
 	if err := db.UpdatePipelineRun(ctx, userId, pipelineRunId, updateData); err != nil {
-		logger.Error("Failed to update pipeline run destination", "error", err, "pipeline_run_id", pipelineRunId, "destination", dest.String())
+		logger.Error("Failed to update pipeline run status", "error", err, "pipeline_run_id", pipelineRunId)
 	} else {
-		logger.Debug("Updated pipeline run destination", "pipeline_run_id", pipelineRunId, "destination", dest.String(), "status", status.String())
+		logger.Debug("Updated pipeline run status", "pipeline_run_id", pipelineRunId, "status", newStatus.String())
 	}
 }
 

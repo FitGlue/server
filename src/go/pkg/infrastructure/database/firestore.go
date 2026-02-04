@@ -2,11 +2,14 @@ package database
 
 import (
 	"context"
+	"fmt"
 	"strings"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	storage "github.com/fitglue/server/src/go/pkg/storage/firestore"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // FirestoreAdapter provides database operations using Firestore
@@ -214,81 +217,6 @@ func (a *FirestoreAdapter) DeletePersonalRecord(ctx context.Context, userId stri
 	return err
 }
 
-// --- Activities ---
-
-func (a *FirestoreAdapter) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
-	// Set the synchronized activity document
-	if err := a.storage.Activities(userId).Doc(activity.ActivityId).Set(ctx, activity); err != nil {
-		return err
-	}
-
-	// PHASE 2 OPTIMIZATION: Atomically increment activity counters for O(1) stats access
-	// This enables the frontend to show activity counts without expensive count() queries
-	_, err := a.Client.Collection("users").Doc(userId).Update(ctx, []firestore.Update{
-		{Path: "activityCounts.synchronized", Value: firestore.Increment(1)},
-		{Path: "activityCounts.weeklySync", Value: firestore.Increment(1)},
-		{Path: "activityCounts.lastUpdated", Value: firestore.ServerTimestamp},
-	})
-	// Don't fail if counters update fails - the activity was already created
-	if err != nil {
-		// Log but don't return error - activity creation succeeded
-		// The counters can be backfilled later if needed
-	}
-
-	return nil
-}
-
-// ListPendingParkrunActivities queries all users' activities with pending Parkrun results
-func (a *FirestoreAdapter) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
-	// Query across ALL users' activities subcollections using collection group query
-	// Filter by parkrun_results_state == PARKRUN_RESULTS_STATE_PENDING (2)
-	iter := a.Client.CollectionGroup("activities").
-		Where("parkrun_results_state", "==", int32(pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING)).
-		Documents(ctx)
-
-	docs, err := iter.GetAll()
-	if err != nil {
-		return nil, nil, err
-	}
-
-	var activities []*pb.SynchronizedActivity
-	var userIDs []string
-
-	for _, d := range docs {
-		// Extract user ID from path: users/{userId}/activities/{activityId}
-		pathParts := d.Ref.Parent.Parent.ID // This gets us the userId
-		userID := pathParts
-
-		m := d.Data()
-		activity := storage.FirestoreToSynchronizedActivity(m)
-		if activity.ActivityId == "" {
-			activity.ActivityId = d.Ref.ID
-		}
-		activities = append(activities, activity)
-		userIDs = append(userIDs, userID)
-	}
-
-	return activities, userIDs, nil
-}
-
-// UpdateSynchronizedActivity updates specific fields on an activity
-func (a *FirestoreAdapter) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
-	return a.storage.Activities(userId).Doc(activityId).Update(ctx, data)
-}
-
-// GetSynchronizedActivity retrieves a single synchronized activity
-func (a *FirestoreAdapter) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
-	activity, err := a.storage.Activities(userId).Doc(activityId).Get(ctx)
-	if err != nil {
-		return nil, err
-	}
-	// Ensure activity ID is set
-	if activity != nil && activity.ActivityId == "" {
-		activity.ActivityId = activityId
-	}
-	return activity, nil
-}
-
 func (a *FirestoreAdapter) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
 	// Query across all pending inputs using collection group query
 	iter := a.Client.CollectionGroup("pending_inputs").
@@ -435,7 +363,112 @@ func (a *FirestoreAdapter) GetPipelineRun(ctx context.Context, userId string, id
 	return run, nil
 }
 
+// GetPipelineRunByActivityId retrieves the most recent pipeline run for an activity
+// Returns nil (not an error) if no run found for the activity
+func (a *FirestoreAdapter) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error) {
+	iter := a.Client.Collection("users").Doc(userId).Collection("pipeline_runs").
+		Where("activity_id", "==", activityId).
+		OrderBy("created_at", firestore.Desc).
+		Limit(1).
+		Documents(ctx)
+
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(docs) == 0 {
+		return nil, nil // Not found - not an error
+	}
+
+	m := docs[0].Data()
+	run := storage.FirestoreToPipelineRun(m)
+	if run.Id == "" {
+		run.Id = docs[0].Ref.ID
+	}
+	return run, nil
+}
+
 // UpdatePipelineRun updates specific fields on a pipeline run
 func (a *FirestoreAdapter) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return a.storage.PipelineRuns(userId).Doc(id).Update(ctx, data)
+}
+
+// --- Destination Outcomes (subcollection of Pipeline Runs) ---
+// Each destination outcome is stored as a separate document to avoid race conditions
+// when multiple uploaders update their status in parallel.
+
+// SetDestinationOutcome writes a destination outcome to the subcollection
+// Document ID is the destination enum value (e.g., "1" for STRAVA, "2" for SHOWCASE)
+func (a *FirestoreAdapter) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+	docId := fmt.Sprintf("%d", outcome.Destination)
+	data := map[string]interface{}{
+		"destination": int32(outcome.Destination),
+		"status":      int32(outcome.Status),
+		"updated_at":  time.Now(),
+	}
+	if outcome.ExternalId != nil {
+		data["external_id"] = *outcome.ExternalId
+	}
+	if outcome.Error != nil {
+		data["error"] = *outcome.Error
+	}
+	if outcome.CompletedAt != nil {
+		data["completed_at"] = outcome.CompletedAt.AsTime()
+	}
+
+	_, err := a.Client.Collection("users").Doc(userId).
+		Collection("pipeline_runs").Doc(pipelineRunId).
+		Collection("destination_outcomes").Doc(docId).
+		Set(ctx, data, firestore.MergeAll)
+	return err
+}
+
+// GetDestinationOutcomes retrieves all destination outcomes for a pipeline run
+func (a *FirestoreAdapter) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+	iter := a.Client.Collection("users").Doc(userId).
+		Collection("pipeline_runs").Doc(pipelineRunId).
+		Collection("destination_outcomes").
+		Documents(ctx)
+
+	docs, err := iter.GetAll()
+	if err != nil {
+		return nil, err
+	}
+
+	outcomes := make([]*pb.DestinationOutcome, 0, len(docs))
+	for _, doc := range docs {
+		m := doc.Data()
+		outcome := &pb.DestinationOutcome{}
+
+		if v, ok := m["destination"]; ok {
+			switch val := v.(type) {
+			case int64:
+				outcome.Destination = pb.Destination(val)
+			case float64:
+				outcome.Destination = pb.Destination(int32(val))
+			}
+		}
+		if v, ok := m["status"]; ok {
+			switch val := v.(type) {
+			case int64:
+				outcome.Status = pb.DestinationStatus(val)
+			case float64:
+				outcome.Status = pb.DestinationStatus(int32(val))
+			}
+		}
+		if v, ok := m["external_id"].(string); ok {
+			outcome.ExternalId = &v
+		}
+		if v, ok := m["error"].(string); ok {
+			outcome.Error = &v
+		}
+		if v, ok := m["completed_at"].(time.Time); ok {
+			outcome.CompletedAt = timestamppb.New(v)
+		}
+
+		outcomes = append(outcomes, outcome)
+	}
+
+	return outcomes, nil
 }

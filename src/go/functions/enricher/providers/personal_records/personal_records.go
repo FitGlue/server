@@ -284,7 +284,10 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 	return results, nil
 }
 
-// detectHybridRaceType checks activity tags for hybrid race type indicators
+// detectHybridRaceType checks activity tags for hybrid race type indicators.
+// Only detects from explicit tags or activity name - NOT from exercise names.
+// This ensures Hyrox PRs are only tracked during actual Hyrox-tagged events,
+// not regular workouts that happen to include exercises like rowing or skierg.
 func detectHybridRaceType(activity *pb.StandardizedActivity) string {
 	// Check tags for hybrid race indicators
 	for _, tag := range activity.Tags {
@@ -304,21 +307,6 @@ func detectHybridRaceType(activity *pb.StandardizedActivity) string {
 	}
 	if strings.Contains(lowerName, "athx") {
 		return "athx"
-	}
-
-	// Check if activity has hybrid race stations in StrengthSets
-	for _, session := range activity.Sessions {
-		for _, set := range session.StrengthSets {
-			exerciseLower := strings.ToLower(set.ExerciseName)
-			// Hyrox-specific exercises
-			if strings.Contains(exerciseLower, "sled push") ||
-				strings.Contains(exerciseLower, "sled pull") ||
-				strings.Contains(exerciseLower, "wall balls") ||
-				strings.Contains(exerciseLower, "sandbag lunge") ||
-				strings.Contains(exerciseLower, "burpee broad") {
-				return "hyrox" // Default to Hyrox if detecting hybrid race exercises
-			}
-		}
 	}
 
 	return ""

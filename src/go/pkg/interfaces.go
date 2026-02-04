@@ -40,12 +40,6 @@ type Database interface {
 	ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error)
 	DeletePersonalRecord(ctx context.Context, userId string, recordType string) error
 
-	// Activities
-	SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
-	GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error)
-	ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error)
-	UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error
-
 	// Pipelines (Sub-collection)
 	GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
 
@@ -61,7 +55,12 @@ type Database interface {
 	// Pipeline Runs (lifecycle tracking)
 	CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error
 	GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error)
+	GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error)
 	UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error
+
+	// Destination Outcomes (subcollection of Pipeline Runs - avoids race conditions)
+	SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error
+	GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error)
 }
 
 // --- Messaging Interfaces ---

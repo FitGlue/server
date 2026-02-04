@@ -20,11 +20,10 @@ type MockDatabase struct {
 	UpdatePendingInputFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	ListPendingInputsFunc  func(ctx context.Context, userID string) ([]*pb.PendingInput, error)
 
-	GetCounterFunc              func(ctx context.Context, userId string, id string) (*pb.Counter, error)
-	SetCounterFunc              func(ctx context.Context, userId string, counter *pb.Counter) error
-	ListCountersFunc            func(ctx context.Context, userId string) ([]*pb.Counter, error)
-	SetSynchronizedActivityFunc func(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error
-	GetUserPipelinesFunc        func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
+	GetCounterFunc       func(ctx context.Context, userId string, id string) (*pb.Counter, error)
+	SetCounterFunc       func(ctx context.Context, userId string, counter *pb.Counter) error
+	ListCountersFunc     func(ctx context.Context, userId string) ([]*pb.Counter, error)
+	GetUserPipelinesFunc func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -111,13 +110,6 @@ func (m *MockDatabase) DeleteCounter(ctx context.Context, userId string, id stri
 	return nil
 }
 
-func (m *MockDatabase) SetSynchronizedActivity(ctx context.Context, userId string, activity *pb.SynchronizedActivity) error {
-	if m.SetSynchronizedActivityFunc != nil {
-		return m.SetSynchronizedActivityFunc(ctx, userId, activity)
-	}
-	return nil
-}
-
 // --- Sync Count (for tier limits) ---
 
 func (m *MockDatabase) IncrementSyncCount(ctx context.Context, userID string) error {
@@ -133,21 +125,6 @@ func (m *MockDatabase) IncrementPreventedSyncCount(ctx context.Context, userID s
 func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error {
 	// No-op for tests by default
 	return nil
-}
-
-func (m *MockDatabase) ListPendingParkrunActivities(ctx context.Context) ([]*pb.SynchronizedActivity, []string, error) {
-	// No-op for tests by default
-	return nil, nil, nil
-}
-
-func (m *MockDatabase) UpdateSynchronizedActivity(ctx context.Context, userId string, activityId string, data map[string]interface{}) error {
-	// No-op for tests by default
-	return nil
-}
-
-func (m *MockDatabase) GetSynchronizedActivity(ctx context.Context, userId string, activityId string) (*pb.SynchronizedActivity, error) {
-	// No-op for tests by default
-	return nil, nil
 }
 
 func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
@@ -228,9 +205,26 @@ func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id str
 	return nil, nil
 }
 
+func (m *MockDatabase) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
 func (m *MockDatabase) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	// No-op for tests by default
 	return nil
+}
+
+// --- Destination Outcomes (subcollection of Pipeline Runs) ---
+
+func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+	// No-op for tests by default
+	return nil, nil
 }
 
 // --- Mock Publisher ---

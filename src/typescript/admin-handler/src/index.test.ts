@@ -204,6 +204,9 @@ function createMockContext(overrides: Partial<any> = {}): any {
       activities: {
         countSynchronized: jest.fn().mockResolvedValue(5),
       },
+      pipelineRuns: {
+        list: jest.fn().mockResolvedValue([]),
+      },
     },
     ...overrides,
   };
@@ -366,7 +369,7 @@ describe('admin-handler', () => {
         tier: 2, // USER_TIER_ATHLETE
         email: 'test@example.com',
         displayName: 'Test User',
-        activityCount: 5,
+        activityCount: 0,
         pendingInputCount: 1,
       }));
       // Verify token is masked

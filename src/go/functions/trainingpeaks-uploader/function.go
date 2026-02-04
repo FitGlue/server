@@ -161,39 +161,8 @@ func handleTrainingPeaksCreate(ctx context.Context, httpClient *http.Client, eve
 		}
 	}
 
-	// Persist SynchronizedActivity
-	existingActivity, _ := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
-	if existingActivity != nil {
-		if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-			"destinations": map[string]interface{}{
-				"trainingpeaks": workoutID,
-			},
-			"synced_at": timestamppb.Now().AsTime(),
-		}); err != nil {
-			fwCtx.Logger.Error("Failed to update synchronized activity destinations", "error", err)
-		} else {
-			fwCtx.Logger.Info("Updated synchronized activity destinations (preserved execution ID)", "activity_id", eventPayload.ActivityId)
-		}
-	} else {
-		syncedActivity := &pb.SynchronizedActivity{
-			ActivityId:          eventPayload.ActivityId,
-			Title:               eventPayload.Name,
-			Description:         eventPayload.Description,
-			Type:                eventPayload.ActivityType,
-			Source:              eventPayload.Source.String(),
-			StartTime:           eventPayload.StartTime,
-			SyncedAt:            timestamppb.Now(),
-			PipelineId:          eventPayload.PipelineId,
-			PipelineExecutionId: fwCtx.PipelineExecutionId,
-			Destinations: map[string]string{
-				"trainingpeaks": workoutID,
-			},
-		}
-
-		if err := svc.DB.SetSynchronizedActivity(ctx, eventPayload.UserId, syncedActivity); err != nil {
-			fwCtx.Logger.Error("Failed to persist synchronized activity", "error", err)
-		}
-	}
+	// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+	// The destination.UpdateStatus call at the end of this function updates pipeline_runs with the externalId
 
 	// Increment sync count for billing
 	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
@@ -222,25 +191,32 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 		"activity_id", eventPayload.ActivityId,
 		"user_id", eventPayload.UserId)
 
-	// 1. Lookup SynchronizedActivity to get TrainingPeaks workout ID
-	syncActivity, err := svc.DB.GetSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId)
+	// 1. Lookup PipelineRun to get TrainingPeaks workout ID from destinations
+	pipelineRun, err := svc.DB.GetPipelineRunByActivityId(ctx, eventPayload.UserId, eventPayload.ActivityId)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get synchronized activity: %w", err)
+		return nil, fmt.Errorf("failed to get pipeline run: %w", err)
 	}
-	if syncActivity == nil {
-		return nil, fmt.Errorf("synchronized activity not found for activity_id: %s", eventPayload.ActivityId)
+	if pipelineRun == nil {
+		return nil, fmt.Errorf("pipeline run not found for activity_id: %s", eventPayload.ActivityId)
 	}
 
-	workoutIDStr, ok := syncActivity.Destinations["trainingpeaks"]
-	if !ok || workoutIDStr == "" {
-		return nil, fmt.Errorf("no TrainingPeaks destination found in synchronized activity")
+	// Extract TrainingPeaks external ID from destinations array
+	var workoutIDStr string
+	for _, dest := range pipelineRun.Destinations {
+		if dest.Destination == pb.Destination_DESTINATION_TRAININGPEAKS && dest.ExternalId != nil && *dest.ExternalId != "" {
+			workoutIDStr = *dest.ExternalId
+			break
+		}
+	}
+	if workoutIDStr == "" {
+		return nil, fmt.Errorf("no TrainingPeaks destination found in pipeline run")
 	}
 
 	fwCtx.Logger.Info("Found existing TrainingPeaks workout", "trainingpeaks_workout_id", workoutIDStr)
 
-	// 2. Merge description: use stored description as base (from SynchronizedActivity)
+	// 2. Merge description: use stored description as base (from PipelineRun)
 	// then apply section replacement with the enricher's new content
-	existingDescription := syncActivity.Description
+	existingDescription := pipelineRun.Description
 	mergedDescription := existingDescription
 	if eventPayload.Description != "" {
 		// Check for section header in metadata (signals replaceable section)
@@ -304,12 +280,8 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 		"workoutId", workoutIDStr,
 		"activityId", eventPayload.ActivityId)
 
-	// 4. Update SynchronizedActivity with new description
-	if err := svc.DB.UpdateSynchronizedActivity(ctx, eventPayload.UserId, eventPayload.ActivityId, map[string]interface{}{
-		"description": mergedDescription,
-	}); err != nil {
-		fwCtx.Logger.Warn("Failed to update synchronized activity description", "error", err)
-	}
+	// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
+	// We no longer update synchronized_activities here
 
 	// 5. Increment sync count for billing (per successful destination sync)
 	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {

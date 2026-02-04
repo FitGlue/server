@@ -115,16 +115,7 @@ export function createWebhookProcessor<TConfig extends ConnectorConfig, TRaw>(
       }
     }
 
-    // 7. Loop Prevention Check (Fallback)
-    // Check if the incoming external ID exists as a destination in any synchronized activity.
-    // This prevents infinite loops (e.g., Hevy → Strava → Hevy → ...)
-    const isLoopActivity = await ctx.services.user.checkDestinationExists(userId, connector.name, externalId);
-    if (isLoopActivity) {
-      logger.info(`Loop detected: Activity ${externalId} was already posted by this system. Skipping.`);
-      return { status: 'Skipped', reason: 'Loop prevention - activity was already posted as destination' };
-    }
-
-    // 8. Deduplication Check
+    // 7. Deduplication Check
     const alreadyProcessed = await ctx.services.user.hasProcessedActivity(userId, connector.name, externalId);
     if (alreadyProcessed) {
       logger.info(`Activity ${externalId} already processed for user ${userId}`);

@@ -805,6 +805,14 @@ func (o *Orchestrator) createInitialPipelineRun(ctx context.Context, logger *slo
 		logger.Error("Failed to create initial pipeline run", "error", err, "pipeline_run_id", pipelineRun.Id)
 	} else {
 		logger.Debug("Created initial pipeline run", "pipeline_run_id", pipelineRun.Id, "activity_id", activityId)
+
+		// Also write each destination outcome to the subcollection
+		// This is required for the race-condition-free UpdateStatus pattern
+		for _, outcome := range destOutcomes {
+			if err := o.database.SetDestinationOutcome(ctx, userId, pipelineExecutionID, outcome); err != nil {
+				logger.Error("Failed to create initial destination outcome", "error", err, "destination", outcome.Destination.String())
+			}
+		}
 	}
 }
 
@@ -834,14 +842,9 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 	// Convert ProviderExecutions to snake_case maps for Firestore
 	boosters := boostersToFirestoreMaps(providerExecs)
 
-	// Build destination outcomes as snake_case maps (all pending at this point)
-	destinations := make([]map[string]interface{}, 0, len(event.Destinations))
-	for _, dest := range event.Destinations {
-		destinations = append(destinations, map[string]interface{}{
-			"destination": int32(dest),
-			"status":      int32(pb.DestinationStatus_DESTINATION_STATUS_PENDING),
-		})
-	}
+	// Note: destinations are now managed via subcollection (destination_outcomes)
+	// and updated atomically by each uploader via SetDestinationOutcome.
+	// We no longer write the destinations array on the parent document.
 
 	// Update pipeline run with final enriched data
 	// Note: status changes from PENDING -> RUNNING, and we clear any status_message
@@ -856,7 +859,6 @@ func (o *Orchestrator) finalizePipelineRun(ctx context.Context, logger *slog.Log
 		"status":               int32(pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING),
 		"status_message":       nil, // Clear pending input message on successful resume
 		"boosters":             boosters,
-		"destinations":         destinations,
 		"original_payload_uri": originalPayloadUri,
 	}
 
