@@ -193,6 +193,18 @@ export interface UserRecord {
   stripeCustomerId: string;
   /** Waitlist gate - false until admin enables access */
   accessEnabled: boolean;
+  /** User's push notification preferences */
+  notificationPreferences?: NotificationPreferences | undefined;
+}
+
+/** NotificationPreferences allows users to control what notifications they receive */
+export interface NotificationPreferences {
+  /** Notify when a pipeline needs user input (e.g., file upload, data selection) */
+  notifyPendingInput: boolean;
+  /** Notify when an activity is successfully synced to destinations */
+  notifyPipelineSuccess: boolean;
+  /** Notify when a pipeline fails to process an activity */
+  notifyPipelineFailure: boolean;
 }
 
 export interface PipelineConfig {

@@ -30,6 +30,18 @@ message UserRecord {
   string stripe_customer_id = 12;
   // Waitlist gate - false until admin enables access
   bool access_enabled = 13;
+  // User's push notification preferences
+  NotificationPreferences notification_preferences = 14;
+}
+
+// NotificationPreferences allows users to control what notifications they receive
+message NotificationPreferences {
+  // Notify when a pipeline needs user input (e.g., file upload, data selection)
+  bool notify_pending_input = 1;
+  // Notify when an activity is successfully synced to destinations
+  bool notify_pipeline_success = 2;
+  // Notify when a pipeline fails to process an activity
+  bool notify_pipeline_failure = 3;
 }
 
 enum UserTier {

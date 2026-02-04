@@ -176,6 +176,57 @@ export const handler: FrameworkHandler = async (req, ctx) => {
         }
     }
 
+    // --- Notification Preferences Routes ---
+    if (path.includes('/notification-preferences')) {
+        const userRef = db.collection('users').doc(userId);
+
+        if (method === 'GET') {
+            const doc = await userRef.get();
+            if (!doc.exists) {
+                // Default preferences - all notifications enabled
+                return {
+                    notifyPendingInput: true,
+                    notifyPipelineSuccess: true,
+                    notifyPipelineFailure: true
+                };
+            }
+            const data = doc.data();
+            const prefs = data?.notification_preferences ?? {};
+            return {
+                notifyPendingInput: prefs.notify_pending_input ?? true,
+                notifyPipelineSuccess: prefs.notify_pipeline_success ?? true,
+                notifyPipelineFailure: prefs.notify_pipeline_failure ?? true
+            };
+        }
+
+        if (method === 'PATCH') {
+            const body = req.body as {
+                notifyPendingInput?: boolean;
+                notifyPipelineSuccess?: boolean;
+                notifyPipelineFailure?: boolean;
+            };
+
+            const updates: Record<string, boolean> = {};
+            if (typeof body.notifyPendingInput === 'boolean') {
+                updates['notification_preferences.notify_pending_input'] = body.notifyPendingInput;
+            }
+            if (typeof body.notifyPipelineSuccess === 'boolean') {
+                updates['notification_preferences.notify_pipeline_success'] = body.notifyPipelineSuccess;
+            }
+            if (typeof body.notifyPipelineFailure === 'boolean') {
+                updates['notification_preferences.notify_pipeline_failure'] = body.notifyPipelineFailure;
+            }
+
+            if (Object.keys(updates).length === 0) {
+                throw new HttpError(400, 'No valid preferences provided');
+            }
+
+            await userRef.update(updates);
+            ctx.logger.info('Updated notification preferences', { userId, updates });
+            return { success: true };
+        }
+    }
+
     throw new HttpError(404, 'Not found');
 };
 

@@ -394,6 +394,28 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				fmt.Sprintf("Enricher failed: %s - %v", provider.Name(), err),
 				providerExecutions)
 
+			// Send push notification on pipeline failure
+			if o.notifications != nil {
+				user, fetchErr := o.database.GetUser(ctx, payload.UserId)
+				if fetchErr == nil && user != nil && len(user.FcmTokens) > 0 {
+					// Check notification preferences (default to true if not set)
+					prefs := user.NotificationPreferences
+					shouldNotify := prefs == nil || prefs.NotifyPipelineFailure
+					if shouldNotify {
+						title := fmt.Sprintf("Activity Failed: %s", currentActivity.Name)
+						body := fmt.Sprintf("Enricher '%s' encountered an error", provider.Name())
+						data := map[string]string{
+							"type":        "PIPELINE_FAILED",
+							"activity_id": activityId,
+							"user_id":     payload.UserId,
+						}
+						if notifyErr := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); notifyErr != nil {
+							logger.Warn("Failed to send failure notification", "error", notifyErr, "user_id", payload.UserId)
+						}
+					}
+				}
+			}
+
 			// Fail pipeline
 			return &ProcessResult{
 				Events:             []*pb.EnrichedActivityEvent{},
@@ -652,6 +674,29 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// Finalize PipelineRun with enriched data (initial run was created at start)
 	o.finalizePipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, originalPayloadUri)
 
+	// Send push notification on successful pipeline completion
+	if o.notifications != nil {
+		user, err := o.database.GetUser(ctx, payload.UserId)
+		if err == nil && user != nil && len(user.FcmTokens) > 0 {
+			// Check notification preferences (default to true if not set)
+			prefs := user.NotificationPreferences
+			shouldNotify := prefs == nil || prefs.NotifyPipelineSuccess
+			if shouldNotify {
+				destCount := len(pipeline.Destinations)
+				title := fmt.Sprintf("Activity Synced: %s", currentActivity.Name)
+				body := fmt.Sprintf("Your activity was boosted and is syncing to %d destination(s)", destCount)
+				data := map[string]string{
+					"type":        "PIPELINE_SUCCESS",
+					"activity_id": activityId,
+					"user_id":     payload.UserId,
+				}
+				if err := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); err != nil {
+					logger.Warn("Failed to send success notification", "error", err, "user_id", payload.UserId)
+				}
+			}
+		}
+	}
+
 	return &ProcessResult{
 		Events:             []*pb.EnrichedActivityEvent{finalEvent},
 		ProviderExecutions: providerExecutions,
@@ -759,15 +804,20 @@ func (o *Orchestrator) handleWaitError(ctx context.Context, logger *slog.Logger,
 	if o.notifications != nil {
 		user, err := o.database.GetUser(ctx, payload.UserId)
 		if err == nil && user != nil && len(user.FcmTokens) > 0 {
-			title := "Action Required: FitGlue"
-			body := "An activity needs more information to be processed."
-			data := map[string]string{
-				"activity_id": waitErr.ActivityID,
-				"user_id":     payload.UserId,
-				"type":        "PENDING_INPUT",
-			}
-			if err := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); err != nil {
-				logger.Error("Failed to send push notification", "error", err, "user_id", payload.UserId)
+			// Check notification preferences (default to true if not set)
+			prefs := user.NotificationPreferences
+			shouldNotify := prefs == nil || prefs.NotifyPendingInput
+			if shouldNotify {
+				title := "Action Required: FitGlue"
+				body := "An activity needs more information to be processed."
+				data := map[string]string{
+					"activity_id": waitErr.ActivityID,
+					"user_id":     payload.UserId,
+					"type":        "PENDING_INPUT",
+				}
+				if err := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); err != nil {
+					logger.Error("Failed to send push notification", "error", err, "user_id", payload.UserId)
+				}
 			}
 		}
 	}

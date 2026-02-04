@@ -2538,8 +2538,8 @@ function checkUseApiPattern(): CheckResult {
     const content = fs.readFileSync(file, 'utf-8');
     const fileName = path.relative(webDir, file);
 
-    // Skip the useApi hook itself and services
-    if (file.includes('hooks/useApi') || file.includes('services/')) continue;
+    // Skip the useApi hook itself, services, and service workers (SW must use fetch directly)
+    if (file.includes('hooks/useApi') || file.includes('services/') || file.includes('-sw.ts')) continue;
 
     // Check for direct fetch calls in components
     const hasFetch = /[^a-zA-Z]fetch\s*\(/g.test(content);
