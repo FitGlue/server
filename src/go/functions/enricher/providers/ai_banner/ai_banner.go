@@ -316,14 +316,150 @@ func buildActivityContext(activity *pb.StandardizedActivity) string {
 		parts = append(parts, fmt.Sprintf("Duration: %.0f minutes", mins))
 	}
 
-	// Distance
+	// Distance with scale context for cardio activities
 	if totalDistance > 0 {
 		km := totalDistance / 1000
 		parts = append(parts, fmt.Sprintf("Distance: %.1f km", km))
+
+		// Add distance scale context for runs/rides/swims
+		activityType := activity.Type
+		if activityType == pb.ActivityType_ACTIVITY_TYPE_RUN || activityType == pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN {
+			var scaleContext string
+			switch {
+			case km >= 42:
+				scaleContext = "marathon or ultra distance - epic endurance achievement"
+			case km >= 21:
+				scaleContext = "half marathon distance - significant endurance effort"
+			case km >= 15:
+				scaleContext = "long run - serious training distance"
+			case km >= 10:
+				scaleContext = "10K distance - solid training run"
+			case km >= 5:
+				scaleContext = "5K distance - classic race distance"
+			default:
+				scaleContext = "short run - easy/recovery pace"
+			}
+			parts = append(parts, fmt.Sprintf("Run category: %s", scaleContext))
+		} else if activityType == pb.ActivityType_ACTIVITY_TYPE_RIDE || activityType == pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE {
+			var scaleContext string
+			switch {
+			case km >= 160:
+				scaleContext = "century ride or gran fondo - epic distance"
+			case km >= 100:
+				scaleContext = "long endurance ride"
+			case km >= 50:
+				scaleContext = "substantial ride - solid training"
+			case km >= 20:
+				scaleContext = "moderate ride"
+			default:
+				scaleContext = "short ride - commute or easy spin"
+			}
+			parts = append(parts, fmt.Sprintf("Ride category: %s", scaleContext))
+		} else if activityType == pb.ActivityType_ACTIVITY_TYPE_SWIM {
+			var scaleContext string
+			switch {
+			case km >= 3.8:
+				scaleContext = "ironman swim distance - open water endurance"
+			case km >= 1.9:
+				scaleContext = "half ironman swim distance"
+			case km >= 1.5:
+				scaleContext = "olympic triathlon swim distance"
+			case km >= 0.75:
+				scaleContext = "sprint triathlon swim distance"
+			default:
+				scaleContext = "pool training session"
+			}
+			parts = append(parts, fmt.Sprintf("Swim category: %s", scaleContext))
+		}
 	}
 
-	// Strength exercises - muscle groups focused
+	// Calculate intensity indicators from pace (for cardio) or heart rate
+	if totalDistance > 0 && totalDuration > 0 {
+		// Calculate average pace/speed
+		avgSpeedKmh := (totalDistance / 1000) / (totalDuration / 3600)
+
+		activityType := activity.Type
+		if activityType == pb.ActivityType_ACTIVITY_TYPE_RUN || activityType == pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN {
+			// Running pace context (min/km)
+			paceMinPerKm := (totalDuration / 60) / (totalDistance / 1000)
+			var intensityContext string
+			switch {
+			case paceMinPerKm < 4:
+				intensityContext = "elite/race pace - very fast"
+			case paceMinPerKm < 5:
+				intensityContext = "fast tempo pace"
+			case paceMinPerKm < 6:
+				intensityContext = "steady moderate pace"
+			case paceMinPerKm < 7:
+				intensityContext = "easy conversational pace"
+			default:
+				intensityContext = "recovery/walk pace"
+			}
+			parts = append(parts, fmt.Sprintf("Intensity: %s", intensityContext))
+		} else if activityType == pb.ActivityType_ACTIVITY_TYPE_RIDE || activityType == pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE {
+			var intensityContext string
+			switch {
+			case avgSpeedKmh > 35:
+				intensityContext = "race pace - very fast"
+			case avgSpeedKmh > 28:
+				intensityContext = "fast training pace"
+			case avgSpeedKmh > 22:
+				intensityContext = "moderate endurance pace"
+			default:
+				intensityContext = "easy/recovery pace"
+			}
+			parts = append(parts, fmt.Sprintf("Intensity: %s", intensityContext))
+		}
+	}
+
+	// Add trail run context
+	if activity.Type == pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN {
+		parts = append(parts, "Environment: trail running - natural terrain, forests, mountains")
+	}
+
+	// Strength exercises - include actual exercise names and detect if bodyweight
 	if len(strengthSets) > 0 {
+		// Collect unique exercise names (limit to 8 for prompt brevity)
+		exercisesSeen := make(map[string]bool)
+		var exercises []string
+		var hasWeightedExercise bool
+		var hasBodyweightExercise bool
+
+		for _, set := range strengthSets {
+			// Check if weighted or bodyweight
+			if set.WeightKg > 0 {
+				hasWeightedExercise = true
+			} else {
+				hasBodyweightExercise = true
+			}
+
+			// Collect exercise names
+			if set.ExerciseName != "" && !exercisesSeen[set.ExerciseName] {
+				exercisesSeen[set.ExerciseName] = true
+				exercises = append(exercises, set.ExerciseName)
+			}
+		}
+
+		// Include exercise names - this is crucial for accurate image generation
+		if len(exercises) > 0 {
+			// Limit to 8 exercises for prompt brevity
+			displayExercises := exercises
+			if len(displayExercises) > 8 {
+				displayExercises = displayExercises[:8]
+			}
+			parts = append(parts, fmt.Sprintf("Exercises performed: %s", strings.Join(displayExercises, ", ")))
+		}
+
+		// Indicate workout style (bodyweight vs weighted)
+		if hasBodyweightExercise && !hasWeightedExercise {
+			parts = append(parts, "Workout style: bodyweight only (no equipment/weights)")
+		} else if hasWeightedExercise && !hasBodyweightExercise {
+			parts = append(parts, "Workout style: weighted exercises with equipment")
+		} else if hasWeightedExercise && hasBodyweightExercise {
+			parts = append(parts, "Workout style: mixed bodyweight and weighted exercises")
+		}
+
+		// Collect muscle groups
 		musclesSeen := make(map[pb.MuscleGroup]bool)
 		var muscles []string
 		for _, set := range strengthSets {
