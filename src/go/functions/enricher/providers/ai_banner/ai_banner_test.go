@@ -96,90 +96,143 @@ func TestAIBanner_Enrich_NoActivityID(t *testing.T) {
 	}
 }
 
-func TestBuildImagePrompt(t *testing.T) {
+func TestBuildActivityContext(t *testing.T) {
 	tests := []struct {
 		name     string
 		activity *pb.StandardizedActivity
-		style    string
-		subject  string
 		contains []string
 	}{
 		{
-			name: "morning run vibrant",
+			name: "morning run",
 			activity: &pb.StandardizedActivity{
 				Type:      pb.ActivityType_ACTIVITY_TYPE_RUN,
 				StartTime: timestamppb.New(time.Date(2026, 1, 21, 7, 30, 0, 0, time.UTC)),
 			},
-			style:   "vibrant",
-			subject: "abstract",
 			contains: []string{
-				"banner image",
 				"run",
 				"early morning",
-				"vibrant",
 			},
 		},
 		{
-			name: "afternoon ride minimal",
+			name: "afternoon ride",
 			activity: &pb.StandardizedActivity{
 				Type:      pb.ActivityType_ACTIVITY_TYPE_RIDE,
 				StartTime: timestamppb.New(time.Date(2026, 1, 21, 14, 0, 0, 0, time.UTC)),
 			},
-			style:   "minimal",
-			subject: "abstract",
 			contains: []string{
-				"banner image",
 				"ride",
 				"afternoon",
-				"minimalist",
 			},
 		},
 		{
-			name: "evening strength dramatic",
+			name: "evening strength",
 			activity: &pb.StandardizedActivity{
 				Type:      pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
 				StartTime: timestamppb.New(time.Date(2026, 1, 21, 18, 30, 0, 0, time.UTC)),
 			},
-			style:   "dramatic",
-			subject: "abstract",
 			contains: []string{
-				"banner image",
 				"weight training",
 				"evening",
-				"dramatic",
 			},
 		},
 		{
-			name: "male subject",
+			name: "night workout",
 			activity: &pb.StandardizedActivity{
-				Type:      pb.ActivityType_ACTIVITY_TYPE_RUN,
-				StartTime: timestamppb.New(time.Date(2026, 1, 21, 10, 0, 0, 0, time.UTC)),
+				Type:      pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+				StartTime: timestamppb.New(time.Date(2026, 1, 21, 22, 0, 0, 0, time.UTC)),
 			},
-			style:   "vibrant",
-			subject: "male",
 			contains: []string{
-				"male athlete",
-				"focal point",
-			},
-		},
-		{
-			name: "female subject",
-			activity: &pb.StandardizedActivity{
-				Type:      pb.ActivityType_ACTIVITY_TYPE_RUN,
-				StartTime: timestamppb.New(time.Date(2026, 1, 21, 10, 0, 0, 0, time.UTC)),
-			},
-			style:   "vibrant",
-			subject: "female",
-			contains: []string{
-				"female athlete",
-				"focal point",
+				"night",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prompt := buildImagePrompt(tt.activity, tt.style, tt.subject)
+			context := buildActivityContext(tt.activity)
+			for _, contains := range tt.contains {
+				if !containsIgnoreCase(context, contains) {
+					t.Errorf("Expected context to contain %q, got: %s", contains, context)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildLLMPrompt(t *testing.T) {
+	tests := []struct {
+		name     string
+		context  string
+		style    string
+		subject  string
+		contains []string
+	}{
+		{
+			name:    "vibrant abstract",
+			context: "Activity type: run\nTime of day: morning",
+			style:   "vibrant",
+			subject: "abstract",
+			contains: []string{
+				"image prompt generator",
+				"vibrant",
+				"abstract scenery",
+				"NO people",
+			},
+		},
+		{
+			name:    "minimal abstract",
+			context: "Activity type: ride",
+			style:   "minimal",
+			subject: "abstract",
+			contains: []string{
+				"minimalist",
+				"abstract scenery",
+			},
+		},
+		{
+			name:    "dramatic abstract",
+			context: "Activity type: weight training",
+			style:   "dramatic",
+			subject: "abstract",
+			contains: []string{
+				"dramatic",
+				"bold contrast",
+			},
+		},
+		{
+			name:    "male subject",
+			context: "Activity type: run",
+			style:   "vibrant",
+			subject: "male",
+			contains: []string{
+				"male athlete",
+			},
+		},
+		{
+			name:    "female subject",
+			context: "Activity type: run",
+			style:   "vibrant",
+			subject: "female",
+			contains: []string{
+				"female athlete",
+			},
+		},
+		{
+			name:    "critical rules present",
+			context: "Activity type: run",
+			style:   "vibrant",
+			subject: "abstract",
+			contains: []string{
+				"CRITICAL RULES",
+				"NEVER mention any text",
+				"visual elements",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			prompt := buildLLMPrompt(tt.context, tt.style, tt.subject)
 			for _, contains := range tt.contains {
 				if !containsIgnoreCase(prompt, contains) {
 					t.Errorf("Expected prompt to contain %q, got: %s", contains, prompt)

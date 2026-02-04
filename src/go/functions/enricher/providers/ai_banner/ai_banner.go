@@ -17,7 +17,9 @@ import (
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/tier"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"github.com/google/generative-ai-go/genai"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 )
 
 // AIBannerProvider generates custom header images for activities using Vertex AI Imagen.
@@ -105,11 +107,29 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 		}, nil
 	}
 
-	// Build context-aware prompt
-	prompt := buildImagePrompt(activity, style, subject)
+	// Step 1: Build activity context (structured data)
+	activityContext := buildActivityContext(activity)
 
-	// Generate image using Gemini
-	imageData, err := p.generateBannerWithGemini(ctx, apiKey, prompt)
+	// Step 2: Use text LLM to generate an image description
+	imagePrompt, err := p.generateImagePromptWithLLM(ctx, apiKey, activityContext, style, subject)
+	if err != nil {
+		logger.Error("Failed to generate image prompt with LLM", "error", err)
+		return &providers.EnrichmentResult{
+			Metadata: map[string]string{
+				"status":        "error",
+				"reason":        "prompt_generation_failed",
+				"status_detail": err.Error(),
+			},
+		}, nil
+	}
+
+	logger.Info("Generated image prompt via LLM",
+		"prompt_length", len(imagePrompt),
+		"prompt_preview", truncatePrompt(imagePrompt, 200),
+	)
+
+	// Step 3: Generate image using Imagen with the LLM-generated prompt
+	imageData, err := p.generateBannerWithGemini(ctx, apiKey, imagePrompt)
 	if err != nil {
 		logger.Error("Failed to generate AI banner", "error", err)
 		return &providers.EnrichmentResult{
@@ -151,6 +171,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 			"status":          "success",
 			"asset_ai_banner": bannerURL,
 			"style":           style,
+			"image_prompt":    imagePrompt,
 		},
 	}, nil
 }
@@ -185,7 +206,162 @@ type ImagenPrediction struct {
 }
 
 // fallbackPrompt is a simple, safe prompt used when the primary prompt triggers content filters
-const fallbackPrompt = "Abstract digital art with colorful geometric shapes and gradient backgrounds. Professional quality, artistic composition. Do NOT include any text, letters, numbers, words, or written content in the image."
+const fallbackPrompt = "Abstract digital art with colorful geometric shapes and gradient backgrounds, professional quality artistic composition, no text"
+
+// generateImagePromptWithLLM uses Gemini text model to generate a clean image description
+// from the activity context. This ensures the prompt is purely visual with no text elements.
+func (p *AIBannerProvider) generateImagePromptWithLLM(ctx context.Context, apiKey, activityContext, style, subject string) (string, error) {
+	client, err := genai.NewClient(ctx, option.WithAPIKey(apiKey))
+	if err != nil {
+		return "", fmt.Errorf("failed to create Gemini client: %w", err)
+	}
+	defer client.Close()
+
+	model := client.GenerativeModel("gemini-2.0-flash")
+
+	// Configure for concise, focused output
+	model.SetTemperature(0.8) // Slightly creative
+	model.SetTopP(0.9)
+	model.SetMaxOutputTokens(200) // Keep prompts concise
+
+	prompt := buildLLMPrompt(activityContext, style, subject)
+
+	resp, err := model.GenerateContent(ctx, genai.Text(prompt))
+	if err != nil {
+		return "", fmt.Errorf("failed to generate image prompt: %w", err)
+	}
+
+	if len(resp.Candidates) == 0 || len(resp.Candidates[0].Content.Parts) == 0 {
+		return "", fmt.Errorf("no content generated")
+	}
+
+	// Extract the generated prompt
+	var result string
+	for _, part := range resp.Candidates[0].Content.Parts {
+		if text, ok := part.(genai.Text); ok {
+			result += string(text)
+		}
+	}
+
+	return strings.TrimSpace(result), nil
+}
+
+// buildLLMPrompt creates the prompt for the text LLM to generate an image description
+func buildLLMPrompt(activityContext, style, subject string) string {
+	subjectGuidance := ""
+	switch subject {
+	case "male":
+		subjectGuidance = "The image should feature a male athlete as the main subject."
+	case "female":
+		subjectGuidance = "The image should feature a female athlete as the main subject."
+	default: // "abstract"
+		subjectGuidance = "The image should be abstract scenery only, with NO people or human figures."
+	}
+
+	styleGuidance := ""
+	switch style {
+	case "minimal":
+		styleGuidance = "Style: minimalist, clean lines, muted colors, simple geometric shapes."
+	case "dramatic":
+		styleGuidance = "Style: dramatic, bold contrast, dynamic composition, intense colors."
+	default: // "vibrant"
+		styleGuidance = "Style: vibrant, energetic, bold colors, athletic and dynamic mood."
+	}
+
+	return fmt.Sprintf(`You are an image prompt generator for an AI image generation model.
+
+Given the following fitness activity data, generate a short, descriptive prompt for creating a banner image.
+
+CRITICAL RULES:
+1. Output ONLY the image description - no explanations, no preamble, no quotes
+2. NEVER mention any text, titles, captions, watermarks, or written content
+3. NEVER include the activity name or any words that should appear in the image
+4. Describe ONLY visual elements: scenes, colors, lighting, composition, mood, atmosphere
+5. Keep it under 100 words
+
+%s
+%s
+
+Activity Data:
+%s
+
+Generate the image prompt now:`, subjectGuidance, styleGuidance, activityContext)
+}
+
+// buildActivityContext assembles structured data about the activity for the LLM
+func buildActivityContext(activity *pb.StandardizedActivity) string {
+	var parts []string
+
+	// Activity type
+	if activity.Type != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+		activityType := strings.ToLower(strings.ReplaceAll(activity.Type.String(), "ACTIVITY_TYPE_", ""))
+		activityType = strings.ReplaceAll(activityType, "_", " ")
+		parts = append(parts, fmt.Sprintf("Activity type: %s", activityType))
+	}
+
+	// Calculate totals from sessions
+	var totalDuration float64
+	var totalDistance float64
+	var strengthSets []*pb.StrengthSet
+
+	for _, session := range activity.Sessions {
+		totalDuration += session.TotalElapsedTime
+		totalDistance += session.TotalDistance
+		strengthSets = append(strengthSets, session.StrengthSets...)
+	}
+
+	// Duration
+	if totalDuration > 0 {
+		mins := totalDuration / 60
+		parts = append(parts, fmt.Sprintf("Duration: %.0f minutes", mins))
+	}
+
+	// Distance
+	if totalDistance > 0 {
+		km := totalDistance / 1000
+		parts = append(parts, fmt.Sprintf("Distance: %.1f km", km))
+	}
+
+	// Strength exercises - muscle groups focused
+	if len(strengthSets) > 0 {
+		musclesSeen := make(map[pb.MuscleGroup]bool)
+		var muscles []string
+		for _, set := range strengthSets {
+			if set.PrimaryMuscleGroup != pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED && !musclesSeen[set.PrimaryMuscleGroup] {
+				musclesSeen[set.PrimaryMuscleGroup] = true
+				muscleName := strings.ToLower(strings.ReplaceAll(set.PrimaryMuscleGroup.String(), "MUSCLE_GROUP_", ""))
+				muscleName = strings.ReplaceAll(muscleName, "_", " ")
+				muscles = append(muscles, muscleName)
+			}
+		}
+		if len(muscles) > 0 {
+			parts = append(parts, fmt.Sprintf("Muscle focus: %s", strings.Join(muscles, ", ")))
+		}
+		parts = append(parts, fmt.Sprintf("Total sets: %d", len(strengthSets)))
+	}
+
+	// Time of day
+	if activity.StartTime != nil {
+		startTime := activity.StartTime.AsTime()
+		hour := startTime.Hour()
+		var timeOfDay string
+		switch {
+		case hour >= 5 && hour < 9:
+			timeOfDay = "early morning (sunrise)"
+		case hour >= 9 && hour < 12:
+			timeOfDay = "morning"
+		case hour >= 12 && hour < 17:
+			timeOfDay = "afternoon"
+		case hour >= 17 && hour < 20:
+			timeOfDay = "evening (golden hour)"
+		default:
+			timeOfDay = "night"
+		}
+		parts = append(parts, fmt.Sprintf("Time of day: %s", timeOfDay))
+	}
+
+	return strings.Join(parts, "\n")
+}
 
 // truncatePrompt returns a truncated version of the prompt for logging
 func truncatePrompt(prompt string, maxLen int) string {
@@ -371,169 +547,4 @@ func (p *AIBannerProvider) storeImage(ctx context.Context, bucketName, objectPat
 
 	// Fallback to raw GCS URL
 	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath), nil
-}
-
-func buildImagePrompt(activity *pb.StandardizedActivity, style string, subject string) string {
-	var parts []string
-
-	// Base prompt for banner generation (aspect ratio is set via API parameter, not in prompt)
-	parts = append(parts, "Generate an artistic banner image for a fitness activity.")
-
-	// Subject guidance - controls whether/what type of person appears
-	switch subject {
-	case "male":
-		parts = append(parts, "Subject: Feature a male athlete figure as the focal point.")
-	case "female":
-		parts = append(parts, "Subject: Feature a female athlete figure as the focal point.")
-	default: // "abstract"
-		parts = append(parts, "Subject: Abstract scenery only, no people or human figures.")
-	}
-
-	// Activity type context
-	activityType := strings.ToLower(strings.ReplaceAll(activity.Type.String(), "ACTIVITY_TYPE_", ""))
-	activityType = strings.ReplaceAll(activityType, "_", " ")
-	if activityType != "unspecified" {
-		parts = append(parts, fmt.Sprintf("Activity type: %s", activityType))
-	}
-
-	// Activity name - often contains evocative context like "Morning Run", "Race Day", "First Marathon"
-	// Use "theme" phrasing to encourage mood interpretation rather than text rendering
-	if activity.Name != "" {
-		parts = append(parts, fmt.Sprintf("Theme/mood (for visual atmosphere only, NOT text): %s", activity.Name))
-	}
-
-	// User's original description/notes - can contain rich context
-	// Phrase as context for visual mood, not text to display
-	if activity.Description != "" {
-		// Truncate long descriptions to avoid prompt bloat
-		desc := activity.Description
-		if len(desc) > 200 {
-			desc = desc[:200] + "..."
-		}
-		parts = append(parts, fmt.Sprintf("Context for visual mood (NOT text to display): %s", desc))
-	}
-
-	// Calculate totals from sessions for scale context
-	var totalDuration float64
-	var totalDistance float64
-	var strengthSets []*pb.StrengthSet
-	for _, session := range activity.Sessions {
-		totalDuration += session.TotalElapsedTime
-		totalDistance += session.TotalDistance
-		strengthSets = append(strengthSets, session.StrengthSets...)
-	}
-
-	// Distance context - adds scale/epic-ness
-	if totalDistance > 0 {
-		km := totalDistance / 1000
-		var scaleContext string
-		switch {
-		case km >= 100:
-			scaleContext = "ultra-distance, epic journey"
-		case km >= 42:
-			scaleContext = "marathon distance, significant achievement"
-		case km >= 21:
-			scaleContext = "half marathon, substantial effort"
-		case km >= 10:
-			scaleContext = "moderate distance"
-		default:
-			scaleContext = "short distance"
-		}
-		parts = append(parts, fmt.Sprintf("Scale: %.1f km (%s)", km, scaleContext))
-	}
-
-	// Duration context - intensity/effort feel
-	if totalDuration > 0 {
-		hours := totalDuration / 3600
-		var effortContext string
-		switch {
-		case hours >= 4:
-			effortContext = "endurance effort, long haul"
-		case hours >= 2:
-			effortContext = "extended session"
-		case hours >= 1:
-			effortContext = "solid workout"
-		case totalDuration >= 1800: // 30+ mins
-			effortContext = "moderate session"
-		default:
-			effortContext = "quick burst"
-		}
-		parts = append(parts, fmt.Sprintf("Duration: %.0f minutes (%s)", totalDuration/60, effortContext))
-	}
-
-	// Strength training context - exercises and muscle groups
-	if len(strengthSets) > 0 {
-		// Collect unique exercises (limit to top 5 for prompt brevity)
-		exercisesSeen := make(map[string]bool)
-		var exercises []string
-		for _, set := range strengthSets {
-			if set.ExerciseName != "" && !exercisesSeen[set.ExerciseName] {
-				exercisesSeen[set.ExerciseName] = true
-				exercises = append(exercises, set.ExerciseName)
-				if len(exercises) >= 5 {
-					break
-				}
-			}
-		}
-
-		// Collect unique primary muscle groups
-		musclesSeen := make(map[pb.MuscleGroup]bool)
-		var muscles []string
-		for _, set := range strengthSets {
-			if set.PrimaryMuscleGroup != pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED && !musclesSeen[set.PrimaryMuscleGroup] {
-				musclesSeen[set.PrimaryMuscleGroup] = true
-				// Convert enum to readable name
-				muscleName := strings.ToLower(strings.ReplaceAll(set.PrimaryMuscleGroup.String(), "MUSCLE_GROUP_", ""))
-				muscleName = strings.ReplaceAll(muscleName, "_", " ")
-				muscles = append(muscles, muscleName)
-			}
-		}
-
-		if len(exercises) > 0 {
-			parts = append(parts, fmt.Sprintf("Exercises: %s", strings.Join(exercises, ", ")))
-		}
-		if len(muscles) > 0 {
-			parts = append(parts, fmt.Sprintf("Muscle focus: %s", strings.Join(muscles, ", ")))
-		}
-	}
-
-	// Time of day context
-	if activity.StartTime != nil {
-		startTime := activity.StartTime.AsTime()
-		hour := startTime.Hour()
-		var timeOfDay string
-		switch {
-		case hour >= 5 && hour < 9:
-			timeOfDay = "early morning, sunrise colors"
-		case hour >= 9 && hour < 12:
-			timeOfDay = "morning, bright daylight"
-		case hour >= 12 && hour < 17:
-			timeOfDay = "afternoon, warm sunlight"
-		case hour >= 17 && hour < 20:
-			timeOfDay = "evening, golden hour"
-		default:
-			timeOfDay = "night, dark with city lights"
-		}
-		parts = append(parts, fmt.Sprintf("Time of day: %s", timeOfDay))
-	}
-
-	// Style guidance
-	switch style {
-	case "minimal":
-		parts = append(parts, "Style: minimalist, clean lines, muted colors, simple geometric shapes")
-	case "dramatic":
-		parts = append(parts, "Style: dramatic, bold contrast, dynamic composition, intense colors")
-	default: // "vibrant"
-		parts = append(parts, "Style: vibrant, energetic, bold colors, athletic and dynamic mood")
-	}
-
-	// General guidance - use positive language to avoid triggering content filters
-	// Composition: center the subject for better use as backgrounds
-	parts = append(parts, "Composition: Subject centered in the frame with balanced composition. Main focal point should be in the center third of the image.")
-	parts = append(parts, "Include geometric patterns and natural elements. High quality, professional digital art.")
-
-	// Critical: Explicitly prohibit text generation - AI models often generate garbled text otherwise
-	parts = append(parts, "IMPORTANT: Do NOT include any text, letters, numbers, words, titles, captions, watermarks, logos, or written content of any kind in the image. The image must be purely visual with no textual elements whatsoever.")
-
-	return strings.Join(parts, "\n")
 }
