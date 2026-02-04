@@ -1,4 +1,4 @@
-import { CloudEvent } from 'cloudevents';
+
 import { initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import { UserService } from '@fitglue/shared/domain/services';
@@ -17,15 +17,18 @@ const userService = new UserService(userStore, activityStore, pipelineStore);
 
 /**
  * Cloud Function triggered by Firebase Auth User Creation.
- * Eventarc Logic: google.firebase.auth.user.v1.created
+ * Gen 1 trigger: providers/firebase.auth/eventTypes/user.create
+ *
+ * Note: Gen 1 Firebase Auth triggers pass the UserRecord directly (not as CloudEvent).
+ * The UID is available directly on the event object.
  */
-export const authOnCreate = async (cloudEvent: CloudEvent<AuthUserData>) => {
+export const authOnCreate = async (event: AuthUserRecord) => {
   try {
-    const { subject } = cloudEvent;
-    const uid = subject?.replace('users/', '');
+    // Gen 1 Firebase Auth triggers pass uid directly on the event
+    const uid = event.uid;
 
     if (!uid) {
-      console.error('No UID found in CloudEvent subject', cloudEvent);
+      console.error('No UID found in event', event);
       return;
     }
 
@@ -43,9 +46,9 @@ export const authOnCreate = async (cloudEvent: CloudEvent<AuthUserData>) => {
   }
 };
 
-// Partial interface for the Auth CloudEvent data
-// We mainly care about the UID which is in the subject, but data contains more info
-interface AuthUserData {
+// Interface for Gen 1 Firebase Auth User Record
+// Matches the structure passed by providers/firebase.auth/eventTypes/user.create trigger
+interface AuthUserRecord {
   uid: string;
   email?: string;
   displayName?: string;
