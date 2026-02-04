@@ -1184,6 +1184,19 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER, {
         { value: 'dramatic', label: 'Dramatic & Bold' },
       ],
     },
+    {
+      key: 'subject',
+      label: 'Subject Type',
+      description: 'What type of subject to show in the banner',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'abstract',
+      options: [
+        { value: 'male', label: 'Male Athlete' },
+        { value: 'female', label: 'Female Athlete' },
+        { value: 'abstract', label: 'Abstract (No People)' },
+      ],
+    },
   ],
   marketingDescription: `
 ### AI-Generated Activity Banners

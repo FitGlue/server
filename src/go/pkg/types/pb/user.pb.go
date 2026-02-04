@@ -118,7 +118,7 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE EnricherProviderType = 26
 	// Config inputs: "width", "height", "style", "line_color", "line_width" - generates static map image of GPS route - Athlete tier only
 	EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL EnricherProviderType = 27
-	// Config inputs: \"style\" (vibrant/minimal/dramatic) - generates AI banner image for Showcase - Athlete tier only
+	// Config inputs: "style" (vibrant/minimal/dramatic), "subject" (male/female/abstract) - generates AI banner image for Showcase - Athlete tier only
 	EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER EnricherProviderType = 28
 	// Config inputs: none (requests FIT file upload via pending input, extracts HR data for merging)
 	EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE EnricherProviderType = 29

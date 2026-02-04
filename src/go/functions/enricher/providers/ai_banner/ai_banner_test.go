@@ -101,6 +101,7 @@ func TestBuildImagePrompt(t *testing.T) {
 		name     string
 		activity *pb.StandardizedActivity
 		style    string
+		subject  string
 		contains []string
 	}{
 		{
@@ -109,7 +110,8 @@ func TestBuildImagePrompt(t *testing.T) {
 				Type:      pb.ActivityType_ACTIVITY_TYPE_RUN,
 				StartTime: timestamppb.New(time.Date(2026, 1, 21, 7, 30, 0, 0, time.UTC)),
 			},
-			style: "vibrant",
+			style:   "vibrant",
+			subject: "abstract",
 			contains: []string{
 				"banner image",
 				"run",
@@ -123,7 +125,8 @@ func TestBuildImagePrompt(t *testing.T) {
 				Type:      pb.ActivityType_ACTIVITY_TYPE_RIDE,
 				StartTime: timestamppb.New(time.Date(2026, 1, 21, 14, 0, 0, 0, time.UTC)),
 			},
-			style: "minimal",
+			style:   "minimal",
+			subject: "abstract",
 			contains: []string{
 				"banner image",
 				"ride",
@@ -137,7 +140,8 @@ func TestBuildImagePrompt(t *testing.T) {
 				Type:      pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
 				StartTime: timestamppb.New(time.Date(2026, 1, 21, 18, 30, 0, 0, time.UTC)),
 			},
-			style: "dramatic",
+			style:   "dramatic",
+			subject: "abstract",
 			contains: []string{
 				"banner image",
 				"weight training",
@@ -145,11 +149,37 @@ func TestBuildImagePrompt(t *testing.T) {
 				"dramatic",
 			},
 		},
+		{
+			name: "male subject",
+			activity: &pb.StandardizedActivity{
+				Type:      pb.ActivityType_ACTIVITY_TYPE_RUN,
+				StartTime: timestamppb.New(time.Date(2026, 1, 21, 10, 0, 0, 0, time.UTC)),
+			},
+			style:   "vibrant",
+			subject: "male",
+			contains: []string{
+				"male athlete",
+				"focal point",
+			},
+		},
+		{
+			name: "female subject",
+			activity: &pb.StandardizedActivity{
+				Type:      pb.ActivityType_ACTIVITY_TYPE_RUN,
+				StartTime: timestamppb.New(time.Date(2026, 1, 21, 10, 0, 0, 0, time.UTC)),
+			},
+			style:   "vibrant",
+			subject: "female",
+			contains: []string{
+				"female athlete",
+				"focal point",
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			prompt := buildImagePrompt(tt.activity, tt.style)
+			prompt := buildImagePrompt(tt.activity, tt.style, tt.subject)
 			for _, contains := range tt.contains {
 				if !containsIgnoreCase(prompt, contains) {
 					t.Errorf("Expected prompt to contain %q, got: %s", contains, prompt)

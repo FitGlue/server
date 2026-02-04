@@ -69,6 +69,12 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 		style = "vibrant" // Default
 	}
 
+	// Get subject configuration
+	subject := inputs["subject"]
+	if subject == "" {
+		subject = "abstract" // Default to no people
+	}
+
 	// Get asset folder ID for storage path
 	// Use pipeline_execution_id (unique per pipeline execution) with fallback to activity.ExternalId
 	assetFolderID := inputs["pipeline_execution_id"]
@@ -100,7 +106,7 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 	}
 
 	// Build context-aware prompt
-	prompt := buildImagePrompt(activity, style)
+	prompt := buildImagePrompt(activity, style, subject)
 
 	// Generate image using Gemini
 	imageData, err := p.generateBannerWithGemini(ctx, apiKey, prompt)
@@ -367,11 +373,21 @@ func (p *AIBannerProvider) storeImage(ctx context.Context, bucketName, objectPat
 	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", bucketName, objectPath), nil
 }
 
-func buildImagePrompt(activity *pb.StandardizedActivity, style string) string {
+func buildImagePrompt(activity *pb.StandardizedActivity, style string, subject string) string {
 	var parts []string
 
 	// Base prompt for banner generation (aspect ratio is set via API parameter, not in prompt)
 	parts = append(parts, "Generate an artistic banner image for a fitness activity.")
+
+	// Subject guidance - controls whether/what type of person appears
+	switch subject {
+	case "male":
+		parts = append(parts, "Subject: Feature a male athlete figure as the focal point.")
+	case "female":
+		parts = append(parts, "Subject: Feature a female athlete figure as the focal point.")
+	default: // "abstract"
+		parts = append(parts, "Subject: Abstract scenery only, no people or human figures.")
+	}
 
 	// Activity type context
 	activityType := strings.ToLower(strings.ReplaceAll(activity.Type.String(), "ACTIVITY_TYPE_", ""))
@@ -510,7 +526,9 @@ func buildImagePrompt(activity *pb.StandardizedActivity, style string) string {
 	}
 
 	// General guidance - use positive language to avoid triggering content filters
-	parts = append(parts, "Abstract scenery with geometric patterns and natural elements. Clean composition without text overlays. High quality, professional digital art.")
+	// Composition: center the subject for better use as backgrounds
+	parts = append(parts, "Composition: Subject centered in the frame with balanced composition. Main focal point should be in the center third of the image.")
+	parts = append(parts, "Include geometric patterns and natural elements. Clean composition without text overlays. High quality, professional digital art.")
 
 	return strings.Join(parts, "\n")
 }
