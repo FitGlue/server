@@ -280,6 +280,49 @@ resource "google_firestore_index" "pipeline_runs_source_created" {
   }
 }
 
+# Index for finding pipeline runs by activity_id + created_at
+# Used by findByActivityId() in repost-handler, inputs-handler (dismiss), etc.
+resource "google_firestore_index" "pipeline_runs_activity_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "activity_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
+# Index for getSynced() - activity_id + status + created_at
+# Used when looking up synced runs by activity ID
+resource "google_firestore_index" "pipeline_runs_activity_status_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "activity_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "status"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
 # Index for filtering by pipeline_id + created_at
 # Used for viewing runs from a specific pipeline config
 resource "google_firestore_index" "pipeline_runs_pipeline_created" {
