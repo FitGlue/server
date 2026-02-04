@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.0.1](https://github.com/FitGlue/server/compare/v12.0.0...v12.0.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* better ai image generation ([cea62d2](https://github.com/FitGlue/server/commit/cea62d25869db94f6d80257b780e5b75785be737))
+
 ## [12.0.0](https://github.com/FitGlue/server/compare/v11.1.0...v12.0.0) (2026-02-04)
 
 
