@@ -163,8 +163,8 @@ type ImagenParameters struct {
 	SampleCount      int    `json:"sampleCount"`
 	AspectRatio      string `json:"aspectRatio"`
 	AddWatermark     bool   `json:"addWatermark"`
-	PersonGeneration string `json:"personGeneration"`
 	IncludeRaiReason bool   `json:"includeRaiReason"`
+	// PersonGeneration removed - causes silent RAI filtering issues with abstract prompts
 }
 
 // ImagenResponse represents the response from Vertex AI Imagen API
@@ -178,7 +178,41 @@ type ImagenPrediction struct {
 	MimeType           string `json:"mimeType"`
 }
 
+// fallbackPrompt is a simple, safe prompt used when the primary prompt triggers content filters
+const fallbackPrompt = "Abstract digital art with colorful geometric shapes and gradient backgrounds. Professional quality, artistic composition."
+
+// truncatePrompt returns a truncated version of the prompt for logging
+func truncatePrompt(prompt string, maxLen int) string {
+	if len(prompt) <= maxLen {
+		return prompt
+	}
+	return prompt[:maxLen] + "..."
+}
+
 func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey, prompt string) ([]byte, error) {
+	// First attempt with the context-aware prompt
+	imageData, err := p.callImagenAPI(ctx, apiKey, prompt)
+	if err == nil {
+		return imageData, nil
+	}
+
+	// Check if this looks like a content filter issue (empty response)
+	// These errors indicate the API processed the request but returned no image
+	if strings.Contains(err.Error(), "empty base64") || strings.Contains(err.Error(), "no predictions") {
+		// Retry with simplified safe prompt that avoids content filter triggers
+		imageData, retryErr := p.callImagenAPI(ctx, apiKey, fallbackPrompt)
+		if retryErr == nil {
+			return imageData, nil
+		}
+		// Both attempts failed - return original error with context
+		return nil, fmt.Errorf("primary prompt failed (%w), fallback also failed (%v)", err, retryErr)
+	}
+
+	// Non-content-filter error (auth, network, etc.) - don't retry
+	return nil, err
+}
+
+func (p *AIBannerProvider) callImagenAPI(ctx context.Context, apiKey, prompt string) ([]byte, error) {
 	// Get GCP project ID and region from environment
 	projectID := os.Getenv("GCP_PROJECT_ID")
 	if projectID == "" {
@@ -209,10 +243,9 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 		},
 		Parameters: ImagenParameters{
 			SampleCount:      1,
-			AspectRatio:      "3:4",        // Standard photograph ratio
-			AddWatermark:     false,        // Disable watermark for cleaner banners
-			PersonGeneration: "dont_allow", // No people/faces in abstract banners
-			IncludeRaiReason: true,         // Include RAI filtering reasons for debugging
+			AspectRatio:      "3:4", // Standard photograph ratio
+			AddWatermark:     false, // Disable watermark for cleaner banners
+			IncludeRaiReason: true,  // Include RAI filtering reasons for debugging
 		},
 	}
 
@@ -278,7 +311,11 @@ func (p *AIBannerProvider) generateBannerWithGemini(ctx context.Context, apiKey,
 	// Validate that we have actual image data
 	base64Data := imagenResp.Predictions[0].BytesBase64Encoded
 	if base64Data == "" {
-		return nil, fmt.Errorf("empty base64 image data in response (prediction has no image content)")
+		raiReason := imagenResp.RaiFilteredReason
+		if raiReason == "" {
+			raiReason = "none provided"
+		}
+		return nil, fmt.Errorf("empty base64 image data in response (prompt: %q, RAI reason: %s)", truncatePrompt(prompt, 100), raiReason)
 	}
 
 	// Decode base64 image data
@@ -343,6 +380,105 @@ func buildImagePrompt(activity *pb.StandardizedActivity, style string) string {
 		parts = append(parts, fmt.Sprintf("Activity type: %s", activityType))
 	}
 
+	// Activity name - often contains evocative context like "Morning Run", "Race Day", "First Marathon"
+	if activity.Name != "" {
+		parts = append(parts, fmt.Sprintf("Activity title: %s", activity.Name))
+	}
+
+	// User's original description/notes - can contain rich context
+	if activity.Description != "" {
+		// Truncate long descriptions to avoid prompt bloat
+		desc := activity.Description
+		if len(desc) > 200 {
+			desc = desc[:200] + "..."
+		}
+		parts = append(parts, fmt.Sprintf("User notes: %s", desc))
+	}
+
+	// Calculate totals from sessions for scale context
+	var totalDuration float64
+	var totalDistance float64
+	var strengthSets []*pb.StrengthSet
+	for _, session := range activity.Sessions {
+		totalDuration += session.TotalElapsedTime
+		totalDistance += session.TotalDistance
+		strengthSets = append(strengthSets, session.StrengthSets...)
+	}
+
+	// Distance context - adds scale/epic-ness
+	if totalDistance > 0 {
+		km := totalDistance / 1000
+		var scaleContext string
+		switch {
+		case km >= 100:
+			scaleContext = "ultra-distance, epic journey"
+		case km >= 42:
+			scaleContext = "marathon distance, significant achievement"
+		case km >= 21:
+			scaleContext = "half marathon, substantial effort"
+		case km >= 10:
+			scaleContext = "moderate distance"
+		default:
+			scaleContext = "short distance"
+		}
+		parts = append(parts, fmt.Sprintf("Scale: %.1f km (%s)", km, scaleContext))
+	}
+
+	// Duration context - intensity/effort feel
+	if totalDuration > 0 {
+		hours := totalDuration / 3600
+		var effortContext string
+		switch {
+		case hours >= 4:
+			effortContext = "endurance effort, long haul"
+		case hours >= 2:
+			effortContext = "extended session"
+		case hours >= 1:
+			effortContext = "solid workout"
+		case totalDuration >= 1800: // 30+ mins
+			effortContext = "moderate session"
+		default:
+			effortContext = "quick burst"
+		}
+		parts = append(parts, fmt.Sprintf("Duration: %.0f minutes (%s)", totalDuration/60, effortContext))
+	}
+
+	// Strength training context - exercises and muscle groups
+	if len(strengthSets) > 0 {
+		// Collect unique exercises (limit to top 5 for prompt brevity)
+		exercisesSeen := make(map[string]bool)
+		var exercises []string
+		for _, set := range strengthSets {
+			if set.ExerciseName != "" && !exercisesSeen[set.ExerciseName] {
+				exercisesSeen[set.ExerciseName] = true
+				exercises = append(exercises, set.ExerciseName)
+				if len(exercises) >= 5 {
+					break
+				}
+			}
+		}
+
+		// Collect unique primary muscle groups
+		musclesSeen := make(map[pb.MuscleGroup]bool)
+		var muscles []string
+		for _, set := range strengthSets {
+			if set.PrimaryMuscleGroup != pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED && !musclesSeen[set.PrimaryMuscleGroup] {
+				musclesSeen[set.PrimaryMuscleGroup] = true
+				// Convert enum to readable name
+				muscleName := strings.ToLower(strings.ReplaceAll(set.PrimaryMuscleGroup.String(), "MUSCLE_GROUP_", ""))
+				muscleName = strings.ReplaceAll(muscleName, "_", " ")
+				muscles = append(muscles, muscleName)
+			}
+		}
+
+		if len(exercises) > 0 {
+			parts = append(parts, fmt.Sprintf("Exercises: %s", strings.Join(exercises, ", ")))
+		}
+		if len(muscles) > 0 {
+			parts = append(parts, fmt.Sprintf("Muscle focus: %s", strings.Join(muscles, ", ")))
+		}
+	}
+
 	// Time of day context
 	if activity.StartTime != nil {
 		startTime := activity.StartTime.AsTime()
@@ -373,8 +509,8 @@ func buildImagePrompt(activity *pb.StandardizedActivity, style string) string {
 		parts = append(parts, "Style: vibrant, energetic, bold colors, athletic and dynamic mood")
 	}
 
-	// General guidance - explicitly abstract to avoid person generation conflicts
-	parts = append(parts, "No text, watermarks, or people. Abstract landscape or geometric patterns. High quality, professional digital art.")
+	// General guidance - use positive language to avoid triggering content filters
+	parts = append(parts, "Abstract scenery with geometric patterns and natural elements. Clean composition without text overlays. High quality, professional digital art.")
 
 	return strings.Join(parts, "\n")
 }
