@@ -791,7 +791,7 @@ resource "google_cloudfunctions2_function" "mock_source_handler" {
   description = "Mocks source events for testing"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "mockSourceHandler"
     source {
       storage_source {
@@ -833,7 +833,7 @@ resource "google_cloudfunctions2_function" "hevy_handler" {
   description = "Ingests Hevy webhooks"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "hevyHandler"
     source {
       storage_source {
@@ -872,7 +872,7 @@ resource "google_cloudfunctions2_function" "fitbit_handler" {
   description = "Ingests Fitbit webhooks and data"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "fitbitWebhookHandler"
     source {
       storage_source {
@@ -941,7 +941,7 @@ resource "google_cloudfunctions2_function" "strava_handler" {
   description = "Ingests Strava webhooks for activity sync"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "stravaWebhookHandler"
     source {
       storage_source {
@@ -1003,7 +1003,7 @@ resource "google_cloudfunctions2_function" "wahoo_handler" {
   description = "Ingests Wahoo webhooks for workout sync"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "wahooWebhookHandler"
     source {
       storage_source {
@@ -1057,7 +1057,7 @@ resource "google_cloud_run_service_iam_member" "wahoo_handler_invoker" {
 resource "google_cloudfunctions_function" "auth_on_create" {
   name        = "auth-on-create"
   description = "Triggered when a new user is created in Firebase Auth"
-  runtime     = "nodejs20"
+  runtime     = "nodejs22"
 
   available_memory_mb   = 256
   source_archive_bucket = google_storage_bucket.source_bucket.name
@@ -1090,7 +1090,7 @@ resource "google_cloudfunctions2_function" "inputs_handler" {
   description = "Handles pending user input resolutions"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "inputsHandler"
     source {
       storage_source {
@@ -1131,7 +1131,7 @@ resource "google_cloudfunctions2_function" "activities_handler" {
   description = "Handles activities listing and statistics"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "activitiesHandler"
     source {
       storage_source {
@@ -1173,7 +1173,7 @@ resource "google_cloudfunctions2_function" "user_profile_handler" {
   description = "Handles user profile operations (GET, PATCH, DELETE)"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "userProfileHandler"
     source {
       storage_source {
@@ -1213,7 +1213,7 @@ resource "google_cloudfunctions2_function" "user_integrations_handler" {
   description = "Handles user integration management (list, connect, disconnect)"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "userIntegrationsHandler"
     source {
       storage_source {
@@ -1269,7 +1269,7 @@ resource "google_cloudfunctions2_function" "billing_handler" {
   description = "Handles billing requests"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "billingHandler"
     source {
       storage_source {
@@ -1332,7 +1332,7 @@ resource "google_cloudfunctions2_function" "user_data_handler" {
   description = "Handles user enricher data (counters, personal records) management"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "userDataHandler"
     source {
       storage_source {
@@ -1372,7 +1372,7 @@ resource "google_cloudfunctions2_function" "mobile_sync_handler" {
   description = "Handles mobile sync requests"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "mobileSyncHandler"
     source {
       storage_source {
@@ -1414,7 +1414,7 @@ resource "google_cloudfunctions2_function" "user_pipelines_handler" {
   description = "Handles user pipeline CRUD operations"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "userPipelinesHandler"
     source {
       storage_source {
@@ -1454,7 +1454,7 @@ resource "google_cloudfunctions2_function" "registry_handler" {
   description = "Returns FitGlue registry (connections and plugins)"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "registryHandler"
     source {
       storage_source {
@@ -1494,7 +1494,7 @@ resource "google_cloudfunctions2_function" "integration_request_handler" {
   description = "Handles integration requests from users"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "integrationRequestHandler"
     source {
       storage_source {
@@ -1708,7 +1708,7 @@ resource "google_cloudfunctions2_function" "showcase_handler" {
   description = "Public showcase viewer for shareable activity URLs"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "showcaseHandler"
     source {
       storage_source {
@@ -1795,7 +1795,7 @@ resource "google_cloudfunctions2_function" "repost_handler" {
   description = "Handles re-post mechanisms for synchronized activities"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "repostHandler"
     source {
       storage_source {
@@ -1835,7 +1835,7 @@ resource "google_cloudfunctions2_function" "admin_handler" {
   description = "Consolidated admin operations handler"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "adminHandler"
     source {
       storage_source {
@@ -1875,7 +1875,7 @@ resource "google_cloudfunctions2_function" "polar_handler" {
   description = "Ingests Polar webhooks for activity sync"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "polarWebhookHandler"
     source {
       storage_source {
@@ -1930,7 +1930,7 @@ resource "google_cloudfunctions2_function" "oura_handler" {
   description = "Ingests Oura webhooks for sleep/activity sync"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "ouraWebhookHandler"
     source {
       storage_source {

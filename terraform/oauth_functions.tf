@@ -6,7 +6,7 @@ resource "google_cloudfunctions2_function" "strava_oauth_handler" {
   description = "Handles Strava OAuth callback"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "stravaOAuthHandler"
     source {
       storage_source {
@@ -63,7 +63,7 @@ resource "google_cloudfunctions2_function" "fitbit_oauth_handler" {
   description = "Handles Fitbit OAuth callback"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "fitbitOAuthHandler"
     source {
       storage_source {
@@ -120,7 +120,7 @@ resource "google_cloudfunctions2_function" "spotify_oauth_handler" {
   description = "Handles Spotify OAuth callback"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "spotifyOAuthHandler"
     source {
       storage_source {
@@ -177,7 +177,7 @@ resource "google_cloudfunctions2_function" "trainingpeaks_oauth_handler" {
   description = "Handles TrainingPeaks OAuth callback"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "trainingPeaksOAuthHandler"
     source {
       storage_source {
@@ -234,7 +234,7 @@ resource "google_cloudfunctions2_function" "wahoo_oauth_handler" {
   description = "Handles Wahoo OAuth callback"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "wahooOAuthHandler"
     source {
       storage_source {
@@ -291,7 +291,7 @@ resource "google_cloudfunctions2_function" "polar_oauth_handler" {
   description = "Handles Polar OAuth callback"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "polarOAuthHandler"
     source {
       storage_source {
@@ -348,7 +348,7 @@ resource "google_cloudfunctions2_function" "oura_oauth_handler" {
   description = "Handles Oura OAuth callback"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "ouraOAuthHandler"
     source {
       storage_source {
@@ -405,7 +405,7 @@ resource "google_cloudfunctions2_function" "google_oauth_handler" {
   description = "Handles Google OAuth callback for Sheets integration"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "googleOAuthHandler"
     source {
       storage_source {

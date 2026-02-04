@@ -7,13 +7,19 @@ orbs:
 executors:
   unified-executor:
     docker:
-      - image: cimg/go:1.25.5-node
+      - image: cimg/go:1.25.5
 
 jobs:
   build-and-test:
     executor: unified-executor
     steps:
       - checkout
+      - run:
+          name: Install Node.js 22
+          command: |
+            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+            sudo apt-get install -y nodejs
+            node --version
       - run:
           name: Install Core Dependencies
           command: |

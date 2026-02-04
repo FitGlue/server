@@ -221,7 +221,7 @@ resource "google_cloudfunctions2_function" "${snake_name}_handler" {
   description = "${pascal_name} webhook handler"
 
   build_config {
-    runtime     = "nodejs20"
+    runtime     = "nodejs22"
     entry_point = "${name}WebhookHandler"
     source {
       storage_source {
