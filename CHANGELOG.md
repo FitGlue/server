@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.0.0](https://github.com/FitGlue/server/compare/v11.1.0...v12.0.0) (2026-02-04)
+
+
+### ⚠ BREAKING CHANGES
+
+* Update node version to v22
+
+### Features
+
+* upgrade node version ([d962b5d](https://github.com/FitGlue/server/commit/d962b5d8ed5a229d1d7cc4b21a62130ff7182796))
+
+
+### Bug Fixes
+
+* destinations not being read from the new subcollection properly, create firestore index ([b6c45cd](https://github.com/FitGlue/server/commit/b6c45cd74521c41149a78628e3aba9383c51204b))
+* install node where needed for circleci ([32205de](https://github.com/FitGlue/server/commit/32205dec435c1a8f11329c1759b8a61b3487aeb5))
+* more firestore indexes ([d7b89ca](https://github.com/FitGlue/server/commit/d7b89ca20701b8877252dd3e851baea5c7274c24))
+* sentry-cli sudo install ([8c5a6b0](https://github.com/FitGlue/server/commit/8c5a6b0a274dff1a66331cadffa38ec4fbcef93e))
+* set originalPayloadUri immediately ([fdbab00](https://github.com/FitGlue/server/commit/fdbab00a04a6b97ab90f1193662e1d92f4e0fef1))
+
 ## [11.1.0](https://github.com/FitGlue/server/compare/v11.0.1...v11.1.0) (2026-02-03)
 
 
