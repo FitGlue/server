@@ -185,7 +185,7 @@ type ImagenPrediction struct {
 }
 
 // fallbackPrompt is a simple, safe prompt used when the primary prompt triggers content filters
-const fallbackPrompt = "Abstract digital art with colorful geometric shapes and gradient backgrounds. Professional quality, artistic composition."
+const fallbackPrompt = "Abstract digital art with colorful geometric shapes and gradient backgrounds. Professional quality, artistic composition. Do NOT include any text, letters, numbers, words, or written content in the image."
 
 // truncatePrompt returns a truncated version of the prompt for logging
 func truncatePrompt(prompt string, maxLen int) string {
@@ -397,18 +397,20 @@ func buildImagePrompt(activity *pb.StandardizedActivity, style string, subject s
 	}
 
 	// Activity name - often contains evocative context like "Morning Run", "Race Day", "First Marathon"
+	// Use "theme" phrasing to encourage mood interpretation rather than text rendering
 	if activity.Name != "" {
-		parts = append(parts, fmt.Sprintf("Activity title: %s", activity.Name))
+		parts = append(parts, fmt.Sprintf("Theme/mood (for visual atmosphere only, NOT text): %s", activity.Name))
 	}
 
 	// User's original description/notes - can contain rich context
+	// Phrase as context for visual mood, not text to display
 	if activity.Description != "" {
 		// Truncate long descriptions to avoid prompt bloat
 		desc := activity.Description
 		if len(desc) > 200 {
 			desc = desc[:200] + "..."
 		}
-		parts = append(parts, fmt.Sprintf("User notes: %s", desc))
+		parts = append(parts, fmt.Sprintf("Context for visual mood (NOT text to display): %s", desc))
 	}
 
 	// Calculate totals from sessions for scale context
@@ -528,7 +530,10 @@ func buildImagePrompt(activity *pb.StandardizedActivity, style string, subject s
 	// General guidance - use positive language to avoid triggering content filters
 	// Composition: center the subject for better use as backgrounds
 	parts = append(parts, "Composition: Subject centered in the frame with balanced composition. Main focal point should be in the center third of the image.")
-	parts = append(parts, "Include geometric patterns and natural elements. Clean composition without text overlays. High quality, professional digital art.")
+	parts = append(parts, "Include geometric patterns and natural elements. High quality, professional digital art.")
+
+	// Critical: Explicitly prohibit text generation - AI models often generate garbled text otherwise
+	parts = append(parts, "IMPORTANT: Do NOT include any text, letters, numbers, words, titles, captions, watermarks, logos, or written content of any kind in the image. The image must be purely visual with no textual elements whatsoever.")
 
 	return strings.Join(parts, "\n")
 }
