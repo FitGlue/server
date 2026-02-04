@@ -7,19 +7,13 @@ orbs:
 executors:
   unified-executor:
     docker:
-      - image: cimg/go:1.25.5
+      - image: cimg/go:1.25.5-node
 
 jobs:
   build-and-test:
     executor: unified-executor
     steps:
       - checkout
-      - run:
-          name: Install Node.js 22
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-            node --version
       - run:
           name: Install Core Dependencies
           command: |
@@ -124,11 +118,6 @@ jobs:
       - attach_workspace:
           at: .
       - run:
-          name: Install Node.js 22
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-            sudo apt-get install -y nodejs
-      - run:
           name: Upload Source Maps to Sentry
           command: |
              # Install Sentry CLI
@@ -143,11 +132,6 @@ jobs:
       - add_ssh_keys:
           fingerprints:
             - "SHA256:VRiS+EY45HNsLzWN3a7lKsalrTzaBb4gRiQoc1IK0X4"
-      - run:
-          name: Install Node.js 22
-          command: |
-            curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
-            sudo apt-get install -y nodejs
       - run:
           name: Setup Git User
           command: |
