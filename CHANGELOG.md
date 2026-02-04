@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.1.1](https://github.com/FitGlue/server/compare/v12.1.0...v12.1.1) (2026-02-04)
+
+
+### Bug Fixes
+
+* align fit file provided heartrate data when mismatched ([bf2241a](https://github.com/FitGlue/server/commit/bf2241a91e27087180503501b7cd98871ce7768d))
+* auth-on-create to expect Gen 1 events ([ff2d782](https://github.com/FitGlue/server/commit/ff2d78206087ff2d4540119f337ab7d5337df058))
+
 ## [12.1.0](https://github.com/FitGlue/server/compare/v12.0.1...v12.1.0) (2026-02-04)
 
 
