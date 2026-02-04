@@ -132,7 +132,7 @@ jobs:
           name: Upload Source Maps to Sentry
           command: |
              # Install Sentry CLI
-             npm install -g @sentry/cli
+             sudo npm install -g @sentry/cli
              # Run upload script using Git SHA as release
              ./scripts/upload_sourcemaps.sh "$CIRCLE_SHA1"
 
