@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.2.0](https://github.com/FitGlue/server/compare/v12.1.1...v12.2.0) (2026-02-05)
+
+
+### Features
+
+* add notification preferences API and fix hook-related enrichment ([1c6bd78](https://github.com/FitGlue/server/commit/1c6bd7833884ac8517771e59498c6e0d6a14030d))
+
+
+### Bug Fixes
+
+* user endpoint not allowed to delete ([845e65d](https://github.com/FitGlue/server/commit/845e65ddb3538b429306f52c29739ce04acfcc48))
+
 ### [12.1.1](https://github.com/FitGlue/server/compare/v12.1.0...v12.1.1) (2026-02-04)
 
 
