@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.3.0](https://github.com/FitGlue/server/compare/v12.2.0...v12.3.0) (2026-02-05)
+
+
+### Features
+
+* implement detailed monitoring ([170a51a](https://github.com/FitGlue/server/commit/170a51a5a3c3b43f025893c8146d502f5e24f8b4))
+* send summary of new waitlist users every day ([dd04950](https://github.com/FitGlue/server/commit/dd0495092af4908d79c96a2ac69a67c0759237ce))
+* show branding enricher for more people ([09f6e11](https://github.com/FitGlue/server/commit/09f6e116589db299b454421576fcab4d4d41636a))
+
+
+### Bug Fixes
+
+* lint issues ([89d8cc9](https://github.com/FitGlue/server/commit/89d8cc9999ca8227c61e52b76f99fa6931718568))
+* more analytics deploy failures ([1a8daf9](https://github.com/FitGlue/server/commit/1a8daf921e69034118da934e1853d6dc81d2e1a9))
+* new users start as hobbyist tier ([37759b1](https://github.com/FitGlue/server/commit/37759b11505cdd4923029e82f9044d99b4726e6a))
+* reorganise plugin categories ([f9beb64](https://github.com/FitGlue/server/commit/f9beb64b19ede9bc73d7e845a2cae43a1ab4c5a8))
+* shared_modules missing dep ([34c8ac0](https://github.com/FitGlue/server/commit/34c8ac0a3978d1fc39aa7dc4258db8f47eb27a3a))
+
 ## [12.2.0](https://github.com/FitGlue/server/compare/v12.1.1...v12.2.0) (2026-02-05)
 
 
