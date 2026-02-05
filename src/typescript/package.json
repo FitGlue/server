@@ -35,7 +35,8 @@
     "oura-handler",
     "polar-oauth-handler",
     "polar-handler",
-    "user-data-handler"
+    "user-data-handler",
+    "registration-summary-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

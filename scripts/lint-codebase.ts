@@ -748,6 +748,7 @@ function checkFirebaseRouting(): CheckResult {
     'admin-cli',          // CLI tool, not a function
     'mcp-server',         // MCP server, not a Cloud Function
     'shared',             // Library package
+    'registration-summary-handler', // Pub/Sub trigger (Cloud Scheduler), not HTTP
   ];
 
   const firebaseJsonPath = path.join(SERVER_ROOT, '..', 'web', 'firebase.json');

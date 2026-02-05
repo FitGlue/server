@@ -1977,3 +1977,60 @@ resource "google_cloud_run_service_iam_member" "oura_handler_invoker" {
   role     = "roles/run.invoker"
   member   = "allUsers"
 }
+
+# ----------------- Registration Summary Handler -----------------
+# Daily email summary of new user registrations
+resource "google_storage_bucket_object" "registration_summary_handler_zip" {
+  name   = "registration-summary-handler-${filemd5("/tmp/fitglue-function-zips/registration-summary-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/registration-summary-handler.zip"
+}
+
+resource "google_cloudfunctions2_function" "registration_summary_handler" {
+  name        = "registration-summary-handler"
+  location    = var.region
+  description = "Daily email summary of new user registrations"
+
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "registrationSummaryHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.registration_summary_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.registration_summary_trigger.id
+    retry_policy   = var.retry_policy
+  }
+}
+
+# Cloud Scheduler: Daily registration summary at 8:00 AM UTC
+resource "google_cloud_scheduler_job" "registration_summary_daily" {
+  name        = "registration-summary-daily"
+  description = "Send daily summary of new user registrations"
+  schedule    = "0 8 * * *"  # 8:00 AM UTC daily
+  time_zone   = "UTC"
+  region      = var.region
+
+  pubsub_target {
+    topic_name = google_pubsub_topic.registration_summary_trigger.id
+    data       = base64encode("{\"trigger\":\"scheduled\"}")
+  }
+}

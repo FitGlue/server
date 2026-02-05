@@ -120,3 +120,9 @@ resource "google_pubsub_topic" "parkrun_results_trigger" {
   name    = "topic-parkrun-results-trigger"
   project = var.project_id
 }
+
+# Registration summary topic - triggered daily by Cloud Scheduler
+resource "google_pubsub_topic" "registration_summary_trigger" {
+  name    = "topic-registration-summary-trigger"
+  project = var.project_id
+}

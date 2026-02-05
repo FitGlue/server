@@ -148,3 +148,8 @@ exports.userDataHandler = (req, res) => {
   const userData = require('./user-data-handler/dist/index');
   return userData.userDataHandler(req, res);
 };
+
+exports.registrationSummaryHandler = (event) => {
+  const regSummary = require('./registration-summary-handler/dist/index');
+  return regSummary.registrationSummaryHandler(event);
+};

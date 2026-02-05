@@ -126,6 +126,22 @@ export class UserStore {
   }
 
   /**
+   * Find users created within a date range.
+   * Used for registration summary emails.
+   */
+  async findByCreationDateRange(
+    startDate: Date,
+    endDate: Date
+  ): Promise<UserRecord[]> {
+    const snapshot = await this.collection()
+      .where('created_at', '>=', startDate)
+      .where('created_at', '<', endDate)
+      .get();
+
+    return snapshot.docs.map(doc => doc.data());
+  }
+
+  /**
    * Update a user document (root level fields only).
    */
   async update(userId: string, data: Partial<UserRecord>): Promise<void> {
