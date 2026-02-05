@@ -10,15 +10,13 @@ export const CATEGORY_WEARABLES = 'wearables';
 export const CATEGORY_APPS = 'apps';
 export const CATEGORY_MANUAL = 'manual';
 
-// Enricher categories
-export const CATEGORY_AI_CONTENT = 'ai_content';
-export const CATEGORY_STATS = 'stats';
+// Enricher categories (Output-based taxonomy)
+export const CATEGORY_AI_IMAGES = 'ai_images';
+export const CATEGORY_SUMMARIES = 'summaries';
+export const CATEGORY_DATA = 'data';
 export const CATEGORY_DETECTION = 'detection';
-export const CATEGORY_TRANSFORMATION = 'transformation';
-export const CATEGORY_VISUAL = 'visual';
-export const CATEGORY_LOCATION = 'location';
-export const CATEGORY_LOGIC = 'logic';
-export const CATEGORY_REFERENCES = 'references';
+export const CATEGORY_LINKS = 'links';
+export const CATEGORY_WORKFLOW = 'workflow';
 
 // Destination categories
 export const CATEGORY_SOCIAL = 'social';
@@ -41,14 +39,12 @@ export const SOURCE_CATEGORIES: CategoryMeta[] = [
 ];
 
 export const ENRICHER_CATEGORIES: CategoryMeta[] = [
-  { id: CATEGORY_AI_CONTENT, name: 'AI & Content', emoji: '✨' },
-  { id: CATEGORY_STATS, name: 'Stats', emoji: '📊' },
-  { id: CATEGORY_DETECTION, name: 'Detection', emoji: '🎯' },
-  { id: CATEGORY_TRANSFORMATION, name: 'Transformation', emoji: '🔧' },
-  { id: CATEGORY_VISUAL, name: 'Visual', emoji: '🎨' },
-  { id: CATEGORY_LOCATION, name: 'Location', emoji: '🗺️' },
-  { id: CATEGORY_LOGIC, name: 'Logic', emoji: '⚙️' },
-  { id: CATEGORY_REFERENCES, name: 'References', emoji: '🔗' },
+  { id: CATEGORY_AI_IMAGES, name: 'AI & Images', emoji: '✨' },
+  { id: CATEGORY_SUMMARIES, name: 'Summaries', emoji: '📝' },
+  { id: CATEGORY_DATA, name: 'Data & Stats', emoji: '📊' },
+  { id: CATEGORY_DETECTION, name: 'Smart Detection', emoji: '🎯' },
+  { id: CATEGORY_LINKS, name: 'Links & References', emoji: '🔗' },
+  { id: CATEGORY_WORKFLOW, name: 'Workflow', emoji: '⚙️' },
 ];
 
 export const DESTINATION_CATEGORIES: CategoryMeta[] = [
@@ -61,5 +57,5 @@ export const DESTINATION_CATEGORIES: CategoryMeta[] = [
  * Type-safe category unions for compile-time validation
  */
 export type SourceCategory = typeof CATEGORY_WEARABLES | typeof CATEGORY_APPS | typeof CATEGORY_MANUAL;
-export type EnricherCategory = typeof CATEGORY_AI_CONTENT | typeof CATEGORY_STATS | typeof CATEGORY_DETECTION | typeof CATEGORY_TRANSFORMATION | typeof CATEGORY_VISUAL | typeof CATEGORY_LOCATION | typeof CATEGORY_LOGIC | typeof CATEGORY_REFERENCES;
+export type EnricherCategory = typeof CATEGORY_AI_IMAGES | typeof CATEGORY_SUMMARIES | typeof CATEGORY_DATA | typeof CATEGORY_DETECTION | typeof CATEGORY_LINKS | typeof CATEGORY_WORKFLOW;
 export type DestinationCategory = typeof CATEGORY_SOCIAL | typeof CATEGORY_ANALYTICS | typeof CATEGORY_LOGGING;

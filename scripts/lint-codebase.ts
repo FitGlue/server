@@ -3406,6 +3406,81 @@ function checkMandatoryFormatterUsage(): CheckResult {
 }
 
 // ============================================================================
+// Check 35b: OpenAPI to Firebase Routing Alignment (W16)
+// ============================================================================
+
+/**
+ * Validates that all paths defined in swagger.json have corresponding
+ * Firebase Hosting rewrites configured.
+ * 
+ * This prevents 404 errors where an endpoint is defined in the API spec
+ * but not routed to a Cloud Run service.
+ */
+function checkOpenApiFirebaseRouting(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  const swaggerPath = path.join(webDir, 'src', 'openapi', 'swagger.json');
+  const firebaseJsonPath = path.join(webDir, 'firebase.json');
+
+  if (!fs.existsSync(swaggerPath) || !fs.existsSync(firebaseJsonPath)) {
+    return { name: 'OpenAPI Firebase Routing (W16)', passed: true, errors, warnings };
+  }
+
+  // Parse swagger.json to get all defined paths
+  const swagger = JSON.parse(fs.readFileSync(swaggerPath, 'utf-8'));
+  const apiPaths = Object.keys(swagger.paths || {});
+
+  // Parse firebase.json to get all API rewrites
+  const firebaseConfig = JSON.parse(fs.readFileSync(firebaseJsonPath, 'utf-8'));
+  const rewrites = firebaseConfig.hosting?.rewrites || [];
+
+  // Extract rewrite patterns (normalize to match swagger format)
+  const rewritePatterns: string[] = rewrites
+    .filter((r: { source?: string; run?: object }) => r.source?.startsWith('/api') && r.run)
+    .map((r: { source: string }) => {
+      // Convert /api/users/me/** to /users/me
+      return r.source
+        .replace('/api', '')
+        .replace('/**', '')
+        .replace('/*', '');
+    });
+
+  // Check each swagger path has a matching rewrite
+  for (const apiPath of apiPaths) {
+    // Skip paths that don't need /api prefix (like /showcase which has its own routing)
+    if (apiPath.startsWith('/showcase')) continue;
+
+    // Check if this path is covered by any rewrite pattern
+    const isCovered = rewritePatterns.some(pattern => {
+      // Exact match
+      if (pattern === apiPath) return true;
+      // Wildcard match - /users/me covers /users/me/notification-preferences
+      if (apiPath.startsWith(pattern + '/')) return true;
+      // Pattern with path params - /users/me/integrations/{provider}/connect matches /users/me/integrations
+      const pathWithoutParams = apiPath.replace(/\{[^}]+\}/g, '*');
+      if (pattern === pathWithoutParams) return true;
+      // Check if base path matches wildcard pattern
+      const basePath = '/' + apiPath.split('/').filter(Boolean).slice(0, 2).join('/');
+      if (pattern === basePath) return true;
+      return false;
+    });
+
+    if (!isCovered) {
+      errors.push(`Swagger path '${apiPath}' has no Firebase rewrite (add /api${apiPath} to firebase.json)`);
+    }
+  }
+
+  return {
+    name: 'OpenAPI Firebase Routing (W16)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Check 36: API Endpoint Alignment (W12)
 // ============================================================================
 
@@ -4176,6 +4251,8 @@ function checkPluginCategoryValidation(): CheckResult {
 
   const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
   const categoriesPath = path.join(TS_SRC_DIR, 'shared/src/plugin/categories.ts');
+  const webCategoriesPath = path.join(SERVER_ROOT, '../web/src/app/utils/pluginCategories.ts');
+  const marketingTaskPath = path.join(SERVER_ROOT, '../web/tasks/transformRegistryTask.js');
 
   if (!fs.existsSync(registryPath)) {
     errors.push('Plugin registry not found');
@@ -4187,28 +4264,46 @@ function checkPluginCategoryValidation(): CheckResult {
     return { name: 'Plugin Category Validation', passed: false, errors, warnings };
   }
 
-  // Extract valid categories from categories.ts
+  // Extract valid categories from categories.ts (source of truth)
   const categoriesContent = fs.readFileSync(categoriesPath, 'utf-8');
   const validCategories = new Set<string>();
+  const enricherCategories = new Set<string>();
 
-  // Extract all CATEGORY_* constants
+  // Build a map of constant names to values first
+  const categoryConstants = new Map<string, string>();
   const categoryConstPattern = /export const (CATEGORY_\w+) = '([^']+)'/g;
   let match;
   while ((match = categoryConstPattern.exec(categoriesContent)) !== null) {
-    validCategories.add(match[2]); // The string value, e.g., 'visual', 'stats'
+    categoryConstants.set(match[1], match[2]); // e.g., 'CATEGORY_AI_IMAGES' -> 'ai_images'
+    validCategories.add(match[2]); // The string value, e.g., 'ai_images', 'summaries'
   }
 
-  // Read registry and extract all category values
-  const registryContent = fs.readFileSync(registryPath, 'utf-8');
+  // Extract enricher-specific categories from ENRICHER_CATEGORIES array
+  // Note: using substring instead of regex because nested object braces break simple regex
+  const enricherStartIdx = categoriesContent.indexOf('export const ENRICHER_CATEGORIES');
+  if (enricherStartIdx > -1) {
+    const enricherEndIdx = categoriesContent.indexOf('];', enricherStartIdx);
+    const enricherArraySection = categoriesContent.substring(enricherStartIdx, enricherEndIdx + 2);
 
-  // Split into registration blocks
+    const idPattern = /id:\s*(CATEGORY_\w+)/g;
+    let idMatch;
+    while ((idMatch = idPattern.exec(enricherArraySection)) !== null) {
+      const constName = idMatch[1]; // e.g., 'CATEGORY_AI_IMAGES'
+      const value = categoryConstants.get(constName);
+      if (value) {
+        enricherCategories.add(value);
+      }
+    }
+  }
+
+  // Read registry and validate category values
+  const registryContent = fs.readFileSync(registryPath, 'utf-8');
   const registrationBlocks = registryContent.split(/\n(registerSource|registerEnricher|registerDestination|registerIntegration)\(/);
 
   for (let i = 1; i < registrationBlocks.length; i += 2) {
     const registerType = registrationBlocks[i];
     const blockContent = registrationBlocks[i + 1];
 
-    // Extract id and category from this block
     const idMatch = /id:\s*['"]([^'"]+)['"]/.exec(blockContent);
     const categoryMatch = /category:\s*['"]([^'"]+)['"]/.exec(blockContent);
 
@@ -4220,6 +4315,85 @@ function checkPluginCategoryValidation(): CheckResult {
         errors.push(`Plugin '${pluginId}' uses invalid category '${category}' (not defined in categories.ts)`);
       }
     }
+  }
+
+  // -------------------------------------------------------------------------
+  // Rule G21: Category Synchronization Checklist
+  // Verify web app and marketing site have same enricher categories
+  // -------------------------------------------------------------------------
+
+  // Check web app pluginCategories.ts
+  if (fs.existsSync(webCategoriesPath)) {
+    const webCategoriesContent = fs.readFileSync(webCategoriesPath, 'utf-8');
+    const webCategories = new Set<string>();
+
+    // Build web app constant map first
+    const webConstants = new Map<string, string>();
+    const webConstPattern = /(?:export )?const (CATEGORY_\w+) = ['"]([^'"]+)['"]/g;
+    let webConstMatch;
+    while ((webConstMatch = webConstPattern.exec(webCategoriesContent)) !== null) {
+      webConstants.set(webConstMatch[1], webConstMatch[2]);
+    }
+
+    // Extract enricher category IDs from web app using substring (handles nested brackets)
+    const webEnricherStartIdx = webCategoriesContent.indexOf('ENRICHER_CATEGORIES');
+    if (webEnricherStartIdx > -1) {
+      const webEnricherEndIdx = webCategoriesContent.indexOf('];', webEnricherStartIdx);
+      const webEnricherSection = webCategoriesContent.substring(webEnricherStartIdx, webEnricherEndIdx + 2);
+
+      const webIdPattern = /id:\s*(CATEGORY_\w+)/g;
+      let webMatch;
+      while ((webMatch = webIdPattern.exec(webEnricherSection)) !== null) {
+        const value = webConstants.get(webMatch[1]);
+        if (value) {
+          webCategories.add(value);
+        }
+      }
+    }
+
+    // Check for mismatches
+    for (const cat of enricherCategories) {
+      if (!webCategories.has(cat)) {
+        errors.push(`Enricher category '${cat}' missing from web/src/app/utils/pluginCategories.ts (Rule G21)`);
+      }
+    }
+    for (const cat of webCategories) {
+      if (!enricherCategories.has(cat)) {
+        errors.push(`Web app has category '${cat}' not in categories.ts (Rule G21)`);
+      }
+    }
+  } else {
+    warnings.push('Web app pluginCategories.ts not found - cannot verify category sync');
+  }
+
+  // Check marketing site transformRegistryTask.js
+  if (fs.existsSync(marketingTaskPath)) {
+    const marketingContent = fs.readFileSync(marketingTaskPath, 'utf-8');
+    const marketingCategories = new Set<string>();
+
+    // Extract enricher category IDs from marketing task
+    const marketingEnricherMatch = /ENRICHER_CATEGORIES\s*=\s*\[([^\]]+)\]/s.exec(marketingContent);
+    if (marketingEnricherMatch) {
+      const marketingIdPattern = /id:\s*['"]([^'"]+)['"]/g;
+      let marketingMatch;
+      while ((marketingMatch = marketingIdPattern.exec(marketingEnricherMatch[1])) !== null) {
+        marketingCategories.add(marketingMatch[1]);
+      }
+    }
+
+    // Check for mismatches
+    for (const cat of enricherCategories) {
+      if (!marketingCategories.has(cat)) {
+        errors.push(`Enricher category '${cat}' missing from web/tasks/transformRegistryTask.js (Rule G21)`);
+      }
+    }
+    for (const cat of marketingCategories) {
+      if (!enricherCategories.has(cat)) {
+        errors.push(`Marketing task has category '${cat}' not in categories.ts (Rule G21)`);
+      }
+    }
+  } else {
+    warnings.push('Marketing transformRegistryTask.js not found - cannot verify category sync');
   }
 
   return {
@@ -4795,6 +4969,7 @@ function main(): void {
         { id: 'W12', fn: () => ({ ...checkApiEndpointAlignment(), name: 'W12: API Endpoint Alignment' }) },
         { id: 'W13', fn: () => ({ ...checkHardcodedEmojiMaps(), name: 'W13: Hardcoded Emoji Maps' }) },
         { id: 'W15', fn: () => ({ ...checkBareHtmlUsage(), name: 'W15: Bare HTML Detection' }) },
+        { id: 'W16', fn: () => ({ ...checkOpenApiFirebaseRouting(), name: 'W16: OpenAPI Firebase Routing' }) },
       ]
     },
     {

@@ -940,7 +940,7 @@ FitGlue analyzes your sets, reps, and weight data, identifies your primary muscl
     'Celebrate personal records automatically',
   ],
   // UX Organization
-  category: 'transformation',
+  category: 'summaries',
   sortOrder: 1,
   isPremium: false,
   popularityScore: 90,
@@ -1028,7 +1028,7 @@ Our database includes 100+ canonical exercises with fuzzy matching, so even cust
     'Track custom exercises with automatic muscle mapping',
   ],
   // UX Organization
-  category: 'transformation',
+  category: 'summaries',
   sortOrder: 3,
   isPremium: false,
   popularityScore: 85,
@@ -1104,7 +1104,7 @@ This premium visual enricher is available exclusively to Athlete-tier users. The
     'Create professional-looking workout summaries',
   ],
   // UX Organization
-  category: 'transformation',
+  category: 'ai_images',
   sortOrder: 4,
   isPremium: true,
   popularityScore: 95,
@@ -1155,7 +1155,7 @@ This premium visual enricher is available exclusively to Athlete-tier users. The
     'Create visual summaries of running and cycling routes',
   ],
   // UX Organization
-  category: 'visual',
+  category: 'ai_images',
   sortOrder: 1,
   isPremium: true,
   popularityScore: 85,
@@ -1232,7 +1232,7 @@ This premium visual enricher is available exclusively to Athlete-tier users. The
     'Unique visual identity for each workout',
   ],
   // UX Organization
-  category: 'visual',
+  category: 'ai_images',
   sortOrder: 2,
   isPremium: true,
   popularityScore: 75,
@@ -1292,7 +1292,7 @@ When your activity has GPS data (from a phone app or watch), FitGlue uses an "El
     'Track training intensity across all activities',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'data',
   sortOrder: 1,
   isPremium: false,
   popularityScore: 80,
@@ -1351,7 +1351,7 @@ When your activity has GPS data, FitGlue uses an "Elastic Match" algorithm to al
     'Complete heart rate data on pool swims',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'data',
   sortOrder: 2,
   isPremium: false,
   popularityScore: 75,
@@ -1426,7 +1426,7 @@ When an activity is processed, Virtual GPS overlays a pre-defined GPS route onto
     'Virtual touring while on the treadmill',
   ],
   // UX Organization
-  category: 'location',
+  category: 'data',
   sortOrder: 1,
   isPremium: false,
   popularityScore: 70,
@@ -1469,7 +1469,7 @@ When activities are imported from sources, Source Link adds a clickable URL poin
     'Cross-reference between platforms',
   ],
   // UX Organization
-  category: 'references',
+  category: 'links',
   sortOrder: 1,
   isPremium: false,
   popularityScore: 65,
@@ -1568,7 +1568,7 @@ Define matching rules like "title contains 'Virtual Ride'" → "Virtual Ride" or
     'Fix incorrect activity types from source apps',
   ],
   // UX Organization
-  category: 'logic',
+  category: 'detection',
   sortOrder: 1,
   isPremium: false,
   popularityScore: 55,
@@ -1803,7 +1803,7 @@ Define a counter key and optional title filter. Activities matching the filter g
     'Create numbered runs',
   ],
   // UX Organization
-  category: 'logic',
+  category: 'summaries',
   sortOrder: 2,
   isPremium: false,
   popularityScore: 45,
@@ -1855,7 +1855,7 @@ When an activity reaches this booster, it’s held pending your input. You recei
     'Custom titles per workout',
   ],
   // UX Organization
-  category: 'logic',
+  category: 'workflow',
   sortOrder: 3,
   isPremium: false,
   popularityScore: 50,
@@ -1942,7 +1942,7 @@ Define include or exclude rules by activity type or title keywords. Activities m
     'Only sync strength sessions',
   ],
   // UX Organization
-  category: 'logic',
+  category: 'workflow',
   sortOrder: 4,
   isPremium: false,
   popularityScore: 50,
@@ -2034,7 +2034,7 @@ Define rules using fields like activity type, day of week, time, location, or ti
     'Block activities on certain days',
   ],
   // UX Organization
-  category: 'logic',
+  category: 'workflow',
   sortOrder: 5,
   isPremium: false,
   popularityScore: 55,
@@ -2079,7 +2079,7 @@ When your activity has heart rate data (from Fitbit, Apple Watch, or any source)
     'Share intensity without graphs',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 2,
   isPremium: false,
   popularityScore: 82,
@@ -2162,7 +2162,7 @@ This premium feature is exclusively available to Athlete tier subscribers.
     'Add personality to workout logs',
   ],
   // UX Organization
-  category: 'ai_content',
+  category: 'ai_images',
   sortOrder: 1,
   isPremium: true,
   popularityScore: 95,
@@ -2206,7 +2206,7 @@ When your activity has speed data (from GPS or sensors), this enricher converts 
     'Share pace without complex stats',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 3,
   isPremium: false,
   popularityScore: 75,
@@ -2250,7 +2250,7 @@ When your activity has cadence data (from sensors), this enricher calculates avg
     'Analyze stride consistency',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 4,
   isPremium: false,
   popularityScore: 55,
@@ -2294,7 +2294,7 @@ When your activity has power data (from a power meter), this enricher calculates
     'Share power stats easily',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 5,
   isPremium: false,
   popularityScore: 60,
@@ -2338,7 +2338,7 @@ When your activity has speed data (from GPS or sensors), this enricher calculate
     'Monitor activity performance',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 6,
   isPremium: false,
   popularityScore: 50,
@@ -2418,7 +2418,7 @@ TRIMP is cumulative, meaning a long easy session can have the same load as a sho
     'Celebrate your hardest training sessions',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 7,
   isPremium: false,
   popularityScore: 65,
@@ -2551,7 +2551,7 @@ Filters out zero or negative altitude records to ensure accurate calculations ev
     'Track total effort on vertical terrain',
   ],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 8,
   isPremium: false,
   popularityScore: 68,
@@ -2606,7 +2606,7 @@ When your activity has GPS data, this enricher fetches historical weather data f
     'Share outdoor conditions on your activity feed',
   ],
   // UX Organization
-  category: 'location',
+  category: 'data',
   sortOrder: 2,
   isPremium: false,
   popularityScore: 72,
@@ -2652,7 +2652,7 @@ When you complete an activity, FitGlue checks your Spotify listening history for
     'Discover which playlists motivate you most',
   ],
   // UX Organization
-  category: 'references',
+  category: 'links',
   sortOrder: 2,
   isPremium: false,
   popularityScore: 58,
@@ -2731,7 +2731,7 @@ When your activity has GPS data, this enricher uses OpenStreetMap's Nominatim AP
     'Share location context on your activity feed',
   ],
   // UX Organization
-  category: 'location',
+  category: 'summaries',
   sortOrder: 3,
   isPremium: false,
   popularityScore: 68,
@@ -2780,7 +2780,7 @@ Tagged laps can be automatically mapped to exercises in your connected strength 
     'Properly categorize triathlon or duathlon segments',
   ],
   // UX Organization
-  category: 'transformation',
+  category: 'detection',
   sortOrder: 10,
   isPremium: false,
   popularityScore: 70,
@@ -2794,6 +2794,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS, {
   icon: '👟',
   enabled: true,
   requiredIntegrations: [],
+  requiredTier: 'athlete',
   configSchema: [],
   marketingDescription: `
 ### Running Dynamics Booster
@@ -2825,7 +2826,7 @@ This booster extracts the telemetry from your activity file and appends a single
   ],
   useCases: [],
   // UX Organization
-  category: 'stats',
+  category: 'summaries',
   sortOrder: 10,
   isPremium: true,
   popularityScore: 90,
@@ -2861,7 +2862,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   transformations: [],
   useCases: [],
   // UX Organization (internal testing only)
-  category: 'logic',
+  category: 'workflow',
   sortOrder: 99,
   isPremium: false,
   popularityScore: 0,
