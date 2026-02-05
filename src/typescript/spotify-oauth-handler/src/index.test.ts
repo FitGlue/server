@@ -7,10 +7,16 @@ jest.mock('firebase-admin', () => ({
   })),
 }));
 
+// Create a simple FrameworkResponse class for testing
+class MockFrameworkResponse {
+  constructor(public readonly options: { status?: number; body?: unknown; headers?: Record<string, string> }) { }
+}
+
 // Mock @fitglue/shared/framework
 jest.mock('@fitglue/shared/framework', () => ({
   createCloudFunction: (handler: any) => handler,
   FrameworkContext: jest.fn(),
+  FrameworkResponse: MockFrameworkResponse,
 }));
 
 // Mock @fitglue/shared/infrastructure/oauth
@@ -20,6 +26,13 @@ jest.mock('@fitglue/shared/infrastructure/oauth', () => ({
 }));
 
 import { spotifyOAuthHandler } from './index';
+
+// Helper to check redirect response
+const expectRedirect = (result: any, location: string) => {
+  expect(result).toBeInstanceOf(MockFrameworkResponse);
+  expect(result.options.status).toBe(302);
+  expect(result.options.headers?.Location).toBe(location);
+};
 
 describe('spotifyOAuthHandler', () => {
   let req: any;
@@ -65,10 +78,7 @@ describe('spotifyOAuthHandler', () => {
     const result = await (spotifyOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.warn).toHaveBeenCalledWith('User denied Spotify authorization', { error: 'access_denied' });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/spotify/error?reason=denied' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/spotify/error?reason=denied');
   });
 
   it('should redirect to error page if code is missing', async () => {
@@ -77,10 +87,7 @@ describe('spotifyOAuthHandler', () => {
     const result = await (spotifyOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/spotify/error?reason=missing_params' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/spotify/error?reason=missing_params');
   });
 
   it('should redirect to error page if state is missing', async () => {
@@ -89,10 +96,7 @@ describe('spotifyOAuthHandler', () => {
     const result = await (spotifyOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/spotify/error?reason=missing_params' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/spotify/error?reason=missing_params');
   });
 
   it('should redirect to error page if state token is invalid', async () => {
@@ -103,17 +107,14 @@ describe('spotifyOAuthHandler', () => {
 
     expect(mockValidateOAuthState).toHaveBeenCalledWith('invalid-state');
     expect(ctx.logger.error).toHaveBeenCalledWith('Invalid or expired state token');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/spotify/error?reason=invalid_state' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/spotify/error?reason=invalid_state');
   });
 
   it('should successfully process OAuth callback and store tokens', async () => {
     req.query = { code: 'auth-code', state: 'valid-state' };
     mockValidateOAuthState.mockResolvedValue({ valid: true, userId: 'user-123' });
 
-    // Mock fetch for token exchange and profile
+    // Mock fetch for token exchange and profile fetch
     global.fetch = jest.fn()
       .mockResolvedValueOnce({
         ok: true,
@@ -121,7 +122,7 @@ describe('spotifyOAuthHandler', () => {
           access_token: 'access-token',
           refresh_token: 'refresh-token',
           expires_in: 3600,
-          scope: 'user-read-recently-played',
+          scope: 'user-read-currently-playing',
         }),
       })
       .mockResolvedValueOnce({
@@ -148,10 +149,7 @@ describe('spotifyOAuthHandler', () => {
       userId: 'user-123',
       spotifyUserId: 'spotify-user-123',
     });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/spotify/success' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/spotify/success');
   });
 
   it('should redirect to error page if token exchange fails', async () => {
@@ -168,9 +166,6 @@ describe('spotifyOAuthHandler', () => {
     const result = await (spotifyOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Error processing Spotify OAuth callback', expect.anything());
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/spotify/error?reason=server_error' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/spotify/error?reason=server_error');
   });
 });

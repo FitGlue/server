@@ -1,6 +1,9 @@
 // Module-level imports for smart pruning
-import { createCloudFunction, FrameworkContext } from '@fitglue/shared/framework';
+import { createCloudFunction, FrameworkContext, FrameworkResponse } from '@fitglue/shared/framework';
 import { validateOAuthState, storeOAuthTokens } from '@fitglue/shared/infrastructure/oauth';
+
+// Helper to create redirect responses
+const redirect = (url: string) => new FrameworkResponse({ status: 302, headers: { Location: url } });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -12,20 +15,20 @@ const handler = async (req: any, ctx: FrameworkContext) => {
   // Handle authorization denial
   if (error) {
     logger.warn('User denied Spotify authorization', { error });
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/spotify/error?reason=denied` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/spotify/error?reason=denied`);
   }
 
   // Validate required parameters
   if (!code || !state) {
     logger.error('Missing required OAuth parameters');
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/spotify/error?reason=missing_params` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/spotify/error?reason=missing_params`);
   }
 
   // Validate state token (CSRF protection)
   const validation = await validateOAuthState(state);
   if (!validation.valid || !validation.userId) {
     logger.error('Invalid or expired state token');
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/spotify/error?reason=invalid_state` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/spotify/error?reason=invalid_state`);
   }
   const userId = validation.userId;
 
@@ -38,7 +41,7 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
     if (!clientId || !clientSecret) {
       logger.error('Missing Spotify OAuth credentials');
-      return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/spotify/error?reason=config_error` } };
+      return redirect(`${process.env.BASE_URL}/app/connections/spotify/error?reason=config_error`);
     }
 
     const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
@@ -96,12 +99,11 @@ const handler = async (req: any, ctx: FrameworkContext) => {
     logger.info('Successfully connected Spotify account', { userId, spotifyUserId: profile.id });
 
     // Redirect to success page
-    // Redirect to success page
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/spotify/success` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/spotify/success`);
 
   } catch (error: unknown) {
     logger.error('Error processing Spotify OAuth callback', { error });
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/spotify/error?reason=server_error` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/spotify/error?reason=server_error`);
   }
 };
 

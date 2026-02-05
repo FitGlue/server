@@ -7,10 +7,16 @@ jest.mock('firebase-admin', () => ({
   })),
 }));
 
+// Create a simple FrameworkResponse class for testing
+class MockFrameworkResponse {
+  constructor(public readonly options: { status?: number; body?: unknown; headers?: Record<string, string> }) { }
+}
+
 // Mock @fitglue/shared/framework
 jest.mock('@fitglue/shared/framework', () => ({
   createCloudFunction: (handler: any) => handler,
   FrameworkContext: jest.fn(),
+  FrameworkResponse: MockFrameworkResponse,
 }));
 
 // Mock @fitglue/shared/infrastructure/oauth
@@ -20,6 +26,13 @@ jest.mock('@fitglue/shared/infrastructure/oauth', () => ({
 }));
 
 import { fitbitOAuthHandler } from './index';
+
+// Helper to check redirect response
+const expectRedirect = (result: any, location: string) => {
+  expect(result).toBeInstanceOf(MockFrameworkResponse);
+  expect(result.options.status).toBe(302);
+  expect(result.options.headers?.Location).toBe(location);
+};
 
 describe('fitbitOAuthHandler', () => {
   let req: any;
@@ -65,10 +78,7 @@ describe('fitbitOAuthHandler', () => {
     const result = await (fitbitOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.warn).toHaveBeenCalledWith('User denied Fitbit authorization', { error: 'access_denied' });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=denied' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=denied');
   });
 
   it('should redirect to error page if code is missing', async () => {
@@ -77,10 +87,7 @@ describe('fitbitOAuthHandler', () => {
     const result = await (fitbitOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=missing_params' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=missing_params');
   });
 
   it('should redirect to error page if state is missing', async () => {
@@ -89,10 +96,7 @@ describe('fitbitOAuthHandler', () => {
     const result = await (fitbitOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=missing_params' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=missing_params');
   });
 
   it('should redirect to error page if state token is invalid', async () => {
@@ -103,10 +107,7 @@ describe('fitbitOAuthHandler', () => {
 
     expect(mockValidateOAuthState).toHaveBeenCalledWith('invalid-state');
     expect(ctx.logger.error).toHaveBeenCalledWith('Invalid or expired state token');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=invalid_state' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=invalid_state');
   });
 
   it('should successfully process OAuth callback and store tokens', async () => {
@@ -141,10 +142,7 @@ describe('fitbitOAuthHandler', () => {
       userId: 'user-123',
       fitbitUserId: 'ABC123',
     });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/fitbit/success' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/fitbit/success');
   });
 
   it('should redirect to error page if token exchange fails', async () => {
@@ -161,9 +159,6 @@ describe('fitbitOAuthHandler', () => {
     const result = await (fitbitOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Error processing Fitbit OAuth callback', expect.anything());
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=server_error' }
-    });
+    expectRedirect(result, 'https://dev.fitglue.tech/app/connections/fitbit/error?reason=server_error');
   });
 });
