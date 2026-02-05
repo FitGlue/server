@@ -589,8 +589,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	}
 
 	brandingApplied := false
-	// Run branding provider last (only for Hobbyist tier)
-	if brandingProvider, ok := o.providersByName["branding"]; ok && tier.GetEffectiveTier(userRec) == tier.TierHobbyist {
+	// Run branding provider last (for non-paying users only)
+	if brandingProvider, ok := o.providersByName["branding"]; ok && tier.ShouldShowBranding(userRec) {
 		brandingLogger := slog.Default().With("provider", "branding")
 		brandingRes, err := brandingProvider.Enrich(ctx, brandingLogger, currentActivity, userRec, map[string]string{}, doNotRetry)
 		if err != nil {

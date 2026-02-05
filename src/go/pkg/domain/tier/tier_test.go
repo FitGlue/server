@@ -190,3 +190,66 @@ func TestGetTrialDaysRemaining(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldShowBranding(t *testing.T) {
+	tests := []struct {
+		name     string
+		user     *pb.UserRecord
+		expected bool
+	}{
+		{
+			name: "Hobbyist tier shows branding",
+			user: &pb.UserRecord{
+				Tier: pb.UserTier_USER_TIER_HOBBYIST,
+			},
+			expected: true,
+		},
+		{
+			name: "Unspecified tier shows branding",
+			user: &pb.UserRecord{
+				Tier: pb.UserTier_USER_TIER_UNSPECIFIED,
+			},
+			expected: true,
+		},
+		{
+			name: "Athlete tier on active trial shows branding",
+			user: &pb.UserRecord{
+				Tier:        pb.UserTier_USER_TIER_ATHLETE,
+				TrialEndsAt: timestamppb.New(time.Now().Add(time.Hour)),
+			},
+			expected: true,
+		},
+		{
+			name: "Athlete tier via admin shows branding",
+			user: &pb.UserRecord{
+				Tier:    pb.UserTier_USER_TIER_ATHLETE,
+				IsAdmin: true,
+			},
+			expected: true,
+		},
+		{
+			name: "Paid athlete tier hides branding",
+			user: &pb.UserRecord{
+				Tier:    pb.UserTier_USER_TIER_ATHLETE,
+				IsAdmin: false,
+			},
+			expected: false,
+		},
+		{
+			name: "Expired trial athlete hides branding",
+			user: &pb.UserRecord{
+				Tier:        pb.UserTier_USER_TIER_ATHLETE,
+				TrialEndsAt: timestamppb.New(time.Now().Add(-time.Hour)),
+			},
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := ShouldShowBranding(tt.user); got != tt.expected {
+				t.Errorf("%s: ShouldShowBranding() = %v, want %v", tt.name, got, tt.expected)
+			}
+		})
+	}
+}

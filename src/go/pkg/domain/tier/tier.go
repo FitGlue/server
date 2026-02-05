@@ -99,3 +99,31 @@ func GetTrialDaysRemaining(user *pb.UserRecord) int {
 
 	return int(trialEnd.Sub(now).Hours()/24) + 1
 }
+
+// ShouldShowBranding determines if the branding enricher should be enabled.
+// This is intentionally NOT based on effective tier - it's about payment status:
+//   - Hobbyist tier: show branding (not paying)
+//   - Athlete trial: show branding (not paying yet)
+//   - Admin-only athlete: show branding (admin access, not paying)
+//   - Paid athlete: hide branding (actually paying)
+func ShouldShowBranding(user *pb.UserRecord) bool {
+	// Hobbyist tier: show branding
+	if user.Tier != pb.UserTier_USER_TIER_ATHLETE {
+		return true
+	}
+
+	// User is on athlete tier - check if it's paid or via admin/trial
+
+	// Admin override for athlete access: show branding (not paying)
+	if user.IsAdmin {
+		return true
+	}
+
+	// Active trial: show branding (not paying yet)
+	if user.TrialEndsAt != nil && user.TrialEndsAt.AsTime().After(time.Now()) {
+		return true
+	}
+
+	// Paid athlete: hide branding
+	return false
+}
