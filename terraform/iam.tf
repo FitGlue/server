@@ -28,10 +28,10 @@ resource "google_project_iam_member" "cloud_function_sa_fcm_admin" {
   member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 
-# Firebase Auth Viewer - allows GetUser() for display name lookup (used by showcase-uploader)
-resource "google_project_iam_member" "cloud_function_sa_firebase_auth_viewer" {
+# Firebase Auth Admin - allows GetUser() for display name lookup AND deleteUser() for account deletion
+resource "google_project_iam_member" "cloud_function_sa_firebase_auth_admin" {
   project = var.project_id
-  role    = "roles/firebaseauth.viewer"
+  role    = "roles/firebaseauth.admin"
   member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 

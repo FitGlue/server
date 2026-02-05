@@ -1,3 +1,4 @@
+import * as admin from 'firebase-admin';
 import { UserStore, ActivityStore, PipelineStore } from '../../storage/firestore';
 import { UserRecord, UserIntegrations, ProcessedActivityRecord, UserTier } from '../../types/pb/user';
 import { FirestoreTokenSource, OAuthProvider } from '../../infrastructure/oauth/token-source';
@@ -205,7 +206,6 @@ export class UserService {
         // If this fails, the user can still login and retry deletion
         // If Firestore deletion fails after Auth deletion, cleanup is harder
         // but at least the user can't login as an orphan
-        const admin = await import('firebase-admin');
         await admin.auth().deleteUser(userId);
 
         // Then delete Firestore user document
