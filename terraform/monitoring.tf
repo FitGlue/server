@@ -1258,12 +1258,58 @@ resource "google_monitoring_alert_policy" "critical_uploader_failure" {
   }
 }
 
-resource "google_monitoring_alert_policy" "critical_integration_failure" {
-  display_name = "Critical Integration Handler Failure"
+# Google Cloud Monitoring allows max 6 conditions per alert policy.
+# Split ts_integration_handlers (8 items) into two policies.
+locals {
+  ts_integration_handlers_group1 = slice(local.ts_integration_handlers, 0, 6)
+  ts_integration_handlers_group2 = slice(local.ts_integration_handlers, 6, 8)
+}
+
+resource "google_monitoring_alert_policy" "critical_integration_failure_1" {
+  display_name = "Critical Integration Handler Failure (1/2)"
   combiner     = "OR"
 
   dynamic "conditions" {
-    for_each = local.ts_integration_handlers
+    for_each = local.ts_integration_handlers_group1
+    content {
+      display_name = "${conditions.value} errors"
+      condition_threshold {
+        filter          = <<-EOT
+          resource.type="cloud_function" AND
+          resource.labels.function_name="${conditions.value}" AND
+          metric.type="cloudfunctions.googleapis.com/function/execution_count" AND
+          metric.labels.status!="ok"
+        EOT
+        duration        = "60s"
+        comparison      = "COMPARISON_GT"
+        threshold_value = 5
+
+        aggregations {
+          alignment_period   = "60s"
+          per_series_aligner = "ALIGN_SUM"
+        }
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email.id]
+
+  alert_strategy {
+    auto_close = "86400s"
+  }
+
+  documentation {
+    content   = "An integration handler has experienced more than 5 errors in the last minute."
+    mime_type = "text/markdown"
+  }
+}
+
+resource "google_monitoring_alert_policy" "critical_integration_failure_2" {
+  display_name = "Critical Integration Handler Failure (2/2)"
+  combiner     = "OR"
+
+  dynamic "conditions" {
+    for_each = local.ts_integration_handlers_group2
     content {
       display_name = "${conditions.value} errors"
       condition_threshold {

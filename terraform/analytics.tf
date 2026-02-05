@@ -73,6 +73,46 @@ resource "google_bigquery_dataset_iam_member" "log_sink_writer" {
 }
 
 # =============================================================================
+# PLACEHOLDER TABLE FOR WILDCARD VIEWS
+# =============================================================================
+# BigQuery requires at least one table to match a wildcard pattern before views
+# can reference it. The log sink creates cloudfunction_YYYYMMDD tables when
+# logs flow in, but on first apply no tables exist yet. This placeholder
+# allows the views to be created; it will be ignored once real log data arrives.
+# =============================================================================
+
+resource "google_bigquery_table" "cloudfunction_placeholder" {
+  dataset_id = google_bigquery_dataset.analytics.dataset_id
+  table_id   = "cloudfunction_20200101"
+
+  schema = jsonencode([
+    { name = "timestamp", type = "TIMESTAMP", mode = "NULLABLE" },
+    { name = "severity", type = "STRING", mode = "NULLABLE" },
+    { name = "jsonPayload", type = "STRING", mode = "NULLABLE" },
+    {
+      name   = "resource",
+      type   = "RECORD",
+      mode   = "NULLABLE",
+      fields = [
+        { name = "type", type = "STRING", mode = "NULLABLE" },
+        {
+          name   = "labels",
+          type   = "RECORD",
+          mode   = "NULLABLE",
+          fields = [{ name = "function_name", type = "STRING", mode = "NULLABLE" }]
+        }
+      ]
+    }
+  ])
+
+  labels = {
+    purpose = "analytics-placeholder"
+  }
+
+  depends_on = [google_bigquery_dataset.analytics]
+}
+
+# =============================================================================
 # BIGQUERY VIEWS FOR COMMON QUERIES
 # =============================================================================
 
@@ -91,7 +131,7 @@ resource "google_bigquery_table" "pipeline_summary_view" {
         COUNTIF(JSON_EXTRACT_SCALAR(jsonPayload, '$.status') = 'FAILED') AS failed_count,
         COUNTIF(JSON_EXTRACT_SCALAR(jsonPayload, '$.status') = 'SKIPPED') AS skipped_count
       FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
-      WHERE 
+      WHERE
         resource.labels.function_name = 'enricher'
         AND JSON_EXTRACT_SCALAR(jsonPayload, '$.status') IS NOT NULL
       GROUP BY date, status
@@ -104,7 +144,7 @@ resource "google_bigquery_table" "pipeline_summary_view" {
     purpose = "analytics"
   }
 
-  depends_on = [google_bigquery_dataset.analytics]
+  depends_on = [google_bigquery_dataset.analytics, google_bigquery_table.cloudfunction_placeholder]
 }
 
 # View: Enricher provider popularity
@@ -121,7 +161,7 @@ resource "google_bigquery_table" "enricher_popularity_view" {
         AVG(CAST(JSON_EXTRACT_SCALAR(jsonPayload, '$.duration_ms') AS FLOAT64)) AS avg_duration_ms,
         APPROX_QUANTILES(CAST(JSON_EXTRACT_SCALAR(jsonPayload, '$.duration_ms') AS FLOAT64), 100)[OFFSET(95)] AS p95_duration_ms
       FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
-      WHERE 
+      WHERE
         resource.labels.function_name = 'enricher'
         AND JSON_EXTRACT_SCALAR(jsonPayload, '$.message') LIKE 'Provider completed%'
         AND JSON_EXTRACT_SCALAR(jsonPayload, '$.name') IS NOT NULL
@@ -135,7 +175,7 @@ resource "google_bigquery_table" "enricher_popularity_view" {
     purpose = "analytics"
   }
 
-  depends_on = [google_bigquery_dataset.analytics]
+  depends_on = [google_bigquery_dataset.analytics, google_bigquery_table.cloudfunction_placeholder]
 }
 
 # View: Daily active users (based on pipeline runs)
@@ -150,7 +190,7 @@ resource "google_bigquery_table" "daily_active_users_view" {
         COUNT(DISTINCT JSON_EXTRACT_SCALAR(jsonPayload, '$.user_id')) AS unique_users,
         COUNT(*) AS total_activities
       FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
-      WHERE 
+      WHERE
         resource.labels.function_name = 'enricher'
         AND JSON_EXTRACT_SCALAR(jsonPayload, '$.user_id') IS NOT NULL
       GROUP BY date
@@ -163,7 +203,7 @@ resource "google_bigquery_table" "daily_active_users_view" {
     purpose = "analytics"
   }
 
-  depends_on = [google_bigquery_dataset.analytics]
+  depends_on = [google_bigquery_dataset.analytics, google_bigquery_table.cloudfunction_placeholder]
 }
 
 # View: Weekly growth trends with week-over-week comparison
@@ -180,12 +220,12 @@ resource "google_bigquery_table" "weekly_growth_view" {
           COUNT(*) AS total_activities,
           COUNTIF(JSON_EXTRACT_SCALAR(jsonPayload, '$.status') = 'SUCCESS') AS successful_syncs
         FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
-        WHERE 
+        WHERE
           resource.labels.function_name = 'enricher'
           AND JSON_EXTRACT_SCALAR(jsonPayload, '$.user_id') IS NOT NULL
         GROUP BY week_start
       )
-      SELECT 
+      SELECT
         week_start,
         unique_users,
         total_activities,
@@ -204,7 +244,7 @@ resource "google_bigquery_table" "weekly_growth_view" {
     purpose = "analytics"
   }
 
-  depends_on = [google_bigquery_dataset.analytics]
+  depends_on = [google_bigquery_dataset.analytics, google_bigquery_table.cloudfunction_placeholder]
 }
 
 # View: Destination success rates by provider
@@ -222,7 +262,7 @@ resource "google_bigquery_table" "destination_success_view" {
         COUNTIF(severity = 'ERROR' OR severity = 'CRITICAL') AS failed_uploads,
         ROUND((1 - SAFE_DIVIDE(COUNTIF(severity = 'ERROR' OR severity = 'CRITICAL'), COUNT(*))) * 100, 1) AS success_rate_pct
       FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
-      WHERE 
+      WHERE
         resource.labels.function_name LIKE '%-uploader'
       GROUP BY date, uploader, provider
       ORDER BY date DESC, total_uploads DESC
@@ -234,7 +274,7 @@ resource "google_bigquery_table" "destination_success_view" {
     purpose = "analytics"
   }
 
-  depends_on = [google_bigquery_dataset.analytics]
+  depends_on = [google_bigquery_dataset.analytics, google_bigquery_table.cloudfunction_placeholder]
 }
 
 # View: Activity source distribution
@@ -250,7 +290,7 @@ resource "google_bigquery_table" "source_distribution_view" {
         COUNT(*) AS activity_count,
         COUNT(DISTINCT JSON_EXTRACT_SCALAR(jsonPayload, '$.user_id')) AS unique_users
       FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
-      WHERE 
+      WHERE
         resource.labels.function_name IN ('strava-handler', 'fitbit-handler', 'polar-handler', 'wahoo-handler', 'oura-handler', 'hevy-handler', 'mobile-sync-handler')
       GROUP BY date, source
       ORDER BY date DESC, activity_count DESC
@@ -262,7 +302,7 @@ resource "google_bigquery_table" "source_distribution_view" {
     purpose = "analytics"
   }
 
-  depends_on = [google_bigquery_dataset.analytics]
+  depends_on = [google_bigquery_dataset.analytics, google_bigquery_table.cloudfunction_placeholder]
 }
 
 # View: Executive summary - key metrics for business dashboards
@@ -280,9 +320,9 @@ resource "google_bigquery_table" "executive_summary_view" {
         COUNTIF(DATE(timestamp) = CURRENT_DATE() AND JSON_EXTRACT_SCALAR(jsonPayload, '$.status') = 'FAILED') AS failed_syncs
       FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
       WHERE resource.labels.function_name = 'enricher'
-      
+
       UNION ALL
-      
+
       SELECT
         'this_week' AS period,
         COUNT(DISTINCT CASE WHEN DATE(timestamp) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) THEN JSON_EXTRACT_SCALAR(jsonPayload, '$.user_id') END) AS active_users,
@@ -291,9 +331,9 @@ resource "google_bigquery_table" "executive_summary_view" {
         COUNTIF(DATE(timestamp) >= DATE_SUB(CURRENT_DATE(), INTERVAL 7 DAY) AND JSON_EXTRACT_SCALAR(jsonPayload, '$.status') = 'FAILED') AS failed_syncs
       FROM `${var.project_id}.${google_bigquery_dataset.analytics.dataset_id}.cloudfunction_*`
       WHERE resource.labels.function_name = 'enricher'
-      
+
       UNION ALL
-      
+
       SELECT
         'this_month' AS period,
         COUNT(DISTINCT CASE WHEN DATE(timestamp) >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY) THEN JSON_EXTRACT_SCALAR(jsonPayload, '$.user_id') END) AS active_users,
@@ -310,7 +350,7 @@ resource "google_bigquery_table" "executive_summary_view" {
     purpose = "analytics"
   }
 
-  depends_on = [google_bigquery_dataset.analytics]
+  depends_on = [google_bigquery_dataset.analytics, google_bigquery_table.cloudfunction_placeholder]
 }
 
 # =============================================================================
@@ -322,7 +362,7 @@ resource "google_bigquery_table" "executive_summary_view" {
 # 2. Function runs: gcloud firestore export gs://bucket/path --collection-ids=users,pipelines
 # 3. BigQuery Data Transfer loads from GCS
 #
-# For FitGlue, we recommend using the Firestore BigQuery Extension or 
+# For FitGlue, we recommend using the Firestore BigQuery Extension or
 # setting up a scheduled export. Below is the infrastructure for the storage.
 
 # GCS bucket for Firestore exports
