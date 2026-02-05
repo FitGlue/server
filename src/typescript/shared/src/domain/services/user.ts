@@ -110,9 +110,10 @@ export class UserService {
     }
 
     /**
-     * Create or ensure a user exists.
-     * New users get a 30-day Pro trial.
-     */
+   * Create or ensure a user exists.
+   * New users get a 30-day trial with Athlete-tier access.
+   * After trial expires, they fall back to Hobbyist unless they subscribe.
+   */
     async createUser(userId: string): Promise<void> {
         const now = new Date();
         const trialEndsAt = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30 days
@@ -122,8 +123,8 @@ export class UserService {
             createdAt: now,
             integrations: {} as UserIntegrations,
             fcmTokens: [],
-            // Initialize with 30-day Pro trial
-            tier: UserTier.USER_TIER_ATHLETE,
+            // Stored tier is Hobbyist; getEffectiveTier() grants Athlete during trial via trialEndsAt
+            tier: UserTier.USER_TIER_HOBBYIST,
             trialEndsAt: trialEndsAt,
             isAdmin: false,
             syncCountThisMonth: 0,
