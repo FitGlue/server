@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.3.1](https://github.com/FitGlue/server/compare/v12.3.0...v12.3.1) (2026-02-05)
+
+
+### Bug Fixes
+
+* oauth handlers to redirect correctly ([07d0ae7](https://github.com/FitGlue/server/commit/07d0ae7e7b249a8120f5aac16d87ee324d0f9e84))
+
 ## [12.3.0](https://github.com/FitGlue/server/compare/v12.2.0...v12.3.0) (2026-02-05)
 
 
