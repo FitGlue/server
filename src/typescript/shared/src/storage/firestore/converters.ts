@@ -1,6 +1,5 @@
 import { FirestoreDataConverter, QueryDocumentSnapshot, Timestamp } from 'firebase-admin/firestore';
 import { UserRecord, UserTier, UserIntegrations, ProcessedActivityRecord } from '../../types/pb/user';
-import { WaitlistEntry } from '../../types/pb/waitlist';
 import { ApiKeyRecord, IntegrationIdentity } from '../../types/pb/auth';
 import { ExecutionRecord, ExecutionStatus } from '../../types/pb/execution';
 import { PendingInput, PendingInput_Status } from '../../types/pb/pending_input';
@@ -19,28 +18,6 @@ const toDate = (val: unknown): Date | undefined => {
 
 // Helper for generic recursive snake->camel for simple objects if strictly needed,
 // but manual mapping is safer for refactoring.
-
-export const waitlistConverter: FirestoreDataConverter<WaitlistEntry> = {
-  toFirestore(model: WaitlistEntry): FirebaseFirestore.DocumentData {
-    const data: FirebaseFirestore.DocumentData = {};
-    if (model.email !== undefined) data.email = model.email;
-    if (model.source !== undefined) data.source = model.source;
-    if (model.createdAt !== undefined) data.created_at = model.createdAt;
-    if (model.userAgent !== undefined) data.user_agent = model.userAgent;
-    if (model.ip !== undefined) data.ip = model.ip;
-    return data;
-  },
-  fromFirestore(snapshot: QueryDocumentSnapshot): WaitlistEntry {
-    const data = snapshot.data();
-    return {
-      email: data.email,
-      source: data.source,
-      createdAt: toDate(data.created_at),
-      userAgent: data.user_agent,
-      ip: data.ip
-    };
-  }
-};
 
 export const apiKeyConverter: FirestoreDataConverter<ApiKeyRecord> = {
   toFirestore(model: ApiKeyRecord): FirebaseFirestore.DocumentData {

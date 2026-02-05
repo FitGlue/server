@@ -4249,6 +4249,12 @@ function checkPluginCategoryValidation(): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  // Skip if web directory is not present (server-only CI)
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Plugin Category Validation', passed: true, errors, warnings };
+  }
+
   const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
   const categoriesPath = path.join(TS_SRC_DIR, 'shared/src/plugin/categories.ts');
   const webCategoriesPath = path.join(SERVER_ROOT, '../web/src/app/utils/pluginCategories.ts');
