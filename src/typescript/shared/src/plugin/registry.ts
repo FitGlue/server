@@ -2045,30 +2045,39 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY, {
   id: 'heart-rate-summary',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Heart Rate Summary',
-  description: 'Adds min/avg/max heart rate stats to the activity description',
+  description: 'Adds min/avg/max heart rate stats with optional drift detection',
   icon: '❤️',
   enabled: true,
   requiredIntegrations: [],
-  configSchema: [],
+  configSchema: [
+    {
+      key: 'show_drift',
+      label: 'Show Drift',
+      description: 'Detect cardiac drift (rising HR) that may indicate dehydration or fatigue',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+  ],
   marketingDescription: `
 ### Heart Rate Stats at a Glance
 Automatically calculates and appends heart rate statistics to your activity description. See your min, average, and max heart rate without diving into charts.
 
-### How it works
-When your activity has heart rate data (from Fitbit, Apple Watch, or any source), this enricher analyzes all the data points and adds a clean summary showing your minimum, average, and maximum heart rates during the workout.
+### Cardiac Drift Detection
+Enable **Show Drift** to compare your HR at the start vs end of your workout. An upward drift may indicate dehydration or accumulated fatigue.
   `,
   features: [
     '✅ Calculates min/avg/max heart rate',
-    '✅ Appends clean summary to description',
     '✅ Works with any heart rate source',
-    '✅ No configuration required',
+    '✅ Optional cardiac drift detection 📈',
   ],
   transformations: [
     {
       field: 'description',
       label: 'Activity Description',
       before: 'Morning Run',
-      after: 'Morning Run\n\n❤️ Heart Rate: 95 bpm min • 145 bpm avg • 178 bpm max',
+      after: '❤️ Heart Rate: 95 bpm min • 145 bpm avg • 178 bpm max',
       visualType: '',
       afterHtml: '',
     },
@@ -2076,7 +2085,7 @@ When your activity has heart rate data (from Fitbit, Apple Watch, or any source)
   useCases: [
     'Quick HR overview on your activity feed',
     'Track training zones summary',
-    'Share intensity without graphs',
+    'Monitor cardiac drift for long efforts',
   ],
   // UX Organization
   category: 'summaries',
@@ -2261,38 +2270,79 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY, {
   id: 'pace-summary',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Pace Summary',
-  description: 'Adds avg/best pace stats (min/km) to the activity description',
+  description: 'Adds avg/best pace stats with optional splits analysis and fatigue detection',
   icon: '🏃‍♂️',
   enabled: true,
   requiredIntegrations: [],
-  configSchema: [],
+  configSchema: [
+    {
+      key: 'show_splits',
+      label: 'Show Splits',
+      description: 'Display pace for each km split with fastest (🏆) and slowest (🐢) markers',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+    {
+      key: 'negative_split_alert',
+      label: 'Negative Split Alert',
+      description: 'Celebrate when your second half is faster than your first',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+    {
+      key: 'show_fatigue',
+      label: 'Fatigue Analysis',
+      description: 'Compare first and last quarter performance to detect pacing fade',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+  ],
   marketingDescription: `
 ### Pace Stats at a Glance
 Automatically calculates and appends pace statistics to your activity description. See your average and best pace without diving into charts.
 
 ### How it works
 When your activity has speed data (from GPS or sensors), this enricher converts speed to pace and adds a clean summary showing your average and best pace in min/km format.
+
+### Advanced Analysis
+Enable **Splits** to see every km pace with fastest/slowest markers. Enable **Negative Split Alert** to celebrate when you finish stronger. Enable **Fatigue Analysis** to understand your pacing strategy.
   `,
   features: [
     '✅ Calculates avg/best pace from speed data',
     '✅ Formats pace as min/km',
-    '✅ Appends clean summary to description',
-    '✅ No configuration required',
+    '✅ Optional km-by-km split breakdown',
+    '✅ Negative split detection 🔥',
+    '✅ Fatigue analysis (first vs last quarter)',
   ],
   transformations: [
     {
       field: 'description',
       label: 'Activity Description',
       before: 'Morning Run',
-      after: 'Morning Run\n\n⚡ Pace: 5:32/km avg • 4:45/km best',
+      after: 'Morning Run\\n\\n⚡ Pace: 5:32/km avg • 4:45/km best',
       visualType: '',
       afterHtml: '',
+    },
+    {
+      field: 'description',
+      label: 'With Splits Enabled',
+      before: 'Morning Run',
+      after: '',
+      visualType: '',
+      afterHtml: '<strong>⚡ Pace: 5:32/km avg • 4:45/km best</strong><br><br>📊 Splits:<br>- Km 1: 5:45<br>- Km 2: 5:38<br>- Km 3: 5:22 🏆<br>- Km 4: 5:41<br>- Km 5: 5:55 🐢<br><br>🔥 Negative Split! Second half 12s/km faster',
     },
   ],
   useCases: [
     'Quick pace overview on your activity feed',
-    'Track running performance',
-    'Share pace without complex stats',
+    'Track running performance and pacing strategy',
+    'Identify fatigue patterns in long runs',
+    'Celebrate negative splits and strong finishes',
   ],
   // UX Organization
   category: 'summaries',
@@ -2602,17 +2652,30 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY, {
   id: 'elevation-summary',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Elevation Summary',
-  description: 'Calculates elevation gain, loss, and maximum altitude from activity records',
+  description: 'Calculates elevation gain, loss, and max altitude with optional visual profile',
   icon: '⛰️',
   enabled: true,
   requiredIntegrations: [],
-  configSchema: [],
+  configSchema: [
+    {
+      key: 'style',
+      label: 'Display Style',
+      description: 'Choose how to display elevation data',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'text',
+      options: [
+        { label: 'Text Only', value: 'text' },
+        { label: 'With Profile', value: 'profile' },
+      ],
+    },
+  ],
   marketingDescription: `
 ### Total Ascent & Descent
 Automatically calculates and appends elevation statistics to your activity description. Perfect for hilly runs, mountain bike rides, or mountain hikes.
 
-### How it works
-When your activity contains altitude data (from GPS tracks or barometric sensors), this enricher calculates your total ascent (gain), total descent (loss), and the maximum altitude reached during the activity.
+### Visual Profile
+Enable **Profile** mode to see an ASCII art elevation chart: \`📈 ▁▂▄▆█▆▃▁\`
 
 ### Clean Data Processing
 Filters out zero or negative altitude records to ensure accurate calculations even if your GPS occasionally loses altitude data.
@@ -2620,24 +2683,31 @@ Filters out zero or negative altitude records to ensure accurate calculations ev
   features: [
     '✅ Calculates total elevation gain (ascent)',
     '✅ Calculates total elevation loss (descent)',
-    '✅ Tracks maximum altitude seen during the activity',
-    '✅ Appends clean summary with emoji to description',
-    '✅ No configuration required',
+    '✅ Tracks maximum altitude during activity',
+    '✅ Optional visual elevation profile 📈',
   ],
   transformations: [
     {
       field: 'description',
       label: 'Activity Description',
       before: 'Mountain Hike',
-      after: 'Mountain Hike\n\n⛰️ Elevation: +342m gain • -289m loss • 1,245m max',
+      after: '⛰️ Elevation: +342m gain • -289m loss • 1,245m max',
       visualType: '',
       afterHtml: '',
+    },
+    {
+      field: 'description',
+      label: 'With Profile',
+      before: 'Mountain Hike',
+      after: '',
+      visualType: '',
+      afterHtml: '⛰️ Elevation: +342m gain • -289m loss • 1,245m max<br>📈 ▁▂▄▆█▇▅▃▂▁▂▃▅▇█▆▃▁▁',
     },
   ],
   useCases: [
     'Hilly runs and rides',
     'Mountain hiking and climbing',
-    'Track total effort on vertical terrain',
+    'Visualize elevation changes at a glance',
   ],
   // UX Organization
   category: 'summaries',
@@ -2789,10 +2859,25 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING, {
       defaultValue: 'true',
       options: [],
     },
+    {
+      key: 'time_context',
+      label: 'Time of Day Context',
+      description: 'Add sunrise/sunset context based on solar position',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'none',
+      options: [
+        { value: 'none', label: 'None' },
+        { value: 'solar', label: 'Solar (Sunrise/Sunset)' },
+      ],
+    },
   ],
   marketingDescription: `
 ### Automatic Location-Based Titles
 Give your activities meaningful names based on where you exercised. Instead of generic "Morning Run", get "Morning Run in Hyde Park".
+
+### Sunrise/Sunset Context
+Enable **Solar Time** to add time-of-day context based on actual sunrise/sunset for your location: "Sunrise Run in Hyde Park" or "Night Ride through Camden".
 
 ### How it works
 When your activity has GPS data, this enricher uses OpenStreetMap's Nominatim API to reverse geocode your starting location. It prioritizes parks and leisure venues, falling back to suburb or city names when no specific location is found.
@@ -2802,6 +2887,7 @@ When your activity has GPS data, this enricher uses OpenStreetMap's Nominatim AP
     '✅ Prioritizes parks and leisure venues',
     '✅ Customizable title templates',
     '✅ City fallback for urban activities',
+    '✅ 🌅 Sunrise/Sunset time context',
     '✅ Free API, no authentication required',
   ],
   transformations: [
@@ -2919,6 +3005,222 @@ This booster extracts the telemetry from your activity file and appends a single
   sortOrder: 10,
   isPremium: true,
   popularityScore: 90,
+});
+
+// ============================================
+// Calories Burned
+// ============================================
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED, {
+  id: 'calories-burned',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Calories Burned',
+  description: 'Estimate calories burned with optional fun food equivalents',
+  icon: '🔋',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'fun_mode',
+      label: 'Fun Mode',
+      description: 'Show food equivalents (e.g., "≈ 2.5 donuts 🍩")',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+    {
+      key: 'user_weight',
+      label: 'Weight (kg)',
+      description: 'Your weight for more accurate calorie calculation',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: false,
+      defaultValue: '70',
+      options: [],
+      validation: { minValue: 30, maxValue: 200 },
+    },
+  ],
+  marketingDescription: `
+### Know Your Burn
+Estimate calories burned based on activity type, duration, and your weight using MET (Metabolic Equivalent) calculations.
+
+### Fun Mode
+Enable **Fun Mode** to see your workout translated to food: "🔥 450 kcal ≈ 1.8 slices of pizza 🍕"
+  `,
+  features: [
+    '✅ MET-based calorie estimation',
+    '✅ Activity type aware',
+    '✅ Optional fun food equivalents 🍕🍩🍫',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: '🔥 Calories: 485 kcal',
+      visualType: '',
+      afterHtml: '',
+    },
+    {
+      field: 'description',
+      label: 'With Fun Mode',
+      before: 'Morning Run',
+      after: '',
+      visualType: '',
+      afterHtml: '🔥 Calories: 485 kcal ≈ 1.7 slices of pizza 🍕',
+    },
+  ],
+  useCases: [
+    'Track workout energy expenditure',
+    'Fun conversation starter',
+    'Monitor calorie burn across activities',
+  ],
+  category: 'summaries',
+  sortOrder: 6,
+  isPremium: false,
+  popularityScore: 75,
+});
+
+// ============================================
+// Goal Tracker
+// ============================================
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER, {
+  id: 'goal-tracker',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Goal Tracker',
+  description: 'Track progress toward weekly, monthly, or yearly goals',
+  icon: '📅',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'period',
+      label: 'Goal Period',
+      description: 'Time period for your goal',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'month',
+      options: [
+        { label: 'Weekly', value: 'week' },
+        { label: 'Monthly', value: 'month' },
+        { label: 'Yearly', value: 'year' },
+      ],
+    },
+    {
+      key: 'metric',
+      label: 'Goal Metric',
+      description: 'What to track',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'distance',
+      options: [
+        { label: 'Distance (km)', value: 'distance' },
+        { label: 'Duration (hours)', value: 'duration' },
+        { label: 'Activity Count', value: 'activities' },
+      ],
+    },
+    {
+      key: 'target',
+      label: 'Target',
+      description: 'Your goal target (e.g., 100 for 100km)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: true,
+      defaultValue: '100',
+      options: [],
+      validation: { minValue: 1 },
+    },
+  ],
+  marketingDescription: `
+### Set and Track Your Goals
+Configure weekly, monthly, or yearly targets for distance, duration, or activity count. Each activity shows your progress!
+
+### Smart Guidance
+Get daily target suggestions to stay on track: "💡 8.5 km/day to hit your goal"
+  `,
+  features: [
+    '✅ Configurable period (week/month/year)',
+    '✅ Multiple metrics (distance, duration, count)',
+    '✅ Daily pace guidance',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: '',
+      visualType: '',
+      afterHtml: '📅 February Goal: 100 km<br>➕ This activity: +5.2 km<br>💡 Target: 3.6 km/day',
+    },
+  ],
+  useCases: [
+    'Monthly distance challenges',
+    'Yearly mileage goals',
+    'Weekly activity targets',
+  ],
+  category: 'data',
+  sortOrder: 1,
+  isPremium: false,
+  popularityScore: 70,
+});
+
+// ============================================
+// Streak Tracker
+// ============================================
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER, {
+  id: 'streak-tracker',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Streak Tracker',
+  description: 'Celebrate consecutive activity days and streaks',
+  icon: '⭐',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'activity_types',
+      label: 'Activity Type Filter',
+      description: 'Track streaks for specific activity types',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'any',
+      options: [
+        { label: 'Any Activity', value: 'any' },
+        { label: 'Running Only', value: 'running' },
+        { label: 'Cycling Only', value: 'cycling' },
+        { label: 'Swimming Only', value: 'swimming' },
+        { label: 'Strength Only', value: 'strength' },
+      ],
+    },
+  ],
+  marketingDescription: `
+### Keep the Fire Burning
+Track consecutive days of activity to maintain motivation. Receive milestone celebrations at 7, 14, 30, and 100 days!
+
+### Activity Type Filtering
+Focus on specific activities like running or strength training to build targeted habits.
+  `,
+  features: [
+    '✅ Track consecutive activity days',
+    '✅ Filter by activity type',
+    '✅ Milestone celebrations 🎉',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Activity Description',
+      before: 'Morning Run',
+      after: '🔥 Keep the running streak alive!',
+      visualType: '',
+      afterHtml: '',
+    },
+  ],
+  useCases: [
+    'Build daily exercise habits',
+    'Track running streak',
+    'Celebrate consistency milestones',
+  ],
+  category: 'data',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 65,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {

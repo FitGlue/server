@@ -73,6 +73,12 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_RUNNING_DYNAMICS = 31,
   /** ENRICHER_PROVIDER_HEART_RATE_ZONES - Config inputs: "max_hr" (optional, default 190), "style" (emoji/percentage/text), "bar_length" (3-10) - shows time in each heart rate zone */
   ENRICHER_PROVIDER_HEART_RATE_ZONES = 32,
+  /** ENRICHER_PROVIDER_CALORIES_BURNED - Config inputs: "fun_mode" (boolean, shows food equivalents), "user_weight" (optional, kg) - estimates calories burned */
+  ENRICHER_PROVIDER_CALORIES_BURNED = 33,
+  /** ENRICHER_PROVIDER_GOAL_TRACKER - Config inputs: "period" (week/month/year), "metric" (distance/duration/activities/elevation), "target" - tracks goal progress */
+  ENRICHER_PROVIDER_GOAL_TRACKER = 34,
+  /** ENRICHER_PROVIDER_STREAK_TRACKER - Config inputs: "activity_types" (any/running/cycling/etc) - tracks consecutive activity streaks */
+  ENRICHER_PROVIDER_STREAK_TRACKER = 35,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

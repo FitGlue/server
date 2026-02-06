@@ -128,7 +128,13 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS EnricherProviderType = 31
 	// Config inputs: "max_hr" (optional, default 190), "style" (emoji/percentage/text), "bar_length" (3-10) - shows time in each heart rate zone
 	EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES EnricherProviderType = 32
-	EnricherProviderType_ENRICHER_PROVIDER_MOCK             EnricherProviderType = 99
+	// Config inputs: "fun_mode" (boolean, shows food equivalents), "user_weight" (optional, kg) - estimates calories burned
+	EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED EnricherProviderType = 33
+	// Config inputs: "period" (week/month/year), "metric" (distance/duration/activities/elevation), "target" - tracks goal progress
+	EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER EnricherProviderType = 34
+	// Config inputs: "activity_types" (any/running/cycling/etc) - tracks consecutive activity streaks
+	EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER EnricherProviderType = 35
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK           EnricherProviderType = 99
 )
 
 // Enum value maps for EnricherProviderType.
@@ -166,6 +172,9 @@ var (
 		30: "ENRICHER_PROVIDER_HYBRID_RACE_TAGGER",
 		31: "ENRICHER_PROVIDER_RUNNING_DYNAMICS",
 		32: "ENRICHER_PROVIDER_HEART_RATE_ZONES",
+		33: "ENRICHER_PROVIDER_CALORIES_BURNED",
+		34: "ENRICHER_PROVIDER_GOAL_TRACKER",
+		35: "ENRICHER_PROVIDER_STREAK_TRACKER",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -201,6 +210,9 @@ var (
 		"ENRICHER_PROVIDER_HYBRID_RACE_TAGGER":   30,
 		"ENRICHER_PROVIDER_RUNNING_DYNAMICS":     31,
 		"ENRICHER_PROVIDER_HEART_RATE_ZONES":     32,
+		"ENRICHER_PROVIDER_CALORIES_BURNED":      33,
+		"ENRICHER_PROVIDER_GOAL_TRACKER":         34,
+		"ENRICHER_PROVIDER_STREAK_TRACKER":       35,
 		"ENRICHER_PROVIDER_MOCK":                 99,
 	}
 )
@@ -3220,7 +3232,8 @@ const file_user_proto_rawDesc = "" +
 	"\bUserTier\x12\x19\n" +
 	"\x15USER_TIER_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_TIER_HOBBYIST\x10\x01\x12\x15\n" +
-	"\x11USER_TIER_ATHLETE\x10\x02*\xeb\t\n" +
+	"\x11USER_TIER_ATHLETE\x10\x02*\xdc\n" +
+	"\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -3254,7 +3267,10 @@ const file_user_proto_rawDesc = "" +
 	"%ENRICHER_PROVIDER_FIT_FILE_HEART_RATE\x10\x1d\x12(\n" +
 	"$ENRICHER_PROVIDER_HYBRID_RACE_TAGGER\x10\x1e\x12&\n" +
 	"\"ENRICHER_PROVIDER_RUNNING_DYNAMICS\x10\x1f\x12&\n" +
-	"\"ENRICHER_PROVIDER_HEART_RATE_ZONES\x10 \x12\x1a\n" +
+	"\"ENRICHER_PROVIDER_HEART_RATE_ZONES\x10 \x12%\n" +
+	"!ENRICHER_PROVIDER_CALORIES_BURNED\x10!\x12\"\n" +
+	"\x1eENRICHER_PROVIDER_GOAL_TRACKER\x10\"\x12$\n" +
+	" ENRICHER_PROVIDER_STREAK_TRACKER\x10#\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

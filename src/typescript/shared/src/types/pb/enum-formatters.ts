@@ -898,6 +898,18 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'HEART_RATE_ZONES': 'Heart Rate Zones',
     'Heart Rate Zones': 'Heart Rate Zones',
     '32': 'Heart Rate Zones',
+    'ENRICHER_PROVIDER_CALORIES_BURNED': 'Calories Burned',
+    'CALORIES_BURNED': 'Calories Burned',
+    'Calories Burned': 'Calories Burned',
+    '33': 'Calories Burned',
+    'ENRICHER_PROVIDER_GOAL_TRACKER': 'Goal Tracker',
+    'GOAL_TRACKER': 'Goal Tracker',
+    'Goal Tracker': 'Goal Tracker',
+    '34': 'Goal Tracker',
+    'ENRICHER_PROVIDER_STREAK_TRACKER': 'Streak Tracker',
+    'STREAK_TRACKER': 'Streak Tracker',
+    'Streak Tracker': 'Streak Tracker',
+    '35': 'Streak Tracker',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -955,6 +967,9 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER: return 'Hybrid Race Tagger';
     case EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS: return 'Running Dynamics';
     case EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES: return 'Heart Rate Zones';
+    case EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED: return 'Calories Burned';
+    case EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER: return 'Goal Tracker';
+    case EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER: return 'Streak Tracker';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }

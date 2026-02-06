@@ -349,6 +349,12 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Running Dynamics"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES:
 		return "Heart Rate Zones"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED:
+		return "Calories Burned"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER:
+		return "Goal Tracker"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER:
+		return "Streak Tracker"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:

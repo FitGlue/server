@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"strings"
 	"sync"
@@ -181,6 +182,7 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 		titleTemplate = "{activity_type} in {location}"
 	}
 	fallbackEnabled := inputs["fallback_enabled"] != "false" // Default to true
+	timeContext := inputs["time_context"]                    // none (default), solar
 
 	// If no specific location found and fallback is disabled, skip
 	if locationName == "" && !fallbackEnabled {
@@ -206,12 +208,31 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 		}, nil
 	}
 
+	// Calculate time context if enabled
+	var timePrefix string
+	var timeEmoji string
+	if timeContext == "solar" && activity.StartTime != nil {
+		activityTime := activity.StartTime.AsTime()
+		sunrise, sunset := calculateSunriseSunset(activityTime, latitude, longitude)
+		timePrefix, timeEmoji = getSolarTimeContext(activityTime, sunrise, sunset)
+		logger.Info("Solar time calculated",
+			"activity_time", activityTime,
+			"sunrise", sunrise,
+			"sunset", sunset,
+			"time_prefix", timePrefix,
+		)
+	}
+
 	result := &providers.EnrichmentResult{
 		Metadata: map[string]string{
 			"location_naming_status": "success",
 			"location_name":          displayLocation,
 			"city":                   cityName,
 		},
+	}
+
+	if timePrefix != "" {
+		result.Metadata["time_context"] = timePrefix
 	}
 
 	// Build the activity type string for template
@@ -221,16 +242,26 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 	case "title":
 		// Generate title using template
 		newTitle := titleTemplate
-		newTitle = strings.ReplaceAll(newTitle, "{activity_type}", activityType)
+		if timePrefix != "" {
+			// Prepend time context: "Sunrise Run in Hyde Park"
+			newTitle = strings.ReplaceAll(newTitle, "{activity_type}", timePrefix+" "+activityType)
+		} else {
+			newTitle = strings.ReplaceAll(newTitle, "{activity_type}", activityType)
+		}
 		newTitle = strings.ReplaceAll(newTitle, "{location}", displayLocation)
 		result.Name = newTitle
 		logger.Info("Generated location-based title", "title", newTitle)
 
 	case "description":
 		// Append location line to description
-		locationLine := fmt.Sprintf("\n\n📍 Location: %s", displayLocation)
+		var locationLine string
+		if timeEmoji != "" {
+			locationLine = fmt.Sprintf("%s %s", timeEmoji, displayLocation)
+		} else {
+			locationLine = fmt.Sprintf("📍 Location: %s", displayLocation)
+		}
 		if cityName != "" && cityName != displayLocation {
-			locationLine = fmt.Sprintf("\n\n📍 Location: %s, %s", displayLocation, cityName)
+			locationLine = fmt.Sprintf("%s, %s", locationLine, cityName)
 		}
 		result.Description = locationLine
 		logger.Info("Generated location description", "location_line", locationLine)
@@ -310,4 +341,85 @@ func getActivityTypeStr(activityType pb.ActivityType) string {
 	default:
 		return "Activity"
 	}
+}
+
+// calculateSunriseSunset calculates approximate sunrise and sunset times for a given date and location
+// Uses a simplified solar position algorithm
+func calculateSunriseSunset(date time.Time, lat, lon float64) (sunrise, sunset time.Time) {
+	// Day of year
+	dayOfYear := float64(date.YearDay())
+
+	// Solar declination (simplified)
+	declination := 23.45 * math.Sin(2*math.Pi*(284+dayOfYear)/365)
+	declinationRad := declination * math.Pi / 180
+
+	// Latitude in radians
+	latRad := lat * math.Pi / 180
+
+	// Hour angle at sunrise/sunset
+	cosHourAngle := -math.Tan(latRad) * math.Tan(declinationRad)
+
+	// Clamp to valid range (for extreme latitudes)
+	if cosHourAngle < -1 {
+		cosHourAngle = -1 // Midnight sun
+	} else if cosHourAngle > 1 {
+		cosHourAngle = 1 // Polar night
+	}
+
+	hourAngle := math.Acos(cosHourAngle) * 180 / math.Pi
+
+	// Solar noon (in hours UTC)
+	// Equation of time approximation
+	B := 2 * math.Pi * (dayOfYear - 81) / 365
+	eot := 9.87*math.Sin(2*B) - 7.53*math.Cos(B) - 1.5*math.Sin(B) // minutes
+
+	solarNoon := 12 - lon/15 - eot/60 // hours UTC
+
+	// Sunrise and sunset in hours
+	sunriseHours := solarNoon - hourAngle/15
+	sunsetHours := solarNoon + hourAngle/15
+
+	// Convert to time.Time
+	year, month, day := date.Date()
+	loc := date.Location()
+
+	sunrise = time.Date(year, month, day, 0, 0, 0, 0, loc).Add(time.Duration(sunriseHours * float64(time.Hour)))
+	sunset = time.Date(year, month, day, 0, 0, 0, 0, loc).Add(time.Duration(sunsetHours * float64(time.Hour)))
+
+	return sunrise, sunset
+}
+
+// getSolarTimeContext returns time-of-day context based on solar position
+func getSolarTimeContext(activityTime, sunrise, sunset time.Time) (prefix, emoji string) {
+	// Define time windows relative to sunrise/sunset
+	goldenHourDuration := 45 * time.Minute
+
+	// Before sunrise
+	if activityTime.Before(sunrise.Add(-goldenHourDuration)) {
+		return "Night", "🌙"
+	}
+
+	// Dawn/Sunrise window (45 min before to 45 min after sunrise)
+	if activityTime.Before(sunrise.Add(goldenHourDuration)) {
+		return "Sunrise", "🌅"
+	}
+
+	// Morning (after sunrise golden hour until solar noon-ish)
+	midday := sunrise.Add(sunset.Sub(sunrise) / 2)
+	if activityTime.Before(midday) {
+		return "Morning", "☀️"
+	}
+
+	// Afternoon (solar noon to sunset golden hour)
+	if activityTime.Before(sunset.Add(-goldenHourDuration)) {
+		return "Afternoon", "☀️"
+	}
+
+	// Sunset/Dusk window (45 min before to 45 min after sunset)
+	if activityTime.Before(sunset.Add(goldenHourDuration)) {
+		return "Sunset", "🌄"
+	}
+
+	// After sunset
+	return "Night", "🌙"
 }

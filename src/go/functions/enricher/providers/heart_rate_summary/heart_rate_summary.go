@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -39,6 +40,9 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 		"activity_name", activity.Name,
 		"session_count", len(activity.Sessions),
 	)
+
+	// Parse config
+	showDrift := inputs["show_drift"] == "true"
 
 	// Collect all heart rate values from the activity
 	var heartRates []int32
@@ -86,14 +90,41 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 		"sample_count", len(heartRates),
 	)
 
-	// Build the summary text to append to description (single line format like workout summary)
-	summaryText := fmt.Sprintf("❤️ Heart Rate: %d bpm min • %.0f bpm avg • %d bpm max", minHR, avgHR, maxHR)
+	// Build the summary text
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("❤️ Heart Rate: %d bpm min • %.0f bpm avg • %d bpm max", minHR, avgHR, maxHR))
 
-	// Append to existing description
-	newDescription := summaryText
+	// Cardiac drift detection
+	if showDrift && len(heartRates) >= 20 {
+		// Compare first 20% to last 20%
+		sampleSize := len(heartRates) / 5
+		if sampleSize < 5 {
+			sampleSize = 5
+		}
+
+		var firstSum, lastSum int64
+		for i := 0; i < sampleSize && i < len(heartRates); i++ {
+			firstSum += int64(heartRates[i])
+		}
+		for i := len(heartRates) - sampleSize; i < len(heartRates); i++ {
+			lastSum += int64(heartRates[i])
+		}
+
+		firstAvg := float64(firstSum) / float64(sampleSize)
+		lastAvg := float64(lastSum) / float64(sampleSize)
+		drift := lastAvg - firstAvg
+
+		if drift > 5 {
+			// Significant upward drift (potential dehydration/fatigue)
+			sb.WriteString(fmt.Sprintf("\n\n📈 HR Drift: +%.0f bpm from start to end (check hydration)", drift))
+		} else if drift < -5 {
+			// Negative drift (good warm-up)
+			sb.WriteString(fmt.Sprintf("\n\n📉 HR Drift: %.0f bpm (good warm-up effect)", drift))
+		}
+	}
 
 	return &providers.EnrichmentResult{
-		Description: newDescription,
+		Description: sb.String(),
 		Metadata: map[string]string{
 			"hr_summary_status": "success",
 			"hr_min":            fmt.Sprintf("%d", minHR),
