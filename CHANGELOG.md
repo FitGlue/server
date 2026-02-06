@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.4.0](https://github.com/FitGlue/server/compare/v12.3.1...v12.4.0) (2026-02-06)
+
+
+### Features
+
+* implement TIER_BLOCKED ghost runs and fix environment routing ([6208693](https://github.com/FitGlue/server/commit/62086935fdcf4b8953bc88a7f223b7dcccdbd592))
+
 ### [12.3.1](https://github.com/FitGlue/server/compare/v12.3.0...v12.3.1) (2026-02-05)
 
 
