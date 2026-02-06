@@ -151,17 +151,15 @@ describe('user-profile-handler', () => {
 
     it('returns user list for admin', async () => {
       mockAuthorizationService.requireAdmin.mockResolvedValue(undefined);
-      const { db } = jest.requireMock('@fitglue/shared/framework');
-      db.get.mockResolvedValue({
-        docs: [
-          { id: 'user-1', data: () => ({ tier: 2, isAdmin: true }) }, // USER_TIER_ATHLETE
-          { id: 'user-2', data: () => ({ tier: 1, isAdmin: false }) } // USER_TIER_HOBBYIST
-        ]
-      });
+      mockUserService.listUsers = jest.fn().mockResolvedValue([
+        { userId: 'user-1', tier: 2, isAdmin: true, createdAt: new Date(), trialEndsAt: null, syncCountThisMonth: 0, stripeCustomerId: null },
+        { userId: 'user-2', tier: 1, isAdmin: false, createdAt: new Date(), trialEndsAt: null, syncCountThisMonth: 0, stripeCustomerId: null }
+      ]);
 
       const result: any = await handler(req, ctx);
 
       expect(mockAuthorizationService.requireAdmin).toHaveBeenCalledWith('user-1');
+      expect(mockUserService.listUsers).toHaveBeenCalled();
       expect(result).toHaveLength(2);
     });
   });

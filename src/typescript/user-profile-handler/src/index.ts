@@ -139,20 +139,17 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       throw e;
     }
 
-    const snapshot = await db.collection('users').get();
-    const users = snapshot.docs.map(doc => {
-      const data = doc.data();
-      return {
-        userId: doc.id,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || data.createdAt,
-        tier: data.tier || 'hobbyist',
-        trialEndsAt: data.trialEndsAt?.toDate?.()?.toISOString() || data.trialEndsAt,
-        isAdmin: data.isAdmin || false,
-        syncCountThisMonth: data.syncCountThisMonth || 0,
-        stripeCustomerId: data.stripeCustomerId || null,
-      };
-    });
-    return users;
+    // Use services.user.listUsers() which applies the converter for proper camelCase/snake_case mapping
+    const users = await services.user.listUsers();
+    return users.map(user => ({
+      userId: user.userId,
+      createdAt: user.createdAt?.toISOString?.() || user.createdAt,
+      tier: user.tier || 'hobbyist',
+      trialEndsAt: user.trialEndsAt?.toISOString?.() || user.trialEndsAt,
+      isAdmin: user.isAdmin || false,
+      syncCountThisMonth: user.syncCountThisMonth || 0,
+      stripeCustomerId: user.stripeCustomerId || null,
+    }));
   }
 
   // --- PATCH /admin/users/:targetUserId (Admin Only) ---
@@ -168,12 +165,13 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       throw e;
     }
 
-    const updates: Record<string, string | boolean> = {};
+    // Use store update which applies the converter for proper field mapping
+    const updates: Partial<Pick<import('@fitglue/shared/types').UserRecord, 'tier' | 'isAdmin'>> = {};
     if (tier !== undefined) updates.tier = tier;
     if (isAdmin !== undefined) updates.isAdmin = isAdmin;
 
     if (Object.keys(updates).length > 0) {
-      await db.collection('users').doc(targetUserId).update(updates);
+      await ctx.stores.users.update(targetUserId, updates);
     }
     return { success: true };
   }

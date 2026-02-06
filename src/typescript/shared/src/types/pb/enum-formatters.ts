@@ -1528,6 +1528,10 @@ const PipelineRunStatusNames: Record<string, string> = {
     'ARCHIVED': 'Archived',
     'Archived': 'Archived',
     '7': 'Archived',
+    'PIPELINE_RUN_STATUS_TIER_BLOCKED': 'Tier Blocked',
+    'TIER_BLOCKED': 'Tier Blocked',
+    'Tier Blocked': 'Tier Blocked',
+    '8': 'Tier Blocked',
 };
 
 export function formatPipelineRunStatus(value: PipelineRunStatus | number | string | undefined | null): string {
@@ -1557,6 +1561,7 @@ export function formatPipelineRunStatus(value: PipelineRunStatus | number | stri
     case PipelineRunStatus.PIPELINE_RUN_STATUS_PENDING: return 'Pending';
     case PipelineRunStatus.PIPELINE_RUN_STATUS_SKIPPED: return 'Skipped';
     case PipelineRunStatus.PIPELINE_RUN_STATUS_ARCHIVED: return 'Archived';
+    case PipelineRunStatus.PIPELINE_RUN_STATUS_TIER_BLOCKED: return 'Tier Blocked';
     default: return 'Unknown';
   }
 }

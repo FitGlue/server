@@ -497,14 +497,15 @@ func (ParkrunResultsState) EnumDescriptor() ([]byte, []int) {
 type PipelineRunStatus int32
 
 const (
-	PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED PipelineRunStatus = 0
-	PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING     PipelineRunStatus = 1 // In progress
-	PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED      PipelineRunStatus = 2 // All destinations succeeded
-	PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL     PipelineRunStatus = 3 // Some destinations failed
-	PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED      PipelineRunStatus = 4 // All destinations failed
-	PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING     PipelineRunStatus = 5 // Waiting for pending input
-	PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED     PipelineRunStatus = 6 // Halted by filter/logic gate
-	PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED    PipelineRunStatus = 7 // Older than TTL, hidden from default views
+	PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED  PipelineRunStatus = 0
+	PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING      PipelineRunStatus = 1 // In progress
+	PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED       PipelineRunStatus = 2 // All destinations succeeded
+	PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL      PipelineRunStatus = 3 // Some destinations failed
+	PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED       PipelineRunStatus = 4 // All destinations failed
+	PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING      PipelineRunStatus = 5 // Waiting for pending input
+	PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED      PipelineRunStatus = 6 // Halted by filter/logic gate
+	PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED     PipelineRunStatus = 7 // Older than TTL, hidden from default views
+	PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED PipelineRunStatus = 8 // Blocked by tier limit (upgrade required)
 )
 
 // Enum value maps for PipelineRunStatus.
@@ -518,16 +519,18 @@ var (
 		5: "PIPELINE_RUN_STATUS_PENDING",
 		6: "PIPELINE_RUN_STATUS_SKIPPED",
 		7: "PIPELINE_RUN_STATUS_ARCHIVED",
+		8: "PIPELINE_RUN_STATUS_TIER_BLOCKED",
 	}
 	PipelineRunStatus_value = map[string]int32{
-		"PIPELINE_RUN_STATUS_UNSPECIFIED": 0,
-		"PIPELINE_RUN_STATUS_RUNNING":     1,
-		"PIPELINE_RUN_STATUS_SYNCED":      2,
-		"PIPELINE_RUN_STATUS_PARTIAL":     3,
-		"PIPELINE_RUN_STATUS_FAILED":      4,
-		"PIPELINE_RUN_STATUS_PENDING":     5,
-		"PIPELINE_RUN_STATUS_SKIPPED":     6,
-		"PIPELINE_RUN_STATUS_ARCHIVED":    7,
+		"PIPELINE_RUN_STATUS_UNSPECIFIED":  0,
+		"PIPELINE_RUN_STATUS_RUNNING":      1,
+		"PIPELINE_RUN_STATUS_SYNCED":       2,
+		"PIPELINE_RUN_STATUS_PARTIAL":      3,
+		"PIPELINE_RUN_STATUS_FAILED":       4,
+		"PIPELINE_RUN_STATUS_PENDING":      5,
+		"PIPELINE_RUN_STATUS_SKIPPED":      6,
+		"PIPELINE_RUN_STATUS_ARCHIVED":     7,
+		"PIPELINE_RUN_STATUS_TIER_BLOCKED": 8,
 	}
 )
 
@@ -3272,7 +3275,7 @@ const file_user_proto_rawDesc = "" +
 	"\x1dPARKRUN_RESULTS_STATE_PENDING\x10\x01\x12\"\n" +
 	"\x1ePARKRUN_RESULTS_STATE_COMPLETE\x10\x02\x12!\n" +
 	"\x1dPARKRUN_RESULTS_STATE_EXPIRED\x10\x03\x12#\n" +
-	"\x1fPARKRUN_RESULTS_STATE_IMMEDIATE\x10\x04*\x9e\x02\n" +
+	"\x1fPARKRUN_RESULTS_STATE_IMMEDIATE\x10\x04*\xc4\x02\n" +
 	"\x11PipelineRunStatus\x12#\n" +
 	"\x1fPIPELINE_RUN_STATUS_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bPIPELINE_RUN_STATUS_RUNNING\x10\x01\x12\x1e\n" +
@@ -3281,7 +3284,8 @@ const file_user_proto_rawDesc = "" +
 	"\x1aPIPELINE_RUN_STATUS_FAILED\x10\x04\x12\x1f\n" +
 	"\x1bPIPELINE_RUN_STATUS_PENDING\x10\x05\x12\x1f\n" +
 	"\x1bPIPELINE_RUN_STATUS_SKIPPED\x10\x06\x12 \n" +
-	"\x1cPIPELINE_RUN_STATUS_ARCHIVED\x10\a*\xb6\x01\n" +
+	"\x1cPIPELINE_RUN_STATUS_ARCHIVED\x10\a\x12$\n" +
+	" PIPELINE_RUN_STATUS_TIER_BLOCKED\x10\b*\xb6\x01\n" +
 	"\x11DestinationStatus\x12\"\n" +
 	"\x1eDESTINATION_STATUS_UNSPECIFIED\x10\x00\x12\x1e\n" +
 	"\x1aDESTINATION_STATUS_PENDING\x10\x01\x12\x1e\n" +

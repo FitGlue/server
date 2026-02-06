@@ -110,7 +110,9 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // - RefreshControl: Animated loading indicator
   // - EnrichedActivityCard: Complex card layout
   // - ActivityDetailPage: SvgAsset helper for SVG injection requires img/div
-  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/, /EnricherTimeline/, /RefreshControl/, /EnrichedActivityCard/, /ActivityDetailPage/],
+  // - PWAInstallBanner: Standalone install prompt with custom layout
+  // - SubscriptionPage: Subscription/billing page with tier comparison layout
+  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/, /EnricherTimeline/, /RefreshControl/, /EnrichedActivityCard/, /ActivityDetailPage/, /PWAInstallBanner/, /SubscriptionPage/],
 };
 
 // ============================================================================

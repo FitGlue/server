@@ -96,11 +96,45 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		if err := o.database.IncrementPreventedSyncCount(ctx, payload.UserId); err != nil {
 			logger.Warn("Failed to increment prevented sync count", "error", err, "userId", payload.UserId)
 		}
+
+		// Create a visible TIER_BLOCKED PipelineRun so user sees the blocked activity
+		// and can be prompted to upgrade
+		if payload.StandardizedActivity != nil &&
+			len(payload.StandardizedActivity.Sessions) > 0 &&
+			payload.PipelineId != nil && *payload.PipelineId != "" {
+
+			activity := payload.StandardizedActivity
+			activityId := uuid.NewString()
+
+			blockedRun := &pb.PipelineRun{
+				Id:               basePipelineExecutionID,
+				PipelineId:       *payload.PipelineId,
+				ActivityId:       activityId,
+				Source:           payload.Source.String(),
+				SourceActivityId: activity.GetExternalId(),
+				Title:            activity.GetName(),
+				Description:      activity.GetDescription(),
+				Type:             activity.GetType(),
+				StartTime:        activity.GetSessions()[0].GetStartTime(),
+				Status:           pb.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
+				StatusMessage:    &reason,
+				CreatedAt:        timestamppb.Now(),
+				UpdatedAt:        timestamppb.Now(),
+				Destinations:     []*pb.DestinationOutcome{}, // No destinations for blocked runs
+			}
+
+			if err := o.database.CreatePipelineRun(ctx, payload.UserId, blockedRun); err != nil {
+				logger.Warn("Failed to create tier-blocked pipeline run", "error", err)
+			} else {
+				logger.Info("Created tier-blocked pipeline run", "pipeline_run_id", blockedRun.Id, "activity_id", activityId)
+			}
+		}
+
 		return &ProcessResult{
 			Events:             []*pb.EnrichedActivityEvent{},
 			ProviderExecutions: []ProviderExecution{},
 			Status:             pb.ExecutionStatus_STATUS_SKIPPED,
-		}, fmt.Errorf("tier limit: %s", reason)
+		}, nil // Return nil error - this is a controlled halt, not an exception
 	}
 
 	// 1.5. Validate Payload

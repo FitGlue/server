@@ -152,6 +152,8 @@ export enum PipelineRunStatus {
   PIPELINE_RUN_STATUS_SKIPPED = 6,
   /** PIPELINE_RUN_STATUS_ARCHIVED - Older than TTL, hidden from default views */
   PIPELINE_RUN_STATUS_ARCHIVED = 7,
+  /** PIPELINE_RUN_STATUS_TIER_BLOCKED - Blocked by tier limit (upgrade required) */
+  PIPELINE_RUN_STATUS_TIER_BLOCKED = 8,
   UNRECOGNIZED = -1,
 }
 

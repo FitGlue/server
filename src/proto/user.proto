@@ -406,6 +406,7 @@ enum PipelineRunStatus {
   PIPELINE_RUN_STATUS_PENDING = 5;      // Waiting for pending input
   PIPELINE_RUN_STATUS_SKIPPED = 6;      // Halted by filter/logic gate
   PIPELINE_RUN_STATUS_ARCHIVED = 7;     // Older than TTL, hidden from default views
+  PIPELINE_RUN_STATUS_TIER_BLOCKED = 8; // Blocked by tier limit (upgrade required)
 }
 
 // BoosterExecution tracks a single enricher provider's execution.

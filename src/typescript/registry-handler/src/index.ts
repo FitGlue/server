@@ -4,7 +4,8 @@ import { HttpError } from '@fitglue/shared/errors';
 import { getRegistry } from '@fitglue/shared/plugin';
 
 // Get project ID for environment detection
-const projectId = process.env.GCP_PROJECT || 'fitglue-server-dev';
+// GOOGLE_CLOUD_PROJECT is set by Terraform in service_config.environment_variables
+const projectId = process.env.GOOGLE_CLOUD_PROJECT || 'fitglue-server-dev';
 
 /**
  * Registry Handler
@@ -23,14 +24,15 @@ const projectId = process.env.GCP_PROJECT || 'fitglue-server-dev';
  * - prod: fitglue.tech
  */
 function getShowcaseBaseUrl(): string {
-  if (projectId.includes('-dev')) {
-    return 'https://dev.fitglue.tech';
+  // Project IDs: fitglue-server-dev, fitglue-server-test, fitglue-server-prod
+  if (projectId.includes('-prod')) {
+    return 'https://fitglue.tech';
   }
   if (projectId.includes('-test')) {
     return 'https://test.fitglue.tech';
   }
-  // Production (no suffix or unknown)
-  return 'https://fitglue.tech';
+  // Dev environment (or unknown/local defaults to dev)
+  return 'https://dev.fitglue.tech';
 }
 
 export const handler: FrameworkHandler = async (req, ctx) => {

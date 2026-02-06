@@ -551,6 +551,8 @@ func FormatPipelineRunStatus(value pb.PipelineRunStatus) string {
 		return "Skipped"
 	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED:
 		return "Archived"
+	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED:
+		return "Tier Blocked"
 	default:
 		return "Unknown"
 	}
