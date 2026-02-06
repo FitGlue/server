@@ -126,6 +126,8 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER EnricherProviderType = 30
 	// Config inputs: none (summarizes ground contact time, vertical oscillation, etc.) - Athlete tier only
 	EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS EnricherProviderType = 31
+	// Config inputs: "max_hr" (optional, default 190), "style" (emoji/percentage/text), "bar_length" (3-10) - shows time in each heart rate zone
+	EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES EnricherProviderType = 32
 	EnricherProviderType_ENRICHER_PROVIDER_MOCK             EnricherProviderType = 99
 )
 
@@ -163,6 +165,7 @@ var (
 		29: "ENRICHER_PROVIDER_FIT_FILE_HEART_RATE",
 		30: "ENRICHER_PROVIDER_HYBRID_RACE_TAGGER",
 		31: "ENRICHER_PROVIDER_RUNNING_DYNAMICS",
+		32: "ENRICHER_PROVIDER_HEART_RATE_ZONES",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -197,6 +200,7 @@ var (
 		"ENRICHER_PROVIDER_FIT_FILE_HEART_RATE":  29,
 		"ENRICHER_PROVIDER_HYBRID_RACE_TAGGER":   30,
 		"ENRICHER_PROVIDER_RUNNING_DYNAMICS":     31,
+		"ENRICHER_PROVIDER_HEART_RATE_ZONES":     32,
 		"ENRICHER_PROVIDER_MOCK":                 99,
 	}
 )
@@ -3216,7 +3220,7 @@ const file_user_proto_rawDesc = "" +
 	"\bUserTier\x12\x19\n" +
 	"\x15USER_TIER_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_TIER_HOBBYIST\x10\x01\x12\x15\n" +
-	"\x11USER_TIER_ATHLETE\x10\x02*\xc3\t\n" +
+	"\x11USER_TIER_ATHLETE\x10\x02*\xeb\t\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -3249,7 +3253,8 @@ const file_user_proto_rawDesc = "" +
 	"\x1bENRICHER_PROVIDER_AI_BANNER\x10\x1c\x12)\n" +
 	"%ENRICHER_PROVIDER_FIT_FILE_HEART_RATE\x10\x1d\x12(\n" +
 	"$ENRICHER_PROVIDER_HYBRID_RACE_TAGGER\x10\x1e\x12&\n" +
-	"\"ENRICHER_PROVIDER_RUNNING_DYNAMICS\x10\x1f\x12\x1a\n" +
+	"\"ENRICHER_PROVIDER_RUNNING_DYNAMICS\x10\x1f\x12&\n" +
+	"\"ENRICHER_PROVIDER_HEART_RATE_ZONES\x10 \x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

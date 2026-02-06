@@ -71,6 +71,8 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_HYBRID_RACE_TAGGER = 30,
   /** ENRICHER_PROVIDER_RUNNING_DYNAMICS - Config inputs: none (summarizes ground contact time, vertical oscillation, etc.) - Athlete tier only */
   ENRICHER_PROVIDER_RUNNING_DYNAMICS = 31,
+  /** ENRICHER_PROVIDER_HEART_RATE_ZONES - Config inputs: "max_hr" (optional, default 190), "style" (emoji/percentage/text), "bar_length" (3-10) - shows time in each heart rate zone */
+  ENRICHER_PROVIDER_HEART_RATE_ZONES = 32,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

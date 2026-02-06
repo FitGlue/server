@@ -2085,6 +2085,95 @@ When your activity has heart rate data (from Fitbit, Apple Watch, or any source)
   popularityScore: 82,
 });
 
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES, {
+  id: 'heart-rate-zones',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Heart Rate Zones',
+  description: 'Shows time spent in each heart rate training zone with visual bars',
+  icon: '📊',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'max_hr',
+      label: 'Max Heart Rate',
+      description: 'Your maximum heart rate in bpm (default: 190)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: false,
+      defaultValue: '190',
+      options: [],
+      validation: { minValue: 120, maxValue: 220 },
+    },
+    {
+      key: 'style',
+      label: 'Display Style',
+      description: 'How the zones should be rendered',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'emoji',
+      options: [
+        { value: 'emoji', label: 'Emoji Bars (🟩🟩🟩⬜⬜)' },
+        { value: 'percentage', label: 'Percentage (Zone 2: 45%)' },
+        { value: 'text', label: 'Text Only (Zone 2: High)' },
+      ],
+    },
+    {
+      key: 'bar_length',
+      label: 'Bar Length',
+      description: 'Number of squares in emoji bar',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: false,
+      defaultValue: '5',
+      options: [],
+      validation: { minValue: 3, maxValue: 10 },
+      dependsOn: { fieldKey: 'style', values: ['emoji'] },
+    },
+  ],
+  marketingDescription: `
+### Visualize Your Training Intensity
+See exactly how much time you spent in each heart rate training zone. Perfect for understanding whether your workout hit the intended intensity targets.
+
+### How it works
+FitGlue analyzes your heart rate data and calculates time spent in each of the 5 standard training zones:
+- **Zone 1 (Recovery)**: 50-60% max HR - Easy warmup/cooldown
+- **Zone 2 (Endurance)**: 60-70% max HR - Fat burning, base building
+- **Zone 3 (Tempo)**: 70-80% max HR - Aerobic capacity
+- **Zone 4 (Threshold)**: 80-90% max HR - Lactate threshold
+- **Zone 5 (VO2 Max)**: 90-100% max HR - Maximum effort
+
+### Configurable Display
+Choose between emoji bars (visual progress), percentages, or text descriptions. Set your personal max HR for accurate zone calculations.
+  `,
+  features: [
+    '✅ Visual breakdown of time in each zone',
+    '✅ Color-coded zones (🟦🟩🟨🟧🟥)',
+    '✅ Configurable max heart rate',
+    '✅ Multiple display styles (emoji/percentage/text)',
+    '✅ Works with any heart rate source',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Heart Rate Zones',
+      before: 'Morning Run',
+      after: '',
+      visualType: '',
+      afterHtml: '<strong>❤️ Heart Rate Zones:</strong><br><br><span class="zone-row">Zone 1 (Recovery): <span class="zone-bar">🟦🟦⬜⬜⬜</span> 5 min</span><br><span class="zone-row">Zone 2 (Endurance): <span class="zone-bar">🟩🟩🟩🟩🟩</span> 20 min</span><br><span class="zone-row">Zone 3 (Tempo): <span class="zone-bar">🟨🟨🟨⬜⬜</span> 12 min</span><br><span class="zone-row">Zone 4 (Threshold): <span class="zone-bar">🟧🟧⬜⬜⬜</span> 8 min</span><br><span class="zone-row">Zone 5 (VO2 Max): <span class="zone-bar">🟥⬜⬜⬜⬜</span> 3 min</span>',
+    },
+  ],
+  useCases: [
+    'Track training zone distribution',
+    'Verify workout intensity targets',
+    'Identify over/under training patterns',
+    'Share zone breakdown on activity feed',
+  ],
+  // UX Organization
+  category: 'summaries',
+  sortOrder: 3,
+  isPremium: false,
+  popularityScore: 84,
+});
+
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION, {
   id: 'ai-companion',
   type: PluginType.PLUGIN_TYPE_ENRICHER,

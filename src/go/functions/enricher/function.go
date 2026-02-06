@@ -34,6 +34,7 @@ import (
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/fit_file_hr"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/fitbit_hr"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/heart_rate_summary"
+	_ "github.com/fitglue/server/src/go/functions/enricher/providers/heart_rate_zones"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/hybrid_race_tagger"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/location_naming"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/logic_gate"
