@@ -150,7 +150,11 @@ When you complete a workout in Hevy, FitGlue receives a webhook notification and
     '✅ Works seamlessly with all FitGlue boosters',
   ],
   transformations: [],
-  useCases: [],
+  useCases: [
+    'Enhance strength workouts with AI descriptions and muscle heatmaps',
+    'Cross-post Hevy workouts to Strava with rich metadata',
+    'Generate public Showcase links for your training sessions',
+  ],
   // UX Organization
   category: 'apps',
   sortOrder: 2,
@@ -183,7 +187,11 @@ FitGlue connects to the Fitbit API and receives notifications when you complete 
     '✅ Automatic sync when activities complete',
   ],
   transformations: [],
-  useCases: [],
+  useCases: [
+    'Enhance Fitbit activities with AI descriptions and stats',
+    'Overlay Fitbit heart rate data onto Hevy strength workouts',
+    'Cross-post Fitbit activities to Strava with boosted content',
+  ],
   // UX Organization
   category: 'wearables',
   sortOrder: 2,
@@ -236,7 +244,11 @@ Install the FitGlue mobile app on your iOS device and grant access to Apple Heal
     '✅ Background sync when app is installed',
   ],
   transformations: [],
-  useCases: [],
+  useCases: [
+    'Enhance Apple Watch workouts with AI descriptions and stats',
+    'Cross-post iOS workouts to Strava with rich metadata',
+    'Import heart rate and GPS data for use with boosters',
+  ],
   // UX Organization
   category: 'wearables',
   sortOrder: 1,
@@ -269,7 +281,11 @@ Install the FitGlue mobile app on your Android device and grant access to Health
     '✅ Background sync when app is installed',
   ],
   transformations: [],
-  useCases: [],
+  useCases: [
+    'Enhance Android workouts with AI descriptions and stats',
+    'Import data from Garmin, Samsung, and other Health Connect devices',
+    'Cross-post Android activities to Strava with boosted content',
+  ],
   // UX Organization
   category: 'wearables',
   sortOrder: 4,
@@ -396,13 +412,23 @@ registerSource({
   configSchema: [],
   marketingDescription: `
 ### Garmin Connect Source
-Standard Garmin Connect integration for importing activities.
+Import your runs, rides, swims, and multisport activities from Garmin Connect. FitGlue receives activities in real-time via webhooks with full FIT file data including heart rate, GPS, and power metrics.
+
+### How it works
+Connect your Garmin Connect account to FitGlue via OAuth. When you complete an activity on your Garmin device and sync it, FitGlue receives a webhook notification and imports the full activity data into your pipeline for enrichment.
   `,
   features: [
     '✅ Import activities from Garmin devices',
+    '✅ Heart rate and GPS data included',
+    '✅ Real-time sync via webhooks',
+    '✅ Works with all FitGlue boosters',
   ],
   transformations: [],
-  useCases: [],
+  useCases: [
+    'Enhance Garmin activities with AI descriptions and stats',
+    'Cross-post Garmin activities to Strava with boosted content',
+    'Generate public Showcase links for your Garmin workouts',
+  ],
   // UX Organization
   category: 'wearables',
   sortOrder: 3,
@@ -787,7 +813,7 @@ registerDestination({
   type: PluginType.PLUGIN_TYPE_DESTINATION,
   name: 'Google Sheets',
   description: 'Log activities to a Google Spreadsheet',
-  icon: '📊',
+  icon: '📑',
   enabled: true,
   externalUrlTemplate: 'https://docs.google.com/spreadsheets/d/${spreadsheet_id}/edit#gid=0&range=A${row_number}',
   requiredIntegrations: ['google'],
@@ -906,10 +932,10 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY, {
   ],
   marketingDescription: `
 ### What is Workout Summary?
-This booster uses advanced AI to analyze your strength training data and generate engaging, human-readable summaries of your sessions. Instead of just a list of numbers, you get a narrative description of your workout intensity, volume, and focus areas.
+Generates clean, structured summaries of your strength training exercises with sets, reps, and weights. Instead of just raw data, you get a well-formatted breakdown of your session with volume stats and key highlights.
 
 ### How it works
-FitGlue analyzes your sets, reps, and weight data, identifies your primary muscle groups targeted, and calculates total volume. It then uses a Large Language Model (LLM) to craft a summary that highlights your achievements, personal bests, and overall effort.
+FitGlue analyzes your sets, reps, and weight data, identifies your primary muscle groups targeted, and calculates total volume. It then formats a structured summary that highlights your heaviest lifts, total volume, and overall rep count.
   `,
   features: [
     '✅ Narrative summaries of your strength workouts',
@@ -1437,7 +1463,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK, {
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Source Link',
   description: 'Appends a link to the original activity in the description',
-  icon: '🔗',
+  icon: '↗️',
   enabled: true,
   requiredIntegrations: [],
   configSchema: [],
@@ -1665,7 +1691,7 @@ Christmas Day and New Year's Day Parkruns get festive titles automatically!
   ],
   // UX Organization
   category: 'detection',
-  sortOrder: 1,
+  sortOrder: 2,
   isPremium: false,
   popularityScore: 75,
 });
@@ -2099,7 +2125,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES, {
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Heart Rate Zones',
   description: 'Shows time spent in each heart rate training zone with visual bars',
-  icon: '📊',
+  icon: '💗',
   enabled: true,
   requiredIntegrations: [],
   configSchema: [
@@ -2536,7 +2562,7 @@ TRIMP is cumulative, meaning a long easy session can have the same load as a sho
   features: [
     '✅ Calculates cumulative TRIMP (Training Impulse)',
     '✅ Uses the Banister Formula (weighted for gender)',
-    '✅ categorizes effort into 5 zones',
+    '✅ Categorizes effort into 5 zones',
     '✅ Works with any heart rate data source',
     '✅ Customizable max and resting heart rate',
   ],
@@ -3157,7 +3183,7 @@ Get daily target suggestions to stay on track: "💡 8.5 km/day to hit your goal
     'Weekly activity targets',
   ],
   category: 'data',
-  sortOrder: 1,
+  sortOrder: 3,
   isPremium: false,
   popularityScore: 70,
 });
@@ -3326,7 +3352,7 @@ Monitors your accumulated training stress over the past week to give context-awa
     'Balance training load across the week',
   ],
   category: 'summaries',
-  sortOrder: 8,
+  sortOrder: 9,
   isPremium: true,
   popularityScore: 55,
 });
@@ -3449,7 +3475,7 @@ FitGlue connects to your Fitbit account via OAuth, enabling you to import activi
 registerIntegration({
   id: 'strava',
   name: 'Strava',
-  description: 'Upload activities to Strava',
+  description: 'Import activities from and upload to Strava',
   icon: '🚴',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
@@ -3588,8 +3614,8 @@ FitGlue automatically detects when your run is a Parkrun based on GPS location a
     '✅ Special event detection (Christmas, New Year)',
     '✅ 2,500+ worldwide Parkrun locations supported',
   ],
-  iconType: 'emoji',
-  iconPath: '',
+  iconType: 'png',
+  iconPath: '/images/icons/parkrun.png',
 });
 
 registerIntegration({

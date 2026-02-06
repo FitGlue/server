@@ -15,7 +15,8 @@ resource "google_project_service" "apis" {
     "eventarc.googleapis.com",
     "identitytoolkit.googleapis.com",
     "fcm.googleapis.com",
-    "aiplatform.googleapis.com"
+    "aiplatform.googleapis.com",
+    "cloudtasks.googleapis.com"
   ])
 
   project = var.project_id

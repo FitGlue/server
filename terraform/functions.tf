@@ -2087,6 +2087,8 @@ resource "google_cloud_tasks_queue" "connection_actions" {
   name     = "connection-actions"
   location = var.region
 
+  depends_on = [google_project_service.apis["cloudtasks.googleapis.com"]]
+
   rate_limits {
     max_dispatches_per_second = 5
     max_concurrent_dispatches = 2
