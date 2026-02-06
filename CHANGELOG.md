@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.6.0](https://github.com/FitGlue/server/compare/v12.5.0...v12.6.0) (2026-02-06)
+
+
+### Features
+
+* **enricher:** add new booster providers ([3630799](https://github.com/FitGlue/server/commit/3630799e96b678cd45a78b61aed15ad6bd3c026c))
+
+
+### Bug Fixes
+
+* personal records to write section header ([7c75124](https://github.com/FitGlue/server/commit/7c751242138a522f704b926df866c6daca85105a))
+
 ## [12.5.0](https://github.com/FitGlue/server/compare/v12.4.0...v12.5.0) (2026-02-06)
 
 
