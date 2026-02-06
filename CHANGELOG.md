@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.7.0](https://github.com/FitGlue/server/compare/v12.6.0...v12.7.0) (2026-02-06)
+
+
+### Features
+
+* **enricher:** add new booster providers ([bed1666](https://github.com/FitGlue/server/commit/bed16662280a28a01fc2d2708b01ce80ea096789))
+
 ## [12.6.0](https://github.com/FitGlue/server/compare/v12.5.0...v12.6.0) (2026-02-06)
 
 
