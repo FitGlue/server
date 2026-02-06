@@ -93,13 +93,14 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 		}, nil
 	}
 
-	// Build the output
-	var descriptionParts []string
+	// Build the output with section title (matching other enrichers like heart_rate_zones)
+	var sb strings.Builder
+	sb.WriteString("🏆 Personal Records:\n")
 	for _, pr := range newPRs {
-		descriptionParts = append(descriptionParts, pr.DisplayMessage)
+		sb.WriteString(pr.DisplayMessage)
+		sb.WriteString("\n")
 	}
-
-	prDescription := strings.Join(descriptionParts, "\n")
+	prDescription := sb.String()
 
 	result := &providers.EnrichmentResult{
 		Description: prDescription,
