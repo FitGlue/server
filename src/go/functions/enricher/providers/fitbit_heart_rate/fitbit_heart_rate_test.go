@@ -1,4 +1,4 @@
-package fitbit_hr
+package fitbit_heart_rate
 
 import (
 	"bytes"

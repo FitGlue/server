@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
+	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -38,6 +40,10 @@ func (p *SpeedSummary) ProviderType() pb.EnricherProviderType {
 
 func (p *SpeedSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Debug("speed_summary: starting", "activity_name", activity.Name)
+
+	// Parse config
+	showAnalysis := inputs["show_analysis"] == "true"
+
 	// Collect all speed values from the activity (m/s)
 	var speeds []float64
 
@@ -84,14 +90,35 @@ func (p *SpeedSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 		"sample_count", len(speeds),
 	)
 
-	// Build the summary text to append to description
-	summaryText := fmt.Sprintf("🚀 Speed: %.1f km/h avg • %.1f km/h max", avgSpeedKmh, maxSpeedKmh)
+	// Build output based on config
+	var sb strings.Builder
 
-	// Append to existing description
-	newDescription := summaryText
+	if showAnalysis && len(speeds) >= 10 {
+		// Multi-line bullet format with consistency analysis
+		sb.WriteString("🚀 Speed:\n")
+		sb.WriteString(fmt.Sprintf(" - %.1f km/h avg\n", avgSpeedKmh))
+		sb.WriteString(fmt.Sprintf(" - %.1f km/h max\n", maxSpeedKmh))
+
+		// Calculate coefficient of variation (CV) as consistency metric
+		consistency := calculateSpeedConsistency(speeds, avgSpeed)
+		var consistencyLabel string
+		if consistency >= 85 {
+			consistencyLabel = "very consistent"
+		} else if consistency >= 70 {
+			consistencyLabel = "consistent"
+		} else if consistency >= 50 {
+			consistencyLabel = "moderate variance"
+		} else {
+			consistencyLabel = "high variance"
+		}
+		sb.WriteString(fmt.Sprintf(" - Consistency: %.0f%% (%s)", consistency, consistencyLabel))
+	} else {
+		// Simple single-line format
+		sb.WriteString(fmt.Sprintf("🚀 Speed: %.1f km/h avg • %.1f km/h max", avgSpeedKmh, maxSpeedKmh))
+	}
 
 	return &providers.EnrichmentResult{
-		Description: newDescription,
+		Description: sb.String(),
 		Metadata: map[string]string{
 			"speed_summary_status": "success",
 			"speed_avg_kmh":        fmt.Sprintf("%.1f", avgSpeedKmh),
@@ -99,4 +126,35 @@ func (p *SpeedSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 			"speed_sample_count":   fmt.Sprintf("%d", len(speeds)),
 		},
 	}, nil
+}
+
+// calculateSpeedConsistency returns a 0-100 score based on coefficient of variation
+// Lower CV = higher consistency
+func calculateSpeedConsistency(speeds []float64, mean float64) float64 {
+	if len(speeds) < 2 || mean == 0 {
+		return 0
+	}
+
+	// Calculate standard deviation
+	var sumSquaredDiff float64
+	for _, speed := range speeds {
+		diff := speed - mean
+		sumSquaredDiff += diff * diff
+	}
+	stdDev := math.Sqrt(sumSquaredDiff / float64(len(speeds)))
+
+	// Coefficient of variation (as percentage)
+	cv := (stdDev / mean) * 100
+
+	// Convert to consistency score (inverse, capped at 100)
+	// CV of 0 = 100% consistency, CV of 50+ = 0% consistency
+	consistency := 100 - (cv * 2)
+	if consistency < 0 {
+		consistency = 0
+	}
+	if consistency > 100 {
+		consistency = 100
+	}
+
+	return consistency
 }

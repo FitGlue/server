@@ -13,6 +13,10 @@ import { Timestamp } from 'firebase-admin/firestore';
  * - GET  /personal-records      - List all personal records
  * - POST /personal-records      - Create or update a personal record
  * - DELETE /personal-records/:type - Delete a personal record
+ * - GET  /booster-data          - List all booster data
+ * - GET  /booster-data/:id      - Get specific booster data
+ * - POST /booster-data/:id      - Create or update booster data
+ * - DELETE /booster-data/:id    - Delete booster data
  */
 
 interface Counter {
@@ -172,6 +176,66 @@ export const handler: FrameworkHandler = async (req, ctx) => {
 
             await recordsCollection.doc(decodeURIComponent(recordType)).delete();
             ctx.logger.info('Deleted personal record', { userId, recordType });
+            return { success: true };
+        }
+    }
+
+    // --- Booster Data Routes ---
+    // Generic key-value storage for boosters that need persistence (goal_tracker, streak_tracker, etc.)
+    if (path.includes('/booster-data')) {
+        const boosterDataCollection = db.collection('users').doc(userId).collection('booster_data');
+
+        // Extract booster ID from path: /booster-data/:boosterId
+        const segments = path.split('/').filter(s => s.length > 0);
+        const boosterDataIndex = segments.findIndex(s => s === 'booster-data');
+        const boosterId = segments[boosterDataIndex + 1];
+
+        if (method === 'GET') {
+            if (boosterId) {
+                // Get specific booster data
+                const doc = await boosterDataCollection.doc(decodeURIComponent(boosterId)).get();
+                if (!doc.exists) {
+                    return { data: {} };
+                }
+                return { data: doc.data() };
+            } else {
+                // List all booster data
+                const snapshot = await boosterDataCollection.get();
+                const data: Record<string, unknown> = {};
+                snapshot.docs.forEach(doc => {
+                    data[doc.id] = doc.data();
+                });
+                return { data };
+            }
+        }
+
+        if (method === 'POST') {
+            if (!boosterId) {
+                throw new HttpError(400, 'Missing booster ID');
+            }
+
+            const body = req.body as Record<string, unknown>;
+            if (!body || typeof body !== 'object') {
+                throw new HttpError(400, 'Missing or invalid body');
+            }
+
+            // Merge update to support incremental updates
+            await boosterDataCollection.doc(decodeURIComponent(boosterId)).set({
+                ...body,
+                last_updated: Timestamp.now()
+            }, { merge: true });
+
+            ctx.logger.info('Updated booster data', { userId, boosterId });
+            return { success: true };
+        }
+
+        if (method === 'DELETE') {
+            if (!boosterId) {
+                throw new HttpError(400, 'Missing booster ID');
+            }
+
+            await boosterDataCollection.doc(decodeURIComponent(boosterId)).delete();
+            ctx.logger.info('Deleted booster data', { userId, boosterId });
             return { success: true };
         }
     }

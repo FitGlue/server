@@ -227,6 +227,23 @@ func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string
 	return nil, nil
 }
 
+// --- Booster Data (generic key-value storage for enrichers) ---
+
+func (m *MockDatabase) GetBoosterData(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
+func (m *MockDatabase) SetBoosterData(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) DeleteBoosterData(ctx context.Context, userId string, boosterId string) error {
+	// No-op for tests by default
+	return nil
+}
+
 // --- Mock Publisher ---
 type MockPublisher struct {
 	PublishCloudEventFunc func(ctx context.Context, topic string, e event.Event) (string, error)

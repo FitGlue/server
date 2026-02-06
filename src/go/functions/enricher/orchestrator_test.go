@@ -124,6 +124,15 @@ func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string,
 func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
 	return nil, nil
 }
+func (m *MockDatabase) GetBoosterData(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+	return nil, nil
+}
+func (m *MockDatabase) SetBoosterData(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+	return nil
+}
+func (m *MockDatabase) DeleteBoosterData(ctx context.Context, userId string, boosterId string) error {
+	return nil
+}
 
 type MockBlobStore struct {
 	WriteFunc func(ctx context.Context, bucket, object string, data []byte) error

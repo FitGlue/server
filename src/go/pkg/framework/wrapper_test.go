@@ -123,6 +123,15 @@ func (m *MockDB) SetDestinationOutcome(ctx context.Context, userId string, pipel
 func (m *MockDB) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
 	return nil, nil
 }
+func (m *MockDB) GetBoosterData(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+	return nil, nil
+}
+func (m *MockDB) SetBoosterData(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+	return nil
+}
+func (m *MockDB) DeleteBoosterData(ctx context.Context, userId string, boosterId string) error {
+	return nil
+}
 
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {

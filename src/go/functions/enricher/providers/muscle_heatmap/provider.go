@@ -287,7 +287,16 @@ func formatMuscleName(m pb.MuscleGroup) string {
 	s := m.String()
 	s = strings.TrimPrefix(s, "MUSCLE_GROUP_")
 	s = strings.ReplaceAll(s, "_", " ")
-	return strings.Title(strings.ToLower(s))
+	s = strings.ToLower(s)
+
+	// Convert to Title Case manually (strings.Title is deprecated)
+	words := strings.Fields(s)
+	for i, w := range words {
+		if len(w) > 0 {
+			words[i] = strings.ToUpper(w[:1]) + w[1:]
+		}
+	}
+	return strings.Join(words, " ")
 }
 
 // CalculateLoad calculates the training load for a strength set.

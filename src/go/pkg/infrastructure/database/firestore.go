@@ -472,3 +472,31 @@ func (a *FirestoreAdapter) GetDestinationOutcomes(ctx context.Context, userId st
 
 	return outcomes, nil
 }
+
+// --- Booster Data (generic key-value storage for enrichers) ---
+
+// GetBoosterData retrieves booster-specific data by ID
+func (a *FirestoreAdapter) GetBoosterData(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+	doc, err := a.Client.Collection("users").Doc(userId).Collection("booster_data").Doc(boosterId).Get(ctx)
+	if err != nil {
+		if isNotFoundError(err) {
+			return nil, nil // Not found - return empty map
+		}
+		return nil, err
+	}
+	return doc.Data(), nil
+}
+
+// SetBoosterData creates or updates booster-specific data
+func (a *FirestoreAdapter) SetBoosterData(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+	// Add timestamp
+	data["last_updated"] = time.Now()
+	_, err := a.Client.Collection("users").Doc(userId).Collection("booster_data").Doc(boosterId).Set(ctx, data, firestore.MergeAll)
+	return err
+}
+
+// DeleteBoosterData removes booster-specific data by ID
+func (a *FirestoreAdapter) DeleteBoosterData(ctx context.Context, userId string, boosterId string) error {
+	_, err := a.Client.Collection("users").Doc(userId).Collection("booster_data").Doc(boosterId).Delete(ctx)
+	return err
+}

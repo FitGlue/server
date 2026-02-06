@@ -199,6 +199,12 @@ resource "google_storage_bucket_object" "user_data_handler_zip" {
   source = "/tmp/fitglue-function-zips/user-data-handler.zip"
 }
 
+resource "google_storage_bucket_object" "connection_actions_handler_zip" {
+  name   = "connection-actions-handler-${filemd5("/tmp/fitglue-function-zips/connection-actions-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/connection-actions-handler.zip"
+}
+
 
 
 # ----------------- Enricher Service -----------------
@@ -2032,5 +2038,64 @@ resource "google_cloud_scheduler_job" "registration_summary_daily" {
   pubsub_target {
     topic_name = google_pubsub_topic.registration_summary_trigger.id
     data       = base64encode("{\"trigger\":\"scheduled\"}")
+  }
+}
+
+# ----------------- Connection Actions Handler -----------------
+# Handles one-off integration actions like importing historical PRs
+resource "google_cloudfunctions2_function" "connection_actions_handler" {
+  name        = "connection-actions-handler"
+  location    = var.region
+  description = "Handles connection-specific actions (import historical PRs, etc.)"
+
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "connectionActionsHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.connection_actions_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300  # 5 minutes for large import jobs
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "connection_actions_handler_invoker" {
+  project  = google_cloudfunctions2_function.connection_actions_handler.project
+  location = google_cloudfunctions2_function.connection_actions_handler.location
+  service  = google_cloudfunctions2_function.connection_actions_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ----------------- Cloud Tasks Queue for Connection Actions -----------------
+resource "google_cloud_tasks_queue" "connection_actions" {
+  name     = "connection-actions"
+  location = var.region
+
+  rate_limits {
+    max_dispatches_per_second = 5
+    max_concurrent_dispatches = 2
+  }
+
+  retry_config {
+    max_attempts       = 3
+    min_backoff        = "10s"
+    max_backoff        = "300s"
+    max_doublings      = 4
   }
 }

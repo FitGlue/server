@@ -910,6 +910,14 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'STREAK_TRACKER': 'Streak Tracker',
     'Streak Tracker': 'Streak Tracker',
     '35': 'Streak Tracker',
+    'ENRICHER_PROVIDER_DISTANCE_MILESTONES': 'Distance Milestones',
+    'DISTANCE_MILESTONES': 'Distance Milestones',
+    'Distance Milestones': 'Distance Milestones',
+    '36': 'Distance Milestones',
+    'ENRICHER_PROVIDER_RECOVERY_ADVISOR': 'Recovery Advisor',
+    'RECOVERY_ADVISOR': 'Recovery Advisor',
+    'Recovery Advisor': 'Recovery Advisor',
+    '37': 'Recovery Advisor',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -970,6 +978,8 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED: return 'Calories Burned';
     case EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER: return 'Goal Tracker';
     case EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER: return 'Streak Tracker';
+    case EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES: return 'Distance Milestones';
+    case EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR: return 'Recovery Advisor';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }

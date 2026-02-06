@@ -355,6 +355,10 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Goal Tracker"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER:
 		return "Streak Tracker"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES:
+		return "Distance Milestones"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR:
+		return "Recovery Advisor"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:

@@ -9,6 +9,14 @@ export interface ConfigurableField {
   required: boolean;
 }
 
+// One-off action that can be triggered for an integration
+export interface ActionDefinition {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+}
+
 // Integration definition that aligns with protobuf auth types
 export interface IntegrationDefinition {
   key: keyof UserIntegrations;
@@ -18,6 +26,8 @@ export interface IntegrationDefinition {
   externalUserIdField?: string;
   // Fields that can be configured via CLI
   configurableFields: ConfigurableField[];
+  // One-off actions available for this integration
+  actions?: ActionDefinition[];
 }
 
 // Helper type guard
@@ -32,6 +42,14 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
     externalUserIdField: 'apiKey',
     configurableFields: [{ field: 'apiKey', name: 'API Key', type: 'password', required: true }],
+    actions: [
+      {
+        id: 'import_strength_prs',
+        label: 'Import Strength PRs',
+        description: 'Import 1RM and volume records from your last 12 months of Hevy workouts',
+        icon: '💪',
+      },
+    ],
   },
   mock: {
     key: 'mock',
@@ -45,6 +63,14 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
     externalUserIdField: 'athleteId',
     configurableFields: [], // OAuth configured via flow
+    actions: [
+      {
+        id: 'import_cardio_prs',
+        label: 'Import Cardio PRs',
+        description: 'Fetch your fastest 5K, 10K, and half marathon times from Strava history',
+        icon: '🏃',
+      },
+    ],
   },
   fitbit: {
     key: 'fitbit',

@@ -90,11 +90,12 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 		"sample_count", len(heartRates),
 	)
 
-	// Build the summary text
+	// Build output based on config
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("❤️ Heart Rate: %d bpm min • %.0f bpm avg • %d bpm max", minHR, avgHR, maxHR))
 
-	// Cardiac drift detection
+	// Calculate drift early so we can include in multi-line format if applicable
+	var drift float64
+	var hasDrift bool
 	if showDrift && len(heartRates) >= 20 {
 		// Compare first 20% to last 20%
 		sampleSize := len(heartRates) / 5
@@ -112,15 +113,27 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 
 		firstAvg := float64(firstSum) / float64(sampleSize)
 		lastAvg := float64(lastSum) / float64(sampleSize)
-		drift := lastAvg - firstAvg
+		drift = lastAvg - firstAvg
+		hasDrift = drift > 5 || drift < -5
+	}
 
-		if drift > 5 {
-			// Significant upward drift (potential dehydration/fatigue)
-			sb.WriteString(fmt.Sprintf("\n\n📈 HR Drift: +%.0f bpm from start to end (check hydration)", drift))
-		} else if drift < -5 {
-			// Negative drift (good warm-up)
-			sb.WriteString(fmt.Sprintf("\n\n📉 HR Drift: %.0f bpm (good warm-up effect)", drift))
+	if showDrift {
+		// Multi-line bullet format
+		sb.WriteString("❤️ Heart Rate:\n")
+		sb.WriteString(fmt.Sprintf(" - %d bpm min\n", minHR))
+		sb.WriteString(fmt.Sprintf(" - %.0f bpm avg\n", avgHR))
+		sb.WriteString(fmt.Sprintf(" - %d bpm max\n", maxHR))
+
+		if hasDrift {
+			if drift > 5 {
+				sb.WriteString(fmt.Sprintf(" - Drift: +%.0f bpm (check hydration)", drift))
+			} else if drift < -5 {
+				sb.WriteString(fmt.Sprintf(" - Drift: %.0f bpm (good warm-up)", drift))
+			}
 		}
+	} else {
+		// Simple single-line format
+		sb.WriteString(fmt.Sprintf("❤️ Heart Rate: %d bpm min • %.0f bpm avg • %d bpm max", minHR, avgHR, maxHR))
 	}
 
 	return &providers.EnrichmentResult{

@@ -559,7 +559,8 @@ function checkPluginRegistration(): CheckResult {
   };
 
   // -------------------------------------------------------------------------
-  // 1. Check Enrichers (EnricherProviderType -> registerEnricher)
+  // 1. Enricher Provider 3-Way Consistency Check
+  //    All three must align: Go folder ↔ Proto enum ↔ Registry entry
   // -------------------------------------------------------------------------
   const enricherEnums = extractProtoEnum('user.proto', 'EnricherProviderType');
   const registeredEnrichersPattern = /registerEnricher\s*\(\s*EnricherProviderType\.(\w+)/g;
@@ -569,9 +570,83 @@ function checkPluginRegistration(): CheckResult {
     registeredEnrichers.add(match[1]);
   }
 
-  for (const enumValue of enricherEnums) {
-    if (isUsedInCode(enumValue) && !registeredEnrichers.has(enumValue)) {
-      errors.push(`Enricher '${enumValue}' used in code but not registered in registry.ts`);
+  // Get Go enricher provider directories
+  const goEnricherProvidersDir = path.join(GO_SRC_DIR, 'functions/enricher/providers');
+  const goProviderDirs = new Set<string>();
+
+  // Directories to exclude: internal infrastructure, not user-visible enrichers
+  // - branding: returns UNSPECIFIED, internal footer provider
+  // - mock: test-only provider
+  const excludedDirs = ['mock', 'branding'];
+
+  if (fs.existsSync(goEnricherProvidersDir)) {
+    const dirs = fs.readdirSync(goEnricherProvidersDir, { withFileTypes: true })
+      .filter(d => d.isDirectory())
+      .filter(d => !excludedDirs.includes(d.name))
+      .map(d => d.name);
+
+    for (const dir of dirs) {
+      // Strict naming: snake_case directory must match proto enum exactly
+      // e.g., speed_summary -> ENRICHER_PROVIDER_SPEED_SUMMARY
+      goProviderDirs.add('ENRICHER_PROVIDER_' + dir.toUpperCase());
+    }
+  }
+
+  // Proto enums to exclude from Go folder requirement
+  // - MOCK: test-only, excluded from Go provider dirs
+  const protoExclusions = new Set(['ENRICHER_PROVIDER_MOCK']);
+
+  // Convert proto enums to a Set for easier lookup
+  const protoEnrichers = new Set<string>(enricherEnums);
+
+  // Helper to convert enum to expected directory name
+  // e.g., ENRICHER_PROVIDER_SPEED_SUMMARY -> speed_summary
+  const enumToDir = (enumName: string): string =>
+    enumName.replace(/^ENRICHER_PROVIDER_/, '').toLowerCase();
+
+  // 1a. Check: Go folder exists → Proto enum must exist
+  for (const enumName of goProviderDirs) {
+    if (!protoEnrichers.has(enumName)) {
+      errors.push(`Go enricher provider '${enumToDir(enumName)}' has no proto definition (missing ${enumName} in user.proto)`);
+    }
+  }
+
+  // 1b. Check: Go folder exists → Registry entry must exist
+  for (const enumName of goProviderDirs) {
+    if (!registeredEnrichers.has(enumName)) {
+      errors.push(`Go enricher provider '${enumToDir(enumName)}' not registered in registry.ts (expected EnricherProviderType.${enumName})`);
+    }
+  }
+
+  // 1c. Check: Proto enum exists → Go folder must exist
+  for (const enumName of protoEnrichers) {
+    if (protoExclusions.has(enumName)) continue; // Skip test-only providers
+    if (!goProviderDirs.has(enumName)) {
+      errors.push(`Proto enricher '${enumName}' has no Go provider directory (expected providers/${enumToDir(enumName)}/)`);
+    }
+  }
+
+  // 1d. Check: Proto enum exists → Registry entry must exist
+  for (const enumName of protoEnrichers) {
+    if (protoExclusions.has(enumName)) continue; // Skip test-only providers
+    if (!registeredEnrichers.has(enumName)) {
+      errors.push(`Proto enricher '${enumName}' not registered in registry.ts`);
+    }
+  }
+
+  // 1e. Check: Registry entry exists → Proto enum must exist
+  for (const enumName of registeredEnrichers) {
+    if (protoExclusions.has(enumName)) continue; // Skip test-only providers
+    if (!protoEnrichers.has(enumName)) {
+      errors.push(`Registry enricher '${enumName}' has no proto definition (missing in user.proto)`);
+    }
+  }
+
+  // 1f. Check: Registry entry exists → Go folder must exist
+  for (const enumName of registeredEnrichers) {
+    if (protoExclusions.has(enumName)) continue; // Skip test-only providers
+    if (!goProviderDirs.has(enumName)) {
+      errors.push(`Registry enricher '${enumName}' has no Go provider directory (expected providers/${enumToDir(enumName)}/)`);
     }
   }
 

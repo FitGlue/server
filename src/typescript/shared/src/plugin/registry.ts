@@ -3223,6 +3223,114 @@ Focus on specific activities like running or strength training to build targeted
   popularityScore: 65,
 });
 
+// ============================================
+// Distance Milestones
+// ============================================
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES, {
+  id: 'distance-milestones',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Distance Milestones',
+  description: 'Celebrate lifetime distance achievements per sport',
+  icon: '🏅',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'sport',
+      label: 'Sport Filter',
+      description: 'Track milestones for specific sports',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'any',
+      options: [
+        { label: 'All Activities', value: 'any' },
+        { label: 'Running Only', value: 'running' },
+        { label: 'Cycling Only', value: 'cycling' },
+        { label: 'Swimming Only', value: 'swimming' },
+      ],
+    },
+  ],
+  marketingDescription: `
+### Celebrate Your Journey
+Track your lifetime distance and get celebrated when you hit major milestones — 100km, 500km, 1,000km, and beyond!
+
+### Per-Sport Tracking
+Focus on a specific sport to track your running, cycling, or swimming journey separately.
+  `,
+  features: [
+    '✅ Lifetime distance tracking',
+    '✅ Milestone celebrations at key thresholds',
+    '✅ Per-sport filtering',
+    '✅ Progress toward next milestone',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Milestone Celebration',
+      before: 'Morning Run',
+      after: '',
+      visualType: '',
+      afterHtml: '🎉 MILESTONE: 1,000 km lifetime!<br>• Total: 1,005.2 km<br>• This run: +5.2 km',
+    },
+  ],
+  useCases: [
+    'Track your lifetime running distance',
+    'Celebrate major cycling milestones',
+    'Monitor progress toward yearly goals',
+  ],
+  category: 'data',
+  sortOrder: 3,
+  isPremium: false,
+  popularityScore: 60,
+});
+
+// ============================================
+// Recovery Advisor
+// ============================================
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR, {
+  id: 'recovery-advisor',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Recovery Advisor',
+  description: 'Calculate training load and suggest recovery time',
+  icon: '💤',
+  enabled: true,
+  requiredIntegrations: [],
+  requiredTier: 'athlete',
+  configSchema: [],
+  marketingDescription: `
+### Know When to Rest
+Uses TRIMP (Training Impulse) to estimate your training load and suggest optimal recovery time.
+
+### 7-Day Load Tracking
+Monitors your accumulated training stress over the past week to give context-aware recovery recommendations.
+  `,
+  features: [
+    '✅ TRIMP-based training load calculation',
+    '✅ 7-day rolling load history',
+    '✅ Smart recovery recommendations',
+    '✅ Intensity classification',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Recovery Recommendation',
+      before: 'Hard Interval Session',
+      after: '',
+      visualType: '',
+      afterHtml: '💤 Recovery Advisor<br>• Session load: 150 TRIMP (Hard)<br>• 7-day load: 520 TRIMP<br>• 💡 Suggested recovery: 36 hours',
+    },
+  ],
+  useCases: [
+    'Prevent overtraining',
+    'Optimize recovery between sessions',
+    'Balance training load across the week',
+  ],
+  category: 'summaries',
+  sortOrder: 8,
+  isPremium: true,
+  popularityScore: 55,
+});
+
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   id: 'mock',
   type: PluginType.PLUGIN_TYPE_ENRICHER,

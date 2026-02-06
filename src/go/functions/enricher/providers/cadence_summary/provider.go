@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"math"
+	"strings"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -38,14 +40,24 @@ func (p *CadenceSummary) ProviderType() pb.EnricherProviderType {
 
 func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Debug("cadence_summary: starting", "activity_name", activity.Name)
-	// Collect all cadence values from the activity
+
+	// Parse config
+	showCorrelation := inputs["show_correlation"] == "true"
+
+	// Collect cadence and speed values from the activity (for correlation)
 	var cadences []int32
+	var speeds []float64 // m/s values paired with cadence
 
 	for _, session := range activity.Sessions {
 		for _, lap := range session.Laps {
 			for _, record := range lap.Records {
 				if record.Cadence > 0 {
 					cadences = append(cadences, record.Cadence)
+					if record.Speed > 0 {
+						speeds = append(speeds, record.Speed)
+					} else {
+						speeds = append(speeds, 0)
+					}
 				}
 			}
 		}
@@ -86,14 +98,35 @@ func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activi
 		"sample_count", len(cadences),
 	)
 
-	// Build the summary text to append to description
-	summaryText := fmt.Sprintf("🦶 Cadence: %.0f %s avg • %d %s max", avgCadence, unit, maxCadence, unit)
+	// Build output based on config
+	var sb strings.Builder
 
-	// Append to existing description
-	newDescription := summaryText
+	if showCorrelation {
+		// Multi-line bullet format with correlation
+		sb.WriteString("🦶 Cadence:\n")
+		sb.WriteString(fmt.Sprintf(" - %.0f %s avg\n", avgCadence, unit))
+		sb.WriteString(fmt.Sprintf(" - %d %s max\n", maxCadence, unit))
+
+		// Calculate Pearson correlation between cadence and speed
+		corr := calculatePaceCorrelation(cadences, speeds)
+		if !math.IsNaN(corr) && len(speeds) >= 10 {
+			var interpretation string
+			if corr > 0.3 {
+				interpretation = "faster pace = higher cadence"
+			} else if corr < -0.3 {
+				interpretation = "slower pace = higher cadence"
+			} else {
+				interpretation = "no strong correlation"
+			}
+			sb.WriteString(fmt.Sprintf(" - Pace Correlation: %+.2f (%s)", corr, interpretation))
+		}
+	} else {
+		// Simple single-line format
+		sb.WriteString(fmt.Sprintf("🦶 Cadence: %.0f %s avg • %d %s max", avgCadence, unit, maxCadence, unit))
+	}
 
 	return &providers.EnrichmentResult{
-		Description: newDescription,
+		Description: sb.String(),
 		Metadata: map[string]string{
 			"cadence_summary_status": "success",
 			"cadence_avg":            fmt.Sprintf("%.0f", avgCadence),
@@ -101,6 +134,53 @@ func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activi
 			"cadence_sample_count":   fmt.Sprintf("%d", len(cadences)),
 		},
 	}, nil
+}
+
+// calculatePaceCorrelation computes Pearson correlation coefficient between cadence and speed
+func calculatePaceCorrelation(cadences []int32, speeds []float64) float64 {
+	n := len(cadences)
+	if n != len(speeds) || n < 2 {
+		return math.NaN()
+	}
+
+	// Filter to only include records with both cadence and speed > 0
+	var validCadences []float64
+	var validSpeeds []float64
+	for i := 0; i < n; i++ {
+		if cadences[i] > 0 && speeds[i] > 0 {
+			validCadences = append(validCadences, float64(cadences[i]))
+			validSpeeds = append(validSpeeds, float64(speeds[i]))
+		}
+	}
+
+	if len(validCadences) < 10 {
+		return math.NaN()
+	}
+
+	// Calculate means
+	var sumC, sumS float64
+	for i := range validCadences {
+		sumC += validCadences[i]
+		sumS += validSpeeds[i]
+	}
+	meanC := sumC / float64(len(validCadences))
+	meanS := sumS / float64(len(validSpeeds))
+
+	// Calculate Pearson correlation
+	var numSum, denomC, denomS float64
+	for i := range validCadences {
+		diffC := validCadences[i] - meanC
+		diffS := validSpeeds[i] - meanS
+		numSum += diffC * diffS
+		denomC += diffC * diffC
+		denomS += diffS * diffS
+	}
+
+	if denomC == 0 || denomS == 0 {
+		return math.NaN()
+	}
+
+	return numSum / (math.Sqrt(denomC) * math.Sqrt(denomS))
 }
 
 // isRunningActivity returns true if the activity type is a running/walking activity

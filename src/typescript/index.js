@@ -153,3 +153,8 @@ exports.registrationSummaryHandler = (event) => {
   const regSummary = require('./registration-summary-handler/dist/index');
   return regSummary.registrationSummaryHandler(event);
 };
+
+exports.connectionActionsHandler = (req, res) => {
+  const connectionActions = require('./connection-actions-handler/dist/index');
+  return connectionActions.connectionActionsHandler(req, res);
+};

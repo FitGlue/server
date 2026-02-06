@@ -63,7 +63,11 @@ func (p *SourceLinkProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 
 	// Format: "View on [Source]: [URL]"
 	// We can allow customization via inputConfig if needed later
-	sourceDisplay := strings.Title(strings.TrimPrefix(sourceLower, "source_"))
+	sourceName := strings.TrimPrefix(sourceLower, "source_")
+	sourceDisplay := sourceName
+	if len(sourceName) > 0 {
+		sourceDisplay = strings.ToUpper(sourceName[:1]) + sourceName[1:]
+	}
 	desc := fmt.Sprintf("View on %s: %s", sourceDisplay, link)
 
 	logger.Debug("source_link: generated link",

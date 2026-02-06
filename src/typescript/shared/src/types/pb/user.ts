@@ -79,6 +79,10 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_GOAL_TRACKER = 34,
   /** ENRICHER_PROVIDER_STREAK_TRACKER - Config inputs: "activity_types" (any/running/cycling/etc) - tracks consecutive activity streaks */
   ENRICHER_PROVIDER_STREAK_TRACKER = 35,
+  /** ENRICHER_PROVIDER_DISTANCE_MILESTONES - Config inputs: "sport" (any/running/cycling/etc) - celebrates lifetime distance milestones */
+  ENRICHER_PROVIDER_DISTANCE_MILESTONES = 36,
+  /** ENRICHER_PROVIDER_RECOVERY_ADVISOR - Config inputs: none (calculates training load and suggests recovery) - Athlete tier only */
+  ENRICHER_PROVIDER_RECOVERY_ADVISOR = 37,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

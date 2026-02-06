@@ -1,4 +1,4 @@
-package fit_file_hr
+package fit_file_heart_rate
 
 import (
 	"context"

@@ -61,6 +61,11 @@ type Database interface {
 	// Destination Outcomes (subcollection of Pipeline Runs - avoids race conditions)
 	SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error
 	GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error)
+
+	// Booster Data (generic key-value storage for enrichers that need persistence)
+	GetBoosterData(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error)
+	SetBoosterData(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error
+	DeleteBoosterData(ctx context.Context, userId string, boosterId string) error
 }
 
 // --- Messaging Interfaces ---
