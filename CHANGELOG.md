@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.5.0](https://github.com/FitGlue/server/compare/v12.4.0...v12.5.0) (2026-02-06)
+
+
+### Features
+
+* **enricher:** add Heart Rate Zones booster ([c1cf3c1](https://github.com/FitGlue/server/commit/c1cf3c12695c691ae03f7f22fcca2ee96da7d6e5))
+
 ## [12.4.0](https://github.com/FitGlue/server/compare/v12.3.1...v12.4.0) (2026-02-06)
 
 
