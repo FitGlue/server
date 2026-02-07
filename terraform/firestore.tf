@@ -366,6 +366,20 @@ resource "google_firestore_index" "pipeline_runs_cg_status_created" {
   }
 }
 
+# Collection group index for created_at only (no filters)
+# Used by admin handler default listing with no status/source filter
+resource "google_firestore_index" "pipeline_runs_cg_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "pipeline_runs"
+  query_scope = "COLLECTION_GROUP"
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
 # Collection group index for source + created_at
 # Used by admin handler when filtering by source
 resource "google_firestore_index" "pipeline_runs_cg_source_created" {
