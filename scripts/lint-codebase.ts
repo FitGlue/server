@@ -698,7 +698,7 @@ function checkPluginRegistration(): CheckResult {
   // 4. Check Integrations (UserIntegrations fields -> registerIntegration)
   // -------------------------------------------------------------------------
   const integrationFields = extractIntegrations();
-  const registeredIntegrationsPattern = /registerIntegration\s*\(\s*\{[^}]*id:\s*['"]([^'"]+)['"]/g;
+  const registeredIntegrationsPattern = /registerIntegration\s*\(\s*\{\s*id:\s*['"]([^'"]+)['"]/g;
   const registeredIntegrations = new Set<string>();
   while ((match = registeredIntegrationsPattern.exec(registryContent)) !== null) {
     registeredIntegrations.add(match[1].toLowerCase());

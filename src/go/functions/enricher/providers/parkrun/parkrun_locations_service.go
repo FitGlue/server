@@ -191,6 +191,7 @@ type eventsJSONEventProperties struct {
 	EventLongName  string `json:"EventLongName"`  // Full name
 	EventShortName string `json:"EventShortName"` // Short name
 	CountryCode    int    `json:"countrycode"`
+	SeriesID       int    `json:"seriesid"` // 1 = regular 5k parkrun, 2 = junior parkrun (2k, Sundays)
 }
 
 type eventsJSONGeometry struct {
@@ -221,6 +222,13 @@ func parseEventsJSON(data []byte) ([]ParkrunLocation, error) {
 	locations := make([]ParkrunLocation, 0, len(fc.Features))
 	for _, feature := range fc.Features {
 		if feature.Geometry.Type != "Point" || len(feature.Geometry.Coordinates) < 2 {
+			continue
+		}
+
+		// Skip non-standard parkruns (seriesid 2 = Junior parkruns, which run on Sundays)
+		// Junior events share GPS coordinates with their regular counterpart and would
+		// cause FindNearest to return the wrong event name on Saturdays.
+		if feature.Properties.SeriesID != 1 {
 			continue
 		}
 

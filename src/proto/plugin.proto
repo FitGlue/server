@@ -125,6 +125,14 @@ enum IntegrationAuthType {
   INTEGRATION_AUTH_TYPE_PUBLIC_ID = 4; // Public identifier (no secrets, no ingress key needed)
 }
 
+// IntegrationAction defines an action available on a connected integration
+message IntegrationAction {
+  string id = 1;                              // Action identifier (e.g., "import_cardio_prs")
+  string label = 2;                           // Button label (e.g., "Import Cardio PRs")
+  string description = 3;                     // Help text shown below the label
+  string icon = 4;                            // Emoji icon
+}
+
 // IntegrationManifest defines metadata for external service integrations
 message IntegrationManifest {
   string id = 1;                              // Unique identifier (e.g., "hevy", "fitbit", "strava")
@@ -150,6 +158,9 @@ message IntegrationManifest {
 
   // When true, integration is hidden from connections page but shown on marketing with "Coming Soon"
   optional bool is_temporarily_unavailable = 14;
+
+  // Available actions for connected integrations (e.g., import historical PRs)
+  repeated IntegrationAction actions = 17;
 }
 
 // PluginRegistryResponse for API discovery

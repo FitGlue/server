@@ -327,3 +327,79 @@ func TestSpecialDayDetection(t *testing.T) {
 		})
 	}
 }
+
+func TestParseEventsJSON_FiltersJuniorEvents(t *testing.T) {
+	// Simulate events.json with both regular (seriesid=1) and junior (seriesid=2) events
+	eventsJSON := `{
+		"events": {
+			"type": "FeatureCollection",
+			"features": [
+				{
+					"id": 1,
+					"type": "Feature",
+					"geometry": {"type": "Point", "coordinates": [-0.8088, 53.0764]},
+					"properties": {
+						"eventname": "newark",
+						"EventLongName": "Newark parkrun",
+						"EventShortName": "Newark",
+						"countrycode": 97,
+						"seriesid": 1
+					}
+				},
+				{
+					"id": 2,
+					"type": "Feature",
+					"geometry": {"type": "Point", "coordinates": [-0.8085, 53.0762]},
+					"properties": {
+						"eventname": "newark-juniors",
+						"EventLongName": "Newark junior parkrun",
+						"EventShortName": "Newark juniors",
+						"countrycode": 97,
+						"seriesid": 2
+					}
+				},
+				{
+					"id": 3,
+					"type": "Feature",
+					"geometry": {"type": "Point", "coordinates": [-0.3421, 51.4106]},
+					"properties": {
+						"eventname": "bushy",
+						"EventLongName": "Bushy parkrun",
+						"EventShortName": "Bushy Park",
+						"countrycode": 97,
+						"seriesid": 1
+					}
+				}
+			]
+		}
+	}`
+
+	locations, err := parseEventsJSON([]byte(eventsJSON))
+	if err != nil {
+		t.Fatalf("parseEventsJSON returned error: %v", err)
+	}
+
+	// Should only have 2 locations (the junior event should be filtered out)
+	if len(locations) != 2 {
+		t.Fatalf("Expected 2 locations, got %d", len(locations))
+	}
+
+	// Verify the correct events were retained
+	for _, loc := range locations {
+		if loc.EventSlug == "newark-juniors" {
+			t.Errorf("Junior event 'newark-juniors' should have been filtered out")
+		}
+	}
+
+	// Verify newark and bushy are present
+	slugs := map[string]bool{}
+	for _, loc := range locations {
+		slugs[loc.EventSlug] = true
+	}
+	if !slugs["newark"] {
+		t.Error("Expected 'newark' to be in locations")
+	}
+	if !slugs["bushy"] {
+		t.Error("Expected 'bushy' to be in locations")
+	}
+}

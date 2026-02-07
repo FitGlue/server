@@ -835,6 +835,75 @@ func (x *ConfigFieldValidation) GetMaxValue() float64 {
 	return 0
 }
 
+// IntegrationAction defines an action available on a connected integration
+type IntegrationAction struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`                   // Action identifier (e.g., "import_cardio_prs")
+	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`             // Button label (e.g., "Import Cardio PRs")
+	Description   string                 `protobuf:"bytes,3,opt,name=description,proto3" json:"description,omitempty"` // Help text shown below the label
+	Icon          string                 `protobuf:"bytes,4,opt,name=icon,proto3" json:"icon,omitempty"`               // Emoji icon
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IntegrationAction) Reset() {
+	*x = IntegrationAction{}
+	mi := &file_plugin_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IntegrationAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IntegrationAction) ProtoMessage() {}
+
+func (x *IntegrationAction) ProtoReflect() protoreflect.Message {
+	mi := &file_plugin_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IntegrationAction.ProtoReflect.Descriptor instead.
+func (*IntegrationAction) Descriptor() ([]byte, []int) {
+	return file_plugin_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *IntegrationAction) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *IntegrationAction) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *IntegrationAction) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *IntegrationAction) GetIcon() string {
+	if x != nil {
+		return x.Icon
+	}
+	return ""
+}
+
 // IntegrationManifest defines metadata for external service integrations
 type IntegrationManifest struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
@@ -858,13 +927,15 @@ type IntegrationManifest struct {
 	IconPath *string `protobuf:"bytes,16,opt,name=icon_path,json=iconPath,proto3,oneof" json:"icon_path,omitempty"` // Path to icon asset (e.g., "/images/icons/strava.svg")
 	// When true, integration is hidden from connections page but shown on marketing with "Coming Soon"
 	IsTemporarilyUnavailable *bool `protobuf:"varint,14,opt,name=is_temporarily_unavailable,json=isTemporarilyUnavailable,proto3,oneof" json:"is_temporarily_unavailable,omitempty"`
-	unknownFields            protoimpl.UnknownFields
-	sizeCache                protoimpl.SizeCache
+	// Available actions for connected integrations (e.g., import historical PRs)
+	Actions       []*IntegrationAction `protobuf:"bytes,17,rep,name=actions,proto3" json:"actions,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *IntegrationManifest) Reset() {
 	*x = IntegrationManifest{}
-	mi := &file_plugin_proto_msgTypes[6]
+	mi := &file_plugin_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -876,7 +947,7 @@ func (x *IntegrationManifest) String() string {
 func (*IntegrationManifest) ProtoMessage() {}
 
 func (x *IntegrationManifest) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_proto_msgTypes[6]
+	mi := &file_plugin_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -889,7 +960,7 @@ func (x *IntegrationManifest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use IntegrationManifest.ProtoReflect.Descriptor instead.
 func (*IntegrationManifest) Descriptor() ([]byte, []int) {
-	return file_plugin_proto_rawDescGZIP(), []int{6}
+	return file_plugin_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *IntegrationManifest) GetId() string {
@@ -1004,6 +1075,13 @@ func (x *IntegrationManifest) GetIsTemporarilyUnavailable() bool {
 	return false
 }
 
+func (x *IntegrationManifest) GetActions() []*IntegrationAction {
+	if x != nil {
+		return x.Actions
+	}
+	return nil
+}
+
 // PluginRegistryResponse for API discovery
 type PluginRegistryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -1017,7 +1095,7 @@ type PluginRegistryResponse struct {
 
 func (x *PluginRegistryResponse) Reset() {
 	*x = PluginRegistryResponse{}
-	mi := &file_plugin_proto_msgTypes[7]
+	mi := &file_plugin_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1029,7 +1107,7 @@ func (x *PluginRegistryResponse) String() string {
 func (*PluginRegistryResponse) ProtoMessage() {}
 
 func (x *PluginRegistryResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_plugin_proto_msgTypes[7]
+	mi := &file_plugin_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1042,7 +1120,7 @@ func (x *PluginRegistryResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PluginRegistryResponse.ProtoReflect.Descriptor instead.
 func (*PluginRegistryResponse) Descriptor() ([]byte, []int) {
-	return file_plugin_proto_rawDescGZIP(), []int{7}
+	return file_plugin_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *PluginRegistryResponse) GetSources() []*PluginManifest {
@@ -1172,7 +1250,12 @@ const file_plugin_proto_rawDesc = "" +
 	"\n" +
 	"_min_valueB\f\n" +
 	"\n" +
-	"_max_value\"\x8f\x05\n" +
+	"_max_value\"o\n" +
+	"\x11IntegrationAction\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
+	"\x05label\x18\x02 \x01(\tR\x05label\x12 \n" +
+	"\vdescription\x18\x03 \x01(\tR\vdescription\x12\x12\n" +
+	"\x04icon\x18\x04 \x01(\tR\x04icon\"\xc5\x05\n" +
 	"\x13IntegrationManifest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12 \n" +
@@ -1191,7 +1274,8 @@ const file_plugin_proto_rawDesc = "" +
 	"\bfeatures\x18\r \x03(\tR\bfeatures\x12 \n" +
 	"\ticon_type\x18\x0f \x01(\tH\x00R\biconType\x88\x01\x01\x12 \n" +
 	"\ticon_path\x18\x10 \x01(\tH\x01R\biconPath\x88\x01\x01\x12A\n" +
-	"\x1ais_temporarily_unavailable\x18\x0e \x01(\bH\x02R\x18isTemporarilyUnavailable\x88\x01\x01B\f\n" +
+	"\x1ais_temporarily_unavailable\x18\x0e \x01(\bH\x02R\x18isTemporarilyUnavailable\x88\x01\x01\x124\n" +
+	"\aactions\x18\x11 \x03(\v2\x1a.fitglue.IntegrationActionR\aactionsB\f\n" +
 	"\n" +
 	"_icon_typeB\f\n" +
 	"\n" +
@@ -1237,7 +1321,7 @@ func file_plugin_proto_rawDescGZIP() []byte {
 }
 
 var file_plugin_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_plugin_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_plugin_proto_goTypes = []any{
 	(PluginType)(0),                // 0: fitglue.PluginType
 	(ConfigFieldType)(0),           // 1: fitglue.ConfigFieldType
@@ -1248,8 +1332,9 @@ var file_plugin_proto_goTypes = []any{
 	(*ConfigFieldDependency)(nil),  // 6: fitglue.ConfigFieldDependency
 	(*ConfigFieldOption)(nil),      // 7: fitglue.ConfigFieldOption
 	(*ConfigFieldValidation)(nil),  // 8: fitglue.ConfigFieldValidation
-	(*IntegrationManifest)(nil),    // 9: fitglue.IntegrationManifest
-	(*PluginRegistryResponse)(nil), // 10: fitglue.PluginRegistryResponse
+	(*IntegrationAction)(nil),      // 9: fitglue.IntegrationAction
+	(*IntegrationManifest)(nil),    // 10: fitglue.IntegrationManifest
+	(*PluginRegistryResponse)(nil), // 11: fitglue.PluginRegistryResponse
 }
 var file_plugin_proto_depIdxs = []int32{
 	0,  // 0: fitglue.PluginManifest.type:type_name -> fitglue.PluginType
@@ -1262,15 +1347,16 @@ var file_plugin_proto_depIdxs = []int32{
 	7,  // 7: fitglue.ConfigFieldSchema.key_options:type_name -> fitglue.ConfigFieldOption
 	7,  // 8: fitglue.ConfigFieldSchema.value_options:type_name -> fitglue.ConfigFieldOption
 	2,  // 9: fitglue.IntegrationManifest.auth_type:type_name -> fitglue.IntegrationAuthType
-	3,  // 10: fitglue.PluginRegistryResponse.sources:type_name -> fitglue.PluginManifest
-	3,  // 11: fitglue.PluginRegistryResponse.enrichers:type_name -> fitglue.PluginManifest
-	3,  // 12: fitglue.PluginRegistryResponse.destinations:type_name -> fitglue.PluginManifest
-	9,  // 13: fitglue.PluginRegistryResponse.integrations:type_name -> fitglue.IntegrationManifest
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	9,  // 10: fitglue.IntegrationManifest.actions:type_name -> fitglue.IntegrationAction
+	3,  // 11: fitglue.PluginRegistryResponse.sources:type_name -> fitglue.PluginManifest
+	3,  // 12: fitglue.PluginRegistryResponse.enrichers:type_name -> fitglue.PluginManifest
+	3,  // 13: fitglue.PluginRegistryResponse.destinations:type_name -> fitglue.PluginManifest
+	10, // 14: fitglue.PluginRegistryResponse.integrations:type_name -> fitglue.IntegrationManifest
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_plugin_proto_init() }
@@ -1281,14 +1367,14 @@ func file_plugin_proto_init() {
 	file_plugin_proto_msgTypes[0].OneofWrappers = []any{}
 	file_plugin_proto_msgTypes[2].OneofWrappers = []any{}
 	file_plugin_proto_msgTypes[5].OneofWrappers = []any{}
-	file_plugin_proto_msgTypes[6].OneofWrappers = []any{}
+	file_plugin_proto_msgTypes[7].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_plugin_proto_rawDesc), len(file_plugin_proto_rawDesc)),
 			NumEnums:      3,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

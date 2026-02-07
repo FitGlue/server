@@ -199,6 +199,18 @@ export interface ConfigFieldValidation {
   maxValue?: number | undefined;
 }
 
+/** IntegrationAction defines an action available on a connected integration */
+export interface IntegrationAction {
+  /** Action identifier (e.g., "import_cardio_prs") */
+  id: string;
+  /** Button label (e.g., "Import Cardio PRs") */
+  label: string;
+  /** Help text shown below the label */
+  description: string;
+  /** Emoji icon */
+  icon: string;
+}
+
 /** IntegrationManifest defines metadata for external service integrations */
 export interface IntegrationManifest {
   /** Unique identifier (e.g., "hevy", "fitbit", "strava") */
@@ -236,7 +248,11 @@ export interface IntegrationManifest {
     | string
     | undefined;
   /** When true, integration is hidden from connections page but shown on marketing with "Coming Soon" */
-  isTemporarilyUnavailable?: boolean | undefined;
+  isTemporarilyUnavailable?:
+    | boolean
+    | undefined;
+  /** Available actions for connected integrations (e.g., import historical PRs) */
+  actions: IntegrationAction[];
 }
 
 /** PluginRegistryResponse for API discovery */

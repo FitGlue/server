@@ -76,7 +76,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
     if (method === 'GET' && path.includes('/actions/')) {
         const segments = path.split('/').filter(s => s.length > 0);
         const actionsIndex = segments.findIndex(s => s === 'actions');
-        const sourceId = segments[actionsIndex + 1];
+        const sourceId = segments[actionsIndex - 1];
 
         if (!sourceId) {
             throw new HttpError(400, 'Missing source ID');
@@ -91,8 +91,8 @@ export const handler: FrameworkHandler = async (req, ctx) => {
     if (method === 'POST' && path.includes('/actions/') && !path.includes('/execute/')) {
         const segments = path.split('/').filter(s => s.length > 0);
         const actionsIndex = segments.findIndex(s => s === 'actions');
-        const sourceId = segments[actionsIndex + 1];
-        const actionId = segments[actionsIndex + 2];
+        const sourceId = segments[actionsIndex - 1];
+        const actionId = segments[actionsIndex + 1];
 
         if (!sourceId || !actionId) {
             throw new HttpError(400, 'Missing source ID or action ID');

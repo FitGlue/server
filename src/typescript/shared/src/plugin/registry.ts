@@ -3433,6 +3433,14 @@ FitGlue connects to your Hevy account via API key, allowing your logged activiti
   ],
   iconType: 'svg',
   iconPath: '/images/icons/hevy.svg',
+  actions: [
+    {
+      id: 'import_strength_prs',
+      label: 'Import Strength PRs',
+      description: 'Import 1RM and volume records from your last 12 months of Hevy workouts',
+      icon: '💪',
+    },
+  ],
 });
 
 registerIntegration({
@@ -3470,6 +3478,7 @@ FitGlue connects to your Fitbit account via OAuth, enabling you to import activi
   ],
   iconType: 'svg',
   iconPath: '/images/icons/fitbit.svg',
+  actions: [],
 });
 
 registerIntegration({
@@ -3507,6 +3516,14 @@ FitGlue connects to your Strava account via OAuth and can upload your boosted ac
   ],
   iconType: 'svg',
   iconPath: '/images/icons/strava.svg',
+  actions: [
+    {
+      id: 'import_cardio_prs',
+      label: 'Import Cardio PRs',
+      description: 'Fetch your fastest 5K, 10K, and half marathon times from Strava history',
+      icon: '🏃',
+    },
+  ],
 });
 
 registerIntegration({
@@ -3543,6 +3560,7 @@ FitGlue's mobile app reads your workout data from Apple Health and syncs it to t
   ],
   iconType: 'png',
   iconPath: '/images/icons/healthkit.png',
+  actions: [],
 });
 
 registerIntegration({
@@ -3579,6 +3597,7 @@ FitGlue's mobile app reads your workout data from Health Connect and syncs it to
   ],
   iconType: 'svg',
   iconPath: '/images/icons/healthconnect.svg',
+  actions: [],
 });
 
 registerIntegration({
@@ -3616,6 +3635,7 @@ FitGlue automatically detects when your run is a Parkrun based on GPS location a
   ],
   iconType: 'png',
   iconPath: '/images/icons/parkrun.png',
+  actions: [],
 });
 
 registerIntegration({
@@ -3654,6 +3674,7 @@ FitGlue connects to your TrainingPeaks account via OAuth and uploads your booste
   ],
   iconType: 'png',
   iconPath: '/images/icons/trainingpeaks.png',
+  actions: [],
 });
 
 registerIntegration({
@@ -3691,6 +3712,7 @@ FitGlue connects to your Spotify account and tracks what music you listened to d
   ],
   iconType: 'png',
   iconPath: '/images/icons/spotify.png',
+  actions: [],
 });
 
 registerIntegration({
@@ -3728,6 +3750,7 @@ FitGlue connects to your Google account and automatically logs your activities t
   ],
   iconType: 'png',
   iconPath: '/images/icons/google.png',
+  actions: [],
 });
 
 registerIntegration({
@@ -3766,6 +3789,7 @@ FitGlue connects to your Oura account via OAuth and imports your tracked workout
   ],
   iconType: 'jpg',
   iconPath: '/images/icons/oura.jpg',
+  actions: [],
 });
 
 registerIntegration({
@@ -3811,6 +3835,7 @@ Polar uses a unique transaction-based API that ensures no activities are lost. F
   ],
   iconType: 'svg',
   iconPath: '/images/icons/polar.svg',
+  actions: [],
 });
 
 registerIntegration({
@@ -3850,6 +3875,7 @@ FitGlue connects to your Intervals.icu account via API key and can upload your b
   ],
   iconType: 'png',
   iconPath: '/images/icons/intervals.png',
+  actions: [],
 });
 
 registerIntegration({
@@ -3889,6 +3915,7 @@ FitGlue connects to your Wahoo account via OAuth and imports your workouts with 
   ],
   iconType: 'jpg',
   iconPath: '/images/icons/wahoo.jpg',
+  actions: [],
 });
 
 registerIntegration({
@@ -3926,4 +3953,5 @@ FitGlue connects to your Garmin Connect account via OAuth and imports your activ
   ],
   iconType: 'svg',
   iconPath: '/images/icons/garmin.svg',
+  actions: [],
 });
