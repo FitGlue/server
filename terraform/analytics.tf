@@ -84,8 +84,9 @@ resource "google_bigquery_dataset_iam_member" "log_sink_writer" {
 # =============================================================================
 
 resource "google_bigquery_table" "cloudrun_placeholder" {
-  dataset_id = google_bigquery_dataset.analytics.dataset_id
-  table_id   = "run_googleapis_com_requests_20200101"
+  dataset_id          = google_bigquery_dataset.analytics.dataset_id
+  table_id            = "run_googleapis_com_requests_20200101"
+  deletion_protection = false
 
   schema = jsonencode([
     { name = "timestamp", type = "TIMESTAMP", mode = "NULLABLE" },
