@@ -114,7 +114,7 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 	}
 
 	// Build output
-	activityLabel := getActivityLabel(activityTypes, activity.Type)
+	activityLabel := getActivityLabel(activityTypes)
 	var sb strings.Builder
 
 	if streakBroken {
@@ -164,7 +164,7 @@ func getStreakEmoji(streak int) string {
 	}
 }
 
-func getActivityLabel(filter string, actType pb.ActivityType) string {
+func getActivityLabel(filter string) string {
 	switch filter {
 	case "running":
 		return "running"
@@ -175,19 +175,7 @@ func getActivityLabel(filter string, actType pb.ActivityType) string {
 	case "strength":
 		return "strength training"
 	default:
-		// Use actual activity type if "any"
-		switch actType {
-		case pb.ActivityType_ACTIVITY_TYPE_RUN, pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:
-			return "running"
-		case pb.ActivityType_ACTIVITY_TYPE_RIDE, pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE:
-			return "cycling"
-		case pb.ActivityType_ACTIVITY_TYPE_SWIM:
-			return "swimming"
-		case pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
-			return "strength"
-		default:
-			return "activity"
-		}
+		return "activity"
 	}
 }
 
