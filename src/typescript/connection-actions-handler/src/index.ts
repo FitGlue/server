@@ -122,11 +122,14 @@ export const handler: FrameworkHandler = async (req, ctx) => {
         });
 
         // Enqueue to Cloud Tasks
-        const projectId = process.env.GCP_PROJECT || process.env.GCLOUD_PROJECT;
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+        if (!projectId) {
+            throw new Error('GOOGLE_CLOUD_PROJECT environment variable is not set');
+        }
         const location = process.env.FUNCTION_REGION || 'us-central1';
         const queueName = 'connection-actions';
 
-        const parent = tasksClient.queuePath(projectId!, location, queueName);
+        const parent = tasksClient.queuePath(projectId, location, queueName);
         const serviceUrl = process.env.CONNECTION_ACTIONS_URL || `https://${location}-${projectId}.cloudfunctions.net/connection-actions-handler`;
 
         await tasksClient.createTask({
