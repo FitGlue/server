@@ -332,6 +332,21 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	// If no changes, skip the PUT
 	if len(updatedFields) == 0 {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
+		// Record upload for loop prevention even when skipping PUT
+		// The activity IS on Hevy, so we need bounceback protection
+		uploadRecord := &pb.UploadedActivityRecord{
+			Id:            loopprevention.BuildUploadedActivityID(pb.Destination_DESTINATION_HEVY, workoutID),
+			UserId:        event.UserId,
+			Source:        event.Source,
+			ExternalId:    event.ActivityData.GetExternalId(),
+			StartTime:     event.StartTime,
+			Destination:   pb.Destination_DESTINATION_HEVY,
+			DestinationId: workoutID,
+			UploadedAt:    timestamppb.Now(),
+		}
+		if err := svc.DB.SetUploadedActivity(ctx, event.UserId, uploadRecord); err != nil {
+			fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+		}
 		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
 		destination.UpdateStatus(ctx, svc.DB, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", fwCtx.Logger)
 		return map[string]interface{}{
@@ -478,6 +493,29 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 	// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
 	// We no longer update synchronized_activities here
+
+	// Record upload for loop prevention (same as create path)
+	uploadRecord := &pb.UploadedActivityRecord{
+		Id:            loopprevention.BuildUploadedActivityID(pb.Destination_DESTINATION_HEVY, workoutID),
+		UserId:        event.UserId,
+		Source:        event.Source,
+		ExternalId:    event.ActivityData.GetExternalId(),
+		StartTime:     event.StartTime,
+		Destination:   pb.Destination_DESTINATION_HEVY,
+		DestinationId: workoutID,
+		UploadedAt:    timestamppb.Now(),
+	}
+	if err := svc.DB.SetUploadedActivity(ctx, event.UserId, uploadRecord); err != nil {
+		fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+	}
+
+	// Increment sync count for billing
+	if err := svc.DB.IncrementSyncCount(ctx, event.UserId); err != nil {
+		fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", event.UserId)
+	}
+
+	// Update PipelineRun destination as synced
+	destination.UpdateStatus(ctx, svc.DB, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":         "SUCCESS",

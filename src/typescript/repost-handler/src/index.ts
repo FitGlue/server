@@ -229,12 +229,13 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
   } = enrichedEvent as Record<string, unknown>;
 
   // Update the event with ONLY the new destination (snake_case for proto JSON)
+  // Use the ORIGINAL pipeline run ID so uploaders update the correct PipelineRun document
   const repostData: Record<string, unknown> = {
     ...eventWithoutConflictingFields,
     user_id: _uid || _uidAlt,
     activity_id: _aid || _aidAlt,
     destinations: [destEnum],  // ONLY the missed destination
-    pipeline_execution_id: newPipelineExecutionId,
+    pipeline_execution_id: pipelineRun.id,
   };
 
   ctx.logger.info('Constructed repost data', {
@@ -344,12 +345,13 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
   } = enrichedEvent as Record<string, unknown>;
 
   // Update the event with ONLY the retry destination (snake_case for proto JSON)
+  // Use the ORIGINAL pipeline run ID so uploaders update the correct PipelineRun document
   const repostData: Record<string, unknown> = {
     ...eventWithoutConflictingFields,
     user_id: _uid || _uidAlt,
     activity_id: _aid || _aidAlt,
     destinations: [destEnum],  // ONLY the retry destination
-    pipeline_execution_id: newPipelineExecutionId,
+    pipeline_execution_id: pipelineRun.id,
   };
 
   // Wrap in CloudEvent envelope matching Go enricher format

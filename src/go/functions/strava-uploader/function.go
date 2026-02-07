@@ -493,6 +493,21 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
 	}
 
+	// Record upload for loop prevention (same as create path)
+	uploadRecord := &pb.UploadedActivityRecord{
+		Id:            loopprevention.BuildUploadedActivityID(pb.Destination_DESTINATION_STRAVA, stravaIDStr),
+		UserId:        eventPayload.UserId,
+		Source:        eventPayload.Source,
+		ExternalId:    eventPayload.ActivityData.GetExternalId(),
+		StartTime:     eventPayload.StartTime,
+		Destination:   pb.Destination_DESTINATION_STRAVA,
+		DestinationId: stravaIDStr,
+		UploadedAt:    timestamppb.Now(),
+	}
+	if err := svc.DB.SetUploadedActivity(ctx, eventPayload.UserId, uploadRecord); err != nil {
+		fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
+	}
+
 	return map[string]interface{}{
 		"status":             "SUCCESS",
 		"strava_activity_id": stravaIDStr,

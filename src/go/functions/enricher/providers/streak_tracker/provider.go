@@ -116,21 +116,20 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 	// Build output
 	activityLabel := getActivityLabel(activityTypes)
 	var sb strings.Builder
+	sb.WriteString("🔥 Streak Tracker:\n")
 
 	if streakBroken {
-		sb.WriteString("🔥 Starting a new streak!\n")
-		sb.WriteString(fmt.Sprintf("• Day 1 of your %s streak", activityLabel))
+		sb.WriteString(fmt.Sprintf("• Day 1 of your %s streak - starting fresh!", activityLabel))
 	} else if currentStreak == 1 {
-		sb.WriteString(fmt.Sprintf("🔥 %s streak started!\n", capitalise(activityLabel)))
-		sb.WriteString("• Day 1 - let's go!")
+		sb.WriteString(fmt.Sprintf("• %s streak started - let's go!", capitalise(activityLabel)))
 	} else {
 		emoji := getStreakEmoji(currentStreak)
-		sb.WriteString(fmt.Sprintf("%s %d-day %s streak!\n", emoji, currentStreak, activityLabel))
+		sb.WriteString(fmt.Sprintf("• %s %d-day %s streak!", emoji, currentStreak, activityLabel))
 
 		if currentStreak == longestStreak && currentStreak > 1 {
-			sb.WriteString("• 🏆 New personal best streak!")
+			sb.WriteString("\n• 🏆 New personal best streak!")
 		} else if longestStreak > currentStreak {
-			sb.WriteString(fmt.Sprintf("• Best: %d days", longestStreak))
+			sb.WriteString(fmt.Sprintf("\n• Best: %d days", longestStreak))
 		}
 	}
 
