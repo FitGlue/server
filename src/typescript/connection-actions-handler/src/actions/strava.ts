@@ -221,8 +221,8 @@ async function saveRecordsToFirestore(
             unit: 'seconds',
             activity_id: newRecord.activityId.toString(),
             achieved_at: Timestamp.fromDate(new Date(newRecord.date)),
-            previous_value: existing?.value,
-            improvement,
+            previous_value: existing?.value ?? null,
+            improvement: improvement ?? null,
             source: 'strava_import',
         });
 

@@ -89,8 +89,8 @@ resource "google_logging_metric" "pipeline_execution_status" {
   name        = "pipeline_execution_status"
   description = "Pipeline execution outcomes extracted from enricher logs"
   filter      = <<-EOT
-    resource.type="cloud_function"
-    resource.labels.function_name="enricher"
+    resource.type="cloud_run_revision"
+    resource.labels.service_name="enricher"
     jsonPayload.status=~"SUCCESS|FAILED|SKIPPED"
   EOT
 
@@ -115,8 +115,8 @@ resource "google_logging_metric" "enricher_provider_execution" {
   name        = "enricher_provider_execution"
   description = "Enricher provider execution count by name and status"
   filter      = <<-EOT
-    resource.type="cloud_function"
-    resource.labels.function_name="enricher"
+    resource.type="cloud_run_revision"
+    resource.labels.service_name="enricher"
     jsonPayload.message=~"Provider completed|Provider failed|Provider halted"
   EOT
 
@@ -147,8 +147,8 @@ resource "google_logging_metric" "enricher_provider_duration" {
   name        = "enricher_provider_duration"
   description = "Enricher provider execution duration in milliseconds"
   filter      = <<-EOT
-    resource.type="cloud_function"
-    resource.labels.function_name="enricher"
+    resource.type="cloud_run_revision"
+    resource.labels.service_name="enricher"
     jsonPayload.message=~"Provider completed|Provider failed"
     jsonPayload.duration_ms > 0
   EOT
@@ -183,8 +183,8 @@ resource "google_logging_metric" "provider_api_latency" {
   name        = "provider_api_latency"
   description = "Uploader function execution time as proxy for provider API latency"
   filter      = <<-EOT
-    resource.type="cloud_function"
-    resource.labels.function_name=~".*-uploader"
+    resource.type="cloud_run_revision"
+    resource.labels.service_name=~".*-uploader"
   EOT
 
   metric_descriptor {
@@ -199,7 +199,7 @@ resource "google_logging_metric" "provider_api_latency" {
   }
 
   label_extractors = {
-    "provider" = "REGEXP_EXTRACT(resource.labels.function_name, \"(.*)-uploader\")"
+    "provider" = "REGEXP_EXTRACT(resource.labels.service_name, \"(.*)-uploader\")"
   }
 
   # Use execution duration from Cloud Functions
@@ -234,7 +234,7 @@ resource "google_monitoring_dashboard" "operations" {
               scorecard = {
                 timeSeriesQuery = {
                   timeSeriesFilter = {
-                    filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                    filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\""
                     aggregation = {
                       alignmentPeriod  = "86400s"
                       perSeriesAligner = "ALIGN_SUM"
@@ -254,14 +254,14 @@ resource "google_monitoring_dashboard" "operations" {
                 timeSeriesQuery = {
                   timeSeriesFilterRatio = {
                     numerator = {
-                      filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\" AND metric.labels.status!=\"ok\""
+                      filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class!=\"2xx\""
                       aggregation = {
                         alignmentPeriod  = "3600s"
                         perSeriesAligner = "ALIGN_SUM"
                       }
                     }
                     denominator = {
-                      filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                      filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\""
                       aggregation = {
                         alignmentPeriod  = "3600s"
                         perSeriesAligner = "ALIGN_SUM"
@@ -285,7 +285,7 @@ resource "google_monitoring_dashboard" "operations" {
               scorecard = {
                 timeSeriesQuery = {
                   timeSeriesFilter = {
-                    filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                    filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_latencies\""
                     aggregation = {
                       alignmentPeriod    = "3600s"
                       perSeriesAligner   = "ALIGN_PERCENTILE_50"
@@ -305,7 +305,7 @@ resource "google_monitoring_dashboard" "operations" {
               scorecard = {
                 timeSeriesQuery = {
                   timeSeriesFilter = {
-                    filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                    filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_latencies\""
                     aggregation = {
                       alignmentPeriod    = "3600s"
                       perSeriesAligner   = "ALIGN_PERCENTILE_95"
@@ -333,17 +333,17 @@ resource "google_monitoring_dashboard" "operations" {
                 dataSets = [{
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                      filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\""
                       aggregation = {
                         alignmentPeriod    = "300s"
                         perSeriesAligner   = "ALIGN_RATE"
                         crossSeriesReducer = "REDUCE_SUM"
-                        groupByFields      = ["resource.labels.function_name"]
+                        groupByFields      = ["resource.labels.service_name"]
                       }
                     }
                   }
                   plotType       = "STACKED_AREA"
-                  legendTemplate = "$${resource.labels.function_name}"
+                  legendTemplate = "$${resource.labels.service_name}"
                 }]
                 yAxis = { label = "Invocations/sec" }
               }
@@ -360,17 +360,17 @@ resource "google_monitoring_dashboard" "operations" {
                 dataSets = [{
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\" AND metric.labels.status!=\"ok\""
+                      filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class!=\"2xx\""
                       aggregation = {
                         alignmentPeriod    = "300s"
                         perSeriesAligner   = "ALIGN_RATE"
                         crossSeriesReducer = "REDUCE_SUM"
-                        groupByFields      = ["resource.labels.function_name"]
+                        groupByFields      = ["resource.labels.service_name"]
                       }
                     }
                   }
                   plotType       = "STACKED_BAR"
-                  legendTemplate = "$${resource.labels.function_name}"
+                  legendTemplate = "$${resource.labels.service_name}"
                 }]
                 yAxis = { label = "Errors/sec" }
               }
@@ -389,17 +389,17 @@ resource "google_monitoring_dashboard" "operations" {
                 dataSets = [{
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = {
                         alignmentPeriod    = "300s"
                         perSeriesAligner   = "ALIGN_PERCENTILE_99"
                         crossSeriesReducer = "REDUCE_MAX"
-                        groupByFields      = ["resource.labels.function_name"]
+                        groupByFields      = ["resource.labels.service_name"]
                       }
                     }
                   }
                   plotType       = "LINE"
-                  legendTemplate = "$${resource.labels.function_name} (p99)"
+                  legendTemplate = "$${resource.labels.service_name} (p99)"
                 }]
                 yAxis = { label = "Latency (ms)" }
               }
@@ -418,7 +418,7 @@ resource "google_monitoring_dashboard" "operations" {
                 dataSets = [{
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"firestore_database\" AND metric.type=\"firestore.googleapis.com/document/read_count\""
+                      filter = "resource.type=\"firestore_database\" AND metric.type=\"firestore.googleapis.com/document/read_ops_count\""
                       aggregation = {
                         alignmentPeriod  = "300s"
                         perSeriesAligner = "ALIGN_RATE"
@@ -442,7 +442,7 @@ resource "google_monitoring_dashboard" "operations" {
                 dataSets = [{
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"firestore_database\" AND metric.type=\"firestore.googleapis.com/document/write_count\""
+                      filter = "resource.type=\"firestore_database\" AND metric.type=\"firestore.googleapis.com/document/write_ops_count\""
                       aggregation = {
                         alignmentPeriod  = "300s"
                         perSeriesAligner = "ALIGN_RATE"
@@ -484,7 +484,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 for uploader in local.go_uploaders : {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${uploader}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${uploader}\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = {
                         alignmentPeriod  = "300s"
                         perSeriesAligner = "ALIGN_PERCENTILE_95"
@@ -511,7 +511,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"strava-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"strava-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_50" }
                     }
                   }
@@ -520,7 +520,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"strava-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"strava-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_95" }
                     }
                   }
@@ -529,7 +529,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"strava-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"strava-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_99" }
                     }
                   }
@@ -553,7 +553,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"trainingpeaks-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"trainingpeaks-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_50" }
                     }
                   }
@@ -562,7 +562,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"trainingpeaks-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"trainingpeaks-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_95" }
                     }
                   }
@@ -571,7 +571,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"trainingpeaks-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"trainingpeaks-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_99" }
                     }
                   }
@@ -595,7 +595,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"intervals-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"intervals-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_50" }
                     }
                   }
@@ -604,7 +604,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"intervals-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"intervals-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_95" }
                     }
                   }
@@ -613,7 +613,7 @@ resource "google_monitoring_dashboard" "provider_latency" {
                 {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"intervals-uploader\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                      filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"intervals-uploader\" AND metric.type=\"run.googleapis.com/request_latencies\""
                       aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_99" }
                     }
                   }
@@ -637,11 +637,11 @@ resource "google_monitoring_dashboard" "provider_latency" {
                   timeSeriesQuery = {
                     timeSeriesFilterRatio = {
                       numerator = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${uploader}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\" AND metric.labels.status!=\"ok\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${uploader}\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class!=\"2xx\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_SUM" }
                       }
                       denominator = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${uploader}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${uploader}\" AND metric.type=\"run.googleapis.com/request_count\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_SUM" }
                       }
                     }
@@ -689,7 +689,7 @@ resource "google_monitoring_dashboard" "handler_performance" {
                   for handler in local.ts_integration_handlers : {
                     timeSeriesQuery = {
                       timeSeriesFilter = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_count\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_RATE" }
                       }
                     }
@@ -713,7 +713,7 @@ resource "google_monitoring_dashboard" "handler_performance" {
                   for handler in local.ts_integration_handlers : {
                     timeSeriesQuery = {
                       timeSeriesFilter = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_latencies\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_95" }
                       }
                     }
@@ -745,7 +745,7 @@ resource "google_monitoring_dashboard" "handler_performance" {
                   for handler in concat(local.go_pipeline_handlers, local.go_uploaders) : {
                     timeSeriesQuery = {
                       timeSeriesFilter = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_count\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_RATE" }
                       }
                     }
@@ -769,7 +769,7 @@ resource "google_monitoring_dashboard" "handler_performance" {
                   for handler in concat(local.go_pipeline_handlers, local.go_uploaders) : {
                     timeSeriesQuery = {
                       timeSeriesFilter = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_latencies\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_95" }
                       }
                     }
@@ -801,7 +801,7 @@ resource "google_monitoring_dashboard" "handler_performance" {
                   for handler in local.ts_api_handlers : {
                     timeSeriesQuery = {
                       timeSeriesFilter = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_count\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_RATE" }
                       }
                     }
@@ -825,7 +825,7 @@ resource "google_monitoring_dashboard" "handler_performance" {
                   for handler in local.ts_api_handlers : {
                     timeSeriesQuery = {
                       timeSeriesFilter = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_latencies\""
                         aggregation = { alignmentPeriod = "300s", perSeriesAligner = "ALIGN_PERCENTILE_95" }
                       }
                     }
@@ -986,7 +986,7 @@ resource "google_monitoring_dashboard" "business_growth" {
               dataSets = [{
                 timeSeriesQuery = {
                   timeSeriesFilter = {
-                    filter = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"enricher\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                    filter = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"enricher\" AND metric.type=\"run.googleapis.com/request_count\""
                     aggregation = {
                       alignmentPeriod  = "3600s"
                       perSeriesAligner = "ALIGN_SUM"
@@ -1011,7 +1011,7 @@ resource "google_monitoring_dashboard" "business_growth" {
             scorecard = {
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"enricher\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                  filter = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"enricher\" AND metric.type=\"run.googleapis.com/request_count\""
                   aggregation = {
                     alignmentPeriod  = "604800s"
                     perSeriesAligner = "ALIGN_SUM"
@@ -1036,7 +1036,7 @@ resource "google_monitoring_dashboard" "business_growth" {
                 for handler in ["strava-handler", "fitbit-handler", "polar-handler", "wahoo-handler", "mobile-sync-handler"] : {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                      filter = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_count\""
                       aggregation = {
                         alignmentPeriod  = "3600s"
                         perSeriesAligner = "ALIGN_SUM"
@@ -1065,11 +1065,11 @@ resource "google_monitoring_dashboard" "business_growth" {
                   timeSeriesQuery = {
                     timeSeriesFilterRatio = {
                       numerator = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${uploader}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\" AND metric.labels.status=\"ok\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${uploader}\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class=\"2xx\""
                         aggregation = { alignmentPeriod = "3600s", perSeriesAligner = "ALIGN_SUM" }
                       }
                       denominator = {
-                        filter      = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${uploader}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                        filter      = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${uploader}\" AND metric.type=\"run.googleapis.com/request_count\""
                         aggregation = { alignmentPeriod = "3600s", perSeriesAligner = "ALIGN_SUM" }
                       }
                     }
@@ -1094,7 +1094,7 @@ resource "google_monitoring_dashboard" "business_growth" {
                 for handler in ["strava-handler", "fitbit-handler", "polar-handler", "wahoo-handler", "hevy-handler", "oura-handler"] : {
                   timeSeriesQuery = {
                     timeSeriesFilter = {
-                      filter = "resource.type=\"cloud_function\" AND resource.labels.function_name=\"${handler}\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_count\""
+                      filter = "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"${handler}\" AND metric.type=\"run.googleapis.com/request_count\""
                       aggregation = {
                         alignmentPeriod  = "3600s"
                         perSeriesAligner = "ALIGN_RATE"
@@ -1136,9 +1136,9 @@ resource "google_monitoring_alert_policy" "high_error_rate" {
     display_name = "Error rate exceeds 5%"
     condition_threshold {
       filter          = <<-EOT
-        resource.type="cloud_function" AND
-        metric.type="cloudfunctions.googleapis.com/function/execution_count" AND
-        metric.labels.status!="ok"
+        resource.type="cloud_run_revision" AND
+        metric.type="run.googleapis.com/request_count" AND
+        metric.labels.response_code_class!="2xx"
       EOT
       duration        = "300s"
       comparison      = "COMPARISON_GT"
@@ -1148,19 +1148,19 @@ resource "google_monitoring_alert_policy" "high_error_rate" {
         alignment_period     = "300s"
         per_series_aligner   = "ALIGN_RATE"
         cross_series_reducer = "REDUCE_SUM"
-        group_by_fields      = ["resource.labels.function_name"]
+        group_by_fields      = ["resource.labels.service_name"]
       }
 
       denominator_filter = <<-EOT
-        resource.type="cloud_function" AND
-        metric.type="cloudfunctions.googleapis.com/function/execution_count"
+        resource.type="cloud_run_revision" AND
+        metric.type="run.googleapis.com/request_count"
       EOT
 
       denominator_aggregations {
         alignment_period     = "300s"
         per_series_aligner   = "ALIGN_RATE"
         cross_series_reducer = "REDUCE_SUM"
-        group_by_fields      = ["resource.labels.function_name"]
+        group_by_fields      = ["resource.labels.service_name"]
       }
     }
   }
@@ -1190,10 +1190,10 @@ resource "google_monitoring_alert_policy" "critical_pipeline_failure" {
       display_name = "${conditions.value} errors"
       condition_threshold {
         filter          = <<-EOT
-          resource.type="cloud_function" AND
-          resource.labels.function_name="${conditions.value}" AND
-          metric.type="cloudfunctions.googleapis.com/function/execution_count" AND
-          metric.labels.status!="ok"
+          resource.type="cloud_run_revision" AND
+          resource.labels.service_name="${conditions.value}" AND
+          metric.type="run.googleapis.com/request_count" AND
+          metric.labels.response_code_class!="2xx"
         EOT
         duration        = "60s"
         comparison      = "COMPARISON_GT"
@@ -1229,10 +1229,10 @@ resource "google_monitoring_alert_policy" "critical_uploader_failure" {
       display_name = "${conditions.value} errors"
       condition_threshold {
         filter          = <<-EOT
-          resource.type="cloud_function" AND
-          resource.labels.function_name="${conditions.value}" AND
-          metric.type="cloudfunctions.googleapis.com/function/execution_count" AND
-          metric.labels.status!="ok"
+          resource.type="cloud_run_revision" AND
+          resource.labels.service_name="${conditions.value}" AND
+          metric.type="run.googleapis.com/request_count" AND
+          metric.labels.response_code_class!="2xx"
         EOT
         duration        = "60s"
         comparison      = "COMPARISON_GT"
@@ -1275,10 +1275,10 @@ resource "google_monitoring_alert_policy" "critical_integration_failure_1" {
       display_name = "${conditions.value} errors"
       condition_threshold {
         filter          = <<-EOT
-          resource.type="cloud_function" AND
-          resource.labels.function_name="${conditions.value}" AND
-          metric.type="cloudfunctions.googleapis.com/function/execution_count" AND
-          metric.labels.status!="ok"
+          resource.type="cloud_run_revision" AND
+          resource.labels.service_name="${conditions.value}" AND
+          metric.type="run.googleapis.com/request_count" AND
+          metric.labels.response_code_class!="2xx"
         EOT
         duration        = "60s"
         comparison      = "COMPARISON_GT"
@@ -1314,10 +1314,10 @@ resource "google_monitoring_alert_policy" "critical_integration_failure_2" {
       display_name = "${conditions.value} errors"
       condition_threshold {
         filter          = <<-EOT
-          resource.type="cloud_function" AND
-          resource.labels.function_name="${conditions.value}" AND
-          metric.type="cloudfunctions.googleapis.com/function/execution_count" AND
-          metric.labels.status!="ok"
+          resource.type="cloud_run_revision" AND
+          resource.labels.service_name="${conditions.value}" AND
+          metric.type="run.googleapis.com/request_count" AND
+          metric.labels.response_code_class!="2xx"
         EOT
         duration        = "60s"
         comparison      = "COMPARISON_GT"
@@ -1351,7 +1351,7 @@ resource "google_monitoring_alert_policy" "high_latency" {
   conditions {
     display_name = "Function latency exceeds 30 seconds"
     condition_threshold {
-      filter          = "resource.type=\"cloud_function\" AND metric.type=\"cloudfunctions.googleapis.com/function/execution_times\""
+      filter          = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_latencies\""
       duration        = "300s"
       comparison      = "COMPARISON_GT"
       threshold_value = 30000 # 30 seconds in ms
@@ -1360,7 +1360,7 @@ resource "google_monitoring_alert_policy" "high_latency" {
         alignment_period     = "300s"
         per_series_aligner   = "ALIGN_PERCENTILE_95"
         cross_series_reducer = "REDUCE_MAX"
-        group_by_fields      = ["resource.labels.function_name"]
+        group_by_fields      = ["resource.labels.service_name"]
       }
     }
   }

@@ -2070,6 +2070,21 @@ resource "google_cloudfunctions2_function" "connection_actions_handler" {
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
     }
+
+    secret_environment_variables {
+      key        = "STRAVA_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.strava_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "STRAVA_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.strava_client_secret.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 }

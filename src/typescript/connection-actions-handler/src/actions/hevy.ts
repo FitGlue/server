@@ -139,6 +139,16 @@ function processExercise(
     }
 }
 
+function pickBetterOneRM(candidate: number | null, existing: ExerciseRecord | undefined): number | null {
+    if (!existing) return candidate;
+    if (candidate && (!existing.oneRM || candidate > existing.oneRM)) return candidate;
+    return existing.oneRM;
+}
+
+function pickBetterValue(candidate: number, existingValue: number | null): number {
+    return candidate > (existingValue ?? 0) ? candidate : (existingValue ?? 0);
+}
+
 function updateRecordIfBetter(
     records: Map<string, ExerciseRecord>,
     key: string,
@@ -147,21 +157,16 @@ function updateRecordIfBetter(
     const existing = records.get(key);
     const { oneRM, volume, reps, workoutId, date, exerciseTitle } = candidate;
 
-    const newOneRM = (!existing || (oneRM && (!existing.oneRM || oneRM > existing.oneRM)))
-        ? oneRM
-        : existing?.oneRM ?? null;
+    const newOneRM = pickBetterOneRM(oneRM, existing);
+    const newVolume = pickBetterValue(volume, existing?.maxVolume ?? null);
+    const newReps = pickBetterValue(reps, existing?.maxReps ?? null);
 
-    const newVolume = (!existing || volume > (existing.maxVolume ?? 0))
-        ? volume
-        : existing?.maxVolume ?? null;
+    const improved = !existing
+        || newOneRM !== existing.oneRM
+        || newVolume !== existing.maxVolume
+        || newReps !== existing.maxReps;
 
-    const newReps = (!existing || reps > (existing.maxReps ?? 0))
-        ? reps
-        : existing?.maxReps ?? null;
-
-    const improved = newOneRM !== existing?.oneRM || newVolume !== existing?.maxVolume || newReps !== existing?.maxReps;
-
-    if (improved || !existing) {
+    if (improved) {
         records.set(key, {
             oneRM: newOneRM,
             maxVolume: newVolume,
@@ -279,8 +284,8 @@ async function saveIfBetter(options: SaveOptions): Promise<boolean> {
         unit,
         activity_id: record.workoutId,
         achieved_at: Timestamp.fromDate(new Date(record.date)),
-        previous_value: existing?.value,
-        improvement,
+        previous_value: existing?.value ?? null,
+        improvement: improvement ?? null,
         source: 'hevy_import',
     });
 
