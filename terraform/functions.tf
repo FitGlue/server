@@ -2101,3 +2101,10 @@ resource "google_cloud_tasks_queue" "connection_actions" {
     max_doublings      = 4
   }
 }
+
+# Grant the Cloud Function SA permission to enqueue tasks
+resource "google_project_iam_member" "cloud_function_sa_tasks_enqueuer" {
+  project = var.project_id
+  role    = "roles/cloudtasks.enqueuer"
+  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
