@@ -382,6 +382,12 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE]: 'FIT File Heart Rate',
         [EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER]: 'Hybrid Race Tagger',
         [EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS]: 'Running Dynamics',
+        [EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES]: 'Heart Rate Zones',
+        [EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED]: 'Calories Burned',
+        [EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER]: 'Goal Tracker',
+        [EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER]: 'Streak Tracker',
+        [EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES]: 'Distance Milestones',
+        [EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR]: 'Recovery Advisor',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };
