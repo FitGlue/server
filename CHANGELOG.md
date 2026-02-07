@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.8.2](https://github.com/FitGlue/server/compare/v12.8.1...v12.8.2) (2026-02-07)
+
+
+### Bug Fixes
+
+* compositve collection for pipeline run query for admin ([1f2d00d](https://github.com/FitGlue/server/commit/1f2d00dbf66841ba4c70e2238c36084997c0f3b7))
+* grant iam for cloud task creation for function ([cdce33e](https://github.com/FitGlue/server/commit/cdce33e9e85a2c5c2a8d62e89a5550062e36614e))
+* grant iam permission for cloud invoker ([2da4041](https://github.com/FitGlue/server/commit/2da4041900cae748df50dda20ed0e9b72dddfd09))
+* remove unnecessary index ([4338ab1](https://github.com/FitGlue/server/commit/4338ab13528dfc75551abc2ea49bb86e86ba8de9))
+
 ### [12.8.1](https://github.com/FitGlue/server/compare/v12.8.0...v12.8.1) (2026-02-07)
 
 
