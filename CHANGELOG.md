@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.8.0](https://github.com/FitGlue/server/compare/v12.7.0...v12.8.0) (2026-02-07)
+
+
+### Features
+
+* **proto:** add IntegrationAction message to plugin schema ([f4a415e](https://github.com/FitGlue/server/commit/f4a415e12afc74b6b7696f8a8c2b5afa2ef95824))
+
 ## [12.7.0](https://github.com/FitGlue/server/compare/v12.6.0...v12.7.0) (2026-02-06)
 
 
