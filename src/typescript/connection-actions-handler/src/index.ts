@@ -3,7 +3,7 @@ import { createCloudFunction, FirebaseAuthStrategy, PayloadUserStrategy, Framewo
 import { HttpError } from '@fitglue/shared/errors';
 import { CloudTasksClient } from '@google-cloud/tasks';
 import { getMessaging } from 'firebase-admin/messaging';
-import { Timestamp } from 'firebase-admin/firestore';
+import { FieldValue, Timestamp } from 'firebase-admin/firestore';
 
 /**
  * Connection Actions Handler - One-off actions for integrations
@@ -269,8 +269,16 @@ async function sendCompletionNotification(
                 },
             });
         } catch (err) {
-            // Token might be invalid, continue with others
-            console.warn('Failed to send notification to token', { token, error: err });
+            const isNotRegistered = err instanceof Error &&
+                'code' in err && (err as { code: string }).code === 'messaging/registration-token-not-registered';
+            if (isNotRegistered) {
+                await db.collection('users').doc(userId).update({
+                    fcm_tokens: FieldValue.arrayRemove(token),
+                });
+                console.warn('Removed stale FCM token', { userId });
+            } else {
+                console.warn('Failed to send notification to token', { token, error: err });
+            }
         }
     }
 }
@@ -308,7 +316,16 @@ async function sendFailureNotification(
                 },
             });
         } catch (err) {
-            console.warn('Failed to send notification to token', { token, error: err });
+            const isNotRegistered = err instanceof Error &&
+                'code' in err && (err as { code: string }).code === 'messaging/registration-token-not-registered';
+            if (isNotRegistered) {
+                await db.collection('users').doc(userId).update({
+                    fcm_tokens: FieldValue.arrayRemove(token),
+                });
+                console.warn('Removed stale FCM token', { userId });
+            } else {
+                console.warn('Failed to send notification to token', { token, error: err });
+            }
         }
     }
 }

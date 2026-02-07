@@ -199,7 +199,7 @@ func NewService(ctx context.Context) (*Service, error) {
 		return nil, fmt.Errorf("firebase app init: %w", err)
 	}
 
-	fcmAdapter, err := notifications.NewFCMAdapter(ctx, fbApp)
+	fcmAdapter, err := notifications.NewFCMAdapter(ctx, fbApp, fsClient)
 	if err != nil {
 		slog.Warn("FCM initialization failed (notifications will be disabled)", "error", err)
 	}
