@@ -42,6 +42,14 @@ resource "google_project_iam_member" "cloud_function_sa_aiplatform_user" {
   member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 
+# Service Account User - allows Cloud Function SA to create Cloud Tasks with OIDC tokens
+# targeting the App Engine default service account
+resource "google_project_iam_member" "cloud_function_sa_service_account_user" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountUser"
+  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
 resource "google_project_iam_member" "web_deployer_run_viewer" {
   project = var.project_id
   role    = "roles/run.viewer"
