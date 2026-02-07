@@ -2082,6 +2082,15 @@ resource "google_cloud_run_service_iam_member" "connection_actions_handler_invok
   member   = "allUsers"
 }
 
+# Allow the Cloud Function SA to invoke itself (for Cloud Tasks OIDC callbacks)
+resource "google_cloud_run_service_iam_member" "connection_actions_handler_self_invoker" {
+  project  = google_cloudfunctions2_function.connection_actions_handler.project
+  location = google_cloudfunctions2_function.connection_actions_handler.location
+  service  = google_cloudfunctions2_function.connection_actions_handler.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
 # ----------------- Cloud Tasks Queue for Connection Actions -----------------
 resource "google_cloud_tasks_queue" "connection_actions" {
   name     = "connection-actions"

@@ -1,5 +1,5 @@
 // Module-level imports for smart pruning
-import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
+import { createCloudFunction, FirebaseAuthStrategy, PayloadUserStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { CloudTasksClient } from '@google-cloud/tasks';
 import { getMessaging } from 'firebase-admin/messaging';
@@ -149,6 +149,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
                     })).toString('base64'),
                     oidcToken: {
                         serviceAccountEmail: `${projectId}@appspot.gserviceaccount.com`,
+                        audience: serviceUrl,
                     },
                 },
             },
@@ -313,9 +314,17 @@ async function sendFailureNotification(
 }
 
 // Export the wrapped function
+// FirebaseAuthStrategy: user-facing requests (list/trigger actions)
+// PayloadUserStrategy: Cloud Tasks callbacks (execute jobs) where userId is in the body
 export const connectionActionsHandler = createCloudFunction(handler, {
     auth: {
-        strategies: [new FirebaseAuthStrategy()]
+        strategies: [
+            new FirebaseAuthStrategy(),
+            new PayloadUserStrategy(async (payload) => {
+                const body = payload as { userId?: string };
+                return body?.userId ?? null;
+            }),
+        ]
     },
     skipExecutionLogging: true
 });
