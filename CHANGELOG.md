@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.8.1](https://github.com/FitGlue/server/compare/v12.8.0...v12.8.1) (2026-02-07)
+
+
+### Bug Fixes
+
+* use GOOGLE_CLOUD_PROJECT env var not GCP_PROJECT ([d267999](https://github.com/FitGlue/server/commit/d26799983ee9df5aadfb772ec3cd79a501037265))
+
 ## [12.8.0](https://github.com/FitGlue/server/compare/v12.7.0...v12.8.0) (2026-02-07)
 
 
