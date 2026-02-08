@@ -2,6 +2,21 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.9.0](https://github.com/FitGlue/server/compare/v12.8.3...v12.9.0) (2026-02-08)
+
+
+### Features
+
+* Consistently record uploaded activities and increment sync counts for Hevy and Strava, use original pipeline execution ID for reposted events, and refine streak tracker output. ([7a8109c](https://github.com/FitGlue/server/commit/7a8109cd82d86d8f07c5f43de06426e992499390))
+* deregister stale fcm tokens ([6e74be5](https://github.com/FitGlue/server/commit/6e74be50387e84ba1d632cb98df5c131e3068d8f))
+
+
+### Bug Fixes
+
+* activity streak for any activity generation ([f37c2b6](https://github.com/FitGlue/server/commit/f37c2b6f52993ef8dafec5ea1c31177eac98be0a))
+* allow deletion of temp table ([5f93e4a](https://github.com/FitGlue/server/commit/5f93e4a86cd09c71d5e61b4ce9af8359126c0356))
+* monitoring dashboards, connection actions failures ([ae50b2a](https://github.com/FitGlue/server/commit/ae50b2a8e76d4e43631e3a57ce5aa5ce0abfc598))
+
 ### [12.8.3](https://github.com/FitGlue/server/compare/v12.8.2...v12.8.3) (2026-02-07)
 
 
