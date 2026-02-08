@@ -91,8 +91,8 @@ func (p *PowerSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 	if showCurve && len(powers) >= 5 {
 		// Multi-line bullet format with power curve
 		sb.WriteString("⚡ Power:\n")
-		sb.WriteString(fmt.Sprintf(" - %.0fW avg\n", avgPower))
-		sb.WriteString(fmt.Sprintf(" - %dW max\n", maxPower))
+		sb.WriteString(fmt.Sprintf("• %.0fW avg\n", avgPower))
+		sb.WriteString(fmt.Sprintf("• %dW max\n", maxPower))
 
 		// Calculate peak power for intervals (assuming ~1 second per record)
 		peak5s := calculatePeakPower(powers, 5)
@@ -101,19 +101,19 @@ func (p *PowerSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 		peak20m := calculatePeakPower(powers, 1200)
 
 		if peak5s > 0 {
-			sb.WriteString(fmt.Sprintf(" - Peak 5s: %dW\n", peak5s))
+			sb.WriteString(fmt.Sprintf("• Peak 5s: %dW\n", peak5s))
 		}
 		if peak1m > 0 {
-			sb.WriteString(fmt.Sprintf(" - Peak 1m: %dW\n", peak1m))
+			sb.WriteString(fmt.Sprintf("• Peak 1m: %dW\n", peak1m))
 		}
 		if peak5m > 0 {
-			sb.WriteString(fmt.Sprintf(" - Peak 5m: %dW\n", peak5m))
+			sb.WriteString(fmt.Sprintf("• Peak 5m: %dW\n", peak5m))
 		}
 		if peak20m > 0 {
 			// FTP is estimated as 95% of 20-minute power
 			ftp := float64(peak20m) * 0.95
-			sb.WriteString(fmt.Sprintf(" - Peak 20m: %dW\n", peak20m))
-			sb.WriteString(fmt.Sprintf(" - Est. FTP: %.0fW", ftp))
+			sb.WriteString(fmt.Sprintf("• Peak 20m: %dW\n", peak20m))
+			sb.WriteString(fmt.Sprintf("• Est. FTP: %.0fW", ftp))
 		}
 	} else {
 		// Simple single-line format

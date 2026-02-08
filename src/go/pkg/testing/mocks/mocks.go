@@ -24,6 +24,9 @@ type MockDatabase struct {
 	SetCounterFunc       func(ctx context.Context, userId string, counter *pb.Counter) error
 	ListCountersFunc     func(ctx context.Context, userId string) ([]*pb.Counter, error)
 	GetUserPipelinesFunc func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
+
+	GetBoosterDataFunc func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error)
+	SetBoosterDataFunc func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error
 }
 
 func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
@@ -230,12 +233,16 @@ func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string
 // --- Booster Data (generic key-value storage for enrichers) ---
 
 func (m *MockDatabase) GetBoosterData(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
-	// No-op for tests by default
+	if m.GetBoosterDataFunc != nil {
+		return m.GetBoosterDataFunc(ctx, userId, boosterId)
+	}
 	return nil, nil
 }
 
 func (m *MockDatabase) SetBoosterData(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
-	// No-op for tests by default
+	if m.SetBoosterDataFunc != nil {
+		return m.SetBoosterDataFunc(ctx, userId, boosterId, data)
+	}
 	return nil
 }
 

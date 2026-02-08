@@ -124,7 +124,7 @@ func (p *TrainingLoad) Enrich(ctx context.Context, logger *slog.Logger, activity
 	}
 
 	zone := getTrainingLoadZone(totalTRIMP)
-	summaryText := fmt.Sprintf("\n\n💪 Training Load: %.0f (%s)", totalTRIMP, zone)
+	summaryText := fmt.Sprintf("💪 Training Load: %.0f (%s)", totalTRIMP, zone)
 
 	logger.Info("Training Load calculated", "trimp", totalTRIMP, "zone", zone)
 

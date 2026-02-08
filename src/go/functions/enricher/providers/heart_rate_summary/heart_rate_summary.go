@@ -120,15 +120,15 @@ func (p *HeartRateSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 	if showDrift {
 		// Multi-line bullet format
 		sb.WriteString("❤️ Heart Rate:\n")
-		sb.WriteString(fmt.Sprintf(" - %d bpm min\n", minHR))
-		sb.WriteString(fmt.Sprintf(" - %.0f bpm avg\n", avgHR))
-		sb.WriteString(fmt.Sprintf(" - %d bpm max\n", maxHR))
+		sb.WriteString(fmt.Sprintf("• %d bpm min\n", minHR))
+		sb.WriteString(fmt.Sprintf("• %.0f bpm avg\n", avgHR))
+		sb.WriteString(fmt.Sprintf("• %d bpm max\n", maxHR))
 
 		if hasDrift {
 			if drift > 5 {
-				sb.WriteString(fmt.Sprintf(" - Drift: +%.0f bpm (check hydration)", drift))
+				sb.WriteString(fmt.Sprintf("• Drift: +%.0f bpm (check hydration)", drift))
 			} else if drift < -5 {
-				sb.WriteString(fmt.Sprintf(" - Drift: %.0f bpm (good warm-up)", drift))
+				sb.WriteString(fmt.Sprintf("• Drift: %.0f bpm (good warm-up)", drift))
 			}
 		}
 	} else {

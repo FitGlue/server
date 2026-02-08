@@ -25,6 +25,8 @@ import (
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+
+	hevy "github.com/fitglue/server/src/go/pkg/api/hevy"
 )
 
 var (
@@ -232,40 +234,8 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		return nil, fmt.Errorf("GET workout failed: status %d, body: %s", getResp.StatusCode, errorBody.String())
 	}
 
-	// Parse the FULL workout response including exercises
-	// Using a struct that matches the Hevy API GET response
-	type HevySet struct {
-		CustomMetric    *float32 `json:"custom_metric"`
-		DistanceMeters  *float32 `json:"distance_meters"`
-		DurationSeconds *float32 `json:"duration_seconds"`
-		Index           *float32 `json:"index,omitempty"`
-		Reps            *float32 `json:"reps"`
-		Rpe             *float32 `json:"rpe"`
-		Type            *string  `json:"type,omitempty"`
-		WeightKg        *float32 `json:"weight_kg"`
-	}
-	type HevyExercise struct {
-		ExerciseTemplateId *string    `json:"exercise_template_id,omitempty"`
-		Index              *float32   `json:"index,omitempty"`
-		Notes              *string    `json:"notes,omitempty"`
-		Sets               *[]HevySet `json:"sets,omitempty"`
-		SupersetId         *float32   `json:"superset_id"`
-		Title              *string    `json:"title,omitempty"`
-	}
-	type HevyWorkoutFull struct {
-		ID          *string         `json:"id,omitempty"`
-		Title       *string         `json:"title,omitempty"`
-		Description *string         `json:"description,omitempty"`
-		StartTime   *string         `json:"start_time,omitempty"`
-		EndTime     *string         `json:"end_time,omitempty"`
-		IsPrivate   *bool           `json:"is_private,omitempty"`
-		Exercises   *[]HevyExercise `json:"exercises,omitempty"`
-		RoutineId   *string         `json:"routine_id,omitempty"`
-		CreatedAt   *string         `json:"created_at,omitempty"`
-		UpdatedAt   *string         `json:"updated_at,omitempty"`
-	}
-
-	var existingWorkout HevyWorkoutFull
+	// Parse into generated Workout type (which includes exercises)
+	var existingWorkout hevy.Workout
 	if err := json.NewDecoder(getResp.Body).Decode(&existingWorkout); err != nil {
 		return nil, fmt.Errorf("failed to decode existing workout: %w", err)
 	}
@@ -364,45 +334,27 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 	// 4. Build the FULL workout payload for PUT (Hevy requires complete workout, not partial)
 	// Convert exercises from GET response format to POST/PUT request format
-	type PutSet struct {
-		CustomMetric    *float32 `json:"custom_metric"`
-		DistanceMeters  *int     `json:"distance_meters"`
-		DurationSeconds *int     `json:"duration_seconds"`
-		Reps            *int     `json:"reps"`
-		Rpe             *float32 `json:"rpe"`
-		Type            *string  `json:"type,omitempty"`
-		WeightKg        *float32 `json:"weight_kg"`
-	}
-	type PutExercise struct {
-		ExerciseTemplateId *string   `json:"exercise_template_id,omitempty"`
-		Notes              *string   `json:"notes"`
-		Sets               *[]PutSet `json:"sets,omitempty"`
-		SupersetId         *int      `json:"superset_id"`
-	}
-	type PutWorkout struct {
-		Title       *string        `json:"title,omitempty"`
-		Description *string        `json:"description"`
-		StartTime   *string        `json:"start_time,omitempty"`
-		EndTime     *string        `json:"end_time,omitempty"`
-		IsPrivate   *bool          `json:"is_private,omitempty"`
-		Exercises   *[]PutExercise `json:"exercises,omitempty"`
-	}
-	type PutWorkoutRequest struct {
-		Workout *PutWorkout `json:"workout,omitempty"`
-	}
 
 	// Convert exercises from GET format to PUT format
-	var putExercises []PutExercise
+	var putExercises []hevy.PostWorkoutsRequestExercise
 	if existingWorkout.Exercises != nil {
 		for _, ex := range *existingWorkout.Exercises {
-			var putSets []PutSet
+			var putSets []hevy.PostWorkoutsRequestSet
 			if ex.Sets != nil {
 				for _, s := range *ex.Sets {
-					putSet := PutSet{
+					putSet := hevy.PostWorkoutsRequestSet{
 						CustomMetric: s.CustomMetric,
-						Rpe:          s.Rpe,
-						Type:         s.Type,
 						WeightKg:     s.WeightKg,
+					}
+					// Convert Rpe from *float32 to *PostWorkoutsRequestSetRpe
+					if s.Rpe != nil {
+						rpe := hevy.PostWorkoutsRequestSetRpe(*s.Rpe)
+						putSet.Rpe = &rpe
+					}
+					// Convert Type from *string to *PostWorkoutsRequestSetType
+					if s.Type != nil {
+						setType := hevy.PostWorkoutsRequestSetType(*s.Type)
+						putSet.Type = &setType
 					}
 					// Convert float32 pointers to int pointers (API schema difference)
 					if s.DistanceMeters != nil {
@@ -421,7 +373,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 				}
 			}
 
-			putEx := PutExercise{
+			putEx := hevy.PostWorkoutsRequestExercise{
 				ExerciseTemplateId: ex.ExerciseTemplateId,
 				Notes:              ex.Notes,
 			}
@@ -438,13 +390,19 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	}
 
 	// Build the full PUT payload
-	putPayload := PutWorkoutRequest{
-		Workout: &PutWorkout{
-			Title:       &existingTitle, // Preserve existing title, don't update
+	putPayload := hevy.PostWorkoutsRequestBody{
+		Workout: &struct {
+			Description *string                             `json:"description"`
+			EndTime     *string                             `json:"end_time,omitempty"`
+			Exercises   *[]hevy.PostWorkoutsRequestExercise `json:"exercises,omitempty"`
+			IsPrivate   *bool                               `json:"is_private,omitempty"`
+			StartTime   *string                             `json:"start_time,omitempty"`
+			Title       *string                             `json:"title,omitempty"`
+		}{
+			Title:       &existingTitle,
 			Description: &mergedDescription,
 			StartTime:   existingWorkout.StartTime,
 			EndTime:     existingWorkout.EndTime,
-			IsPrivate:   existingWorkout.IsPrivate,
 		},
 	}
 	if len(putExercises) > 0 {
@@ -529,7 +487,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 }
 
 // createHevyWorkout POSTs a new workout to Hevy
-func createHevyWorkout(ctx context.Context, apiKey string, workout *HevyWorkoutRequest, fwCtx *framework.FrameworkContext) (string, error) {
+func createHevyWorkout(ctx context.Context, apiKey string, workout *hevy.PostWorkoutsRequestBody, fwCtx *framework.FrameworkContext) (string, error) {
 	bodyJSON, err := json.Marshal(workout)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal workout: %w", err)
@@ -559,13 +517,14 @@ func createHevyWorkout(ctx context.Context, apiKey string, workout *HevyWorkoutR
 		return "", err
 	}
 
-	// Parse response to get workout ID
-	var respBody struct {
-		ID string `json:"workoutId"`
-	}
+	// Parse response to get workout ID (response is a full Workout object)
+	var respBody hevy.Workout
 	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
 		return "", fmt.Errorf("failed to decode Hevy response: %w", err)
 	}
 
-	return respBody.ID, nil
+	if respBody.Id != nil {
+		return *respBody.Id, nil
+	}
+	return "", nil
 }

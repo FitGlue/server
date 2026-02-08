@@ -88,9 +88,11 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 	var weeklyLoad float64
 	boosterId := "recovery_advisor"
 	now := time.Now()
+	var data map[string]interface{}
 
 	if p.Service != nil && p.Service.DB != nil {
-		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
+		var err error
+		data, err = p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
 		if err != nil {
 			logger.Warn("Failed to fetch recovery data", "error", err)
 		} else if data != nil {
@@ -104,9 +106,15 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		}
 	}
 
-	// Add today's load
+	// Add today's load, accumulating with any previously stored TRIMP for today
+	// This handles users doing multiple activities in a single day
 	today := now.Format("2006-01-02")
 	todayLoad := trimp
+	if data != nil {
+		if existingToday, ok := data[today].(float64); ok {
+			todayLoad += existingToday
+		}
+	}
 	totalWeeklyLoad := weeklyLoad + todayLoad
 
 	// Persist today's load
@@ -126,7 +134,7 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 	// Build output
 	var sb strings.Builder
 
-	sb.WriteString("💤 Recovery Advisor\n")
+	sb.WriteString("💤 Recovery Advisor:\n")
 	sb.WriteString(fmt.Sprintf("• Session load: %.0f TRIMP (%s)\n", trimp, intensity))
 	sb.WriteString(fmt.Sprintf("• 7-day load: %.0f TRIMP\n", totalWeeklyLoad))
 	sb.WriteString(fmt.Sprintf("• 💡 Suggested recovery: %s", formatRecoveryTime(recoveryHours)))

@@ -113,7 +113,7 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	// Progress bar
 	progressBar := buildProgressBar(percentage)
 
-	sb.WriteString(fmt.Sprintf("🎯 %s Goal Progress\n", periodLabel))
+	sb.WriteString(fmt.Sprintf("🎯 %s Goal Progress:\n", periodLabel))
 	sb.WriteString(fmt.Sprintf("• %s %.1f/%.0f %s\n", progressBar, newTotal, target, metricLabel))
 	sb.WriteString(fmt.Sprintf("• ➕ This activity: +%.1f %s", activityValue, metricLabel))
 

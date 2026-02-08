@@ -109,8 +109,6 @@ func TestDescriptionEngine_Integration(t *testing.T) {
 		// Updated volume: 8355 + 960 (Farmers Walk) = 9315
 		// Total sets: 22 + 1 = 23
 		"23 sets • 9,315kg volume • 208 reps • 1.5km distance • Heaviest: 140kg (Squat)",
-		"(Exercises with matching numbers are supersets - performed back-to-back)",
-		"([W]=Warmup, [F]=Failure, [D]=Dropset)",
 
 		// Superset 1 with emoji numbers
 		"1️⃣ Bench Press:",

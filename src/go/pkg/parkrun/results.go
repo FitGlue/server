@@ -465,42 +465,42 @@ func FormatResultsDescription(results *Result, eventName string) string {
 	sb.WriteString("🏃 Parkrun Results:\n")
 
 	// Position line with PB badges
-	sb.WriteString(fmt.Sprintf("Position: %s", Ordinal(results.Position)))
+	sb.WriteString(fmt.Sprintf("• Position: %s", Ordinal(results.Position)))
 	if results.PosAllTimePB {
-		sb.WriteString(" | 🏆 New all-time PB!")
+		sb.WriteString(" · 🏆 New all-time PB!")
 	}
 	if results.PosThisYearPB {
-		sb.WriteString(" | 🏅 New this-year PB!")
+		sb.WriteString(" · 🏅 New this-year PB!")
 	}
 	sb.WriteString("\n")
 
 	// Time line with PB badges
-	sb.WriteString(fmt.Sprintf("Time: %s", results.Time))
+	sb.WriteString(fmt.Sprintf("• Time: %s", results.Time))
 	if results.TimeAllTimePB {
-		sb.WriteString(" | 🏆 New all-time PB!")
+		sb.WriteString(" · 🏆 New all-time PB!")
 	}
 	if results.TimeThisYearPB {
-		sb.WriteString(" | 🏅 New this-year PB!")
+		sb.WriteString(" · 🏅 New this-year PB!")
 	}
 	sb.WriteString("\n")
 
 	// Age Grade line with PB badges
 	if results.AgeGrade != "" {
-		sb.WriteString(fmt.Sprintf("Age Grade: %s", results.AgeGrade))
+		sb.WriteString(fmt.Sprintf("• Age Grade: %s", results.AgeGrade))
 		if results.AgeGradeAllTimePB {
-			sb.WriteString(" | 🏆 New all-time PB!")
+			sb.WriteString(" · 🏆 New all-time PB!")
 		}
 		if results.AgeGradeThisYearPB {
-			sb.WriteString(" | 🏅 New this-year PB!")
+			sb.WriteString(" · 🏅 New this-year PB!")
 		}
 		sb.WriteString("\n")
 	}
 
 	// Location line
-	sb.WriteString(fmt.Sprintf("Location: %s, %s Parkrun here (%d total)",
+	sb.WriteString(fmt.Sprintf("• Location: %s, %s Parkrun here (%d total)",
 		eventName, Ordinal(results.TotalAtLocation), results.TotalAllTime))
 	if results.FirstAtLocation {
-		sb.WriteString(" | 🌟 First time at this location!")
+		sb.WriteString(" · 🌟 First time at this location!")
 	}
 
 	return sb.String()

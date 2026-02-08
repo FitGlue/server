@@ -188,7 +188,7 @@ func formatZoneRow(zone HeartRateZone, duration time.Duration, minutes int, tota
 		if totalDuration > 0 {
 			pct = float64(duration) / float64(totalDuration) * 100
 		}
-		return fmt.Sprintf("- %s: %.0f%% (%d min)\n", zone.Name, pct, minutes)
+		return fmt.Sprintf("%s: %.0f%% (%d min)\n", zone.Name, pct, minutes)
 
 	case "text":
 		level := "None"
@@ -204,7 +204,7 @@ func formatZoneRow(zone HeartRateZone, duration time.Duration, minutes int, tota
 				level = "Low"
 			}
 		}
-		return fmt.Sprintf("- %s: %s (%d min)\n", zone.Name, level, minutes)
+		return fmt.Sprintf("%s: %s (%d min)\n", zone.Name, level, minutes)
 
 	default: // emoji bars
 		rating := 0
@@ -226,6 +226,6 @@ func formatZoneRow(zone HeartRateZone, duration time.Duration, minutes int, tota
 				bar += "⬜"
 			}
 		}
-		return fmt.Sprintf("- %s: %s %d min\n", zone.Name, bar, minutes)
+		return fmt.Sprintf("%s: %s %d min\n", zone.Name, bar, minutes)
 	}
 }

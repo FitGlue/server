@@ -96,8 +96,8 @@ func (p *SpeedSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 	if showAnalysis && len(speeds) >= 10 {
 		// Multi-line bullet format with consistency analysis
 		sb.WriteString("🚀 Speed:\n")
-		sb.WriteString(fmt.Sprintf(" - %.1f km/h avg\n", avgSpeedKmh))
-		sb.WriteString(fmt.Sprintf(" - %.1f km/h max\n", maxSpeedKmh))
+		sb.WriteString(fmt.Sprintf("• %.1f km/h avg\n", avgSpeedKmh))
+		sb.WriteString(fmt.Sprintf("• %.1f km/h max\n", maxSpeedKmh))
 
 		// Calculate coefficient of variation (CV) as consistency metric
 		consistency := calculateSpeedConsistency(speeds, avgSpeed)
@@ -111,7 +111,7 @@ func (p *SpeedSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 		} else {
 			consistencyLabel = "high variance"
 		}
-		sb.WriteString(fmt.Sprintf(" - Consistency: %.0f%% (%s)", consistency, consistencyLabel))
+		sb.WriteString(fmt.Sprintf("• Consistency: %.0f%% (%s)", consistency, consistencyLabel))
 	} else {
 		// Simple single-line format
 		sb.WriteString(fmt.Sprintf("🚀 Speed: %.1f km/h avg • %.1f km/h max", avgSpeedKmh, maxSpeedKmh))

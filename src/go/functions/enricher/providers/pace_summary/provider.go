@@ -114,7 +114,7 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 
 	// Show splits
 	if showSplits && len(splits) > 0 {
-		sb.WriteString("\n\n📊 Splits:")
+		sb.WriteString("\n📊 Splits:")
 		fastestIdx, slowestIdx := 0, 0
 		for i, split := range splits {
 			if split.Pace < splits[fastestIdx].Pace {
@@ -131,7 +131,7 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 			} else if i == slowestIdx {
 				marker = " 🐢"
 			}
-			sb.WriteString(fmt.Sprintf("\n- Km %d: %s%s", i+1, formatPace(split.Pace), marker))
+			sb.WriteString(fmt.Sprintf("\n• Km %d: %s%s", i+1, formatPace(split.Pace), marker))
 		}
 	}
 
@@ -151,7 +151,7 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		if secondHalfPace < firstHalfPace {
 			diff := firstHalfPace - secondHalfPace
 			diffSeconds := int(diff * 60)
-			sb.WriteString(fmt.Sprintf("\n\n🔥 Negative Split! Second half %ds/km faster", diffSeconds))
+			sb.WriteString(fmt.Sprintf("\n🔥 Negative Split! Second half %ds/km faster", diffSeconds))
 		}
 	}
 
@@ -171,11 +171,11 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		if lastQuarterPace > firstQuarterPace {
 			fatiguePercent := ((lastQuarterPace - firstQuarterPace) / firstQuarterPace) * 100
 			if fatiguePercent > 1 { // Only show if significant
-				sb.WriteString(fmt.Sprintf("\n\n😓 Fatigue: %.0f%% pace drop in final quarter", fatiguePercent))
+				sb.WriteString(fmt.Sprintf("\n😓 Fatigue: %.0f%% pace drop in final quarter", fatiguePercent))
 			}
 		} else {
 			// Strong finish!
-			sb.WriteString("\n\n💪 Strong Finish: Final quarter faster than start")
+			sb.WriteString("\n💪 Strong Finish: Final quarter faster than start")
 		}
 	}
 

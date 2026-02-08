@@ -14,17 +14,9 @@ import (
 	"strings"
 	"time"
 
+	hevy "github.com/fitglue/server/src/go/pkg/api/hevy"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 )
-
-// HevyExerciseTemplate represents an exercise template from the Hevy API
-type HevyExerciseTemplate struct {
-	ID            string `json:"id"`
-	Title         string `json:"title"`
-	Type          string `json:"type"`           // weight_reps, distance_duration, etc.
-	PrimaryMuscle string `json:"primary_muscle"` // optional
-	IsCustom      bool   `json:"is_custom"`
-}
 
 // ExerciseTypeConfig holds the exercise type and muscle group for custom templates
 type ExerciseTypeConfig struct {
@@ -91,7 +83,7 @@ func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 // TemplateResolver fetches, caches, and resolves exercise template IDs from Hevy
 type TemplateResolver struct {
 	apiKey    string
-	templates []HevyExerciseTemplate
+	templates []hevy.ExerciseTemplate
 	cache     map[string]string // normalized name -> template ID
 	fetched   bool
 	logger    *slog.Logger
@@ -159,7 +151,7 @@ func (r *TemplateResolver) ResolveTemplateID(ctx context.Context, exerciseName s
 
 // fetchAllTemplates retrieves all exercise templates from Hevy API (paginated)
 func (r *TemplateResolver) fetchAllTemplates(ctx context.Context) error {
-	r.templates = []HevyExerciseTemplate{}
+	r.templates = []hevy.ExerciseTemplate{}
 	page := 1
 	pageSize := 100
 
@@ -186,9 +178,9 @@ func (r *TemplateResolver) fetchAllTemplates(ctx context.Context) error {
 		}
 
 		var result struct {
-			ExerciseTemplates []HevyExerciseTemplate `json:"exercise_templates"`
-			Page              int                    `json:"page"`
-			PageCount         int                    `json:"page_count"`
+			ExerciseTemplates []hevy.ExerciseTemplate `json:"exercise_templates"`
+			Page              int                     `json:"page"`
+			PageCount         int                     `json:"page_count"`
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 			return fmt.Errorf("decode response: %w", err)
@@ -218,8 +210,10 @@ func (r *TemplateResolver) fetchAllTemplates(ctx context.Context) error {
 func (r *TemplateResolver) strictMatch(normalizedName string) string {
 	// Exact match first
 	for _, t := range r.templates {
-		if normalizeExerciseName(t.Title) == normalizedName {
-			return t.ID
+		if t.Title != nil && normalizeExerciseName(*t.Title) == normalizedName {
+			if t.Id != nil {
+				return *t.Id
+			}
 		}
 	}
 
@@ -227,12 +221,14 @@ func (r *TemplateResolver) strictMatch(normalizedName string) string {
 	if aliases, ok := strictExerciseAliases[normalizedName]; ok {
 		for _, alias := range aliases {
 			for _, t := range r.templates {
-				if normalizeExerciseName(t.Title) == alias {
+				if t.Title != nil && normalizeExerciseName(*t.Title) == alias {
 					r.logger.Debug("Matched via strict alias",
 						"source", normalizedName,
 						"alias", alias,
-						"templateTitle", t.Title)
-					return t.ID
+						"templateTitle", *t.Title)
+					if t.Id != nil {
+						return *t.Id
+					}
 				}
 			}
 		}
@@ -287,7 +283,7 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 	}
 
 	var result struct {
-		ExerciseTemplate HevyExerciseTemplate `json:"exercise_template"`
+		ExerciseTemplate hevy.ExerciseTemplate `json:"exercise_template"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
 		return "", fmt.Errorf("decode response: %w", err)
@@ -296,7 +292,10 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 	// Add to local cache
 	r.templates = append(r.templates, result.ExerciseTemplate)
 
-	return result.ExerciseTemplate.ID, nil
+	if result.ExerciseTemplate.Id != nil {
+		return *result.ExerciseTemplate.Id, nil
+	}
+	return "", fmt.Errorf("created template has no ID")
 }
 
 // normalizeExerciseName normalizes an exercise name for comparison

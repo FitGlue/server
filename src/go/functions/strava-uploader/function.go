@@ -28,6 +28,8 @@ import (
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
 	"github.com/fitglue/server/src/go/pkg/loopprevention"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+
+	strava "github.com/fitglue/server/src/go/pkg/api/strava"
 )
 
 var (
@@ -178,15 +180,15 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		return nil, err
 	}
 
-	var uploadResp stravaUploadResponse
+	var uploadResp strava.Upload
 	json.NewDecoder(httpResp.Body).Decode(&uploadResp)
 
-	fwCtx.Logger.Info("Upload initiated", "upload_id", uploadResp.ID, "status", uploadResp.Status)
+	fwCtx.Logger.Info("Upload initiated", "upload_id", derefInt64(uploadResp.Id), "status", derefStr(uploadResp.Status))
 
 	// Soft Poll: Wait up to 15 seconds for completion
 	// This covers 95% of use cases without needing complex async infrastructure
-	if uploadResp.ActivityID == 0 {
-		finalResp, err := waitForUploadCompletion(ctx, httpClient, uploadResp.ID, fwCtx.Logger)
+	if derefInt64(uploadResp.ActivityId) == 0 {
+		finalResp, err := waitForUploadCompletion(ctx, httpClient, derefInt64(uploadResp.Id), fwCtx.Logger)
 		if err != nil {
 			// Log warning but return SUCCESS with partial data so pipeline continues
 			fwCtx.Logger.Warn("Soft polling finished without final ID (async processing continues)", "error", err)
@@ -195,13 +197,13 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		}
 	}
 
-	fwCtx.Logger.Info("Upload complete", "upload_id", uploadResp.ID, "activity_id", uploadResp.ActivityID, "status", uploadResp.Status)
+	fwCtx.Logger.Info("Upload complete", "upload_id", derefInt64(uploadResp.Id), "activity_id", derefInt64(uploadResp.ActivityId), "status", derefStr(uploadResp.Status))
 
 	// Check for duplicate activity (common during testing - not a true error)
 	// Strava returns this in the error field when the FIT file was already uploaded
-	if uploadResp.Error != "" && strings.Contains(strings.ToLower(uploadResp.Error), "duplicate") {
+	if derefStr(uploadResp.Error) != "" && strings.Contains(strings.ToLower(derefStr(uploadResp.Error)), "duplicate") {
 		fwCtx.Logger.Info("Strava duplicate activity detected - skipping",
-			"upload_error", uploadResp.Error,
+			"upload_error", derefStr(uploadResp.Error),
 			"activity_id", eventPayload.ActivityId,
 			"pipeline_id", eventPayload.PipelineId,
 		)
@@ -212,8 +214,8 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 		return map[string]interface{}{
 			"status":           "SKIPPED",
 			"skip_reason":      "duplicate_activity",
-			"strava_error":     uploadResp.Error,
-			"strava_upload_id": uploadResp.ID,
+			"strava_error":     derefStr(uploadResp.Error),
+			"strava_upload_id": derefInt64(uploadResp.Id),
 			"activity_id":      eventPayload.ActivityId,
 			"pipeline_id":      eventPayload.PipelineId,
 			"fit_file_uri":     eventPayload.FitFileUri,
@@ -223,8 +225,8 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	}
 
 	// Record upload for loop prevention if successful
-	if uploadResp.ActivityID != 0 {
-		stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)
+	if derefInt64(uploadResp.ActivityId) != 0 {
+		stravaDestID := fmt.Sprintf("%d", derefInt64(uploadResp.ActivityId))
 
 		// Record upload for loop prevention
 		// Key is destination:destinationId so when Strava sends a webhook with activityId,
@@ -259,9 +261,9 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	}
 
 	status := "SUCCESS"
-	if uploadResp.Error != "" {
+	if derefStr(uploadResp.Error) != "" {
 		status = "FAILED_STRAVA_PROCESSING"
-	} else if uploadResp.ActivityID == 0 {
+	} else if derefInt64(uploadResp.ActivityId) == 0 {
 		// ActivityID is still 0 after soft polling - Strava is still processing async
 		// Return PENDING status so this shows up in failed/stalled list
 		status = "PENDING_STRAVA_PROCESSING"
@@ -269,10 +271,10 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 
 	result := map[string]interface{}{
 		"status":             status,
-		"strava_upload_id":   uploadResp.ID,
-		"strava_activity_id": uploadResp.ActivityID,
-		"upload_status":      uploadResp.Status,
-		"upload_error":       uploadResp.Error,
+		"strava_upload_id":   derefInt64(uploadResp.Id),
+		"strava_activity_id": derefInt64(uploadResp.ActivityId),
+		"upload_status":      derefStr(uploadResp.Status),
+		"upload_error":       derefStr(uploadResp.Error),
 		"activity_id":        eventPayload.ActivityId,
 		"pipeline_id":        eventPayload.PipelineId,
 		"fit_file_uri":       eventPayload.FitFileUri,
@@ -282,9 +284,9 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	}
 
 	if status != "SUCCESS" {
-		errMsg := uploadResp.Error
+		errMsg := derefStr(uploadResp.Error)
 		if errMsg == "" {
-			errMsg = fmt.Sprintf("status=%s, activity_id=%d", status, uploadResp.ActivityID)
+			errMsg = fmt.Sprintf("status=%s, activity_id=%d", status, derefInt64(uploadResp.ActivityId))
 		}
 		// Update PipelineRun destination as failed
 		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, fwCtx.Logger)
@@ -292,7 +294,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	}
 
 	// Update PipelineRun destination as synced
-	stravaDestID := fmt.Sprintf("%d", uploadResp.ActivityID)
+	stravaDestID := fmt.Sprintf("%d", derefInt64(uploadResp.ActivityId))
 	destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, stravaDestID, "", fwCtx.Logger)
 
 	return result, nil
@@ -519,15 +521,23 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 	}, nil
 }
 
-type stravaUploadResponse struct {
-	ID         int64  `json:"id"`
-	ExternalID string `json:"external_id"`
-	ActivityID int64  `json:"activity_id"`
-	Status     string `json:"status"`
-	Error      string `json:"error"`
+// derefInt64 safely dereferences a *int64 pointer, returning 0 if nil.
+func derefInt64(p *int64) int64 {
+	if p != nil {
+		return *p
+	}
+	return 0
 }
 
-func waitForUploadCompletion(ctx context.Context, client *http.Client, uploadID int64, logger *slog.Logger) (*stravaUploadResponse, error) {
+// derefStr safely dereferences a *string pointer, returning "" if nil.
+func derefStr(p *string) string {
+	if p != nil {
+		return *p
+	}
+	return ""
+}
+
+func waitForUploadCompletion(ctx context.Context, client *http.Client, uploadID int64, logger *slog.Logger) (*strava.Upload, error) {
 	// Check every 2 seconds, give up after 15 seconds
 	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
@@ -558,14 +568,14 @@ func waitForUploadCompletion(ctx context.Context, client *http.Client, uploadID 
 				continue
 			}
 
-			var status stravaUploadResponse
+			var status strava.Upload
 			if err := json.NewDecoder(resp.Body).Decode(&status); err != nil {
 				return nil, fmt.Errorf("failed to decode poll response: %w", err)
 			}
 
-			logger.Info("Polled upload status", "status", status.Status, "activity_id", status.ActivityID, "error", status.Error)
+			logger.Info("Polled upload status", "status", derefStr(status.Status), "activity_id", derefInt64(status.ActivityId), "error", derefStr(status.Error))
 
-			if status.ActivityID != 0 || status.Error != "" {
+			if derefInt64(status.ActivityId) != 0 || derefStr(status.Error) != "" {
 				return &status, nil
 			}
 			// Continue polling if still processing (activity_id == 0 and no error)

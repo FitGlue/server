@@ -950,12 +950,11 @@ FitGlue analyzes your sets, reps, and weight data, identifies your primary muscl
       before: '(empty)',
       after: `📋 Workout Summary:
 20 sets • 8,240kg volume • 57 reps • Heaviest: 80kg (Bench Press)
-
-- Bench Press: 4 × 8 × 80.0kg
-- Overhead Press: 4 × 10 × 40.0kg
-- Incline DB Press: 4 × 12 × 24.0kg
-- Lateral Raises: 4 × 15 × 10.0kg
-- Tricep Pushdowns: 4 × 12 × 25.0kg`,
+• Bench Press: 4 × 8 × 80.0kg
+• Overhead Press: 4 × 10 × 40.0kg
+• Incline DB Press: 4 × 12 × 24.0kg
+• Lateral Raises: 4 × 15 × 10.0kg
+• Tricep Pushdowns: 4 × 12 × 25.0kg`,
       visualType: '',
       afterHtml: '',
     },
@@ -1018,6 +1017,18 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP, {
         { value: 'bodybuilding', label: 'Bodybuilding (emphasize isolation)' },
       ],
     },
+    {
+      key: 'group_by',
+      label: 'Group By',
+      description: 'Roll up muscles into broader groups (Legs, Back, Arms, etc.)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'muscle',
+      options: [
+        { value: 'muscle', label: 'Individual Muscles (Quadriceps, Lats, etc.)' },
+        { value: 'muscle_group', label: 'Muscle Groups (Legs, Back, Arms, etc.)' },
+      ],
+    },
   ],
   marketingDescription: `
 ### Visualize Your Training
@@ -1026,12 +1037,16 @@ The Muscle Heatmap booster generates a visual representation of your training vo
 ### How it works
 Every exercise in your workout is mapped to primary and secondary muscle groups using our built-in exercise taxonomy. We calculate the volume load for each muscle and generate a "heatmap" bar or chart that is appended to your activity description.
 
+### Group By Muscle Groups
+Too much detail? Enable the **Group By** option to roll up individual muscles (Quadriceps, Hamstrings, Glutes...) into broader categories like **Legs**, **Back**, **Arms**, **Chest**, **Shoulders**, and **Core** for a cleaner overview.
+
 ### Smart Exercise Recognition
 Our database includes 100+ canonical exercises with fuzzy matching, so even custom-named exercises like "Dave's Bench Press" are correctly identified. Abbreviations (DB, BB, KB) are automatically expanded, and typos are handled gracefully.
   `,
   features: [
     '✅ Visual heatmap of trained muscles',
     '✅ Supports Emoji, Percentage, and Text formats',
+    '✅ Group by individual muscles or roll up into categories (Legs, Back, Arms, etc.)',
     '✅ Smart exercise recognition with fuzzy matching',
     '✅ 100+ exercises in canonical database',
     '✅ Adjustable muscle coefficients (Standard, Powerlifting, Bodybuilding)',
@@ -1040,11 +1055,19 @@ Our database includes 100+ canonical exercises with fuzzy matching, so even cust
   transformations: [
     {
       field: 'description',
-      label: 'Muscle Heatmap',
+      label: 'Muscle Heatmap (Individual)',
       before: 'Weight Training\n45 min',
       after: '',
       visualType: '',
       afterHtml: '<strong>🔥 Muscle Activation</strong><br><br><span class="heatmap-row">Chest: <span class="heatmap-bar high">🟪🟪🟪🟪🟪</span></span><br><span class="heatmap-row">Shoulders: <span class="heatmap-bar high">🟪🟪🟪🟪⬛</span></span><br><span class="heatmap-row">Triceps: <span class="heatmap-bar med">🟪🟪⬛⬛⬛</span></span><br><span class="heatmap-row">Core: <span class="heatmap-bar low">🟪⬛⬛⬛⬛</span></span>',
+    },
+    {
+      field: 'description',
+      label: 'Muscle Heatmap (Grouped)',
+      before: 'Weight Training\n45 min',
+      after: '',
+      visualType: '',
+      afterHtml: '<strong>🔥 Muscle Activation</strong><br><br><span class="heatmap-row">Legs: <span class="heatmap-bar high">🟪🟪🟪🟪🟪</span></span><br><span class="heatmap-row">Back: <span class="heatmap-bar high">🟪🟪🟪🟪⬛</span></span><br><span class="heatmap-row">Arms: <span class="heatmap-bar med">🟪🟪🟪⬛⬛</span></span><br><span class="heatmap-row">Core: <span class="heatmap-bar low">🟪⬛⬛⬛⬛</span></span>',
     },
   ],
   useCases: [
@@ -1681,7 +1704,7 @@ Christmas Day and New Year's Day Parkruns get festive titles automatically!
   ],
   transformations: [
     { field: 'title', label: 'Activity Title', before: 'Morning Run', after: 'Parkrun @ Newark', visualType: '', afterHtml: '' },
-    { field: 'description', label: 'Official Results', before: '(empty)', after: '🏃 **Official Parkrun Results**\n\n📍 Newark Parkrun\n🏁 Position: 42\n⏱️ Official Time: 24:12\n📊 Age Grade: 65.2%', visualType: '', afterHtml: '' },
+    { field: 'description', label: 'Official Results', before: '(empty)', after: '🏃 Parkrun Results:\n• Position: 42nd · 🏆 New all-time PB!\n• Time: 24:12\n• Age Grade: 65.2%\n• Location: Newark Parkrun, Parkrun #8 here (42 total)', visualType: '', afterHtml: '' },
   ],
   useCases: [
     'Auto-name Parkrun activities with official results',

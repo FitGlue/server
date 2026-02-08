@@ -104,8 +104,8 @@ func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activi
 	if showCorrelation {
 		// Multi-line bullet format with correlation
 		sb.WriteString("🦶 Cadence:\n")
-		sb.WriteString(fmt.Sprintf(" - %.0f %s avg\n", avgCadence, unit))
-		sb.WriteString(fmt.Sprintf(" - %d %s max\n", maxCadence, unit))
+		sb.WriteString(fmt.Sprintf("• %.0f %s avg\n", avgCadence, unit))
+		sb.WriteString(fmt.Sprintf("• %d %s max\n", maxCadence, unit))
 
 		// Calculate Pearson correlation between cadence and speed
 		corr := calculatePaceCorrelation(cadences, speeds)
@@ -118,7 +118,7 @@ func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activi
 			} else {
 				interpretation = "no strong correlation"
 			}
-			sb.WriteString(fmt.Sprintf(" - Pace Correlation: %+.2f (%s)", corr, interpretation))
+			sb.WriteString(fmt.Sprintf("• Pace Correlation: %+.2f (%s)", corr, interpretation))
 		}
 	} else {
 		// Simple single-line format

@@ -47,6 +47,43 @@ var StandardCoefficients = map[pb.MuscleGroup]float64{
 	pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY:  1.0,
 }
 
+// MuscleGroupCategories maps individual muscle groups to broader display categories.
+// This is exported for use by the muscle_heatmap_image provider.
+var MuscleGroupCategories = map[pb.MuscleGroup]string{
+	// Legs
+	pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS: "Legs",
+	pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS: "Legs",
+	pb.MuscleGroup_MUSCLE_GROUP_GLUTES:     "Legs",
+	pb.MuscleGroup_MUSCLE_GROUP_CALVES:     "Legs",
+	pb.MuscleGroup_MUSCLE_GROUP_ADDUCTORS:  "Legs",
+	pb.MuscleGroup_MUSCLE_GROUP_ABDUCTORS:  "Legs",
+
+	// Back
+	pb.MuscleGroup_MUSCLE_GROUP_LATS:       "Back",
+	pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK: "Back",
+	pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK: "Back",
+	pb.MuscleGroup_MUSCLE_GROUP_NECK:       "Back",
+	pb.MuscleGroup_MUSCLE_GROUP_TRAPS:      "Back",
+
+	// Chest
+	pb.MuscleGroup_MUSCLE_GROUP_CHEST: "Chest",
+
+	// Shoulders
+	pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS: "Shoulders",
+
+	// Arms
+	pb.MuscleGroup_MUSCLE_GROUP_BICEPS:   "Arms",
+	pb.MuscleGroup_MUSCLE_GROUP_TRICEPS:  "Arms",
+	pb.MuscleGroup_MUSCLE_GROUP_FOREARMS: "Arms",
+
+	// Core
+	pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS: "Core",
+
+	// Cardio & Full Body
+	pb.MuscleGroup_MUSCLE_GROUP_CARDIO:    "Cardio",
+	pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY: "Full Body",
+}
+
 // MuscleHeatmapProvider generates an emoji-based "heatmap" of muscle volume.
 type MuscleHeatmapProvider struct {
 	coefficients map[pb.MuscleGroup]float64
@@ -119,6 +156,12 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, logger *slog.Logger,
 		coeffs = GetPresetCoefficients(preset)
 	}
 
+	// Parse group_by option
+	groupBy := ""
+	if g, ok := inputConfig["group_by"]; ok {
+		groupBy = g
+	}
+
 	// Calculate Weighted Volume per Muscle Group
 	volumeScores := make(map[string]float64)
 	maxScore := 0.0
@@ -160,6 +203,18 @@ func (p *MuscleHeatmapProvider) Enrich(ctx context.Context, logger *slog.Logger,
 				if volumeScores[name] > maxScore {
 					maxScore = volumeScores[name]
 				}
+			}
+		}
+	}
+
+	// Roll up into broader groups if requested
+	if groupBy == "muscle_group" {
+		volumeScores = RollUpScores(volumeScores)
+		// Recalculate max
+		maxScore = 0
+		for _, v := range volumeScores {
+			if v > maxScore {
+				maxScore = v
 			}
 		}
 	}
@@ -248,6 +303,38 @@ func GetPresetCoefficients(preset string) map[pb.MuscleGroup]float64 {
 	}
 }
 
+// GetMuscleGroupCategory returns the broad category name for a muscle group.
+// This is exported for use by the muscle_heatmap_image provider.
+func GetMuscleGroupCategory(muscle pb.MuscleGroup) string {
+	if cat, ok := MuscleGroupCategories[muscle]; ok {
+		return cat
+	}
+	return formatMuscleName(muscle)
+}
+
+// RollUpScores aggregates per-muscle volume scores into broader category totals.
+// Input keys are formatted muscle names (e.g. "Quadriceps", "Hamstrings").
+// Output keys are category names (e.g. "Legs", "Back").
+// This is exported for use by the muscle_heatmap_image provider.
+func RollUpScores(perMuscle map[string]float64) map[string]float64 {
+	// Build reverse lookup: formatted name -> category
+	nameToCategory := make(map[string]string)
+	for mg, cat := range MuscleGroupCategories {
+		nameToCategory[formatMuscleName(mg)] = cat
+	}
+
+	rolled := make(map[string]float64)
+	for name, score := range perMuscle {
+		if cat, ok := nameToCategory[name]; ok {
+			rolled[cat] += score
+		} else {
+			// Unknown muscles keep their original name
+			rolled[name] += score
+		}
+	}
+	return rolled
+}
+
 // formatMuscleRow formats a single muscle row based on style
 func (p *MuscleHeatmapProvider) formatMuscleRow(name string, score float64, rating int, maxScore float64, barLength int, style pb.MuscleHeatmapStyle) string {
 	switch style {
@@ -256,7 +343,7 @@ func (p *MuscleHeatmapProvider) formatMuscleRow(name string, score float64, rati
 		if maxScore > 0 {
 			percentage = int((score / maxScore) * 100)
 		}
-		return fmt.Sprintf("- %s: %d%%\n", name, percentage)
+		return fmt.Sprintf("%s: %d%%\n", name, percentage)
 
 	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY:
 		level := "Low"
@@ -267,7 +354,7 @@ func (p *MuscleHeatmapProvider) formatMuscleRow(name string, score float64, rati
 		} else if rating >= barLength/4 {
 			level = "Medium"
 		}
-		return fmt.Sprintf("- %s: %s\n", name, level)
+		return fmt.Sprintf("%s: %s\n", name, level)
 
 	default: // EMOJI_BARS
 		bar := ""
@@ -278,7 +365,7 @@ func (p *MuscleHeatmapProvider) formatMuscleRow(name string, score float64, rati
 				bar += "⬜"
 			}
 		}
-		return fmt.Sprintf("- %s: %s\n", name, bar)
+		return fmt.Sprintf("%s: %s\n", name, bar)
 	}
 }
 

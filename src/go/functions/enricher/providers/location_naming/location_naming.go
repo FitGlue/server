@@ -255,13 +255,12 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 	case "description":
 		// Append location line to description
 		var locationLine string
-		if timeEmoji != "" {
-			locationLine = fmt.Sprintf("%s %s", timeEmoji, displayLocation)
-		} else {
-			locationLine = fmt.Sprintf("📍 Location: %s", displayLocation)
-		}
+		locationLine = fmt.Sprintf("📍 Location: %s", displayLocation)
 		if cityName != "" && cityName != displayLocation {
 			locationLine = fmt.Sprintf("%s, %s", locationLine, cityName)
+		}
+		if timeEmoji != "" && timePrefix != "" {
+			locationLine = fmt.Sprintf("%s (%s %s)", locationLine, timeEmoji, timePrefix)
 		}
 		result.Description = locationLine
 		logger.Info("Generated location description", "location_line", locationLine)

@@ -156,7 +156,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, logger *slog.Logger
 		}
 
 		if len(statParts) > 0 {
-			sb.WriteString(strings.Join(statParts, " • ") + "\n\n")
+			sb.WriteString(strings.Join(statParts, " • ") + "\n")
 		}
 	}
 
@@ -181,17 +181,6 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, logger *slog.Logger
 		if hasSetTypes {
 			break
 		}
-	}
-
-	// Add explanatory notes if needed
-	if hasSupersets {
-		sb.WriteString("(Exercises with matching numbers are supersets - performed back-to-back)\n")
-	}
-	if hasSetTypes {
-		sb.WriteString("([W]=Warmup, [F]=Failure, [D]=Dropset)\n")
-	}
-	if hasSupersets || hasSetTypes {
-		sb.WriteString("\n")
 	}
 
 	// Map superset IDs to emoji numbers
@@ -224,7 +213,7 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, logger *slog.Logger
 			supersetMarker = "⬜ "
 		}
 
-		sb.WriteString(fmt.Sprintf("- %s%s: ", supersetMarker, b.Name))
+		sb.WriteString(fmt.Sprintf("• %s%s: ", supersetMarker, b.Name))
 
 		// Format sets based on style
 		var setStrs []string

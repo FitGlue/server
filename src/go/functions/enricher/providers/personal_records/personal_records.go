@@ -97,7 +97,7 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 	var sb strings.Builder
 	sb.WriteString("🏆 Personal Records:\n")
 	for _, pr := range newPRs {
-		sb.WriteString(pr.DisplayMessage)
+		sb.WriteString("• " + pr.DisplayMessage)
 		sb.WriteString("\n")
 	}
 	prDescription := sb.String()

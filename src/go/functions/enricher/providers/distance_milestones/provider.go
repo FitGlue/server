@@ -139,7 +139,8 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 	nextMilestone := getNextMilestone(newDistance)
 	remaining := nextMilestone - newDistance
 
-	sb.WriteString(fmt.Sprintf("📊 Lifetime %s: %.1f km\n", getSportLabel(sport), newDistance))
+	sb.WriteString(fmt.Sprintf("📊 Lifetime %s:\n", getSportLabel(sport)))
+	sb.WriteString(fmt.Sprintf("• %.1f km total\n", newDistance))
 	sb.WriteString(fmt.Sprintf("• Next milestone: %.0f km (%.1f km to go)", nextMilestone, remaining))
 
 	logger.Info("Distance milestones processed",

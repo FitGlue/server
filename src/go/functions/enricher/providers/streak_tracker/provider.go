@@ -80,13 +80,25 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 	isNewDay := lastActivityDate != activityDate
 
 	if isNewDay && lastActivityDate != "" {
-		// Check if streak continues: last activity must be exactly the day before this activity
 		actDate, _ := time.Parse("2006-01-02", activityDate)
-		expectedPrev := actDate.AddDate(0, 0, -1).Format("2006-01-02")
-		if lastActivityDate != expectedPrev {
-			// Streak broken - reset
-			streakBroken = true
-			currentStreak = 0
+		lastDate, _ := time.Parse("2006-01-02", lastActivityDate)
+
+		// If this activity is from a date BEFORE or SAME as the last recorded date,
+		// it's out-of-order or a race condition duplicate — don't modify the streak
+		if !actDate.After(lastDate) {
+			isNewDay = false
+			logger.Info("streak_tracker: skipping out-of-order or duplicate activity",
+				"activity_date", activityDate,
+				"last_activity_date", lastActivityDate,
+			)
+		} else {
+			// Check if streak continues: last activity must be exactly the day before this activity
+			expectedPrev := actDate.AddDate(0, 0, -1).Format("2006-01-02")
+			if lastActivityDate != expectedPrev {
+				// Streak broken - reset
+				streakBroken = true
+				currentStreak = 0
+			}
 		}
 	}
 
