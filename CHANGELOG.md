@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.10.0](https://github.com/FitGlue/server/compare/v12.9.0...v12.10.0) (2026-02-08)
+
+
+### Features
+
+* **server:** standardize description formatting, add muscle group rollup, fix streak/recovery bugs, and migrate uploader types ([7ec0a75](https://github.com/FitGlue/server/commit/7ec0a755376b165172685941da232a80fa64545e))
+
 ## [12.9.0](https://github.com/FitGlue/server/compare/v12.8.3...v12.9.0) (2026-02-08)
 
 
