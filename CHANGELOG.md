@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.11.1](https://github.com/FitGlue/server/compare/v12.11.0...v12.11.1) (2026-02-09)
+
+
+### Bug Fixes
+
+* oauth connections for github and google ([30684e9](https://github.com/FitGlue/server/commit/30684e99f1ce672005f5f001b40d33cb0f686af8))
+
 ## [12.11.0](https://github.com/FitGlue/server/compare/v12.10.0...v12.11.0) (2026-02-09)
 
 
