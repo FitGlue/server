@@ -232,6 +232,30 @@ export interface PipelineConfig {
   name: string;
   /** When true, pipeline is temporarily disabled and skipped by enricher */
   disabled: boolean;
+  /** Source plugin configuration (validated against PluginManifest.config_schema) */
+  sourceConfig: { [key: string]: string };
+  /** Destination plugin configurations, keyed by destination ID (e.g. "googlesheets") */
+  destinationConfigs: { [key: string]: DestinationConfig };
+}
+
+export interface PipelineConfig_SourceConfigEntry {
+  key: string;
+  value: string;
+}
+
+export interface PipelineConfig_DestinationConfigsEntry {
+  key: string;
+  value?: DestinationConfig | undefined;
+}
+
+/** Configuration for a single destination plugin */
+export interface DestinationConfig {
+  config: { [key: string]: string };
+}
+
+export interface DestinationConfig_ConfigEntry {
+  key: string;
+  value: string;
 }
 
 export interface UserIntegrations {

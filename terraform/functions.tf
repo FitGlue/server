@@ -1332,6 +1332,7 @@ resource "google_cloud_run_service_iam_member" "user_profile_handler_invoker" {
 }
 
 # ----------------- User Integrations Handler -----------------
+# terraform-lint: needs-all-oauth-secrets
 resource "google_cloudfunctions2_function" "user_integrations_handler" {
   name        = "user-integrations-handler"
   location    = var.region
@@ -1372,6 +1373,55 @@ resource "google_cloudfunctions2_function" "user_integrations_handler" {
       key        = "FITBIT_CLIENT_ID"
       project_id = var.project_id
       secret     = google_secret_manager_secret.fitbit_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "GOOGLE_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.google_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "GITHUB_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "SPOTIFY_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.spotify_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "TRAININGPEAKS_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.trainingpeaks_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "WAHOO_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.wahoo_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "POLAR_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.polar_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "OURA_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.oura_client_id.secret_id
       version    = "latest"
     }
 

@@ -65,6 +65,50 @@ const destinations: Map<string, PluginManifest> = new Map();
 const integrations: Map<string, IntegrationManifest> = new Map();
 
 /**
+ * Lifecycle hooks for plugins. These are called during pipeline CRUD operations.
+ * Not serialised — runtime-only callbacks registered alongside plugin manifests.
+ *
+ * Follow-up implementation guide for agents:
+ *   1. Create a hook implementation (e.g. in `shared/src/plugin/hooks/github.ts`).
+ *   2. Call `registerPluginHooks('github', { onPipelineCreate: async (ctx) => { ... } })`.
+ *   3. In the pipeline create handler, iterate registered hooks for matching source/dest IDs
+ *      and call `onPipelineCreate` with the pipeline config and user context.
+ *   4. For GitHub specifically, `onPipelineCreate` should call the GitHub API to register
+ *      a webhook on the configured repo using the user's stored GitHub OAuth token.
+ */
+export interface PluginLifecycleHooks {
+  /** Called when a pipeline using this plugin is created */
+  onPipelineCreate?: (ctx: { userId: string; pipelineId: string; config: Record<string, string> }) => Promise<void>;
+  /** Called when a pipeline using this plugin is deleted */
+  onPipelineDelete?: (ctx: { userId: string; pipelineId: string; config: Record<string, string> }) => Promise<void>;
+}
+
+const pluginHooks: Map<string, PluginLifecycleHooks> = new Map();
+
+/**
+ * Register lifecycle hooks for a plugin.
+ * @param pluginId - The plugin's unique ID (e.g. "github")
+ * @param hooks - The lifecycle callbacks
+ */
+export function registerPluginHooks(pluginId: string, hooks: PluginLifecycleHooks): void {
+  pluginHooks.set(pluginId, hooks);
+}
+
+/**
+ * Get lifecycle hooks for a plugin by ID.
+ */
+export function getPluginHooks(pluginId: string): PluginLifecycleHooks | undefined {
+  return pluginHooks.get(pluginId);
+}
+
+/**
+ * Clear all plugin hooks (for testing).
+ */
+export function clearPluginHooks(): void {
+  pluginHooks.clear();
+}
+
+/**
  * Register a source plugin manifest
  */
 export function registerSource(manifest: PluginManifestInput): void {
@@ -121,6 +165,7 @@ export function clearRegistry(): void {
   enrichers.clear();
   destinations.clear();
   integrations.clear();
+  clearPluginHooks();
 }
 
 // ============================================================================

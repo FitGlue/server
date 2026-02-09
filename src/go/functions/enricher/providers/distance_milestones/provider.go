@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"strings"
-	"time"
 
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
@@ -79,9 +78,7 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 		if err != nil {
 			logger.Warn("Failed to fetch lifetime distance", "error", err)
 		} else if data != nil {
-			if val, ok := data["lifetime_distance"].(float64); ok {
-				lifetimeDistance = val
-			}
+			lifetimeDistance = providers.ToFloat64(data["lifetime_distance"])
 		}
 	}
 
@@ -101,7 +98,6 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 	if p.Service != nil && p.Service.DB != nil {
 		updateData := map[string]interface{}{
 			"lifetime_distance": newDistance,
-			"last_update":       time.Now().Format(time.RFC3339),
 		}
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
 			logger.Warn("Failed to save lifetime distance", "error", err)

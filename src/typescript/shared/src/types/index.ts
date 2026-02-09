@@ -33,6 +33,7 @@ export {
   GitHubIntegration,
   EnricherProviderType,
   EnricherConfig,
+  DestinationConfig,
   ProcessedActivityRecord,
   PipelineConfig,
   ShowcasedActivity,

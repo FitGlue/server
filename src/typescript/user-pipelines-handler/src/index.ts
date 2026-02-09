@@ -2,7 +2,7 @@
 import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, FrameworkContext } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { routeRequest, RouteMatch } from '@fitglue/shared/routing';
-import { PipelineConfig, EnricherConfig, Destination } from '@fitglue/shared/types';
+import { PipelineConfig, EnricherConfig, DestinationConfig, Destination } from '@fitglue/shared/types';
 
 export const handler: FrameworkHandler = async (req, ctx) => {
   const userId = ctx.userId;
@@ -77,7 +77,9 @@ async function handleCreatePipeline(userId: string, req: { body: Record<string, 
     source: normalizedSource,
     enrichers: (body.enrichers as EnricherConfig[]) || [],
     destinations: destEnums,
-    disabled: false
+    disabled: false,
+    sourceConfig: (body.sourceConfig as Record<string, string>) || {},
+    destinationConfigs: (body.destinationConfigs as Record<string, DestinationConfig>) || {},
   };
 
   await ctx.services.user.pipelineStore.create(userId, pipeline);
@@ -120,7 +122,9 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: { b
     source: normalizedSource,
     enrichers: (body.enrichers as EnricherConfig[]) || [],
     destinations: destEnums,
-    disabled: (body.disabled as boolean) || false
+    disabled: (body.disabled as boolean) || false,
+    sourceConfig: (body.sourceConfig as Record<string, string>) || {},
+    destinationConfigs: (body.destinationConfigs as Record<string, DestinationConfig>) || {},
   };
 
   await ctx.services.user.pipelineStore.create(userId, pipeline); // create() is idempotent (set operation)

@@ -138,8 +138,8 @@ func TestRecoveryAdvisor_NoHeartRate(t *testing.T) {
 	if result.Metadata["trimp"] != "15" {
 		t.Errorf("Expected trimp 15 for no-HR fallback, got %s", result.Metadata["trimp"])
 	}
-	if result.Metadata["intensity"] != "Easy" {
-		t.Errorf("Expected Easy intensity, got %s", result.Metadata["intensity"])
+	if result.Metadata["intensity"] != "Recovery" {
+		t.Errorf("Expected Recovery intensity, got %s", result.Metadata["intensity"])
 	}
 }
 
@@ -181,11 +181,11 @@ func TestRecoveryAdvisor_HighWeeklyLoad(t *testing.T) {
 	}
 
 	// Recovery hours should include the +12h high-load adjustment
-	// 60min@170bpm ≈ 88 TRIMP (Moderate = 24h base + 12h high-load = 36h)
+	// 60min@170bpm ≈ 165 TRIMP (Very Hard = 48h base + 12h high-load = 60h)
 	var hours float64
 	fmt.Sscanf(result.Metadata["recovery_hours"], "%f", &hours)
-	if hours < 36 {
-		t.Errorf("Expected >= 36h recovery with high weekly load, got %.0f", hours)
+	if hours < 60 {
+		t.Errorf("Expected >= 60h recovery with high weekly load, got %.0f", hours)
 	}
 }
 
@@ -196,12 +196,13 @@ func TestGetRecoveryRecommendation(t *testing.T) {
 		wantHours  float64
 		wantLabel  string
 	}{
-		{30, 200, 12, "Easy"},
-		{75, 300, 24, "Moderate"},
+		{15, 200, 8, "Recovery"},
+		{45, 300, 12, "Easy"},
+		{75, 400, 24, "Moderate"},
 		{120, 400, 36, "Hard"},
 		{200, 400, 48, "Very Hard"},
 		// High weekly load adjustments
-		{30, 600, 24, "Easy"},       // 12 + 12
+		{15, 600, 20, "Recovery"},   // 8 + 12
 		{120, 600, 48, "Hard"},      // 36 + 12
 		{200, 600, 60, "Very Hard"}, // 48 + 12
 	}

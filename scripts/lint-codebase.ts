@@ -56,7 +56,7 @@ const NO_TERRAFORM_REQUIRED = ['admin-cli', 'mcp-server'];
 // Rules that should FAIL if they have warnings (blocking)
 const ERROR_RULES = new Set([
   // Infrastructure
-  'I1', 'I2', 'I3', 'I4', 'I5', 'R1', 'R3', 'R4',
+  'I1', 'I2', 'I3', 'I4', 'I5', 'I6', 'R1', 'R3', 'R4',
   // Go
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14', 'G15',
   // TypeScript
@@ -4784,6 +4784,112 @@ function checkOAuthConnectHandlerCoverage(): CheckResult {
   };
 }
 
+// ============================================================================
+// Check I6: Terraform OAuth Secret Coverage
+// ============================================================================
+
+/**
+ * Ensures Cloud Functions annotated with `# terraform-lint: needs-all-oauth-secrets`
+ * have all _CLIENT_ID secrets from oauth_functions.tf as secret_environment_variables.
+ *
+ * This prevents drift when new OAuth integrations are added — if a new provider
+ * gets an oauth handler with CLIENT_ID/CLIENT_SECRET, annotated functions will
+ * fail lint until they also receive the new CLIENT_ID.
+ */
+function checkTerraformOAuthSecretCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const oauthFunctionsPath = path.join(TERRAFORM_DIR, 'oauth_functions.tf');
+  const functionsPath = path.join(TERRAFORM_DIR, 'functions.tf');
+
+  if (!fs.existsSync(oauthFunctionsPath) || !fs.existsSync(functionsPath)) {
+    errors.push('Required terraform files not found (oauth_functions.tf or functions.tf)');
+    return { name: 'Terraform OAuth Secret Coverage', passed: false, errors, warnings };
+  }
+
+  const oauthContent = fs.readFileSync(oauthFunctionsPath, 'utf-8');
+  const functionsContent = fs.readFileSync(functionsPath, 'utf-8');
+
+  // Extract all _CLIENT_ID keys from oauth_functions.tf
+  const clientIdPattern = /key\s*=\s*"([A-Z_]+_CLIENT_ID)"/g;
+  const allClientIds = new Set<string>();
+  let match;
+  while ((match = clientIdPattern.exec(oauthContent)) !== null) {
+    allClientIds.add(match[1]);
+  }
+
+  if (allClientIds.size === 0) {
+    warnings.push('No _CLIENT_ID secrets found in oauth_functions.tf');
+    return { name: 'Terraform OAuth Secret Coverage', passed: true, errors, warnings };
+  }
+
+  // Find annotated function blocks in functions.tf
+  // Split by resource blocks and look for the annotation comment
+  const lines = functionsContent.split('\n');
+  let i = 0;
+  while (i < lines.length) {
+    if (lines[i].includes('# terraform-lint: needs-all-oauth-secrets')) {
+      // Find the resource name on the next line(s)
+      const nameMatch = /name\s*=\s*"([^"]+)"/.exec(
+        lines.slice(i, Math.min(i + 10, lines.length)).join('\n')
+      );
+      const functionName = nameMatch ? nameMatch[1] : 'unknown';
+
+      // Extract the full resource block (find matching closing brace)
+      let braceDepth = 0;
+      let blockStart = i;
+      let blockEnd = i;
+      let foundStart = false;
+
+      for (let j = i; j < lines.length; j++) {
+        for (const char of lines[j]) {
+          if (char === '{') {
+            braceDepth++;
+            foundStart = true;
+          } else if (char === '}') {
+            braceDepth--;
+          }
+        }
+        if (foundStart && braceDepth === 0) {
+          blockEnd = j;
+          break;
+        }
+      }
+
+      const blockContent = lines.slice(blockStart, blockEnd + 1).join('\n');
+
+      // Extract _CLIENT_ID keys present in this block
+      const blockClientIds = new Set<string>();
+      const blockKeyPattern = /key\s*=\s*"([A-Z_]+_CLIENT_ID)"/g;
+      let blockMatch;
+      while ((blockMatch = blockKeyPattern.exec(blockContent)) !== null) {
+        blockClientIds.add(blockMatch[1]);
+      }
+
+      // Check for missing CLIENT_IDs
+      for (const clientId of allClientIds) {
+        if (!blockClientIds.has(clientId)) {
+          errors.push(
+            `Function '${functionName}' is annotated with needs-all-oauth-secrets ` +
+            `but is missing secret: ${clientId}`
+          );
+        }
+      }
+
+      i = blockEnd + 1;
+    } else {
+      i++;
+    }
+  }
+
+  return {
+    name: 'Terraform OAuth Secret Coverage',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
 
 
 /**
@@ -5176,6 +5282,7 @@ function main(): void {
         { id: 'R2', fn: () => ({ ...checkPluginIconUniqueness(), name: 'R2: Plugin Icon Uniqueness' }) },
         { id: 'R3', fn: () => ({ ...checkHelpArticleParity(), name: 'R3: Help Article Parity' }) },
         { id: 'R4', fn: () => ({ ...checkOAuthConnectHandlerCoverage(), name: 'R4: OAuth Connect Handler Coverage' }) },
+        { id: 'I6', fn: () => ({ ...checkTerraformOAuthSecretCoverage(), name: 'I6: Terraform OAuth Secret Coverage' }) },
       ]
     },
     {

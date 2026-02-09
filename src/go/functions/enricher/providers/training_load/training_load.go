@@ -140,13 +140,13 @@ func (p *TrainingLoad) Enrich(ctx context.Context, logger *slog.Logger, activity
 
 func getTrainingLoadZone(trimp float64) string {
 	switch {
-	case trimp < 50:
+	case trimp < 30:
 		return "Recovery"
-	case trimp < 100:
+	case trimp < 60:
 		return "Easy"
-	case trimp < 150:
+	case trimp < 90:
 		return "Moderate"
-	case trimp < 250:
+	case trimp < 150:
 		return "Hard"
 	default:
 		return "Very Hard"

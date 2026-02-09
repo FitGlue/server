@@ -267,7 +267,7 @@ func PipelineToFirestore(p *pb.PipelineConfig) map[string]interface{} {
 		}
 	}
 
-	return map[string]interface{}{
+	m := map[string]interface{}{
 		"id":           p.Id,
 		"name":         p.Name,
 		"source":       p.Source,
@@ -275,6 +275,26 @@ func PipelineToFirestore(p *pb.PipelineConfig) map[string]interface{} {
 		"enrichers":    enrichers,
 		"disabled":     p.Disabled,
 	}
+
+	// Source config
+	if len(p.SourceConfig) > 0 {
+		m["source_config"] = p.SourceConfig
+	}
+
+	// Destination configs
+	if len(p.DestinationConfigs) > 0 {
+		destConfigs := make(map[string]interface{})
+		for k, v := range p.DestinationConfigs {
+			if v != nil {
+				destConfigs[k] = map[string]interface{}{
+					"config": v.Config,
+				}
+			}
+		}
+		m["destination_configs"] = destConfigs
+	}
+
+	return m
 }
 
 func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
@@ -337,13 +357,43 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 		}
 	}
 
+	// Source config
+	sourceConfig := make(map[string]string)
+	if scMap, ok := m["source_config"].(map[string]interface{}); ok {
+		for k, v := range scMap {
+			if s, ok := v.(string); ok {
+				sourceConfig[k] = s
+			}
+		}
+	}
+
+	// Destination configs
+	destConfigs := make(map[string]*pb.DestinationConfig)
+	if dcMap, ok := m["destination_configs"].(map[string]interface{}); ok {
+		for destId, dcRaw := range dcMap {
+			if dcObj, ok := dcRaw.(map[string]interface{}); ok {
+				cfg := make(map[string]string)
+				if cMap, ok := dcObj["config"].(map[string]interface{}); ok {
+					for k, v := range cMap {
+						if s, ok := v.(string); ok {
+							cfg[k] = s
+						}
+					}
+				}
+				destConfigs[destId] = &pb.DestinationConfig{Config: cfg}
+			}
+		}
+	}
+
 	return &pb.PipelineConfig{
-		Id:           getString(m, "id"),
-		Name:         getString(m, "name"),
-		Source:       getString(m, "source"),
-		Enrichers:    enrichers,
-		Destinations: dests,
-		Disabled:     getBool(m, "disabled"),
+		Id:                 getString(m, "id"),
+		Name:               getString(m, "name"),
+		Source:             getString(m, "source"),
+		Enrichers:          enrichers,
+		Destinations:       dests,
+		Disabled:           getBool(m, "disabled"),
+		SourceConfig:       sourceConfig,
+		DestinationConfigs: destConfigs,
 	}
 }
 

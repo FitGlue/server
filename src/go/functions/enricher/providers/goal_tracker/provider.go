@@ -74,9 +74,7 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 			if storedPeriod, ok := data["period_key"].(string); ok {
 				currentPeriod = getPeriodKey(period)
 				if storedPeriod == currentPeriod {
-					if val, ok := data["accumulated"].(float64); ok {
-						accumulatedProgress = val
-					}
+					accumulatedProgress = providers.ToFloat64(data["accumulated"])
 				}
 				// If period changed, reset (new week/month/year)
 			}
@@ -98,7 +96,6 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		updateData := map[string]interface{}{
 			"accumulated": newTotal,
 			"period_key":  currentPeriod,
-			"last_update": time.Now().Format(time.RFC3339),
 		}
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
 			logger.Warn("Failed to save goal progress", "error", err)

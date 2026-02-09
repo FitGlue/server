@@ -243,3 +243,39 @@ func TestStreakTracker_LongestStreakPreserved(t *testing.T) {
 		t.Errorf("Expected persisted longest_streak=15, got %v", savedData["longest_streak"])
 	}
 }
+
+func TestStreakTracker_FirestoreInt64Types(t *testing.T) {
+	// Firestore returns int64 for integer values, not float64.
+	// This test ensures ToFloat64 correctly handles real Firestore data types.
+	var savedData map[string]interface{}
+	mockDB := &mocks.MockDatabase{
+		GetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+			return map[string]interface{}{
+				"current_streak":     int64(77),
+				"longest_streak":     int64(77),
+				"last_activity_date": "2026-02-08",
+			}, nil
+		},
+		SetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+			savedData = data
+			return nil
+		},
+	}
+
+	provider := &StreakTracker{}
+	provider.SetService(&bootstrap.Service{DB: mockDB})
+
+	res, err := provider.Enrich(context.Background(), slog.Default(), makeActivity("2026-02-09"), &pb.UserRecord{UserId: "u1"}, map[string]string{}, false)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+	if res.Metadata["streak_current"] != "78" {
+		t.Errorf("Expected streak_current=78, got %s", res.Metadata["streak_current"])
+	}
+	if res.Metadata["streak_longest"] != "78" {
+		t.Errorf("Expected streak_longest=78, got %s", res.Metadata["streak_longest"])
+	}
+	if savedData["current_streak"] != 78 {
+		t.Errorf("Expected persisted current_streak=78, got %v", savedData["current_streak"])
+	}
+}

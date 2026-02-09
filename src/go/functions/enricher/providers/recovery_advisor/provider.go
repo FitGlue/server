@@ -77,8 +77,8 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		if hrReserve > 1 {
 			hrReserve = 1
 		}
-		// Exponential weighting for intensity
-		trimp = durationMinutes * hrReserve * math.Pow(1.92, hrReserve)
+		// Banister TRIMP: duration × HRR × 0.64 × e^(1.92 × HRR)
+		trimp = durationMinutes * hrReserve * 0.64 * math.Exp(1.92*hrReserve)
 	} else {
 		// Estimate from duration only (less accurate)
 		trimp = durationMinutes * 0.5
@@ -99,9 +99,7 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 			// Get previous 7 days of load (excluding today, which will be added fresh)
 			for i := 1; i <= 7; i++ {
 				dateKey := now.AddDate(0, 0, -i).Format("2006-01-02")
-				if val, ok := data[dateKey].(float64); ok {
-					weeklyLoad += val
-				}
+				weeklyLoad += providers.ToFloat64(data[dateKey])
 			}
 		}
 	}
@@ -111,17 +109,14 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 	today := now.Format("2006-01-02")
 	todayLoad := trimp
 	if data != nil {
-		if existingToday, ok := data[today].(float64); ok {
-			todayLoad += existingToday
-		}
+		todayLoad += providers.ToFloat64(data[today])
 	}
 	totalWeeklyLoad := weeklyLoad + todayLoad
 
 	// Persist today's load
 	if p.Service != nil && p.Service.DB != nil {
 		updateData := map[string]interface{}{
-			today:         todayLoad,
-			"last_update": now.Format(time.RFC3339),
+			today: todayLoad,
 		}
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
 			logger.Warn("Failed to save recovery data", "error", err)
@@ -158,20 +153,23 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 }
 
 func getRecoveryRecommendation(trimp, weeklyLoad float64) (hours float64, intensity string) {
-	// Base recovery on session intensity
+	// Base recovery on session intensity (aligned with training_load zone thresholds)
 	switch {
 	case trimp >= 150:
 		intensity = "Very Hard"
 		hours = 48
-	case trimp >= 100:
+	case trimp >= 90:
 		intensity = "Hard"
 		hours = 36
-	case trimp >= 50:
+	case trimp >= 60:
 		intensity = "Moderate"
 		hours = 24
-	default:
+	case trimp >= 30:
 		intensity = "Easy"
 		hours = 12
+	default:
+		intensity = "Recovery"
+		hours = 8
 	}
 
 	// Adjust based on weekly load

@@ -622,6 +622,11 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
+	// Post-enrichment: Reconcile TimeMarker labels with StrengthSet exercise names.
+	// After all enrichers have run, the StrengthSets may have better names than
+	// the generic FIT category-based labels on the TimeMarkers (e.g., from Hevy data).
+	reconcileTimeMarkerLabels(currentActivity)
+
 	brandingApplied := false
 	// Run branding provider last (for non-paying users only)
 	if brandingProvider, ok := o.providersByName["branding"]; ok && tier.ShouldShowBranding(userRec) {
@@ -692,6 +697,20 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, "branding")
 	}
 
+	// Inject source config into metadata
+	for k, v := range pipeline.SourceConfig {
+		finalEvent.EnrichmentMetadata[k] = v
+	}
+
+	// Inject destination configs into metadata (prefixed with destination ID)
+	for destId, destCfg := range pipeline.DestinationConfigs {
+		if destCfg != nil {
+			for k, v := range destCfg.Config {
+				finalEvent.EnrichmentMetadata[destId+"_"+k] = v
+			}
+		}
+	}
+
 	// Generate FIT file artifact
 	fitBytes, err := fit.GenerateFitFile(currentActivity)
 	if err != nil {
@@ -719,9 +738,11 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 }
 
 type configuredPipeline struct {
-	ID           string
-	Enrichers    []configuredEnricher
-	Destinations []pb.Destination
+	ID                 string
+	Enrichers          []configuredEnricher
+	Destinations       []pb.Destination
+	SourceConfig       map[string]string
+	DestinationConfigs map[string]*pb.DestinationConfig
 }
 
 type configuredEnricher struct {
@@ -752,9 +773,11 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 				})
 			}
 			return &configuredPipeline{
-				ID:           p.Id,
-				Enrichers:    enrichers,
-				Destinations: p.Destinations,
+				ID:                 p.Id,
+				Enrichers:          enrichers,
+				Destinations:       p.Destinations,
+				SourceConfig:       p.SourceConfig,
+				DestinationConfigs: p.DestinationConfigs,
 			}, nil
 		}
 	}

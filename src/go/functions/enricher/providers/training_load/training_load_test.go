@@ -76,10 +76,10 @@ func TestTrainingLoad_Enrich_Zones(t *testing.T) {
 		trimp    float64
 		expected string
 	}{
-		{25, "Recovery"},
-		{75, "Easy"},
-		{125, "Moderate"},
-		{200, "Hard"},
+		{15, "Recovery"},
+		{45, "Easy"},
+		{75, "Moderate"},
+		{120, "Hard"},
 		{300, "Very Hard"},
 	}
 

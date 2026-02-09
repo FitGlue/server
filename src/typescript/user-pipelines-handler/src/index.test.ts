@@ -135,7 +135,28 @@ describe('user-pipelines-handler', () => {
           source: 'SOURCE_HEVY',
           enrichers: [],
           destinations: expect.any(Array),
-          disabled: false
+          disabled: false,
+          sourceConfig: {},
+          destinationConfigs: {},
+        })
+      );
+    });
+
+    it('passes through sourceConfig and destinationConfigs on create', async () => {
+      req.body = {
+        source: 'hevy',
+        destinations: ['strava'],
+        sourceConfig: { repo: 'my-org/my-repo', folder: 'workouts' },
+        destinationConfigs: { googlesheets: { config: { spreadsheet_id: 'abc123' } } },
+      };
+
+      await handler(req, ctx);
+
+      expect(mockPipelineStore.create).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          sourceConfig: { repo: 'my-org/my-repo', folder: 'workouts' },
+          destinationConfigs: { googlesheets: { config: { spreadsheet_id: 'abc123' } } },
         })
       );
     });
@@ -172,7 +193,28 @@ describe('user-pipelines-handler', () => {
         expect.objectContaining({
           id: 'pipeline-123',
           source: 'SOURCE_FITBIT',
-          destinations: expect.any(Array)
+          destinations: expect.any(Array),
+          sourceConfig: {},
+          destinationConfigs: {},
+        })
+      );
+    });
+
+    it('passes through sourceConfig and destinationConfigs on update', async () => {
+      req.body = {
+        source: 'fitbit',
+        destinations: ['strava'],
+        sourceConfig: { folder: 'data' },
+        destinationConfigs: { strava: { config: { activity_type: 'run' } } },
+      };
+
+      await handler(req, ctx);
+
+      expect(mockPipelineStore.create).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          sourceConfig: { folder: 'data' },
+          destinationConfigs: { strava: { config: { activity_type: 'run' } } },
         })
       );
     });

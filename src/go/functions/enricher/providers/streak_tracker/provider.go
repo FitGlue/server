@@ -63,12 +63,8 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 		if err != nil {
 			logger.Warn("Failed to fetch streak data", "error", err)
 		} else if data != nil {
-			if val, ok := data["current_streak"].(float64); ok {
-				currentStreak = int(val)
-			}
-			if val, ok := data["longest_streak"].(float64); ok {
-				longestStreak = int(val)
-			}
+			currentStreak = int(providers.ToFloat64(data["current_streak"]))
+			longestStreak = int(providers.ToFloat64(data["longest_streak"]))
 			if val, ok := data["last_activity_date"].(string); ok {
 				lastActivityDate = val
 			}
@@ -118,7 +114,6 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 			"current_streak":     currentStreak,
 			"longest_streak":     longestStreak,
 			"last_activity_date": activityDate,
-			"last_update":        time.Now().Format(time.RFC3339),
 		}
 		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
 			logger.Warn("Failed to save streak data", "error", err)

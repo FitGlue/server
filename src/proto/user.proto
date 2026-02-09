@@ -58,6 +58,15 @@ message PipelineConfig {
   repeated fitglue.events.Destination destinations = 4;
   string name = 5; // Optional user-friendly name (e.g., "Morning Gym Sessions")
   bool disabled = 6; // When true, pipeline is temporarily disabled and skipped by enricher
+  // Source plugin configuration (validated against PluginManifest.config_schema)
+  map<string, string> source_config = 7;
+  // Destination plugin configurations, keyed by destination ID (e.g. "googlesheets")
+  map<string, DestinationConfig> destination_configs = 8;
+}
+
+// Configuration for a single destination plugin
+message DestinationConfig {
+  map<string, string> config = 1;
 }
 
 message UserIntegrations {

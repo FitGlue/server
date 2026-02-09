@@ -18,11 +18,26 @@ export const pipelineConverter: admin.firestore.FirestoreDataConverter<PipelineC
       })) || [],
       disabled: model.disabled || false
     };
+    if (model.sourceConfig && Object.keys(model.sourceConfig).length > 0) {
+      data.source_config = model.sourceConfig;
+    }
+    if (model.destinationConfigs && Object.keys(model.destinationConfigs).length > 0) {
+      const destConfigs: Record<string, { config: Record<string, string> }> = {};
+      for (const [k, v] of Object.entries(model.destinationConfigs)) {
+        destConfigs[k] = { config: v.config || {} };
+      }
+      data.destination_configs = destConfigs;
+    }
     return data;
   },
 
   fromFirestore(snapshot: admin.firestore.QueryDocumentSnapshot): PipelineConfig {
     const data = snapshot.data();
+    const destConfigsRaw = (data.destination_configs || {}) as Record<string, { config?: Record<string, string> }>;
+    const destinationConfigs: Record<string, { config: Record<string, string> }> = {};
+    for (const [k, v] of Object.entries(destConfigsRaw)) {
+      destinationConfigs[k] = { config: (v?.config || {}) as Record<string, string> };
+    }
     return {
       id: data.id as string,
       name: (data.name as string) || '',
@@ -32,7 +47,9 @@ export const pipelineConverter: admin.firestore.FirestoreDataConverter<PipelineC
         providerType: (e.provider_type || e.providerType) as number,
         typedConfig: (e.typed_config || e.typedConfig || {}) as Record<string, string>
       })),
-      disabled: (data.disabled as boolean) || false
+      disabled: (data.disabled as boolean) || false,
+      sourceConfig: (data.source_config || {}) as Record<string, string>,
+      destinationConfigs,
     };
   }
 };

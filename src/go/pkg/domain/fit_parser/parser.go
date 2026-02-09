@@ -3,6 +3,7 @@ package fit_parser
 import (
 	"bytes"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/muktihari/fit/decoder"
@@ -31,6 +32,7 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 	var allRecords []*pb.Record
 	var lapInfos []lapInfo
 	var sessionInfos []sessionInfo
+	var setInfos []setInfo
 
 	var activityType pb.ActivityType
 	var activityName string
@@ -99,12 +101,31 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 				if activityName == "" && sessionMsg.SportProfileName != "" {
 					activityName = sessionMsg.SportProfileName
 				}
+
+			case typedef.MesgNumSet:
+				setMsg := mesgdef.NewSet(&msg)
+				// Skip rest sets (only process active exercise sets)
+				if setMsg.SetType == typedef.SetTypeRest {
+					continue
+				}
+				si := setInfo{
+					startTime:    setMsg.StartTime.UTC(),
+					duration:     setMsg.DurationScaled(),
+					reps:         int32(setMsg.Repetitions),
+					weightKg:     setMsg.WeightScaled(),
+					wktStepIndex: int32(setMsg.WktStepIndex),
+				}
+				// Extract exercise name from category
+				if len(setMsg.Category) > 0 {
+					si.exerciseName = formatExerciseCategory(setMsg.Category[0])
+				}
+				setInfos = append(setInfos, si)
 			}
 		}
 	}
 
 	// Build sessions from collected data
-	sessions := buildSessions(allRecords, lapInfos, sessionInfos)
+	sessions := buildSessions(allRecords, lapInfos, sessionInfos, setInfos)
 
 	if len(sessions) == 0 {
 		return nil, fmt.Errorf("no sessions found in FIT file")
@@ -124,11 +145,12 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 	}
 
 	activity := &pb.StandardizedActivity{
-		Source:    "SOURCE_FILE_UPLOAD",
-		StartTime: timestamppb.New(startTime),
-		Name:      activityName,
-		Type:      activityType,
-		Sessions:  []*pb.Session{mergedSession},
+		Source:      "SOURCE_FILE_UPLOAD",
+		StartTime:   timestamppb.New(startTime),
+		Name:        activityName,
+		Type:        activityType,
+		Sessions:    []*pb.Session{mergedSession},
+		TimeMarkers: generateExerciseTimeMarkers(setInfos),
 	}
 
 	return activity, nil
@@ -151,8 +173,17 @@ type sessionInfo struct {
 	sportProfileName string
 }
 
+type setInfo struct {
+	startTime    time.Time
+	duration     float64 // seconds
+	reps         int32
+	weightKg     float64
+	exerciseName string
+	wktStepIndex int32
+}
+
 // buildSessions organizes records into laps and sessions based on timestamps
-func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sessionInfo) []*pb.Session {
+func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sessionInfo, setInfos []setInfo) []*pb.Session {
 	if len(records) == 0 {
 		return nil
 	}
@@ -285,6 +316,38 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 			if !assigned && len(sessions) > 0 {
 				sessions[0].Laps = append(sessions[0].Laps, lap)
 			}
+		}
+	}
+
+	// Convert setInfos to StrengthSets and assign to sessions
+	for _, si := range setInfos {
+		strengthSet := &pb.StrengthSet{
+			ExerciseName:    si.exerciseName,
+			Reps:            si.reps,
+			DurationSeconds: int32(si.duration),
+			StartTime:       timestamppb.New(si.startTime),
+		}
+		// Only set weight if it's a valid number (NaN from FIT means no weight)
+		if si.weightKg == si.weightKg { // NaN != NaN check
+			strengthSet.WeightKg = si.weightKg
+		}
+
+		// Assign to session based on timestamp
+		assigned := false
+		for i := len(sessions) - 1; i >= 0; i-- {
+			sessionStart := sessions[i].StartTime.AsTime()
+			sessionEnd := sessionStart.Add(time.Duration(sessions[i].TotalElapsedTime) * time.Second)
+
+			if (si.startTime.Equal(sessionStart) || si.startTime.After(sessionStart)) &&
+				(si.startTime.Before(sessionEnd) || si.startTime.Equal(sessionEnd)) {
+				sessions[i].StrengthSets = append(sessions[i].StrengthSets, strengthSet)
+				assigned = true
+				break
+			}
+		}
+		// Fallback: assign to first session
+		if !assigned && len(sessions) > 0 {
+			sessions[0].StrengthSets = append(sessions[0].StrengthSets, strengthSet)
 		}
 	}
 
@@ -647,4 +710,51 @@ func generateActivityName(activityType pb.ActivityType, startTime time.Time) str
 	}
 
 	return fmt.Sprintf("%s %s", timeOfDay, activityName)
+}
+
+// generateExerciseTimeMarkers creates TimeMarker objects from FIT Set messages.
+// Groups consecutive sets by exercise name so each exercise block gets one marker.
+func generateExerciseTimeMarkers(sets []setInfo) []*pb.TimeMarker {
+	if len(sets) == 0 {
+		return nil
+	}
+
+	var markers []*pb.TimeMarker
+	currentExercise := ""
+
+	for _, s := range sets {
+		name := s.exerciseName
+		if name == "" {
+			name = "Exercise"
+		}
+
+		// Only create a marker when the exercise name changes (new block)
+		if name != currentExercise {
+			markers = append(markers, &pb.TimeMarker{
+				Timestamp:  timestamppb.New(s.startTime),
+				Label:      name,
+				MarkerType: "exercise_start",
+			})
+			currentExercise = name
+		}
+	}
+
+	return markers
+}
+
+// formatExerciseCategory converts a FIT ExerciseCategory enum to a readable exercise name.
+// e.g. ExerciseCategoryBenchPress.String() = "bench_press" → "Bench Press"
+func formatExerciseCategory(cat typedef.ExerciseCategory) string {
+	s := cat.String()
+	if s == "" || s == "invalid" {
+		return "Exercise"
+	}
+	// Convert snake_case to Title Case
+	parts := strings.Split(s, "_")
+	for i, p := range parts {
+		if len(p) > 0 {
+			parts[i] = strings.ToUpper(p[:1]) + p[1:]
+		}
+	}
+	return strings.Join(parts, " ")
 }
