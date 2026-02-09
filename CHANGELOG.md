@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.11.0](https://github.com/FitGlue/server/compare/v12.10.0...v12.11.0) (2026-02-09)
+
+
+### Features
+
+* enable google connection and sheets destination ([40a37ac](https://github.com/FitGlue/server/commit/40a37accb871ba295501f2c9a0d81674f2ac7870))
+* **server:** add GitHub integration, pipeline sync notifications, and generated enum parsers ([ef39e6f](https://github.com/FitGlue/server/commit/ef39e6f1cfd753eb896f9e9fcc23e6d7eeaf65f2))
+
 ## [12.10.0](https://github.com/FitGlue/server/compare/v12.9.0...v12.10.0) (2026-02-08)
 
 
