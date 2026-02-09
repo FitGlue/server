@@ -94,13 +94,13 @@ func uploadHandler() framework.HandlerFunc {
 		// 1. Get user's Hevy API key
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), eventPayload.Name, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
 		if user.Integrations == nil || user.Integrations.Hevy == nil || user.Integrations.Hevy.ApiKey == "" {
 			fwCtx.Logger.Warn("User has no Hevy API key configured", "userId", eventPayload.UserId)
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "no Hevy API key configured", fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "no Hevy API key configured", eventPayload.Name, fwCtx.Logger)
 			return map[string]interface{}{
 				"status": "FAILED",
 				"reason": "no_hevy_api_key",
@@ -123,14 +123,14 @@ func uploadHandler() framework.HandlerFunc {
 		// 5. Map to Hevy workout format
 		workout, err := mapToHevyWorkout(ctx, &eventPayload, resolver, fwCtx)
 		if err != nil {
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to map to Hevy format: %s", err), fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to map to Hevy format: %s", err), eventPayload.Name, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to map activity to Hevy format: %w", err)
 		}
 
 		// 6. POST to Hevy API
 		workoutID, err := createHevyWorkout(ctx, apiKey, workout, fwCtx)
 		if err != nil {
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), eventPayload.Name, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to create Hevy workout: %w", err)
 		}
 
@@ -169,7 +169,7 @@ func uploadHandler() framework.HandlerFunc {
 		}
 
 		// Update PipelineRun destination as synced
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", eventPayload.Name, fwCtx.Logger)
 
 		return map[string]interface{}{
 			"status":        "SUCCESS",
@@ -318,7 +318,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 			fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
 		}
 		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
-		destination.UpdateStatus(ctx, svc.DB, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", event.Name, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":         "SUCCESS",
 			"hevy_id":        workoutID,
@@ -473,7 +473,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	}
 
 	// Update PipelineRun destination as synced
-	destination.UpdateStatus(ctx, svc.DB, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", fwCtx.Logger)
+	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", event.Name, fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":         "SUCCESS",

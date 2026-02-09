@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { UserStore, IntegrationIdentityStore } from '../../storage/firestore';
 import * as crypto from 'crypto';
-import { StravaIntegration, FitbitIntegration, TrainingPeaksIntegration, SpotifyIntegration, GoogleIntegration, PolarIntegration, WahooIntegration, OuraIntegration } from '../../types/pb/user';
+import { StravaIntegration, FitbitIntegration, TrainingPeaksIntegration, SpotifyIntegration, GoogleIntegration, PolarIntegration, WahooIntegration, OuraIntegration, GitHubIntegration } from '../../types/pb/user';
 
 
 /**
@@ -10,7 +10,7 @@ import { StravaIntegration, FitbitIntegration, TrainingPeaksIntegration, Spotify
  */
 export async function storeOAuthTokens(
   userId: string,
-  provider: 'strava' | 'fitbit' | 'trainingpeaks' | 'spotify' | 'google' | 'polar' | 'wahoo' | 'oura',
+  provider: 'strava' | 'fitbit' | 'trainingpeaks' | 'spotify' | 'google' | 'polar' | 'wahoo' | 'oura' | 'github',
 
   tokens: {
     accessToken: string;
@@ -42,8 +42,9 @@ export async function storeOAuthTokens(
     ...(provider === 'google' ? { googleUserId: tokens.externalUserId } : {}),
     ...(provider === 'polar' ? { polarUserId: tokens.externalUserId } : {}),
     ...(provider === 'wahoo' ? { wahooUserId: tokens.externalUserId } : {}),
-    ...(provider === 'oura' ? { ouraUserId: tokens.externalUserId } : {})
-  } as (typeof provider extends 'strava' ? StravaIntegration : typeof provider extends 'fitbit' ? FitbitIntegration : typeof provider extends 'trainingpeaks' ? TrainingPeaksIntegration : typeof provider extends 'spotify' ? SpotifyIntegration : typeof provider extends 'google' ? GoogleIntegration : typeof provider extends 'polar' ? PolarIntegration : typeof provider extends 'wahoo' ? WahooIntegration : OuraIntegration));
+    ...(provider === 'oura' ? { ouraUserId: tokens.externalUserId } : {}),
+    ...(provider === 'github' ? { githubUserId: tokens.externalUserId } : {})
+  } as (typeof provider extends 'strava' ? StravaIntegration : typeof provider extends 'fitbit' ? FitbitIntegration : typeof provider extends 'trainingpeaks' ? TrainingPeaksIntegration : typeof provider extends 'spotify' ? SpotifyIntegration : typeof provider extends 'google' ? GoogleIntegration : typeof provider extends 'polar' ? PolarIntegration : typeof provider extends 'wahoo' ? WahooIntegration : typeof provider extends 'github' ? GitHubIntegration : OuraIntegration));
 
 
   // Map external user ID to our user ID

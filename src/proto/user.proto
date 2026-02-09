@@ -73,6 +73,7 @@ message UserIntegrations {
   OuraIntegration oura = 10;
   PolarIntegration polar = 11;
   WahooIntegration wahoo = 12;
+  GitHubIntegration github = 13;
 }
 
 message MockIntegration {
@@ -297,6 +298,17 @@ message WahooIntegration {
     google.protobuf.Timestamp last_used_at = 7;
 }
 
+message GitHubIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;             // GitHub tokens don't expire; placeholder for consistency
+    google.protobuf.Timestamp expires_at = 4;
+    string github_user_id = 5;            // GitHub user ID
+    string github_username = 6;           // GitHub login username
+    string scope = 7;                     // Granted OAuth scopes
+    google.protobuf.Timestamp created_at = 8;
+    google.protobuf.Timestamp last_used_at = 9;
+}
 
 message ProcessedActivityRecord {
   string source = 1;

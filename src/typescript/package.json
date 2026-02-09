@@ -37,7 +37,9 @@
     "polar-handler",
     "user-data-handler",
     "registration-summary-handler",
-    "connection-actions-handler"
+    "connection-actions-handler",
+    "github-handler",
+    "github-oauth-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

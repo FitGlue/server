@@ -32,6 +32,7 @@ enum ActivitySource {
   SOURCE_INTERVALS = 13 [(corresponding_destination) = "DESTINATION_INTERVALS"];
   SOURCE_TRAININGPEAKS = 14 [(corresponding_destination) = "DESTINATION_TRAININGPEAKS"];
   SOURCE_GOOGLESHEETS = 15 [(corresponding_destination) = "DESTINATION_GOOGLESHEETS"];
+  SOURCE_GITHUB = 16 [(corresponding_destination) = "DESTINATION_GITHUB"];
   SOURCE_TEST = 99;
 }
 

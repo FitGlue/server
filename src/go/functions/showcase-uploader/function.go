@@ -228,7 +228,7 @@ func showcaseHandler() framework.HandlerFunc {
 			var err error
 			showcaseID, err = generateShowcaseID(ctx, svc, eventPayload.Name, startTime)
 			if err != nil {
-				destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to generate ID: %s", err), fwCtx.Logger)
+				destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to generate ID: %s", err), eventPayload.Name, fwCtx.Logger)
 				return nil, fmt.Errorf("failed to generate showcase ID: %w", err)
 			}
 		}
@@ -305,7 +305,7 @@ func showcaseHandler() framework.HandlerFunc {
 		// Persist to Firestore
 		if err := svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
 			fwCtx.Logger.Error("Failed to persist showcased activity", "error", err)
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("persist failed: %s", err), fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("persist failed: %s", err), eventPayload.Name, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to persist showcased activity: %w", err)
 		}
 
@@ -324,7 +324,7 @@ func showcaseHandler() framework.HandlerFunc {
 		)
 
 		// Update PipelineRun destination as synced
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, showcaseID, "", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_SHOWCASE, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, showcaseID, "", eventPayload.Name, fwCtx.Logger)
 
 		return map[string]interface{}{
 			"status":        "SUCCESS",

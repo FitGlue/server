@@ -135,4 +135,11 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     externalUserIdField: 'wahooUserId',
     configurableFields: [], // OAuth configured via flow
   },
+  github: {
+    key: 'github',
+    displayName: 'GitHub',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    externalUserIdField: 'githubUsername',
+    configurableFields: [], // OAuth configured via flow
+  },
 };

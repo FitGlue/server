@@ -277,6 +277,15 @@
         "infra-oauth",
         "infra-http"
       ]
+    },
+    "int-github": {
+      "paths": [
+        "src/integrations/github"
+      ],
+      "depends_on": [
+        "infra-http",
+        "storage"
+      ]
     }
   },
   "import_patterns": {
@@ -342,6 +351,9 @@
     ],
     "@fitglue/shared/integrations/trainingpeaks": [
       "int-trainingpeaks"
+    ],
+    "@fitglue/shared/integrations/github": [
+      "int-github"
     ],
     "@fitglue/shared/dist/types/pb": [
       "types-pb"
@@ -432,6 +444,9 @@
     ],
     "@fitglue/shared/dist/integrations/trainingpeaks": [
       "int-trainingpeaks"
+    ],
+    "@fitglue/shared/dist/integrations/github": [
+      "int-github"
     ]
   }
 }

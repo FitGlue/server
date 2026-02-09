@@ -101,6 +101,22 @@ export class UserStore {
     return { id: doc.id, data: doc.data() };
   }
 
+  /**
+   * Find a user by their GitHub username.
+   */
+  async findByGitHubUsername(username: string): Promise<{ id: string; data: UserRecord } | null> {
+    const snapshot = await this.collection()
+      .where('integrations.github.github_username', '==', username)
+      .limit(1)
+      .get();
+
+    if (snapshot.empty) {
+      return null;
+    }
+
+    const doc = snapshot.docs[0];
+    return { id: doc.id, data: doc.data() };
+  }
 
   /**
    * Get a user by ID.

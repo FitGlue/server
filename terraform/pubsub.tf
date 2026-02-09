@@ -84,6 +84,14 @@ resource "google_pubsub_topic" "job_upload_googlesheets" {
   message_retention_duration = "3600s"
 }
 
+# GitHub topic for committing enriched activities to GitHub repos (all environments)
+resource "google_pubsub_topic" "job_upload_github" {
+  name    = "topic-job-upload-github"
+  project = var.project_id
+
+  message_retention_duration = "3600s"
+}
+
 
 resource "google_pubsub_subscription" "enrichment_lag_sub" {
   name    = "sub-enrichment-lag"

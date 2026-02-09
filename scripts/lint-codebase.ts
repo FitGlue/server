@@ -56,7 +56,7 @@ const NO_TERRAFORM_REQUIRED = ['admin-cli', 'mcp-server'];
 // Rules that should FAIL if they have warnings (blocking)
 const ERROR_RULES = new Set([
   // Infrastructure
-  'I1', 'I2', 'I3', 'I4', 'I5', 'R1',
+  'I1', 'I2', 'I3', 'I4', 'I5', 'R1', 'R3',
   // Go
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14', 'G15',
   // TypeScript
@@ -988,8 +988,10 @@ function checkEventsHelperCompleteness(): CheckResult {
   ];
 
   for (const exportName of requiredExports) {
-    const exportPattern = new RegExp(`export\\s+(const|function)\\s+${exportName}\\b`);
-    if (!exportPattern.test(helperContent)) {
+    // Match direct exports (export const/function X) and re-exports (export { X } from ...)
+    const directExport = new RegExp(`export\\s+(const|function)\\s+${exportName}\\b`);
+    const reExport = new RegExp(`export\\s*\\{[^}]*\\b${exportName}\\b[^}]*\\}\\s*from`);
+    if (!directExport.test(helperContent) && !reExport.test(helperContent)) {
       errors.push(`Missing required export in events-helper.ts: ${exportName}`);
     }
   }
@@ -4582,6 +4584,119 @@ function checkPluginIconUniqueness(): CheckResult {
 }
 
 // ============================================================================
+// Check R3: Help Article Parity
+// ============================================================================
+
+/**
+ * Validates 1:1 parity between registry plugin IDs and help article files.
+ * Help article URLs are generated as /help/articles/registry/{type}/{id},
+ * so filenames MUST match the registry `id` field exactly.
+ *
+ * Checks:
+ * - Every enabled, non-excluded plugin ID has a matching .md file
+ * - No orphan .md files exist that don't match any registry ID
+ */
+function checkHelpArticleParity(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const webDir = path.join(SERVER_ROOT, '..', 'web');
+  const helpDir = path.join(webDir, 'content/help-articles/registry');
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+
+  if (!fs.existsSync(webDir)) {
+    return { name: 'Help Article Parity', passed: true, errors, warnings };
+  }
+
+  if (!fs.existsSync(registryPath)) {
+    errors.push('Plugin registry not found');
+    return { name: 'Help Article Parity', passed: false, errors, warnings };
+  }
+
+  if (!fs.existsSync(helpDir)) {
+    errors.push('Help articles directory not found');
+    return { name: 'Help Article Parity', passed: false, errors, warnings };
+  }
+
+  // IDs excluded from help article generation (must match transformRegistryTask.js)
+  const EXCLUDED_IDS = new Set(['mock', 'parkrun_results']);
+
+  // Map register function names to help article subdirectory names
+  const TYPE_MAP: Record<string, string> = {
+    'registerSource': 'sources',
+    'registerEnricher': 'enrichers',
+    'registerDestination': 'destinations',
+    'registerIntegration': 'integrations',
+  };
+
+  // Parse registry IDs grouped by type
+  const registryContent = fs.readFileSync(registryPath, 'utf-8');
+  const registrationBlocks = registryContent.split(/\n(registerSource|registerEnricher|registerDestination|registerIntegration)\(/);
+
+  // registryIds: { sources: Set<string>, enrichers: Set<string>, ... }
+  const registryIds: Record<string, Set<string>> = {};
+  for (const dir of Object.values(TYPE_MAP)) {
+    registryIds[dir] = new Set<string>();
+  }
+
+  for (let i = 1; i < registrationBlocks.length; i += 2) {
+    const registerType = registrationBlocks[i];
+    const blockContent = registrationBlocks[i + 1];
+    const subDir = TYPE_MAP[registerType];
+    if (!subDir) continue;
+
+    const idMatch = /id:\s*['"]([^'"]+)['"]/.exec(blockContent);
+    const enabledMatch = /enabled:\s*(false|true)/.exec(blockContent);
+
+    if (!idMatch) continue;
+
+    const pluginId = idMatch[1];
+    const isEnabled = !enabledMatch || enabledMatch[1] !== 'false';
+
+    if (isEnabled && !EXCLUDED_IDS.has(pluginId)) {
+      registryIds[subDir].add(pluginId);
+    }
+  }
+
+  // Check each type subdirectory
+  for (const [subDir, expectedIds] of Object.entries(registryIds)) {
+    const articleDir = path.join(helpDir, subDir);
+
+    if (!fs.existsSync(articleDir)) {
+      if (expectedIds.size > 0) {
+        errors.push(`Help article directory '${subDir}/' missing (${expectedIds.size} articles expected)`);
+      }
+      continue;
+    }
+
+    // Get actual .md files in this directory
+    const actualFiles = getFiles(articleDir, '.md').map(f => f.replace(/\.md$/, ''));
+    const actualFileSet = new Set(actualFiles);
+
+    // Check for missing articles (registry ID has no matching file)
+    for (const id of expectedIds) {
+      if (!actualFileSet.has(id)) {
+        errors.push(`Missing help article: ${subDir}/${id}.md (registry ID '${id}' has no article)`);
+      }
+    }
+
+    // Check for orphan files (file exists but no matching registry ID)
+    for (const file of actualFiles) {
+      if (!expectedIds.has(file)) {
+        errors.push(`Orphan help article: ${subDir}/${file}.md (no matching registry ID '${file}')`);
+      }
+    }
+  }
+
+  return {
+    name: 'Help Article Parity',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
 // Check T51: Handler package.json Required Properties
 // ============================================================================
 
@@ -4973,6 +5088,7 @@ function main(): void {
         { id: 'I5', fn: () => ({ ...checkPluginRegistration(), name: 'I5: Plugin Registration' }) },
         { id: 'R1', fn: () => ({ ...checkPluginCategoryValidation(), name: 'R1: Plugin Category Validation' }) },
         { id: 'R2', fn: () => ({ ...checkPluginIconUniqueness(), name: 'R2: Plugin Icon Uniqueness' }) },
+        { id: 'R3', fn: () => ({ ...checkHelpArticleParity(), name: 'R3: Help Article Parity' }) },
       ]
     },
     {

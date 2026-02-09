@@ -4,6 +4,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
+	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
@@ -65,14 +66,21 @@ func GetIntervalsActivityType(t pb.ActivityType) string {
 }
 
 // ParseActivityTypeFromString parses a friendly string into an ActivityType enum.
-// Accepts both enum names (e.g., "ACTIVITY_TYPE_RUN") and friendly names (e.g., "RUNNING", "Run").
+// Accepts enum names (e.g., "ACTIVITY_TYPE_RUN"), display names (e.g., "Run"),
+// and informal aliases (e.g., "running", "cycling", "bike") via the generated parser.
 func ParseActivityTypeFromString(input string) pb.ActivityType {
-	// First try exact enum name
+	// 1. Try exact proto enum name (fast path)
 	if v, ok := pb.ActivityType_value[input]; ok {
 		return pb.ActivityType(v)
 	}
 
-	// Try matching strava_name (case-insensitive)
+	// 2. Try generated parser (handles display names, short names, aliases, case-insensitive)
+	parsed := formatters.ParseActivityType(input)
+	if parsed != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+		return parsed
+	}
+
+	// 3. Try matching strava_name (case-insensitive, for backward compat)
 	for _, enumVal := range pb.ActivityType_value {
 		at := pb.ActivityType(enumVal)
 		stravaName := GetStravaActivityType(at)
@@ -81,45 +89,6 @@ func ParseActivityTypeFromString(input string) pb.ActivityType {
 		}
 	}
 
-	// Try common friendly mappings
-	return parseFriendlyActivityType(input)
-}
-
-// parseFriendlyActivityType handles common aliases
-func parseFriendlyActivityType(input string) pb.ActivityType {
-	friendly := map[string]pb.ActivityType{
-		"run":             pb.ActivityType_ACTIVITY_TYPE_RUN,
-		"running":         pb.ActivityType_ACTIVITY_TYPE_RUN,
-		"walk":            pb.ActivityType_ACTIVITY_TYPE_WALK,
-		"walking":         pb.ActivityType_ACTIVITY_TYPE_WALK,
-		"ride":            pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"cycling":         pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"biking":          pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"bike":            pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"swim":            pb.ActivityType_ACTIVITY_TYPE_SWIM,
-		"swimming":        pb.ActivityType_ACTIVITY_TYPE_SWIM,
-		"weight_training": pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"weights":         pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"weighttraining":  pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"yoga":            pb.ActivityType_ACTIVITY_TYPE_YOGA,
-		"hike":            pb.ActivityType_ACTIVITY_TYPE_HIKE,
-		"hiking":          pb.ActivityType_ACTIVITY_TYPE_HIKE,
-		"workout":         pb.ActivityType_ACTIVITY_TYPE_WORKOUT,
-		"hiit":            pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
-		"crossfit":        pb.ActivityType_ACTIVITY_TYPE_CROSSFIT,
-		"elliptical":      pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL,
-		"rowing":          pb.ActivityType_ACTIVITY_TYPE_ROWING,
-		"pilates":         pb.ActivityType_ACTIVITY_TYPE_PILATES,
-		"tennis":          pb.ActivityType_ACTIVITY_TYPE_TENNIS,
-		"soccer":          pb.ActivityType_ACTIVITY_TYPE_SOCCER,
-		"trail_run":       pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
-		"trailrun":        pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
-	}
-
-	normalized := toLower(input)
-	if t, ok := friendly[normalized]; ok {
-		return t
-	}
 	return pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED
 }
 

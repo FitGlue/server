@@ -1,0 +1,658 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "GitHub Contents API (trimmed for FitGlue)",
+    "version": "1.0.0",
+    "description": "Minimal spec containing only the Contents API endpoints used by the GitHub uploader and handler."
+  },
+  "servers": [
+    {
+      "url": "https://api.github.com"
+    }
+  ],
+  "paths": {
+    "/repos/{owner}/{repo}/contents/{path}": {
+      "get": {
+        "operationId": "repos/get-content",
+        "summary": "Get repository content",
+        "description": "Gets the contents of a file or directory in a repository.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/owner"
+          },
+          {
+            "$ref": "#/components/parameters/repo"
+          },
+          {
+            "$ref": "#/components/parameters/path"
+          },
+          {
+            "name": "ref",
+            "in": "query",
+            "description": "The name of the commit/branch/tag. Default: the repository's default branch.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentFile"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "repos/create-or-update-file-contents",
+        "summary": "Create or update file contents",
+        "description": "Creates a new file or replaces an existing file in a repository.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/owner"
+          },
+          {
+            "$ref": "#/components/parameters/repo"
+          },
+          {
+            "$ref": "#/components/parameters/path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateOrUpdateFileRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response when updating an existing file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileCommit"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Response when creating a new file",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileCommit"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/commits/{ref}": {
+      "get": {
+        "operationId": "repos/get-commit",
+        "summary": "Get a commit",
+        "description": "Returns the contents of a single commit reference.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/owner"
+          },
+          {
+            "$ref": "#/components/parameters/repo"
+          },
+          {
+            "$ref": "#/components/parameters/ref"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Commit"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "parameters": {
+      "owner": {
+        "name": "owner",
+        "in": "path",
+        "required": true,
+        "description": "The account owner of the repository.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "repo": {
+        "name": "repo",
+        "in": "path",
+        "required": true,
+        "description": "The name of the repository without the .git extension.",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "path": {
+        "name": "path",
+        "in": "path",
+        "required": true,
+        "description": "path parameter",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ref": {
+        "name": "ref",
+        "in": "path",
+        "required": true,
+        "description": "The commit reference (SHA, branch name, or tag name).",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "ContentFile": {
+        "type": "object",
+        "description": "Content File",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "file",
+              "dir",
+              "symlink",
+              "submodule"
+            ]
+          },
+          "encoding": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string",
+            "description": "Base64 encoded content of the file."
+          },
+          "sha": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "git_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "download_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/ContentLinks"
+          }
+        },
+        "required": [
+          "type",
+          "size",
+          "name",
+          "path",
+          "sha",
+          "url",
+          "git_url",
+          "html_url",
+          "download_url",
+          "_links"
+        ]
+      },
+      "ContentLinks": {
+        "type": "object",
+        "properties": {
+          "self": {
+            "type": "string",
+            "format": "uri"
+          },
+          "git": {
+            "type": "string",
+            "format": "uri"
+          },
+          "html": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "self",
+          "git",
+          "html"
+        ]
+      },
+      "CreateOrUpdateFileRequest": {
+        "type": "object",
+        "description": "Request body for creating or updating a file.",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The commit message."
+          },
+          "content": {
+            "type": "string",
+            "description": "The new file content, using Base64 encoding."
+          },
+          "sha": {
+            "type": "string",
+            "description": "Required if you are updating a file. The blob SHA of the file being replaced."
+          },
+          "branch": {
+            "type": "string",
+            "description": "The branch name. Default: the repository's default branch."
+          },
+          "committer": {
+            "$ref": "#/components/schemas/CommitAuthor"
+          },
+          "author": {
+            "$ref": "#/components/schemas/CommitAuthor"
+          }
+        },
+        "required": [
+          "message",
+          "content"
+        ]
+      },
+      "CommitAuthor": {
+        "type": "object",
+        "description": "The author or committer of a commit.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The name of the author or committer."
+          },
+          "email": {
+            "type": "string",
+            "description": "The email of the author or committer."
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Indicates when this commit was authored (or committed)."
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "FileCommit": {
+        "type": "object",
+        "description": "File Commit",
+        "properties": {
+          "content": {
+            "$ref": "#/components/schemas/FileCommitContent"
+          },
+          "commit": {
+            "$ref": "#/components/schemas/FileCommitDetails"
+          }
+        },
+        "required": [
+          "content",
+          "commit"
+        ]
+      },
+      "FileCommitContent": {
+        "type": "object",
+        "description": "The file content after the commit.",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "sha": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "git_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "download_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "type": {
+            "type": "string"
+          },
+          "_links": {
+            "$ref": "#/components/schemas/ContentLinks"
+          }
+        }
+      },
+      "FileCommitDetails": {
+        "type": "object",
+        "description": "The commit details.",
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "author": {
+            "$ref": "#/components/schemas/CommitUser"
+          },
+          "committer": {
+            "$ref": "#/components/schemas/CommitUser"
+          },
+          "message": {
+            "type": "string"
+          },
+          "tree": {
+            "type": "object",
+            "properties": {
+              "sha": {
+                "type": "string"
+              },
+              "url": {
+                "type": "string",
+                "format": "uri"
+              }
+            }
+          },
+          "parents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sha": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string",
+                  "format": "uri"
+                },
+                "html_url": {
+                  "type": "string",
+                  "format": "uri"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CommitUser": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          }
+        }
+      },
+      "Commit": {
+        "type": "object",
+        "description": "Commit",
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "commit": {
+            "$ref": "#/components/schemas/FileCommitDetails"
+          },
+          "author": {
+            "$ref": "#/components/schemas/SimpleUser"
+          },
+          "committer": {
+            "$ref": "#/components/schemas/SimpleUser"
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiffEntry"
+            }
+          }
+        },
+        "required": [
+          "sha",
+          "url",
+          "html_url",
+          "commit"
+        ]
+      },
+      "DiffEntry": {
+        "type": "object",
+        "description": "Diff Entry",
+        "properties": {
+          "sha": {
+            "type": "string"
+          },
+          "filename": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "added",
+              "removed",
+              "modified",
+              "renamed",
+              "copied",
+              "changed",
+              "unchanged"
+            ]
+          },
+          "additions": {
+            "type": "integer"
+          },
+          "deletions": {
+            "type": "integer"
+          },
+          "changes": {
+            "type": "integer"
+          },
+          "patch": {
+            "type": "string"
+          },
+          "previous_filename": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sha",
+          "filename",
+          "status",
+          "additions",
+          "deletions",
+          "changes"
+        ]
+      },
+      "SimpleUser": {
+        "type": "object",
+        "description": "A GitHub user.",
+        "properties": {
+          "login": {
+            "type": "string"
+          },
+          "id": {
+            "type": "integer"
+          },
+          "avatar_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "html_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "login",
+          "id"
+        ]
+      },
+      "BasicError": {
+        "type": "object",
+        "description": "Basic Error",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "documentation_url": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          }
+        }
+      },
+      "ValidationError": {
+        "type": "object",
+        "description": "Validation Error",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "documentation_url": {
+            "type": "string"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "resource": {
+                  "type": "string"
+                },
+                "field": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "code"
+              ]
+            }
+          }
+        },
+        "required": [
+          "message",
+          "documentation_url"
+        ]
+      }
+    }
+  }
+}

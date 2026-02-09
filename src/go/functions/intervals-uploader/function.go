@@ -93,17 +93,17 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// 1. Get user's Intervals integration credentials
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), eventPayload.Name, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 		if user.Integrations == nil || user.Integrations.Intervals == nil || !user.Integrations.Intervals.Enabled {
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Intervals integration not enabled", fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Intervals integration not enabled", eventPayload.Name, fwCtx.Logger)
 			return nil, fmt.Errorf("Intervals integration not enabled for user")
 		}
 
 		intervalsIntegration := user.Integrations.Intervals
 		if intervalsIntegration.ApiKey == "" || intervalsIntegration.AthleteId == "" {
-			destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "missing API key or athlete ID", fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "missing API key or athlete ID", eventPayload.Name, fwCtx.Logger)
 			return nil, fmt.Errorf("Intervals credentials incomplete: missing API key or athlete ID")
 		}
 
@@ -136,7 +136,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	fileData, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
 	if err != nil {
 		fwCtx.Logger.Error("GCS Read Error", "error", err)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("GCS error: %s", err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("GCS error: %s", err), eventPayload.Name, fwCtx.Logger)
 		return nil, fmt.Errorf("GCS Read Error: %w", err)
 	}
 
@@ -151,7 +151,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	uploadURL := fmt.Sprintf("%s/athlete/%s/activities", baseURL, integration.AthleteId)
 	req, err := http.NewRequestWithContext(ctx, "POST", uploadURL, bytes.NewBuffer(fileData))
 	if err != nil {
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to create request: %s", err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to create request: %s", err), eventPayload.Name, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
@@ -162,7 +162,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	resp, err := httpClient.Do(req)
 	if err != nil {
 		fwCtx.Logger.Error("Intervals API Error", "error", err)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), eventPayload.Name, fwCtx.Logger)
 		return nil, fmt.Errorf("Intervals API Error: %w", err)
 	}
 	defer resp.Body.Close()
@@ -170,13 +170,13 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	if resp.StatusCode >= 400 {
 		err := httputil.WrapResponseError(resp, "Intervals upload failed")
 		fwCtx.Logger.Error("Intervals upload failed", "status", resp.StatusCode, "error", err)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error (HTTP %d): %s", resp.StatusCode, err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error (HTTP %d): %s", resp.StatusCode, err), eventPayload.Name, fwCtx.Logger)
 		return nil, err
 	}
 
 	var uploadResp intervalsActivityResponse
 	if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to decode response: %s", err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to decode response: %s", err), eventPayload.Name, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
@@ -225,7 +225,7 @@ func handleIntervalsCreate(ctx context.Context, httpClient *http.Client, integra
 	}
 
 	// Update PipelineRun destination as synced
-	destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, intervalsDestID, "", fwCtx.Logger)
+	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, intervalsDestID, "", eventPayload.Name, fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":                "SUCCESS",
@@ -338,7 +338,7 @@ func handleIntervalsUpdate(ctx context.Context, httpClient *http.Client, integra
 	if len(updateBody) == 0 {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
 		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, intervalsIDStr, "", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_INTERVALS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, intervalsIDStr, "", eventPayload.Name, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":                "SUCCESS",
 			"intervals_activity_id": intervalsIDStr,

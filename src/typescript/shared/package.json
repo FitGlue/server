@@ -92,6 +92,10 @@
       "types": "./dist/integrations/trainingpeaks/index.d.ts",
       "default": "./dist/integrations/trainingpeaks/index.js"
     },
+    "./integrations/github": {
+      "types": "./dist/integrations/github/index.d.ts",
+      "default": "./dist/integrations/github/index.js"
+    },
     "./dist/*": "./dist/*"
   },
   "typesVersions": {
@@ -158,6 +162,9 @@
       ],
       "integrations/trainingpeaks": [
         "dist/integrations/trainingpeaks/index.d.ts"
+      ],
+      "integrations/github": [
+        "dist/integrations/github/index.d.ts"
       ]
     }
   },

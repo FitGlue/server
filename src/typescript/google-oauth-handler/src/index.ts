@@ -33,10 +33,10 @@ const handler = async (req: any, ctx: FrameworkContext) => {
 
   try {
     // Exchange authorization code for tokens
-    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) {
-      throw new Error('Missing GOOGLE_OAUTH_CLIENT_ID or GOOGLE_OAUTH_CLIENT_SECRET environment variables');
+      throw new Error('Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables');
     }
 
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {

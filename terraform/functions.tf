@@ -175,6 +175,12 @@ resource "google_storage_bucket_object" "google_oauth_handler_zip" {
   source = "/tmp/fitglue-function-zips/google-oauth-handler.zip"
 }
 
+resource "google_storage_bucket_object" "github_oauth_handler_zip" {
+  name   = "github-oauth-handler-${filemd5("/tmp/fitglue-function-zips/github-oauth-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/github-oauth-handler.zip"
+}
+
 resource "google_storage_bucket_object" "user_integrations_handler_zip" {
   name   = "user-integrations-handler-${filemd5("/tmp/fitglue-function-zips/user-integrations-handler.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
@@ -764,16 +770,16 @@ resource "google_cloudfunctions2_function" "googlesheets_uploader" {
     }
 
     secret_environment_variables {
-      key        = "GOOGLE_OAUTH_CLIENT_ID"
+      key        = "GOOGLE_CLIENT_ID"
       project_id = var.project_id
-      secret     = google_secret_manager_secret.google_oauth_client_id.secret_id
+      secret     = google_secret_manager_secret.google_client_id.secret_id
       version    = "latest"
     }
 
     secret_environment_variables {
-      key        = "GOOGLE_OAUTH_CLIENT_SECRET"
+      key        = "GOOGLE_CLIENT_SECRET"
       project_id = var.project_id
-      secret     = google_secret_manager_secret.google_oauth_client_secret.secret_id
+      secret     = google_secret_manager_secret.google_client_secret.secret_id
       version    = "latest"
     }
 
@@ -786,6 +792,119 @@ resource "google_cloudfunctions2_function" "googlesheets_uploader" {
     pubsub_topic   = google_pubsub_topic.job_upload_googlesheets.id
     retry_policy   = var.retry_policy
   }
+}
+
+# ----------------- GitHub Uploader (Go) -----------------
+resource "google_storage_bucket_object" "github_uploader_zip" {
+  name   = "github-uploader-${filemd5("/tmp/fitglue-function-zips/github-uploader.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/github-uploader.zip"
+}
+
+resource "google_cloudfunctions2_function" "github_uploader" {
+  name     = "github-uploader"
+  location = var.region
+
+  build_config {
+    runtime     = "go125"
+    entry_point = "UploadToGitHub"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.github_uploader_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      LOG_LEVEL            = var.log_level
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.job_upload_github.id
+    retry_policy   = var.retry_policy
+  }
+}
+
+# ----------------- GitHub Handler (Webhook Source) -----------------
+resource "google_storage_bucket_object" "github_handler_zip" {
+  name   = "github-handler-${filemd5("/tmp/fitglue-function-zips/github-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/github-handler.zip"
+}
+
+resource "google_cloudfunctions2_function" "github_handler" {
+  name        = "github-handler"
+  location    = var.region
+  description = "Ingests GitHub webhooks for activity sync"
+
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "githubHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.github_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
+    }
+
+    secret_environment_variables {
+      key        = "GITHUB_WEBHOOK_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_webhook_secret.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "GITHUB_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "GITHUB_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_client_secret.secret_id
+      version    = "latest"
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "github_handler_invoker" {
+  project  = google_cloudfunctions2_function.github_handler.project
+  location = google_cloudfunctions2_function.github_handler.location
+  service  = google_cloudfunctions2_function.github_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
 
 # ----------------- Mock Source Handler (Dev Only) -----------------

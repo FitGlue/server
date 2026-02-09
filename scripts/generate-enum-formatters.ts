@@ -10,6 +10,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execSync } from 'child_process';
 
 const TS_PB_DIR = path.join(__dirname, '..', 'src', 'typescript', 'shared', 'src', 'types', 'pb');
 const GO_FORMATTERS_DIR = path.join(__dirname, '..', 'src', 'go', 'pkg', 'types', 'formatters');
@@ -23,6 +24,9 @@ interface EnumConfig {
   prefix: string;
   displayNameOverrides?: Record<string, string>;
   defaultValue?: string;
+  // Additional aliases for the parser: maps informal string → enum member name (without prefix)
+  // e.g. { 'running': 'RUN', 'cycling': 'RIDE', 'bike': 'RIDE' }
+  parseAliases?: Record<string, string>;
 }
 
 const ENUM_CONFIGS: EnumConfig[] = [
@@ -37,6 +41,19 @@ const ENUM_CONFIGS: EnumConfig[] = [
       'HIGH_INTENSITY_INTERVAL_TRAINING': 'HIIT',
     },
     defaultValue: 'Workout',
+    parseAliases: {
+      'running': 'RUN',
+      'cycling': 'RIDE',
+      'biking': 'RIDE',
+      'bike': 'RIDE',
+      'swimming': 'SWIM',
+      'walking': 'WALK',
+      'hiking': 'HIKE',
+      'weights': 'WEIGHT_TRAINING',
+      'weighttraining': 'WEIGHT_TRAINING',
+      'strength': 'WEIGHT_TRAINING',
+      'trailrun': 'TRAIL_RUN',
+    },
   },
   {
     file: 'standardized_activity.ts',
@@ -322,6 +339,136 @@ ${cases}
 `;
 }
 
+// Generate TypeScript parser function (string -> enum)
+function generateTsParser(config: EnumConfig, entries: Array<{ name: string; value: number }>): string {
+  const { enumName, prefix, displayNameOverrides = {}, parseAliases = {} } = config;
+  const funcName = `parse${enumName}`;
+
+  // Find the default enum entry (UNSPECIFIED or first entry)
+  const defaultEntry = entries.find(e => e.name.includes('UNSPECIFIED')) || entries[0];
+  const defaultEnumValue = `${enumName}.${defaultEntry?.name || entries[0].name}`;
+
+  // Collect entries, deduplicating by key (first entry wins)
+  const seenKeys = new Set<string>();
+  const mappingEntries: string[] = [];
+
+  const addEntry = (key: string, enumValue: string) => {
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      mappingEntries.push(`    '${key}': ${enumValue},`);
+    }
+  };
+
+  entries.forEach(entry => {
+    if (entry.name === 'UNRECOGNIZED') return;
+
+    const nameWithoutPrefix = entry.name.replace(prefix, '');
+    const displayName = displayNameOverrides[nameWithoutPrefix] || toTitleCase(nameWithoutPrefix);
+    const enumValue = `${enumName}.${entry.name}`;
+
+    // Map all variations (lowercased) to enum value
+    addEntry(entry.name.toLowerCase(), enumValue);            // e.g. 'activity_type_run'
+    addEntry(nameWithoutPrefix.toLowerCase(), enumValue);     // e.g. 'run'
+    addEntry(displayName.toLowerCase(), enumValue);           // e.g. 'run'
+    addEntry(String(entry.value), enumValue);                 // e.g. '27'
+  });
+
+  // Add aliases from config
+  for (const [alias, targetMember] of Object.entries(parseAliases)) {
+    const targetEntry = entries.find(e => e.name === `${prefix}${targetMember}`);
+    if (targetEntry) {
+      addEntry(alias.toLowerCase(), `${enumName}.${targetEntry.name}`);
+    }
+  }
+
+  return `
+const ${enumName}Values: Record<string, ${enumName}> = {
+${mappingEntries.join('\n')}
+};
+
+export function ${funcName}(input: string | number | undefined | null): ${enumName} {
+  if (input === undefined || input === null) return ${defaultEnumValue};
+  const key = String(input).toLowerCase().trim();
+  if (${enumName}Values[key] !== undefined) return ${enumName}Values[key];
+  return ${defaultEnumValue};
+}
+`;
+}
+
+// Generate Go parser function (string -> enum)
+function generateGoParser(config: EnumConfig, entries: Array<{ name: string; value: number }>): string {
+  const { enumName, prefix, displayNameOverrides = {}, parseAliases = {} } = config;
+  const funcName = `Parse${enumName.replace(/_/g, '')}`;  // Remove underscores for function name
+
+  const isNestedEnum = enumName.includes('_');
+
+  // Find default constant
+  const defaultEntry = entries.find(e => e.name.includes('UNSPECIFIED')) || entries[0];
+  const defaultGoConstant = isNestedEnum
+    ? `pb.${enumName.split('_')[0]}_${defaultEntry.name}`
+    : `pb.${enumName}_${defaultEntry.name}`;
+
+  // Collect all map entries, deduplicating keys (first entry wins)
+  const seenKeys = new Set<string>();
+  const allGoEntries: string[] = [];
+
+  const addEntry = (key: string, goConstant: string) => {
+    if (!seenKeys.has(key)) {
+      seenKeys.add(key);
+      allGoEntries.push(`\t\t"${key}": ${goConstant},`);
+    }
+  };
+
+  entries
+    .filter(e => e.name !== 'UNRECOGNIZED')
+    .forEach(entry => {
+      const nameWithoutPrefix = entry.name.replace(prefix, '');
+      const displayName = displayNameOverrides[nameWithoutPrefix] || toTitleCase(nameWithoutPrefix);
+
+      const goConstant = isNestedEnum
+        ? `pb.${enumName.split('_')[0]}_${entry.name}`
+        : `pb.${enumName}_${entry.name}`;
+
+      // Add multiple keys: full name, short name, display name (all lowercased)
+      addEntry(entry.name.toLowerCase(), goConstant);
+      addEntry(nameWithoutPrefix.toLowerCase(), goConstant);
+      addEntry(displayName.toLowerCase(), goConstant);
+    });
+
+  // Add aliases from config
+  for (const [alias, targetMember] of Object.entries(parseAliases)) {
+    const targetEntry = entries.find(e => e.name === `${prefix}${targetMember}`);
+    if (!targetEntry) continue;
+    const goConstant = isNestedEnum
+      ? `pb.${enumName.split('_')[0]}_${targetEntry.name}`
+      : `pb.${enumName}_${targetEntry.name}`;
+    addEntry(alias.toLowerCase(), goConstant);
+  }
+
+  const mapEntries = allGoEntries.join('\n');
+
+
+  return `
+func ${funcName}(input string) pb.${enumName} {
+\t// Try exact proto enum name first (fast path)
+\tif v, ok := pb.${enumName}_value[input]; ok {
+\t\treturn pb.${enumName}(v)
+\t}
+
+\t// Case-insensitive lookup via display names, short names, and aliases
+\tlookup := map[string]pb.${enumName}{
+${mapEntries}
+\t}
+
+\tnormalized := strings.ToLower(strings.TrimSpace(input))
+\tif v, ok := lookup[normalized]; ok {
+\t\treturn v
+\t}
+\treturn ${defaultGoConstant}
+}
+`;
+}
+
 // Main generator
 function main(): void {
   console.log('🔧 Generating enum formatters...\n');
@@ -351,7 +498,11 @@ import { PendingInput_Status } from './pending_input';
   let goContent = `// Code generated by generate-enum-formatters.ts. DO NOT EDIT.
 package formatters
 
-import pb "github.com/fitglue/server/src/go/pkg/types/pb"
+import (
+\t"strings"
+
+\tpb "github.com/fitglue/server/src/go/pkg/types/pb"
+)
 `;
 
   for (const config of ENUM_CONFIGS) {
@@ -370,7 +521,9 @@ import pb "github.com/fitglue/server/src/go/pkg/types/pb"
     console.log(`✅ ${config.enumName}: ${entries.length} values`);
 
     tsContent += generateTsFormatter(config, entries);
+    tsContent += generateTsParser(config, entries);
     goContent += generateGoFormatter(config, entries);
+    goContent += generateGoParser(config, entries);
   }
 
   // Write TypeScript formatters (server)
@@ -384,6 +537,12 @@ import pb "github.com/fitglue/server/src/go/pkg/types/pb"
   }
   const goOutputPath = path.join(GO_FORMATTERS_DIR, 'formatters.go');
   fs.writeFileSync(goOutputPath, goContent.trim() + '\n');
+  // Run gofmt to ensure generated Go code passes lint
+  try {
+    execSync(`gofmt -w ${goOutputPath}`, { stdio: 'inherit' });
+  } catch {
+    console.warn('⚠️  gofmt not found or failed, skipping formatting');
+  }
   console.log(`📁 Go: ${goOutputPath}`);
 
   // Copy to web if exists

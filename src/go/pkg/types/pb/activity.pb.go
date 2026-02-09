@@ -42,6 +42,7 @@ const (
 	ActivitySource_SOURCE_INTERVALS       ActivitySource = 13
 	ActivitySource_SOURCE_TRAININGPEAKS   ActivitySource = 14
 	ActivitySource_SOURCE_GOOGLESHEETS    ActivitySource = 15
+	ActivitySource_SOURCE_GITHUB          ActivitySource = 16
 	ActivitySource_SOURCE_TEST            ActivitySource = 99
 )
 
@@ -63,6 +64,7 @@ var (
 		13: "SOURCE_INTERVALS",
 		14: "SOURCE_TRAININGPEAKS",
 		15: "SOURCE_GOOGLESHEETS",
+		16: "SOURCE_GITHUB",
 		99: "SOURCE_TEST",
 	}
 	ActivitySource_value = map[string]int32{
@@ -81,6 +83,7 @@ var (
 		"SOURCE_INTERVALS":       13,
 		"SOURCE_TRAININGPEAKS":   14,
 		"SOURCE_GOOGLESHEETS":    15,
+		"SOURCE_GITHUB":          16,
 		"SOURCE_TEST":            99,
 	}
 )
@@ -314,7 +317,7 @@ const file_activity_proto_rawDesc = "" +
 	"\f_activity_idB\x0e\n" +
 	"\f_pipeline_idB\x1a\n" +
 	"\x18_resume_pending_input_idB\x15\n" +
-	"\x13_origin_destination*\x83\x04\n" +
+	"\x13_origin_destination*\xae\x04\n" +
 	"\x0eActivitySource\x12\x12\n" +
 	"\x0eSOURCE_UNKNOWN\x10\x00\x12%\n" +
 	"\vSOURCE_HEVY\x10\x01\x1a\x14\xa2\xb6\x18\x10DESTINATION_HEVY\x12)\n" +
@@ -331,7 +334,8 @@ const file_activity_proto_rawDesc = "" +
 	"\fSOURCE_WAHOO\x10\f\x12/\n" +
 	"\x10SOURCE_INTERVALS\x10\r\x1a\x19\xa2\xb6\x18\x15DESTINATION_INTERVALS\x127\n" +
 	"\x14SOURCE_TRAININGPEAKS\x10\x0e\x1a\x1d\xa2\xb6\x18\x19DESTINATION_TRAININGPEAKS\x125\n" +
-	"\x13SOURCE_GOOGLESHEETS\x10\x0f\x1a\x1c\xa2\xb6\x18\x18DESTINATION_GOOGLESHEETS\x12\x0f\n" +
+	"\x13SOURCE_GOOGLESHEETS\x10\x0f\x1a\x1c\xa2\xb6\x18\x18DESTINATION_GOOGLESHEETS\x12)\n" +
+	"\rSOURCE_GITHUB\x10\x10\x1a\x16\xa2\xb6\x18\x12DESTINATION_GITHUB\x12\x0f\n" +
 	"\vSOURCE_TEST\x10c:`\n" +
 	"\x19corresponding_destination\x12!.google.protobuf.EnumValueOptions\x18\xe4\x86\x03 \x01(\tR\x18correspondingDestinationB/Z-github.com/fitglue/server/src/go/pkg/types/pbb\x06proto3"
 

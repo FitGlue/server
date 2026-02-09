@@ -213,6 +213,7 @@ def main():
         "trainingpeaks-uploader",
         "intervals-uploader",
         "googlesheets-uploader",
+        "github-uploader",
     ]
 
     for function_name in functions:

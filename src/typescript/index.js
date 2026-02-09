@@ -158,3 +158,13 @@ exports.connectionActionsHandler = (req, res) => {
   const connectionActions = require('./connection-actions-handler/dist/index');
   return connectionActions.connectionActionsHandler(req, res);
 };
+
+exports.githubHandler = (req, res) => {
+  const github = require('./github-handler/dist/index');
+  return github.githubHandler(req, res);
+};
+
+exports.githubOAuthHandler = (req, res) => {
+  const github = require('./github-oauth-handler/dist/index');
+  return github.githubOAuthHandler(req, res);
+};

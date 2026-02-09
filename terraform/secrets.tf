@@ -377,15 +377,15 @@ resource "google_secret_manager_secret_version" "oura_client_secret_initial" {
 # =============================================================================
 # Google OAuth Credentials (for Google Sheets integration)
 # =============================================================================
-resource "google_secret_manager_secret" "google_oauth_client_id" {
-  secret_id = "google-oauth-client-id"
+resource "google_secret_manager_secret" "google_client_id" {
+  secret_id = "google-client-id"
   replication {
     auto {}
   }
 }
 
-resource "google_secret_manager_secret_version" "google_oauth_client_id_initial" {
-  secret      = google_secret_manager_secret.google_oauth_client_id.id
+resource "google_secret_manager_secret_version" "google_client_id_initial" {
+  secret      = google_secret_manager_secret.google_client_id.id
   secret_data = "PLACEHOLDER_REPLACE_ME"
 
   lifecycle {
@@ -393,15 +393,66 @@ resource "google_secret_manager_secret_version" "google_oauth_client_id_initial"
   }
 }
 
-resource "google_secret_manager_secret" "google_oauth_client_secret" {
-  secret_id = "google-oauth-client-secret"
+resource "google_secret_manager_secret" "google_client_secret" {
+  secret_id = "google-client-secret"
   replication {
     auto {}
   }
 }
 
-resource "google_secret_manager_secret_version" "google_oauth_client_secret_initial" {
-  secret      = google_secret_manager_secret.google_oauth_client_secret.id
+resource "google_secret_manager_secret_version" "google_client_secret_initial" {
+  secret      = google_secret_manager_secret.google_client_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+# =============================================================================
+# GitHub OAuth Credentials & Webhook Secret
+# =============================================================================
+resource "google_secret_manager_secret" "github_client_id" {
+  secret_id = "github-client-id"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "github_client_id_initial" {
+  secret      = google_secret_manager_secret.github_client_id.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+resource "google_secret_manager_secret" "github_client_secret" {
+  secret_id = "github-client-secret"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "github_client_secret_initial" {
+  secret      = google_secret_manager_secret.github_client_secret.id
+  secret_data = "PLACEHOLDER_REPLACE_ME"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+resource "google_secret_manager_secret" "github_webhook_secret" {
+  secret_id = "github-webhook-secret"
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "github_webhook_secret_initial" {
+  secret      = google_secret_manager_secret.github_webhook_secret.id
   secret_data = "PLACEHOLDER_REPLACE_ME"
 
   lifecycle {

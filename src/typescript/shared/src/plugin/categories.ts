@@ -22,6 +22,7 @@ export const CATEGORY_WORKFLOW = 'workflow';
 export const CATEGORY_SOCIAL = 'social';
 export const CATEGORY_ANALYTICS = 'analytics';
 export const CATEGORY_LOGGING = 'logging';
+export const CATEGORY_DEVELOPER = 'developer';
 
 /**
  * Category metadata for UI rendering
@@ -51,6 +52,7 @@ export const DESTINATION_CATEGORIES: CategoryMeta[] = [
   { id: CATEGORY_SOCIAL, name: 'Social', emoji: '🌐' },
   { id: CATEGORY_ANALYTICS, name: 'Analytics', emoji: '📈' },
   { id: CATEGORY_LOGGING, name: 'Logging', emoji: '📊' },
+  { id: CATEGORY_DEVELOPER, name: 'Developer', emoji: '🛠️' },
 ];
 
 /**
@@ -58,4 +60,4 @@ export const DESTINATION_CATEGORIES: CategoryMeta[] = [
  */
 export type SourceCategory = typeof CATEGORY_WEARABLES | typeof CATEGORY_APPS | typeof CATEGORY_MANUAL;
 export type EnricherCategory = typeof CATEGORY_AI_IMAGES | typeof CATEGORY_SUMMARIES | typeof CATEGORY_DATA | typeof CATEGORY_DETECTION | typeof CATEGORY_LINKS | typeof CATEGORY_WORKFLOW;
-export type DestinationCategory = typeof CATEGORY_SOCIAL | typeof CATEGORY_ANALYTICS | typeof CATEGORY_LOGGING;
+export type DestinationCategory = typeof CATEGORY_SOCIAL | typeof CATEGORY_ANALYTICS | typeof CATEGORY_LOGGING | typeof CATEGORY_DEVELOPER;

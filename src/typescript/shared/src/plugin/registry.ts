@@ -600,6 +600,86 @@ FitGlue polls your Intervals.icu account for new activities. When new activities
   iconPath: '/images/icons/intervals.png',
 });
 
+registerSource({
+  id: 'github',
+  type: PluginType.PLUGIN_TYPE_SOURCE,
+  name: 'GitHub',
+  description: 'Import activities from a GitHub repository',
+  icon: '🐙',
+  enabled: true,
+  requiredIntegrations: ['github'],
+  configSchema: [
+    {
+      key: 'repo',
+      label: 'Repository',
+      description: 'Full name of the repository (e.g. your-username/fitness-log)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: true,
+      defaultValue: '',
+      options: [],
+    },
+    {
+      key: 'folder',
+      label: 'Folder Path',
+      description: 'Root folder to watch for activity Markdown files (e.g. workouts/)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: false,
+      defaultValue: 'workouts/',
+      options: [],
+    },
+  ],
+  marketingDescription: `
+### What is it?
+GitHub as a Source lets you store your fitness activities as Markdown files inside a Git repository. Each activity file uses YAML frontmatter for structured metadata (title, type, date) and can optionally reference a \`.fit\` file for full telemetry data.
+
+### How it works
+When you push a commit containing new or modified \`.md\` files to your configured folder, a GitHub webhook fires and FitGlue automatically picks up the changes. FitGlue parses the YAML frontmatter — title, activity type, distance, and more — and creates a standardised activity that flows through your pipeline.
+
+If the frontmatter contains a \`fit_file\` field pointing to a \`.fit\` binary in the same repository, FitGlue downloads the file and attaches the full telemetry (heart rate, GPS, cadence, power) so that boosters like Heart Rate Zones and Muscle Heatmap can process the data.
+
+### File Format
+Activity files follow a simple convention:
+\`\`\`markdown
+---
+title: "Morning Run"
+type: running
+date: 2026-02-08
+distance_km: 5.2
+fit_file: ./morning-run.fit
+---
+Optional free-text notes here.
+\`\`\`
+
+### Safety & Privacy
+- FitGlue only reads files inside your configured folder — nothing else in the repo is accessed.
+- Webhook payloads are verified via HMAC-SHA256 to prevent spoofing.
+- Commits authored by "FitGlue Bot" are automatically ignored to prevent infinite loops when GitHub is also a destination.
+- Your OAuth token is stored encrypted and is only used to fetch file contents.
+  `,
+  features: [
+    '✅ Version-controlled activity history',
+    '✅ Full FIT file telemetry support',
+    '✅ YAML frontmatter for structured metadata',
+    '✅ HMAC-SHA256 webhook verification',
+    '✅ Automatic loop prevention',
+    '✅ Works with any public or private repository',
+  ],
+  transformations: [],
+  useCases: [
+    'Maintain a Git-based fitness journal with full history',
+    'Trigger enrichment pipelines from CI/CD workflows',
+    'Share activity data through pull requests and code review',
+    'Archive telemetry data alongside training notes',
+  ],
+  // UX Organization
+  category: 'developer',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 60,
+  iconType: 'svg',
+  iconPath: '/images/icons/github.svg',
+});
+
 // ============================================================================
 // Register all known destination manifests
 // ============================================================================
@@ -890,6 +970,80 @@ If enabled, muscle heatmaps and route thumbnails are embedded using Google Sheet
   iconPath: '/images/icons/googlesheets.svg',
 });
 
+registerDestination({
+  id: 'github',
+  type: PluginType.PLUGIN_TYPE_DESTINATION,
+  name: 'GitHub',
+  description: 'Commit enriched activities to a GitHub repository',
+  icon: '🐙',
+  enabled: true,
+  externalUrlTemplate: 'https://github.com/${repo}/blob/main/${file_path}',
+  requiredIntegrations: ['github'],
+  configSchema: [
+    {
+      key: 'repo',
+      label: 'Repository',
+      description: 'Full name of the target repository (e.g. your-username/fitness-log)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: true,
+      defaultValue: '',
+      options: [],
+    },
+    {
+      key: 'folder',
+      label: 'Folder Path',
+      description: 'Root folder for committed activity files (e.g. workouts/)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+      required: false,
+      defaultValue: 'workouts/',
+      options: [],
+    },
+  ],
+  destinationType: 7, // DESTINATION_GITHUB
+  marketingDescription: `
+### What is it?
+GitHub as a Destination commits your enriched activities as Markdown files to a Git repository. Each activity becomes a versioned document containing your title, description, booster output, and metadata — all stored in your own repo under your full control.
+
+### How it works
+After your activity passes through the FitGlue pipeline and all boosters have run, the enriched result is committed to your chosen repository. The file is placed inside your configured folder, organised by year, month, and date (e.g. \`workouts/2026/02/2026-02-08-morning-run/activity.md\`).
+
+Commits are authored by "FitGlue Bot" so they are clearly distinguishable from your own work. If GitHub is also configured as a source, this author name is used for automatic loop prevention — FitGlue ignores its own commits.
+
+### File Structure
+Each committed Markdown file includes:
+- **YAML frontmatter** — title, activity type, date, source, pipeline ID, applied enrichments, and tags
+- **Heading and description** — the full enriched description with all booster sections
+- **\`<!-- fitglue:end -->\` marker** — anything you write below this line is preserved across updates
+
+### Safety & Privacy
+- Only the configured folder is written to — FitGlue never modifies other files.
+- Updates preserve any content you add below the \`fitglue:end\` marker.
+- All commits use the FitGlue Bot identity for traceability.
+- Your OAuth token is stored encrypted and scoped to the \`repo\` permission.
+  `,
+  features: [
+    '✅ Full Git history for every activity update',
+    '✅ Organised by year/month/date folder structure',
+    '✅ User content preserved below fitglue:end marker',
+    '✅ FitGlue Bot commits for clear attribution',
+    '✅ Automatic loop prevention with source',
+    '✅ Works with public and private repositories',
+  ],
+  transformations: [],
+  useCases: [
+    'Build a version-controlled fitness journal',
+    'Create a public training log on GitHub Pages',
+    'Archive enriched activities alongside your code',
+    'Review training data through pull request workflows',
+  ],
+  // UX Organization
+  category: 'developer',
+  sortOrder: 2,
+  isPremium: false,
+  popularityScore: 60,
+  iconType: 'svg',
+  iconPath: '/images/icons/github.svg',
+});
 
 // ============================================================================
 
@@ -3976,5 +4130,63 @@ FitGlue connects to your Garmin Connect account via OAuth and imports your activ
   ],
   iconType: 'svg',
   iconPath: '/images/icons/garmin.svg',
+  actions: [],
+});
+
+registerIntegration({
+  id: 'github',
+  name: 'GitHub',
+  description: 'Connect your GitHub account for repository-based activity tracking',
+  icon: '🐙',
+  authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+  enabled: true,
+  docsUrl: 'https://docs.github.com/en/apps/oauth-apps/building-oauth-apps',
+  setupTitle: 'Connect GitHub',
+  setupInstructions: `Connect your GitHub account to FitGlue with secure OAuth:
+
+1. Open the **FitGlue Dashboard**
+2. Navigate to **Connections** and click **Connect** on GitHub
+3. Sign in to your **GitHub account** when redirected
+4. Review the requested permissions and click **Authorize FitGlue**
+5. You're connected! Choose a repository and folder to get started
+
+**Permissions:** FitGlue requests the \`repo\` scope, which allows reading and writing repository contents. This is required for both source (reading your activity files) and destination (committing enriched activities). FitGlue only accesses the specific repository and folder you configure.
+
+**Webhook Setup (Source only):** If you want to use GitHub as a source, you'll need to add a webhook to your repository:
+1. Go to your repository's **Settings → Webhooks → Add webhook**
+2. Set **Payload URL** to \`https://api.fitglue.com/github/webhook\`
+3. Set **Content type** to \`application/json\`
+4. Set **Secret** to the shared webhook secret shown in your FitGlue dashboard
+5. Select **Just the push event**
+6. Click **Add webhook**`,
+  apiKeyLabel: '',
+  apiKeyHelpUrl: '',
+  marketingDescription: `
+### What is GitHub?
+GitHub is the world's largest platform for software development and version control. With Git-based repositories, every change is tracked, versioned, and recoverable — making it an ideal platform for maintaining structured data like fitness activity logs.
+
+### What FitGlue Does
+FitGlue connects to your GitHub account via OAuth, enabling a bidirectional integration. As a **source**, FitGlue watches a repository folder for new Markdown activity files and pulls them into your pipeline. As a **destination**, FitGlue commits enriched activities back to a repository as version-controlled Markdown documents.
+
+### How it works
+- **Source flow:** You push a Markdown file with YAML frontmatter to your repo → GitHub fires a webhook → FitGlue parses the metadata and optional FIT file → your activity enters the pipeline for enrichment.
+- **Destination flow:** Your activity passes through the pipeline → boosters add descriptions, metrics, and tags → FitGlue commits the enriched result to your repo as a Markdown file organised by date.
+
+### Safety & Privacy
+- All webhook payloads are verified with HMAC-SHA256 signature validation.
+- OAuth tokens are stored encrypted and never exposed.
+- Automatic loop prevention ensures FitGlue's own commits are never re-processed.
+- FitGlue only accesses the specific repository and folder you configure.
+  `,
+  features: [
+    '✅ Bidirectional — use as source, destination, or both',
+    '✅ Secure OAuth connection — no passwords stored',
+    '✅ HMAC-SHA256 webhook verification',
+    '✅ Works with public and private repositories',
+    '✅ Automatic loop prevention',
+    '✅ Version-controlled activity history',
+  ],
+  iconType: 'svg',
+  iconPath: '/images/icons/github.svg',
   actions: [],
 });

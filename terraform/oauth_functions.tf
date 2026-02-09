@@ -431,15 +431,15 @@ resource "google_cloudfunctions2_function" "google_oauth_handler" {
       version    = "latest"
     }
     secret_environment_variables {
-      key        = "GOOGLE_OAUTH_CLIENT_ID"
+      key        = "GOOGLE_CLIENT_ID"
       project_id = var.project_id
-      secret     = google_secret_manager_secret.google_oauth_client_id.secret_id
+      secret     = google_secret_manager_secret.google_client_id.secret_id
       version    = "latest"
     }
     secret_environment_variables {
-      key        = "GOOGLE_OAUTH_CLIENT_SECRET"
+      key        = "GOOGLE_CLIENT_SECRET"
       project_id = var.project_id
-      secret     = google_secret_manager_secret.google_oauth_client_secret.secret_id
+      secret     = google_secret_manager_secret.google_client_secret.secret_id
       version    = "latest"
     }
     service_account_email = google_service_account.cloud_function_sa.email
@@ -450,6 +450,63 @@ resource "google_cloud_run_service_iam_member" "google_oauth_handler_invoker" {
   project  = google_cloudfunctions2_function.google_oauth_handler.project
   location = google_cloudfunctions2_function.google_oauth_handler.location
   service  = google_cloudfunctions2_function.google_oauth_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# ----------------- GitHub OAuth Handler -----------------
+
+resource "google_cloudfunctions2_function" "github_oauth_handler" {
+  name        = "github-oauth-handler"
+  location    = var.region
+  description = "Handles GitHub OAuth callback"
+
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "githubOAuthHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.github_oauth_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      BASE_URL             = local.base_url
+      GOOGLE_CLOUD_PROJECT = var.project_id
+    }
+    secret_environment_variables {
+      key        = "OAUTH_STATE_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.oauth_state_secret.secret_id
+      version    = "latest"
+    }
+    secret_environment_variables {
+      key        = "GITHUB_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_client_id.secret_id
+      version    = "latest"
+    }
+    secret_environment_variables {
+      key        = "GITHUB_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_client_secret.secret_id
+      version    = "latest"
+    }
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "github_oauth_handler_invoker" {
+  project  = google_cloudfunctions2_function.github_oauth_handler.project
+  location = google_cloudfunctions2_function.github_oauth_handler.location
+  service  = google_cloudfunctions2_function.github_oauth_handler.name
   role     = "roles/run.invoker"
   member   = "allUsers"
 }

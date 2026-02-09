@@ -167,9 +167,9 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     throw new HttpError(400, 'activityId and destination are required');
   }
 
-  // Validate destination enum
+  // Validate destination enum (parseDestination returns DESTINATION_UNSPECIFIED for unknown inputs)
   const destEnum = parseDestination(destination);
-  if (destEnum === undefined) {
+  if (!destEnum) {
     throw new HttpError(400, `Invalid destination: ${destination}`);
   }
 
@@ -282,9 +282,9 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
     throw new HttpError(400, 'activityId and destination are required');
   }
 
-  // Validate destination enum
+  // Validate destination enum (parseDestination returns DESTINATION_UNSPECIFIED for unknown inputs)
   const destEnum = parseDestination(destination);
-  if (destEnum === undefined) {
+  if (!destEnum) {
     throw new HttpError(400, `Invalid destination: ${destination}`);
   }
 

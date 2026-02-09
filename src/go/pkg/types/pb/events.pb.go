@@ -113,6 +113,7 @@ const (
 	CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK     CloudEventSource = 11
 	CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO             CloudEventSource = 12
 	CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER CloudEventSource = 13
+	CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB            CloudEventSource = 14
 	CloudEventSource_CLOUD_EVENT_SOURCE_MOCK              CloudEventSource = 99
 )
 
@@ -133,6 +134,7 @@ var (
 		11: "CLOUD_EVENT_SOURCE_POLAR_WEBHOOK",
 		12: "CLOUD_EVENT_SOURCE_WAHOO",
 		13: "CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER",
+		14: "CLOUD_EVENT_SOURCE_GITHUB",
 		99: "CLOUD_EVENT_SOURCE_MOCK",
 	}
 	CloudEventSource_value = map[string]int32{
@@ -150,6 +152,7 @@ var (
 		"CLOUD_EVENT_SOURCE_POLAR_WEBHOOK":     11,
 		"CLOUD_EVENT_SOURCE_WAHOO":             12,
 		"CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER": 13,
+		"CLOUD_EVENT_SOURCE_GITHUB":            14,
 		"CLOUD_EVENT_SOURCE_MOCK":              99,
 	}
 )
@@ -193,6 +196,7 @@ const (
 	Destination_DESTINATION_TRAININGPEAKS Destination = 4
 	Destination_DESTINATION_INTERVALS     Destination = 5
 	Destination_DESTINATION_GOOGLESHEETS  Destination = 6
+	Destination_DESTINATION_GITHUB        Destination = 7
 	Destination_DESTINATION_MOCK          Destination = 99
 )
 
@@ -206,6 +210,7 @@ var (
 		4:  "DESTINATION_TRAININGPEAKS",
 		5:  "DESTINATION_INTERVALS",
 		6:  "DESTINATION_GOOGLESHEETS",
+		7:  "DESTINATION_GITHUB",
 		99: "DESTINATION_MOCK",
 	}
 	Destination_value = map[string]int32{
@@ -216,6 +221,7 @@ var (
 		"DESTINATION_TRAININGPEAKS": 4,
 		"DESTINATION_INTERVALS":     5,
 		"DESTINATION_GOOGLESHEETS":  6,
+		"DESTINATION_GITHUB":        7,
 		"DESTINATION_MOCK":          99,
 	}
 )
@@ -573,7 +579,7 @@ const file_events_proto_rawDesc = "" +
 	"$CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION\x10\x04\x1a#\x82\xb5\x18\x1fcom.fitglue.fitbit.notification\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_ENRICHMENT_LAG\x10\x05\x1a\x1e\x82\xb5\x18\x1acom.fitglue.enrichment.lag\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_INPUT_RESOLVED\x10\x06\x1a\x1e\x82\xb5\x18\x1acom.fitglue.input.resolved\x12E\n" +
-	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\x98\a\n" +
+	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\xd1\a\n" +
 	"\x10CloudEventSource\x12\"\n" +
 	"\x1eCLOUD_EVENT_SOURCE_UNSPECIFIED\x10\x00\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_HEVY\x10\x01\x1a\x16\x8a\xb5\x18\x12/integrations/hevy\x12G\n" +
@@ -589,8 +595,9 @@ const file_events_proto_rawDesc = "" +
 	"\x1a\x16\x8a\xb5\x18\x12/integrations/oura\x12E\n" +
 	" CLOUD_EVENT_SOURCE_POLAR_WEBHOOK\x10\v\x1a\x1f\x8a\xb5\x18\x1b/integrations/polar/webhook\x125\n" +
 	"\x18CLOUD_EVENT_SOURCE_WAHOO\x10\f\x1a\x17\x8a\xb5\x18\x13/integrations/wahoo\x12E\n" +
-	"$CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER\x10\r\x1a\x1b\x8a\xb5\x18\x17/core/pipeline-splitter\x123\n" +
-	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\xb9\x03\n" +
+	"$CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER\x10\r\x1a\x1b\x8a\xb5\x18\x17/core/pipeline-splitter\x127\n" +
+	"\x19CLOUD_EVENT_SOURCE_GITHUB\x10\x0e\x1a\x18\x8a\xb5\x18\x14/integrations/github\x123\n" +
+	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\xee\x03\n" +
 	"\vDestination\x12\x1b\n" +
 	"\x17DESTINATION_UNSPECIFIED\x10\x00\x123\n" +
 	"\x12DESTINATION_STRAVA\x10\x01\x1a\x1b\x92\xb5\x18\x17topic-job-upload-strava\x127\n" +
@@ -598,7 +605,8 @@ const file_events_proto_rawDesc = "" +
 	"\x10DESTINATION_HEVY\x10\x03\x1a\x19\x92\xb5\x18\x15topic-job-upload-hevy\x12A\n" +
 	"\x19DESTINATION_TRAININGPEAKS\x10\x04\x1a\"\x92\xb5\x18\x1etopic-job-upload-trainingpeaks\x129\n" +
 	"\x15DESTINATION_INTERVALS\x10\x05\x1a\x1e\x92\xb5\x18\x1atopic-job-upload-intervals\x12?\n" +
-	"\x18DESTINATION_GOOGLESHEETS\x10\x06\x1a!\x92\xb5\x18\x1dtopic-job-upload-googlesheets\x12/\n" +
+	"\x18DESTINATION_GOOGLESHEETS\x10\x06\x1a!\x92\xb5\x18\x1dtopic-job-upload-googlesheets\x123\n" +
+	"\x12DESTINATION_GITHUB\x10\a\x1a\x1b\x92\xb5\x18\x17topic-job-upload-github\x12/\n" +
 	"\x10DESTINATION_MOCK\x10c\x1a\x19\x92\xb5\x18\x15topic-job-upload-mock:<\n" +
 	"\ace_type\x12!.google.protobuf.EnumValueOptions\x18І\x03 \x01(\tR\x06ceType:@\n" +
 	"\tce_source\x12!.google.protobuf.EnumValueOptions\x18ц\x03 \x01(\tR\bceSource:B\n" +

@@ -708,28 +708,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// Finalize PipelineRun with enriched data (initial run was created at start)
 	o.finalizePipelineRun(ctx, logger, payload.UserId, finalEvent, providerExecutions, originalPayloadUri)
 
-	// Send push notification on successful pipeline completion
-	if o.notifications != nil {
-		user, err := o.database.GetUser(ctx, payload.UserId)
-		if err == nil && user != nil && len(user.FcmTokens) > 0 {
-			// Check notification preferences (default to true if not set)
-			prefs := user.NotificationPreferences
-			shouldNotify := prefs == nil || prefs.NotifyPipelineSuccess
-			if shouldNotify {
-				destCount := len(pipeline.Destinations)
-				title := fmt.Sprintf("Activity Synced: %s", currentActivity.Name)
-				body := fmt.Sprintf("Your activity was boosted and is syncing to %d destination(s)", destCount)
-				data := map[string]string{
-					"type":        "PIPELINE_SUCCESS",
-					"activity_id": activityId,
-					"user_id":     payload.UserId,
-				}
-				if err := o.notifications.SendPushNotification(ctx, payload.UserId, title, body, user.FcmTokens, data); err != nil {
-					logger.Warn("Failed to send success notification", "error", err, "user_id", payload.UserId)
-				}
-			}
-		}
-	}
+	// Note: Success/partial notifications are now sent by destination.UpdateStatus
+	// when all destinations have reported their final status (SYNCED or PARTIAL).
 
 	return &ProcessResult{
 		Events:             []*pb.EnrichedActivityEvent{finalEvent},

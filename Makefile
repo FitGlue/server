@@ -37,7 +37,7 @@ generate:
 		--proto_path=../proto ../proto/*.proto
 	# Generate OpenAPI Clients
 	@echo "Generating OpenAPI Clients..."
-	@for dir in src/openapi/*; do \
+	@set -e; for dir in src/openapi/*; do \
 		if [ -d "$$dir" ]; then \
 			SERVICE=$$(basename $$dir); \
 			echo "Processing $$SERVICE..."; \

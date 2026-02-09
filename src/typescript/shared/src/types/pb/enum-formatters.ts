@@ -299,6 +299,200 @@ export function formatActivityType(value: ActivityType | number | string | undef
   }
 }
 
+const ActivityTypeValues: Record<string, ActivityType> = {
+    'activity_type_unspecified': ActivityType.ACTIVITY_TYPE_UNSPECIFIED,
+    'unspecified': ActivityType.ACTIVITY_TYPE_UNSPECIFIED,
+    'workout': ActivityType.ACTIVITY_TYPE_UNSPECIFIED,
+    '0': ActivityType.ACTIVITY_TYPE_UNSPECIFIED,
+    'activity_type_alpine_ski': ActivityType.ACTIVITY_TYPE_ALPINE_SKI,
+    'alpine_ski': ActivityType.ACTIVITY_TYPE_ALPINE_SKI,
+    'alpine ski': ActivityType.ACTIVITY_TYPE_ALPINE_SKI,
+    '1': ActivityType.ACTIVITY_TYPE_ALPINE_SKI,
+    'activity_type_backcountry_ski': ActivityType.ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+    'backcountry_ski': ActivityType.ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+    'backcountry ski': ActivityType.ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+    '2': ActivityType.ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+    'activity_type_badminton': ActivityType.ACTIVITY_TYPE_BADMINTON,
+    'badminton': ActivityType.ACTIVITY_TYPE_BADMINTON,
+    '3': ActivityType.ACTIVITY_TYPE_BADMINTON,
+    'activity_type_canoeing': ActivityType.ACTIVITY_TYPE_CANOEING,
+    'canoeing': ActivityType.ACTIVITY_TYPE_CANOEING,
+    '4': ActivityType.ACTIVITY_TYPE_CANOEING,
+    'activity_type_crossfit': ActivityType.ACTIVITY_TYPE_CROSSFIT,
+    'crossfit': ActivityType.ACTIVITY_TYPE_CROSSFIT,
+    '5': ActivityType.ACTIVITY_TYPE_CROSSFIT,
+    'activity_type_ebike_ride': ActivityType.ACTIVITY_TYPE_EBIKE_RIDE,
+    'ebike_ride': ActivityType.ACTIVITY_TYPE_EBIKE_RIDE,
+    'e-bike ride': ActivityType.ACTIVITY_TYPE_EBIKE_RIDE,
+    '6': ActivityType.ACTIVITY_TYPE_EBIKE_RIDE,
+    'activity_type_elliptical': ActivityType.ACTIVITY_TYPE_ELLIPTICAL,
+    'elliptical': ActivityType.ACTIVITY_TYPE_ELLIPTICAL,
+    '7': ActivityType.ACTIVITY_TYPE_ELLIPTICAL,
+    'activity_type_emountain_bike_ride': ActivityType.ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+    'emountain_bike_ride': ActivityType.ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+    'e-mountain bike ride': ActivityType.ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+    '8': ActivityType.ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+    'activity_type_golf': ActivityType.ACTIVITY_TYPE_GOLF,
+    'golf': ActivityType.ACTIVITY_TYPE_GOLF,
+    '9': ActivityType.ACTIVITY_TYPE_GOLF,
+    'activity_type_gravel_ride': ActivityType.ACTIVITY_TYPE_GRAVEL_RIDE,
+    'gravel_ride': ActivityType.ACTIVITY_TYPE_GRAVEL_RIDE,
+    'gravel ride': ActivityType.ACTIVITY_TYPE_GRAVEL_RIDE,
+    '10': ActivityType.ACTIVITY_TYPE_GRAVEL_RIDE,
+    'activity_type_handcycle': ActivityType.ACTIVITY_TYPE_HANDCYCLE,
+    'handcycle': ActivityType.ACTIVITY_TYPE_HANDCYCLE,
+    '11': ActivityType.ACTIVITY_TYPE_HANDCYCLE,
+    'activity_type_high_intensity_interval_training': ActivityType.ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+    'high_intensity_interval_training': ActivityType.ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+    'hiit': ActivityType.ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+    '12': ActivityType.ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+    'activity_type_hike': ActivityType.ACTIVITY_TYPE_HIKE,
+    'hike': ActivityType.ACTIVITY_TYPE_HIKE,
+    '13': ActivityType.ACTIVITY_TYPE_HIKE,
+    'activity_type_ice_skate': ActivityType.ACTIVITY_TYPE_ICE_SKATE,
+    'ice_skate': ActivityType.ACTIVITY_TYPE_ICE_SKATE,
+    'ice skate': ActivityType.ACTIVITY_TYPE_ICE_SKATE,
+    '14': ActivityType.ACTIVITY_TYPE_ICE_SKATE,
+    'activity_type_inline_skate': ActivityType.ACTIVITY_TYPE_INLINE_SKATE,
+    'inline_skate': ActivityType.ACTIVITY_TYPE_INLINE_SKATE,
+    'inline skate': ActivityType.ACTIVITY_TYPE_INLINE_SKATE,
+    '15': ActivityType.ACTIVITY_TYPE_INLINE_SKATE,
+    'activity_type_kayaking': ActivityType.ACTIVITY_TYPE_KAYAKING,
+    'kayaking': ActivityType.ACTIVITY_TYPE_KAYAKING,
+    '16': ActivityType.ACTIVITY_TYPE_KAYAKING,
+    'activity_type_kitesurf': ActivityType.ACTIVITY_TYPE_KITESURF,
+    'kitesurf': ActivityType.ACTIVITY_TYPE_KITESURF,
+    '17': ActivityType.ACTIVITY_TYPE_KITESURF,
+    'activity_type_mountain_bike_ride': ActivityType.ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+    'mountain_bike_ride': ActivityType.ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+    'mountain bike ride': ActivityType.ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+    '18': ActivityType.ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+    'activity_type_nordic_ski': ActivityType.ACTIVITY_TYPE_NORDIC_SKI,
+    'nordic_ski': ActivityType.ACTIVITY_TYPE_NORDIC_SKI,
+    'nordic ski': ActivityType.ACTIVITY_TYPE_NORDIC_SKI,
+    '19': ActivityType.ACTIVITY_TYPE_NORDIC_SKI,
+    'activity_type_pickleball': ActivityType.ACTIVITY_TYPE_PICKLEBALL,
+    'pickleball': ActivityType.ACTIVITY_TYPE_PICKLEBALL,
+    '20': ActivityType.ACTIVITY_TYPE_PICKLEBALL,
+    'activity_type_pilates': ActivityType.ACTIVITY_TYPE_PILATES,
+    'pilates': ActivityType.ACTIVITY_TYPE_PILATES,
+    '21': ActivityType.ACTIVITY_TYPE_PILATES,
+    'activity_type_racquetball': ActivityType.ACTIVITY_TYPE_RACQUETBALL,
+    'racquetball': ActivityType.ACTIVITY_TYPE_RACQUETBALL,
+    '22': ActivityType.ACTIVITY_TYPE_RACQUETBALL,
+    'activity_type_ride': ActivityType.ACTIVITY_TYPE_RIDE,
+    'ride': ActivityType.ACTIVITY_TYPE_RIDE,
+    '23': ActivityType.ACTIVITY_TYPE_RIDE,
+    'activity_type_rock_climbing': ActivityType.ACTIVITY_TYPE_ROCK_CLIMBING,
+    'rock_climbing': ActivityType.ACTIVITY_TYPE_ROCK_CLIMBING,
+    'rock climbing': ActivityType.ACTIVITY_TYPE_ROCK_CLIMBING,
+    '24': ActivityType.ACTIVITY_TYPE_ROCK_CLIMBING,
+    'activity_type_roller_ski': ActivityType.ACTIVITY_TYPE_ROLLER_SKI,
+    'roller_ski': ActivityType.ACTIVITY_TYPE_ROLLER_SKI,
+    'roller ski': ActivityType.ACTIVITY_TYPE_ROLLER_SKI,
+    '25': ActivityType.ACTIVITY_TYPE_ROLLER_SKI,
+    'activity_type_rowing': ActivityType.ACTIVITY_TYPE_ROWING,
+    'rowing': ActivityType.ACTIVITY_TYPE_ROWING,
+    '26': ActivityType.ACTIVITY_TYPE_ROWING,
+    'activity_type_run': ActivityType.ACTIVITY_TYPE_RUN,
+    'run': ActivityType.ACTIVITY_TYPE_RUN,
+    '27': ActivityType.ACTIVITY_TYPE_RUN,
+    'activity_type_sail': ActivityType.ACTIVITY_TYPE_SAIL,
+    'sail': ActivityType.ACTIVITY_TYPE_SAIL,
+    '28': ActivityType.ACTIVITY_TYPE_SAIL,
+    'activity_type_skateboard': ActivityType.ACTIVITY_TYPE_SKATEBOARD,
+    'skateboard': ActivityType.ACTIVITY_TYPE_SKATEBOARD,
+    '29': ActivityType.ACTIVITY_TYPE_SKATEBOARD,
+    'activity_type_snowboard': ActivityType.ACTIVITY_TYPE_SNOWBOARD,
+    'snowboard': ActivityType.ACTIVITY_TYPE_SNOWBOARD,
+    '30': ActivityType.ACTIVITY_TYPE_SNOWBOARD,
+    'activity_type_snowshoe': ActivityType.ACTIVITY_TYPE_SNOWSHOE,
+    'snowshoe': ActivityType.ACTIVITY_TYPE_SNOWSHOE,
+    '31': ActivityType.ACTIVITY_TYPE_SNOWSHOE,
+    'activity_type_soccer': ActivityType.ACTIVITY_TYPE_SOCCER,
+    'soccer': ActivityType.ACTIVITY_TYPE_SOCCER,
+    '32': ActivityType.ACTIVITY_TYPE_SOCCER,
+    'activity_type_squash': ActivityType.ACTIVITY_TYPE_SQUASH,
+    'squash': ActivityType.ACTIVITY_TYPE_SQUASH,
+    '33': ActivityType.ACTIVITY_TYPE_SQUASH,
+    'activity_type_stair_stepper': ActivityType.ACTIVITY_TYPE_STAIR_STEPPER,
+    'stair_stepper': ActivityType.ACTIVITY_TYPE_STAIR_STEPPER,
+    'stair stepper': ActivityType.ACTIVITY_TYPE_STAIR_STEPPER,
+    '34': ActivityType.ACTIVITY_TYPE_STAIR_STEPPER,
+    'activity_type_stand_up_paddling': ActivityType.ACTIVITY_TYPE_STAND_UP_PADDLING,
+    'stand_up_paddling': ActivityType.ACTIVITY_TYPE_STAND_UP_PADDLING,
+    'stand up paddling': ActivityType.ACTIVITY_TYPE_STAND_UP_PADDLING,
+    '35': ActivityType.ACTIVITY_TYPE_STAND_UP_PADDLING,
+    'activity_type_surfing': ActivityType.ACTIVITY_TYPE_SURFING,
+    'surfing': ActivityType.ACTIVITY_TYPE_SURFING,
+    '36': ActivityType.ACTIVITY_TYPE_SURFING,
+    'activity_type_swim': ActivityType.ACTIVITY_TYPE_SWIM,
+    'swim': ActivityType.ACTIVITY_TYPE_SWIM,
+    '37': ActivityType.ACTIVITY_TYPE_SWIM,
+    'activity_type_table_tennis': ActivityType.ACTIVITY_TYPE_TABLE_TENNIS,
+    'table_tennis': ActivityType.ACTIVITY_TYPE_TABLE_TENNIS,
+    'table tennis': ActivityType.ACTIVITY_TYPE_TABLE_TENNIS,
+    '38': ActivityType.ACTIVITY_TYPE_TABLE_TENNIS,
+    'activity_type_tennis': ActivityType.ACTIVITY_TYPE_TENNIS,
+    'tennis': ActivityType.ACTIVITY_TYPE_TENNIS,
+    '39': ActivityType.ACTIVITY_TYPE_TENNIS,
+    'activity_type_trail_run': ActivityType.ACTIVITY_TYPE_TRAIL_RUN,
+    'trail_run': ActivityType.ACTIVITY_TYPE_TRAIL_RUN,
+    'trail run': ActivityType.ACTIVITY_TYPE_TRAIL_RUN,
+    '40': ActivityType.ACTIVITY_TYPE_TRAIL_RUN,
+    'activity_type_velomobile': ActivityType.ACTIVITY_TYPE_VELOMOBILE,
+    'velomobile': ActivityType.ACTIVITY_TYPE_VELOMOBILE,
+    '41': ActivityType.ACTIVITY_TYPE_VELOMOBILE,
+    'activity_type_virtual_ride': ActivityType.ACTIVITY_TYPE_VIRTUAL_RIDE,
+    'virtual_ride': ActivityType.ACTIVITY_TYPE_VIRTUAL_RIDE,
+    'virtual ride': ActivityType.ACTIVITY_TYPE_VIRTUAL_RIDE,
+    '42': ActivityType.ACTIVITY_TYPE_VIRTUAL_RIDE,
+    'activity_type_virtual_row': ActivityType.ACTIVITY_TYPE_VIRTUAL_ROW,
+    'virtual_row': ActivityType.ACTIVITY_TYPE_VIRTUAL_ROW,
+    'virtual row': ActivityType.ACTIVITY_TYPE_VIRTUAL_ROW,
+    '43': ActivityType.ACTIVITY_TYPE_VIRTUAL_ROW,
+    'activity_type_virtual_run': ActivityType.ACTIVITY_TYPE_VIRTUAL_RUN,
+    'virtual_run': ActivityType.ACTIVITY_TYPE_VIRTUAL_RUN,
+    'virtual run': ActivityType.ACTIVITY_TYPE_VIRTUAL_RUN,
+    '44': ActivityType.ACTIVITY_TYPE_VIRTUAL_RUN,
+    'activity_type_walk': ActivityType.ACTIVITY_TYPE_WALK,
+    'walk': ActivityType.ACTIVITY_TYPE_WALK,
+    '45': ActivityType.ACTIVITY_TYPE_WALK,
+    'activity_type_weight_training': ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
+    'weight_training': ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
+    'weight training': ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
+    '46': ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
+    'activity_type_wheelchair': ActivityType.ACTIVITY_TYPE_WHEELCHAIR,
+    'wheelchair': ActivityType.ACTIVITY_TYPE_WHEELCHAIR,
+    '47': ActivityType.ACTIVITY_TYPE_WHEELCHAIR,
+    'activity_type_windsurf': ActivityType.ACTIVITY_TYPE_WINDSURF,
+    'windsurf': ActivityType.ACTIVITY_TYPE_WINDSURF,
+    '48': ActivityType.ACTIVITY_TYPE_WINDSURF,
+    'activity_type_workout': ActivityType.ACTIVITY_TYPE_WORKOUT,
+    '49': ActivityType.ACTIVITY_TYPE_WORKOUT,
+    'activity_type_yoga': ActivityType.ACTIVITY_TYPE_YOGA,
+    'yoga': ActivityType.ACTIVITY_TYPE_YOGA,
+    '50': ActivityType.ACTIVITY_TYPE_YOGA,
+    'running': ActivityType.ACTIVITY_TYPE_RUN,
+    'cycling': ActivityType.ACTIVITY_TYPE_RIDE,
+    'biking': ActivityType.ACTIVITY_TYPE_RIDE,
+    'bike': ActivityType.ACTIVITY_TYPE_RIDE,
+    'swimming': ActivityType.ACTIVITY_TYPE_SWIM,
+    'walking': ActivityType.ACTIVITY_TYPE_WALK,
+    'hiking': ActivityType.ACTIVITY_TYPE_HIKE,
+    'weights': ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
+    'weighttraining': ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
+    'strength': ActivityType.ACTIVITY_TYPE_WEIGHT_TRAINING,
+    'trailrun': ActivityType.ACTIVITY_TYPE_TRAIL_RUN,
+};
+
+export function parseActivityType(input: string | number | undefined | null): ActivityType {
+  if (input === undefined || input === null) return ActivityType.ACTIVITY_TYPE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (ActivityTypeValues[key] !== undefined) return ActivityTypeValues[key];
+  return ActivityType.ACTIVITY_TYPE_UNSPECIFIED;
+}
+
 const MuscleGroupNames: Record<string, string> = {
     'MUSCLE_GROUP_UNSPECIFIED': 'Unknown',
     'UNSPECIFIED': 'Unknown',
@@ -430,6 +624,83 @@ export function formatMuscleGroup(value: MuscleGroup | number | string | undefin
   }
 }
 
+const MuscleGroupValues: Record<string, MuscleGroup> = {
+    'muscle_group_unspecified': MuscleGroup.MUSCLE_GROUP_UNSPECIFIED,
+    'unspecified': MuscleGroup.MUSCLE_GROUP_UNSPECIFIED,
+    'unknown': MuscleGroup.MUSCLE_GROUP_UNSPECIFIED,
+    '0': MuscleGroup.MUSCLE_GROUP_UNSPECIFIED,
+    'muscle_group_abdominals': MuscleGroup.MUSCLE_GROUP_ABDOMINALS,
+    'abdominals': MuscleGroup.MUSCLE_GROUP_ABDOMINALS,
+    '1': MuscleGroup.MUSCLE_GROUP_ABDOMINALS,
+    'muscle_group_shoulders': MuscleGroup.MUSCLE_GROUP_SHOULDERS,
+    'shoulders': MuscleGroup.MUSCLE_GROUP_SHOULDERS,
+    '2': MuscleGroup.MUSCLE_GROUP_SHOULDERS,
+    'muscle_group_biceps': MuscleGroup.MUSCLE_GROUP_BICEPS,
+    'biceps': MuscleGroup.MUSCLE_GROUP_BICEPS,
+    '3': MuscleGroup.MUSCLE_GROUP_BICEPS,
+    'muscle_group_triceps': MuscleGroup.MUSCLE_GROUP_TRICEPS,
+    'triceps': MuscleGroup.MUSCLE_GROUP_TRICEPS,
+    '4': MuscleGroup.MUSCLE_GROUP_TRICEPS,
+    'muscle_group_forearms': MuscleGroup.MUSCLE_GROUP_FOREARMS,
+    'forearms': MuscleGroup.MUSCLE_GROUP_FOREARMS,
+    '5': MuscleGroup.MUSCLE_GROUP_FOREARMS,
+    'muscle_group_quadriceps': MuscleGroup.MUSCLE_GROUP_QUADRICEPS,
+    'quadriceps': MuscleGroup.MUSCLE_GROUP_QUADRICEPS,
+    '6': MuscleGroup.MUSCLE_GROUP_QUADRICEPS,
+    'muscle_group_hamstrings': MuscleGroup.MUSCLE_GROUP_HAMSTRINGS,
+    'hamstrings': MuscleGroup.MUSCLE_GROUP_HAMSTRINGS,
+    '7': MuscleGroup.MUSCLE_GROUP_HAMSTRINGS,
+    'muscle_group_calves': MuscleGroup.MUSCLE_GROUP_CALVES,
+    'calves': MuscleGroup.MUSCLE_GROUP_CALVES,
+    '8': MuscleGroup.MUSCLE_GROUP_CALVES,
+    'muscle_group_glutes': MuscleGroup.MUSCLE_GROUP_GLUTES,
+    'glutes': MuscleGroup.MUSCLE_GROUP_GLUTES,
+    '9': MuscleGroup.MUSCLE_GROUP_GLUTES,
+    'muscle_group_abductors': MuscleGroup.MUSCLE_GROUP_ABDUCTORS,
+    'abductors': MuscleGroup.MUSCLE_GROUP_ABDUCTORS,
+    '10': MuscleGroup.MUSCLE_GROUP_ABDUCTORS,
+    'muscle_group_adductors': MuscleGroup.MUSCLE_GROUP_ADDUCTORS,
+    'adductors': MuscleGroup.MUSCLE_GROUP_ADDUCTORS,
+    '11': MuscleGroup.MUSCLE_GROUP_ADDUCTORS,
+    'muscle_group_lats': MuscleGroup.MUSCLE_GROUP_LATS,
+    'lats': MuscleGroup.MUSCLE_GROUP_LATS,
+    '12': MuscleGroup.MUSCLE_GROUP_LATS,
+    'muscle_group_upper_back': MuscleGroup.MUSCLE_GROUP_UPPER_BACK,
+    'upper_back': MuscleGroup.MUSCLE_GROUP_UPPER_BACK,
+    'upper back': MuscleGroup.MUSCLE_GROUP_UPPER_BACK,
+    '13': MuscleGroup.MUSCLE_GROUP_UPPER_BACK,
+    'muscle_group_traps': MuscleGroup.MUSCLE_GROUP_TRAPS,
+    'traps': MuscleGroup.MUSCLE_GROUP_TRAPS,
+    '14': MuscleGroup.MUSCLE_GROUP_TRAPS,
+    'muscle_group_lower_back': MuscleGroup.MUSCLE_GROUP_LOWER_BACK,
+    'lower_back': MuscleGroup.MUSCLE_GROUP_LOWER_BACK,
+    'lower back': MuscleGroup.MUSCLE_GROUP_LOWER_BACK,
+    '15': MuscleGroup.MUSCLE_GROUP_LOWER_BACK,
+    'muscle_group_chest': MuscleGroup.MUSCLE_GROUP_CHEST,
+    'chest': MuscleGroup.MUSCLE_GROUP_CHEST,
+    '16': MuscleGroup.MUSCLE_GROUP_CHEST,
+    'muscle_group_cardio': MuscleGroup.MUSCLE_GROUP_CARDIO,
+    'cardio': MuscleGroup.MUSCLE_GROUP_CARDIO,
+    '17': MuscleGroup.MUSCLE_GROUP_CARDIO,
+    'muscle_group_neck': MuscleGroup.MUSCLE_GROUP_NECK,
+    'neck': MuscleGroup.MUSCLE_GROUP_NECK,
+    '18': MuscleGroup.MUSCLE_GROUP_NECK,
+    'muscle_group_full_body': MuscleGroup.MUSCLE_GROUP_FULL_BODY,
+    'full_body': MuscleGroup.MUSCLE_GROUP_FULL_BODY,
+    'full body': MuscleGroup.MUSCLE_GROUP_FULL_BODY,
+    '19': MuscleGroup.MUSCLE_GROUP_FULL_BODY,
+    'muscle_group_other': MuscleGroup.MUSCLE_GROUP_OTHER,
+    'other': MuscleGroup.MUSCLE_GROUP_OTHER,
+    '20': MuscleGroup.MUSCLE_GROUP_OTHER,
+};
+
+export function parseMuscleGroup(input: string | number | undefined | null): MuscleGroup {
+  if (input === undefined || input === null) return MuscleGroup.MUSCLE_GROUP_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (MuscleGroupValues[key] !== undefined) return MuscleGroupValues[key];
+  return MuscleGroup.MUSCLE_GROUP_UNSPECIFIED;
+}
+
 const DestinationNames: Record<string, string> = {
     'DESTINATION_UNSPECIFIED': 'Unknown',
     'UNSPECIFIED': 'Unknown',
@@ -459,6 +730,10 @@ const DestinationNames: Record<string, string> = {
     'GOOGLESHEETS': 'Googlesheets',
     'Googlesheets': 'Googlesheets',
     '6': 'Googlesheets',
+    'DESTINATION_GITHUB': 'Github',
+    'GITHUB': 'Github',
+    'Github': 'Github',
+    '7': 'Github',
     'DESTINATION_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -491,9 +766,48 @@ export function formatDestination(value: Destination | number | string | undefin
     case Destination.DESTINATION_TRAININGPEAKS: return 'Trainingpeaks';
     case Destination.DESTINATION_INTERVALS: return 'Intervals';
     case Destination.DESTINATION_GOOGLESHEETS: return 'Googlesheets';
+    case Destination.DESTINATION_GITHUB: return 'Github';
     case Destination.DESTINATION_MOCK: return 'Mock';
     default: return 'Unknown';
   }
+}
+
+const DestinationValues: Record<string, Destination> = {
+    'destination_unspecified': Destination.DESTINATION_UNSPECIFIED,
+    'unspecified': Destination.DESTINATION_UNSPECIFIED,
+    'unknown': Destination.DESTINATION_UNSPECIFIED,
+    '0': Destination.DESTINATION_UNSPECIFIED,
+    'destination_strava': Destination.DESTINATION_STRAVA,
+    'strava': Destination.DESTINATION_STRAVA,
+    '1': Destination.DESTINATION_STRAVA,
+    'destination_showcase': Destination.DESTINATION_SHOWCASE,
+    'showcase': Destination.DESTINATION_SHOWCASE,
+    '2': Destination.DESTINATION_SHOWCASE,
+    'destination_hevy': Destination.DESTINATION_HEVY,
+    'hevy': Destination.DESTINATION_HEVY,
+    '3': Destination.DESTINATION_HEVY,
+    'destination_trainingpeaks': Destination.DESTINATION_TRAININGPEAKS,
+    'trainingpeaks': Destination.DESTINATION_TRAININGPEAKS,
+    '4': Destination.DESTINATION_TRAININGPEAKS,
+    'destination_intervals': Destination.DESTINATION_INTERVALS,
+    'intervals': Destination.DESTINATION_INTERVALS,
+    '5': Destination.DESTINATION_INTERVALS,
+    'destination_googlesheets': Destination.DESTINATION_GOOGLESHEETS,
+    'googlesheets': Destination.DESTINATION_GOOGLESHEETS,
+    '6': Destination.DESTINATION_GOOGLESHEETS,
+    'destination_github': Destination.DESTINATION_GITHUB,
+    'github': Destination.DESTINATION_GITHUB,
+    '7': Destination.DESTINATION_GITHUB,
+    'destination_mock': Destination.DESTINATION_MOCK,
+    'mock': Destination.DESTINATION_MOCK,
+    '99': Destination.DESTINATION_MOCK,
+};
+
+export function parseDestination(input: string | number | undefined | null): Destination {
+  if (input === undefined || input === null) return Destination.DESTINATION_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (DestinationValues[key] !== undefined) return DestinationValues[key];
+  return Destination.DESTINATION_UNSPECIFIED;
 }
 
 const CloudEventTypeNames: Record<string, string> = {
@@ -562,6 +876,47 @@ export function formatCloudEventType(value: CloudEventType | number | string | u
   }
 }
 
+const CloudEventTypeValues: Record<string, CloudEventType> = {
+    'cloud_event_type_unspecified': CloudEventType.CLOUD_EVENT_TYPE_UNSPECIFIED,
+    'unspecified': CloudEventType.CLOUD_EVENT_TYPE_UNSPECIFIED,
+    '0': CloudEventType.CLOUD_EVENT_TYPE_UNSPECIFIED,
+    'cloud_event_type_activity_created': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
+    'activity_created': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
+    'activity created': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
+    '1': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
+    'cloud_event_type_activity_enriched': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
+    'activity_enriched': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
+    'activity enriched': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
+    '2': CloudEventType.CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
+    'cloud_event_type_job_routed': CloudEventType.CLOUD_EVENT_TYPE_JOB_ROUTED,
+    'job_routed': CloudEventType.CLOUD_EVENT_TYPE_JOB_ROUTED,
+    'job routed': CloudEventType.CLOUD_EVENT_TYPE_JOB_ROUTED,
+    '3': CloudEventType.CLOUD_EVENT_TYPE_JOB_ROUTED,
+    'cloud_event_type_fitbit_notification': CloudEventType.CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
+    'fitbit_notification': CloudEventType.CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
+    'fitbit notification': CloudEventType.CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
+    '4': CloudEventType.CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
+    'cloud_event_type_enrichment_lag': CloudEventType.CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
+    'enrichment_lag': CloudEventType.CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
+    'enrichment lag': CloudEventType.CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
+    '5': CloudEventType.CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
+    'cloud_event_type_input_resolved': CloudEventType.CLOUD_EVENT_TYPE_INPUT_RESOLVED,
+    'input_resolved': CloudEventType.CLOUD_EVENT_TYPE_INPUT_RESOLVED,
+    'input resolved': CloudEventType.CLOUD_EVENT_TYPE_INPUT_RESOLVED,
+    '6': CloudEventType.CLOUD_EVENT_TYPE_INPUT_RESOLVED,
+    'cloud_event_type_parkrun_results': CloudEventType.CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
+    'parkrun_results': CloudEventType.CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
+    'parkrun results': CloudEventType.CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
+    '7': CloudEventType.CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
+};
+
+export function parseCloudEventType(input: string | number | undefined | null): CloudEventType {
+  if (input === undefined || input === null) return CloudEventType.CLOUD_EVENT_TYPE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (CloudEventTypeValues[key] !== undefined) return CloudEventTypeValues[key];
+  return CloudEventType.CLOUD_EVENT_TYPE_UNSPECIFIED;
+}
+
 const CloudEventSourceNames: Record<string, string> = {
     'CLOUD_EVENT_SOURCE_UNSPECIFIED': 'Unspecified',
     'UNSPECIFIED': 'Unspecified',
@@ -619,6 +974,10 @@ const CloudEventSourceNames: Record<string, string> = {
     'PIPELINE_SPLITTER': 'Pipeline Splitter',
     'Pipeline Splitter': 'Pipeline Splitter',
     '13': 'Pipeline Splitter',
+    'CLOUD_EVENT_SOURCE_GITHUB': 'Github',
+    'GITHUB': 'Github',
+    'Github': 'Github',
+    '14': 'Github',
     'CLOUD_EVENT_SOURCE_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -658,9 +1017,75 @@ export function formatCloudEventSource(value: CloudEventSource | number | string
     case CloudEventSource.CLOUD_EVENT_SOURCE_POLAR_WEBHOOK: return 'Polar Webhook';
     case CloudEventSource.CLOUD_EVENT_SOURCE_WAHOO: return 'Wahoo';
     case CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER: return 'Pipeline Splitter';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB: return 'Github';
     case CloudEventSource.CLOUD_EVENT_SOURCE_MOCK: return 'Mock';
     default: return 'Unknown';
   }
+}
+
+const CloudEventSourceValues: Record<string, CloudEventSource> = {
+    'cloud_event_source_unspecified': CloudEventSource.CLOUD_EVENT_SOURCE_UNSPECIFIED,
+    'unspecified': CloudEventSource.CLOUD_EVENT_SOURCE_UNSPECIFIED,
+    '0': CloudEventSource.CLOUD_EVENT_SOURCE_UNSPECIFIED,
+    'cloud_event_source_hevy': CloudEventSource.CLOUD_EVENT_SOURCE_HEVY,
+    'hevy': CloudEventSource.CLOUD_EVENT_SOURCE_HEVY,
+    '1': CloudEventSource.CLOUD_EVENT_SOURCE_HEVY,
+    'cloud_event_source_fitbit_webhook': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
+    'fitbit_webhook': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
+    'fitbit webhook': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
+    '2': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
+    'cloud_event_source_fitbit_ingest': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_INGEST,
+    'fitbit_ingest': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_INGEST,
+    'fitbit ingest': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_INGEST,
+    '3': CloudEventSource.CLOUD_EVENT_SOURCE_FITBIT_INGEST,
+    'cloud_event_source_enricher': CloudEventSource.CLOUD_EVENT_SOURCE_ENRICHER,
+    'enricher': CloudEventSource.CLOUD_EVENT_SOURCE_ENRICHER,
+    '4': CloudEventSource.CLOUD_EVENT_SOURCE_ENRICHER,
+    'cloud_event_source_router': CloudEventSource.CLOUD_EVENT_SOURCE_ROUTER,
+    'router': CloudEventSource.CLOUD_EVENT_SOURCE_ROUTER,
+    '5': CloudEventSource.CLOUD_EVENT_SOURCE_ROUTER,
+    'cloud_event_source_inputs_handler': CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
+    'inputs_handler': CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
+    'inputs handler': CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
+    '6': CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
+    'cloud_event_source_parkrun_results': CloudEventSource.CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
+    'parkrun_results': CloudEventSource.CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
+    'parkrun results': CloudEventSource.CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
+    '7': CloudEventSource.CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
+    'cloud_event_source_file_upload': CloudEventSource.CLOUD_EVENT_SOURCE_FILE_UPLOAD,
+    'file_upload': CloudEventSource.CLOUD_EVENT_SOURCE_FILE_UPLOAD,
+    'file upload': CloudEventSource.CLOUD_EVENT_SOURCE_FILE_UPLOAD,
+    '8': CloudEventSource.CLOUD_EVENT_SOURCE_FILE_UPLOAD,
+    'cloud_event_source_strava': CloudEventSource.CLOUD_EVENT_SOURCE_STRAVA,
+    'strava': CloudEventSource.CLOUD_EVENT_SOURCE_STRAVA,
+    '9': CloudEventSource.CLOUD_EVENT_SOURCE_STRAVA,
+    'cloud_event_source_oura': CloudEventSource.CLOUD_EVENT_SOURCE_OURA,
+    'oura': CloudEventSource.CLOUD_EVENT_SOURCE_OURA,
+    '10': CloudEventSource.CLOUD_EVENT_SOURCE_OURA,
+    'cloud_event_source_polar_webhook': CloudEventSource.CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
+    'polar_webhook': CloudEventSource.CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
+    'polar webhook': CloudEventSource.CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
+    '11': CloudEventSource.CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
+    'cloud_event_source_wahoo': CloudEventSource.CLOUD_EVENT_SOURCE_WAHOO,
+    'wahoo': CloudEventSource.CLOUD_EVENT_SOURCE_WAHOO,
+    '12': CloudEventSource.CLOUD_EVENT_SOURCE_WAHOO,
+    'cloud_event_source_pipeline_splitter': CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
+    'pipeline_splitter': CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
+    'pipeline splitter': CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
+    '13': CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
+    'cloud_event_source_github': CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB,
+    'github': CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB,
+    '14': CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB,
+    'cloud_event_source_mock': CloudEventSource.CLOUD_EVENT_SOURCE_MOCK,
+    'mock': CloudEventSource.CLOUD_EVENT_SOURCE_MOCK,
+    '99': CloudEventSource.CLOUD_EVENT_SOURCE_MOCK,
+};
+
+export function parseCloudEventSource(input: string | number | undefined | null): CloudEventSource {
+  if (input === undefined || input === null) return CloudEventSource.CLOUD_EVENT_SOURCE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (CloudEventSourceValues[key] !== undefined) return CloudEventSourceValues[key];
+  return CloudEventSource.CLOUD_EVENT_SOURCE_UNSPECIFIED;
 }
 
 const ActivitySourceNames: Record<string, string> = {
@@ -724,6 +1149,10 @@ const ActivitySourceNames: Record<string, string> = {
     'GOOGLESHEETS': 'Googlesheets',
     'Googlesheets': 'Googlesheets',
     '15': 'Googlesheets',
+    'SOURCE_GITHUB': 'Github',
+    'GITHUB': 'Github',
+    'Github': 'Github',
+    '16': 'Github',
     'SOURCE_TEST': 'Test',
     'TEST': 'Test',
     'Test': 'Test',
@@ -764,9 +1193,75 @@ export function formatActivitySource(value: ActivitySource | number | string | u
     case ActivitySource.SOURCE_INTERVALS: return 'Intervals';
     case ActivitySource.SOURCE_TRAININGPEAKS: return 'Trainingpeaks';
     case ActivitySource.SOURCE_GOOGLESHEETS: return 'Googlesheets';
+    case ActivitySource.SOURCE_GITHUB: return 'Github';
     case ActivitySource.SOURCE_TEST: return 'Test';
     default: return 'Unknown';
   }
+}
+
+const ActivitySourceValues: Record<string, ActivitySource> = {
+    'source_unknown': ActivitySource.SOURCE_UNKNOWN,
+    'unknown': ActivitySource.SOURCE_UNKNOWN,
+    '0': ActivitySource.SOURCE_UNKNOWN,
+    'source_hevy': ActivitySource.SOURCE_HEVY,
+    'hevy': ActivitySource.SOURCE_HEVY,
+    '1': ActivitySource.SOURCE_HEVY,
+    'source_fitbit': ActivitySource.SOURCE_FITBIT,
+    'fitbit': ActivitySource.SOURCE_FITBIT,
+    '3': ActivitySource.SOURCE_FITBIT,
+    'source_parkrun_results': ActivitySource.SOURCE_PARKRUN_RESULTS,
+    'parkrun_results': ActivitySource.SOURCE_PARKRUN_RESULTS,
+    'parkrun results': ActivitySource.SOURCE_PARKRUN_RESULTS,
+    '4': ActivitySource.SOURCE_PARKRUN_RESULTS,
+    'source_file_upload': ActivitySource.SOURCE_FILE_UPLOAD,
+    'file_upload': ActivitySource.SOURCE_FILE_UPLOAD,
+    'file upload': ActivitySource.SOURCE_FILE_UPLOAD,
+    '5': ActivitySource.SOURCE_FILE_UPLOAD,
+    'source_strava': ActivitySource.SOURCE_STRAVA,
+    'strava': ActivitySource.SOURCE_STRAVA,
+    '6': ActivitySource.SOURCE_STRAVA,
+    'source_garmin': ActivitySource.SOURCE_GARMIN,
+    'garmin': ActivitySource.SOURCE_GARMIN,
+    '7': ActivitySource.SOURCE_GARMIN,
+    'source_apple_health': ActivitySource.SOURCE_APPLE_HEALTH,
+    'apple_health': ActivitySource.SOURCE_APPLE_HEALTH,
+    'apple health': ActivitySource.SOURCE_APPLE_HEALTH,
+    '8': ActivitySource.SOURCE_APPLE_HEALTH,
+    'source_health_connect': ActivitySource.SOURCE_HEALTH_CONNECT,
+    'health_connect': ActivitySource.SOURCE_HEALTH_CONNECT,
+    'health connect': ActivitySource.SOURCE_HEALTH_CONNECT,
+    '9': ActivitySource.SOURCE_HEALTH_CONNECT,
+    'source_oura': ActivitySource.SOURCE_OURA,
+    'oura': ActivitySource.SOURCE_OURA,
+    '10': ActivitySource.SOURCE_OURA,
+    'source_polar': ActivitySource.SOURCE_POLAR,
+    'polar': ActivitySource.SOURCE_POLAR,
+    '11': ActivitySource.SOURCE_POLAR,
+    'source_wahoo': ActivitySource.SOURCE_WAHOO,
+    'wahoo': ActivitySource.SOURCE_WAHOO,
+    '12': ActivitySource.SOURCE_WAHOO,
+    'source_intervals': ActivitySource.SOURCE_INTERVALS,
+    'intervals': ActivitySource.SOURCE_INTERVALS,
+    '13': ActivitySource.SOURCE_INTERVALS,
+    'source_trainingpeaks': ActivitySource.SOURCE_TRAININGPEAKS,
+    'trainingpeaks': ActivitySource.SOURCE_TRAININGPEAKS,
+    '14': ActivitySource.SOURCE_TRAININGPEAKS,
+    'source_googlesheets': ActivitySource.SOURCE_GOOGLESHEETS,
+    'googlesheets': ActivitySource.SOURCE_GOOGLESHEETS,
+    '15': ActivitySource.SOURCE_GOOGLESHEETS,
+    'source_github': ActivitySource.SOURCE_GITHUB,
+    'github': ActivitySource.SOURCE_GITHUB,
+    '16': ActivitySource.SOURCE_GITHUB,
+    'source_test': ActivitySource.SOURCE_TEST,
+    'test': ActivitySource.SOURCE_TEST,
+    '99': ActivitySource.SOURCE_TEST,
+};
+
+export function parseActivitySource(input: string | number | undefined | null): ActivitySource {
+  if (input === undefined || input === null) return ActivitySource.SOURCE_UNKNOWN;
+  const key = String(input).toLowerCase().trim();
+  if (ActivitySourceValues[key] !== undefined) return ActivitySourceValues[key];
+  return ActivitySource.SOURCE_UNKNOWN;
 }
 
 const EnricherProviderTypeNames: Record<string, string> = {
@@ -985,6 +1480,165 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
   }
 }
 
+const EnricherProviderTypeValues: Record<string, EnricherProviderType> = {
+    'enricher_provider_unspecified': EnricherProviderType.ENRICHER_PROVIDER_UNSPECIFIED,
+    'unspecified': EnricherProviderType.ENRICHER_PROVIDER_UNSPECIFIED,
+    'unknown': EnricherProviderType.ENRICHER_PROVIDER_UNSPECIFIED,
+    '0': EnricherProviderType.ENRICHER_PROVIDER_UNSPECIFIED,
+    'enricher_provider_fitbit_heart_rate': EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE,
+    'fitbit_heart_rate': EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE,
+    'fitbit heart rate': EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE,
+    '1': EnricherProviderType.ENRICHER_PROVIDER_FITBIT_HEART_RATE,
+    'enricher_provider_workout_summary': EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY,
+    'workout_summary': EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY,
+    'workout summary': EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY,
+    '2': EnricherProviderType.ENRICHER_PROVIDER_WORKOUT_SUMMARY,
+    'enricher_provider_muscle_heatmap': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP,
+    'muscle_heatmap': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP,
+    'muscle heatmap': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP,
+    '3': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP,
+    'enricher_provider_source_link': EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
+    'source_link': EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
+    'source link': EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
+    '4': EnricherProviderType.ENRICHER_PROVIDER_SOURCE_LINK,
+    'enricher_provider_virtual_gps': EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS,
+    'virtual_gps': EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS,
+    'virtual gps': EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS,
+    '6': EnricherProviderType.ENRICHER_PROVIDER_VIRTUAL_GPS,
+    'enricher_provider_type_mapper': EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER,
+    'type_mapper': EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER,
+    'type mapper': EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER,
+    '7': EnricherProviderType.ENRICHER_PROVIDER_TYPE_MAPPER,
+    'enricher_provider_parkrun': EnricherProviderType.ENRICHER_PROVIDER_PARKRUN,
+    'parkrun': EnricherProviderType.ENRICHER_PROVIDER_PARKRUN,
+    '8': EnricherProviderType.ENRICHER_PROVIDER_PARKRUN,
+    'enricher_provider_condition_matcher': EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER,
+    'condition_matcher': EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER,
+    'condition matcher': EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER,
+    '9': EnricherProviderType.ENRICHER_PROVIDER_CONDITION_MATCHER,
+    'enricher_provider_auto_increment': EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT,
+    'auto_increment': EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT,
+    'auto increment': EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT,
+    '10': EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT,
+    'enricher_provider_user_input': EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT,
+    'user_input': EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT,
+    'user input': EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT,
+    '11': EnricherProviderType.ENRICHER_PROVIDER_USER_INPUT,
+    'enricher_provider_activity_filter': EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER,
+    'activity_filter': EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER,
+    'activity filter': EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER,
+    '12': EnricherProviderType.ENRICHER_PROVIDER_ACTIVITY_FILTER,
+    'enricher_provider_logic_gate': EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE,
+    'logic_gate': EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE,
+    'logic gate': EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE,
+    '13': EnricherProviderType.ENRICHER_PROVIDER_LOGIC_GATE,
+    'enricher_provider_heart_rate_summary': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
+    'heart_rate_summary': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
+    'heart rate summary': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
+    '14': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
+    'enricher_provider_ai_companion': EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION,
+    'ai_companion': EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION,
+    'ai companion': EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION,
+    '15': EnricherProviderType.ENRICHER_PROVIDER_AI_COMPANION,
+    'enricher_provider_pace_summary': EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY,
+    'pace_summary': EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY,
+    'pace summary': EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY,
+    '16': EnricherProviderType.ENRICHER_PROVIDER_PACE_SUMMARY,
+    'enricher_provider_cadence_summary': EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY,
+    'cadence_summary': EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY,
+    'cadence summary': EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY,
+    '17': EnricherProviderType.ENRICHER_PROVIDER_CADENCE_SUMMARY,
+    'enricher_provider_power_summary': EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY,
+    'power_summary': EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY,
+    'power summary': EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY,
+    '18': EnricherProviderType.ENRICHER_PROVIDER_POWER_SUMMARY,
+    'enricher_provider_speed_summary': EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY,
+    'speed_summary': EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY,
+    'speed summary': EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY,
+    '19': EnricherProviderType.ENRICHER_PROVIDER_SPEED_SUMMARY,
+    'enricher_provider_personal_records': EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS,
+    'personal_records': EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS,
+    'personal records': EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS,
+    '20': EnricherProviderType.ENRICHER_PROVIDER_PERSONAL_RECORDS,
+    'enricher_provider_training_load': EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD,
+    'training_load': EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD,
+    'training load': EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD,
+    '21': EnricherProviderType.ENRICHER_PROVIDER_TRAINING_LOAD,
+    'enricher_provider_spotify_tracks': EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS,
+    'spotify_tracks': EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS,
+    'spotify tracks': EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS,
+    '22': EnricherProviderType.ENRICHER_PROVIDER_SPOTIFY_TRACKS,
+    'enricher_provider_weather': EnricherProviderType.ENRICHER_PROVIDER_WEATHER,
+    'weather': EnricherProviderType.ENRICHER_PROVIDER_WEATHER,
+    '23': EnricherProviderType.ENRICHER_PROVIDER_WEATHER,
+    'enricher_provider_elevation_summary': EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY,
+    'elevation_summary': EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY,
+    'elevation summary': EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY,
+    '24': EnricherProviderType.ENRICHER_PROVIDER_ELEVATION_SUMMARY,
+    'enricher_provider_location_naming': EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING,
+    'location_naming': EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING,
+    'location naming': EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING,
+    '25': EnricherProviderType.ENRICHER_PROVIDER_LOCATION_NAMING,
+    'enricher_provider_muscle_heatmap_image': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
+    'muscle_heatmap_image': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
+    'muscle heatmap image': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
+    '26': EnricherProviderType.ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
+    'enricher_provider_route_thumbnail': EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
+    'route_thumbnail': EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
+    'route thumbnail': EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
+    '27': EnricherProviderType.ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
+    'enricher_provider_ai_banner': EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER,
+    'ai_banner': EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER,
+    'ai banner': EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER,
+    '28': EnricherProviderType.ENRICHER_PROVIDER_AI_BANNER,
+    'enricher_provider_fit_file_heart_rate': EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
+    'fit_file_heart_rate': EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
+    'fit file heart rate': EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
+    '29': EnricherProviderType.ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
+    'enricher_provider_hybrid_race_tagger': EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
+    'hybrid_race_tagger': EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
+    'hybrid race tagger': EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
+    '30': EnricherProviderType.ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
+    'enricher_provider_running_dynamics': EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS,
+    'running_dynamics': EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS,
+    'running dynamics': EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS,
+    '31': EnricherProviderType.ENRICHER_PROVIDER_RUNNING_DYNAMICS,
+    'enricher_provider_heart_rate_zones': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES,
+    'heart_rate_zones': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES,
+    'heart rate zones': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES,
+    '32': EnricherProviderType.ENRICHER_PROVIDER_HEART_RATE_ZONES,
+    'enricher_provider_calories_burned': EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED,
+    'calories_burned': EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED,
+    'calories burned': EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED,
+    '33': EnricherProviderType.ENRICHER_PROVIDER_CALORIES_BURNED,
+    'enricher_provider_goal_tracker': EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER,
+    'goal_tracker': EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER,
+    'goal tracker': EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER,
+    '34': EnricherProviderType.ENRICHER_PROVIDER_GOAL_TRACKER,
+    'enricher_provider_streak_tracker': EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER,
+    'streak_tracker': EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER,
+    'streak tracker': EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER,
+    '35': EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER,
+    'enricher_provider_distance_milestones': EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES,
+    'distance_milestones': EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES,
+    'distance milestones': EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES,
+    '36': EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES,
+    'enricher_provider_recovery_advisor': EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+    'recovery_advisor': EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+    'recovery advisor': EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+    '37': EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+    'enricher_provider_mock': EnricherProviderType.ENRICHER_PROVIDER_MOCK,
+    'mock': EnricherProviderType.ENRICHER_PROVIDER_MOCK,
+    '99': EnricherProviderType.ENRICHER_PROVIDER_MOCK,
+};
+
+export function parseEnricherProviderType(input: string | number | undefined | null): EnricherProviderType {
+  if (input === undefined || input === null) return EnricherProviderType.ENRICHER_PROVIDER_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (EnricherProviderTypeValues[key] !== undefined) return EnricherProviderTypeValues[key];
+  return EnricherProviderType.ENRICHER_PROVIDER_UNSPECIFIED;
+}
+
 const UserTierNames: Record<string, string> = {
     'USER_TIER_UNSPECIFIED': 'Hobbyist',
     'UNSPECIFIED': 'Hobbyist',
@@ -1023,6 +1677,25 @@ export function formatUserTier(value: UserTier | number | string | undefined | n
     case UserTier.USER_TIER_ATHLETE: return 'Athlete';
     default: return 'Hobbyist';
   }
+}
+
+const UserTierValues: Record<string, UserTier> = {
+    'user_tier_unspecified': UserTier.USER_TIER_UNSPECIFIED,
+    'unspecified': UserTier.USER_TIER_UNSPECIFIED,
+    'hobbyist': UserTier.USER_TIER_UNSPECIFIED,
+    '0': UserTier.USER_TIER_UNSPECIFIED,
+    'user_tier_hobbyist': UserTier.USER_TIER_HOBBYIST,
+    '1': UserTier.USER_TIER_HOBBYIST,
+    'user_tier_athlete': UserTier.USER_TIER_ATHLETE,
+    'athlete': UserTier.USER_TIER_ATHLETE,
+    '2': UserTier.USER_TIER_ATHLETE,
+};
+
+export function parseUserTier(input: string | number | undefined | null): UserTier {
+  if (input === undefined || input === null) return UserTier.USER_TIER_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (UserTierValues[key] !== undefined) return UserTierValues[key];
+  return UserTier.USER_TIER_UNSPECIFIED;
 }
 
 const ExecutionStatusNames: Record<string, string> = {
@@ -1091,6 +1764,41 @@ export function formatExecutionStatus(value: ExecutionStatus | number | string |
   }
 }
 
+const ExecutionStatusValues: Record<string, ExecutionStatus> = {
+    'status_unknown': ExecutionStatus.STATUS_UNKNOWN,
+    'unknown': ExecutionStatus.STATUS_UNKNOWN,
+    '0': ExecutionStatus.STATUS_UNKNOWN,
+    'status_started': ExecutionStatus.STATUS_STARTED,
+    'started': ExecutionStatus.STATUS_STARTED,
+    '1': ExecutionStatus.STATUS_STARTED,
+    'status_success': ExecutionStatus.STATUS_SUCCESS,
+    'success': ExecutionStatus.STATUS_SUCCESS,
+    '2': ExecutionStatus.STATUS_SUCCESS,
+    'status_failed': ExecutionStatus.STATUS_FAILED,
+    'failed': ExecutionStatus.STATUS_FAILED,
+    '3': ExecutionStatus.STATUS_FAILED,
+    'status_pending': ExecutionStatus.STATUS_PENDING,
+    'pending': ExecutionStatus.STATUS_PENDING,
+    '4': ExecutionStatus.STATUS_PENDING,
+    'status_waiting': ExecutionStatus.STATUS_WAITING,
+    'waiting': ExecutionStatus.STATUS_WAITING,
+    '5': ExecutionStatus.STATUS_WAITING,
+    'status_lagged_retry': ExecutionStatus.STATUS_LAGGED_RETRY,
+    'lagged_retry': ExecutionStatus.STATUS_LAGGED_RETRY,
+    'lagged retry': ExecutionStatus.STATUS_LAGGED_RETRY,
+    '6': ExecutionStatus.STATUS_LAGGED_RETRY,
+    'status_skipped': ExecutionStatus.STATUS_SKIPPED,
+    'skipped': ExecutionStatus.STATUS_SKIPPED,
+    '7': ExecutionStatus.STATUS_SKIPPED,
+};
+
+export function parseExecutionStatus(input: string | number | undefined | null): ExecutionStatus {
+  if (input === undefined || input === null) return ExecutionStatus.STATUS_UNKNOWN;
+  const key = String(input).toLowerCase().trim();
+  if (ExecutionStatusValues[key] !== undefined) return ExecutionStatusValues[key];
+  return ExecutionStatus.STATUS_UNKNOWN;
+}
+
 const ConfigFieldTypeNames: Record<string, string> = {
     'CONFIG_FIELD_TYPE_UNSPECIFIED': 'Unspecified',
     'UNSPECIFIED': 'Unspecified',
@@ -1157,6 +1865,43 @@ export function formatConfigFieldType(value: ConfigFieldType | number | string |
   }
 }
 
+const ConfigFieldTypeValues: Record<string, ConfigFieldType> = {
+    'config_field_type_unspecified': ConfigFieldType.CONFIG_FIELD_TYPE_UNSPECIFIED,
+    'unspecified': ConfigFieldType.CONFIG_FIELD_TYPE_UNSPECIFIED,
+    '0': ConfigFieldType.CONFIG_FIELD_TYPE_UNSPECIFIED,
+    'config_field_type_string': ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+    'string': ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+    '1': ConfigFieldType.CONFIG_FIELD_TYPE_STRING,
+    'config_field_type_number': ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+    'number': ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+    '2': ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+    'config_field_type_boolean': ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+    'boolean': ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+    '3': ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+    'config_field_type_select': ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+    'select': ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+    '4': ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+    'config_field_type_multi_select': ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+    'multi_select': ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+    'multi select': ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+    '5': ConfigFieldType.CONFIG_FIELD_TYPE_MULTI_SELECT,
+    'config_field_type_key_value_map': ConfigFieldType.CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+    'key_value_map': ConfigFieldType.CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+    'key value map': ConfigFieldType.CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+    '6': ConfigFieldType.CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+    'config_field_type_dynamic_select': ConfigFieldType.CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+    'dynamic_select': ConfigFieldType.CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+    'dynamic select': ConfigFieldType.CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+    '7': ConfigFieldType.CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+};
+
+export function parseConfigFieldType(input: string | number | undefined | null): ConfigFieldType {
+  if (input === undefined || input === null) return ConfigFieldType.CONFIG_FIELD_TYPE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (ConfigFieldTypeValues[key] !== undefined) return ConfigFieldTypeValues[key];
+  return ConfigFieldType.CONFIG_FIELD_TYPE_UNSPECIFIED;
+}
+
 const IntegrationAuthTypeNames: Record<string, string> = {
     'INTEGRATION_AUTH_TYPE_UNSPECIFIED': 'Manual',
     'UNSPECIFIED': 'Manual',
@@ -1208,6 +1953,35 @@ export function formatIntegrationAuthType(value: IntegrationAuthType | number | 
   }
 }
 
+const IntegrationAuthTypeValues: Record<string, IntegrationAuthType> = {
+    'integration_auth_type_unspecified': IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED,
+    'unspecified': IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED,
+    'manual': IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED,
+    '0': IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED,
+    'integration_auth_type_oauth': IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    'oauth': IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    '1': IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
+    'integration_auth_type_api_key': IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    'api_key': IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    'api key': IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    '2': IntegrationAuthType.INTEGRATION_AUTH_TYPE_API_KEY,
+    'integration_auth_type_app_sync': IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
+    'app_sync': IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
+    'app sync': IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
+    '3': IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
+    'integration_auth_type_public_id': IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+    'public_id': IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+    'public id': IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+    '4': IntegrationAuthType.INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+};
+
+export function parseIntegrationAuthType(input: string | number | undefined | null): IntegrationAuthType {
+  if (input === undefined || input === null) return IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (IntegrationAuthTypeValues[key] !== undefined) return IntegrationAuthTypeValues[key];
+  return IntegrationAuthType.INTEGRATION_AUTH_TYPE_UNSPECIFIED;
+}
+
 const PluginTypeNames: Record<string, string> = {
     'PLUGIN_TYPE_UNSPECIFIED': 'Unspecified',
     'UNSPECIFIED': 'Unspecified',
@@ -1252,6 +2026,28 @@ export function formatPluginType(value: PluginType | number | string | undefined
     case PluginType.PLUGIN_TYPE_DESTINATION: return 'Destination';
     default: return 'Unknown';
   }
+}
+
+const PluginTypeValues: Record<string, PluginType> = {
+    'plugin_type_unspecified': PluginType.PLUGIN_TYPE_UNSPECIFIED,
+    'unspecified': PluginType.PLUGIN_TYPE_UNSPECIFIED,
+    '0': PluginType.PLUGIN_TYPE_UNSPECIFIED,
+    'plugin_type_source': PluginType.PLUGIN_TYPE_SOURCE,
+    'source': PluginType.PLUGIN_TYPE_SOURCE,
+    '1': PluginType.PLUGIN_TYPE_SOURCE,
+    'plugin_type_enricher': PluginType.PLUGIN_TYPE_ENRICHER,
+    'enricher': PluginType.PLUGIN_TYPE_ENRICHER,
+    '2': PluginType.PLUGIN_TYPE_ENRICHER,
+    'plugin_type_destination': PluginType.PLUGIN_TYPE_DESTINATION,
+    'destination': PluginType.PLUGIN_TYPE_DESTINATION,
+    '3': PluginType.PLUGIN_TYPE_DESTINATION,
+};
+
+export function parsePluginType(input: string | number | undefined | null): PluginType {
+  if (input === undefined || input === null) return PluginType.PLUGIN_TYPE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (PluginTypeValues[key] !== undefined) return PluginTypeValues[key];
+  return PluginType.PLUGIN_TYPE_UNSPECIFIED;
 }
 
 const MuscleHeatmapPresetNames: Record<string, string> = {
@@ -1300,6 +2096,28 @@ export function formatMuscleHeatmapPreset(value: MuscleHeatmapPreset | number | 
   }
 }
 
+const MuscleHeatmapPresetValues: Record<string, MuscleHeatmapPreset> = {
+    'muscle_heatmap_preset_unspecified': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_UNSPECIFIED,
+    'unspecified': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_UNSPECIFIED,
+    '0': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_UNSPECIFIED,
+    'muscle_heatmap_preset_standard': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_STANDARD,
+    'standard': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_STANDARD,
+    '1': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_STANDARD,
+    'muscle_heatmap_preset_powerlifting': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_POWERLIFTING,
+    'powerlifting': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_POWERLIFTING,
+    '2': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_POWERLIFTING,
+    'muscle_heatmap_preset_bodybuilding': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_BODYBUILDING,
+    'bodybuilding': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_BODYBUILDING,
+    '3': MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_BODYBUILDING,
+};
+
+export function parseMuscleHeatmapPreset(input: string | number | undefined | null): MuscleHeatmapPreset {
+  if (input === undefined || input === null) return MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (MuscleHeatmapPresetValues[key] !== undefined) return MuscleHeatmapPresetValues[key];
+  return MuscleHeatmapPreset.MUSCLE_HEATMAP_PRESET_UNSPECIFIED;
+}
+
 const MuscleHeatmapStyleNames: Record<string, string> = {
     'MUSCLE_HEATMAP_STYLE_UNSPECIFIED': 'Unspecified',
     'UNSPECIFIED': 'Unspecified',
@@ -1344,6 +2162,30 @@ export function formatMuscleHeatmapStyle(value: MuscleHeatmapStyle | number | st
     case MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_TEXT_ONLY: return 'Text Only';
     default: return 'Emoji Bars';
   }
+}
+
+const MuscleHeatmapStyleValues: Record<string, MuscleHeatmapStyle> = {
+    'muscle_heatmap_style_unspecified': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_UNSPECIFIED,
+    'unspecified': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_UNSPECIFIED,
+    '0': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_UNSPECIFIED,
+    'muscle_heatmap_style_emoji_bars': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
+    'emoji_bars': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
+    'emoji bars': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
+    '1': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
+    'muscle_heatmap_style_percentage': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_PERCENTAGE,
+    'percentage': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_PERCENTAGE,
+    '2': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_PERCENTAGE,
+    'muscle_heatmap_style_text_only': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
+    'text_only': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
+    'text only': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
+    '3': MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
+};
+
+export function parseMuscleHeatmapStyle(input: string | number | undefined | null): MuscleHeatmapStyle {
+  if (input === undefined || input === null) return MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (MuscleHeatmapStyleValues[key] !== undefined) return MuscleHeatmapStyleValues[key];
+  return MuscleHeatmapStyle.MUSCLE_HEATMAP_STYLE_UNSPECIFIED;
 }
 
 const ParkrunResultsStateNames: Record<string, string> = {
@@ -1397,6 +2239,31 @@ export function formatParkrunResultsState(value: ParkrunResultsState | number | 
   }
 }
 
+const ParkrunResultsStateValues: Record<string, ParkrunResultsState> = {
+    'parkrun_results_state_unspecified': ParkrunResultsState.PARKRUN_RESULTS_STATE_UNSPECIFIED,
+    'unspecified': ParkrunResultsState.PARKRUN_RESULTS_STATE_UNSPECIFIED,
+    '0': ParkrunResultsState.PARKRUN_RESULTS_STATE_UNSPECIFIED,
+    'parkrun_results_state_pending': ParkrunResultsState.PARKRUN_RESULTS_STATE_PENDING,
+    'pending': ParkrunResultsState.PARKRUN_RESULTS_STATE_PENDING,
+    '1': ParkrunResultsState.PARKRUN_RESULTS_STATE_PENDING,
+    'parkrun_results_state_complete': ParkrunResultsState.PARKRUN_RESULTS_STATE_COMPLETE,
+    'complete': ParkrunResultsState.PARKRUN_RESULTS_STATE_COMPLETE,
+    '2': ParkrunResultsState.PARKRUN_RESULTS_STATE_COMPLETE,
+    'parkrun_results_state_expired': ParkrunResultsState.PARKRUN_RESULTS_STATE_EXPIRED,
+    'expired': ParkrunResultsState.PARKRUN_RESULTS_STATE_EXPIRED,
+    '3': ParkrunResultsState.PARKRUN_RESULTS_STATE_EXPIRED,
+    'parkrun_results_state_immediate': ParkrunResultsState.PARKRUN_RESULTS_STATE_IMMEDIATE,
+    'immediate': ParkrunResultsState.PARKRUN_RESULTS_STATE_IMMEDIATE,
+    '4': ParkrunResultsState.PARKRUN_RESULTS_STATE_IMMEDIATE,
+};
+
+export function parseParkrunResultsState(input: string | number | undefined | null): ParkrunResultsState {
+  if (input === undefined || input === null) return ParkrunResultsState.PARKRUN_RESULTS_STATE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (ParkrunResultsStateValues[key] !== undefined) return ParkrunResultsStateValues[key];
+  return ParkrunResultsState.PARKRUN_RESULTS_STATE_UNSPECIFIED;
+}
+
 const VirtualGPSRouteNames: Record<string, string> = {
     'VIRTUAL_GPS_ROUTE_UNSPECIFIED': 'Unspecified',
     'UNSPECIFIED': 'Unspecified',
@@ -1436,6 +2303,25 @@ export function formatVirtualGPSRoute(value: VirtualGPSRoute | number | string |
     case VirtualGPSRoute.VIRTUAL_GPS_ROUTE_NYC: return 'Nyc';
     default: return 'None';
   }
+}
+
+const VirtualGPSRouteValues: Record<string, VirtualGPSRoute> = {
+    'virtual_gps_route_unspecified': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_UNSPECIFIED,
+    'unspecified': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_UNSPECIFIED,
+    '0': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_UNSPECIFIED,
+    'virtual_gps_route_london': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_LONDON,
+    'london': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_LONDON,
+    '1': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_LONDON,
+    'virtual_gps_route_nyc': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_NYC,
+    'nyc': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_NYC,
+    '2': VirtualGPSRoute.VIRTUAL_GPS_ROUTE_NYC,
+};
+
+export function parseVirtualGPSRoute(input: string | number | undefined | null): VirtualGPSRoute {
+  if (input === undefined || input === null) return VirtualGPSRoute.VIRTUAL_GPS_ROUTE_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (VirtualGPSRouteValues[key] !== undefined) return VirtualGPSRouteValues[key];
+  return VirtualGPSRoute.VIRTUAL_GPS_ROUTE_UNSPECIFIED;
 }
 
 const WorkoutSummaryFormatNames: Record<string, string> = {
@@ -1484,6 +2370,28 @@ export function formatWorkoutSummaryFormat(value: WorkoutSummaryFormat | number 
   }
 }
 
+const WorkoutSummaryFormatValues: Record<string, WorkoutSummaryFormat> = {
+    'workout_summary_format_unspecified': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_UNSPECIFIED,
+    'unspecified': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_UNSPECIFIED,
+    '0': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_UNSPECIFIED,
+    'workout_summary_format_compact': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_COMPACT,
+    'compact': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_COMPACT,
+    '1': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_COMPACT,
+    'workout_summary_format_detailed': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_DETAILED,
+    'detailed': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_DETAILED,
+    '2': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_DETAILED,
+    'workout_summary_format_verbose': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_VERBOSE,
+    'verbose': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_VERBOSE,
+    '3': WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_VERBOSE,
+};
+
+export function parseWorkoutSummaryFormat(input: string | number | undefined | null): WorkoutSummaryFormat {
+  if (input === undefined || input === null) return WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (WorkoutSummaryFormatValues[key] !== undefined) return WorkoutSummaryFormatValues[key];
+  return WorkoutSummaryFormat.WORKOUT_SUMMARY_FORMAT_UNSPECIFIED;
+}
+
 const PendingInput_StatusNames: Record<string, string> = {
     'STATUS_UNSPECIFIED': 'Unspecified',
     'UNSPECIFIED': 'Unspecified',
@@ -1523,6 +2431,25 @@ export function formatPendingInput_Status(value: PendingInput_Status | number | 
     case PendingInput_Status.STATUS_COMPLETED: return 'Completed';
     default: return 'Waiting';
   }
+}
+
+const PendingInput_StatusValues: Record<string, PendingInput_Status> = {
+    'status_unspecified': PendingInput_Status.STATUS_UNSPECIFIED,
+    'unspecified': PendingInput_Status.STATUS_UNSPECIFIED,
+    '0': PendingInput_Status.STATUS_UNSPECIFIED,
+    'status_waiting': PendingInput_Status.STATUS_WAITING,
+    'waiting': PendingInput_Status.STATUS_WAITING,
+    '1': PendingInput_Status.STATUS_WAITING,
+    'status_completed': PendingInput_Status.STATUS_COMPLETED,
+    'completed': PendingInput_Status.STATUS_COMPLETED,
+    '2': PendingInput_Status.STATUS_COMPLETED,
+};
+
+export function parsePendingInput_Status(input: string | number | undefined | null): PendingInput_Status {
+  if (input === undefined || input === null) return PendingInput_Status.STATUS_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (PendingInput_StatusValues[key] !== undefined) return PendingInput_StatusValues[key];
+  return PendingInput_Status.STATUS_UNSPECIFIED;
 }
 
 const PipelineRunStatusNames: Record<string, string> = {
@@ -1596,6 +2523,46 @@ export function formatPipelineRunStatus(value: PipelineRunStatus | number | stri
   }
 }
 
+const PipelineRunStatusValues: Record<string, PipelineRunStatus> = {
+    'pipeline_run_status_unspecified': PipelineRunStatus.PIPELINE_RUN_STATUS_UNSPECIFIED,
+    'unspecified': PipelineRunStatus.PIPELINE_RUN_STATUS_UNSPECIFIED,
+    'unknown': PipelineRunStatus.PIPELINE_RUN_STATUS_UNSPECIFIED,
+    '0': PipelineRunStatus.PIPELINE_RUN_STATUS_UNSPECIFIED,
+    'pipeline_run_status_running': PipelineRunStatus.PIPELINE_RUN_STATUS_RUNNING,
+    'running': PipelineRunStatus.PIPELINE_RUN_STATUS_RUNNING,
+    'in progress': PipelineRunStatus.PIPELINE_RUN_STATUS_RUNNING,
+    '1': PipelineRunStatus.PIPELINE_RUN_STATUS_RUNNING,
+    'pipeline_run_status_synced': PipelineRunStatus.PIPELINE_RUN_STATUS_SYNCED,
+    'synced': PipelineRunStatus.PIPELINE_RUN_STATUS_SYNCED,
+    '2': PipelineRunStatus.PIPELINE_RUN_STATUS_SYNCED,
+    'pipeline_run_status_partial': PipelineRunStatus.PIPELINE_RUN_STATUS_PARTIAL,
+    'partial': PipelineRunStatus.PIPELINE_RUN_STATUS_PARTIAL,
+    '3': PipelineRunStatus.PIPELINE_RUN_STATUS_PARTIAL,
+    'pipeline_run_status_failed': PipelineRunStatus.PIPELINE_RUN_STATUS_FAILED,
+    'failed': PipelineRunStatus.PIPELINE_RUN_STATUS_FAILED,
+    '4': PipelineRunStatus.PIPELINE_RUN_STATUS_FAILED,
+    'pipeline_run_status_pending': PipelineRunStatus.PIPELINE_RUN_STATUS_PENDING,
+    'pending': PipelineRunStatus.PIPELINE_RUN_STATUS_PENDING,
+    '5': PipelineRunStatus.PIPELINE_RUN_STATUS_PENDING,
+    'pipeline_run_status_skipped': PipelineRunStatus.PIPELINE_RUN_STATUS_SKIPPED,
+    'skipped': PipelineRunStatus.PIPELINE_RUN_STATUS_SKIPPED,
+    '6': PipelineRunStatus.PIPELINE_RUN_STATUS_SKIPPED,
+    'pipeline_run_status_archived': PipelineRunStatus.PIPELINE_RUN_STATUS_ARCHIVED,
+    'archived': PipelineRunStatus.PIPELINE_RUN_STATUS_ARCHIVED,
+    '7': PipelineRunStatus.PIPELINE_RUN_STATUS_ARCHIVED,
+    'pipeline_run_status_tier_blocked': PipelineRunStatus.PIPELINE_RUN_STATUS_TIER_BLOCKED,
+    'tier_blocked': PipelineRunStatus.PIPELINE_RUN_STATUS_TIER_BLOCKED,
+    'tier blocked': PipelineRunStatus.PIPELINE_RUN_STATUS_TIER_BLOCKED,
+    '8': PipelineRunStatus.PIPELINE_RUN_STATUS_TIER_BLOCKED,
+};
+
+export function parsePipelineRunStatus(input: string | number | undefined | null): PipelineRunStatus {
+  if (input === undefined || input === null) return PipelineRunStatus.PIPELINE_RUN_STATUS_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (PipelineRunStatusValues[key] !== undefined) return PipelineRunStatusValues[key];
+  return PipelineRunStatus.PIPELINE_RUN_STATUS_UNSPECIFIED;
+}
+
 const DestinationStatusNames: Record<string, string> = {
     'DESTINATION_STATUS_UNSPECIFIED': 'Unknown',
     'UNSPECIFIED': 'Unknown',
@@ -1645,4 +2612,30 @@ export function formatDestinationStatus(value: DestinationStatus | number | stri
     case DestinationStatus.DESTINATION_STATUS_SKIPPED: return 'Skipped';
     default: return 'Unknown';
   }
+}
+
+const DestinationStatusValues: Record<string, DestinationStatus> = {
+    'destination_status_unspecified': DestinationStatus.DESTINATION_STATUS_UNSPECIFIED,
+    'unspecified': DestinationStatus.DESTINATION_STATUS_UNSPECIFIED,
+    'unknown': DestinationStatus.DESTINATION_STATUS_UNSPECIFIED,
+    '0': DestinationStatus.DESTINATION_STATUS_UNSPECIFIED,
+    'destination_status_pending': DestinationStatus.DESTINATION_STATUS_PENDING,
+    'pending': DestinationStatus.DESTINATION_STATUS_PENDING,
+    '1': DestinationStatus.DESTINATION_STATUS_PENDING,
+    'destination_status_success': DestinationStatus.DESTINATION_STATUS_SUCCESS,
+    'success': DestinationStatus.DESTINATION_STATUS_SUCCESS,
+    '2': DestinationStatus.DESTINATION_STATUS_SUCCESS,
+    'destination_status_failed': DestinationStatus.DESTINATION_STATUS_FAILED,
+    'failed': DestinationStatus.DESTINATION_STATUS_FAILED,
+    '3': DestinationStatus.DESTINATION_STATUS_FAILED,
+    'destination_status_skipped': DestinationStatus.DESTINATION_STATUS_SKIPPED,
+    'skipped': DestinationStatus.DESTINATION_STATUS_SKIPPED,
+    '4': DestinationStatus.DESTINATION_STATUS_SKIPPED,
+};
+
+export function parseDestinationStatus(input: string | number | undefined | null): DestinationStatus {
+  if (input === undefined || input === null) return DestinationStatus.DESTINATION_STATUS_UNSPECIFIED;
+  const key = String(input).toLowerCase().trim();
+  if (DestinationStatusValues[key] !== undefined) return DestinationStatusValues[key];
+  return DestinationStatus.DESTINATION_STATUS_UNSPECIFIED;
 }

@@ -30,6 +30,7 @@ export {
   UserTier,
   UserIntegrations,
   HevyIntegration,
+  GitHubIntegration,
   EnricherProviderType,
   EnricherConfig,
   ProcessedActivityRecord,
@@ -60,7 +61,17 @@ export {
 // Enum formatters
 export * from './pb/enum-formatters';
 
-// Helper types
-export * from './events-helper';
+// Helper types (named exports to avoid collision with enum-formatters parseDestination)
+export {
+  SourceToDestinationMap,
+  getCorrespondingDestination,
+  CloudEventTypeURN,
+  CloudEventSourceURN,
+  DestinationTopics,
+  getCloudEventType,
+  getCloudEventSource,
+  getDestinationTopic,
+  getDestinationName,
+} from './events-helper';
 export * from './integrations';
 export * from './activity-counters';

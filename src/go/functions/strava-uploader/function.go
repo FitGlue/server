@@ -125,7 +125,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	fileData, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
 	if err != nil {
 		fwCtx.Logger.Error("GCS Read Error", "error", err)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("GCS error: %s", err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("GCS error: %s", err), eventPayload.Name, fwCtx.Logger)
 		return nil, fmt.Errorf("GCS Read Error: %w", err)
 	}
 
@@ -159,7 +159,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	// Create request
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://www.strava.com/api/v3/uploads", body)
 	if err != nil {
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to create request: %s", err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to create request: %s", err), eventPayload.Name, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 	req.Header.Set("Content-Type", writer.FormDataContentType())
@@ -168,7 +168,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	httpResp, err := httpClient.Do(req)
 	if err != nil {
 		fwCtx.Logger.Error("Strava API Error", "error", err)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), eventPayload.Name, fwCtx.Logger)
 		return nil, fmt.Errorf("Strava API Error: %w", err)
 	}
 	defer httpResp.Body.Close()
@@ -176,7 +176,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 	if httpResp.StatusCode >= 400 {
 		err := httputil.WrapResponseError(httpResp, "Strava upload failed")
 		fwCtx.Logger.Error("Strava upload failed", "status", httpResp.StatusCode, "error", err)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("HTTP %d: %s", httpResp.StatusCode, err), fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("HTTP %d: %s", httpResp.StatusCode, err), eventPayload.Name, fwCtx.Logger)
 		return nil, err
 	}
 
@@ -208,7 +208,7 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"pipeline_id", eventPayload.PipelineId,
 		)
 		// Update PipelineRun destination as skipped (duplicate)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "duplicate_activity", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "duplicate_activity", eventPayload.Name, fwCtx.Logger)
 		// Return SKIPPED status without error - this prevents Sentry capture
 		// and shows as "skipped" in the UI rather than "failed"
 		return map[string]interface{}{
@@ -289,13 +289,13 @@ func handleStravaCreate(ctx context.Context, httpClient *http.Client, eventPaylo
 			errMsg = fmt.Sprintf("status=%s, activity_id=%d", status, derefInt64(uploadResp.ActivityId))
 		}
 		// Update PipelineRun destination as failed
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, eventPayload.Name, fwCtx.Logger)
 		return result, fmt.Errorf("strava upload incomplete: %s", errMsg)
 	}
 
 	// Update PipelineRun destination as synced
 	stravaDestID := fmt.Sprintf("%d", derefInt64(uploadResp.ActivityId))
-	destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, stravaDestID, "", fwCtx.Logger)
+	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, stravaDestID, "", eventPayload.Name, fwCtx.Logger)
 
 	return result, nil
 }
@@ -317,7 +317,7 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"error", err,
 		)
 		// Update PipelineRun destination as skipped
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", eventPayload.Name, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "activity_not_found",
@@ -332,7 +332,7 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"activity_id", eventPayload.ActivityId,
 		)
 		// Update PipelineRun destination as skipped
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", eventPayload.Name, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "activity_not_found",
@@ -357,7 +357,7 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 			"destinations", pipelineRun.Destinations,
 		)
 		// Update PipelineRun destination as skipped
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "no_strava_destination", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "no_strava_destination", eventPayload.Name, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "no_strava_destination",
@@ -440,7 +440,7 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 	if len(updateBody) == 0 {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
 		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
-		destination.UpdateStatus(ctx, svc.DB, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, stravaIDStr, "", fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, stravaIDStr, "", eventPayload.Name, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":             "SUCCESS",
 			"strava_activity_id": stravaIDStr,

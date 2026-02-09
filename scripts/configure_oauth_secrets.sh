@@ -9,15 +9,15 @@ SERVICE=${1:-}
 ENV=${2:-}
 
 # Validate arguments
-if [[ ! "$SERVICE" =~ ^(strava|fitbit)$ ]]; then
+if [[ ! "$SERVICE" =~ ^(strava|fitbit|google)$ ]]; then
   echo "❌ Error: Invalid service '$SERVICE'"
-  echo "Usage: $0 <strava|fitbit> <dev|test|prod>"
+  echo "Usage: $0 <strava|fitbit|google> <dev|test|prod>"
   exit 1
 fi
 
 if [[ ! "$ENV" =~ ^(dev|test|prod)$ ]]; then
   echo "❌ Error: Invalid environment '$ENV'"
-  echo "Usage: $0 <strava|fitbit> <dev|test|prod>"
+  echo "Usage: $0 <strava|fitbit|google> <dev|test|prod>"
   exit 1
 fi
 

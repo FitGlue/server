@@ -2,8 +2,11 @@ package destination
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"strings"
 
+	shared "github.com/fitglue/server/src/go/pkg"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -14,21 +17,25 @@ type Database interface {
 	UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error
 	SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error
 	GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error)
+	GetUser(ctx context.Context, id string) (*pb.UserRecord, error)
 }
 
 // UpdateStatus updates a single destination's status using the subcollection pattern.
 // Each destination is written as a separate document in the destination_outcomes subcollection,
 // eliminating race conditions between parallel uploaders.
+// When all destinations have reached a terminal status, a push notification is sent to the user.
 // Parameters:
 //   - db: the Database interface for Firestore operations
+//   - notifications: the notification service for sending push notifications (can be nil)
 //   - userId: the user's ID
 //   - pipelineRunId: the ID of the pipeline run (same as pipelineExecutionId)
 //   - dest: the destination enum value (e.g., DESTINATION_STRAVA)
 //   - status: the new status (e.g., DESTINATION_STATUS_SUCCESS, DESTINATION_STATUS_FAILED)
 //   - externalId: optional external ID from the destination (e.g., Strava activity ID)
 //   - errMsg: optional error message if status is FAILED
+//   - activityName: the activity name for the push notification title
 //   - logger: logger for debugging
-func UpdateStatus(ctx context.Context, db Database, userId string, pipelineRunId string, dest pb.Destination, status pb.DestinationStatus, externalId string, errMsg string, logger *slog.Logger) {
+func UpdateStatus(ctx context.Context, db Database, notifications shared.NotificationService, userId string, pipelineRunId string, dest pb.Destination, status pb.DestinationStatus, externalId string, errMsg string, activityName string, logger *slog.Logger) {
 	if pipelineRunId == "" {
 		return // No pipeline run to update - legacy flow
 	}
@@ -96,6 +103,95 @@ func UpdateStatus(ctx context.Context, db Database, userId string, pipelineRunId
 		logger.Error("Failed to update pipeline run status", "error", err, "pipeline_run_id", pipelineRunId)
 	} else {
 		logger.Debug("Updated pipeline run status and destinations", "pipeline_run_id", pipelineRunId, "status", newStatus.String(), "destinations_count", len(destinationsData))
+	}
+
+	// Send push notification when all destinations have reached a terminal status
+	if newStatus == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED || newStatus == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+		sendSyncNotification(ctx, db, notifications, userId, activityName, newStatus, outcomes, logger)
+	}
+}
+
+// sendSyncNotification sends a push notification when all destinations have completed.
+// For SYNCED: "Successfully synced to: Strava, Hevy"
+// For PARTIAL: "Synced to Strava, but Hevy failed"
+func sendSyncNotification(ctx context.Context, db Database, notifications shared.NotificationService, userId string, activityName string, status pb.PipelineRunStatus, outcomes []*pb.DestinationOutcome, logger *slog.Logger) {
+	if notifications == nil {
+		return
+	}
+
+	user, err := db.GetUser(ctx, userId)
+	if err != nil || user == nil || len(user.FcmTokens) == 0 {
+		return
+	}
+
+	// Check notification preferences (default to true if not set)
+	prefs := user.NotificationPreferences
+	if status == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+		if prefs != nil && !prefs.NotifyPipelineSuccess {
+			return
+		}
+	} else if status == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+		if prefs != nil && !prefs.NotifyPipelineFailure {
+			return
+		}
+	}
+
+	// Build human-readable destination lists
+	var succeeded []string
+	var failed []string
+	for _, o := range outcomes {
+		name := FormatDestinationName(o.Destination)
+		switch o.Status {
+		case pb.DestinationStatus_DESTINATION_STATUS_SUCCESS:
+			succeeded = append(succeeded, name)
+		case pb.DestinationStatus_DESTINATION_STATUS_FAILED:
+			failed = append(failed, name)
+		}
+	}
+
+	var title, body string
+	data := map[string]string{
+		"type":    "PIPELINE_SYNCED",
+		"user_id": userId,
+	}
+
+	if status == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+		title = fmt.Sprintf("Activity Synced: %s", activityName)
+		body = fmt.Sprintf("Successfully synced to: %s", strings.Join(succeeded, ", "))
+	} else {
+		title = fmt.Sprintf("Partial Sync: %s", activityName)
+		if len(succeeded) > 0 && len(failed) > 0 {
+			body = fmt.Sprintf("Synced to %s, but %s failed", strings.Join(succeeded, ", "), strings.Join(failed, ", "))
+		} else if len(failed) > 0 {
+			body = fmt.Sprintf("Failed to sync to: %s", strings.Join(failed, ", "))
+		}
+		data["type"] = "PIPELINE_PARTIAL"
+	}
+
+	if err := notifications.SendPushNotification(ctx, userId, title, body, user.FcmTokens, data); err != nil {
+		logger.Warn("Failed to send sync notification", "error", err, "user_id", userId)
+	}
+}
+
+// FormatDestinationName returns a human-readable name for a destination.
+func FormatDestinationName(dest pb.Destination) string {
+	switch dest {
+	case pb.Destination_DESTINATION_STRAVA:
+		return "Strava"
+	case pb.Destination_DESTINATION_SHOWCASE:
+		return "Showcase"
+	case pb.Destination_DESTINATION_HEVY:
+		return "Hevy"
+	case pb.Destination_DESTINATION_TRAININGPEAKS:
+		return "TrainingPeaks"
+	case pb.Destination_DESTINATION_INTERVALS:
+		return "Intervals.icu"
+	case pb.Destination_DESTINATION_GOOGLESHEETS:
+		return "Google Sheets"
+	case pb.Destination_DESTINATION_MOCK:
+		return "Mock"
+	default:
+		return dest.String()
 	}
 }
 

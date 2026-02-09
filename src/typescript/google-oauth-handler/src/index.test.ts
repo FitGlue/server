@@ -50,13 +50,13 @@ describe('googleOAuthHandler', () => {
 
     process.env.BASE_URL = 'https://dev.fitglue.tech';
     process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-server-dev';
-    process.env.GOOGLE_OAUTH_CLIENT_ID = 'test-client-id';
-    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'test-client-secret';
+    process.env.GOOGLE_CLIENT_ID = 'test-client-id';
+    process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
   });
 
   afterEach(() => {
-    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
-    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    delete process.env.GOOGLE_CLIENT_ID;
+    delete process.env.GOOGLE_CLIENT_SECRET;
   });
 
   it('should redirect to error page if user denies authorization', async () => {

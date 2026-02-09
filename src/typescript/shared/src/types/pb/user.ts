@@ -247,6 +247,7 @@ export interface UserIntegrations {
   oura?: OuraIntegration | undefined;
   polar?: PolarIntegration | undefined;
   wahoo?: WahooIntegration | undefined;
+  github?: GitHubIntegration | undefined;
 }
 
 export interface MockIntegration {
@@ -395,6 +396,24 @@ export interface WahooIntegration {
     | undefined;
   /** Wahoo Cloud user ID */
   wahooUserId: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface GitHubIntegration {
+  enabled: boolean;
+  accessToken: string;
+  /** GitHub tokens don't expire; placeholder for consistency */
+  refreshToken: string;
+  expiresAt?:
+    | Date
+    | undefined;
+  /** GitHub user ID */
+  githubUserId: string;
+  /** GitHub login username */
+  githubUsername: string;
+  /** Granted OAuth scopes */
+  scope: string;
   createdAt?: Date | undefined;
   lastUsedAt?: Date | undefined;
 }

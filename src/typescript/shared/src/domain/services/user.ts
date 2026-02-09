@@ -49,6 +49,13 @@ export class UserService {
         return this.userStore.findByOuraId(ouraUserId);
     }
 
+    /**
+     * Find a user by GitHub username.
+     */
+    async findByGitHubUsername(username: string): Promise<{ id: string; data: UserRecord } | null> {
+        return this.userStore.findByGitHubUsername(username);
+    }
+
 
     /**
      * Load connector configuration for a user.
