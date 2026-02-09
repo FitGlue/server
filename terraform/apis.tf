@@ -16,7 +16,8 @@ resource "google_project_service" "apis" {
     "identitytoolkit.googleapis.com",
     "fcm.googleapis.com",
     "aiplatform.googleapis.com",
-    "cloudtasks.googleapis.com"
+    "cloudtasks.googleapis.com",
+    "sheets.googleapis.com"
   ])
 
   project = var.project_id

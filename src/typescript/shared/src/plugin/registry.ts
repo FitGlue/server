@@ -3899,7 +3899,6 @@ registerIntegration({
   icon: '🔵',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_OAUTH,
   enabled: true,
-  isTemporarilyUnavailable: true,
   docsUrl: 'https://developers.google.com/sheets',
   setupTitle: 'Connect Google',
   setupInstructions: `To connect Google, you'll authorize FitGlue to access your Google Sheets:

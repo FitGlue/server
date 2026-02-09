@@ -7,11 +7,7 @@
 
 ## 1. Enable the Google Sheets API
 
-```
-https://console.cloud.google.com/apis/library/sheets.googleapis.com
-```
-
-Enable it for your FitGlue project.
+The Google Sheets API is enabled automatically via Terraform (`apis.tf`). No manual action needed.
 
 ## 2. Create OAuth 2.0 Credentials
 
