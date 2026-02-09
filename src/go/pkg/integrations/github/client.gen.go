@@ -36,6 +36,12 @@ const (
 	Unchanged DiffEntryStatus = "unchanged"
 )
 
+// Defines values for WebhookConfigContentType.
+const (
+	Form WebhookConfigContentType = "form"
+	Json WebhookConfigContentType = "json"
+)
+
 // BasicError Basic Error
 type BasicError struct {
 	DocumentationUrl *string `json:"documentation_url,omitempty"`
@@ -128,6 +134,21 @@ type CreateOrUpdateFileRequest struct {
 	Sha *string `json:"sha,omitempty"`
 }
 
+// CreateWebhookRequest Request body for creating a webhook.
+type CreateWebhookRequest struct {
+	// Active Determines if notifications are sent when the webhook is triggered.
+	Active *bool `json:"active,omitempty"`
+
+	// Config Configuration for a webhook.
+	Config WebhookConfig `json:"config"`
+
+	// Events Determines what events the hook is triggered for.
+	Events *[]string `json:"events,omitempty"`
+
+	// Name Must be set to 'web'.
+	Name *string `json:"name,omitempty"`
+}
+
 // DiffEntry Diff Entry
 type DiffEntry struct {
 	Additions        int             `json:"additions"`
@@ -205,6 +226,53 @@ type ValidationError struct {
 	Message string `json:"message"`
 }
 
+// Webhook A repository webhook.
+type Webhook struct {
+	// Active Determines whether the hook is actually triggered on pushes.
+	Active bool `json:"active"`
+
+	// Config Configuration for a webhook.
+	Config        WebhookConfig `json:"config"`
+	CreatedAt     *time.Time    `json:"created_at,omitempty"`
+	DeliveriesUrl *string       `json:"deliveries_url,omitempty"`
+
+	// Events Determines what events the hook is triggered for.
+	Events []string `json:"events"`
+
+	// Id Unique identifier of the webhook.
+	Id int `json:"id"`
+
+	// Name The type of webhook. The only valid value is 'web'.
+	Name      string     `json:"name"`
+	PingUrl   *string    `json:"ping_url,omitempty"`
+	Type      *string    `json:"type,omitempty"`
+	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+
+	// Url The API URL for this webhook.
+	Url string `json:"url"`
+}
+
+// WebhookConfig Configuration for a webhook.
+type WebhookConfig struct {
+	// ContentType The media type used to serialize the payloads.
+	ContentType *WebhookConfigContentType `json:"content_type,omitempty"`
+
+	// InsecureSsl Whether to verify SSL certificates.
+	InsecureSsl *string `json:"insecure_ssl,omitempty"`
+
+	// Secret The secret used to sign webhook payloads.
+	Secret *string `json:"secret,omitempty"`
+
+	// Url The URL to which the payloads will be delivered.
+	Url *string `json:"url,omitempty"`
+}
+
+// WebhookConfigContentType The media type used to serialize the payloads.
+type WebhookConfigContentType string
+
+// HookId defines model for hook_id.
+type HookId = int
+
 // Owner defines model for owner.
 type Owner = string
 
@@ -225,6 +293,9 @@ type ReposgetContentParams struct {
 
 // ReposcreateOrUpdateFileContentsJSONRequestBody defines body for ReposcreateOrUpdateFileContents for application/json ContentType.
 type ReposcreateOrUpdateFileContentsJSONRequestBody = CreateOrUpdateFileRequest
+
+// ReposcreateWebhookJSONRequestBody defines body for ReposcreateWebhook for application/json ContentType.
+type ReposcreateWebhookJSONRequestBody = CreateWebhookRequest
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
@@ -309,6 +380,17 @@ type ClientInterface interface {
 	ReposcreateOrUpdateFileContentsWithBody(ctx context.Context, owner Owner, repo Repo, path Path, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	ReposcreateOrUpdateFileContents(ctx context.Context, owner Owner, repo Repo, path Path, body ReposcreateOrUpdateFileContentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReposlistWebhooks request
+	ReposlistWebhooks(ctx context.Context, owner Owner, repo Repo, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReposcreateWebhookWithBody request with any body
+	ReposcreateWebhookWithBody(ctx context.Context, owner Owner, repo Repo, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ReposcreateWebhook(ctx context.Context, owner Owner, repo Repo, body ReposcreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// ReposdeleteWebhook request
+	ReposdeleteWebhook(ctx context.Context, owner Owner, repo Repo, hookId HookId, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) ReposgetCommit(ctx context.Context, owner Owner, repo Repo, ref Ref, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -349,6 +431,54 @@ func (c *Client) ReposcreateOrUpdateFileContentsWithBody(ctx context.Context, ow
 
 func (c *Client) ReposcreateOrUpdateFileContents(ctx context.Context, owner Owner, repo Repo, path Path, body ReposcreateOrUpdateFileContentsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReposcreateOrUpdateFileContentsRequest(c.Server, owner, repo, path, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReposlistWebhooks(ctx context.Context, owner Owner, repo Repo, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReposlistWebhooksRequest(c.Server, owner, repo)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReposcreateWebhookWithBody(ctx context.Context, owner Owner, repo Repo, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReposcreateWebhookRequestWithBody(c.Server, owner, repo, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReposcreateWebhook(ctx context.Context, owner Owner, repo Repo, body ReposcreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReposcreateWebhookRequest(c.Server, owner, repo, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ReposdeleteWebhook(ctx context.Context, owner Owner, repo Repo, hookId HookId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewReposdeleteWebhookRequest(c.Server, owner, repo, hookId)
 	if err != nil {
 		return nil, err
 	}
@@ -538,6 +668,149 @@ func NewReposcreateOrUpdateFileContentsRequestWithBody(server string, owner Owne
 	return req, nil
 }
 
+// NewReposlistWebhooksRequest generates requests for ReposlistWebhooks
+func NewReposlistWebhooksRequest(server string, owner Owner, repo Repo) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "owner", runtime.ParamLocationPath, owner)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repo", runtime.ParamLocationPath, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/repos/%s/%s/hooks", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("GET", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewReposcreateWebhookRequest calls the generic ReposcreateWebhook builder with application/json body
+func NewReposcreateWebhookRequest(server string, owner Owner, repo Repo, body ReposcreateWebhookJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewReposcreateWebhookRequestWithBody(server, owner, repo, "application/json", bodyReader)
+}
+
+// NewReposcreateWebhookRequestWithBody generates requests for ReposcreateWebhook with any type of body
+func NewReposcreateWebhookRequestWithBody(server string, owner Owner, repo Repo, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "owner", runtime.ParamLocationPath, owner)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repo", runtime.ParamLocationPath, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/repos/%s/%s/hooks", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewReposdeleteWebhookRequest generates requests for ReposdeleteWebhook
+func NewReposdeleteWebhookRequest(server string, owner Owner, repo Repo, hookId HookId) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "owner", runtime.ParamLocationPath, owner)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithLocation("simple", false, "repo", runtime.ParamLocationPath, repo)
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam2 string
+
+	pathParam2, err = runtime.StyleParamWithLocation("simple", false, "hook_id", runtime.ParamLocationPath, hookId)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/repos/%s/%s/hooks/%s", pathParam0, pathParam1, pathParam2)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("DELETE", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -591,6 +864,17 @@ type ClientWithResponsesInterface interface {
 	ReposcreateOrUpdateFileContentsWithBodyWithResponse(ctx context.Context, owner Owner, repo Repo, path Path, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReposcreateOrUpdateFileContentsResponse, error)
 
 	ReposcreateOrUpdateFileContentsWithResponse(ctx context.Context, owner Owner, repo Repo, path Path, body ReposcreateOrUpdateFileContentsJSONRequestBody, reqEditors ...RequestEditorFn) (*ReposcreateOrUpdateFileContentsResponse, error)
+
+	// ReposlistWebhooksWithResponse request
+	ReposlistWebhooksWithResponse(ctx context.Context, owner Owner, repo Repo, reqEditors ...RequestEditorFn) (*ReposlistWebhooksResponse, error)
+
+	// ReposcreateWebhookWithBodyWithResponse request with any body
+	ReposcreateWebhookWithBodyWithResponse(ctx context.Context, owner Owner, repo Repo, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReposcreateWebhookResponse, error)
+
+	ReposcreateWebhookWithResponse(ctx context.Context, owner Owner, repo Repo, body ReposcreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ReposcreateWebhookResponse, error)
+
+	// ReposdeleteWebhookWithResponse request
+	ReposdeleteWebhookWithResponse(ctx context.Context, owner Owner, repo Repo, hookId HookId, reqEditors ...RequestEditorFn) (*ReposdeleteWebhookResponse, error)
 }
 
 type ReposgetCommitResponse struct {
@@ -665,6 +949,75 @@ func (r ReposcreateOrUpdateFileContentsResponse) StatusCode() int {
 	return 0
 }
 
+type ReposlistWebhooksResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *[]Webhook
+	JSON404      *BasicError
+}
+
+// Status returns HTTPResponse.Status
+func (r ReposlistWebhooksResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReposlistWebhooksResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReposcreateWebhookResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *Webhook
+	JSON404      *BasicError
+	JSON422      *ValidationError
+}
+
+// Status returns HTTPResponse.Status
+func (r ReposcreateWebhookResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReposcreateWebhookResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+type ReposdeleteWebhookResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON404      *BasicError
+}
+
+// Status returns HTTPResponse.Status
+func (r ReposdeleteWebhookResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ReposdeleteWebhookResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // ReposgetCommitWithResponse request returning *ReposgetCommitResponse
 func (c *ClientWithResponses) ReposgetCommitWithResponse(ctx context.Context, owner Owner, repo Repo, ref Ref, reqEditors ...RequestEditorFn) (*ReposgetCommitResponse, error) {
 	rsp, err := c.ReposgetCommit(ctx, owner, repo, ref, reqEditors...)
@@ -698,6 +1051,41 @@ func (c *ClientWithResponses) ReposcreateOrUpdateFileContentsWithResponse(ctx co
 		return nil, err
 	}
 	return ParseReposcreateOrUpdateFileContentsResponse(rsp)
+}
+
+// ReposlistWebhooksWithResponse request returning *ReposlistWebhooksResponse
+func (c *ClientWithResponses) ReposlistWebhooksWithResponse(ctx context.Context, owner Owner, repo Repo, reqEditors ...RequestEditorFn) (*ReposlistWebhooksResponse, error) {
+	rsp, err := c.ReposlistWebhooks(ctx, owner, repo, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReposlistWebhooksResponse(rsp)
+}
+
+// ReposcreateWebhookWithBodyWithResponse request with arbitrary body returning *ReposcreateWebhookResponse
+func (c *ClientWithResponses) ReposcreateWebhookWithBodyWithResponse(ctx context.Context, owner Owner, repo Repo, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ReposcreateWebhookResponse, error) {
+	rsp, err := c.ReposcreateWebhookWithBody(ctx, owner, repo, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReposcreateWebhookResponse(rsp)
+}
+
+func (c *ClientWithResponses) ReposcreateWebhookWithResponse(ctx context.Context, owner Owner, repo Repo, body ReposcreateWebhookJSONRequestBody, reqEditors ...RequestEditorFn) (*ReposcreateWebhookResponse, error) {
+	rsp, err := c.ReposcreateWebhook(ctx, owner, repo, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReposcreateWebhookResponse(rsp)
+}
+
+// ReposdeleteWebhookWithResponse request returning *ReposdeleteWebhookResponse
+func (c *ClientWithResponses) ReposdeleteWebhookWithResponse(ctx context.Context, owner Owner, repo Repo, hookId HookId, reqEditors ...RequestEditorFn) (*ReposdeleteWebhookResponse, error) {
+	rsp, err := c.ReposdeleteWebhook(ctx, owner, repo, hookId, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseReposdeleteWebhookResponse(rsp)
 }
 
 // ParseReposgetCommitResponse parses an HTTP response from a ReposgetCommitWithResponse call
@@ -814,6 +1202,105 @@ func ParseReposcreateOrUpdateFileContentsResponse(rsp *http.Response) (*Reposcre
 			return nil, err
 		}
 		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReposlistWebhooksResponse parses an HTTP response from a ReposlistWebhooksWithResponse call
+func ParseReposlistWebhooksResponse(rsp *http.Response) (*ReposlistWebhooksResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReposlistWebhooksResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []Webhook
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest BasicError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReposcreateWebhookResponse parses an HTTP response from a ReposcreateWebhookWithResponse call
+func ParseReposcreateWebhookResponse(rsp *http.Response) (*ReposcreateWebhookResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReposcreateWebhookResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest Webhook
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest BasicError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 422:
+		var dest ValidationError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON422 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseReposdeleteWebhookResponse parses an HTTP response from a ReposdeleteWebhookWithResponse call
+func ParseReposdeleteWebhookResponse(rsp *http.Response) (*ReposdeleteWebhookResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ReposdeleteWebhookResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest BasicError
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
 
 	}
 

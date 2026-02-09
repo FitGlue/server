@@ -48,6 +48,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/repos/{owner}/{repo}/hooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List repository webhooks
+         * @description Lists webhooks for a repository.
+         */
+        get: operations["repos/list-webhooks"];
+        put?: never;
+        /**
+         * Create a repository webhook
+         * @description Repositories can have multiple webhooks installed. Each webhook should have a unique config.
+         */
+        post: operations["repos/create-webhook"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/repos/{owner}/{repo}/hooks/{hook_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a repository webhook
+         * @description Deletes a webhook configured on a repository.
+         */
+        delete: operations["repos/delete-webhook"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -207,6 +251,70 @@ export interface components {
                 code: string;
             }[];
         };
+        /** @description A repository webhook. */
+        Webhook: {
+            /** @description Unique identifier of the webhook. */
+            id: number;
+            type?: string;
+            /** @description The type of webhook. The only valid value is 'web'. */
+            name: string;
+            /** @description Determines whether the hook is actually triggered on pushes. */
+            active: boolean;
+            /** @description Determines what events the hook is triggered for. */
+            events: string[];
+            config: components["schemas"]["WebhookConfig"];
+            /** Format: date-time */
+            created_at?: string;
+            /** Format: date-time */
+            updated_at?: string;
+            /**
+             * Format: uri
+             * @description The API URL for this webhook.
+             */
+            url: string;
+            /** Format: uri */
+            ping_url?: string;
+            /** Format: uri */
+            deliveries_url?: string;
+        };
+        /** @description Configuration for a webhook. */
+        WebhookConfig: {
+            /**
+             * Format: uri
+             * @description The URL to which the payloads will be delivered.
+             */
+            url?: string;
+            /**
+             * @description The media type used to serialize the payloads.
+             * @enum {string}
+             */
+            content_type?: "json" | "form";
+            /** @description The secret used to sign webhook payloads. */
+            secret?: string;
+            /** @description Whether to verify SSL certificates. */
+            insecure_ssl?: string;
+        };
+        /** @description Request body for creating a webhook. */
+        CreateWebhookRequest: {
+            /**
+             * @description Must be set to 'web'.
+             * @default web
+             */
+            name: string;
+            /**
+             * @description Determines if notifications are sent when the webhook is triggered.
+             * @default true
+             */
+            active: boolean;
+            /**
+             * @description Determines what events the hook is triggered for.
+             * @default [
+             *       "push"
+             *     ]
+             */
+            events: string[];
+            config: components["schemas"]["WebhookConfig"];
+        };
     };
     responses: never;
     parameters: {
@@ -218,6 +326,8 @@ export interface components {
         path: string;
         /** @description The commit reference (SHA, branch name, or tag name). */
         ref: string;
+        /** @description The unique identifier of the hook. */
+        hook_id: number;
     };
     requestBodies: never;
     headers: never;
@@ -355,6 +465,121 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Commit"];
                 };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicError"];
+                };
+            };
+        };
+    };
+    "repos/list-webhooks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account owner of the repository. */
+                owner: components["parameters"]["owner"];
+                /** @description The name of the repository without the .git extension. */
+                repo: components["parameters"]["repo"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Webhook"][];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicError"];
+                };
+            };
+        };
+    };
+    "repos/create-webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account owner of the repository. */
+                owner: components["parameters"]["owner"];
+                /** @description The name of the repository without the .git extension. */
+                repo: components["parameters"]["repo"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateWebhookRequest"];
+            };
+        };
+        responses: {
+            /** @description Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Webhook"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BasicError"];
+                };
+            };
+            /** @description Validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+        };
+    };
+    "repos/delete-webhook": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The account owner of the repository. */
+                owner: components["parameters"]["owner"];
+                /** @description The name of the repository without the .git extension. */
+                repo: components["parameters"]["repo"];
+                /** @description The unique identifier of the hook. */
+                hook_id: components["parameters"]["hook_id"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No Content */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Resource not found */
             404: {

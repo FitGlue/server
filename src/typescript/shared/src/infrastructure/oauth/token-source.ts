@@ -12,7 +12,7 @@ export interface TokenSource {
 }
 
 /** All supported OAuth providers */
-export type OAuthProvider = 'strava' | 'fitbit' | 'oura' | 'polar' | 'spotify' | 'wahoo' | 'trainingpeaks';
+export type OAuthProvider = 'strava' | 'fitbit' | 'oura' | 'polar' | 'spotify' | 'wahoo' | 'trainingpeaks' | 'github';
 
 /** Provider-specific configuration for token refresh */
 interface ProviderConfig {
@@ -48,6 +48,9 @@ const PROVIDER_CONFIGS: Record<OAuthProvider, ProviderConfig> = {
   },
   trainingpeaks: {
     tokenUrl: 'https://oauth.trainingpeaks.com/token',
+  },
+  github: {
+    tokenUrl: 'https://github.com/login/oauth/access_token',
   },
 };
 

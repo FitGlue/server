@@ -2,7 +2,8 @@
 import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, FrameworkContext } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { routeRequest, RouteMatch } from '@fitglue/shared/routing';
-import { PipelineConfig, EnricherConfig, DestinationConfig, Destination } from '@fitglue/shared/types';
+import { PipelineConfig, EnricherConfig, DestinationConfig, Destination, parseActivitySource, ActivitySource, formatActivitySource } from '@fitglue/shared/types';
+import { getPluginHooks, PluginLifecycleContext } from '@fitglue/shared/plugin';
 
 export const handler: FrameworkHandler = async (req, ctx) => {
   const userId = ctx.userId;
@@ -83,6 +84,35 @@ async function handleCreatePipeline(userId: string, req: { body: Record<string, 
   };
 
   await ctx.services.user.pipelineStore.create(userId, pipeline);
+
+  // Run lifecycle hooks for the source plugin (e.g. GitHub webhook registration)
+  const sourceRegistryId = getSourceRegistryId(normalizedSource);
+  if (sourceRegistryId) {
+    const hooks = getPluginHooks(sourceRegistryId);
+    if (hooks?.onPipelineCreate) {
+      const hookCtx: PluginLifecycleContext = {
+        userId,
+        pipelineId,
+        config: pipeline.sourceConfig,
+        getValidToken: (uid: string, provider: string) => ctx.services.user.getValidToken(uid, provider as import('@fitglue/shared/dist/infrastructure/oauth/token-source').OAuthProvider),
+        logger,
+      };
+      // Throws on failure → pipeline creation is rolled back
+      try {
+        const configUpdate = await hooks.onPipelineCreate(hookCtx);
+        if (configUpdate) {
+          pipeline.sourceConfig = { ...pipeline.sourceConfig, ...configUpdate };
+          await ctx.services.user.pipelineStore.create(userId, pipeline);
+        }
+      } catch (err) {
+        // Roll back the pipeline we just created
+        logger.error('Lifecycle hook failed, rolling back pipeline', { pipelineId, error: String(err) });
+        await ctx.services.user.pipelineStore.delete(userId, pipelineId);
+        throw new HttpError(500, `Pipeline source setup failed: ${err instanceof Error ? err.message : String(err)}`);
+      }
+    }
+  }
+
   logger.info('Created pipeline', { userId, pipelineId });
   return { id: pipelineId };
 }
@@ -134,6 +164,30 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: { b
 
 async function handleDeletePipeline(userId: string, pipelineId: string, ctx: FrameworkContext) {
   const { logger } = ctx;
+
+  // Fetch pipeline to get sourceConfig before deletion (for webhook cleanup)
+  const pipeline = await ctx.services.user.pipelineStore.get(userId, pipelineId);
+  if (pipeline) {
+    const sourceRegistryId = getSourceRegistryId(pipeline.source);
+    if (sourceRegistryId) {
+      const hooks = getPluginHooks(sourceRegistryId);
+      if (hooks?.onPipelineDelete) {
+        const hookCtx: PluginLifecycleContext = {
+          userId,
+          pipelineId,
+          config: pipeline.sourceConfig || {},
+          getValidToken: (uid: string, provider: string) => ctx.services.user.getValidToken(uid, provider as import('@fitglue/shared/dist/infrastructure/oauth/token-source').OAuthProvider),
+          logger,
+        };
+        try {
+          await hooks.onPipelineDelete(hookCtx);
+        } catch (err) {
+          logger.warn('Lifecycle hook onPipelineDelete failed (best-effort)', { pipelineId, error: String(err) });
+        }
+      }
+    }
+  }
+
   await ctx.services.user.pipelineStore.delete(userId, pipelineId);
   logger.info('Deleted pipeline', { userId, pipelineId });
   return { message: 'Pipeline deleted' };
@@ -164,26 +218,35 @@ function mapDestinations(dests: (string | number)[]): Destination[] {
 
 /**
  * Normalize source ID from registry format to protobuf enum string format.
- * Maps registry IDs (e.g., 'hevy') to Go-expected format (e.g., 'SOURCE_HEVY').
+ * Uses the generated enum formatter to map registry IDs (e.g., 'hevy', 'github')
+ * to Go-expected format (e.g., 'SOURCE_HEVY', 'SOURCE_GITHUB').
  */
 function normalizeSource(source: string): string {
-  // Mapping from registry IDs to protobuf enum strings
-  const sourceMap: Record<string, string> = {
-    'hevy': 'SOURCE_HEVY',
-    'fitbit': 'SOURCE_FITBIT',
-    'mock': 'SOURCE_TEST',
-    'apple-health': 'SOURCE_APPLE_HEALTH',
-    'health-connect': 'SOURCE_HEALTH_CONNECT',
-    'file_upload': 'SOURCE_FILE_UPLOAD',
-  };
-
   // If already in protobuf format, return as-is
   if (source.startsWith('SOURCE_')) {
     return source;
   }
 
-  // Map from registry ID to protobuf format
-  return sourceMap[source.toLowerCase()] ?? `SOURCE_${source.toUpperCase()}`;
+  const parsed = parseActivitySource(source);
+  if (parsed === ActivitySource.SOURCE_UNKNOWN) {
+    throw new HttpError(400, `Unknown source: ${source}`);
+  }
+  return ActivitySource[parsed];
+}
+
+/**
+ * Reverse-map a protobuf source string (e.g. 'SOURCE_GITHUB') back to a
+ * registry ID (e.g. 'github') for plugin hook lookup.
+ */
+function getSourceRegistryId(protoSource: string): string | null {
+  // formatActivitySource turns 'SOURCE_GITHUB' → 'GitHub' etc.
+  // We lowercase to get the registry ID ('github').
+  const parsed = parseActivitySource(protoSource);
+  if (parsed === ActivitySource.SOURCE_UNKNOWN) {
+    return null;
+  }
+  const formatted = formatActivitySource(parsed);
+  return formatted ? formatted.toLowerCase().replace(/\s+/g, '-') : null;
 }
 
 export const userPipelinesHandler = createCloudFunction(handler, {

@@ -1,9 +1,9 @@
 {
   "openapi": "3.0.3",
   "info": {
-    "title": "GitHub Contents API (trimmed for FitGlue)",
-    "version": "1.0.0",
-    "description": "Minimal spec containing only the Contents API endpoints used by the GitHub uploader and handler."
+    "title": "GitHub API (trimmed for FitGlue)",
+    "version": "1.1.0",
+    "description": "Minimal spec containing the Contents API and Webhooks API endpoints used by the GitHub uploader, handler, and lifecycle hooks."
   },
   "servers": [
     {
@@ -176,6 +176,134 @@
           }
         }
       }
+    },
+    "/repos/{owner}/{repo}/hooks": {
+      "get": {
+        "operationId": "repos/list-webhooks",
+        "summary": "List repository webhooks",
+        "description": "Lists webhooks for a repository.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/owner"
+          },
+          {
+            "$ref": "#/components/parameters/repo"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Webhook"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "repos/create-webhook",
+        "summary": "Create a repository webhook",
+        "description": "Repositories can have multiple webhooks installed. Each webhook should have a unique config.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/owner"
+          },
+          {
+            "$ref": "#/components/parameters/repo"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateWebhookRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Webhook"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/repos/{owner}/{repo}/hooks/{hook_id}": {
+      "delete": {
+        "operationId": "repos/delete-webhook",
+        "summary": "Delete a repository webhook",
+        "description": "Deletes a webhook configured on a repository.",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/owner"
+          },
+          {
+            "$ref": "#/components/parameters/repo"
+          },
+          {
+            "$ref": "#/components/parameters/hook_id"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "404": {
+            "description": "Resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BasicError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -214,6 +342,15 @@
         "description": "The commit reference (SHA, branch name, or tag name).",
         "schema": {
           "type": "string"
+        }
+      },
+      "hook_id": {
+        "name": "hook_id",
+        "in": "path",
+        "required": true,
+        "description": "The unique identifier of the hook.",
+        "schema": {
+          "type": "integer"
         }
       }
     },
@@ -651,6 +788,125 @@
         "required": [
           "message",
           "documentation_url"
+        ]
+      },
+      "Webhook": {
+        "type": "object",
+        "description": "A repository webhook.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Unique identifier of the webhook."
+          },
+          "type": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "The type of webhook. The only valid value is 'web'."
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Determines whether the hook is actually triggered on pushes."
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Determines what events the hook is triggered for."
+          },
+          "config": {
+            "$ref": "#/components/schemas/WebhookConfig"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The API URL for this webhook."
+          },
+          "ping_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "deliveries_url": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "active",
+          "events",
+          "config",
+          "url"
+        ]
+      },
+      "WebhookConfig": {
+        "type": "object",
+        "description": "Configuration for a webhook.",
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "description": "The URL to which the payloads will be delivered."
+          },
+          "content_type": {
+            "type": "string",
+            "description": "The media type used to serialize the payloads.",
+            "enum": [
+              "json",
+              "form"
+            ]
+          },
+          "secret": {
+            "type": "string",
+            "description": "The secret used to sign webhook payloads."
+          },
+          "insecure_ssl": {
+            "type": "string",
+            "description": "Whether to verify SSL certificates."
+          }
+        }
+      },
+      "CreateWebhookRequest": {
+        "type": "object",
+        "description": "Request body for creating a webhook.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Must be set to 'web'.",
+            "default": "web"
+          },
+          "active": {
+            "type": "boolean",
+            "description": "Determines if notifications are sent when the webhook is triggered.",
+            "default": true
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Determines what events the hook is triggered for.",
+            "default": [
+              "push"
+            ]
+          },
+          "config": {
+            "$ref": "#/components/schemas/WebhookConfig"
+          }
+        },
+        "required": [
+          "config"
         ]
       }
     }

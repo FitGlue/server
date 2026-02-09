@@ -1609,7 +1609,30 @@ resource "google_cloudfunctions2_function" "user_pipelines_handler" {
       SENTRY_ORG           = var.sentry_org
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
+      GITHUB_HANDLER_URL   = google_cloudfunctions2_function.github_handler.service_config[0].uri
     }
+
+    secret_environment_variables {
+      key        = "GITHUB_WEBHOOK_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_webhook_secret.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "GITHUB_CLIENT_ID"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_client_id.secret_id
+      version    = "latest"
+    }
+
+    secret_environment_variables {
+      key        = "GITHUB_CLIENT_SECRET"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.github_client_secret.secret_id
+      version    = "latest"
+    }
+
     service_account_email = google_service_account.cloud_function_sa.email
   }
 }

@@ -65,22 +65,34 @@ const destinations: Map<string, PluginManifest> = new Map();
 const integrations: Map<string, IntegrationManifest> = new Map();
 
 /**
+ * Context passed to lifecycle hooks during pipeline CRUD operations.
+ */
+export interface PluginLifecycleContext {
+  userId: string;
+  pipelineId: string;
+  config: Record<string, string>;
+  /** Retrieve a valid OAuth token for the given provider */
+  getValidToken: (userId: string, provider: string) => Promise<string>;
+  /** Structured logger */
+  logger: { info: (msg: string, meta?: Record<string, unknown>) => void; warn: (msg: string, meta?: Record<string, unknown>) => void; error: (msg: string, meta?: Record<string, unknown>) => void };
+}
+
+/**
  * Lifecycle hooks for plugins. These are called during pipeline CRUD operations.
  * Not serialised — runtime-only callbacks registered alongside plugin manifests.
- *
- * Follow-up implementation guide for agents:
- *   1. Create a hook implementation (e.g. in `shared/src/plugin/hooks/github.ts`).
- *   2. Call `registerPluginHooks('github', { onPipelineCreate: async (ctx) => { ... } })`.
- *   3. In the pipeline create handler, iterate registered hooks for matching source/dest IDs
- *      and call `onPipelineCreate` with the pipeline config and user context.
- *   4. For GitHub specifically, `onPipelineCreate` should call the GitHub API to register
- *      a webhook on the configured repo using the user's stored GitHub OAuth token.
  */
 export interface PluginLifecycleHooks {
-  /** Called when a pipeline using this plugin is created */
-  onPipelineCreate?: (ctx: { userId: string; pipelineId: string; config: Record<string, string> }) => Promise<void>;
-  /** Called when a pipeline using this plugin is deleted */
-  onPipelineDelete?: (ctx: { userId: string; pipelineId: string; config: Record<string, string> }) => Promise<void>;
+  /**
+   * Called when a pipeline using this plugin is created.
+   * Return a partial config update (e.g. { webhook_id: '...' }) to merge into sourceConfig.
+   * Throws on failure → pipeline creation is blocked.
+   */
+  onPipelineCreate?: (ctx: PluginLifecycleContext) => Promise<Record<string, string> | void>;
+  /**
+   * Called when a pipeline using this plugin is deleted.
+   * Best-effort — failures are logged but don't block deletion.
+   */
+  onPipelineDelete?: (ctx: PluginLifecycleContext) => Promise<void>;
 }
 
 const pluginHooks: Map<string, PluginLifecycleHooks> = new Map();
@@ -724,6 +736,10 @@ Optional free-text notes here.
   iconType: 'svg',
   iconPath: '/images/icons/github.svg',
 });
+
+// Register lifecycle hooks for GitHub (webhook management)
+import { githubHooks } from './hooks/github-hooks';
+registerPluginHooks('github', githubHooks);
 
 // ============================================================================
 // Register all known destination manifests
