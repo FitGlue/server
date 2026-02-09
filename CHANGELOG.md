@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.12.0](https://github.com/FitGlue/server/compare/v12.11.1...v12.12.0) (2026-02-09)
+
+
+### Features
+
+* **server:** add plugin config, FIT strength parsing, TRIMP tuning, and pipeline UX improvements ([2057ab1](https://github.com/FitGlue/server/commit/2057ab187bbce0bd2bb48229453996604fbf7194))
+
 ### [12.11.1](https://github.com/FitGlue/server/compare/v12.11.0...v12.11.1) (2026-02-09)
 
 
