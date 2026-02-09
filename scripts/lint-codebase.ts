@@ -64,7 +64,7 @@ const ERROR_RULES = new Set([
   'T20', // Module barrel exports required for smart pruning
   // Note: T19 (No Root Barrel) is WARNING only to allow gradual migration
   // Cross-Language
-  'X1', 'X2', 'X3', 'X4',
+  'X1', 'X2', 'X3', 'X4', 'X6',
   // Web
   'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13', 'W15',
   // Enum
@@ -1420,6 +1420,92 @@ function checkConverterProtobufFieldParity(): CheckResult {
 
   return {
     name: 'Converter Protobuf Field Parity',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check X6: UserIntegrations Converter Coverage
+// ============================================================================
+
+/**
+ * Validates that the Go Firestore converter handles ALL integration types
+ * defined in UserIntegrations (user.proto).
+ *
+ * This prevents bugs where a new integration type is added to the proto
+ * but the Go converter silently ignores it, causing the integration to
+ * appear as nil/unconfigured even when data exists in Firestore.
+ *
+ * Root cause of the Google Sheets sync failure (Feb 2026): Google integration
+ * data was stored by TypeScript but never read by Go because the converter
+ * was missing the Google (and several other) integration types.
+ */
+function checkIntegrationConverterCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // 1. Extract integration field names from UserIntegrations message in user.proto
+  const protoPath = path.join(PROTO_DIR, 'user.proto');
+  if (!fs.existsSync(protoPath)) {
+    errors.push('user.proto not found');
+    return { name: 'UserIntegrations Converter Coverage', passed: false, errors, warnings };
+  }
+
+  const protoContent = fs.readFileSync(protoPath, 'utf-8');
+
+  // Find the UserIntegrations message block
+  const messagePattern = /message\s+UserIntegrations\s*\{([^}]+)\}/s;
+  const messageMatch = messagePattern.exec(protoContent);
+  if (!messageMatch) {
+    errors.push('Could not find UserIntegrations message in user.proto');
+    return { name: 'UserIntegrations Converter Coverage', passed: false, errors, warnings };
+  }
+
+  // Extract field names (e.g., "hevy", "fitbit", "google")
+  const fieldPattern = /^\s*\w+\s+(\w+)\s*=\s*\d+/gm;
+  const integrationNames: string[] = [];
+  let fieldMatch;
+  while ((fieldMatch = fieldPattern.exec(messageMatch[1])) !== null) {
+    integrationNames.push(fieldMatch[1]);
+  }
+
+  if (integrationNames.length === 0) {
+    warnings.push('No integration fields found in UserIntegrations');
+    return { name: 'UserIntegrations Converter Coverage', passed: true, errors, warnings };
+  }
+
+  // Integrations to skip (mock is test-only and not stored via real OAuth flow)
+  const SKIP_INTEGRATIONS = ['mock'];
+
+  // 2. Check Go converter handles each integration
+  const goConverterPath = path.join(GO_SRC_DIR, 'pkg/storage/firestore/converters.go');
+  if (!fs.existsSync(goConverterPath)) {
+    errors.push('Go converters.go not found');
+    return { name: 'UserIntegrations Converter Coverage', passed: false, errors, warnings };
+  }
+
+  const goContent = fs.readFileSync(goConverterPath, 'utf-8');
+
+  for (const name of integrationNames) {
+    if (SKIP_INTEGRATIONS.includes(name)) continue;
+
+    // Check UserToFirestore direction: should have integrations["name"] = map[string]interface{}{
+    const toPattern = new RegExp(`integrations\\["${name}"\\]\\s*=`);
+    if (!toPattern.test(goContent)) {
+      errors.push(`Go UserToFirestore missing integration: "${name}" - add serialization in converters.go`);
+    }
+
+    // Check FirestoreToUser direction: should have iMap["name"].(map[string]interface{})
+    const fromPattern = new RegExp(`iMap\\["${name}"\\]`);
+    if (!fromPattern.test(goContent)) {
+      errors.push(`Go FirestoreToUser missing integration: "${name}" - add deserialization in converters.go`);
+    }
+  }
+
+  return {
+    name: 'UserIntegrations Converter Coverage',
     passed: errors.length === 0,
     errors,
     warnings
@@ -5344,6 +5430,7 @@ function main(): void {
         { id: 'X3', fn: () => ({ ...checkSourceHandlerCoverage(), name: 'X3: ActivitySource Handler Coverage' }) },
         { id: 'X4', fn: () => ({ ...checkDestinationEnumCoverage(), name: 'X4: Destination Enum Coverage' }) },
         { id: 'X5', fn: () => ({ ...checkConverterProtobufFieldParity(), name: 'X5: Converter Protobuf Field Parity' }) },
+        { id: 'X6', fn: () => ({ ...checkIntegrationConverterCoverage(), name: 'X6: UserIntegrations Converter Coverage' }) },
       ]
     },
     {

@@ -91,6 +91,94 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 				"last_used_at":  u.Integrations.Parkrun.LastUsedAt.AsTime(),
 			}
 		}
+		if u.Integrations.Spotify != nil {
+			integrations["spotify"] = map[string]interface{}{
+				"enabled":         u.Integrations.Spotify.Enabled,
+				"access_token":    u.Integrations.Spotify.AccessToken,
+				"refresh_token":   u.Integrations.Spotify.RefreshToken,
+				"expires_at":      u.Integrations.Spotify.ExpiresAt.AsTime(),
+				"spotify_user_id": u.Integrations.Spotify.SpotifyUserId,
+				"created_at":      u.Integrations.Spotify.CreatedAt.AsTime(),
+				"last_used_at":    u.Integrations.Spotify.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.Trainingpeaks != nil {
+			integrations["trainingpeaks"] = map[string]interface{}{
+				"enabled":       u.Integrations.Trainingpeaks.Enabled,
+				"access_token":  u.Integrations.Trainingpeaks.AccessToken,
+				"refresh_token": u.Integrations.Trainingpeaks.RefreshToken,
+				"expires_at":    u.Integrations.Trainingpeaks.ExpiresAt.AsTime(),
+				"athlete_id":    u.Integrations.Trainingpeaks.AthleteId,
+				"created_at":    u.Integrations.Trainingpeaks.CreatedAt.AsTime(),
+				"last_used_at":  u.Integrations.Trainingpeaks.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.Intervals != nil {
+			integrations["intervals"] = map[string]interface{}{
+				"enabled":      u.Integrations.Intervals.Enabled,
+				"api_key":      u.Integrations.Intervals.ApiKey,
+				"athlete_id":   u.Integrations.Intervals.AthleteId,
+				"created_at":   u.Integrations.Intervals.CreatedAt.AsTime(),
+				"last_used_at": u.Integrations.Intervals.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.Oura != nil {
+			integrations["oura"] = map[string]interface{}{
+				"enabled":       u.Integrations.Oura.Enabled,
+				"access_token":  u.Integrations.Oura.AccessToken,
+				"refresh_token": u.Integrations.Oura.RefreshToken,
+				"expires_at":    u.Integrations.Oura.ExpiresAt.AsTime(),
+				"oura_user_id":  u.Integrations.Oura.OuraUserId,
+				"created_at":    u.Integrations.Oura.CreatedAt.AsTime(),
+				"last_used_at":  u.Integrations.Oura.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.Google != nil {
+			integrations["google"] = map[string]interface{}{
+				"enabled":        u.Integrations.Google.Enabled,
+				"access_token":   u.Integrations.Google.AccessToken,
+				"refresh_token":  u.Integrations.Google.RefreshToken,
+				"expires_at":     u.Integrations.Google.ExpiresAt.AsTime(),
+				"google_user_id": u.Integrations.Google.GoogleUserId,
+				"created_at":     u.Integrations.Google.CreatedAt.AsTime(),
+				"last_used_at":   u.Integrations.Google.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.Polar != nil {
+			integrations["polar"] = map[string]interface{}{
+				"enabled":       u.Integrations.Polar.Enabled,
+				"access_token":  u.Integrations.Polar.AccessToken,
+				"refresh_token": u.Integrations.Polar.RefreshToken,
+				"expires_at":    u.Integrations.Polar.ExpiresAt.AsTime(),
+				"polar_user_id": u.Integrations.Polar.PolarUserId,
+				"created_at":    u.Integrations.Polar.CreatedAt.AsTime(),
+				"last_used_at":  u.Integrations.Polar.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.Wahoo != nil {
+			integrations["wahoo"] = map[string]interface{}{
+				"enabled":       u.Integrations.Wahoo.Enabled,
+				"access_token":  u.Integrations.Wahoo.AccessToken,
+				"refresh_token": u.Integrations.Wahoo.RefreshToken,
+				"expires_at":    u.Integrations.Wahoo.ExpiresAt.AsTime(),
+				"wahoo_user_id": u.Integrations.Wahoo.WahooUserId,
+				"created_at":    u.Integrations.Wahoo.CreatedAt.AsTime(),
+				"last_used_at":  u.Integrations.Wahoo.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.Github != nil {
+			integrations["github"] = map[string]interface{}{
+				"enabled":         u.Integrations.Github.Enabled,
+				"access_token":    u.Integrations.Github.AccessToken,
+				"refresh_token":   u.Integrations.Github.RefreshToken,
+				"expires_at":      u.Integrations.Github.ExpiresAt.AsTime(),
+				"github_user_id":  u.Integrations.Github.GithubUserId,
+				"github_username": u.Integrations.Github.GithubUsername,
+				"scope":           u.Integrations.Github.Scope,
+				"created_at":      u.Integrations.Github.CreatedAt.AsTime(),
+				"last_used_at":    u.Integrations.Github.LastUsedAt.AsTime(),
+			}
+		}
 		m["integrations"] = integrations
 	}
 
@@ -173,6 +261,94 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 				ConsentGiven: getBool(pMap, "consent_given"),
 				CreatedAt:    getTime(pMap, "created_at"),
 				LastUsedAt:   getTime(pMap, "last_used_at"),
+			}
+		}
+		if spMap, ok := iMap["spotify"].(map[string]interface{}); ok {
+			u.Integrations.Spotify = &pb.SpotifyIntegration{
+				Enabled:       getBool(spMap, "enabled"),
+				AccessToken:   getString(spMap, "access_token"),
+				RefreshToken:  getString(spMap, "refresh_token"),
+				ExpiresAt:     getTime(spMap, "expires_at"),
+				SpotifyUserId: getString(spMap, "spotify_user_id"),
+				CreatedAt:     getTime(spMap, "created_at"),
+				LastUsedAt:    getTime(spMap, "last_used_at"),
+			}
+		}
+		if tpMap, ok := iMap["trainingpeaks"].(map[string]interface{}); ok {
+			u.Integrations.Trainingpeaks = &pb.TrainingPeaksIntegration{
+				Enabled:      getBool(tpMap, "enabled"),
+				AccessToken:  getString(tpMap, "access_token"),
+				RefreshToken: getString(tpMap, "refresh_token"),
+				ExpiresAt:    getTime(tpMap, "expires_at"),
+				AthleteId:    getString(tpMap, "athlete_id"),
+				CreatedAt:    getTime(tpMap, "created_at"),
+				LastUsedAt:   getTime(tpMap, "last_used_at"),
+			}
+		}
+		if ivMap, ok := iMap["intervals"].(map[string]interface{}); ok {
+			u.Integrations.Intervals = &pb.IntervalsIntegration{
+				Enabled:    getBool(ivMap, "enabled"),
+				ApiKey:     getString(ivMap, "api_key"),
+				AthleteId:  getString(ivMap, "athlete_id"),
+				CreatedAt:  getTime(ivMap, "created_at"),
+				LastUsedAt: getTime(ivMap, "last_used_at"),
+			}
+		}
+		if oMap, ok := iMap["oura"].(map[string]interface{}); ok {
+			u.Integrations.Oura = &pb.OuraIntegration{
+				Enabled:      getBool(oMap, "enabled"),
+				AccessToken:  getString(oMap, "access_token"),
+				RefreshToken: getString(oMap, "refresh_token"),
+				ExpiresAt:    getTime(oMap, "expires_at"),
+				OuraUserId:   getString(oMap, "oura_user_id"),
+				CreatedAt:    getTime(oMap, "created_at"),
+				LastUsedAt:   getTime(oMap, "last_used_at"),
+			}
+		}
+		if gMap, ok := iMap["google"].(map[string]interface{}); ok {
+			u.Integrations.Google = &pb.GoogleIntegration{
+				Enabled:      getBool(gMap, "enabled"),
+				AccessToken:  getString(gMap, "access_token"),
+				RefreshToken: getString(gMap, "refresh_token"),
+				ExpiresAt:    getTime(gMap, "expires_at"),
+				GoogleUserId: getString(gMap, "google_user_id"),
+				CreatedAt:    getTime(gMap, "created_at"),
+				LastUsedAt:   getTime(gMap, "last_used_at"),
+			}
+		}
+		if polMap, ok := iMap["polar"].(map[string]interface{}); ok {
+			u.Integrations.Polar = &pb.PolarIntegration{
+				Enabled:      getBool(polMap, "enabled"),
+				AccessToken:  getString(polMap, "access_token"),
+				RefreshToken: getString(polMap, "refresh_token"),
+				ExpiresAt:    getTime(polMap, "expires_at"),
+				PolarUserId:  getString(polMap, "polar_user_id"),
+				CreatedAt:    getTime(polMap, "created_at"),
+				LastUsedAt:   getTime(polMap, "last_used_at"),
+			}
+		}
+		if wMap, ok := iMap["wahoo"].(map[string]interface{}); ok {
+			u.Integrations.Wahoo = &pb.WahooIntegration{
+				Enabled:      getBool(wMap, "enabled"),
+				AccessToken:  getString(wMap, "access_token"),
+				RefreshToken: getString(wMap, "refresh_token"),
+				ExpiresAt:    getTime(wMap, "expires_at"),
+				WahooUserId:  getString(wMap, "wahoo_user_id"),
+				CreatedAt:    getTime(wMap, "created_at"),
+				LastUsedAt:   getTime(wMap, "last_used_at"),
+			}
+		}
+		if ghMap, ok := iMap["github"].(map[string]interface{}); ok {
+			u.Integrations.Github = &pb.GitHubIntegration{
+				Enabled:        getBool(ghMap, "enabled"),
+				AccessToken:    getString(ghMap, "access_token"),
+				RefreshToken:   getString(ghMap, "refresh_token"),
+				ExpiresAt:      getTime(ghMap, "expires_at"),
+				GithubUserId:   getString(ghMap, "github_user_id"),
+				GithubUsername: getString(ghMap, "github_username"),
+				Scope:          getString(ghMap, "scope"),
+				CreatedAt:      getTime(ghMap, "created_at"),
+				LastUsedAt:     getTime(ghMap, "last_used_at"),
 			}
 		}
 	}
