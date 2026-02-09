@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [12.13.0](https://github.com/FitGlue/server/compare/v12.12.0...v12.13.0) (2026-02-09)
+
+
+### Features
+
+* implement github onPipelineCreate and onPipelineDelete webhook handling ([2803cc3](https://github.com/FitGlue/server/commit/2803cc3a923c8e02adff5f97dbeaad80bee2ec73))
+* **server:** add Effort Score enricher, platform stats API, lifecycle hook context, and enricher tweaks ([77c22c3](https://github.com/FitGlue/server/commit/77c22c3107a460e93d7a5a2dc07ce172828f4f1a))
+
+
+### Bug Fixes
+
+* add new integrations to converters, do not retry on prod ([c139615](https://github.com/FitGlue/server/commit/c1396154958796f5a4ce4a9bcb7281134894f15b))
+
 ## [12.12.0](https://github.com/FitGlue/server/compare/v12.11.1...v12.12.0) (2026-02-09)
 
 
