@@ -1,6 +1,9 @@
 // Module-level imports for smart pruning
-import { createCloudFunction, FrameworkContext } from '@fitglue/shared/framework';
+import { createCloudFunction, FrameworkContext, FrameworkResponse } from '@fitglue/shared/framework';
 import { validateOAuthState, storeOAuthTokens } from '@fitglue/shared/infrastructure/oauth';
+
+// Helper to create redirect responses
+const redirect = (url: string) => new FrameworkResponse({ status: 302, headers: { Location: url } });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const handler = async (req: any, ctx: FrameworkContext) => {
@@ -12,20 +15,20 @@ const handler = async (req: any, ctx: FrameworkContext) => {
   // Handle authorization denial
   if (error) {
     logger.warn('User denied Google authorization', { error });
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/google/error?reason=denied` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/google/error?reason=denied`);
   }
 
   // Validate required parameters
   if (!code || !state) {
     logger.error('Missing required OAuth parameters');
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/google/error?reason=missing_params` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/google/error?reason=missing_params`);
   }
 
   // Validate state token (CSRF protection)
   const validation = await validateOAuthState(state);
   if (!validation.valid || !validation.userId) {
     logger.error('Invalid or expired state token');
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/google/error?reason=invalid_state` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/google/error?reason=invalid_state`);
   }
   const userId = validation.userId;
 
@@ -35,8 +38,10 @@ const handler = async (req: any, ctx: FrameworkContext) => {
     // Exchange authorization code for tokens
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+
     if (!clientId || !clientSecret) {
-      throw new Error('Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET environment variables');
+      logger.error('Missing Google OAuth credentials');
+      return redirect(`${process.env.BASE_URL}/app/connections/google/error?reason=config_error`);
     }
 
     const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
@@ -97,12 +102,11 @@ const handler = async (req: any, ctx: FrameworkContext) => {
     logger.info('Successfully connected Google account', { userId, googleUserId: externalUserId });
 
     // Redirect to success page
-    // Redirect to success page
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/google/success` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/google/success`);
 
   } catch (error: unknown) {
     logger.error('Error processing Google OAuth callback', { error });
-    return { statusCode: 302, headers: { Location: `${process.env.BASE_URL}/app/connections/google/error?reason=server_error` } };
+    return redirect(`${process.env.BASE_URL}/app/connections/google/error?reason=server_error`);
   }
 };
 

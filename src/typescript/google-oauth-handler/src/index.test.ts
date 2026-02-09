@@ -7,10 +7,16 @@ jest.mock('firebase-admin', () => ({
   })),
 }));
 
+// Create a simple FrameworkResponse class for testing
+class MockFrameworkResponse {
+  constructor(public readonly config: { status: number; headers: Record<string, string> }) { }
+}
+
 // Mock @fitglue/shared/framework
 jest.mock('@fitglue/shared/framework', () => ({
   createCloudFunction: (handler: any) => handler,
   FrameworkContext: jest.fn(),
+  FrameworkResponse: MockFrameworkResponse,
 }));
 
 // Mock @fitglue/shared/infrastructure/oauth
@@ -65,10 +71,8 @@ describe('googleOAuthHandler', () => {
     const result = await (googleOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.warn).toHaveBeenCalledWith('User denied Google authorization', { error: 'access_denied' });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/google/error?reason=denied' }
-    });
+    expect(result).toBeInstanceOf(MockFrameworkResponse);
+    expect(result.config.headers.Location).toBe('https://dev.fitglue.tech/app/connections/google/error?reason=denied');
   });
 
   it('should redirect to error page if code is missing', async () => {
@@ -77,10 +81,8 @@ describe('googleOAuthHandler', () => {
     const result = await (googleOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/google/error?reason=missing_params' }
-    });
+    expect(result).toBeInstanceOf(MockFrameworkResponse);
+    expect(result.config.headers.Location).toBe('https://dev.fitglue.tech/app/connections/google/error?reason=missing_params');
   });
 
   it('should redirect to error page if state is missing', async () => {
@@ -89,10 +91,8 @@ describe('googleOAuthHandler', () => {
     const result = await (googleOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Missing required OAuth parameters');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/google/error?reason=missing_params' }
-    });
+    expect(result).toBeInstanceOf(MockFrameworkResponse);
+    expect(result.config.headers.Location).toBe('https://dev.fitglue.tech/app/connections/google/error?reason=missing_params');
   });
 
   it('should redirect to error page if state token is invalid', async () => {
@@ -103,10 +103,20 @@ describe('googleOAuthHandler', () => {
 
     expect(mockValidateOAuthState).toHaveBeenCalledWith('invalid-state');
     expect(ctx.logger.error).toHaveBeenCalledWith('Invalid or expired state token');
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/google/error?reason=invalid_state' }
-    });
+    expect(result).toBeInstanceOf(MockFrameworkResponse);
+    expect(result.config.headers.Location).toBe('https://dev.fitglue.tech/app/connections/google/error?reason=invalid_state');
+  });
+
+  it('should redirect to error page if credentials are missing', async () => {
+    req.query = { code: 'auth-code', state: 'valid-state' };
+    mockValidateOAuthState.mockResolvedValue({ valid: true, userId: 'user-123' });
+    delete process.env.GOOGLE_CLIENT_ID;
+
+    const result = await (googleOAuthHandler as any)(req, ctx);
+
+    expect(ctx.logger.error).toHaveBeenCalledWith('Missing Google OAuth credentials');
+    expect(result).toBeInstanceOf(MockFrameworkResponse);
+    expect(result.config.headers.Location).toBe('https://dev.fitglue.tech/app/connections/google/error?reason=config_error');
   });
 
   it('should successfully process OAuth callback and store tokens', async () => {
@@ -148,10 +158,8 @@ describe('googleOAuthHandler', () => {
       userId: 'user-123',
       googleUserId: 'google-user-123',
     });
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/google/success' }
-    });
+    expect(result).toBeInstanceOf(MockFrameworkResponse);
+    expect(result.config.headers.Location).toBe('https://dev.fitglue.tech/app/connections/google/success');
   });
 
   it('should redirect to error page if token exchange fails', async () => {
@@ -168,9 +176,8 @@ describe('googleOAuthHandler', () => {
     const result = await (googleOAuthHandler as any)(req, ctx);
 
     expect(ctx.logger.error).toHaveBeenCalledWith('Error processing Google OAuth callback', expect.anything());
-    expect(result).toEqual({
-      statusCode: 302,
-      headers: { Location: 'https://dev.fitglue.tech/app/connections/google/error?reason=server_error' }
-    });
+    expect(result).toBeInstanceOf(MockFrameworkResponse);
+    expect(result.config.headers.Location).toBe('https://dev.fitglue.tech/app/connections/google/error?reason=server_error');
   });
 });
+
