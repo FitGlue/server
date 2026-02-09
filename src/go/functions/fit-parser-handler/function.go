@@ -52,6 +52,8 @@ type ParseFitFileRequest struct {
 	// Optional user-provided overrides
 	Title       string `json:"title,omitempty"`
 	Description string `json:"description,omitempty"`
+	// Optional: target a specific pipeline (Nerd Mode)
+	PipelineId string `json:"pipelineId,omitempty"`
 }
 
 // ParseFitFileResponse is the response body
@@ -223,6 +225,11 @@ func ParseFitFile(w http.ResponseWriter, r *http.Request) {
 		Timestamp:            timestamppb.Now(),
 		StandardizedActivity: activity,
 		IsResume:             false,
+	}
+
+	// Nerd Mode: target a specific pipeline if requested
+	if req.PipelineId != "" {
+		payload.PipelineId = &req.PipelineId
 	}
 
 	// Create CloudEvent for publishing

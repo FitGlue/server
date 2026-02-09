@@ -2893,7 +2893,7 @@ All records are stored in Firestore, so your PRs persist across time.
       field: 'description',
       label: 'Activity Description',
       before: 'Weight Training',
-      after: 'Weight Training\\n\\n🏆 NEW PR! Deadlift 1RM: 140kg (previous: 135kg, +3.7%)',
+      after: 'Weight Training\\n\\n🏆 Deadlift 1RM: 140kg (previous: 135kg, +3.7%)',
       visualType: '',
       afterHtml: '',
     },
@@ -3592,6 +3592,57 @@ Monitors your accumulated training stress over the past week to give context-awa
   sortOrder: 9,
   isPremium: true,
   popularityScore: 55,
+});
+
+// ============================================
+// Effort Score
+// ============================================
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_EFFORT_SCORE, {
+  id: 'effort-score',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Effort Score',
+  description: 'Rate every workout on a 0-100 scale relative to your personal norms',
+  icon: '💥',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [],
+  marketingDescription: `
+### How Hard Was That — For You?
+Every workout gets a personal difficulty score from 0 to 100, based on how it compares to your recent 14-day activity history.
+
+### Multi-Factor Analysis
+Your score is calculated from heart rate, pace, duration, elevation gain, and training load — weighted and combined into a single number. If a signal is unavailable (e.g., no HR data), the remaining factors are weighted proportionally.
+
+### Adaptive Over Time
+As your fitness changes, so does your baseline. A run that scored 75 three months ago might score 55 today — because you've gotten stronger.
+  `,
+  features: [
+    '✅ Normalized 0-100 effort score',
+    '✅ Multi-factor: HR, pace, duration, elevation, TRIMP',
+    '✅ Adapts to your personal rolling averages',
+    '✅ Trend indicators (harder/easier than usual)',
+    '✅ Fully automatic — no configuration needed',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Effort Score',
+      before: 'Morning Run',
+      after: '',
+      visualType: '',
+      afterHtml: '💥 Effort Score: 72/100 (Hard)<br>• ❤️ HR: 1.15× avg<br>• 🏃 Pace: 1.08× avg<br>• 📈 Harder than usual',
+    },
+  ],
+  useCases: [
+    'Understand relative workout intensity',
+    'Track fitness progression over time',
+    'Balance easy and hard training days',
+    'See which workouts push your limits',
+  ],
+  category: 'summaries',
+  sortOrder: 8,
+  isPremium: false,
+  popularityScore: 80,
 });
 
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {

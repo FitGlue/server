@@ -1,4 +1,4 @@
-import { handler } from './index';
+import { handler, getPlatformStats } from './index';
 
 // Mock @fitglue/shared/framework
 jest.mock('@fitglue/shared/framework', () => ({
@@ -39,6 +39,25 @@ jest.mock('@fitglue/shared/plugin', () => ({
   })),
 }));
 
+// --- Firebase Admin Mocks ---
+const mockCountGet = jest.fn();
+const mockSelect = jest.fn();
+const mockSelectGet = jest.fn();
+const mockWhere = jest.fn();
+
+jest.mock('firebase-admin/app', () => ({
+  getApps: jest.fn(() => [{ name: 'mock' }]), // Pretend already initialized
+  initializeApp: jest.fn(),
+}));
+
+jest.mock('firebase-admin/firestore', () => ({
+  getFirestore: jest.fn(() => ({
+    collection: jest.fn(() => ({
+      where: mockWhere,
+    })),
+  })),
+}));
+
 // Import FrameworkContext type
 import type { FrameworkContext } from '@fitglue/shared/framework';
 
@@ -64,6 +83,12 @@ describe('registry-handler', () => {
     } as unknown as FrameworkContext;
 
     process.env.GOOGLE_CLOUD_PROJECT = 'fitglue-server-dev';
+
+    // Reset Firebase mocks
+    mockWhere.mockReset();
+    mockCountGet.mockReset();
+    mockSelect.mockReset();
+    mockSelectGet.mockReset();
   });
 
   it('returns 405 for non-GET requests', async () => {
@@ -89,6 +114,49 @@ describe('registry-handler', () => {
     expect(response.sources).toHaveLength(1);
   });
 
+  it('does not include stats for normal requests', async () => {
+    const response: any = await handler(mockReq, mockCtx);
+    expect(response.stats).toBeUndefined();
+  });
+
+  it('includes stats when marketingMode=true', async () => {
+    // Setup Firestore mocks for getPlatformStats
+    mockWhere.mockImplementation(() => ({
+      count: () => ({ get: mockCountGet }),
+      select: mockSelect,
+    }));
+    mockCountGet.mockResolvedValue({ data: () => ({ count: 15 }) });
+    mockSelect.mockReturnValue({ get: mockSelectGet });
+    mockSelectGet.mockResolvedValue({
+      forEach: (fn: (doc: any) => void) => {
+        fn({ data: () => ({ activityCounts: { synchronized: 100 } }) });
+        fn({ data: () => ({ activityCounts: { synchronized: 50 } }) });
+        fn({ data: () => ({}) }); // User without counts
+      },
+    });
+
+    mockReq.query = { marketingMode: 'true' };
+    const response: any = await handler(mockReq, mockCtx);
+
+    expect(response.stats).toEqual({
+      athleteCount: 15,
+      activitiesBoostedCount: 150,
+    });
+  });
+
+  it('omits stats gracefully when Firestore query fails', async () => {
+    mockWhere.mockImplementation(() => {
+      throw new Error('Firestore unavailable');
+    });
+
+    mockReq.query = { marketingMode: 'true' };
+    const response: any = await handler(mockReq, mockCtx);
+
+    // Stats should be absent, not cause a crash
+    expect(response.stats).toBeUndefined();
+    expect(mockCtx.logger.warn).toHaveBeenCalled();
+  });
+
   it('logs registry response', async () => {
     await handler(mockReq, mockCtx);
 
@@ -97,6 +165,39 @@ describe('registry-handler', () => {
       enricherCount: 1,
       destinationCount: 1,
       integrationCount: 2,
+      hasStats: false,
     });
   });
 });
+
+describe('getPlatformStats', () => {
+  const mockLogger = { info: jest.fn(), warn: jest.fn() };
+
+  beforeEach(() => {
+    mockWhere.mockReset();
+    mockCountGet.mockReset();
+    mockSelect.mockReset();
+    mockSelectGet.mockReset();
+  });
+
+  it('returns correct counts from Firestore', async () => {
+    mockWhere.mockImplementation(() => ({
+      count: () => ({ get: mockCountGet }),
+      select: mockSelect,
+    }));
+    mockCountGet.mockResolvedValue({ data: () => ({ count: 8 }) });
+    mockSelect.mockReturnValue({ get: mockSelectGet });
+    mockSelectGet.mockResolvedValue({
+      forEach: (fn: (doc: any) => void) => {
+        fn({ data: () => ({ activityCounts: { synchronized: 200 } }) });
+        fn({ data: () => ({ activityCounts: { synchronized: 147 } }) });
+      },
+    });
+
+    const stats = await getPlatformStats(mockLogger);
+
+    expect(stats).toEqual({ athleteCount: 8, activitiesBoostedCount: 347 });
+    expect(mockLogger.info).toHaveBeenCalledWith('Platform stats fetched', { athleteCount: 8, activitiesBoostedCount: 347 });
+  });
+});
+

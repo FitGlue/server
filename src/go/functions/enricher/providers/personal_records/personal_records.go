@@ -493,7 +493,7 @@ func (p *PersonalRecordsProvider) formatPRMessage(recordType string, newValue fl
 	}
 
 	// Build message
-	message := fmt.Sprintf("%s NEW PR! %s: %s", emoji, displayName, valueStr)
+	message := fmt.Sprintf("%s %s: %s", emoji, displayName, valueStr)
 
 	// Add comparison with previous value
 	if previousValue != nil && improvement != nil {

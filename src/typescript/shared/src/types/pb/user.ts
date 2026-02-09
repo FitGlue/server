@@ -83,6 +83,8 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_DISTANCE_MILESTONES = 36,
   /** ENRICHER_PROVIDER_RECOVERY_ADVISOR - Config inputs: none (calculates training load and suggests recovery) - Athlete tier only */
   ENRICHER_PROVIDER_RECOVERY_ADVISOR = 37,
+  /** ENRICHER_PROVIDER_EFFORT_SCORE - Config inputs: none (computes relative effort score 0-100 against rolling 14-day history) */
+  ENRICHER_PROVIDER_EFFORT_SCORE = 38,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

@@ -32,6 +32,7 @@ import (
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/calories_burned"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/condition_matcher"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/distance_milestones"
+	_ "github.com/fitglue/server/src/go/functions/enricher/providers/effort_score"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/elevation_summary"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/fit_file_heart_rate"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/fitbit_heart_rate"

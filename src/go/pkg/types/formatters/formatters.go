@@ -769,6 +769,8 @@ func FormatEnricherProviderType(value pb.EnricherProviderType) string {
 		return "Distance Milestones"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR:
 		return "Recovery Advisor"
+	case pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE:
+		return "Effort Score"
 	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
@@ -893,6 +895,9 @@ func ParseEnricherProviderType(input string) pb.EnricherProviderType {
 		"enricher_provider_recovery_advisor":     pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
 		"recovery_advisor":                       pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
 		"recovery advisor":                       pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+		"enricher_provider_effort_score":         pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
+		"effort_score":                           pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
+		"effort score":                           pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
 		"enricher_provider_mock":                 pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 		"mock":                                   pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}

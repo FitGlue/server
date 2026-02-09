@@ -138,7 +138,9 @@ const (
 	EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES EnricherProviderType = 36
 	// Config inputs: none (calculates training load and suggests recovery) - Athlete tier only
 	EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR EnricherProviderType = 37
-	EnricherProviderType_ENRICHER_PROVIDER_MOCK             EnricherProviderType = 99
+	// Config inputs: none (computes relative effort score 0-100 against rolling 14-day history)
+	EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE EnricherProviderType = 38
+	EnricherProviderType_ENRICHER_PROVIDER_MOCK         EnricherProviderType = 99
 )
 
 // Enum value maps for EnricherProviderType.
@@ -181,6 +183,7 @@ var (
 		35: "ENRICHER_PROVIDER_STREAK_TRACKER",
 		36: "ENRICHER_PROVIDER_DISTANCE_MILESTONES",
 		37: "ENRICHER_PROVIDER_RECOVERY_ADVISOR",
+		38: "ENRICHER_PROVIDER_EFFORT_SCORE",
 		99: "ENRICHER_PROVIDER_MOCK",
 	}
 	EnricherProviderType_value = map[string]int32{
@@ -221,6 +224,7 @@ var (
 		"ENRICHER_PROVIDER_STREAK_TRACKER":       35,
 		"ENRICHER_PROVIDER_DISTANCE_MILESTONES":  36,
 		"ENRICHER_PROVIDER_RECOVERY_ADVISOR":     37,
+		"ENRICHER_PROVIDER_EFFORT_SCORE":         38,
 		"ENRICHER_PROVIDER_MOCK":                 99,
 	}
 )
@@ -3446,7 +3450,7 @@ const file_user_proto_rawDesc = "" +
 	"\bUserTier\x12\x19\n" +
 	"\x15USER_TIER_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12USER_TIER_HOBBYIST\x10\x01\x12\x15\n" +
-	"\x11USER_TIER_ATHLETE\x10\x02*\xaf\v\n" +
+	"\x11USER_TIER_ATHLETE\x10\x02*\xd3\v\n" +
 	"\x14EnricherProviderType\x12!\n" +
 	"\x1dENRICHER_PROVIDER_UNSPECIFIED\x10\x00\x12'\n" +
 	"#ENRICHER_PROVIDER_FITBIT_HEART_RATE\x10\x01\x12%\n" +
@@ -3485,7 +3489,8 @@ const file_user_proto_rawDesc = "" +
 	"\x1eENRICHER_PROVIDER_GOAL_TRACKER\x10\"\x12$\n" +
 	" ENRICHER_PROVIDER_STREAK_TRACKER\x10#\x12)\n" +
 	"%ENRICHER_PROVIDER_DISTANCE_MILESTONES\x10$\x12&\n" +
-	"\"ENRICHER_PROVIDER_RECOVERY_ADVISOR\x10%\x12\x1a\n" +
+	"\"ENRICHER_PROVIDER_RECOVERY_ADVISOR\x10%\x12\"\n" +
+	"\x1eENRICHER_PROVIDER_EFFORT_SCORE\x10&\x12\x1a\n" +
 	"\x16ENRICHER_PROVIDER_MOCK\x10c*\xab\x01\n" +
 	"\x14WorkoutSummaryFormat\x12&\n" +
 	"\"WORKOUT_SUMMARY_FORMAT_UNSPECIFIED\x10\x00\x12\"\n" +

@@ -214,7 +214,7 @@ func formatZoneRow(zone HeartRateZone, duration time.Duration, minutes int, tota
 		if rating > barLength {
 			rating = barLength
 		}
-		if rating == 0 && duration > 0 {
+		if rating == 0 && minutes > 0 {
 			rating = 1
 		}
 

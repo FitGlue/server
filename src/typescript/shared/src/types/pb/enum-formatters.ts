@@ -1413,6 +1413,10 @@ const EnricherProviderTypeNames: Record<string, string> = {
     'RECOVERY_ADVISOR': 'Recovery Advisor',
     'Recovery Advisor': 'Recovery Advisor',
     '37': 'Recovery Advisor',
+    'ENRICHER_PROVIDER_EFFORT_SCORE': 'Effort Score',
+    'EFFORT_SCORE': 'Effort Score',
+    'Effort Score': 'Effort Score',
+    '38': 'Effort Score',
     'ENRICHER_PROVIDER_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -1475,6 +1479,7 @@ export function formatEnricherProviderType(value: EnricherProviderType | number 
     case EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER: return 'Streak Tracker';
     case EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES: return 'Distance Milestones';
     case EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR: return 'Recovery Advisor';
+    case EnricherProviderType.ENRICHER_PROVIDER_EFFORT_SCORE: return 'Effort Score';
     case EnricherProviderType.ENRICHER_PROVIDER_MOCK: return 'Mock';
     default: return 'Unknown';
   }
@@ -1627,6 +1632,10 @@ const EnricherProviderTypeValues: Record<string, EnricherProviderType> = {
     'recovery_advisor': EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR,
     'recovery advisor': EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR,
     '37': EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+    'enricher_provider_effort_score': EnricherProviderType.ENRICHER_PROVIDER_EFFORT_SCORE,
+    'effort_score': EnricherProviderType.ENRICHER_PROVIDER_EFFORT_SCORE,
+    'effort score': EnricherProviderType.ENRICHER_PROVIDER_EFFORT_SCORE,
+    '38': EnricherProviderType.ENRICHER_PROVIDER_EFFORT_SCORE,
     'enricher_provider_mock': EnricherProviderType.ENRICHER_PROVIDER_MOCK,
     'mock': EnricherProviderType.ENRICHER_PROVIDER_MOCK,
     '99': EnricherProviderType.ENRICHER_PROVIDER_MOCK,
