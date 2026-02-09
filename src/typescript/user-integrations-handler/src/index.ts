@@ -83,6 +83,22 @@ async function handleListIntegrations(userId: string, ctx: FrameworkContext) {
     };
   }
 
+  if (integrations.google) {
+    summary.google = {
+      connected: !!integrations.google.enabled,
+      externalUserId: integrations.google.googleUserId,
+      lastUsedAt: integrations.google.lastUsedAt
+    };
+  }
+
+  if (integrations.github) {
+    summary.github = {
+      connected: !!integrations.github.enabled,
+      externalUserId: integrations.github.githubUserId,
+      lastUsedAt: integrations.github.lastUsedAt
+    };
+  }
+
   return summary;
 }
 
@@ -90,7 +106,7 @@ async function handleConnect(userId: string, provider: string, ctx: FrameworkCon
   const { logger } = ctx;
 
   // Validate provider
-  if (!['strava', 'fitbit'].includes(provider)) {
+  if (!['strava', 'fitbit', 'google', 'github'].includes(provider)) {
     throw new HttpError(400, `Invalid OAuth provider: ${provider}. Hevy uses API key configuration.`);
   }
 
@@ -123,12 +139,28 @@ async function handleConnect(userId: string, provider: string, ctx: FrameworkCon
       'response_type=code&' +
       'scope=read,activity:read_all,activity:write&' +
       `state=${state}`;
-  } else {
+  } else if (provider === 'fitbit') {
     authUrl = 'https://www.fitbit.com/oauth2/authorize?' +
       `client_id=${clientId}&` +
       `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/fitbit/callback`)}&` +
       'response_type=code&' +
       `scope=${encodeURIComponent('activity heartrate profile location')}&` +
+      `state=${state}`;
+  } else if (provider === 'google') {
+    authUrl = 'https://accounts.google.com/o/oauth2/v2/auth?' +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/google/callback`)}&` +
+      'response_type=code&' +
+      `scope=${encodeURIComponent('https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/userinfo.profile')}&` +
+      'access_type=offline&' +
+      'prompt=consent&' +
+      `state=${state}`;
+  } else {
+    // GitHub OAuth
+    authUrl = 'https://github.com/login/oauth/authorize?' +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(`${baseUrl}/auth/github/callback`)}&` +
+      `scope=${encodeURIComponent('repo')}&` +
       `state=${state}`;
   }
 

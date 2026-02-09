@@ -953,7 +953,6 @@ If enabled, muscle heatmaps and route thumbnails are embedded using Google Sheet
     '✅ Showcase links for sharing',
     '✅ Perfect for custom dashboards and analysis',
   ],
-  isTemporarilyUnavailable: true,
   transformations: [],
   useCases: [
     'Create custom fitness dashboards in Google Sheets',

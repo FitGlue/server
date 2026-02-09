@@ -56,7 +56,7 @@ const NO_TERRAFORM_REQUIRED = ['admin-cli', 'mcp-server'];
 // Rules that should FAIL if they have warnings (blocking)
 const ERROR_RULES = new Set([
   // Infrastructure
-  'I1', 'I2', 'I3', 'I4', 'I5', 'R1', 'R3',
+  'I1', 'I2', 'I3', 'I4', 'I5', 'R1', 'R3', 'R4',
   // Go
   'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14', 'G15',
   // TypeScript
@@ -4695,10 +4695,96 @@ function checkHelpArticleParity(): CheckResult {
     warnings
   };
 }
+// ============================================================================
+// Check R4: OAuth Connect Handler Coverage
+// ============================================================================
 
-// ============================================================================
-// Check T51: Handler package.json Required Properties
-// ============================================================================
+/**
+ * Ensures every enabled, non-temporarily-unavailable OAuth integration registered
+ * in the plugin registry has a corresponding branch in handleConnect within the
+ * user-integrations-handler. This prevents OAuth providers from being added to the
+ * registry without working connect logic (the exact bug that broke Google OAuth).
+ */
+function checkOAuthConnectHandlerCoverage(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const registryPath = path.join(TS_SRC_DIR, 'shared/src/plugin/registry.ts');
+  const handlerPath = path.join(TS_SRC_DIR, 'user-integrations-handler/src/index.ts');
+
+  if (!fs.existsSync(registryPath)) {
+    errors.push('Plugin registry not found');
+    return { name: 'OAuth Connect Handler Coverage', passed: false, errors, warnings };
+  }
+  if (!fs.existsSync(handlerPath)) {
+    errors.push('user-integrations-handler not found');
+    return { name: 'OAuth Connect Handler Coverage', passed: false, errors, warnings };
+  }
+
+  const registryContent = fs.readFileSync(registryPath, 'utf-8');
+  const handlerContent = fs.readFileSync(handlerPath, 'utf-8');
+
+  // Parse registry for OAuth integrations that are enabled and NOT temporarily unavailable
+  // We use block-based parsing: split by registerIntegration( calls
+  const oauthIntegrationIds: string[] = [];
+  const blocks = registryContent.split(/\nregisterIntegration\(\{/);
+
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i];
+
+    // Extract the id
+    const idMatch = /id:\s*['"]([^'"]+)['"]/.exec(block);
+    if (!idMatch) continue;
+    const id = idMatch[1];
+
+    // Check authType is OAuth
+    const authTypeMatch = /authType:\s*IntegrationAuthType\.(\w+)/.exec(block);
+    if (!authTypeMatch || authTypeMatch[1] !== 'INTEGRATION_AUTH_TYPE_OAUTH') continue;
+
+    // Check enabled: true
+    const enabledMatch = /enabled:\s*(true|false)/.exec(block);
+    if (enabledMatch && enabledMatch[1] === 'false') continue;
+
+    // Check NOT isTemporarilyUnavailable: true
+    const tempUnavailMatch = /isTemporarilyUnavailable:\s*true/.exec(block);
+    if (tempUnavailMatch) continue;
+
+    oauthIntegrationIds.push(id);
+  }
+
+  // Parse handleConnect's provider allowlist from the handler
+  // Pattern: !['strava', 'fitbit', 'google', 'github'].includes(provider)
+  const allowlistMatch = /\[([^\]]*)\]\.includes\(provider\)/.exec(handlerContent);
+  const handledProviders = new Set<string>();
+
+  if (allowlistMatch) {
+    const listContent = allowlistMatch[1];
+    const providerPattern = /['"]([^'"]+)['"]/g;
+    let match;
+    while ((match = providerPattern.exec(listContent)) !== null) {
+      handledProviders.add(match[1]);
+    }
+  }
+
+  // Check each available OAuth integration is in the allowlist
+  for (const id of oauthIntegrationIds) {
+    if (!handledProviders.has(id)) {
+      errors.push(
+        `OAuth integration '${id}' is enabled and available in registry but missing from ` +
+        `handleConnect provider allowlist in user-integrations-handler`
+      );
+    }
+  }
+
+  return {
+    name: 'OAuth Connect Handler Coverage',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+
 
 /**
  * Validates that all TypeScript handlers have exact required package.json properties.
@@ -5089,6 +5175,7 @@ function main(): void {
         { id: 'R1', fn: () => ({ ...checkPluginCategoryValidation(), name: 'R1: Plugin Category Validation' }) },
         { id: 'R2', fn: () => ({ ...checkPluginIconUniqueness(), name: 'R2: Plugin Icon Uniqueness' }) },
         { id: 'R3', fn: () => ({ ...checkHelpArticleParity(), name: 'R3: Help Article Parity' }) },
+        { id: 'R4', fn: () => ({ ...checkOAuthConnectHandlerCoverage(), name: 'R4: OAuth Connect Handler Coverage' }) },
       ]
     },
     {

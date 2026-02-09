@@ -184,7 +184,8 @@ describe('user-integrations-handler', () => {
         integrations: {
           strava: { enabled: true, athleteId: 123456, lastUsedAt: new Date() },
           fitbit: { enabled: false },
-          hevy: { enabled: true, userId: 'hevy-user-12345', lastUsedAt: new Date() }
+          hevy: { enabled: true, userId: 'hevy-user-12345', lastUsedAt: new Date() },
+          github: { enabled: true, githubUserId: 'gh-12345', lastUsedAt: new Date() },
         }
       });
 
@@ -194,6 +195,8 @@ describe('user-integrations-handler', () => {
       expect(result.strava.externalUserId).toBe('123456');
       expect(result.hevy.connected).toBe(true);
       expect(result.hevy.externalUserId).toContain('***'); // Masked
+      expect(result.github.connected).toBe(true);
+      expect(result.github.externalUserId).toBe('gh-12345');
     });
   });
 
@@ -225,6 +228,13 @@ describe('user-integrations-handler', () => {
       req.path = '/api/users/me/integrations/fitbit/connect';
       const result: any = await handler(req, ctx);
       expect(result.url).toContain('fitbit.com/oauth2/authorize');
+    });
+
+    it('returns OAuth URL for github', async () => {
+      req.path = '/api/users/me/integrations/github/connect';
+      const result: any = await handler(req, ctx);
+      expect(result.url).toContain('github.com/login/oauth/authorize');
+      expect(result.url).toContain('repo');
     });
   });
 
