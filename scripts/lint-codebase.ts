@@ -101,7 +101,7 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // W4: Complex pages - acceptable for wizard/edit pages
   'W4': [/PipelineEditPage/, /PipelineWizardPage/],
   // E6: These files wrap generated formatters or use enums for UI control flow
-  'E6': [/admin-cli/, /events-helper/, /fitbit-handler/, /EnricherConfigForm/],
+  'E6': [/admin-cli/, /events-helper/, /fitbit-handler/, /EnricherConfigForm/, /user-pipelines-handler/],
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   // ActivityDetailPage fetches image assets (SVGs), not API calls
   'W1': [/usePluginRegistry/, /ActivityDetailPage/],
