@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.13.1](https://github.com/FitGlue/server/compare/v12.13.0...v12.13.1) (2026-02-10)
+
+
+### Bug Fixes
+
+* google oauth cred retrieval ([1edc5cb](https://github.com/FitGlue/server/commit/1edc5cb28cea575602d610e6d7ada7954294bab1))
+* stats for marketing site ([c54f04b](https://github.com/FitGlue/server/commit/c54f04bab0133378dd9ac96cd8710ced75d0a270))
+
 ## [12.13.0](https://github.com/FitGlue/server/compare/v12.12.0...v12.13.0) (2026-02-09)
 
 
