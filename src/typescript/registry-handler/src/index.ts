@@ -43,7 +43,7 @@ function getShowcaseBaseUrl(): string {
 /**
  * Fetch platform-wide stats from Firestore for the marketing site.
  * - athleteCount: users with access_enabled == true
- * - activitiesBoostedCount: sum of activityCounts.synchronized across all users
+ * - activitiesBoostedCount: pipeline runs with SYNCED status (activities that went through boosters)
  */
 export async function getPlatformStats(logger: { info: (...args: unknown[]) => void; warn: (...args: unknown[]) => void }): Promise<{ athleteCount: number; activitiesBoostedCount: number }> {
   // Lazy-init Firebase Admin (only needed for stats)
@@ -59,21 +59,13 @@ export async function getPlatformStats(logger: { info: (...args: unknown[]) => v
     .get();
   const athleteCount = athleteSnapshot.data().count;
 
-  // Sum synchronized activity counts across all users
-  // Each user document has activityCounts.synchronized as a materialized counter
-  const usersSnapshot = await db.collection('users')
-    .where('access_enabled', '==', true)
-    .select('activityCounts.synchronized')
+  // Count activities boosted: pipeline runs with SYNCED status across all users
+  // PipelineRunStatus.PIPELINE_RUN_STATUS_SYNCED = 2
+  const syncedRunsSnapshot = await db.collectionGroup('pipeline_runs')
+    .where('status', '==', 2)
+    .count()
     .get();
-
-  let activitiesBoostedCount = 0;
-  usersSnapshot.forEach(doc => {
-    const data = doc.data();
-    const syncCount = data?.activityCounts?.synchronized;
-    if (typeof syncCount === 'number') {
-      activitiesBoostedCount += syncCount;
-    }
-  });
+  const activitiesBoostedCount = syncedRunsSnapshot.data().count;
 
   logger.info('Platform stats fetched', { athleteCount, activitiesBoostedCount });
 

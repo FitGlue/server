@@ -41,9 +41,9 @@ jest.mock('@fitglue/shared/plugin', () => ({
 
 // --- Firebase Admin Mocks ---
 const mockCountGet = jest.fn();
-const mockSelect = jest.fn();
-const mockSelectGet = jest.fn();
+const mockCollectionGroupCountGet = jest.fn();
 const mockWhere = jest.fn();
+const mockCollectionGroupWhere = jest.fn();
 
 jest.mock('firebase-admin/app', () => ({
   getApps: jest.fn(() => [{ name: 'mock' }]), // Pretend already initialized
@@ -54,6 +54,9 @@ jest.mock('firebase-admin/firestore', () => ({
   getFirestore: jest.fn(() => ({
     collection: jest.fn(() => ({
       where: mockWhere,
+    })),
+    collectionGroup: jest.fn(() => ({
+      where: mockCollectionGroupWhere,
     })),
   })),
 }));
@@ -87,8 +90,8 @@ describe('registry-handler', () => {
     // Reset Firebase mocks
     mockWhere.mockReset();
     mockCountGet.mockReset();
-    mockSelect.mockReset();
-    mockSelectGet.mockReset();
+    mockCollectionGroupWhere.mockReset();
+    mockCollectionGroupCountGet.mockReset();
   });
 
   it('returns 405 for non-GET requests', async () => {
@@ -121,19 +124,17 @@ describe('registry-handler', () => {
 
   it('includes stats when marketingMode=true', async () => {
     // Setup Firestore mocks for getPlatformStats
+    // Users collection: count query for athletes
     mockWhere.mockImplementation(() => ({
       count: () => ({ get: mockCountGet }),
-      select: mockSelect,
     }));
     mockCountGet.mockResolvedValue({ data: () => ({ count: 15 }) });
-    mockSelect.mockReturnValue({ get: mockSelectGet });
-    mockSelectGet.mockResolvedValue({
-      forEach: (fn: (doc: any) => void) => {
-        fn({ data: () => ({ activityCounts: { synchronized: 100 } }) });
-        fn({ data: () => ({ activityCounts: { synchronized: 50 } }) });
-        fn({ data: () => ({}) }); // User without counts
-      },
-    });
+
+    // collectionGroup: count query for synced pipeline runs
+    mockCollectionGroupWhere.mockImplementation(() => ({
+      count: () => ({ get: mockCollectionGroupCountGet }),
+    }));
+    mockCollectionGroupCountGet.mockResolvedValue({ data: () => ({ count: 150 }) });
 
     mockReq.query = { marketingMode: 'true' };
     const response: any = await handler(mockReq, mockCtx);
@@ -176,23 +177,22 @@ describe('getPlatformStats', () => {
   beforeEach(() => {
     mockWhere.mockReset();
     mockCountGet.mockReset();
-    mockSelect.mockReset();
-    mockSelectGet.mockReset();
+    mockCollectionGroupWhere.mockReset();
+    mockCollectionGroupCountGet.mockReset();
   });
 
   it('returns correct counts from Firestore', async () => {
+    // Users collection: count query for athletes
     mockWhere.mockImplementation(() => ({
       count: () => ({ get: mockCountGet }),
-      select: mockSelect,
     }));
     mockCountGet.mockResolvedValue({ data: () => ({ count: 8 }) });
-    mockSelect.mockReturnValue({ get: mockSelectGet });
-    mockSelectGet.mockResolvedValue({
-      forEach: (fn: (doc: any) => void) => {
-        fn({ data: () => ({ activityCounts: { synchronized: 200 } }) });
-        fn({ data: () => ({ activityCounts: { synchronized: 147 } }) });
-      },
-    });
+
+    // collectionGroup: count query for synced pipeline runs
+    mockCollectionGroupWhere.mockImplementation(() => ({
+      count: () => ({ get: mockCollectionGroupCountGet }),
+    }));
+    mockCollectionGroupCountGet.mockResolvedValue({ data: () => ({ count: 347 }) });
 
     const stats = await getPlatformStats(mockLogger);
 
@@ -200,4 +200,3 @@ describe('getPlatformStats', () => {
     expect(mockLogger.info).toHaveBeenCalledWith('Platform stats fetched', { athleteCount: 8, activitiesBoostedCount: 347 });
   });
 });
-
