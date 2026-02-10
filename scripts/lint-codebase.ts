@@ -58,7 +58,7 @@ const ERROR_RULES = new Set([
   // Infrastructure
   'I1', 'I2', 'I3', 'I4', 'I5', 'I6', 'R1', 'R3', 'R4',
   // Go
-  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14', 'G15',
+  'G3', 'G4', 'G6', 'G8', 'G9', 'G10', 'G11', 'G13', 'G14', 'G15', 'G16',
   // TypeScript
   'T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12', 'T14', 'T15', 'T16', 'T17', 'T51', 'T52', 'T53',
   'T20', // Module barrel exports required for smart pruning
@@ -1817,6 +1817,79 @@ function checkGoProviderImports(): CheckResult {
 
   return {
     name: 'Go Provider Imports (G15)',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
+// ============================================================================
+// Check 16: Go Token Source Provider Parity (G16)
+// ============================================================================
+
+/**
+ * Validates that all providers used with NewFirestoreTokenSource across the
+ * Go codebase are handled in the token_source.go switch statements.
+ *
+ * Root cause of the Google Sheets "unknown provider google" failure (Feb 2026):
+ * googlesheets-uploader passed "google" to NewFirestoreTokenSource but the
+ * Token/ForceRefresh/refreshToken methods only had cases for strava/fitbit/
+ * trainingpeaks/polar.
+ */
+function checkGoTokenSourceProviderParity(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  const tokenSourcePath = path.join(GO_SRC_DIR, 'pkg/infrastructure/oauth/token_source.go');
+  if (!fs.existsSync(tokenSourcePath)) {
+    errors.push('token_source.go not found');
+    return { name: 'Go Token Source Provider Parity (G16)', passed: false, errors, warnings };
+  }
+
+  const tokenSourceContent = fs.readFileSync(tokenSourcePath, 'utf-8');
+
+  // 1. Extract all switch case providers from token_source.go
+  //    Pattern: case "provider":
+  const casePattern = /case\s+"(\w+)":/g;
+  const handledProviders = new Set<string>();
+  let caseMatch;
+  while ((caseMatch = casePattern.exec(tokenSourceContent)) !== null) {
+    handledProviders.add(caseMatch[1]);
+  }
+
+  // 2. Scan all Go files for NewFirestoreTokenSource calls and extract provider strings
+  const goFiles = getFilesRecursive(GO_SRC_DIR, '.go');
+  const callerProviders = new Map<string, string[]>(); // provider -> [files]
+
+  for (const file of goFiles) {
+    // Skip the token_source.go file itself and test files
+    if (file.includes('token_source.go') || file.endsWith('_test.go')) continue;
+
+    const content = fs.readFileSync(file, 'utf-8');
+    // Match: oauth.NewFirestoreTokenSource(something, something, "provider")
+    const callerPattern = /NewFirestoreTokenSource\([^)]*,\s*"(\w+)"\s*\)/g;
+    let callerMatch;
+    while ((callerMatch = callerPattern.exec(content)) !== null) {
+      const provider = callerMatch[1];
+      const relativePath = path.relative(GO_SRC_DIR, file);
+      if (!callerProviders.has(provider)) {
+        callerProviders.set(provider, []);
+      }
+      callerProviders.get(provider)!.push(relativePath);
+    }
+  }
+
+  // 3. Check that every caller provider is handled in token_source.go
+  for (const [provider, files] of callerProviders) {
+    if (!handledProviders.has(provider)) {
+      errors.push(
+        `Provider "${provider}" used in ${files.join(', ')} but missing from token_source.go switch statements - add case "${provider}" to ForceRefresh, Token, and refreshToken methods`
+      );
+    }
+  }
+
+  return {
+    name: 'Go Token Source Provider Parity (G16)',
     passed: errors.length === 0,
     errors,
     warnings
@@ -5390,6 +5463,7 @@ function main(): void {
         { id: 'G13', fn: () => ({ ...checkEnricherProviderArchitecture(), name: 'G13: Enricher Provider Architecture' }) },
         { id: 'G14', fn: () => ({ ...checkUploaderDescriptionSectionReplacement(), name: 'G14: Uploader Description Section Replacement' }) },
         { id: 'G15', fn: () => ({ ...checkGoProviderImports(), name: 'G15: Go Provider Import Coverage' }) },
+        { id: 'G16', fn: () => ({ ...checkGoTokenSourceProviderParity(), name: 'G16: Go Token Source Provider Parity' }) },
       ]
     },
     {

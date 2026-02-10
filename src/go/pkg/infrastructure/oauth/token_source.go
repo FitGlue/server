@@ -81,6 +81,21 @@ func (s *FirestoreTokenSource) ForceRefresh(ctx context.Context) (*Token, error)
 			return nil, fmt.Errorf("polar not linked/enabled")
 		}
 		refreshToken = userData.Integrations.Polar.RefreshToken
+	case "google":
+		if userData.Integrations.Google == nil || !userData.Integrations.Google.Enabled {
+			return nil, fmt.Errorf("google not linked/enabled")
+		}
+		refreshToken = userData.Integrations.Google.RefreshToken
+	case "github":
+		if userData.Integrations.Github == nil || !userData.Integrations.Github.Enabled {
+			return nil, fmt.Errorf("github not linked/enabled")
+		}
+		refreshToken = userData.Integrations.Github.RefreshToken
+	case "spotify":
+		if userData.Integrations.Spotify == nil || !userData.Integrations.Spotify.Enabled {
+			return nil, fmt.Errorf("spotify not linked/enabled")
+		}
+		refreshToken = userData.Integrations.Spotify.RefreshToken
 	default:
 		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
@@ -147,6 +162,33 @@ func (s *FirestoreTokenSource) Token(ctx context.Context) (*Token, error) {
 		if userData.Integrations.Polar.ExpiresAt != nil {
 			expiry = userData.Integrations.Polar.ExpiresAt.AsTime()
 		}
+	case "google":
+		if userData.Integrations.Google == nil || !userData.Integrations.Google.Enabled {
+			return nil, fmt.Errorf("google not linked/enabled")
+		}
+		accessToken = userData.Integrations.Google.AccessToken
+		refreshToken = userData.Integrations.Google.RefreshToken
+		if userData.Integrations.Google.ExpiresAt != nil {
+			expiry = userData.Integrations.Google.ExpiresAt.AsTime()
+		}
+	case "github":
+		if userData.Integrations.Github == nil || !userData.Integrations.Github.Enabled {
+			return nil, fmt.Errorf("github not linked/enabled")
+		}
+		accessToken = userData.Integrations.Github.AccessToken
+		refreshToken = userData.Integrations.Github.RefreshToken
+		if userData.Integrations.Github.ExpiresAt != nil {
+			expiry = userData.Integrations.Github.ExpiresAt.AsTime()
+		}
+	case "spotify":
+		if userData.Integrations.Spotify == nil || !userData.Integrations.Spotify.Enabled {
+			return nil, fmt.Errorf("spotify not linked/enabled")
+		}
+		accessToken = userData.Integrations.Spotify.AccessToken
+		refreshToken = userData.Integrations.Spotify.RefreshToken
+		if userData.Integrations.Spotify.ExpiresAt != nil {
+			expiry = userData.Integrations.Spotify.ExpiresAt.AsTime()
+		}
 	default:
 		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
@@ -189,13 +231,19 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 		tokenURL = "https://oauth.trainingpeaks.com/token"
 	case "polar":
 		tokenURL = "https://polarremote.com/v2/oauth2/token"
+	case "google":
+		tokenURL = "https://oauth2.googleapis.com/token"
+	case "github":
+		tokenURL = "https://github.com/login/oauth/access_token"
+	case "spotify":
+		tokenURL = "https://accounts.spotify.com/api/token"
 	default:
 		return nil, fmt.Errorf("unsupported provider for refresh: %s", s.provider)
 	}
 
 	data := url.Values{}
-	// Strava requires client_id/secret in body. Fitbit uses Basic Auth header (see below).
-	if s.provider != "fitbit" {
+	// Strava requires client_id/secret in body. Fitbit and Spotify use Basic Auth header (see below).
+	if s.provider != "fitbit" && s.provider != "spotify" {
 		data.Set("client_id", clientID)
 		data.Set("client_secret", clientSecret)
 	}
@@ -208,8 +256,13 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	if s.provider == "fitbit" {
+	if s.provider == "fitbit" || s.provider == "spotify" {
 		req.SetBasicAuth(clientID, clientSecret)
+	}
+
+	// GitHub returns JSON only if we ask for it
+	if s.provider == "github" {
+		req.Header.Set("Accept", "application/json")
 	}
 
 	resp, err := http.DefaultClient.Do(req)
