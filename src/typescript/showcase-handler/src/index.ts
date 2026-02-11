@@ -60,13 +60,7 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
       method: 'GET',
       pattern: '/u/:slug',
       handler: async (match) => {
-        return new FrameworkResponse({
-          status: 302,
-          headers: {
-            ...corsHeaders,
-            'Location': `/showcase-profile.html?slug=${encodeURIComponent(match.params.slug)}`
-          }
-        });
+        return await handleHtmlProfile(match.params.slug, showcaseProfileStore, corsHeaders);
       }
     },
     {
@@ -202,6 +196,61 @@ async function handleApiShowcase(
 }
 
 
+const OG_FALLBACK_IMAGE = 'https://fitglue.com/images/screenshots/boosted-activity.png';
+const SITE_URL = 'https://fitglue.com';
+
+/**
+ * Generate a minimal HTML page with dynamic OG meta tags and a client-side redirect.
+ * Social media crawlers read the OG tags; browsers execute the JS redirect to the full page.
+ */
+function generateOgHtml(options: {
+  title: string;
+  description: string;
+  url: string;
+  redirectUrl: string;
+  image?: string;
+}): string {
+  const escape = (s: string) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const title = escape(options.title);
+  const description = escape(options.description);
+  const url = escape(options.url);
+  const image = escape(options.image || OG_FALLBACK_IMAGE);
+  const redirectUrl = escape(options.redirectUrl);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${title}</title>
+  <meta name="description" content="${description}">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="${title}">
+  <meta property="og:description" content="${description}">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="${url}">
+  <meta property="og:image" content="${image}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="FitGlue">
+  <meta property="og:locale" content="en_GB">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${title}">
+  <meta name="twitter:description" content="${description}">
+  <meta name="twitter:image" content="${image}">
+
+  <meta http-equiv="refresh" content="0;url=${redirectUrl}">
+</head>
+<body>
+  <p>Redirecting...</p>
+  <script>window.location.replace("${redirectUrl.replace(/"/g, '\\"')}");</script>
+</body>
+</html>`;
+}
+
 async function handleHtmlShowcase(
   showcaseId: string,
   showcaseStore: ShowcaseStore,
@@ -219,12 +268,71 @@ async function handleHtmlShowcase(
     throw new HttpError(410, 'This showcase has expired');
   }
 
-  // Serve the static page, which will fetch data via /api/showcase/{id}
+  const ownerAttribution = data.ownerDisplayName ? ` by ${data.ownerDisplayName}` : '';
+  const ogTitle = `${data.title || 'Activity'}${ownerAttribution} — FitGlue`;
+  const ogDescription = data.description || 'Check out this activity on FitGlue — Watch your workout become extraordinary.';
+  const canonicalUrl = `${SITE_URL}/showcase/${showcaseId}`;
+
+  const html = generateOgHtml({
+    title: ogTitle,
+    description: ogDescription,
+    url: canonicalUrl,
+    redirectUrl: `/showcase.html?id=${showcaseId}`,
+  });
+
   return new FrameworkResponse({
-    status: 302,
+    status: 200,
+    body: html,
     headers: {
       ...corsHeaders,
-      'Location': `/showcase.html?id=${showcaseId}`
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=3600',
+    }
+  });
+}
+
+/**
+ * Handle GET /u/:slug
+ * Serves an HTML page with dynamic OG tags for the profile, then redirects to the full profile page.
+ */
+async function handleHtmlProfile(
+  slug: string,
+  profileStore: ShowcaseProfileStore,
+  corsHeaders: Record<string, string>
+): Promise<FrameworkResponse> {
+  const profile = await profileStore.get(slug);
+  if (!profile) {
+    throw new HttpError(404, 'Profile not found');
+  }
+
+  const ogTitle = `${profile.displayName} — FitGlue Athlete`;
+  const statsParts: string[] = [];
+  if (profile.totalActivities > 0) statsParts.push(`${profile.totalActivities} activities`);
+  if (profile.totalDistanceMeters > 0) statsParts.push(`${(profile.totalDistanceMeters / 1000).toFixed(1)} km`);
+  if (profile.totalDurationSeconds > 0) {
+    const hours = Math.floor(profile.totalDurationSeconds / 3600);
+    if (hours > 0) statsParts.push(`${hours}h active`);
+  }
+  const ogDescription = statsParts.length > 0
+    ? `${profile.displayName}'s showcase: ${statsParts.join(' · ')}. Powered by FitGlue.`
+    : `${profile.displayName}'s athlete showcase on FitGlue.`;
+
+  const canonicalUrl = `${SITE_URL}/u/${encodeURIComponent(slug)}`;
+
+  const html = generateOgHtml({
+    title: ogTitle,
+    description: ogDescription,
+    url: canonicalUrl,
+    redirectUrl: `/showcase-profile.html?slug=${encodeURIComponent(slug)}`,
+  });
+
+  return new FrameworkResponse({
+    status: 200,
+    body: html,
+    headers: {
+      ...corsHeaders,
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'public, max-age=300',
     }
   });
 }

@@ -194,12 +194,18 @@ describe('showcase-handler', () => {
   let ctx: any;
   let mockShowcaseStore: any;
 
+  let mockShowcaseProfileStore: any;
+
   beforeEach(() => {
     mockShowcaseStore = {
       get: jest.fn(),
       exists: jest.fn(),
     };
+    mockShowcaseProfileStore = {
+      get: jest.fn(),
+    };
     (ShowcaseStore as unknown as jest.Mock).mockImplementation(() => mockShowcaseStore);
+    (MockShowcaseProfileStore as unknown as jest.Mock).mockImplementation(() => mockShowcaseProfileStore);
 
     req = {
       method: 'GET',
@@ -316,20 +322,84 @@ describe('showcase-handler', () => {
     });
   });
 
-  describe('HTML redirect', () => {
-    it('redirects to static page for /showcase/{id} paths', async () => {
+  describe('HTML showcase with dynamic OG tags', () => {
+    it('returns 200 with HTML containing dynamic OG tags for /showcase/{id}', async () => {
       req.path = '/showcase/my-activity';
       mockShowcaseStore.get.mockResolvedValue({
         showcaseId: 'my-activity',
         userId: 'user-123',
+        title: 'Morning Run',
+        description: 'A lovely morning jog',
+        ownerDisplayName: 'James',
       });
 
-      // Note: HTML redirect path doesn't fetch user data, so no mock needed
       const result = await showcaseHandler(req, ctx);
-      expect((result as unknown as FrameworkResponse).options.status).toBe(302);
+      expect((result as unknown as FrameworkResponse).options.status).toBe(200);
+      const body = (result as unknown as FrameworkResponse).options.body as string;
+      expect(body).toContain('og:title');
+      expect(body).toContain('Morning Run by James');
+      expect(body).toContain('A lovely morning jog');
+      expect(body).toContain('og:image');
+      expect(body).toContain('boosted-activity.png');
       expect((result as unknown as FrameworkResponse).options.headers).toMatchObject({
-        'Location': '/showcase.html?id=my-activity',
+        'Content-Type': 'text/html; charset=utf-8',
       });
+    });
+
+    it('includes client-side redirect to showcase.html', async () => {
+      req.path = '/showcase/my-activity';
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'my-activity',
+        userId: 'user-123',
+        title: 'Test',
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      const body = (result as unknown as FrameworkResponse).options.body as string;
+      expect(body).toContain('window.location.replace');
+      expect(body).toContain('/showcase.html?id=my-activity');
+    });
+
+    it('uses fallback description when none provided', async () => {
+      req.path = '/showcase/my-activity';
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'my-activity',
+        userId: 'user-123',
+        title: 'Test',
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      const body = (result as unknown as FrameworkResponse).options.body as string;
+      expect(body).toContain('Check out this activity on FitGlue');
+    });
+  });
+
+  describe('profile OG tags (/u/:slug)', () => {
+    it('returns 200 with personalised OG tags for profile', async () => {
+      req.path = '/u/james-fit';
+      mockShowcaseProfileStore.get.mockResolvedValue({
+        slug: 'james-fit',
+        displayName: 'James',
+        totalActivities: 42,
+        totalDistanceMeters: 150000,
+        totalDurationSeconds: 72000,
+        entries: [],
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      expect((result as unknown as FrameworkResponse).options.status).toBe(200);
+      const body = (result as unknown as FrameworkResponse).options.body as string;
+      expect(body).toContain('James');
+      expect(body).toContain('FitGlue Athlete');
+      expect(body).toContain('42 activities');
+      expect(body).toContain('150.0 km');
+      expect(body).toContain('showcase-profile.html?slug=james-fit');
+    });
+
+    it('returns 404 for non-existent profile', async () => {
+      req.path = '/u/unknown-slug';
+      mockShowcaseProfileStore.get.mockResolvedValue(null);
+      await expect(showcaseHandler(req, ctx)).rejects.toThrow(HttpError);
     });
   });
 
