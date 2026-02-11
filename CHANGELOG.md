@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.1.0](https://github.com/FitGlue/server/compare/v14.0.0...v14.1.0) (2026-02-11)
+
+
+### Features
+
+* improve data exports, showcase profiles, Google Sheets max HR, and pending input messages ([9e5b843](https://github.com/FitGlue/server/commit/9e5b843a42e12855a7f2a1e869eacbe1b70d3a4c))
+
+
+### Bug Fixes
+
+* hevy handler also handles workoutId in top-level ([a06469d](https://github.com/FitGlue/server/commit/a06469dc59fb5938c9d9ad73e75676ebd48da453))
+* hevy-uploader to output usable workoutId ([11c83a2](https://github.com/FitGlue/server/commit/11c83a27392ae5fe7ab550334eaf4efafbf803d6))
+
 ## [14.0.0](https://github.com/FitGlue/server/compare/v13.0.0...v14.0.0) (2026-02-11)
 
 
