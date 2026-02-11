@@ -40,6 +40,7 @@ import (
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/heart_rate_summary"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/heart_rate_zones"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/hybrid_race_tagger"
+	_ "github.com/fitglue/server/src/go/functions/enricher/providers/intervals"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/location_naming"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/logic_gate"
 	_ "github.com/fitglue/server/src/go/functions/enricher/providers/mock"

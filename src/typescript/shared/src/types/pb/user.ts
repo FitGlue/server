@@ -85,6 +85,8 @@ export enum EnricherProviderType {
   ENRICHER_PROVIDER_RECOVERY_ADVISOR = 37,
   /** ENRICHER_PROVIDER_EFFORT_SCORE - Config inputs: none (computes relative effort score 0-100 against rolling 14-day history) */
   ENRICHER_PROVIDER_EFFORT_SCORE = 38,
+  /** ENRICHER_PROVIDER_INTERVALS - Config inputs: "show_all_intervals" (boolean), "show_progression" (boolean), "show_summary" (boolean) */
+  ENRICHER_PROVIDER_INTERVALS = 39,
   ENRICHER_PROVIDER_MOCK = 99,
   UNRECOGNIZED = -1,
 }

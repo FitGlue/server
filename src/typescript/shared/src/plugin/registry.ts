@@ -3645,6 +3645,84 @@ As your fitness changes, so does your baseline. A run that scored 75 three month
   popularityScore: 80,
 });
 
+// ============================================
+// Intervals
+// ============================================
+registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_INTERVALS, {
+  id: 'intervals',
+  type: PluginType.PLUGIN_TYPE_ENRICHER,
+  name: 'Intervals',
+  description: 'Detect and summarize structured intervals from workout plans',
+  icon: '⏱️',
+  enabled: true,
+  requiredIntegrations: [],
+  configSchema: [
+    {
+      key: 'show_all_intervals',
+      label: 'Show All Intervals',
+      description: 'List every individual interval instead of grouping repeats',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'false',
+      options: [],
+    },
+    {
+      key: 'show_progression',
+      label: 'Show Progression',
+      description: 'Show sprint fade/progression analysis',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+    {
+      key: 'show_summary',
+      label: 'Show Summary',
+      description: 'Show active vs recovery comparison',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_BOOLEAN,
+      required: false,
+      defaultValue: 'true',
+      options: [],
+    },
+  ],
+  marketingDescription: `
+### Know Your Intervals
+Automatically detects and summarizes structured interval workouts from your activity data. Groups repeated intervals, shows pace comparisons, and tracks sprint fade.
+
+### Smart Grouping
+Repeated intervals with similar durations are grouped together: "3×40s sprints: avg 3:28/km, peak 162bpm". Enable **Show All Intervals** to see each interval individually.
+
+### Performance Insights
+Track how your sprint pace changes across sets and compare active vs recovery speeds.
+  `,
+  features: [
+    '✅ Auto-detect structured intervals from FIT files',
+    '✅ Group repeated intervals (e.g., 3×40s)',
+    '✅ Sprint fade/progression analysis',
+    '✅ Active vs recovery speed comparison',
+    '✅ Warmup and cooldown summary',
+  ],
+  transformations: [
+    {
+      field: 'description',
+      label: 'Interval Summary',
+      before: 'Morning Run',
+      after: '',
+      visualType: '',
+      afterHtml: '⏱️ Intervals: 20min Sprints<br>🔥 Warmup: 5:00 • 5:47/km • 863m<br>💨 3×40s sprints: avg 3:28/km, peak 162bpm<br>❄️ Cooldown: 5:00 • 6:33/km • 763m',
+    },
+  ],
+  useCases: [
+    'Summarize structured interval training',
+    'Compare sprint performance across sets',
+    'Track interval progression over time',
+  ],
+  category: 'summaries',
+  sortOrder: 7,
+  isPremium: false,
+  popularityScore: 75,
+});
+
 registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_MOCK, {
   id: 'mock',
   type: PluginType.PLUGIN_TYPE_ENRICHER,

@@ -33,6 +33,8 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 	var lapInfos []lapInfo
 	var sessionInfos []sessionInfo
 	var setInfos []setInfo
+	var workoutSteps []workoutStepInfo
+	var workoutName string
 
 	var activityType pb.ActivityType
 	var activityName string
@@ -81,6 +83,18 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 					li.lapTrigger = &trigger
 				}
 
+				// Extract intensity for interval identification
+				if lapMsg.Intensity != typedef.IntensityInvalid {
+					intensity := lapMsg.Intensity.String()
+					li.intensity = &intensity
+				}
+
+				// Extract average heart rate for interval stats
+				if lapMsg.AvgHeartRate != 0xFF {
+					avgHR := int32(lapMsg.AvgHeartRate)
+					li.avgHeartRate = &avgHR
+				}
+
 				lapInfos = append(lapInfos, li)
 
 			case typedef.MesgNumSession:
@@ -120,6 +134,36 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 					si.exerciseName = formatExerciseCategory(setMsg.Category[0])
 				}
 				setInfos = append(setInfos, si)
+
+			case typedef.MesgNumWorkout:
+				wktMsg := mesgdef.NewWorkout(&msg)
+				if wktMsg.WktName != "" {
+					workoutName = wktMsg.WktName
+				}
+
+			case typedef.MesgNumWorkoutStep:
+				stepMsg := mesgdef.NewWorkoutStep(&msg)
+				wsi := workoutStepInfo{
+					durationType: stepMsg.DurationType.String(),
+				}
+				if stepMsg.Intensity != typedef.IntensityInvalid {
+					wsi.intensity = stepMsg.Intensity.String()
+				}
+				// Duration value depends on type
+				if stepMsg.DurationValue != 0xFFFFFFFF {
+					wsi.durationValue = stepMsg.DurationValue
+				}
+				// Target type and range
+				if stepMsg.TargetType != typedef.WktStepTargetInvalid {
+					wsi.targetType = stepMsg.TargetType.String()
+				}
+				if stepMsg.CustomTargetValueLow != 0xFFFFFFFF {
+					wsi.targetLow = stepMsg.CustomTargetValueLow
+				}
+				if stepMsg.CustomTargetValueHigh != 0xFFFFFFFF {
+					wsi.targetHigh = stepMsg.CustomTargetValueHigh
+				}
+				workoutSteps = append(workoutSteps, wsi)
 			}
 		}
 	}
@@ -153,6 +197,25 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 		TimeMarkers: generateExerciseTimeMarkers(setInfos),
 	}
 
+	// Populate workout definition if present
+	if workoutName != "" || len(workoutSteps) > 0 {
+		wkDefn := &pb.WorkoutDefinition{}
+		if workoutName != "" {
+			wkDefn.Name = workoutName
+		}
+		for _, wsi := range workoutSteps {
+			wkDefn.Steps = append(wkDefn.Steps, &pb.WorkoutStep{
+				Intensity:     wsi.intensity,
+				DurationType:  wsi.durationType,
+				DurationValue: wsi.durationValue,
+				TargetType:    wsi.targetType,
+				TargetLow:     wsi.targetLow,
+				TargetHigh:    wsi.targetHigh,
+			})
+		}
+		activity.Workout = wkDefn
+	}
+
 	return activity, nil
 }
 
@@ -162,6 +225,17 @@ type lapInfo struct {
 	totalDistance    float64
 	wktStepIndex     *int32  // Workout step index - laps with same index belong together
 	lapTrigger       *string // What triggered this lap (manual, distance, time, etc.)
+	intensity        *string // Interval intensity: "warmup", "active", "recovery", "cooldown"
+	avgHeartRate     *int32  // Average heart rate for the lap
+}
+
+type workoutStepInfo struct {
+	intensity     string
+	durationType  string
+	durationValue uint32
+	targetType    string
+	targetLow     uint32
+	targetHigh    uint32
 }
 
 type sessionInfo struct {
@@ -240,6 +314,10 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 			TotalElapsedTime: li.totalElapsedTime,
 			TotalDistance:    li.totalDistance,
 			Records:          []*pb.Record{},
+		}
+		// Preserve interval intensity on the proto Lap
+		if li.intensity != nil {
+			laps[i].Intensity = *li.intensity
 		}
 	}
 
@@ -449,6 +527,8 @@ func mergeConsecutiveLapInfos(group []lapInfo) lapInfo {
 		totalDistance:    0,
 		wktStepIndex:     group[0].wktStepIndex,
 		lapTrigger:       group[0].lapTrigger,
+		intensity:        group[0].intensity,
+		avgHeartRate:     group[0].avgHeartRate,
 	}
 
 	for _, li := range group {

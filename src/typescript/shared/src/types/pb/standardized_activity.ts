@@ -123,6 +123,8 @@ export interface StandardizedActivity {
   notes: string;
   /** Time markers for graph visualization (e.g., station transitions in hybrid races) */
   timeMarkers: TimeMarker[];
+  /** Structured workout definition (from FIT Workout/WorkoutStep messages) */
+  workout?: WorkoutDefinition | undefined;
 }
 
 /** TimeMarker represents a labeled point in time for graph visualization */
@@ -163,6 +165,8 @@ export interface Lap {
   records: Record[];
   /** Override exercise name for this lap (e.g., "SkiErg", "Sled Push") */
   exerciseName: string;
+  /** Interval intensity: "warmup", "active", "recovery", "cooldown" (from FIT Intensity enum) */
+  intensity: string;
 }
 
 /** Record represents a single data point in time (1Hz is typical) */
@@ -220,4 +224,25 @@ export interface StrengthSet {
   distanceMeters: number;
   /** Set Type (warmup, normal, failure, dropset) */
   setType: string;
+}
+
+/** WorkoutDefinition represents a structured workout plan (from FIT Workout message) */
+export interface WorkoutDefinition {
+  /** e.g., "20min Sprints" */
+  name: string;
+  steps: WorkoutStep[];
+}
+
+/** WorkoutStep represents a single step in a structured workout (from FIT WorkoutStep message) */
+export interface WorkoutStep {
+  /** "warmup", "active", "recovery", "cooldown" */
+  intensity: string;
+  /** "time", "distance", "open", "repeat_until_steps_cmplt" */
+  durationType: string;
+  /** ms for time, meters for distance, step index for repeat */
+  durationValue: number;
+  /** "open", "heart_rate", "speed", "power" */
+  targetType: string;
+  targetLow: number;
+  targetHigh: number;
 }

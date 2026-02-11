@@ -127,7 +127,8 @@ export const mapTCXToStandardized = (tcxXml: string, logData: LogData, userId: s
       totalElapsedTime: parseFloat(tcxLap.TotalTimeSeconds || '0'),
       totalDistance: parseFloat(tcxLap.DistanceMeters || '0'),
       records: records,
-      exerciseName: '' // Default empty - can be set by hybrid race tagger
+      exerciseName: '', // Default empty - can be set by hybrid race tagger
+      intensity: ''     // Default empty - set from FIT Intensity field
     };
 
     totalDistanceToCheck += lap.totalDistance;

@@ -95,6 +95,9 @@ message StandardizedActivity {
 
   // Time markers for graph visualization (e.g., station transitions in hybrid races)
   repeated TimeMarker time_markers = 11;
+
+  // Structured workout definition (from FIT Workout/WorkoutStep messages)
+  optional WorkoutDefinition workout = 12;
 }
 
 // TimeMarker represents a labeled point in time for graph visualization
@@ -126,6 +129,7 @@ message Lap {
   double total_distance = 3;     // meters
   repeated Record records = 4;
   string exercise_name = 5;      // Override exercise name for this lap (e.g., "SkiErg", "Sled Push")
+  string intensity = 6;          // Interval intensity: "warmup", "active", "recovery", "cooldown" (from FIT Intensity enum)
 }
 
 // Record represents a single data point in time (1Hz is typical)
@@ -196,4 +200,20 @@ enum MuscleGroup {
   MUSCLE_GROUP_NECK = 18;
   MUSCLE_GROUP_FULL_BODY = 19;
   MUSCLE_GROUP_OTHER = 20;
+}
+
+// WorkoutDefinition represents a structured workout plan (from FIT Workout message)
+message WorkoutDefinition {
+  string name = 1;                    // e.g., "20min Sprints"
+  repeated WorkoutStep steps = 2;
+}
+
+// WorkoutStep represents a single step in a structured workout (from FIT WorkoutStep message)
+message WorkoutStep {
+  string intensity = 1;      // "warmup", "active", "recovery", "cooldown"
+  string duration_type = 2;  // "time", "distance", "open", "repeat_until_steps_cmplt"
+  uint32 duration_value = 3; // ms for time, meters for distance, step index for repeat
+  string target_type = 4;    // "open", "heart_rate", "speed", "power"
+  uint32 target_low = 5;
+  uint32 target_high = 6;
 }
