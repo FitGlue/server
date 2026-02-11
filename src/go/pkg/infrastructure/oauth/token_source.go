@@ -292,26 +292,34 @@ func (s *FirestoreTokenSource) refreshToken(ctx context.Context, refreshToken st
 		newExpiry = time.Unix(result.ExpiresAt, 0)
 	}
 
-	// Update Firestore using UpdateUser logic which expects map (for now)
-	// We use nested maps to ensure proper Firestore object nesting, NOT dotted keys.
+	// Update Firestore using dotted paths to avoid overwriting the entire
+	// integration sub-object (which would wipe enabled, google_user_id, etc.)
+	prefix := "integrations." + s.provider + "."
 	updateData := map[string]interface{}{
-		"integrations": map[string]interface{}{
-			s.provider: map[string]interface{}{
-				"access_token":  result.AccessToken,
-				"refresh_token": result.RefreshToken,
-				"expires_at":    newExpiry,
-				"last_used_at":  time.Now(),
-			},
-		},
+		prefix + "access_token": result.AccessToken,
+		prefix + "expires_at":   newExpiry,
+		prefix + "last_used_at": time.Now(),
+	}
+	// Only update refresh_token if the provider returned a new one.
+	// Google and GitHub don't rotate refresh tokens on refresh, so
+	// writing the empty response value would wipe the stored token.
+	if result.RefreshToken != "" {
+		updateData[prefix+"refresh_token"] = result.RefreshToken
 	}
 
 	if err := s.db.DB.UpdateUser(ctx, s.userID, updateData); err != nil {
 		return nil, fmt.Errorf("failed to persist new tokens: %w", err)
 	}
 
+	// Preserve the original refresh token if the provider didn't return a new one
+	newRefreshToken := result.RefreshToken
+	if newRefreshToken == "" {
+		newRefreshToken = refreshToken
+	}
+
 	return &Token{
 		AccessToken:  result.AccessToken,
-		RefreshToken: result.RefreshToken,
+		RefreshToken: newRefreshToken,
 		Expiry:       newExpiry,
 	}, nil
 }
