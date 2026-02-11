@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [13.0.0](https://github.com/FitGlue/server/compare/v12.13.3...v13.0.0) (2026-02-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* UserService constructor now requires a PluginDefaultsStore parameter.
+Database interface adds GetPluginDefault, SetPluginDefault, GetShowcaseProfileByUserId,
+and DeleteShowcaseProfile methods.
+
+- Add PluginDefault protobuf message and Firestore storage layer (Go + TypeScript)
+- Add plugin defaults CRUD API endpoints on user-pipelines-handler
+- Auto-save source/destination configs as user-level defaults on pipeline create/update
+- Add backfill script for existing users' plugin defaults
+- Inject plugin defaults into repost-handler for missed destinations
+- Add data-export-handler Terraform provisioning (Cloud Function, Cloud Tasks queue,
+  Secret Manager email-app-password secret as env var)
+- Remove @google-cloud/secret-manager direct dependency from data-export-handler
+- Implement showcase profile slug healing (detect and migrate orphaned profiles
+  on display name change)
+- Add GetShowcaseProfileByUserId and DeleteShowcaseProfile to Database interface,
+  FirestoreAdapter, and mocks
+- Add /u/:slug/:id route to showcase-handler
+- Update ShowcaseProfileStore mock in showcase-handler tests
+
+### Features
+
+* add plugin defaults, data export handler, and showcase profile slug healing ([3503965](https://github.com/FitGlue/server/commit/350396504d7f0b9957d6216ac9e2fdadb13f6536))
+* **server:** add ShowcaseProfile materialization, display config DSL for pending inputs, and enricher fixes ([643ec69](https://github.com/FitGlue/server/commit/643ec6969393812d25cc7924952a1b96412566f2))
+
 ### [12.13.3](https://github.com/FitGlue/server/compare/v12.13.2...v12.13.3) (2026-02-11)
 
 
