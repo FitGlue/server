@@ -390,6 +390,49 @@ message ShowcasedActivity {
   string activity_data_uri = 18;
 }
 
+// ShowcaseProfileEntry is a lightweight summary of a showcased activity for list display.
+// Stored as part of ShowcaseProfile.entries array.
+message ShowcaseProfileEntry {
+  string showcase_id = 1;
+  string title = 2;
+  ActivityType activity_type = 3;
+  ActivitySource source = 4;
+  google.protobuf.Timestamp start_time = 5;
+  string route_thumbnail_url = 6;  // Optional route thumbnail from enrichment metadata
+  double distance_meters = 7;      // For per-activity stat display
+  double duration_seconds = 8;     // For per-activity stat display
+
+  // Strength stats (per-activity)
+  int32 total_sets = 9;
+  int32 total_reps = 10;
+  double total_weight_kg = 11;
+}
+
+// ShowcaseProfile is a materialized profile document for a user's public showcase homepage.
+// Stored in top-level showcase_profiles/{slug} collection.
+// Athlete tier only - created/updated by the showcase-uploader on each showcase write.
+message ShowcaseProfile {
+  string slug = 1;                            // URL-safe slug derived from display name
+  string user_id = 2;                         // Owner (for tier verification, not displayed publicly)
+  string display_name = 3;                    // Public display name
+  repeated ShowcaseProfileEntry entries = 4;  // All showcased activities (lightweight summaries)
+
+  // Aggregate stats (recomputed from entries on each write)
+  int32 total_activities = 5;
+  double total_distance_meters = 6;
+  double total_duration_seconds = 7;
+  google.protobuf.Timestamp latest_activity_at = 8;
+
+  // Strength aggregates
+  int32 total_sets = 11;
+  int32 total_reps = 12;
+  double total_weight_kg = 13;
+
+  // Lifecycle
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+}
+
 // PipelineRun tracks a complete pipeline execution lifecycle.
 // This is the primary entity for user-facing activity views, replacing the
 // old SynchronizedActivity + executions pattern.

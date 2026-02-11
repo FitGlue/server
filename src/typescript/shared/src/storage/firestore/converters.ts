@@ -412,6 +412,41 @@ export const FirestoreToShowcasedActivity = (data: Record<string, unknown>): imp
   };
 };
 
+export const FirestoreToShowcaseProfileEntry = (data: Record<string, unknown>): import('../../types/pb/user').ShowcaseProfileEntry => {
+  return {
+    showcaseId: data.showcase_id as string || '',
+    title: data.title as string || '',
+    activityType: (data.activity_type as number) || 0,
+    source: (data.source as number) || 0,
+    startTime: toDate(data.start_time),
+    routeThumbnailUrl: data.route_thumbnail_url as string || '',
+    distanceMeters: (data.distance_meters as number) || 0,
+    durationSeconds: (data.duration_seconds as number) || 0,
+    totalSets: (data.total_sets as number) || 0,
+    totalReps: (data.total_reps as number) || 0,
+    totalWeightKg: (data.total_weight_kg as number) || 0,
+  };
+};
+
+export const FirestoreToShowcaseProfile = (data: Record<string, unknown>): import('../../types/pb/user').ShowcaseProfile => {
+  const entriesRaw = (data.entries as Record<string, unknown>[]) || [];
+  return {
+    slug: data.slug as string || '',
+    userId: data.user_id as string || '',
+    displayName: data.display_name as string || '',
+    entries: entriesRaw.map(e => FirestoreToShowcaseProfileEntry(e)),
+    totalActivities: (data.total_activities as number) || 0,
+    totalDistanceMeters: (data.total_distance_meters as number) || 0,
+    totalDurationSeconds: (data.total_duration_seconds as number) || 0,
+    totalSets: (data.total_sets as number) || 0,
+    totalReps: (data.total_reps as number) || 0,
+    totalWeightKg: (data.total_weight_kg as number) || 0,
+    latestActivityAt: toDate(data.latest_activity_at),
+    createdAt: toDate(data.created_at),
+    updatedAt: toDate(data.updated_at),
+  };
+};
+
 
 // --- PipelineRun Converter (lifecycle tracking) ---
 

@@ -84,6 +84,12 @@ func (m *MockDB) SetShowcasedActivity(ctx context.Context, activity *pb.Showcase
 func (m *MockDB) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
 	return nil, nil
 }
+func (m *MockDB) SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error {
+	return nil
+}
+func (m *MockDB) GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error) {
+	return nil, nil
+}
 func (m *MockDB) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
 	return nil, nil
 }

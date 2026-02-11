@@ -2,6 +2,7 @@ package user_input
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -86,10 +87,12 @@ func (p *UserInputProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 		if pending.Status == pb.PendingInput_STATUS_WAITING {
 			// Still waiting
 			logger.Debug("user_input: still waiting for user input")
+			fields := parseFields(inputs["fields"])
 			return nil, &WaitForInputError{
 				ActivityID:         stableID, // Pass stable ID to orchestrator (redundant if orchestration calculates it too)
-				RequiredFields:     parseFields(inputs["fields"]),
+				RequiredFields:     fields,
 				EnricherProviderID: p.Name(),
+				Metadata:           buildDisplayConfig(fields),
 			}
 		}
 	}
@@ -103,6 +106,7 @@ func (p *UserInputProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 		ActivityID:         stableID,
 		RequiredFields:     requiredFields,
 		EnricherProviderID: p.Name(),
+		Metadata:           buildDisplayConfig(requiredFields),
 	}
 }
 
@@ -122,4 +126,37 @@ func parseFields(s string) []string {
 		return []string{"description"}
 	}
 	return out
+}
+
+// buildDisplayConfig generates display metadata for the generic user input fields
+func buildDisplayConfig(fields []string) map[string]string {
+	labels := make(map[string]string)
+	types := make(map[string]string)
+	for _, f := range fields {
+		labels[f] = humanize(f)
+		switch f {
+		case "description":
+			types[f] = "textarea:rows=3"
+		default:
+			types[f] = "text"
+		}
+	}
+	labelsJSON, _ := json.Marshal(labels)
+	typesJSON, _ := json.Marshal(types)
+	return map[string]string{
+		"display.field_labels": string(labelsJSON),
+		"display.field_types":  string(typesJSON),
+		"display.summary":      "Provide additional details for this activity",
+	}
+}
+
+// humanize converts a snake_case field name to Title Case
+func humanize(s string) string {
+	parts := strings.Split(s, "_")
+	for i, p := range parts {
+		if len(p) > 0 {
+			parts[i] = strings.ToUpper(p[:1]) + p[1:]
+		}
+	}
+	return strings.Join(parts, " ")
 }

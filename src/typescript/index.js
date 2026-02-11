@@ -168,3 +168,8 @@ exports.githubOAuthHandler = (req, res) => {
   const github = require('./github-oauth-handler/dist/index');
   return github.githubOAuthHandler(req, res);
 };
+
+exports.dataExportHandler = (req, res) => {
+  const dataExport = require('./data-export-handler/dist/index');
+  return dataExport.dataExportHandler(req, res);
+};

@@ -974,6 +974,163 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 	return s
 }
 
+// --- ShowcaseProfile Converters ---
+
+func ShowcaseProfileEntryToFirestore(e *pb.ShowcaseProfileEntry) map[string]interface{} {
+	m := map[string]interface{}{
+		"showcase_id":   e.ShowcaseId,
+		"title":         e.Title,
+		"activity_type": int32(e.ActivityType),
+		"source":        int32(e.Source),
+	}
+	if e.StartTime != nil {
+		m["start_time"] = e.StartTime.AsTime()
+	}
+	if e.RouteThumbnailUrl != "" {
+		m["route_thumbnail_url"] = e.RouteThumbnailUrl
+	}
+	if e.DistanceMeters != 0 {
+		m["distance_meters"] = e.DistanceMeters
+	}
+	if e.DurationSeconds != 0 {
+		m["duration_seconds"] = e.DurationSeconds
+	}
+	return m
+}
+
+func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pb.ShowcaseProfileEntry {
+	e := &pb.ShowcaseProfileEntry{
+		ShowcaseId:        getString(m, "showcase_id"),
+		Title:             getString(m, "title"),
+		RouteThumbnailUrl: getString(m, "route_thumbnail_url"),
+		StartTime:         getTime(m, "start_time"),
+	}
+
+	// ActivityType
+	if v, ok := m["activity_type"]; ok {
+		switch val := v.(type) {
+		case int64:
+			e.ActivityType = pb.ActivityType(val)
+		case float64:
+			e.ActivityType = pb.ActivityType(int32(val))
+		}
+	}
+
+	// Source
+	if v, ok := m["source"]; ok {
+		switch val := v.(type) {
+		case int64:
+			e.Source = pb.ActivitySource(val)
+		case float64:
+			e.Source = pb.ActivitySource(int32(val))
+		}
+	}
+
+	// DistanceMeters
+	if v, ok := m["distance_meters"]; ok {
+		switch n := v.(type) {
+		case float64:
+			e.DistanceMeters = n
+		case int64:
+			e.DistanceMeters = float64(n)
+		}
+	}
+
+	// DurationSeconds
+	if v, ok := m["duration_seconds"]; ok {
+		switch n := v.(type) {
+		case float64:
+			e.DurationSeconds = n
+		case int64:
+			e.DurationSeconds = float64(n)
+		}
+	}
+
+	return e
+}
+
+func ShowcaseProfileToFirestore(p *pb.ShowcaseProfile) map[string]interface{} {
+	entries := make([]map[string]interface{}, len(p.Entries))
+	for i, e := range p.Entries {
+		entries[i] = ShowcaseProfileEntryToFirestore(e)
+	}
+
+	m := map[string]interface{}{
+		"slug":                   p.Slug,
+		"user_id":                p.UserId,
+		"display_name":           p.DisplayName,
+		"entries":                entries,
+		"total_activities":       p.TotalActivities,
+		"total_distance_meters":  p.TotalDistanceMeters,
+		"total_duration_seconds": p.TotalDurationSeconds,
+	}
+
+	if p.LatestActivityAt != nil {
+		m["latest_activity_at"] = p.LatestActivityAt.AsTime()
+	}
+	if p.CreatedAt != nil {
+		m["created_at"] = p.CreatedAt.AsTime()
+	}
+	if p.UpdatedAt != nil {
+		m["updated_at"] = p.UpdatedAt.AsTime()
+	}
+
+	return m
+}
+
+func FirestoreToShowcaseProfile(m map[string]interface{}) *pb.ShowcaseProfile {
+	p := &pb.ShowcaseProfile{
+		Slug:             getString(m, "slug"),
+		UserId:           getString(m, "user_id"),
+		DisplayName:      getString(m, "display_name"),
+		LatestActivityAt: getTime(m, "latest_activity_at"),
+		CreatedAt:        getTime(m, "created_at"),
+		UpdatedAt:        getTime(m, "updated_at"),
+	}
+
+	// TotalActivities
+	if v, ok := m["total_activities"]; ok {
+		switch n := v.(type) {
+		case int64:
+			p.TotalActivities = int32(n)
+		case float64:
+			p.TotalActivities = int32(n)
+		}
+	}
+
+	// TotalDistanceMeters
+	if v, ok := m["total_distance_meters"]; ok {
+		switch n := v.(type) {
+		case float64:
+			p.TotalDistanceMeters = n
+		case int64:
+			p.TotalDistanceMeters = float64(n)
+		}
+	}
+
+	// TotalDurationSeconds
+	if v, ok := m["total_duration_seconds"]; ok {
+		switch n := v.(type) {
+		case float64:
+			p.TotalDurationSeconds = n
+		case int64:
+			p.TotalDurationSeconds = float64(n)
+		}
+	}
+
+	// Entries
+	if eList, ok := m["entries"].([]interface{}); ok {
+		p.Entries = make([]*pb.ShowcaseProfileEntry, len(eList))
+		for i, eRaw := range eList {
+			if eMap, ok := eRaw.(map[string]interface{}); ok {
+				p.Entries[i] = FirestoreToShowcaseProfileEntry(eMap)
+			}
+		}
+	}
+
+	return p
+}
+
 // --- UploadedActivityRecord Converters (Loop Prevention) ---
 
 func UploadedActivityToFirestore(r *pb.UploadedActivityRecord) map[string]interface{} {

@@ -48,6 +48,10 @@ type Database interface {
 	SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error
 	GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error)
 
+	// Showcase Profiles (materialized user profile for homepage)
+	SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error
+	GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error)
+
 	// Uploaded Activities (for loop prevention - tracks what we've posted to destinations)
 	SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error
 	GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error)

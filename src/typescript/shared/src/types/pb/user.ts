@@ -533,6 +533,60 @@ export interface ShowcasedActivity_EnrichmentMetadataEntry {
 }
 
 /**
+ * ShowcaseProfileEntry is a lightweight summary of a showcased activity for list display.
+ * Stored as part of ShowcaseProfile.entries array.
+ */
+export interface ShowcaseProfileEntry {
+  showcaseId: string;
+  title: string;
+  activityType: ActivityType;
+  source: ActivitySource;
+  startTime?:
+    | Date
+    | undefined;
+  /** Optional route thumbnail from enrichment metadata */
+  routeThumbnailUrl: string;
+  /** For per-activity stat display */
+  distanceMeters: number;
+  /** For per-activity stat display */
+  durationSeconds: number;
+  /** Strength stats (per-activity) */
+  totalSets: number;
+  totalReps: number;
+  totalWeightKg: number;
+}
+
+/**
+ * ShowcaseProfile is a materialized profile document for a user's public showcase homepage.
+ * Stored in top-level showcase_profiles/{slug} collection.
+ * Athlete tier only - created/updated by the showcase-uploader on each showcase write.
+ */
+export interface ShowcaseProfile {
+  /** URL-safe slug derived from display name */
+  slug: string;
+  /** Owner (for tier verification, not displayed publicly) */
+  userId: string;
+  /** Public display name */
+  displayName: string;
+  /** All showcased activities (lightweight summaries) */
+  entries: ShowcaseProfileEntry[];
+  /** Aggregate stats (recomputed from entries on each write) */
+  totalActivities: number;
+  totalDistanceMeters: number;
+  totalDurationSeconds: number;
+  latestActivityAt?:
+    | Date
+    | undefined;
+  /** Strength aggregates */
+  totalSets: number;
+  totalReps: number;
+  totalWeightKg: number;
+  /** Lifecycle */
+  createdAt?: Date | undefined;
+  updatedAt?: Date | undefined;
+}
+
+/**
  * PipelineRun tracks a complete pipeline execution lifecycle.
  * This is the primary entity for user-facing activity views, replacing the
  * old SynchronizedActivity + executions pattern.

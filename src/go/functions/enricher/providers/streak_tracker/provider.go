@@ -133,7 +133,7 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 		emoji := getStreakEmoji(currentStreak)
 		sb.WriteString(fmt.Sprintf("• %s %d-day %s streak!", emoji, currentStreak, activityLabel))
 
-		if currentStreak == longestStreak && currentStreak > 1 {
+		if currentStreak == longestStreak && currentStreak > 1 && isNewDay {
 			sb.WriteString("\n• 🏆 New personal best streak!")
 		} else if longestStreak > currentStreak {
 			sb.WriteString(fmt.Sprintf("\n• Best: %d days", longestStreak))

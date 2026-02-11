@@ -102,6 +102,15 @@ func (c *Client) ShowcasedActivities() *Collection[pb.ShowcasedActivity] {
 	}
 }
 
+// ShowcaseProfiles is a top-level collection: showcase_profiles/{slug}
+func (c *Client) ShowcaseProfiles() *Collection[pb.ShowcaseProfile] {
+	return &Collection[pb.ShowcaseProfile]{
+		Ref:           c.fs.Collection("showcase_profiles"),
+		ToFirestore:   ShowcaseProfileToFirestore,
+		FromFirestore: FirestoreToShowcaseProfile,
+	}
+}
+
 // UploadedActivities are sub-collections of Users: users/{uid}/uploaded_activities/{id}
 // Used for loop prevention to track activities we've posted to destinations
 func (c *Client) UploadedActivities(userId string) *Collection[pb.UploadedActivityRecord] {

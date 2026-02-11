@@ -277,6 +277,26 @@ func (a *FirestoreAdapter) GetShowcasedActivity(ctx context.Context, showcaseId 
 	return activity, nil
 }
 
+// --- Showcase Profiles (materialized user profile for homepage) ---
+
+// SetShowcaseProfile creates or updates a showcase profile
+func (a *FirestoreAdapter) SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error {
+	return a.storage.ShowcaseProfiles().Doc(profile.Slug).Set(ctx, profile)
+}
+
+// GetShowcaseProfile retrieves a showcase profile by slug
+func (a *FirestoreAdapter) GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error) {
+	profile, err := a.storage.ShowcaseProfiles().Doc(slug).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Ensure slug is set
+	if profile != nil && profile.Slug == "" {
+		profile.Slug = slug
+	}
+	return profile, nil
+}
+
 // isNotFoundError checks if error is a Firestore not found error
 func isNotFoundError(err error) bool {
 	if err == nil {

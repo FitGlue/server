@@ -102,6 +102,11 @@ func (p *FitFileHRProvider) Enrich(ctx context.Context, logger *slog.Logger, act
 			"source_activity_type": activity.Source,
 			"linked_activity_id":   linkedActivityId,
 			"pipeline_id":          inputs["pipeline_id"],
+			"display.field_labels": `{"fit_file_base64":"Heart Rate File"}`,
+			"display.field_types":  `{"fit_file_base64":"file:accept=.fit"}`,
+			"display.summary":      "Upload a .fit file with heart rate data",
+			"display.title":        "Upload Heart Rate Data",
+			"display.help":         "Export the .fit file from your chest strap or secondary device",
 		},
 	}
 }

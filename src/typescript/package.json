@@ -39,7 +39,8 @@
     "registration-summary-handler",
     "connection-actions-handler",
     "github-handler",
-    "github-oauth-handler"
+    "github-oauth-handler",
+    "data-export-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

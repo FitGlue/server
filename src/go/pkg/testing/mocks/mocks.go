@@ -152,6 +152,16 @@ func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId stri
 	return nil, nil
 }
 
+func (m *MockDatabase) SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error {
+	// No-op for tests by default
+	return nil
+}
+
+func (m *MockDatabase) GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
 // --- Personal Records ---
 
 func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {

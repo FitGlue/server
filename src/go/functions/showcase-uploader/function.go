@@ -309,6 +309,107 @@ func showcaseHandler() framework.HandlerFunc {
 			return nil, fmt.Errorf("failed to persist showcased activity: %w", err)
 		}
 
+		// --- Dual-write: Update showcase profile (Athlete tier only) ---
+		if user.Tier == pb.UserTier_USER_TIER_ATHLETE && showcasedActivity.OwnerDisplayName != "" {
+			profileSlug := slugify(showcasedActivity.OwnerDisplayName)
+			if profileSlug != "" {
+				// Compute per-activity stats from the resolved activity data
+				var activityDistance float64
+				var activityDuration float64
+				var activitySets int32
+				var activityReps int32
+				var activityWeightKg float64
+				if eventPayload.ActivityData != nil {
+					for _, session := range eventPayload.ActivityData.Sessions {
+						activityDistance += session.TotalDistance
+						activityDuration += float64(session.TotalElapsedTime)
+						for _, set := range session.StrengthSets {
+							activitySets++
+							activityReps += set.Reps
+							activityWeightKg += set.WeightKg * float64(set.Reps)
+						}
+					}
+				}
+
+				// Build the profile entry for this showcase
+				entry := &pb.ShowcaseProfileEntry{
+					ShowcaseId:      showcaseID,
+					Title:           eventPayload.Name,
+					ActivityType:    eventPayload.ActivityType,
+					Source:          eventPayload.Source,
+					StartTime:       eventPayload.StartTime,
+					DistanceMeters:  activityDistance,
+					DurationSeconds: activityDuration,
+					TotalSets:       activitySets,
+					TotalReps:       activityReps,
+					TotalWeightKg:   activityWeightKg,
+				}
+
+				// Check enrichment metadata for route thumbnail
+				if thumb, ok := eventPayload.EnrichmentMetadata["route_thumbnail_url"]; ok {
+					entry.RouteThumbnailUrl = thumb
+				}
+
+				// Read existing profile or create new one
+				profile, err := svc.DB.GetShowcaseProfile(ctx, profileSlug)
+				if err != nil || profile == nil {
+					// New profile
+					profile = &pb.ShowcaseProfile{
+						Slug:        profileSlug,
+						UserId:      eventPayload.UserId,
+						DisplayName: showcasedActivity.OwnerDisplayName,
+						Entries:     []*pb.ShowcaseProfileEntry{entry},
+						CreatedAt:   timestamppb.New(createdAt),
+					}
+				} else {
+					// Update existing: upsert by showcase ID
+					found := false
+					for i, e := range profile.Entries {
+						if e.ShowcaseId == showcaseID {
+							profile.Entries[i] = entry
+							found = true
+							break
+						}
+					}
+					if !found {
+						profile.Entries = append(profile.Entries, entry)
+					}
+					// Update display name in case it changed
+					profile.DisplayName = showcasedActivity.OwnerDisplayName
+				}
+
+				// Recompute aggregate stats from entries
+				profile.TotalActivities = int32(len(profile.Entries))
+				profile.TotalDistanceMeters = 0
+				profile.TotalDurationSeconds = 0
+				profile.TotalSets = 0
+				profile.TotalReps = 0
+				profile.TotalWeightKg = 0
+				var latestTime time.Time
+				for _, e := range profile.Entries {
+					profile.TotalDistanceMeters += e.DistanceMeters
+					profile.TotalDurationSeconds += e.DurationSeconds
+					profile.TotalSets += e.TotalSets
+					profile.TotalReps += e.TotalReps
+					profile.TotalWeightKg += e.TotalWeightKg
+					if e.StartTime != nil && e.StartTime.AsTime().After(latestTime) {
+						latestTime = e.StartTime.AsTime()
+					}
+				}
+				if !latestTime.IsZero() {
+					profile.LatestActivityAt = timestamppb.New(latestTime)
+				}
+				profile.UpdatedAt = timestamppb.New(createdAt)
+
+				if err := svc.DB.SetShowcaseProfile(ctx, profile); err != nil {
+					// Non-fatal: the showcase itself was already saved
+					fwCtx.Logger.Warn("Failed to update showcase profile", "error", err, "slug", profileSlug)
+				} else {
+					fwCtx.Logger.Info("Updated showcase profile", "slug", profileSlug, "total_activities", profile.TotalActivities)
+				}
+			}
+		}
+
 		// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
 		// The destination.UpdateStatus call at the end of this function updates pipeline_runs with the externalId
 

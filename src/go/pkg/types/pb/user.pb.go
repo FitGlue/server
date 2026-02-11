@@ -2794,6 +2794,279 @@ func (x *ShowcasedActivity) GetActivityDataUri() string {
 	return ""
 }
 
+// ShowcaseProfileEntry is a lightweight summary of a showcased activity for list display.
+// Stored as part of ShowcaseProfile.entries array.
+type ShowcaseProfileEntry struct {
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	ShowcaseId        string                 `protobuf:"bytes,1,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
+	Title             string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	ActivityType      ActivityType           `protobuf:"varint,3,opt,name=activity_type,json=activityType,proto3,enum=fitglue.ActivityType" json:"activity_type,omitempty"`
+	Source            ActivitySource         `protobuf:"varint,4,opt,name=source,proto3,enum=fitglue.ActivitySource" json:"source,omitempty"`
+	StartTime         *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	RouteThumbnailUrl string                 `protobuf:"bytes,6,opt,name=route_thumbnail_url,json=routeThumbnailUrl,proto3" json:"route_thumbnail_url,omitempty"` // Optional route thumbnail from enrichment metadata
+	DistanceMeters    float64                `protobuf:"fixed64,7,opt,name=distance_meters,json=distanceMeters,proto3" json:"distance_meters,omitempty"`          // For per-activity stat display
+	DurationSeconds   float64                `protobuf:"fixed64,8,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`       // For per-activity stat display
+	// Strength stats (per-activity)
+	TotalSets     int32   `protobuf:"varint,9,opt,name=total_sets,json=totalSets,proto3" json:"total_sets,omitempty"`
+	TotalReps     int32   `protobuf:"varint,10,opt,name=total_reps,json=totalReps,proto3" json:"total_reps,omitempty"`
+	TotalWeightKg float64 `protobuf:"fixed64,11,opt,name=total_weight_kg,json=totalWeightKg,proto3" json:"total_weight_kg,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseProfileEntry) Reset() {
+	*x = ShowcaseProfileEntry{}
+	mi := &file_user_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseProfileEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseProfileEntry) ProtoMessage() {}
+
+func (x *ShowcaseProfileEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseProfileEntry.ProtoReflect.Descriptor instead.
+func (*ShowcaseProfileEntry) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *ShowcaseProfileEntry) GetShowcaseId() string {
+	if x != nil {
+		return x.ShowcaseId
+	}
+	return ""
+}
+
+func (x *ShowcaseProfileEntry) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ShowcaseProfileEntry) GetActivityType() ActivityType {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+}
+
+func (x *ShowcaseProfileEntry) GetSource() ActivitySource {
+	if x != nil {
+		return x.Source
+	}
+	return ActivitySource_SOURCE_UNKNOWN
+}
+
+func (x *ShowcaseProfileEntry) GetStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+func (x *ShowcaseProfileEntry) GetRouteThumbnailUrl() string {
+	if x != nil {
+		return x.RouteThumbnailUrl
+	}
+	return ""
+}
+
+func (x *ShowcaseProfileEntry) GetDistanceMeters() float64 {
+	if x != nil {
+		return x.DistanceMeters
+	}
+	return 0
+}
+
+func (x *ShowcaseProfileEntry) GetDurationSeconds() float64 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
+}
+
+func (x *ShowcaseProfileEntry) GetTotalSets() int32 {
+	if x != nil {
+		return x.TotalSets
+	}
+	return 0
+}
+
+func (x *ShowcaseProfileEntry) GetTotalReps() int32 {
+	if x != nil {
+		return x.TotalReps
+	}
+	return 0
+}
+
+func (x *ShowcaseProfileEntry) GetTotalWeightKg() float64 {
+	if x != nil {
+		return x.TotalWeightKg
+	}
+	return 0
+}
+
+// ShowcaseProfile is a materialized profile document for a user's public showcase homepage.
+// Stored in top-level showcase_profiles/{slug} collection.
+// Athlete tier only - created/updated by the showcase-uploader on each showcase write.
+type ShowcaseProfile struct {
+	state       protoimpl.MessageState  `protogen:"open.v1"`
+	Slug        string                  `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`                                  // URL-safe slug derived from display name
+	UserId      string                  `protobuf:"bytes,2,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`                // Owner (for tier verification, not displayed publicly)
+	DisplayName string                  `protobuf:"bytes,3,opt,name=display_name,json=displayName,proto3" json:"display_name,omitempty"` // Public display name
+	Entries     []*ShowcaseProfileEntry `protobuf:"bytes,4,rep,name=entries,proto3" json:"entries,omitempty"`                            // All showcased activities (lightweight summaries)
+	// Aggregate stats (recomputed from entries on each write)
+	TotalActivities      int32                  `protobuf:"varint,5,opt,name=total_activities,json=totalActivities,proto3" json:"total_activities,omitempty"`
+	TotalDistanceMeters  float64                `protobuf:"fixed64,6,opt,name=total_distance_meters,json=totalDistanceMeters,proto3" json:"total_distance_meters,omitempty"`
+	TotalDurationSeconds float64                `protobuf:"fixed64,7,opt,name=total_duration_seconds,json=totalDurationSeconds,proto3" json:"total_duration_seconds,omitempty"`
+	LatestActivityAt     *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=latest_activity_at,json=latestActivityAt,proto3" json:"latest_activity_at,omitempty"`
+	// Strength aggregates
+	TotalSets     int32   `protobuf:"varint,11,opt,name=total_sets,json=totalSets,proto3" json:"total_sets,omitempty"`
+	TotalReps     int32   `protobuf:"varint,12,opt,name=total_reps,json=totalReps,proto3" json:"total_reps,omitempty"`
+	TotalWeightKg float64 `protobuf:"fixed64,13,opt,name=total_weight_kg,json=totalWeightKg,proto3" json:"total_weight_kg,omitempty"`
+	// Lifecycle
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseProfile) Reset() {
+	*x = ShowcaseProfile{}
+	mi := &file_user_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseProfile) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseProfile) ProtoMessage() {}
+
+func (x *ShowcaseProfile) ProtoReflect() protoreflect.Message {
+	mi := &file_user_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseProfile.ProtoReflect.Descriptor instead.
+func (*ShowcaseProfile) Descriptor() ([]byte, []int) {
+	return file_user_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *ShowcaseProfile) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *ShowcaseProfile) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *ShowcaseProfile) GetDisplayName() string {
+	if x != nil {
+		return x.DisplayName
+	}
+	return ""
+}
+
+func (x *ShowcaseProfile) GetEntries() []*ShowcaseProfileEntry {
+	if x != nil {
+		return x.Entries
+	}
+	return nil
+}
+
+func (x *ShowcaseProfile) GetTotalActivities() int32 {
+	if x != nil {
+		return x.TotalActivities
+	}
+	return 0
+}
+
+func (x *ShowcaseProfile) GetTotalDistanceMeters() float64 {
+	if x != nil {
+		return x.TotalDistanceMeters
+	}
+	return 0
+}
+
+func (x *ShowcaseProfile) GetTotalDurationSeconds() float64 {
+	if x != nil {
+		return x.TotalDurationSeconds
+	}
+	return 0
+}
+
+func (x *ShowcaseProfile) GetLatestActivityAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LatestActivityAt
+	}
+	return nil
+}
+
+func (x *ShowcaseProfile) GetTotalSets() int32 {
+	if x != nil {
+		return x.TotalSets
+	}
+	return 0
+}
+
+func (x *ShowcaseProfile) GetTotalReps() int32 {
+	if x != nil {
+		return x.TotalReps
+	}
+	return 0
+}
+
+func (x *ShowcaseProfile) GetTotalWeightKg() float64 {
+	if x != nil {
+		return x.TotalWeightKg
+	}
+	return 0
+}
+
+func (x *ShowcaseProfile) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *ShowcaseProfile) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
 // PipelineRun tracks a complete pipeline execution lifecycle.
 // This is the primary entity for user-facing activity views, replacing the
 // old SynchronizedActivity + executions pattern.
@@ -2830,7 +3103,7 @@ type PipelineRun struct {
 
 func (x *PipelineRun) Reset() {
 	*x = PipelineRun{}
-	mi := &file_user_proto_msgTypes[24]
+	mi := &file_user_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2842,7 +3115,7 @@ func (x *PipelineRun) String() string {
 func (*PipelineRun) ProtoMessage() {}
 
 func (x *PipelineRun) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[24]
+	mi := &file_user_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2855,7 +3128,7 @@ func (x *PipelineRun) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PipelineRun.ProtoReflect.Descriptor instead.
 func (*PipelineRun) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{24}
+	return file_user_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *PipelineRun) GetId() string {
@@ -2998,7 +3271,7 @@ type BoosterExecution struct {
 
 func (x *BoosterExecution) Reset() {
 	*x = BoosterExecution{}
-	mi := &file_user_proto_msgTypes[25]
+	mi := &file_user_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3010,7 +3283,7 @@ func (x *BoosterExecution) String() string {
 func (*BoosterExecution) ProtoMessage() {}
 
 func (x *BoosterExecution) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[25]
+	mi := &file_user_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3023,7 +3296,7 @@ func (x *BoosterExecution) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use BoosterExecution.ProtoReflect.Descriptor instead.
 func (*BoosterExecution) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{25}
+	return file_user_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *BoosterExecution) GetProviderName() string {
@@ -3075,7 +3348,7 @@ type DestinationOutcome struct {
 
 func (x *DestinationOutcome) Reset() {
 	*x = DestinationOutcome{}
-	mi := &file_user_proto_msgTypes[26]
+	mi := &file_user_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -3087,7 +3360,7 @@ func (x *DestinationOutcome) String() string {
 func (*DestinationOutcome) ProtoMessage() {}
 
 func (x *DestinationOutcome) ProtoReflect() protoreflect.Message {
-	mi := &file_user_proto_msgTypes[26]
+	mi := &file_user_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3100,7 +3373,7 @@ func (x *DestinationOutcome) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DestinationOutcome.ProtoReflect.Descriptor instead.
 func (*DestinationOutcome) Descriptor() ([]byte, []int) {
-	return file_user_proto_rawDescGZIP(), []int{26}
+	return file_user_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *DestinationOutcome) GetDestination() Destination {
@@ -3399,7 +3672,43 @@ const file_user_proto_rawDesc = "" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
-	"\x16_pipeline_execution_id\"\xd4\x06\n" +
+	"\x16_pipeline_execution_id\"\xdf\x03\n" +
+	"\x14ShowcaseProfileEntry\x12\x1f\n" +
+	"\vshowcase_id\x18\x01 \x01(\tR\n" +
+	"showcaseId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12:\n" +
+	"\ractivity_type\x18\x03 \x01(\x0e2\x15.fitglue.ActivityTypeR\factivityType\x12/\n" +
+	"\x06source\x18\x04 \x01(\x0e2\x17.fitglue.ActivitySourceR\x06source\x129\n" +
+	"\n" +
+	"start_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12.\n" +
+	"\x13route_thumbnail_url\x18\x06 \x01(\tR\x11routeThumbnailUrl\x12'\n" +
+	"\x0fdistance_meters\x18\a \x01(\x01R\x0edistanceMeters\x12)\n" +
+	"\x10duration_seconds\x18\b \x01(\x01R\x0fdurationSeconds\x12\x1d\n" +
+	"\n" +
+	"total_sets\x18\t \x01(\x05R\ttotalSets\x12\x1d\n" +
+	"\n" +
+	"total_reps\x18\n" +
+	" \x01(\x05R\ttotalReps\x12&\n" +
+	"\x0ftotal_weight_kg\x18\v \x01(\x01R\rtotalWeightKg\"\xd5\x04\n" +
+	"\x0fShowcaseProfile\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
+	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
+	"\fdisplay_name\x18\x03 \x01(\tR\vdisplayName\x127\n" +
+	"\aentries\x18\x04 \x03(\v2\x1d.fitglue.ShowcaseProfileEntryR\aentries\x12)\n" +
+	"\x10total_activities\x18\x05 \x01(\x05R\x0ftotalActivities\x122\n" +
+	"\x15total_distance_meters\x18\x06 \x01(\x01R\x13totalDistanceMeters\x124\n" +
+	"\x16total_duration_seconds\x18\a \x01(\x01R\x14totalDurationSeconds\x12H\n" +
+	"\x12latest_activity_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x10latestActivityAt\x12\x1d\n" +
+	"\n" +
+	"total_sets\x18\v \x01(\x05R\ttotalSets\x12\x1d\n" +
+	"\n" +
+	"total_reps\x18\f \x01(\x05R\ttotalReps\x12&\n" +
+	"\x0ftotal_weight_kg\x18\r \x01(\x01R\rtotalWeightKg\x129\n" +
+	"\n" +
+	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xd4\x06\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +
@@ -3547,7 +3856,7 @@ func file_user_proto_rawDescGZIP() []byte {
 }
 
 var file_user_proto_enumTypes = make([]protoimpl.EnumInfo, 9)
-var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
+var file_user_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_user_proto_goTypes = []any{
 	(UserTier)(0),                    // 0: fitglue.UserTier
 	(EnricherProviderType)(0),        // 1: fitglue.EnricherProviderType
@@ -3582,33 +3891,35 @@ var file_user_proto_goTypes = []any{
 	(*Counter)(nil),                  // 30: fitglue.Counter
 	(*PersonalRecord)(nil),           // 31: fitglue.PersonalRecord
 	(*ShowcasedActivity)(nil),        // 32: fitglue.ShowcasedActivity
-	(*PipelineRun)(nil),              // 33: fitglue.PipelineRun
-	(*BoosterExecution)(nil),         // 34: fitglue.BoosterExecution
-	(*DestinationOutcome)(nil),       // 35: fitglue.DestinationOutcome
-	nil,                              // 36: fitglue.PipelineConfig.SourceConfigEntry
-	nil,                              // 37: fitglue.PipelineConfig.DestinationConfigsEntry
-	nil,                              // 38: fitglue.DestinationConfig.ConfigEntry
-	nil,                              // 39: fitglue.EnricherConfig.TypedConfigEntry
-	nil,                              // 40: fitglue.ShowcasedActivity.EnrichmentMetadataEntry
-	nil,                              // 41: fitglue.BoosterExecution.MetadataEntry
-	(*timestamppb.Timestamp)(nil),    // 42: google.protobuf.Timestamp
-	(Destination)(0),                 // 43: fitglue.events.Destination
-	(ActivityType)(0),                // 44: fitglue.ActivityType
-	(ActivitySource)(0),              // 45: fitglue.ActivitySource
-	(*StandardizedActivity)(nil),     // 46: fitglue.StandardizedActivity
+	(*ShowcaseProfileEntry)(nil),     // 33: fitglue.ShowcaseProfileEntry
+	(*ShowcaseProfile)(nil),          // 34: fitglue.ShowcaseProfile
+	(*PipelineRun)(nil),              // 35: fitglue.PipelineRun
+	(*BoosterExecution)(nil),         // 36: fitglue.BoosterExecution
+	(*DestinationOutcome)(nil),       // 37: fitglue.DestinationOutcome
+	nil,                              // 38: fitglue.PipelineConfig.SourceConfigEntry
+	nil,                              // 39: fitglue.PipelineConfig.DestinationConfigsEntry
+	nil,                              // 40: fitglue.DestinationConfig.ConfigEntry
+	nil,                              // 41: fitglue.EnricherConfig.TypedConfigEntry
+	nil,                              // 42: fitglue.ShowcasedActivity.EnrichmentMetadataEntry
+	nil,                              // 43: fitglue.BoosterExecution.MetadataEntry
+	(*timestamppb.Timestamp)(nil),    // 44: google.protobuf.Timestamp
+	(Destination)(0),                 // 45: fitglue.events.Destination
+	(ActivityType)(0),                // 46: fitglue.ActivityType
+	(ActivitySource)(0),              // 47: fitglue.ActivitySource
+	(*StandardizedActivity)(nil),     // 48: fitglue.StandardizedActivity
 }
 var file_user_proto_depIdxs = []int32{
-	42, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
+	44, // 0: fitglue.UserRecord.created_at:type_name -> google.protobuf.Timestamp
 	13, // 1: fitglue.UserRecord.integrations:type_name -> fitglue.UserIntegrations
 	0,  // 2: fitglue.UserRecord.tier:type_name -> fitglue.UserTier
-	42, // 3: fitglue.UserRecord.trial_ends_at:type_name -> google.protobuf.Timestamp
-	42, // 4: fitglue.UserRecord.sync_count_reset_at:type_name -> google.protobuf.Timestamp
+	44, // 3: fitglue.UserRecord.trial_ends_at:type_name -> google.protobuf.Timestamp
+	44, // 4: fitglue.UserRecord.sync_count_reset_at:type_name -> google.protobuf.Timestamp
 	10, // 5: fitglue.UserRecord.notification_preferences:type_name -> fitglue.NotificationPreferences
 	18, // 6: fitglue.PipelineConfig.enrichers:type_name -> fitglue.EnricherConfig
-	43, // 7: fitglue.PipelineConfig.destinations:type_name -> fitglue.events.Destination
-	36, // 8: fitglue.PipelineConfig.source_config:type_name -> fitglue.PipelineConfig.SourceConfigEntry
-	37, // 9: fitglue.PipelineConfig.destination_configs:type_name -> fitglue.PipelineConfig.DestinationConfigsEntry
-	38, // 10: fitglue.DestinationConfig.config:type_name -> fitglue.DestinationConfig.ConfigEntry
+	45, // 7: fitglue.PipelineConfig.destinations:type_name -> fitglue.events.Destination
+	38, // 8: fitglue.PipelineConfig.source_config:type_name -> fitglue.PipelineConfig.SourceConfigEntry
+	39, // 9: fitglue.PipelineConfig.destination_configs:type_name -> fitglue.PipelineConfig.DestinationConfigsEntry
+	40, // 10: fitglue.DestinationConfig.config:type_name -> fitglue.DestinationConfig.ConfigEntry
 	15, // 11: fitglue.UserIntegrations.hevy:type_name -> fitglue.HevyIntegration
 	16, // 12: fitglue.UserIntegrations.fitbit:type_name -> fitglue.FitbitIntegration
 	19, // 13: fitglue.UserIntegrations.strava:type_name -> fitglue.StravaIntegration
@@ -3622,72 +3933,79 @@ var file_user_proto_depIdxs = []int32{
 	26, // 21: fitglue.UserIntegrations.polar:type_name -> fitglue.PolarIntegration
 	27, // 22: fitglue.UserIntegrations.wahoo:type_name -> fitglue.WahooIntegration
 	28, // 23: fitglue.UserIntegrations.github:type_name -> fitglue.GitHubIntegration
-	42, // 24: fitglue.MockIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 25: fitglue.MockIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 26: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 27: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 28: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 29: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 30: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 24: fitglue.MockIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 25: fitglue.MockIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 26: fitglue.HevyIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 27: fitglue.HevyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 28: fitglue.FitbitIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 29: fitglue.FitbitIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 30: fitglue.FitbitIntegration.last_used_at:type_name -> google.protobuf.Timestamp
 	18, // 31: fitglue.SourceEnrichmentConfig.enrichers:type_name -> fitglue.EnricherConfig
 	1,  // 32: fitglue.EnricherConfig.provider_type:type_name -> fitglue.EnricherProviderType
-	39, // 33: fitglue.EnricherConfig.typed_config:type_name -> fitglue.EnricherConfig.TypedConfigEntry
-	42, // 34: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 35: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 36: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 37: fitglue.ParkrunIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 38: fitglue.ParkrunIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 39: fitglue.SpotifyIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 40: fitglue.SpotifyIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 41: fitglue.SpotifyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 42: fitglue.TrainingPeaksIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 43: fitglue.TrainingPeaksIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 44: fitglue.TrainingPeaksIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 45: fitglue.IntervalsIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 46: fitglue.IntervalsIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 47: fitglue.OuraIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 48: fitglue.OuraIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 49: fitglue.OuraIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 50: fitglue.GoogleIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 51: fitglue.GoogleIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 52: fitglue.GoogleIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 53: fitglue.PolarIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 54: fitglue.PolarIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 55: fitglue.PolarIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 56: fitglue.WahooIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 57: fitglue.WahooIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 58: fitglue.WahooIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 59: fitglue.GitHubIntegration.expires_at:type_name -> google.protobuf.Timestamp
-	42, // 60: fitglue.GitHubIntegration.created_at:type_name -> google.protobuf.Timestamp
-	42, // 61: fitglue.GitHubIntegration.last_used_at:type_name -> google.protobuf.Timestamp
-	42, // 62: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
-	42, // 63: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
-	42, // 64: fitglue.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
-	44, // 65: fitglue.PersonalRecord.activity_type:type_name -> fitglue.ActivityType
-	44, // 66: fitglue.ShowcasedActivity.activity_type:type_name -> fitglue.ActivityType
-	45, // 67: fitglue.ShowcasedActivity.source:type_name -> fitglue.ActivitySource
-	42, // 68: fitglue.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
-	46, // 69: fitglue.ShowcasedActivity.activity_data:type_name -> fitglue.StandardizedActivity
-	40, // 70: fitglue.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.ShowcasedActivity.EnrichmentMetadataEntry
-	42, // 71: fitglue.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
-	42, // 72: fitglue.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
-	44, // 73: fitglue.PipelineRun.type:type_name -> fitglue.ActivityType
-	42, // 74: fitglue.PipelineRun.start_time:type_name -> google.protobuf.Timestamp
-	7,  // 75: fitglue.PipelineRun.status:type_name -> fitglue.PipelineRunStatus
-	42, // 76: fitglue.PipelineRun.created_at:type_name -> google.protobuf.Timestamp
-	42, // 77: fitglue.PipelineRun.updated_at:type_name -> google.protobuf.Timestamp
-	34, // 78: fitglue.PipelineRun.boosters:type_name -> fitglue.BoosterExecution
-	35, // 79: fitglue.PipelineRun.destinations:type_name -> fitglue.DestinationOutcome
-	41, // 80: fitglue.BoosterExecution.metadata:type_name -> fitglue.BoosterExecution.MetadataEntry
-	43, // 81: fitglue.DestinationOutcome.destination:type_name -> fitglue.events.Destination
-	8,  // 82: fitglue.DestinationOutcome.status:type_name -> fitglue.DestinationStatus
-	42, // 83: fitglue.DestinationOutcome.completed_at:type_name -> google.protobuf.Timestamp
-	12, // 84: fitglue.PipelineConfig.DestinationConfigsEntry.value:type_name -> fitglue.DestinationConfig
-	85, // [85:85] is the sub-list for method output_type
-	85, // [85:85] is the sub-list for method input_type
-	85, // [85:85] is the sub-list for extension type_name
-	85, // [85:85] is the sub-list for extension extendee
-	0,  // [0:85] is the sub-list for field type_name
+	41, // 33: fitglue.EnricherConfig.typed_config:type_name -> fitglue.EnricherConfig.TypedConfigEntry
+	44, // 34: fitglue.StravaIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 35: fitglue.StravaIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 36: fitglue.StravaIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 37: fitglue.ParkrunIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 38: fitglue.ParkrunIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 39: fitglue.SpotifyIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 40: fitglue.SpotifyIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 41: fitglue.SpotifyIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 42: fitglue.TrainingPeaksIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 43: fitglue.TrainingPeaksIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 44: fitglue.TrainingPeaksIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 45: fitglue.IntervalsIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 46: fitglue.IntervalsIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 47: fitglue.OuraIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 48: fitglue.OuraIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 49: fitglue.OuraIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 50: fitglue.GoogleIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 51: fitglue.GoogleIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 52: fitglue.GoogleIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 53: fitglue.PolarIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 54: fitglue.PolarIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 55: fitglue.PolarIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 56: fitglue.WahooIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 57: fitglue.WahooIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 58: fitglue.WahooIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 59: fitglue.GitHubIntegration.expires_at:type_name -> google.protobuf.Timestamp
+	44, // 60: fitglue.GitHubIntegration.created_at:type_name -> google.protobuf.Timestamp
+	44, // 61: fitglue.GitHubIntegration.last_used_at:type_name -> google.protobuf.Timestamp
+	44, // 62: fitglue.ProcessedActivityRecord.processed_at:type_name -> google.protobuf.Timestamp
+	44, // 63: fitglue.Counter.last_updated:type_name -> google.protobuf.Timestamp
+	44, // 64: fitglue.PersonalRecord.achieved_at:type_name -> google.protobuf.Timestamp
+	46, // 65: fitglue.PersonalRecord.activity_type:type_name -> fitglue.ActivityType
+	46, // 66: fitglue.ShowcasedActivity.activity_type:type_name -> fitglue.ActivityType
+	47, // 67: fitglue.ShowcasedActivity.source:type_name -> fitglue.ActivitySource
+	44, // 68: fitglue.ShowcasedActivity.start_time:type_name -> google.protobuf.Timestamp
+	48, // 69: fitglue.ShowcasedActivity.activity_data:type_name -> fitglue.StandardizedActivity
+	42, // 70: fitglue.ShowcasedActivity.enrichment_metadata:type_name -> fitglue.ShowcasedActivity.EnrichmentMetadataEntry
+	44, // 71: fitglue.ShowcasedActivity.created_at:type_name -> google.protobuf.Timestamp
+	44, // 72: fitglue.ShowcasedActivity.expires_at:type_name -> google.protobuf.Timestamp
+	46, // 73: fitglue.ShowcaseProfileEntry.activity_type:type_name -> fitglue.ActivityType
+	47, // 74: fitglue.ShowcaseProfileEntry.source:type_name -> fitglue.ActivitySource
+	44, // 75: fitglue.ShowcaseProfileEntry.start_time:type_name -> google.protobuf.Timestamp
+	33, // 76: fitglue.ShowcaseProfile.entries:type_name -> fitglue.ShowcaseProfileEntry
+	44, // 77: fitglue.ShowcaseProfile.latest_activity_at:type_name -> google.protobuf.Timestamp
+	44, // 78: fitglue.ShowcaseProfile.created_at:type_name -> google.protobuf.Timestamp
+	44, // 79: fitglue.ShowcaseProfile.updated_at:type_name -> google.protobuf.Timestamp
+	46, // 80: fitglue.PipelineRun.type:type_name -> fitglue.ActivityType
+	44, // 81: fitglue.PipelineRun.start_time:type_name -> google.protobuf.Timestamp
+	7,  // 82: fitglue.PipelineRun.status:type_name -> fitglue.PipelineRunStatus
+	44, // 83: fitglue.PipelineRun.created_at:type_name -> google.protobuf.Timestamp
+	44, // 84: fitglue.PipelineRun.updated_at:type_name -> google.protobuf.Timestamp
+	36, // 85: fitglue.PipelineRun.boosters:type_name -> fitglue.BoosterExecution
+	37, // 86: fitglue.PipelineRun.destinations:type_name -> fitglue.DestinationOutcome
+	43, // 87: fitglue.BoosterExecution.metadata:type_name -> fitglue.BoosterExecution.MetadataEntry
+	45, // 88: fitglue.DestinationOutcome.destination:type_name -> fitglue.events.Destination
+	8,  // 89: fitglue.DestinationOutcome.status:type_name -> fitglue.DestinationStatus
+	44, // 90: fitglue.DestinationOutcome.completed_at:type_name -> google.protobuf.Timestamp
+	12, // 91: fitglue.PipelineConfig.DestinationConfigsEntry.value:type_name -> fitglue.DestinationConfig
+	92, // [92:92] is the sub-list for method output_type
+	92, // [92:92] is the sub-list for method input_type
+	92, // [92:92] is the sub-list for extension type_name
+	92, // [92:92] is the sub-list for extension extendee
+	0,  // [0:92] is the sub-list for field type_name
 }
 
 func init() { file_user_proto_init() }
@@ -3700,16 +4018,16 @@ func file_user_proto_init() {
 	file_events_proto_init()
 	file_user_proto_msgTypes[22].OneofWrappers = []any{}
 	file_user_proto_msgTypes[23].OneofWrappers = []any{}
-	file_user_proto_msgTypes[24].OneofWrappers = []any{}
-	file_user_proto_msgTypes[25].OneofWrappers = []any{}
 	file_user_proto_msgTypes[26].OneofWrappers = []any{}
+	file_user_proto_msgTypes[27].OneofWrappers = []any{}
+	file_user_proto_msgTypes[28].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_user_proto_rawDesc), len(file_user_proto_rawDesc)),
 			NumEnums:      9,
-			NumMessages:   33,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

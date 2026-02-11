@@ -122,9 +122,13 @@ func (p *HybridRaceTaggerProvider) Enrich(ctx context.Context, logger *slog.Logg
 		RequiredFields:     []string{"race_selection"},
 		EnricherProviderID: p.Name(),
 		Metadata: map[string]string{
-			"laps":      string(lapInfoJSON),
-			"lap_count": fmt.Sprintf("%d", len(laps)),
-			"presets":   string(presetsJSON),
+			"laps":                 string(lapInfoJSON),
+			"lap_count":            fmt.Sprintf("%d", len(laps)),
+			"presets":              string(presetsJSON),
+			"display.field_labels": `{"race_selection":"Race Type"}`,
+			"display.field_types":  `{"race_selection":"custom:hybrid_race_tagger"}`,
+			"display.summary":      "Select the race format for this activity",
+			"display.title":        "Tag Hybrid Race",
 		},
 	}
 }

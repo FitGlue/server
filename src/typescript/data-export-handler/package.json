@@ -1,0 +1,38 @@
+{
+    "name": "data-export-handler",
+    "version": "1.0.0",
+    "description": "Handles GDPR data export and per-run data download",
+    "main": "dist/index.js",
+    "scripts": {
+        "build": "tsc",
+        "gcp-build": "npm run build",
+        "test": "jest",
+        "lint": "eslint src --ext .ts",
+        "start": "functions-framework --target=dataExportHandler",
+        "dev": "concurrently \"tsc -w\" \"functions-framework --target=dataExportHandler\""
+    },
+    "dependencies": {
+        "@fitglue/shared": "^1.0.0",
+        "@google-cloud/functions-framework": "^3.0.0",
+        "@google-cloud/tasks": "^5.0.0",
+        "@google-cloud/secret-manager": "^5.0.0",
+        "@typescript-eslint/eslint-plugin": "^8.53.1",
+        "@typescript-eslint/parser": "^8.53.1",
+        "firebase-admin": "^13.6.0",
+        "jszip": "^3.10.1",
+        "nodemailer": "^6.9.0",
+        "typescript": "^5.0.0"
+    },
+    "devDependencies": {
+        "@types/jest": "^30.0.0",
+        "@types/node": "^20.0.0",
+        "@types/nodemailer": "^6.4.0",
+        "concurrently": "^8.0.0",
+        "jest": "^30.2.0",
+        "ts-jest": "^29.4.6",
+        "eslint": "^8.0.0"
+    },
+    "overrides": {
+        "@types/node": "^20.0.0"
+    }
+}

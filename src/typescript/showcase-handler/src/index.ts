@@ -2,7 +2,7 @@
 import { createCloudFunction, FrameworkContext, FrameworkResponse, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { routeRequest } from '@fitglue/shared/routing';
-import { ShowcaseStore } from '@fitglue/shared/storage';
+import { ShowcaseStore, ShowcaseProfileStore } from '@fitglue/shared/storage';
 import { getEnricherManifest } from '@fitglue/shared/plugin';
 import { getEffectiveTier } from '@fitglue/shared/domain';
 import type { StandardizedActivity, ActivityType, ActivitySource } from '@fitglue/shared/types';
@@ -23,6 +23,7 @@ if (admin.apps.length === 0) {
  */
 export const showcaseHandler = createCloudFunction(async (req: Request, ctx: FrameworkContext) => {
   const showcaseStore = new ShowcaseStore(db);
+  const showcaseProfileStore = new ShowcaseProfileStore(db);
 
 
   const corsHeaders = {
@@ -46,6 +47,26 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
       pattern: '/api/showcase/:id',
       handler: async (match) => {
         return await handleApiShowcase(match.params.id, showcaseStore, db, corsHeaders, ctx.logger);
+      }
+    },
+    {
+      method: 'GET',
+      pattern: '/api/showcase/profile/:slug',
+      handler: async (match) => {
+        return await handleProfileApi(match.params.slug, showcaseProfileStore, corsHeaders);
+      }
+    },
+    {
+      method: 'GET',
+      pattern: '/u/:slug',
+      handler: async (match) => {
+        return new FrameworkResponse({
+          status: 302,
+          headers: {
+            ...corsHeaders,
+            'Location': `/showcase-profile.html?slug=${encodeURIComponent(match.params.slug)}`
+          }
+        });
       }
     },
     {
@@ -197,6 +218,58 @@ async function handleHtmlShowcase(
     headers: {
       ...corsHeaders,
       'Location': `/showcase.html?id=${showcaseId}`
+    }
+  });
+}
+
+/**
+ * Handle GET /api/showcase/profile/:slug
+ * Returns public profile data for the showcase homepage.
+ */
+async function handleProfileApi(
+  slug: string,
+  profileStore: ShowcaseProfileStore,
+  corsHeaders: Record<string, string>
+): Promise<FrameworkResponse> {
+  const profile = await profileStore.get(slug);
+  if (!profile) {
+    throw new HttpError(404, 'Profile not found');
+  }
+
+  // Map entries to public-safe format with formatted fields
+  const entries = profile.entries.map(entry => ({
+    showcaseId: entry.showcaseId,
+    title: entry.title,
+    activityType: entry.activityType,
+    source: entry.source,
+    startTime: entry.startTime?.toISOString(),
+    routeThumbnailUrl: entry.routeThumbnailUrl || undefined,
+    distanceMeters: entry.distanceMeters,
+    durationSeconds: entry.durationSeconds,
+    totalSets: entry.totalSets,
+    totalReps: entry.totalReps,
+    totalWeightKg: entry.totalWeightKg,
+  }));
+
+  const response = {
+    slug: profile.slug,
+    displayName: profile.displayName,
+    entries,
+    totalActivities: profile.totalActivities,
+    totalDistanceMeters: profile.totalDistanceMeters,
+    totalDurationSeconds: profile.totalDurationSeconds,
+    totalSets: profile.totalSets,
+    totalReps: profile.totalReps,
+    totalWeightKg: profile.totalWeightKg,
+    latestActivityAt: profile.latestActivityAt?.toISOString(),
+  };
+
+  return new FrameworkResponse({
+    status: 200,
+    body: response,
+    headers: {
+      ...corsHeaders,
+      'Cache-Control': 'public, max-age=300',
     }
   });
 }
