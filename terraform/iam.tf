@@ -50,6 +50,13 @@ resource "google_project_iam_member" "cloud_function_sa_service_account_user" {
   member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 
+# Service Account Token Creator - allows getSignedUrl() for GCS objects (data export, etc.)
+resource "google_project_iam_member" "cloud_function_sa_token_creator" {
+  project = var.project_id
+  role    = "roles/iam.serviceAccountTokenCreator"
+  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
 resource "google_project_iam_member" "web_deployer_run_viewer" {
   project = var.project_id
   role    = "roles/run.viewer"
