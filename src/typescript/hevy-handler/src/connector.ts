@@ -25,7 +25,9 @@ export class HevyConnector extends BaseConnector<HevyConnectorConfig, HevyWorkou
   extractId(body: unknown): string | null {
     // Return workoutId from payload (support various payload shapes)
     if (!body) return null;
-    return (body as { payload?: { workoutId?: string } }).payload?.workoutId || null;
+    const b = body as { workoutId?: string; payload?: { workoutId?: string } };
+    // Hevy webhooks send workoutId at the top level OR nested under payload
+    return b.payload?.workoutId || b.workoutId || null;
   }
 
   async fetchAndMap(activityId: string, config: HevyConnectorConfig): Promise<StandardizedActivity[]> {
