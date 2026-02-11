@@ -364,10 +364,20 @@ func buildSheetRow(event *pb.EnrichedActivityEvent, includeVisuals bool) []inter
 	}
 	row = append(row, avgHR)
 
-	// Max HR (from session if available)
+	// Max HR (calculate from records, fallback to session field)
 	maxHR := ""
 	if event.ActivityData != nil && len(event.ActivityData.Sessions) > 0 {
-		if mhr := event.ActivityData.Sessions[0].GetMaxHeartRate(); mhr > 0 {
+		var maxHRVal int32
+		for _, lap := range event.ActivityData.Sessions[0].Laps {
+			for _, record := range lap.Records {
+				if record.HeartRate > maxHRVal {
+					maxHRVal = record.HeartRate
+				}
+			}
+		}
+		if maxHRVal > 0 {
+			maxHR = fmt.Sprintf("%d", maxHRVal)
+		} else if mhr := event.ActivityData.Sessions[0].GetMaxHeartRate(); mhr > 0 {
 			maxHR = fmt.Sprintf("%d", mhr)
 		}
 	}

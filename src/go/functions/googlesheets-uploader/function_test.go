@@ -133,6 +133,38 @@ func TestBuildSheetRow_MaxHR(t *testing.T) {
 	}
 }
 
+func TestBuildSheetRow_MaxHRFromRecords(t *testing.T) {
+	// When MaxHeartRate is NOT set on the session (common for Hevy, some FIT files),
+	// max HR should be derived from individual records
+	event := &pb.EnrichedActivityEvent{
+		ActivityId:   "test-max-hr-records",
+		Name:         "HR Records Test",
+		ActivityType: pb.ActivityType_ACTIVITY_TYPE_RUN,
+		ActivityData: &pb.StandardizedActivity{
+			Sessions: []*pb.Session{
+				{
+					Laps: []*pb.Lap{
+						{
+							Records: []*pb.Record{
+								{HeartRate: 120},
+								{HeartRate: 155},
+								{HeartRate: 190},
+								{HeartRate: 170},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	row := buildSheetRow(event, false)
+
+	if row[9] != "190" {
+		t.Errorf("Expected max HR '190' from records, got '%v'", row[9])
+	}
+}
+
 func TestBuildSheetRow_DescriptionPreservesNewlines(t *testing.T) {
 	event := &pb.EnrichedActivityEvent{
 		ActivityId:   "test-desc-newlines",

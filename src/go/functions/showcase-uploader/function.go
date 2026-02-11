@@ -19,6 +19,7 @@ import (
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/destination"
 	"github.com/fitglue/server/src/go/pkg/domain/activity"
+	"github.com/fitglue/server/src/go/pkg/domain/tier"
 	"github.com/fitglue/server/src/go/pkg/framework"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
@@ -141,9 +142,9 @@ func generateShowcaseID(ctx context.Context, svc *bootstrap.Service, title strin
 	return "", fmt.Errorf("failed to generate unique showcase ID after 5 attempts")
 }
 
-func calculateExpiration(tier pb.UserTier, createdAt time.Time) *time.Time {
-	if tier == pb.UserTier_USER_TIER_ATHLETE {
-		// Athlete tier: never expires
+func calculateExpiration(user *pb.UserRecord, createdAt time.Time) *time.Time {
+	if tier.GetEffectiveTier(user) == tier.TierAthlete {
+		// Athlete effective tier: never expires
 		return nil
 	}
 
@@ -235,7 +236,7 @@ func showcaseHandler() framework.HandlerFunc {
 
 		// Calculate expiration
 		createdAt := time.Now()
-		expiresAt := calculateExpiration(user.Tier, createdAt)
+		expiresAt := calculateExpiration(user, createdAt)
 
 		// Create the showcased activity document
 		showcasedActivity := &pb.ShowcasedActivity{
@@ -309,8 +310,8 @@ func showcaseHandler() framework.HandlerFunc {
 			return nil, fmt.Errorf("failed to persist showcased activity: %w", err)
 		}
 
-		// --- Dual-write: Update showcase profile (Athlete tier only) ---
-		if user.Tier == pb.UserTier_USER_TIER_ATHLETE && showcasedActivity.OwnerDisplayName != "" {
+		// --- Dual-write: Update showcase profile (Athlete effective tier only) ---
+		if tier.GetEffectiveTier(user) == tier.TierAthlete && showcasedActivity.OwnerDisplayName != "" {
 			profileSlug := slugify(showcasedActivity.OwnerDisplayName)
 			if profileSlug != "" {
 				// Compute per-activity stats from the resolved activity data

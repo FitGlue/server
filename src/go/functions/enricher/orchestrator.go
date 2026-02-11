@@ -2,6 +2,7 @@ package enricher
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -411,7 +412,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				// Update pipeline run to PENDING status - waiting for user input
 				o.updatePipelineRunStatus(ctx, logger, payload.UserId, pipelineExecutionID,
 					pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
-					fmt.Sprintf("Waiting for user input: %s", strings.Join(waitErr.RequiredFields, ", ")),
+					buildPendingInputStatusMessage(waitErr),
 					providerExecutions)
 				return o.handleWaitError(ctx, logger, payload, providerExecutions, waitErr, activityId)
 			}
@@ -1001,4 +1002,48 @@ func boostersToFirestoreMaps(providerExecs []ProviderExecution) []map[string]int
 		boosters = append(boosters, booster)
 	}
 	return boosters
+}
+
+// buildPendingInputStatusMessage creates a user-friendly status message for pending input.
+// It uses the display.summary from the provider metadata if available, falling back
+// to display.field_labels for humanized field names, and finally to Title-Cased field names.
+func buildPendingInputStatusMessage(waitErr *user_input.WaitForInputError) string {
+	// Priority 1: Use display.summary if the provider set it
+	if summary, ok := waitErr.Metadata["display.summary"]; ok && summary != "" {
+		return fmt.Sprintf("Waiting for user input: %s", summary)
+	}
+
+	// Priority 2: Use display.field_labels for humanized names
+	if labelsJSON, ok := waitErr.Metadata["display.field_labels"]; ok && labelsJSON != "" {
+		var labels map[string]string
+		if err := json.Unmarshal([]byte(labelsJSON), &labels); err == nil && len(labels) > 0 {
+			var friendly []string
+			for _, field := range waitErr.RequiredFields {
+				if label, exists := labels[field]; exists {
+					friendly = append(friendly, label)
+				} else {
+					friendly = append(friendly, humanizeFieldName(field))
+				}
+			}
+			return fmt.Sprintf("Waiting for user input: %s", strings.Join(friendly, ", "))
+		}
+	}
+
+	// Priority 3: Humanize raw field names (e.g. fit_file_base64 -> Fit File Base64)
+	var humanized []string
+	for _, field := range waitErr.RequiredFields {
+		humanized = append(humanized, humanizeFieldName(field))
+	}
+	return fmt.Sprintf("Waiting for user input: %s", strings.Join(humanized, ", "))
+}
+
+// humanizeFieldName converts snake_case to Title Case (e.g. "fit_file_base64" -> "Fit File Base64")
+func humanizeFieldName(s string) string {
+	parts := strings.Split(s, "_")
+	for i, p := range parts {
+		if len(p) > 0 {
+			parts[i] = strings.ToUpper(p[:1]) + p[1:]
+		}
+	}
+	return strings.Join(parts, " ")
 }

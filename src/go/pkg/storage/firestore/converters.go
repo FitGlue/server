@@ -995,6 +995,15 @@ func ShowcaseProfileEntryToFirestore(e *pb.ShowcaseProfileEntry) map[string]inte
 	if e.DurationSeconds != 0 {
 		m["duration_seconds"] = e.DurationSeconds
 	}
+	if e.TotalSets != 0 {
+		m["total_sets"] = e.TotalSets
+	}
+	if e.TotalReps != 0 {
+		m["total_reps"] = e.TotalReps
+	}
+	if e.TotalWeightKg != 0 {
+		m["total_weight_kg"] = e.TotalWeightKg
+	}
 	return m
 }
 
@@ -1046,6 +1055,36 @@ func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pb.ShowcaseProfi
 		}
 	}
 
+	// TotalSets
+	if v, ok := m["total_sets"]; ok {
+		switch n := v.(type) {
+		case int64:
+			e.TotalSets = int32(n)
+		case float64:
+			e.TotalSets = int32(n)
+		}
+	}
+
+	// TotalReps
+	if v, ok := m["total_reps"]; ok {
+		switch n := v.(type) {
+		case int64:
+			e.TotalReps = int32(n)
+		case float64:
+			e.TotalReps = int32(n)
+		}
+	}
+
+	// TotalWeightKg
+	if v, ok := m["total_weight_kg"]; ok {
+		switch n := v.(type) {
+		case float64:
+			e.TotalWeightKg = n
+		case int64:
+			e.TotalWeightKg = float64(n)
+		}
+	}
+
 	return e
 }
 
@@ -1063,6 +1102,9 @@ func ShowcaseProfileToFirestore(p *pb.ShowcaseProfile) map[string]interface{} {
 		"total_activities":       p.TotalActivities,
 		"total_distance_meters":  p.TotalDistanceMeters,
 		"total_duration_seconds": p.TotalDurationSeconds,
+		"total_sets":             p.TotalSets,
+		"total_reps":             p.TotalReps,
+		"total_weight_kg":        p.TotalWeightKg,
 	}
 
 	if p.LatestActivityAt != nil {

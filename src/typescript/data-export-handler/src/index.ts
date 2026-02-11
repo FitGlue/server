@@ -113,6 +113,41 @@ async function fetchGcsBlob(uri: string): Promise<{ content: string; found: bool
     }
 }
 
+async function fetchGcsBinary(uri: string): Promise<{ content: Buffer; found: boolean }> {
+    if (!uri || !uri.startsWith('gs://')) {
+        return { content: Buffer.alloc(0), found: false };
+    }
+
+    try {
+        const withoutProtocol = uri.replace('gs://', '');
+        const slashIndex = withoutProtocol.indexOf('/');
+        const bucketName = withoutProtocol.substring(0, slashIndex);
+        const filePath = withoutProtocol.substring(slashIndex + 1);
+
+        const storage = getStorage();
+        const file = storage.bucket(bucketName).file(filePath);
+        const [exists] = await file.exists();
+
+        if (!exists) {
+            return { content: Buffer.alloc(0), found: false };
+        }
+
+        const [buffer] = await file.download();
+        return { content: buffer, found: true };
+    } catch {
+        return { content: Buffer.alloc(0), found: false };
+    }
+}
+
+function extractFitFileUri(jsonContent: string): string | null {
+    try {
+        const parsed = JSON.parse(jsonContent);
+        return parsed.fit_file_uri || parsed.fitFileUri || null;
+    } catch {
+        return null;
+    }
+}
+
 function getEmailPassword(): string {
     const password = process.env.EMAIL_APP_PASSWORD;
     if (!password) {
@@ -184,12 +219,14 @@ async function addRunBlobsToFolder(
     doc: FirebaseFirestore.QueryDocumentSnapshot
 ): Promise<void> {
     const runData = doc.data();
+    let fitFileUri: string | null = null;
 
     const enrichedUri = runData.enriched_event_uri as string;
     if (enrichedUri) {
         const blob = await fetchGcsBlob(enrichedUri);
         if (blob.found) {
             runsFolder.file(`${doc.id}_enriched.json`, blob.content);
+            if (!fitFileUri) fitFileUri = extractFitFileUri(blob.content);
         } else {
             runsFolder.file(
                 `${doc.id}_enriched_DELETED.txt`,
@@ -205,6 +242,7 @@ async function addRunBlobsToFolder(
         const blob = await fetchGcsBlob(payloadUri);
         if (blob.found) {
             runsFolder.file(`${doc.id}_payload.json`, blob.content);
+            if (!fitFileUri) fitFileUri = extractFitFileUri(blob.content);
         } else {
             runsFolder.file(
                 `${doc.id}_payload_DELETED.txt`,
@@ -212,6 +250,14 @@ async function addRunBlobsToFolder(
                 `Original GCS URI: ${payloadUri}\n` +
                 'The Firestore metadata for this run is still available in pipeline_runs.json.'
             );
+        }
+    }
+
+    // Include raw FIT file binary if available
+    if (fitFileUri) {
+        const fitBlob = await fetchGcsBinary(fitFileUri);
+        if (fitBlob.found) {
+            runsFolder.file(`${doc.id}.fit`, fitBlob.content);
         }
     }
 }
@@ -332,11 +378,14 @@ async function handleRunExport(
 
     let enrichedEvent: unknown = null;
     let originalPayload: unknown = null;
+    let fitFileUri: string | null = null;
+    let fitFileBase64: string | null = null;
 
     if (enrichedEventUri) {
         const blob = await fetchGcsBlob(enrichedEventUri);
         if (blob.found) {
             try { enrichedEvent = JSON.parse(blob.content); } catch { enrichedEvent = blob.content; }
+            if (!fitFileUri) fitFileUri = extractFitFileUri(blob.content);
         }
     }
 
@@ -344,6 +393,15 @@ async function handleRunExport(
         const blob = await fetchGcsBlob(originalPayloadUri);
         if (blob.found) {
             try { originalPayload = JSON.parse(blob.content); } catch { originalPayload = blob.content; }
+            if (!fitFileUri) fitFileUri = extractFitFileUri(blob.content);
+        }
+    }
+
+    // Include raw FIT file as base64 if available
+    if (fitFileUri) {
+        const fitBlob = await fetchGcsBinary(fitFileUri);
+        if (fitBlob.found) {
+            fitFileBase64 = fitBlob.content.toString('base64');
         }
     }
 
@@ -353,11 +411,88 @@ async function handleRunExport(
         pipelineRun: maskSensitiveData(runData),
         enrichedEvent,
         originalPayload,
+        fitFile: fitFileBase64,
         _meta: {
             enrichedEventAvailable: !!enrichedEvent,
             originalPayloadAvailable: !!originalPayload,
+            fitFileAvailable: !!fitFileBase64,
+            fitFileUri: fitFileUri || null,
         },
     };
+}
+
+async function buildExportZip(userId: string): Promise<Buffer> {
+    const zip = new JSZip();
+    const exportDate = new Date().toISOString().split('T')[0];
+    const folder = zip.folder(`fitglue-export-${exportDate}`);
+    if (!folder) throw new Error('Failed to create ZIP folder');
+
+    // 1. User profile
+    const userDoc = await db.collection('users').doc(userId).get();
+    if (userDoc.exists) {
+        folder.file('profile.json', JSON.stringify(
+            maskSensitiveData(userDoc.data() as Record<string, unknown>), null, 2
+        ));
+    }
+
+    // 2. All sub-collections
+    for (const subcollection of USER_SUBCOLLECTIONS) {
+        const docs = await fetchSubcollection(userId, subcollection);
+        if (docs.length > 0) {
+            folder.file(`${subcollection}.json`, JSON.stringify(docs, null, 2));
+        }
+    }
+
+    // 3. Pipeline runs with GCS blobs
+    const runsSnapshot = await db.collection('users').doc(userId)
+        .collection('pipeline_runs').get();
+
+    if (!runsSnapshot.empty) {
+        const runsFolder = folder.folder('pipeline_runs_data');
+        if (runsFolder) {
+            for (const doc of runsSnapshot.docs) {
+                await addRunBlobsToFolder(runsFolder, doc);
+            }
+        }
+    }
+
+    // 4. Showcased activities
+    const showcaseSnapshot = await db.collection('showcased_activities')
+        .where('user_id', '==', userId).get();
+
+    if (!showcaseSnapshot.empty) {
+        const showcaseDocs = showcaseSnapshot.docs.map(
+            (doc: FirebaseFirestore.QueryDocumentSnapshot) => ({
+                _id: doc.id,
+                ...maskSensitiveData(doc.data()),
+            })
+        );
+        folder.file('showcases.json', JSON.stringify(showcaseDocs, null, 2));
+    }
+
+    // 5. Ingress API keys
+    const apiKeysSnapshot = await db.collection('ingress_api_keys')
+        .where('user_id', '==', userId).get();
+
+    if (!apiKeysSnapshot.empty) {
+        const apiKeyDocs = apiKeysSnapshot.docs.map(
+            (doc: FirebaseFirestore.QueryDocumentSnapshot) => ({
+                _id: doc.id,
+                ...maskSensitiveData(doc.data()),
+            })
+        );
+        folder.file('api_keys.json', JSON.stringify(apiKeyDocs, null, 2));
+    }
+
+    // 6. Export metadata
+    folder.file('_export_meta.json', JSON.stringify({
+        exportVersion: '1.0',
+        exportedAt: new Date().toISOString(),
+        userId,
+        note: 'Files ending in _DELETED.txt indicate data that was auto-purged from cloud storage after 7 days.',
+    }, null, 2));
+
+    return zip.generateAsync({ type: 'nodebuffer' });
 }
 
 // --- Route: POST /execute/:jobId (Cloud Tasks callback) ---
@@ -376,78 +511,8 @@ async function handleExecuteExport(
     await jobRef.update({ status: 'RUNNING' });
 
     try {
-        const zip = new JSZip();
-        const exportDate = new Date().toISOString().split('T')[0];
-        const folder = zip.folder(`fitglue-export-${exportDate}`);
-        if (!folder) throw new Error('Failed to create ZIP folder');
+        const zipBuffer = await buildExportZip(jobUserId);
 
-        // 1. User profile
-        const userDoc = await db.collection('users').doc(jobUserId).get();
-        if (userDoc.exists) {
-            folder.file('profile.json', JSON.stringify(
-                maskSensitiveData(userDoc.data() as Record<string, unknown>), null, 2
-            ));
-        }
-
-        // 2. All sub-collections
-        for (const subcollection of USER_SUBCOLLECTIONS) {
-            const docs = await fetchSubcollection(jobUserId, subcollection);
-            if (docs.length > 0) {
-                folder.file(`${subcollection}.json`, JSON.stringify(docs, null, 2));
-            }
-        }
-
-        // 3. Pipeline runs with GCS blobs
-        const runsSnapshot = await db.collection('users').doc(jobUserId)
-            .collection('pipeline_runs').get();
-
-        if (!runsSnapshot.empty) {
-            const runsFolder = folder.folder('pipeline_runs_data');
-            if (runsFolder) {
-                for (const doc of runsSnapshot.docs) {
-                    await addRunBlobsToFolder(runsFolder, doc);
-                }
-            }
-        }
-
-        // 4. Showcased activities
-        const showcaseSnapshot = await db.collection('showcased_activities')
-            .where('user_id', '==', jobUserId).get();
-
-        if (!showcaseSnapshot.empty) {
-            const showcaseDocs = showcaseSnapshot.docs.map(
-                (doc: FirebaseFirestore.QueryDocumentSnapshot) => ({
-                    _id: doc.id,
-                    ...maskSensitiveData(doc.data()),
-                })
-            );
-            folder.file('showcases.json', JSON.stringify(showcaseDocs, null, 2));
-        }
-
-        // 5. Ingress API keys
-        const apiKeysSnapshot = await db.collection('ingress_api_keys')
-            .where('user_id', '==', jobUserId).get();
-
-        if (!apiKeysSnapshot.empty) {
-            const apiKeyDocs = apiKeysSnapshot.docs.map(
-                (doc: FirebaseFirestore.QueryDocumentSnapshot) => ({
-                    _id: doc.id,
-                    ...maskSensitiveData(doc.data()),
-                })
-            );
-            folder.file('api_keys.json', JSON.stringify(apiKeyDocs, null, 2));
-        }
-
-        // 6. Export metadata
-        folder.file('_export_meta.json', JSON.stringify({
-            exportVersion: '1.0',
-            exportedAt: new Date().toISOString(),
-            userId: jobUserId,
-            note: 'Files ending in _DELETED.txt indicate data that was auto-purged from cloud storage after 7 days.',
-        }, null, 2));
-
-        // Generate, upload, sign
-        const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
         const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
         const storage = getStorage();
         const bucket = storage.bucket(`${projectId}-artifacts`);
