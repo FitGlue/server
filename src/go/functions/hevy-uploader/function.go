@@ -518,11 +518,29 @@ func createHevyWorkout(ctx context.Context, apiKey string, workout *hevy.PostWor
 	}
 
 	// Parse response to get workout ID (response is a full Workout object)
+	// CRITICAL: The Hevy API actually returns "workoutId" in the JSON response,
+	// but the generated Workout struct only has json:"id". We decode into a
+	// secondary struct to capture the real field name.
 	var respBody hevy.Workout
-	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+	var rawResp map[string]interface{}
+
+	// Read body once and decode into both targets
+	var bodyBuf bytes.Buffer
+	bodyBuf.ReadFrom(resp.Body)
+	respBytes := bodyBuf.Bytes()
+
+	if err := json.Unmarshal(respBytes, &respBody); err != nil {
 		return "", fmt.Errorf("failed to decode Hevy response: %w", err)
 	}
+	// Also decode raw to check for workoutId field (Hevy API uses workoutId, not id)
+	_ = json.Unmarshal(respBytes, &rawResp)
 
+	// Prefer workoutId from raw response (actual Hevy API field), fall back to id from generated struct
+	if wid, ok := rawResp["workoutId"]; ok {
+		if widStr, ok := wid.(string); ok && widStr != "" {
+			return widStr, nil
+		}
+	}
 	if respBody.Id != nil {
 		return *respBody.Id, nil
 	}
