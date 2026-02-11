@@ -5,7 +5,7 @@ import { UserService } from '@fitglue/shared/domain/services';
 
 // Initialize Firebase Admin
 initializeApp();
-import { UserStore, ActivityStore, PipelineStore } from '@fitglue/shared/storage';
+import { UserStore, ActivityStore, PipelineStore, PluginDefaultsStore } from '@fitglue/shared/storage';
 
 
 // Initialize Firebase Admin
@@ -13,7 +13,8 @@ const db = getFirestore();
 const userStore = new UserStore(db);
 const activityStore = new ActivityStore(db);
 const pipelineStore = new PipelineStore(db);
-const userService = new UserService(userStore, activityStore, pipelineStore);
+const pluginDefaultsStore = new PluginDefaultsStore(db);
+const userService = new UserService(userStore, activityStore, pipelineStore, pluginDefaultsStore);
 
 /**
  * Cloud Function triggered by Firebase Auth User Creation.

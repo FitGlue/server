@@ -38,7 +38,8 @@ export {
   PipelineConfig,
   ShowcasedActivity,
   PipelineRun,
-  PipelineRunStatus
+  PipelineRunStatus,
+  PluginDefault
 } from './pb/user';
 
 // Fitbit types

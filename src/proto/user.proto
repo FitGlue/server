@@ -69,6 +69,15 @@ message DestinationConfig {
   map<string, string> config = 1;
 }
 
+// PluginDefault stores user-level default configuration for a source or destination plugin.
+// Stored in: users/{userId}/plugin_defaults/{pluginId}
+message PluginDefault {
+  string plugin_id = 1;                  // Registry ID (e.g., "googlesheets", "github")
+  map<string, string> config = 2;        // Default config values
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
 message UserIntegrations {
   HevyIntegration hevy = 1;
   FitbitIntegration fitbit = 2;

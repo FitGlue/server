@@ -15,7 +15,6 @@
         "@fitglue/shared": "^1.0.0",
         "@google-cloud/functions-framework": "^3.0.0",
         "@google-cloud/tasks": "^5.0.0",
-        "@google-cloud/secret-manager": "^5.0.0",
         "@typescript-eslint/eslint-plugin": "^8.53.1",
         "@typescript-eslint/parser": "^8.53.1",
         "firebase-admin": "^13.6.0",

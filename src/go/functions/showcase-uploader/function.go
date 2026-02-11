@@ -350,16 +350,46 @@ func showcaseHandler() framework.HandlerFunc {
 					entry.RouteThumbnailUrl = thumb
 				}
 
-				// Read existing profile or create new one
+				// Heal-on-write: if user changed display name, migrate old profile
+				existingProfile, _ := svc.DB.GetShowcaseProfileByUserId(ctx, eventPayload.UserId)
+				if existingProfile != nil && existingProfile.Slug != profileSlug {
+					fwCtx.Logger.Info("Slug migration: user changed display name",
+						"oldSlug", existingProfile.Slug, "newSlug", profileSlug, "userId", eventPayload.UserId)
+					// Delete the old profile - entries will be carried over below
+					if err := svc.DB.DeleteShowcaseProfile(ctx, existingProfile.Slug); err != nil {
+						fwCtx.Logger.Warn("Failed to delete old showcase profile during slug migration", "error", err, "oldSlug", existingProfile.Slug)
+					}
+				}
+
+				// Read existing profile (under new slug) or carry over from migrated profile
 				profile, err := svc.DB.GetShowcaseProfile(ctx, profileSlug)
 				if err != nil || profile == nil {
-					// New profile
-					profile = &pb.ShowcaseProfile{
-						Slug:        profileSlug,
-						UserId:      eventPayload.UserId,
-						DisplayName: showcasedActivity.OwnerDisplayName,
-						Entries:     []*pb.ShowcaseProfileEntry{entry},
-						CreatedAt:   timestamppb.New(createdAt),
+					if existingProfile != nil && existingProfile.Slug != profileSlug {
+						// Carry over entries from the old-slug profile
+						existingProfile.Slug = profileSlug
+						existingProfile.DisplayName = showcasedActivity.OwnerDisplayName
+						profile = existingProfile
+						// Upsert the new entry
+						found := false
+						for i, e := range profile.Entries {
+							if e.ShowcaseId == showcaseID {
+								profile.Entries[i] = entry
+								found = true
+								break
+							}
+						}
+						if !found {
+							profile.Entries = append(profile.Entries, entry)
+						}
+					} else {
+						// Brand new profile
+						profile = &pb.ShowcaseProfile{
+							Slug:        profileSlug,
+							UserId:      eventPayload.UserId,
+							DisplayName: showcasedActivity.OwnerDisplayName,
+							Entries:     []*pb.ShowcaseProfileEntry{entry},
+							CreatedAt:   timestamppb.New(createdAt),
+						}
 					}
 				} else {
 					// Update existing: upsert by showcase ID

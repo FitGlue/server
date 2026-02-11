@@ -14,7 +14,7 @@ export * from './auth-strategies';
 
 import { PubSub } from '@google-cloud/pubsub';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
-import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore, PipelineStore, PipelineRunStore } from '../storage/firestore';
+import { UserStore, ExecutionStore, ApiKeyStore, IntegrationIdentityStore, ActivityStore, PipelineStore, PipelineRunStore, PluginDefaultsStore } from '../storage/firestore';
 import { UserService, ApiKeyService, ExecutionService } from '../domain/services';
 import { AuthorizationService } from '../domain/services/authorization';
 import * as SentryModule from '../infrastructure/sentry';
@@ -448,12 +448,13 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
       integrationIdentities: new IntegrationIdentityStore(db),
       activities: new ActivityStore(db),
       pipelines: new PipelineStore(db),
-      pipelineRuns: new PipelineRunStore(db)
+      pipelineRuns: new PipelineRunStore(db),
+      pluginDefaults: new PluginDefaultsStore(db)
     };
 
     // Initialize services
     const services = {
-      user: new UserService(stores.users, stores.activities, stores.pipelines),
+      user: new UserService(stores.users, stores.activities, stores.pipelines, stores.pluginDefaults),
       apiKey: new ApiKeyService(stores.apiKeys),
       execution: executionService,
       authorization: new AuthorizationService(stores.users)

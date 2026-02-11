@@ -36,6 +36,21 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       method: 'DELETE',
       pattern: '/api/users/me/pipelines/:pipelineId',
       handler: async (match: RouteMatch) => await handleDeletePipeline(userId, match.params.pipelineId, ctx)
+    },
+    {
+      method: 'GET',
+      pattern: '/api/users/me/plugin-defaults',
+      handler: async () => await handleListPluginDefaults(userId, ctx)
+    },
+    {
+      method: 'PUT',
+      pattern: '/api/users/me/plugin-defaults/:pluginId',
+      handler: async (match: RouteMatch) => await handleSetPluginDefault(userId, match.params.pluginId, req, ctx)
+    },
+    {
+      method: 'DELETE',
+      pattern: '/api/users/me/plugin-defaults/:pluginId',
+      handler: async (match: RouteMatch) => await handleDeletePluginDefault(userId, match.params.pluginId, ctx)
     }
   ]);
 };
@@ -114,6 +129,10 @@ async function handleCreatePipeline(userId: string, req: { body: Record<string, 
   }
 
   logger.info('Created pipeline', { userId, pipelineId });
+
+  // Auto-save plugin defaults (first config wins - won't overwrite existing defaults)
+  await savePluginDefaults(userId, pipeline, ctx);
+
   return { id: pipelineId };
 }
 
@@ -159,6 +178,10 @@ async function handleUpdatePipeline(userId: string, pipelineId: string, req: { b
 
   await ctx.services.user.pipelineStore.create(userId, pipeline); // create() is idempotent (set operation)
   logger.info('Updated pipeline', { userId, pipelineId });
+
+  // Auto-save plugin defaults (first config wins - won't overwrite existing defaults)
+  await savePluginDefaults(userId, pipeline, ctx);
+
   return { message: 'Pipeline updated' };
 }
 
@@ -191,6 +214,87 @@ async function handleDeletePipeline(userId: string, pipelineId: string, ctx: Fra
   await ctx.services.user.pipelineStore.delete(userId, pipelineId);
   logger.info('Deleted pipeline', { userId, pipelineId });
   return { message: 'Pipeline deleted' };
+}
+
+// --- Plugin defaults handlers ---
+
+async function handleListPluginDefaults(userId: string, ctx: FrameworkContext) {
+  const defaults = await ctx.services.user.pluginDefaultsStore.list(userId);
+  return { defaults };
+}
+
+async function handleSetPluginDefault(userId: string, pluginId: string, req: { body: Record<string, unknown> }, ctx: FrameworkContext) {
+  const { config } = req.body;
+  if (!config || typeof config !== 'object') {
+    throw new HttpError(400, 'config is required and must be an object');
+  }
+
+  const now = new Date();
+  const pluginDefault = {
+    pluginId,
+    config: config as Record<string, string>,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await ctx.services.user.pluginDefaultsStore.set(userId, pluginDefault);
+  ctx.logger.info('Set plugin default', { userId, pluginId });
+  return pluginDefault;
+}
+
+async function handleDeletePluginDefault(userId: string, pluginId: string, ctx: FrameworkContext) {
+  await ctx.services.user.pluginDefaultsStore.delete(userId, pluginId);
+  ctx.logger.info('Deleted plugin default', { userId, pluginId });
+  return { success: true };
+}
+
+/**
+ * Auto-save source and destination configs as user-level plugin defaults.
+ * Uses setIfNotExists: the first pipeline config for a given plugin becomes
+ * that user's default. Subsequent pipelines don't overwrite it.
+ * This runs fire-and-forget style — failures are logged but don't fail the request.
+ */
+async function savePluginDefaults(userId: string, pipeline: PipelineConfig, ctx: FrameworkContext) {
+  const { logger } = ctx;
+  const store = ctx.services.user.pluginDefaultsStore;
+
+  try {
+    // Save source config as default
+    if (pipeline.sourceConfig && Object.keys(pipeline.sourceConfig).length > 0) {
+      const sourcePluginId = getSourceRegistryId(pipeline.source);
+      if (sourcePluginId) {
+        const created = await store.setIfNotExists(userId, {
+          pluginId: sourcePluginId,
+          config: pipeline.sourceConfig,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
+        if (created) {
+          logger.info('Saved source plugin default', { plugin: sourcePluginId });
+        }
+      }
+    }
+
+    // Save destination configs as defaults
+    if (pipeline.destinationConfigs) {
+      for (const [destId, destCfg] of Object.entries(pipeline.destinationConfigs) as [string, DestinationConfig][]) {
+        if (destCfg?.config && Object.keys(destCfg.config).length > 0) {
+          const created = await store.setIfNotExists(userId, {
+            pluginId: destId,
+            config: destCfg.config,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          });
+          if (created) {
+            logger.info('Saved destination plugin default', { plugin: destId });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    // Best-effort: don't fail the pipeline operation if defaults save fails
+    logger.warn('Failed to save plugin defaults (best-effort)', { error: String(err) });
+  }
 }
 
 // Helper functions

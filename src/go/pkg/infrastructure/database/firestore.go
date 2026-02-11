@@ -297,6 +297,28 @@ func (a *FirestoreAdapter) GetShowcaseProfile(ctx context.Context, slug string) 
 	return profile, nil
 }
 
+// GetShowcaseProfileByUserId finds a showcase profile by the user_id field
+func (a *FirestoreAdapter) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pb.ShowcaseProfile, error) {
+	col := a.storage.ShowcaseProfiles()
+	iter := col.Ref.Where("user_id", "==", userId).Limit(1).Documents(ctx)
+	defer iter.Stop()
+	doc, err := iter.Next()
+	if err != nil {
+		return nil, nil // Not found or error - treat as no existing profile
+	}
+	profile := col.FromFirestore(doc.Data())
+	if profile != nil && profile.Slug == "" {
+		profile.Slug = doc.Ref.ID
+	}
+	return profile, nil
+}
+
+// DeleteShowcaseProfile deletes a showcase profile by slug
+func (a *FirestoreAdapter) DeleteShowcaseProfile(ctx context.Context, slug string) error {
+	_, err := a.storage.ShowcaseProfiles().Ref.Doc(slug).Delete(ctx)
+	return err
+}
+
 // isNotFoundError checks if error is a Firestore not found error
 func isNotFoundError(err error) bool {
 	if err == nil {
@@ -326,6 +348,28 @@ func (a *FirestoreAdapter) GetUserPipelines(ctx context.Context, userId string) 
 	}
 
 	return pipelines, nil
+}
+
+// --- Plugin Defaults (user-level default config for sources/destinations) ---
+
+// GetPluginDefault retrieves a plugin default by plugin ID
+func (a *FirestoreAdapter) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pb.PluginDefault, error) {
+	doc, err := a.storage.PluginDefaults(userId).Doc(pluginId).Get(ctx)
+	if err != nil {
+		if isNotFoundError(err) {
+			return nil, nil // Not found - return nil (no default set)
+		}
+		return nil, err
+	}
+	if doc != nil && doc.PluginId == "" {
+		doc.PluginId = pluginId
+	}
+	return doc, nil
+}
+
+// SetPluginDefault creates or updates a plugin default
+func (a *FirestoreAdapter) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pb.PluginDefault) error {
+	return a.storage.PluginDefaults(userId).Doc(pluginDefault.PluginId).Set(ctx, pluginDefault)
 }
 
 // --- Uploaded Activities (for loop prevention) ---

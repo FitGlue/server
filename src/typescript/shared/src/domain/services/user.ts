@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { UserStore, ActivityStore, PipelineStore } from '../../storage/firestore';
+import { UserStore, ActivityStore, PipelineStore, PluginDefaultsStore } from '../../storage/firestore';
 import { UserRecord, UserIntegrations, ProcessedActivityRecord, UserTier } from '../../types/pb/user';
 import { FirestoreTokenSource, OAuthProvider } from '../../infrastructure/oauth/token-source';
 
@@ -11,7 +11,8 @@ export class UserService {
     constructor(
         private userStore: UserStore,
         private activityStore: ActivityStore,
-        public readonly pipelineStore: PipelineStore
+        public readonly pipelineStore: PipelineStore,
+        public readonly pluginDefaultsStore: PluginDefaultsStore
     ) { }
 
     /**

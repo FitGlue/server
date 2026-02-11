@@ -147,8 +147,10 @@ jest.mock('@fitglue/shared/routing', () => {
 
 // Mock @fitglue/shared/storage
 const MockShowcaseStore = jest.fn();
+const MockShowcaseProfileStore = jest.fn();
 jest.mock('@fitglue/shared/storage', () => ({
   ShowcaseStore: MockShowcaseStore,
+  ShowcaseProfileStore: MockShowcaseProfileStore,
 }));
 
 // Mock @fitglue/shared/plugin

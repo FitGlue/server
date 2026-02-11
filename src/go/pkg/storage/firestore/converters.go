@@ -1131,6 +1131,39 @@ func FirestoreToShowcaseProfile(m map[string]interface{}) *pb.ShowcaseProfile {
 	return p
 }
 
+// --- PluginDefault Converters ---
+
+func PluginDefaultToFirestore(p *pb.PluginDefault) map[string]interface{} {
+	m := map[string]interface{}{
+		"plugin_id": p.PluginId,
+		"config":    p.Config,
+	}
+	if p.CreatedAt != nil {
+		m["created_at"] = p.CreatedAt.AsTime()
+	}
+	if p.UpdatedAt != nil {
+		m["updated_at"] = p.UpdatedAt.AsTime()
+	}
+	return m
+}
+
+func FirestoreToPluginDefault(m map[string]interface{}) *pb.PluginDefault {
+	p := &pb.PluginDefault{
+		PluginId: getString(m, "plugin_id"),
+	}
+	if cfg, ok := m["config"].(map[string]interface{}); ok {
+		p.Config = make(map[string]string, len(cfg))
+		for k, v := range cfg {
+			if s, ok := v.(string); ok {
+				p.Config[k] = s
+			}
+		}
+	}
+	p.CreatedAt = getTime(m, "created_at")
+	p.UpdatedAt = getTime(m, "updated_at")
+	return p
+}
+
 // --- UploadedActivityRecord Converters (Loop Prevention) ---
 
 func UploadedActivityToFirestore(r *pb.UploadedActivityRecord) map[string]interface{} {

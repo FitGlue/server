@@ -9,6 +9,7 @@ export { ShowcaseStore } from './showcase-store';
 export { ShowcaseProfileStore } from './showcase-profile-store';
 export { PipelineStore } from './pipeline-store';
 export { PipelineRunStore } from './pipeline-runs-store';
+export { PluginDefaultsStore } from './plugin-defaults-store';
 
 // Export converters for advanced use cases (e.g., admin queries)
 export { userConverter } from './converters';

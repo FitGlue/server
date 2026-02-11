@@ -71,6 +71,13 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
     },
     {
       method: 'GET',
+      pattern: '/u/:slug/:id',
+      handler: async (match) => {
+        return await handleHtmlShowcase(match.params.id, showcaseStore, corsHeaders);
+      }
+    },
+    {
+      method: 'GET',
       pattern: '/showcase/:id',
       handler: async (match) => {
         return await handleHtmlShowcase(match.params.id, showcaseStore, corsHeaders);

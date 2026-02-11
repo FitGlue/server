@@ -211,6 +211,12 @@ resource "google_storage_bucket_object" "connection_actions_handler_zip" {
   source = "/tmp/fitglue-function-zips/connection-actions-handler.zip"
 }
 
+resource "google_storage_bucket_object" "data_export_handler_zip" {
+  name   = "data-export-handler-${filemd5("/tmp/fitglue-function-zips/data-export-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/data-export-handler.zip"
+}
+
 
 
 # ----------------- Enricher Service -----------------
@@ -2323,4 +2329,82 @@ resource "google_project_iam_member" "cloud_function_sa_tasks_enqueuer" {
   project = var.project_id
   role    = "roles/cloudtasks.enqueuer"
   member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
+# ----------------- Data Export Handler -----------------
+resource "google_cloudfunctions2_function" "data_export_handler" {
+  name        = "data-export-handler"
+  location    = var.region
+  description = "Handles GDPR data export and per-run data download"
+
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "dataExportHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.data_export_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "512Mi"
+    timeout_seconds  = 300
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
+    }
+
+    secret_environment_variables {
+      key        = "EMAIL_APP_PASSWORD"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.email_app_password.secret_id
+      version    = "latest"
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "data_export_handler_invoker" {
+  project  = google_cloudfunctions2_function.data_export_handler.project
+  location = google_cloudfunctions2_function.data_export_handler.location
+  service  = google_cloudfunctions2_function.data_export_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
+}
+
+# Allow the Cloud Function SA to invoke itself (for Cloud Tasks OIDC callbacks)
+resource "google_cloud_run_service_iam_member" "data_export_handler_self_invoker" {
+  project  = google_cloudfunctions2_function.data_export_handler.project
+  location = google_cloudfunctions2_function.data_export_handler.location
+  service  = google_cloudfunctions2_function.data_export_handler.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
+# ----------------- Cloud Tasks Queue for Data Export -----------------
+resource "google_cloud_tasks_queue" "data_export" {
+  name     = "data-export"
+  location = var.region
+
+  depends_on = [google_project_service.apis["cloudtasks.googleapis.com"]]
+
+  rate_limits {
+    max_dispatches_per_second = 2
+    max_concurrent_dispatches = 1
+  }
+
+  retry_config {
+    max_attempts       = 3
+    min_backoff        = "30s"
+    max_backoff        = "600s"
+    max_doublings      = 3
+  }
 }

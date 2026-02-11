@@ -31,6 +31,7 @@ describe('repost-handler', () => {
       userId: 'user-pro',
       logger: {
         info: jest.fn(),
+        warn: jest.fn(),
         error: jest.fn(),
       },
       stores: {

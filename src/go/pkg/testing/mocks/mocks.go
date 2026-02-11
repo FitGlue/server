@@ -162,6 +162,16 @@ func (m *MockDatabase) GetShowcaseProfile(ctx context.Context, slug string) (*pb
 	return nil, nil
 }
 
+func (m *MockDatabase) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pb.ShowcaseProfile, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
+func (m *MockDatabase) DeleteShowcaseProfile(ctx context.Context, slug string) error {
+	// No-op for tests by default
+	return nil
+}
+
 // --- Personal Records ---
 
 func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
@@ -192,6 +202,18 @@ func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*
 	}
 	// No-op for tests by default - return empty slice
 	return []*pb.PipelineConfig{}, nil
+}
+
+// --- Plugin Defaults (user-level default config) ---
+
+func (m *MockDatabase) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pb.PluginDefault, error) {
+	// No-op for tests by default
+	return nil, nil
+}
+
+func (m *MockDatabase) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pb.PluginDefault) error {
+	// No-op for tests by default
+	return nil
 }
 
 // --- Uploaded Activities (for loop prevention) ---

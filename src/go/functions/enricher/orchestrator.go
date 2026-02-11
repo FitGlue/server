@@ -697,16 +697,34 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		finalEvent.AppliedEnrichments = append(finalEvent.AppliedEnrichments, "branding")
 	}
 
-	// Inject source config into metadata
-	for k, v := range pipeline.SourceConfig {
+	// Inject source config into metadata (with user default fallback)
+	sourceConfig := pipeline.SourceConfig
+	if len(sourceConfig) == 0 {
+		// Fall back to user plugin default for this source
+		sourcePluginId := strings.ToLower(strings.TrimPrefix(pipeline.Source, "SOURCE_"))
+		if def, err := o.database.GetPluginDefault(ctx, payload.UserId, sourcePluginId); err == nil && def != nil {
+			sourceConfig = def.Config
+			logger.Info("Using user default for source config", "plugin", sourcePluginId)
+		}
+	}
+	for k, v := range sourceConfig {
 		finalEvent.EnrichmentMetadata[k] = v
 	}
 
 	// Inject destination configs into metadata (prefixed with destination ID)
+	// For each destination, merge pipeline config with user default (pipeline wins)
 	for destId, destCfg := range pipeline.DestinationConfigs {
-		if destCfg != nil {
+		if destCfg != nil && len(destCfg.Config) > 0 {
 			for k, v := range destCfg.Config {
 				finalEvent.EnrichmentMetadata[destId+"_"+k] = v
+			}
+		} else {
+			// Fall back to user plugin default for this destination
+			if def, err := o.database.GetPluginDefault(ctx, payload.UserId, destId); err == nil && def != nil {
+				for k, v := range def.Config {
+					finalEvent.EnrichmentMetadata[destId+"_"+k] = v
+				}
+				logger.Info("Using user default for destination config", "destination", destId)
 			}
 		}
 	}
@@ -739,6 +757,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 type configuredPipeline struct {
 	ID                 string
+	Source             string
 	Enrichers          []configuredEnricher
 	Destinations       []pb.Destination
 	SourceConfig       map[string]string
@@ -774,6 +793,7 @@ func (o *Orchestrator) resolvePipeline(ctx context.Context, pipelineID string, u
 			}
 			return &configuredPipeline{
 				ID:                 p.Id,
+				Source:             p.Source,
 				Enrichers:          enrichers,
 				Destinations:       p.Destinations,
 				SourceConfig:       p.SourceConfig,

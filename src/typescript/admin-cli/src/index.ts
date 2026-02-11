@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import inquirer from 'inquirer';
 // Module-level imports for smart pruning
 import { db } from '@fitglue/shared/framework';
-import { UserStore, ActivityStore, ApiKeyStore, ExecutionStore, PipelineStore } from '@fitglue/shared/storage';
+import { UserStore, ActivityStore, ApiKeyStore, ExecutionStore, PipelineStore, PluginDefaultsStore } from '@fitglue/shared/storage';
 import { UserService, ApiKeyService, ExecutionService } from '@fitglue/shared/domain/services';
 import {
     EnricherProviderType,
@@ -37,8 +37,9 @@ const activityStore = new ActivityStore(db);
 const apiKeyStore = new ApiKeyStore(db);
 const executionStore = new ExecutionStore(db);
 const pipelineStore = new PipelineStore(db);
+const pluginDefaultsStore = new PluginDefaultsStore(db);
 
-const userService = new UserService(userStore, activityStore, pipelineStore);
+const userService = new UserService(userStore, activityStore, pipelineStore, pluginDefaultsStore);
 const apiKeyService = new ApiKeyService(apiKeyStore);
 const executionService = new ExecutionService(executionStore);
 

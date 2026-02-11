@@ -238,6 +238,25 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     pipeline_execution_id: pipelineRun.id,
   };
 
+  // Inject user's default config for the missed destination.
+  // Without this, destinations like Google Sheets would fail with "spreadsheet_id not configured"
+  // because the original pipeline didn't include this destination.
+  try {
+    const destRegistryId = destKey.toLowerCase().replace(/\s+/g, '');
+    const pluginDefault = await ctx.services.user.pluginDefaultsStore.get(userId, destRegistryId);
+    if (pluginDefault?.config && Object.keys(pluginDefault.config).length > 0) {
+      const existingMetadata = (repostData.enrichment_metadata || repostData.enrichmentMetadata || {}) as Record<string, string>;
+      for (const [k, v] of Object.entries(pluginDefault.config)) {
+        existingMetadata[`${destRegistryId}_${k}`] = v;
+      }
+      repostData.enrichment_metadata = existingMetadata;
+      ctx.logger.info('Injected plugin defaults for missed destination', { destination: destRegistryId });
+    }
+  } catch (err) {
+    // Best-effort: don't block repost if defaults lookup fails
+    ctx.logger.warn('Failed to fetch plugin defaults for missed destination (best-effort)', { error: String(err) });
+  }
+
   ctx.logger.info('Constructed repost data', {
     originalDestinations: enrichedEvent.destinations,
     newDestinations: [destEnum],

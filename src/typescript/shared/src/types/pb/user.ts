@@ -260,6 +260,24 @@ export interface DestinationConfig_ConfigEntry {
   value: string;
 }
 
+/**
+ * PluginDefault stores user-level default configuration for a source or destination plugin.
+ * Stored in: users/{userId}/plugin_defaults/{pluginId}
+ */
+export interface PluginDefault {
+  /** Registry ID (e.g., "googlesheets", "github") */
+  pluginId: string;
+  /** Default config values */
+  config: { [key: string]: string };
+  createdAt?: Date | undefined;
+  updatedAt?: Date | undefined;
+}
+
+export interface PluginDefault_ConfigEntry {
+  key: string;
+  value: string;
+}
+
 export interface UserIntegrations {
   hevy?: HevyIntegration | undefined;
   fitbit?: FitbitIntegration | undefined;

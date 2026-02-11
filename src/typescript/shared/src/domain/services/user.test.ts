@@ -32,7 +32,7 @@ describe('UserService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    userService = new UserService(mockUserStore, mockActivityStore, null as any);
+    userService = new UserService(mockUserStore, mockActivityStore, null as any, null as any);
   });
 
   describe('getValidToken', () => {

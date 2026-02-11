@@ -2,7 +2,7 @@
 import * as admin from 'firebase-admin';
 import { adminDb as db } from '../firebase';
 import { UserService, ApiKeyService } from '@fitglue/shared/domain/services';
-import { UserStore, ActivityStore, ApiKeyStore, PipelineStore } from '@fitglue/shared/storage';
+import { UserStore, ActivityStore, ApiKeyStore, PipelineStore, PluginDefaultsStore } from '@fitglue/shared/storage';
 import { generateOAuthState } from '@fitglue/shared/infrastructure/oauth';
 import * as crypto from 'crypto';
 import { randomUUID } from 'crypto';
@@ -11,8 +11,9 @@ const userStore = new UserStore(db);
 const activityStore = new ActivityStore(db);
 const apiKeyStore = new ApiKeyStore(db);
 const pipelineStore = new PipelineStore(db);
+const pluginDefaultsStore = new PluginDefaultsStore(db);
 
-const userService = new UserService(userStore, activityStore, pipelineStore);
+const userService = new UserService(userStore, activityStore, pipelineStore, pluginDefaultsStore);
 const apiKeyService = new ApiKeyService(apiKeyStore);
 
 export function registerUserTools(registerTool: (tool: any, handler: (args: any) => Promise<any>) => void) {

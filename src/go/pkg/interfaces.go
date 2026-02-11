@@ -43,6 +43,10 @@ type Database interface {
 	// Pipelines (Sub-collection)
 	GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
 
+	// Plugin Defaults (user-level default config for sources/destinations)
+	GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pb.PluginDefault, error)
+	SetPluginDefault(ctx context.Context, userId string, pluginDefault *pb.PluginDefault) error
+
 	// Showcased Activities (public shareable snapshots)
 	ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error)
 	SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error
@@ -51,6 +55,8 @@ type Database interface {
 	// Showcase Profiles (materialized user profile for homepage)
 	SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error
 	GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error)
+	GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pb.ShowcaseProfile, error)
+	DeleteShowcaseProfile(ctx context.Context, slug string) error
 
 	// Uploaded Activities (for loop prevention - tracks what we've posted to destinations)
 	SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error

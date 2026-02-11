@@ -88,6 +88,12 @@ func (m *MockDatabase) SetShowcaseProfile(ctx context.Context, profile *pb.Showc
 func (m *MockDatabase) GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error) {
 	return nil, nil
 }
+func (m *MockDatabase) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pb.ShowcaseProfile, error) {
+	return nil, nil
+}
+func (m *MockDatabase) DeleteShowcaseProfile(ctx context.Context, slug string) error {
+	return nil
+}
 func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
 	return nil, nil
 }
@@ -105,6 +111,12 @@ func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*
 		return m.GetUserPipelinesFunc(ctx, userId)
 	}
 	return []*pb.PipelineConfig{}, nil
+}
+func (m *MockDatabase) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pb.PluginDefault, error) {
+	return nil, nil
+}
+func (m *MockDatabase) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pb.PluginDefault) error {
+	return nil
 }
 func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
 	return nil

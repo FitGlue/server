@@ -130,3 +130,13 @@ func (c *Client) PipelineRuns(userId string) *Collection[pb.PipelineRun] {
 		FromFirestore: FirestoreToPipelineRun,
 	}
 }
+
+// PluginDefaults are sub-collections of Users: users/{uid}/plugin_defaults/{pluginId}
+// Stores user-level default config for source and destination plugins
+func (c *Client) PluginDefaults(userId string) *Collection[pb.PluginDefault] {
+	return &Collection[pb.PluginDefault]{
+		Ref:           c.fs.Collection("users").Doc(userId).Collection("plugin_defaults"),
+		ToFirestore:   PluginDefaultToFirestore,
+		FromFirestore: FirestoreToPluginDefault,
+	}
+}

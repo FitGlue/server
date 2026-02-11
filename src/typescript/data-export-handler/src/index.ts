@@ -2,7 +2,7 @@
 import { createCloudFunction, FirebaseAuthStrategy, PayloadUserStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { CloudTasksClient } from '@google-cloud/tasks';
-import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
+
 import { getMessaging } from 'firebase-admin/messaging';
 import { getAuth } from 'firebase-admin/auth';
 import { getStorage } from 'firebase-admin/storage';
@@ -34,7 +34,7 @@ interface ExportJob {
 }
 
 const tasksClient = new CloudTasksClient();
-const secretClient = new SecretManagerServiceClient();
+
 
 const SENDER_EMAIL = 'system@fitglue.tech';
 
@@ -113,15 +113,12 @@ async function fetchGcsBlob(uri: string): Promise<{ content: string; found: bool
     }
 }
 
-async function getEmailPassword(): Promise<string> {
-    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
-    const secretName = `projects/${projectId}/secrets/email-app-password/versions/latest`;
-    const [version] = await secretClient.accessSecretVersion({ name: secretName });
-    const payload = version.payload?.data;
-    if (!payload) {
-        throw new Error('Email app password secret has no payload');
+function getEmailPassword(): string {
+    const password = process.env.EMAIL_APP_PASSWORD;
+    if (!password) {
+        throw new Error('EMAIL_APP_PASSWORD environment variable is not set');
     }
-    return typeof payload === 'string' ? payload : Buffer.from(payload).toString('utf8');
+    return password;
 }
 
 async function sendExportEmail(userEmail: string, downloadUrl: string): Promise<void> {
@@ -516,7 +513,7 @@ export const dataExportHandler = createCloudFunction(handler, {
     auth: {
         strategies: [
             new FirebaseAuthStrategy(),
-            new PayloadUserStrategy(async (payload: Record<string, unknown>) => {
+            new PayloadUserStrategy(async (payload: unknown) => {
                 const body = payload as { userId?: string };
                 return body?.userId ?? null;
             }),
