@@ -223,7 +223,7 @@ describe('data-export-handler', () => {
             )).rejects.toThrow('Pipeline run not found');
         });
 
-        it('should return run data with masked sensitive fields', async () => {
+        it('should return download URL for run data', async () => {
             mockGet.mockResolvedValueOnce({
                 exists: true,
                 data: () => ({
@@ -239,9 +239,8 @@ describe('data-export-handler', () => {
                 mockCtx as any
             );
 
-            expect(result).toHaveProperty('exportVersion', '1.0');
-            expect((result as any).pipelineRun.access_token).toContain('***REDACTED***');
-            expect((result as any).pipelineRun.status).toBe('COMPLETED');
+            expect(result).toHaveProperty('downloadUrl');
+            expect(result).toHaveProperty('fitFileAvailable', false);
         });
     });
 

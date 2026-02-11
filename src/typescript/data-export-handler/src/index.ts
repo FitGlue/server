@@ -379,7 +379,7 @@ async function handleRunExport(
     let enrichedEvent: unknown = null;
     let originalPayload: unknown = null;
     let fitFileUri: string | null = null;
-    let fitFileBase64: string | null = null;
+    let fitFileAvailable = false;
 
     if (enrichedEventUri) {
         const blob = await fetchGcsBlob(enrichedEventUri);
@@ -397,27 +397,50 @@ async function handleRunExport(
         }
     }
 
-    // Include raw FIT file as base64 if available
-    if (fitFileUri) {
-        const fitBlob = await fetchGcsBinary(fitFileUri);
-        if (fitBlob.found) {
-            fitFileBase64 = fitBlob.content.toString('base64');
-        }
-    }
+    // Build ZIP containing JSON data + raw FIT file
+    const zip = new JSZip();
 
-    return {
+    const jsonData = {
         exportVersion: '1.0',
         exportedAt: new Date().toISOString(),
         pipelineRun: maskSensitiveData(runData),
         enrichedEvent,
         originalPayload,
-        fitFile: fitFileBase64,
         _meta: {
             enrichedEventAvailable: !!enrichedEvent,
             originalPayloadAvailable: !!originalPayload,
-            fitFileAvailable: !!fitFileBase64,
+            fitFileAvailable: false,
             fitFileUri: fitFileUri || null,
         },
+    };
+
+    // Add raw FIT file binary if available
+    if (fitFileUri) {
+        const fitBlob = await fetchGcsBinary(fitFileUri);
+        if (fitBlob.found) {
+            zip.file('activity.fit', fitBlob.content);
+            fitFileAvailable = true;
+        }
+    }
+
+    jsonData._meta.fitFileAvailable = fitFileAvailable;
+    zip.file('data.json', JSON.stringify(jsonData, null, 2));
+
+    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
+    // Upload to GCS and generate signed URL (same pattern as full export)
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT || '';
+    const storage = getStorage();
+    const bucket = storage.bucket(`${projectId}-artifacts`);
+    const gcsPath = `exports/${userId}/run-${runId}.zip`;
+    const file = bucket.file(gcsPath);
+
+    await file.save(zipBuffer, { contentType: 'application/zip', metadata: { cacheControl: 'no-cache' } });
+    const [signedUrl] = await file.getSignedUrl({ action: 'read', expires: Date.now() + 24 * 60 * 60 * 1000 });
+
+    return {
+        downloadUrl: signedUrl,
+        fitFileAvailable,
     };
 }
 
