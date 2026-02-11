@@ -797,6 +797,9 @@ Create beautiful, public links to your boosted activities. Share your activity d
 ### Tiered Retention
 - **Hobbyist**: Showcase links expire after 1 month
 - **Athlete**: Showcase links never expire
+
+### Athlete Profile
+Athlete-tier users get a public profile page that aggregates all their Showcased activities into a single shareable homepage. Share your fitness journey at \`/u/your-name\`.
   `,
   features: [
     '✅ Beautiful public activity pages',
@@ -804,6 +807,7 @@ Create beautiful, public links to your boosted activities. Share your activity d
     '✅ Shows all applied FitGlue boosters',
     '✅ Social sharing with rich previews',
     '✅ Mobile-optimized design',
+    '✅ Athlete Profile page (aggregates all your Showcases)',
   ],
   transformations: [],
   useCases: [
