@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.13.3](https://github.com/FitGlue/server/compare/v12.13.2...v12.13.3) (2026-02-11)
+
+
+### Bug Fixes
+
+* heart rate enricher has zone 0, google sheets proper columns ([a45ff52](https://github.com/FitGlue/server/commit/a45ff52cafcfbcfd3b2e2296b229aa833647556e))
+
 ### [12.13.2](https://github.com/FitGlue/server/compare/v12.13.1...v12.13.2) (2026-02-11)
 
 
