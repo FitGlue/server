@@ -2,6 +2,38 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.0.0](https://github.com/FitGlue/server/compare/v13.0.0...v14.0.0) (2026-02-11)
+
+
+### ⚠ BREAKING CHANGES
+
+* StandardizedActivity protobuf adds workout field (12).
+Lap protobuf adds intensity field (6). Database interface unchanged.
+
+- Add ENRICHER_PROVIDER_INTERVALS enum value (39) to user.proto
+- Add WorkoutDefinition and WorkoutStep protobuf messages
+- Add intensity field to Lap proto for interval classification
+- Parse FIT Workout and WorkoutStep messages in fit_parser
+- Extract lap intensity and avg heart rate from FIT Lap messages
+- Preserve intensity through lap merging
+- Add intervals enricher provider with smart grouping, sprint
+  fade analysis, and active vs recovery comparison
+- Register intervals enricher in plugin registry with configurable
+  show_all_intervals, show_progression, and show_summary options
+- Add enum formatter entries for Intervals (Go + TypeScript)
+- Add intensity field to TCX lap parser (default empty)
+- Add intervals_test.go and provider_test.go
+
+### Features
+
+* add intervals enricher with FIT workout/interval parsing ([25874a7](https://github.com/FitGlue/server/commit/25874a7b0ab3e157fb466341e38f0e6531ad7263))
+
+
+### Bug Fixes
+
+* add perms for getting signed url ([226bd84](https://github.com/FitGlue/server/commit/226bd84c18f0ab002c7cf486570da23c941fdc6b))
+* marshaling failure for repost-handler ([ba3a1c0](https://github.com/FitGlue/server/commit/ba3a1c08308d07b7379a8a3234adf0fa8141eea9))
+
 ## [13.0.0](https://github.com/FitGlue/server/compare/v12.13.3...v13.0.0) (2026-02-11)
 
 
