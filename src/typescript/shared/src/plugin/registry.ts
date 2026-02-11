@@ -956,7 +956,7 @@ registerDestination({
   description: 'Log activities to a Google Spreadsheet',
   icon: '📑',
   enabled: true,
-  externalUrlTemplate: 'https://docs.google.com/spreadsheets/d/${spreadsheet_id}/edit#gid=0&range=A${row_number}',
+  externalUrlTemplate: 'https://docs.google.com/spreadsheets/d/{spreadsheet_id}/edit#gid=0&range=A{row_number}',
   requiredIntegrations: ['google'],
   configSchema: [
     {
@@ -1037,7 +1037,7 @@ registerDestination({
   description: 'Commit enriched activities to a GitHub repository',
   icon: '🐙',
   enabled: true,
-  externalUrlTemplate: 'https://github.com/${repo}/blob/main/${file_path}',
+  externalUrlTemplate: 'https://github.com/{repo}/blob/main/{file_path}',
   requiredIntegrations: ['github'],
   configSchema: [
     {

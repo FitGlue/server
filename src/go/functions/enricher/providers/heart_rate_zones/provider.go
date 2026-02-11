@@ -21,8 +21,9 @@ type HeartRateZone struct {
 	Emoji  string  // Colored emoji for this zone
 }
 
-// StandardZones defines the 5-zone heart rate training model
+// StandardZones defines the 6-zone heart rate training model (Zone 0-5)
 var StandardZones = []HeartRateZone{
+	{Name: "Zone 0 (Rest)", MinPct: 0.00, MaxPct: 0.50, Emoji: "⬜"},
 	{Name: "Zone 1 (Recovery)", MinPct: 0.50, MaxPct: 0.60, Emoji: "🟦"},
 	{Name: "Zone 2 (Endurance)", MinPct: 0.60, MaxPct: 0.70, Emoji: "🟩"},
 	{Name: "Zone 3 (Tempo)", MinPct: 0.70, MaxPct: 0.80, Emoji: "🟨"},
@@ -110,7 +111,7 @@ func (p *HeartRateZonesProvider) Enrich(ctx context.Context, logger *slog.Logger
 						// Determine which zone this HR falls into
 						hrPct := float64(record.HeartRate) / maxHR
 						zoneIdx := getZoneIndex(hrPct)
-						if zoneIdx >= 0 && zoneIdx < len(zoneDurations) {
+						if zoneIdx < len(zoneDurations) {
 							zoneDurations[zoneIdx] += delta
 							totalDuration += delta
 						}
@@ -153,16 +154,17 @@ func (p *HeartRateZonesProvider) Enrich(ctx context.Context, logger *slog.Logger
 			"hr_zones_status": "success",
 			"max_hr":          fmt.Sprintf("%.0f", maxHR),
 			"total_duration":  fmt.Sprintf("%.0f", totalDuration.Minutes()),
-			"zone1_minutes":   fmt.Sprintf("%d", int(zoneDurations[0].Minutes())),
-			"zone2_minutes":   fmt.Sprintf("%d", int(zoneDurations[1].Minutes())),
-			"zone3_minutes":   fmt.Sprintf("%d", int(zoneDurations[2].Minutes())),
-			"zone4_minutes":   fmt.Sprintf("%d", int(zoneDurations[3].Minutes())),
-			"zone5_minutes":   fmt.Sprintf("%d", int(zoneDurations[4].Minutes())),
+			"zone0_minutes":   fmt.Sprintf("%d", int(zoneDurations[0].Minutes())),
+			"zone1_minutes":   fmt.Sprintf("%d", int(zoneDurations[1].Minutes())),
+			"zone2_minutes":   fmt.Sprintf("%d", int(zoneDurations[2].Minutes())),
+			"zone3_minutes":   fmt.Sprintf("%d", int(zoneDurations[3].Minutes())),
+			"zone4_minutes":   fmt.Sprintf("%d", int(zoneDurations[4].Minutes())),
+			"zone5_minutes":   fmt.Sprintf("%d", int(zoneDurations[5].Minutes())),
 		},
 	}, nil
 }
 
-// getZoneIndex returns the zone index (0-4) for a given HR percentage
+// getZoneIndex returns the zone index (0-5) for a given HR percentage
 func getZoneIndex(hrPct float64) int {
 	for i, zone := range StandardZones {
 		if hrPct >= zone.MinPct && hrPct < zone.MaxPct {
@@ -171,13 +173,10 @@ func getZoneIndex(hrPct float64) int {
 	}
 	// Handle edge case: exactly at max HR (100%)
 	if hrPct >= 1.0 {
-		return 4 // Zone 5
+		return 5 // Zone 5
 	}
-	// Below zone 1
-	if hrPct < 0.50 {
-		return -1 // Not in any zone
-	}
-	return -1
+	// Should not reach here since Zone 0 covers 0-50%
+	return 0
 }
 
 // formatZoneRow formats a single zone row based on style

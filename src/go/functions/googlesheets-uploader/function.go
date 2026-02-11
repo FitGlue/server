@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -107,7 +108,6 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// 3. Get configuration from enrichment metadata (set by router)
 		spreadsheetID := ""
 		sheetName := "Activities"
-		includeShowcaseLink := true
 		includeVisuals := true
 
 		if eventPayload.EnrichmentMetadata != nil {
@@ -116,9 +116,6 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			}
 			if name, ok := eventPayload.EnrichmentMetadata["googlesheets_sheet_name"]; ok && name != "" {
 				sheetName = name
-			}
-			if link, ok := eventPayload.EnrichmentMetadata["googlesheets_include_showcase_link"]; ok && link == "false" {
-				includeShowcaseLink = false
 			}
 			if visuals, ok := eventPayload.EnrichmentMetadata["googlesheets_include_visuals"]; ok && visuals == "false" {
 				includeVisuals = false
@@ -139,18 +136,82 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// Check for UPDATE mode
 		if eventPayload.EnrichmentMetadata != nil {
 			if mode, ok := eventPayload.EnrichmentMetadata["operation_mode"]; ok && mode == "UPDATE" {
-				return handleGooglesheetsUpdate(ctx, httpClient, &eventPayload, spreadsheetID, sheetName, includeShowcaseLink, includeVisuals, fwCtx)
+				return handleGooglesheetsUpdate(ctx, httpClient, &eventPayload, spreadsheetID, sheetName, includeVisuals, fwCtx)
 			}
 		}
 
-		return handleGoogleSheetsCreate(ctx, httpClient, &eventPayload, spreadsheetID, sheetName, includeShowcaseLink, includeVisuals, fwCtx)
+		return handleGoogleSheetsCreate(ctx, httpClient, &eventPayload, spreadsheetID, sheetName, includeVisuals, fwCtx)
 	}
 }
 
+// getHeaderRow returns the column headers for the Google Sheet
+func getHeaderRow() []interface{} {
+	return []interface{}{
+		"Synced At",
+		"Date",
+		"Source",
+		"Activity Type",
+		"Title",
+		"Duration",
+		"Distance (km)",
+		"Calories",
+		"Avg HR",
+		"Max HR",
+		"Elevation Gain (m)",
+		"Generated Images",
+		"Description",
+	}
+}
+
+// ensureHeaderRow checks if the sheet has a header row and writes one if not
+func ensureHeaderRow(ctx context.Context, httpClient *http.Client, spreadsheetID, sheetName string, fwCtx *framework.FrameworkContext) error {
+	// GET first row to check if headers exist
+	url := fmt.Sprintf("https://sheets.googleapis.com/v4/spreadsheets/%s/values/%s!A1:M1", spreadsheetID, sheetName) // M covers all 13 columns
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return fmt.Errorf("failed to create header check request: %w", err)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("header check request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 400 {
+		err := httputil.WrapResponseError(resp, "Google Sheets API error checking headers")
+		return err
+	}
+
+	var respBody struct {
+		Values [][]interface{} `json:"values"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&respBody); err != nil {
+		return fmt.Errorf("failed to decode header check response: %w", err)
+	}
+
+	// If no values returned, sheet is empty — write headers
+	if len(respBody.Values) == 0 || len(respBody.Values[0]) == 0 {
+		fwCtx.Logger.Info("Sheet has no header row, writing headers")
+		headerRow := getHeaderRow()
+		_, err := appendToSheet(ctx, httpClient, spreadsheetID, sheetName, headerRow, fwCtx)
+		if err != nil {
+			return fmt.Errorf("failed to write header row: %w", err)
+		}
+	}
+
+	return nil
+}
+
 // handleGoogleSheetsCreate appends a new row to the Google Sheet
-func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, eventPayload *pb.EnrichedActivityEvent, spreadsheetID, sheetName string, includeShowcaseLink, includeVisuals bool, fwCtx *framework.FrameworkContext) (interface{}, error) {
+func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, eventPayload *pb.EnrichedActivityEvent, spreadsheetID, sheetName string, includeVisuals bool, fwCtx *framework.FrameworkContext) (interface{}, error) {
+	// Ensure header row exists before first data append
+	if err := ensureHeaderRow(ctx, httpClient, spreadsheetID, sheetName, fwCtx); err != nil {
+		fwCtx.Logger.Warn("Failed to ensure header row", "error", err)
+	}
+
 	// Build row data
-	row := buildSheetRow(eventPayload, includeShowcaseLink, includeVisuals)
+	row := buildSheetRow(eventPayload, includeVisuals)
 
 	// Append to Google Sheets
 	rowNumber, err := appendToSheet(ctx, httpClient, spreadsheetID, sheetName, row, fwCtx)
@@ -212,17 +273,20 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 // handleGooglesheetsUpdate handles UPDATE operations.
 // Google Sheets is append-only, so UPDATE appends a new row with updated data.
 // This is intentional - spreadsheet history is preserved rather than modified.
-func handleGooglesheetsUpdate(ctx context.Context, httpClient *http.Client, eventPayload *pb.EnrichedActivityEvent, spreadsheetID, sheetName string, includeShowcaseLink, includeVisuals bool, fwCtx *framework.FrameworkContext) (interface{}, error) {
+func handleGooglesheetsUpdate(ctx context.Context, httpClient *http.Client, eventPayload *pb.EnrichedActivityEvent, spreadsheetID, sheetName string, includeVisuals bool, fwCtx *framework.FrameworkContext) (interface{}, error) {
 	fwCtx.Logger.Info("Handling Google Sheets UPDATE (append-only mode)",
 		"activity_id", eventPayload.ActivityId)
 
 	// For append-only destinations, UPDATE is the same as CREATE
-	return handleGoogleSheetsCreate(ctx, httpClient, eventPayload, spreadsheetID, sheetName, includeShowcaseLink, includeVisuals, fwCtx)
+	return handleGoogleSheetsCreate(ctx, httpClient, eventPayload, spreadsheetID, sheetName, includeVisuals, fwCtx)
 }
 
 // buildSheetRow constructs the row data for Google Sheets
-func buildSheetRow(event *pb.EnrichedActivityEvent, includeShowcaseLink, includeVisuals bool) []interface{} {
+func buildSheetRow(event *pb.EnrichedActivityEvent, includeVisuals bool) []interface{} {
 	row := []interface{}{}
+
+	// Synced At (current UTC timestamp when row is written)
+	row = append(row, time.Now().UTC().Format("2006-01-02 15:04:05"))
 
 	// Date (activity start)
 	date := ""
@@ -230,6 +294,12 @@ func buildSheetRow(event *pb.EnrichedActivityEvent, includeShowcaseLink, include
 		date = event.StartTime.AsTime().Format("2006-01-02")
 	}
 	row = append(row, date)
+
+	// Source (e.g. Strava, Fitbit)
+	source := event.Source.String()
+	source = strings.TrimPrefix(source, "SOURCE_")
+	source = strings.ReplaceAll(source, "_", " ")
+	row = append(row, source)
 
 	// Activity Type
 	activityType := event.ActivityType.String()
@@ -262,8 +332,18 @@ func buildSheetRow(event *pb.EnrichedActivityEvent, includeShowcaseLink, include
 	}
 	row = append(row, distance)
 
-	// Calories (not available in Session, skip for now)
+	// Calories
 	calories := ""
+	if event.ActivityData != nil && len(event.ActivityData.Sessions) > 0 {
+		if cal := event.ActivityData.Sessions[0].GetTotalCalories(); cal > 0 {
+			calories = fmt.Sprintf("%.0f", cal)
+		}
+	}
+	if calories == "" && event.EnrichmentMetadata != nil {
+		if cal, ok := event.EnrichmentMetadata["calories"]; ok && cal != "" {
+			calories = cal
+		}
+	}
 	row = append(row, calories)
 
 	// Average HR (calculate from records if available)
@@ -284,39 +364,43 @@ func buildSheetRow(event *pb.EnrichedActivityEvent, includeShowcaseLink, include
 	}
 	row = append(row, avgHR)
 
-	// Muscle Heatmap (IMAGE formula if available and enabled)
-	muscleHeatmap := ""
+	// Max HR (from session if available)
+	maxHR := ""
+	if event.ActivityData != nil && len(event.ActivityData.Sessions) > 0 {
+		if mhr := event.ActivityData.Sessions[0].GetMaxHeartRate(); mhr > 0 {
+			maxHR = fmt.Sprintf("%d", mhr)
+		}
+	}
+	row = append(row, maxHR)
+
+	// Elevation Gain (from enrichment metadata)
+	elevationGain := ""
+	if event.EnrichmentMetadata != nil {
+		if eg, ok := event.EnrichmentMetadata["elevation_gain"]; ok && eg != "" {
+			elevationGain = eg
+		}
+	}
+	row = append(row, elevationGain)
+
+	// Generated Images (single column with newline-separated URLs)
+	var imageURLs []string
 	if includeVisuals && event.EnrichmentMetadata != nil {
 		if url, ok := event.EnrichmentMetadata["asset_muscle_heatmap"]; ok && url != "" {
-			muscleHeatmap = fmt.Sprintf("=IMAGE(\"%s\")", url)
+			imageURLs = append(imageURLs, url)
 		}
-	}
-	row = append(row, muscleHeatmap)
-
-	// Route Thumbnail (IMAGE formula if available and enabled)
-	routeThumbnail := ""
-	if includeVisuals && event.EnrichmentMetadata != nil {
 		if url, ok := event.EnrichmentMetadata["asset_route_thumbnail"]; ok && url != "" {
-			routeThumbnail = fmt.Sprintf("=IMAGE(\"%s\")", url)
+			imageURLs = append(imageURLs, url)
 		}
 	}
-	row = append(row, routeThumbnail)
+	row = append(row, strings.Join(imageURLs, "\n"))
 
-	// Description (truncated to 500 chars)
+	// Description (enriched description contains all booster output: HR zones, pace, strength sets, etc.)
+	// Newlines are preserved - the Sheets API handles them within cells correctly
 	description := event.Description
-	if len(description) > 500 {
-		description = description[:500] + "..."
+	if len(description) > 5000 {
+		description = description[:5000] + "..."
 	}
 	row = append(row, description)
-
-	// Showcase Link (if enabled)
-	showcaseLink := ""
-	if includeShowcaseLink && event.EnrichmentMetadata != nil {
-		if url, ok := event.EnrichmentMetadata["showcase_url"]; ok && url != "" {
-			showcaseLink = url
-		}
-	}
-	row = append(row, showcaseLink)
 
 	return row
 }

@@ -26,21 +26,24 @@ func TestHeartRateZones_Enrich_Success(t *testing.T) {
 				Laps: []*pb.Lap{
 					{
 						Records: []*pb.Record{
+							// Zone 0 (Rest): 0-50% of 190 = 0-95 bpm
+							{HeartRate: 80, Timestamp: timestamppb.New(baseTime)},
+							{HeartRate: 85, Timestamp: timestamppb.New(baseTime.Add(1 * time.Minute))},
 							// Zone 1 (Recovery): 50-60% of 190 = 95-114 bpm
-							{HeartRate: 100, Timestamp: timestamppb.New(baseTime)},
-							{HeartRate: 105, Timestamp: timestamppb.New(baseTime.Add(1 * time.Minute))},
+							{HeartRate: 100, Timestamp: timestamppb.New(baseTime.Add(2 * time.Minute))},
+							{HeartRate: 105, Timestamp: timestamppb.New(baseTime.Add(3 * time.Minute))},
 							// Zone 2 (Endurance): 60-70% of 190 = 114-133 bpm
-							{HeartRate: 120, Timestamp: timestamppb.New(baseTime.Add(2 * time.Minute))},
-							{HeartRate: 125, Timestamp: timestamppb.New(baseTime.Add(3 * time.Minute))},
-							{HeartRate: 130, Timestamp: timestamppb.New(baseTime.Add(4 * time.Minute))},
+							{HeartRate: 120, Timestamp: timestamppb.New(baseTime.Add(4 * time.Minute))},
+							{HeartRate: 125, Timestamp: timestamppb.New(baseTime.Add(5 * time.Minute))},
+							{HeartRate: 130, Timestamp: timestamppb.New(baseTime.Add(6 * time.Minute))},
 							// Zone 3 (Tempo): 70-80% of 190 = 133-152 bpm
-							{HeartRate: 140, Timestamp: timestamppb.New(baseTime.Add(5 * time.Minute))},
-							{HeartRate: 145, Timestamp: timestamppb.New(baseTime.Add(6 * time.Minute))},
+							{HeartRate: 140, Timestamp: timestamppb.New(baseTime.Add(7 * time.Minute))},
+							{HeartRate: 145, Timestamp: timestamppb.New(baseTime.Add(8 * time.Minute))},
 							// Zone 4 (Threshold): 80-90% of 190 = 152-171 bpm
-							{HeartRate: 160, Timestamp: timestamppb.New(baseTime.Add(7 * time.Minute))},
+							{HeartRate: 160, Timestamp: timestamppb.New(baseTime.Add(9 * time.Minute))},
 							// Zone 5 (VO2 Max): 90-100% of 190 = 171-190 bpm
-							{HeartRate: 180, Timestamp: timestamppb.New(baseTime.Add(8 * time.Minute))},
-							{HeartRate: 175, Timestamp: timestamppb.New(baseTime.Add(9 * time.Minute))},
+							{HeartRate: 180, Timestamp: timestamppb.New(baseTime.Add(10 * time.Minute))},
+							{HeartRate: 175, Timestamp: timestamppb.New(baseTime.Add(11 * time.Minute))},
 						},
 					},
 				},
@@ -73,6 +76,9 @@ func TestHeartRateZones_Enrich_Success(t *testing.T) {
 	}
 	if !contains(result.Description, "❤️ Heart Rate Zones:") {
 		t.Error("Expected description to contain header")
+	}
+	if !contains(result.Description, "Zone 0") {
+		t.Error("Expected description to contain Zone 0")
 	}
 	if !contains(result.Description, "Zone 1") {
 		t.Error("Expected description to contain Zone 1")
@@ -243,14 +249,15 @@ func TestGetZoneIndex(t *testing.T) {
 		hrPct    float64
 		expected int
 	}{
-		{0.40, -1}, // Below zone 1
-		{0.55, 0},  // Zone 1
-		{0.65, 1},  // Zone 2
-		{0.75, 2},  // Zone 3
-		{0.85, 3},  // Zone 4
-		{0.95, 4},  // Zone 5
-		{1.00, 4},  // Max HR (Zone 5)
-		{1.05, 4},  // Above max (still Zone 5)
+		{0.30, 0}, // Zone 0 (Rest)
+		{0.40, 0}, // Zone 0 (Rest)
+		{0.55, 1}, // Zone 1
+		{0.65, 2}, // Zone 2
+		{0.75, 3}, // Zone 3
+		{0.85, 4}, // Zone 4
+		{0.95, 5}, // Zone 5
+		{1.00, 5}, // Max HR (Zone 5)
+		{1.05, 5}, // Above max (still Zone 5)
 	}
 
 	for _, tt := range tests {
