@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [12.13.2](https://github.com/FitGlue/server/compare/v12.13.1...v12.13.2) (2026-02-11)
+
+
+### Bug Fixes
+
+* token refresh when providers don't return a new one ([e096dda](https://github.com/FitGlue/server/commit/e096ddad0f5d4a99a5c7ce012ea649b25fdfc136))
+
 ### [12.13.1](https://github.com/FitGlue/server/compare/v12.13.0...v12.13.1) (2026-02-10)
 
 
