@@ -216,6 +216,7 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
   const newPipelineExecutionId = generateRepostExecutionId(activityId);
 
   // CRITICAL: Explicitly remove fields to prevent duplicate field errors in Go (camelCase vs snake_case)
+  // protojson treats both casings as the same proto field, so having both causes "duplicate field" unmarshal errors
   const {
     destinations: _originalDests,
     Destinations: _originalDestsAlt,
@@ -225,17 +226,15 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     activityId: _aidAlt,
     user_id: _uid,
     userId: _uidAlt,
+    enrichment_metadata: _em,
+    enrichmentMetadata: _emAlt,
     ...eventWithoutConflictingFields
   } = enrichedEvent as Record<string, unknown>;
 
-  // Update the event with ONLY the new destination (snake_case for proto JSON)
-  // Use the ORIGINAL pipeline run ID so uploaders update the correct PipelineRun document
-  const repostData: Record<string, unknown> = {
-    ...eventWithoutConflictingFields,
-    user_id: _uid || _uidAlt,
-    activity_id: _aid || _aidAlt,
-    destinations: [destEnum],  // ONLY the missed destination
-    pipeline_execution_id: pipelineRun.id,
+  // Merge both casing variants of enrichment_metadata into a single canonical snake_case field
+  const mergedMetadata: Record<string, string> = {
+    ...(_emAlt as Record<string, string> || {}),
+    ...(_em as Record<string, string> || {}),
   };
 
   // Inject user's default config for the missed destination.
@@ -245,17 +244,26 @@ async function handleMissedDestination(req: { body: RepostRequest }, ctx: Framew
     const destRegistryId = destKey.toLowerCase().replace(/\s+/g, '');
     const pluginDefault = await ctx.services.user.pluginDefaultsStore.get(userId, destRegistryId);
     if (pluginDefault?.config && Object.keys(pluginDefault.config).length > 0) {
-      const existingMetadata = (repostData.enrichment_metadata || repostData.enrichmentMetadata || {}) as Record<string, string>;
       for (const [k, v] of Object.entries(pluginDefault.config)) {
-        existingMetadata[`${destRegistryId}_${k}`] = v;
+        mergedMetadata[`${destRegistryId}_${k}`] = String(v);
       }
-      repostData.enrichment_metadata = existingMetadata;
       ctx.logger.info('Injected plugin defaults for missed destination', { destination: destRegistryId });
     }
   } catch (err) {
     // Best-effort: don't block repost if defaults lookup fails
     ctx.logger.warn('Failed to fetch plugin defaults for missed destination (best-effort)', { error: String(err) });
   }
+
+  // Update the event with ONLY the new destination (snake_case for proto JSON)
+  // Use the ORIGINAL pipeline run ID so uploaders update the correct PipelineRun document
+  const repostData: Record<string, unknown> = {
+    ...eventWithoutConflictingFields,
+    user_id: _uid || _uidAlt,
+    activity_id: _aid || _aidAlt,
+    destinations: [destEnum],  // ONLY the missed destination
+    pipeline_execution_id: pipelineRun.id,
+    enrichment_metadata: mergedMetadata,
+  };
 
   ctx.logger.info('Constructed repost data', {
     originalDestinations: enrichedEvent.destinations,
@@ -351,6 +359,7 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
   const hasExistingId = !!existingDest?.externalId;
 
   // CRITICAL: Explicitly remove fields to prevent duplicate field errors in Go (camelCase vs snake_case)
+  // protojson treats both casings as the same proto field, so having both causes "duplicate field" unmarshal errors
   const {
     destinations: _originalDests,
     Destinations: _originalDestsAlt,
@@ -360,8 +369,16 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
     activityId: _aidAlt,
     user_id: _uid,
     userId: _uidAlt,
+    enrichment_metadata: _em,
+    enrichmentMetadata: _emAlt,
     ...eventWithoutConflictingFields
   } = enrichedEvent as Record<string, unknown>;
+
+  // Merge both casing variants into a single canonical snake_case field
+  const mergedMetadata: Record<string, string> = {
+    ...(_emAlt as Record<string, string> || {}),
+    ...(_em as Record<string, string> || {}),
+  };
 
   // Update the event with ONLY the retry destination (snake_case for proto JSON)
   // Use the ORIGINAL pipeline run ID so uploaders update the correct PipelineRun document
@@ -371,6 +388,7 @@ async function handleRetryDestination(req: { body: RepostRequest }, ctx: Framewo
     activity_id: _aid || _aidAlt,
     destinations: [destEnum],  // ONLY the retry destination
     pipeline_execution_id: pipelineRun.id,
+    enrichment_metadata: mergedMetadata,
   };
 
   // Wrap in CloudEvent envelope matching Go enricher format
@@ -467,6 +485,7 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
   const newPipelineExecutionId = generateRepostExecutionId(activityId);
 
   // CRITICAL: Explicitly remove fields to prevent duplicate field errors in Go (camelCase vs snake_case)
+  // protojson treats both casings as the same proto field, so having both causes "duplicate field" unmarshal errors
   const {
     pipeline_execution_id: _peid,
     pipelineExecutionId: _peidAlt,
@@ -476,8 +495,16 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     userId: _uidAlt,
     pipeline_id: _pid,
     pipelineId: _pidAlt,
+    enrichment_metadata: _em,
+    enrichmentMetadata: _emAlt,
     ...rest
   } = originalPayload;
+
+  // Merge both casing variants into a single canonical snake_case field
+  const mergedMetadata: Record<string, string> = {
+    ...(_emAlt as Record<string, string> || {}),
+    ...(_em as Record<string, string> || {}),
+  };
 
   // Add bypass_dedup flag, pipelineId, and new execution ID
   // Publish directly to PIPELINE_ACTIVITY (bypasses splitter since pipelineId is set)
@@ -488,6 +515,7 @@ async function handleFullPipeline(req: { body: RepostRequest }, ctx: FrameworkCo
     pipeline_id: pipelineId, // USE THE ORIGINAL PIPELINE
     bypass_dedup: true,
     pipeline_execution_id: newPipelineExecutionId,
+    enrichment_metadata: mergedMetadata,
   };
 
   // Wrap in CloudEvent envelope matching Go enricher format
