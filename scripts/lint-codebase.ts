@@ -105,16 +105,10 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   // ActivityDetailPage fetches image assets (SVGs), not API calls
   // ShowcaseManagementPage uses fetch() for direct GCS signed-URL upload
-  'W1': [/usePluginRegistry/, /ActivityDetailPage/, /ShowcaseManagementPage/],
-  // W15: Bare HTML allowed in UI primitives, forms, layout, admin page, and specific components with legitimate needs
-  // - EnricherTimeline: Timeline visualization divs
-  // - RefreshControl: Animated loading indicator
-  // - EnrichedActivityCard: Complex card layout
-  // - ActivityDetailPage: SvgAsset helper for SVG injection requires img/div
-  // - PWAInstallBanner: Standalone install prompt with custom layout
-  // - SubscriptionPage: Subscription/billing page with tier comparison layout
-  // - ShowcaseManagementPage: Custom management UI with toggles, slug row, activity list
-  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/, /EnricherTimeline/, /RefreshControl/, /EnrichedActivityCard/, /ActivityDetailPage/, /PWAInstallBanner/, /SubscriptionPage/, /ShowcaseManagementPage/],
+  // SvgAsset fetches SVG image content, not API data
+  'W1': [/usePluginRegistry/, /ActivityDetailPage/, /ShowcaseManagementPage/, /SvgAsset/],
+  // W15: Bare HTML allowed in UI primitives, forms, layout, and admin page
+  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/],
 };
 
 // ============================================================================
@@ -5312,11 +5306,6 @@ function checkBareHtmlUsage(): CheckResult {
     /utils\/markdown\.tsx$/,  // Markdown utility produces semantic inline HTML
     // Wizard components with styled BEM HTML elements
     /components\/wizard\//,
-    /PluginCategorySection\.tsx$/,
-    // Onboarding components with styled HTML
-    /components\/onboarding\//,
-    // Connection pages with styled code elements
-    /ConnectionDetailPage\.tsx$/,
   ];
 
   // Recursively find all .tsx files

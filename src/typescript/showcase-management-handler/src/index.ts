@@ -1,11 +1,10 @@
 // Module-level imports for smart pruning
 import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
-import { ShowcaseProfileStore, ShowcaseStore } from '@fitglue/shared/storage';
-import { getEffectiveTier, TIER_ATHLETE } from '@fitglue/shared/domain';
+import { ShowcaseProfileStore, ShowcaseStore, UserStore } from '@fitglue/shared/storage';
+import { requireAthleteTier } from '@fitglue/shared/domain';
 import { getStorage } from 'firebase-admin/storage';
 import { Timestamp as FirestoreTimestamp } from 'firebase-admin/firestore';
-import type { UserRecord } from '@fitglue/shared/types';
 
 /**
  * Showcase Management Handler - Authenticated CRUD for showcase profiles
@@ -24,21 +23,10 @@ import type { UserRecord } from '@fitglue/shared/types';
 
 const profileStore = new ShowcaseProfileStore(db);
 const showcaseStore = new ShowcaseStore(db);
+const userStore = new UserStore(db);
 
 const PROFILE_PICTURE_BUCKET = `${process.env.GOOGLE_CLOUD_PROJECT || 'fitglue'}-artifacts`;
 const PROFILE_PICTURE_MAX_SIZE = 5 * 1024 * 1024; // 5MB
-
-async function requireAthleteTier(userId: string): Promise<UserRecord> {
-    const userDoc = await db.collection('users').doc(userId).get();
-    if (!userDoc.exists) {
-        throw new HttpError(404, 'User not found');
-    }
-    const user = userDoc.data() as UserRecord;
-    if (getEffectiveTier(user) !== TIER_ATHLETE) {
-        throw new HttpError(403, 'Showcase management requires Athlete tier');
-    }
-    return user;
-}
 
 function extractSegmentAfter(path: string, keyword: string): string {
     const segments = path.split('/').filter((s: string) => s.length > 0);
@@ -370,7 +358,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
     const method = req.method;
 
     // Tier check for all routes
-    await requireAthleteTier(userId);
+    await requireAthleteTier(userStore, userId);
 
     // GET /profile
     if (method === 'GET' && path.endsWith('/profile')) {

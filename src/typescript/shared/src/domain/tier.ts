@@ -1,4 +1,6 @@
 import { UserRecord, UserTier } from '../types/pb/user';
+import { UserStore } from '../storage/firestore/user-store';
+import { HttpError } from '../errors';
 
 export const TIER_HOBBYIST = 'hobbyist' as const;
 export const TIER_ATHLETE = 'athlete' as const;
@@ -102,3 +104,23 @@ export function countActiveConnections(user: UserRecord): number {
   // Add mock only if in dev mode? For now, exclude from user-facing counts
   return count;
 }
+
+/**
+ * Fetch a user via UserStore (which uses the Firestore converter for correct
+ * snake_case → camelCase mapping) and throw 403 if their effective tier is
+ * not Athlete.
+ */
+export async function requireAthleteTier(
+  userStore: UserStore,
+  userId: string
+): Promise<UserRecord> {
+  const user = await userStore.get(userId);
+  if (!user) {
+    throw new HttpError(404, 'User not found');
+  }
+  if (getEffectiveTier(user) !== TIER_ATHLETE) {
+    throw new HttpError(403, 'This functionality requires Athlete tier');
+  }
+  return user;
+}
+
