@@ -370,6 +370,55 @@ resource "google_firestore_index" "pipeline_runs_cg_status_created" {
 # Firestore automatically creates single-field indexes (including collection group).
 # See also the comment on line 160 about this pattern.
 
+# -------------------------------------------------------------------
+# Uploaded Activities Indexes (Loop Prevention)
+# Used by bounceback detection in webhook-processor (TypeScript)
+# and GetUploadedActivity (Go) to check if an activity was uploaded by us
+# -------------------------------------------------------------------
+
+# Composite index for destination + destination_id queries
+# Query: .where('destination', '==', ...).where('destination_id', '==', ...)
+resource "google_firestore_index" "uploaded_activities_destination_id" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "uploaded_activities"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "destination"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "destination_id"
+    order      = "ASCENDING"
+  }
+}
+
+# -------------------------------------------------------------------
+# Showcased Activities Indexes
+# Used by ShowcaseStore.listByUserId in showcase-management-handler
+# -------------------------------------------------------------------
+
+# Composite index for user_id + created_at (descending)
+# Query: .where('user_id', '==', userId).orderBy('created_at', 'desc')
+resource "google_firestore_index" "showcased_activities_user_created" {
+  project     = var.project_id
+  database    = google_firestore_database.database.name
+  collection  = "showcased_activities"
+  query_scope = "COLLECTION"
+
+  fields {
+    field_path = "user_id"
+    order      = "ASCENDING"
+  }
+
+  fields {
+    field_path = "created_at"
+    order      = "DESCENDING"
+  }
+}
+
 # Collection group index for source + created_at
 # Used by admin handler when filtering by source
 resource "google_firestore_index" "pipeline_runs_cg_source_created" {
