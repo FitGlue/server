@@ -173,3 +173,8 @@ exports.dataExportHandler = (req, res) => {
   const dataExport = require('./data-export-handler/dist/index');
   return dataExport.dataExportHandler(req, res);
 };
+
+exports.showcaseManagementHandler = (req, res) => {
+  const showcaseManagement = require('./showcase-management-handler/dist/index');
+  return showcaseManagement.showcaseManagementHandler(req, res);
+};

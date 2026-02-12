@@ -7,13 +7,12 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -3021,7 +3020,7 @@ type ShowcaseProfile struct {
 	Subtitle          string `protobuf:"bytes,14,opt,name=subtitle,proto3" json:"subtitle,omitempty"`                                              // Custom subtitle (replaces hardcoded "FitGlue Athlete")
 	Bio               string `protobuf:"bytes,15,opt,name=bio,proto3" json:"bio,omitempty"`                                                        // Free-text bio
 	ProfilePictureUrl string `protobuf:"bytes,16,opt,name=profile_picture_url,json=profilePictureUrl,proto3" json:"profile_picture_url,omitempty"` // URL to profile picture in GCS
-	Visible           bool   `protobuf:"varint,17,opt,name=visible,proto3" json:"visible,omitempty"`                                               // Whether the profile is publicly visible
+	Visible           bool   `protobuf:"varint,17,opt,name=visible,proto3" json:"visible,omitempty"`                                               // Whether the profile is publicly visible (default true)
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3807,7 +3806,7 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"total_reps\x18\n" +
 	" \x01(\x05R\ttotalReps\x12&\n" +
-	"\x0ftotal_weight_kg\x18\v \x01(\x01R\rtotalWeightKg\"\xb3\x05\n" +
+	"\x0ftotal_weight_kg\x18\v \x01(\x01R\rtotalWeightKg\"\xcd\x05\n" +
 	"\x0fShowcaseProfile\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
@@ -3829,7 +3828,8 @@ const file_user_proto_rawDesc = "" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
 	"\bsubtitle\x18\x0e \x01(\tR\bsubtitle\x12\x10\n" +
 	"\x03bio\x18\x0f \x01(\tR\x03bio\x12.\n" +
-	"\x13profile_picture_url\x18\x10 \x01(\tR\x11profilePictureUrl\"\xd4\x06\n" +
+	"\x13profile_picture_url\x18\x10 \x01(\tR\x11profilePictureUrl\x12\x18\n" +
+	"\avisible\x18\x11 \x01(\bR\avisible\"\xd4\x06\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +

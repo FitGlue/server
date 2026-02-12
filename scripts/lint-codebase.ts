@@ -104,7 +104,8 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'E6': [/admin-cli/, /events-helper/, /fitbit-handler/, /EnricherConfigForm/, /user-pipelines-handler/],
   // W1: usePluginRegistry fetches from public registry.json, doesn't need auth
   // ActivityDetailPage fetches image assets (SVGs), not API calls
-  'W1': [/usePluginRegistry/, /ActivityDetailPage/],
+  // ShowcaseManagementPage uses fetch() for direct GCS signed-URL upload
+  'W1': [/usePluginRegistry/, /ActivityDetailPage/, /ShowcaseManagementPage/],
   // W15: Bare HTML allowed in UI primitives, forms, layout, admin page, and specific components with legitimate needs
   // - EnricherTimeline: Timeline visualization divs
   // - RefreshControl: Animated loading indicator
@@ -112,7 +113,8 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // - ActivityDetailPage: SvgAsset helper for SVG injection requires img/div
   // - PWAInstallBanner: Standalone install prompt with custom layout
   // - SubscriptionPage: Subscription/billing page with tier comparison layout
-  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/, /EnricherTimeline/, /RefreshControl/, /EnrichedActivityCard/, /ActivityDetailPage/, /PWAInstallBanner/, /SubscriptionPage/],
+  // - ShowcaseManagementPage: Custom management UI with toggles, slug row, activity list
+  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/, /EnricherTimeline/, /RefreshControl/, /EnrichedActivityCard/, /ActivityDetailPage/, /PWAInstallBanner/, /SubscriptionPage/, /ShowcaseManagementPage/],
 };
 
 // ============================================================================
