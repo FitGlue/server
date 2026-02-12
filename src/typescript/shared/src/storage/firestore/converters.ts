@@ -444,6 +444,10 @@ export const FirestoreToShowcaseProfile = (data: Record<string, unknown>): impor
     latestActivityAt: toDate(data.latest_activity_at),
     createdAt: toDate(data.created_at),
     updatedAt: toDate(data.updated_at),
+    subtitle: data.subtitle as string || '',
+    bio: data.bio as string || '',
+    profilePictureUrl: data.profile_picture_url as string || '',
+    visible: data.visible !== undefined ? Boolean(data.visible) : true,
   };
 };
 

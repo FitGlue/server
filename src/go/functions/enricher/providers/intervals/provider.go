@@ -96,8 +96,9 @@ func (p *Intervals) Enrich(
 	groups := groupIntervals(laps)
 
 	// Build description
+	// NOTE: The workout name is included in the SectionHeader for G40 title parsing.
+	// Content lines start directly with interval data (no duplicate header line).
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("⏱️ Intervals: %s", workoutName))
 
 	// Active stats accumulators for summary
 	var activeDistance, activeDuration float64
@@ -137,7 +138,7 @@ func (p *Intervals) Enrich(
 		activeSpeed := activeDistance / activeDuration
 		recoverySpeed := recoveryDistance / recoveryDuration
 		ratio := activeSpeed / recoverySpeed
-		sb.WriteString(fmt.Sprintf("\n📊 Active vs Recovery: %.2f m/s vs %.2f m/s (%.2f× ratio)",
+		sb.WriteString(fmt.Sprintf("\n📊 Active vs Recovery: %.1f m/s active • %.1f m/s recovery • %.2f× ratio",
 			activeSpeed, recoverySpeed, ratio))
 	}
 
@@ -148,11 +149,11 @@ func (p *Intervals) Enrich(
 		if firstPace > 0 && lastPace > 0 {
 			fadePercent := ((lastPace - firstPace) / firstPace) * 100
 			if fadePercent > 0 {
-				sb.WriteString(fmt.Sprintf("\n📉 Sprint fade: %s → %s/km (+%.0f%%)",
+				sb.WriteString(fmt.Sprintf("\n📉 Sprint fade: %s → %s/km • +%.0f%% slower",
 					formatPace(firstPace), formatPace(lastPace), fadePercent))
 			} else if fadePercent < -1 {
-				sb.WriteString(fmt.Sprintf("\n📈 Getting faster: %s → %s/km (%.0f%%)",
-					formatPace(firstPace), formatPace(lastPace), fadePercent))
+				sb.WriteString(fmt.Sprintf("\n📈 Getting faster: %s → %s/km • %.0f%% improvement",
+					formatPace(firstPace), formatPace(lastPace), -fadePercent))
 			}
 		}
 	}
@@ -183,9 +184,12 @@ func (p *Intervals) Enrich(
 		"recovery_intervals", totalRecovery,
 		"total_laps", len(laps))
 
+	// Trim leading newline since we no longer have a header content line
+	desc := strings.TrimLeft(sb.String(), "\n")
+
 	return &providers.EnrichmentResult{
-		Description:   sb.String(),
-		SectionHeader: "⏱️ Intervals:",
+		Description:   desc,
+		SectionHeader: fmt.Sprintf("⏱️ Intervals — %s:", workoutName),
 		Metadata:      metadata,
 	}, nil
 }

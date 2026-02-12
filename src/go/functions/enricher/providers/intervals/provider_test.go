@@ -78,13 +78,13 @@ func TestIntervals_BasicIntervals(t *testing.T) {
 		t.Errorf("Expected 3 active intervals, got %s", result.Metadata["intervals_active"])
 	}
 
-	if result.SectionHeader != "⏱️ Intervals:" {
-		t.Errorf("Expected SectionHeader '⏱️ Intervals:', got %q", result.SectionHeader)
+	if result.SectionHeader != "⏱️ Intervals — Test Sprints:" {
+		t.Errorf("Expected SectionHeader '⏱️ Intervals — Test Sprints:', got %q", result.SectionHeader)
 	}
 
-	// Description should contain workout name and interval info
-	if !contains(result.Description, "Test Sprints") {
-		t.Errorf("Description should contain workout name, got: %s", result.Description)
+	// Description should contain interval info (workout name is in SectionHeader, not description)
+	if contains(result.Description, "Test Sprints") {
+		t.Errorf("Description should NOT contain workout name (it's in SectionHeader), got: %s", result.Description)
 	}
 	if !contains(result.Description, "Warmup") {
 		t.Errorf("Description should contain Warmup, got: %s", result.Description)

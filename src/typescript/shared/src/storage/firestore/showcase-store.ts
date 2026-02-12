@@ -35,4 +35,19 @@ export class ShowcaseStore {
     const doc = await this.collection().doc(showcaseId).get();
     return doc.exists;
   }
+
+  /**
+   * List all showcased activities for a given user.
+   */
+  async listByUserId(userId: string): Promise<ShowcasedActivity[]> {
+    const snap = await this.collection()
+      .where('user_id', '==', userId)
+      .orderBy('created_at', 'desc')
+      .get();
+    return snap.docs.map(doc => {
+      const rawData = doc.data() as Record<string, unknown>;
+      return FirestoreToShowcasedActivity(rawData);
+    });
+  }
 }
+

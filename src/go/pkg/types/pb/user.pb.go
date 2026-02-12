@@ -7,12 +7,13 @@
 package pb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -3014,10 +3015,15 @@ type ShowcaseProfile struct {
 	TotalReps     int32   `protobuf:"varint,12,opt,name=total_reps,json=totalReps,proto3" json:"total_reps,omitempty"`
 	TotalWeightKg float64 `protobuf:"fixed64,13,opt,name=total_weight_kg,json=totalWeightKg,proto3" json:"total_weight_kg,omitempty"`
 	// Lifecycle
-	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	CreatedAt *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	// User-editable profile fields
+	Subtitle          string `protobuf:"bytes,14,opt,name=subtitle,proto3" json:"subtitle,omitempty"`                                              // Custom subtitle (replaces hardcoded "FitGlue Athlete")
+	Bio               string `protobuf:"bytes,15,opt,name=bio,proto3" json:"bio,omitempty"`                                                        // Free-text bio
+	ProfilePictureUrl string `protobuf:"bytes,16,opt,name=profile_picture_url,json=profilePictureUrl,proto3" json:"profile_picture_url,omitempty"` // URL to profile picture in GCS
+	Visible           bool   `protobuf:"varint,17,opt,name=visible,proto3" json:"visible,omitempty"`                                               // Whether the profile is publicly visible
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *ShowcaseProfile) Reset() {
@@ -3139,6 +3145,34 @@ func (x *ShowcaseProfile) GetUpdatedAt() *timestamppb.Timestamp {
 		return x.UpdatedAt
 	}
 	return nil
+}
+
+func (x *ShowcaseProfile) GetSubtitle() string {
+	if x != nil {
+		return x.Subtitle
+	}
+	return ""
+}
+
+func (x *ShowcaseProfile) GetBio() string {
+	if x != nil {
+		return x.Bio
+	}
+	return ""
+}
+
+func (x *ShowcaseProfile) GetProfilePictureUrl() string {
+	if x != nil {
+		return x.ProfilePictureUrl
+	}
+	return ""
+}
+
+func (x *ShowcaseProfile) GetVisible() bool {
+	if x != nil {
+		return x.Visible
+	}
+	return false
 }
 
 // PipelineRun tracks a complete pipeline execution lifecycle.
@@ -3773,7 +3807,7 @@ const file_user_proto_rawDesc = "" +
 	"\n" +
 	"total_reps\x18\n" +
 	" \x01(\x05R\ttotalReps\x12&\n" +
-	"\x0ftotal_weight_kg\x18\v \x01(\x01R\rtotalWeightKg\"\xd5\x04\n" +
+	"\x0ftotal_weight_kg\x18\v \x01(\x01R\rtotalWeightKg\"\xb3\x05\n" +
 	"\x0fShowcaseProfile\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
@@ -3792,7 +3826,10 @@ const file_user_proto_rawDesc = "" +
 	"created_at\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
 	"\n" +
 	"updated_at\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\xd4\x06\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\x12\x1a\n" +
+	"\bsubtitle\x18\x0e \x01(\tR\bsubtitle\x12\x10\n" +
+	"\x03bio\x18\x0f \x01(\tR\x03bio\x12.\n" +
+	"\x13profile_picture_url\x18\x10 \x01(\tR\x11profilePictureUrl\"\xd4\x06\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +

@@ -23,6 +23,7 @@ locals {
     "registry-handler",
     "repost-handler",
     "showcase-handler",
+    "showcase-management-handler",
     "user-data-handler",
     "user-integrations-handler",
     "user-pipelines-handler",

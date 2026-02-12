@@ -442,6 +442,12 @@ message ShowcaseProfile {
   // Lifecycle
   google.protobuf.Timestamp created_at = 9;
   google.protobuf.Timestamp updated_at = 10;
+
+  // User-editable profile fields
+  string subtitle = 14;             // Custom subtitle (replaces hardcoded "FitGlue Athlete")
+  string bio = 15;                  // Free-text bio
+  string profile_picture_url = 16;  // URL to profile picture in GCS
+  bool visible = 17;                // Whether the profile is publicly visible (default true)
 }
 
 // PipelineRun tracks a complete pipeline execution lifecycle.

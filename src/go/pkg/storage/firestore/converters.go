@@ -1105,6 +1105,10 @@ func ShowcaseProfileToFirestore(p *pb.ShowcaseProfile) map[string]interface{} {
 		"total_sets":             p.TotalSets,
 		"total_reps":             p.TotalReps,
 		"total_weight_kg":        p.TotalWeightKg,
+		"subtitle":               p.Subtitle,
+		"bio":                    p.Bio,
+		"profile_picture_url":    p.ProfilePictureUrl,
+		"visible":                p.Visible,
 	}
 
 	if p.LatestActivityAt != nil {
@@ -1122,12 +1126,24 @@ func ShowcaseProfileToFirestore(p *pb.ShowcaseProfile) map[string]interface{} {
 
 func FirestoreToShowcaseProfile(m map[string]interface{}) *pb.ShowcaseProfile {
 	p := &pb.ShowcaseProfile{
-		Slug:             getString(m, "slug"),
-		UserId:           getString(m, "user_id"),
-		DisplayName:      getString(m, "display_name"),
-		LatestActivityAt: getTime(m, "latest_activity_at"),
-		CreatedAt:        getTime(m, "created_at"),
-		UpdatedAt:        getTime(m, "updated_at"),
+		Slug:              getString(m, "slug"),
+		UserId:            getString(m, "user_id"),
+		DisplayName:       getString(m, "display_name"),
+		LatestActivityAt:  getTime(m, "latest_activity_at"),
+		CreatedAt:         getTime(m, "created_at"),
+		UpdatedAt:         getTime(m, "updated_at"),
+		Subtitle:          getString(m, "subtitle"),
+		Bio:               getString(m, "bio"),
+		ProfilePictureUrl: getString(m, "profile_picture_url"),
+	}
+
+	// Visible defaults to true for backward compat
+	if v, ok := m["visible"]; ok {
+		if b, ok := v.(bool); ok {
+			p.Visible = b
+		}
+	} else {
+		p.Visible = true
 	}
 
 	// TotalActivities

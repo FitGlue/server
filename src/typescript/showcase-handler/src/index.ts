@@ -217,39 +217,74 @@ function generateOgHtml(options: {
   const image = escape(options.image || OG_FALLBACK_IMAGE);
   const redirectUrl = escape(options.redirectUrl);
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title}</title>
-  <meta name="description" content="${description}">
-
-  <!-- Open Graph -->
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="${url}">
-  <meta property="og:image" content="${image}">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:site_name" content="FitGlue">
-  <meta property="og:locale" content="en_GB">
-
-  <!-- Twitter Card -->
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${title}">
-  <meta name="twitter:description" content="${description}">
-  <meta name="twitter:image" content="${image}">
-
-  <meta http-equiv="refresh" content="0;url=${redirectUrl}">
-</head>
-<body>
-  <p>Redirecting...</p>
-  <script>window.location.replace("${redirectUrl.replace(/"/g, '\\"')}");</script>
-</body>
-</html>`;
+  return [
+    '<!DOCTYPE html>',
+    '<html lang="en">',
+    '<head>',
+    '  <meta charset="UTF-8">',
+    '  <meta name="viewport" content="width=device-width, initial-scale=1.0">',
+    `  <title>${title}</title>`,
+    `  <meta name="description" content="${description}">`,
+    '',
+    '  <!-- Open Graph -->',
+    `  <meta property="og:title" content="${title}">`,
+    `  <meta property="og:description" content="${description}">`,
+    '  <meta property="og:type" content="website">',
+    `  <meta property="og:url" content="${url}">`,
+    `  <meta property="og:image" content="${image}">`,
+    '  <meta property="og:image:width" content="1200">',
+    '  <meta property="og:image:height" content="630">',
+    '  <meta property="og:site_name" content="FitGlue">',
+    '  <meta property="og:locale" content="en_GB">',
+    '',
+    '  <!-- Twitter Card -->',
+    '  <meta name="twitter:card" content="summary_large_image">',
+    `  <meta name="twitter:title" content="${title}">`,
+    `  <meta name="twitter:description" content="${description}">`,
+    `  <meta name="twitter:image" content="${image}">`,
+    '',
+    `  <meta http-equiv="refresh" content="0;url=${redirectUrl}">`,
+    '  <style>',
+    '    *{margin:0;padding:0;box-sizing:border-box}',
+    "    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0A0A0A;color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}",
+    '    .bg{position:fixed;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(255,27,141,.08) 0%,transparent 50%),radial-gradient(ellipse at 80% 80%,rgba(157,78,221,.08) 0%,transparent 50%),radial-gradient(ellipse at 50% 50%,rgba(76,201,240,.03) 0%,transparent 70%);animation:bp 4s ease-in-out infinite}',
+    '    @keyframes bp{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}',
+    '    .c{display:flex;flex-direction:column;align-items:center;gap:2rem;z-index:1;animation:fi .6s ease-out}',
+    '    @keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}',
+    '    .logo{font-size:clamp(2.5rem,8vw,4rem);font-weight:900;letter-spacing:-.02em}',
+    '    .f{background:linear-gradient(135deg,#FF1B8D,#FF6BB3);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sh 2s ease-in-out infinite}',
+    '    .g{background:linear-gradient(135deg,#9D4EDD,#C77DFF);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:sh 2s ease-in-out infinite .15s}',
+    '    @keyframes sh{0%,100%{opacity:.9;filter:brightness(1)}50%{opacity:1;filter:brightness(1.2)}}',
+    '    .sc{position:relative;width:60px;height:60px}',
+    '    .sr{position:absolute;inset:0;border-radius:50%;border:3px solid transparent;border-top-color:#FF1B8D;animation:sp 1.2s cubic-bezier(.5,.1,.5,.9) infinite}',
+    '    .s2{inset:6px;border-top-color:#9D4EDD;animation-duration:1.8s;animation-direction:reverse}',
+    '    .s3{inset:12px;border-top-color:#4CC9F0;animation-duration:2.4s}',
+    '    @keyframes sp{to{transform:rotate(360deg)}}',
+    '    .msg{font-size:1rem;color:rgba(255,255,255,.5);font-weight:500;min-height:1.5em;transition:opacity .3s ease}',
+    '    .msg.fo{opacity:0}',
+    '  </style>',
+    '</head>',
+    '<body>',
+    '  <div class="bg"></div>',
+    '  <div class="c">',
+    '    <div class="logo"><span class="f">Fit</span><span class="g">Glue</span></div>',
+    '    <div class="sc"><div class="sr"></div><div class="sr s2"></div><div class="sr s3"></div></div>',
+    '    <p id="m" class="msg">Loading activity...</p>',
+    '  </div>',
+    '  <script>',
+    `    window.location.replace("${redirectUrl.replace(/"/g, '\\"')}");`,
+    "    var ms=['Reticulating muscle fibers...','Calibrating sweat glands...','Polishing your running shoes...','Stretching the pixels...','Syncing your chakras...','Buffering endorphins...','Warming up the algorithms...','Hydrating the database...','Massaging the data points...',\"Doing some light cardio...\",\"Flexing the API...\",\"Foam rolling the server...\",\"Untangling your headphones...\",\"Motivating the backend...\",\"Loading protein shakes...\",\"Activating beast mode...\"];",
+    "    var el=document.getElementById('m'),i=Math.floor(Math.random()*ms.length);",
+    '    if(el)el.textContent=ms[i];',
+    "    setInterval(function(){if(!el)return;el.classList.add('fo');setTimeout(function(){i=(i+1)%ms.length;el.textContent=ms[i];el.classList.remove('fo')},300)},2000);",
+    '  </script>',
+    '</body>',
+    '</html>',
+  ].join('\n');
 }
+
+
+
 
 async function handleHtmlShowcase(
   showcaseId: string,
@@ -301,11 +336,13 @@ async function handleHtmlProfile(
   corsHeaders: Record<string, string>
 ): Promise<FrameworkResponse> {
   const profile = await profileStore.get(slug);
-  if (!profile) {
+  if (!profile || profile.visible === false) {
     throw new HttpError(404, 'Profile not found');
   }
 
-  const ogTitle = `${profile.displayName} — FitGlue Athlete`;
+  const ogTitle = profile.subtitle
+    ? `${profile.displayName} — ${profile.subtitle}`
+    : `${profile.displayName} — FitGlue Athlete`;
   const statsParts: string[] = [];
   if (profile.totalActivities > 0) statsParts.push(`${profile.totalActivities} activities`);
   if (profile.totalDistanceMeters > 0) statsParts.push(`${(profile.totalDistanceMeters / 1000).toFixed(1)} km`);
@@ -313,9 +350,11 @@ async function handleHtmlProfile(
     const hours = Math.floor(profile.totalDurationSeconds / 3600);
     if (hours > 0) statsParts.push(`${hours}h active`);
   }
-  const ogDescription = statsParts.length > 0
-    ? `${profile.displayName}'s showcase: ${statsParts.join(' · ')}. Powered by FitGlue.`
-    : `${profile.displayName}'s athlete showcase on FitGlue.`;
+  const ogDescription = profile.bio
+    ? profile.bio
+    : statsParts.length > 0
+      ? `${profile.displayName}'s showcase: ${statsParts.join(' · ')}. Powered by FitGlue.`
+      : `${profile.displayName}'s athlete showcase on FitGlue.`;
 
   const canonicalUrl = `${SITE_URL}/u/${encodeURIComponent(slug)}`;
 
@@ -324,6 +363,7 @@ async function handleHtmlProfile(
     description: ogDescription,
     url: canonicalUrl,
     redirectUrl: `/showcase-profile.html?slug=${encodeURIComponent(slug)}`,
+    image: profile.profilePictureUrl || undefined,
   });
 
   return new FrameworkResponse({
@@ -347,7 +387,7 @@ async function handleProfileApi(
   corsHeaders: Record<string, string>
 ): Promise<FrameworkResponse> {
   const profile = await profileStore.get(slug);
-  if (!profile) {
+  if (!profile || profile.visible === false) {
     throw new HttpError(404, 'Profile not found');
   }
 
@@ -369,6 +409,9 @@ async function handleProfileApi(
   const response = {
     slug: profile.slug,
     displayName: profile.displayName,
+    subtitle: profile.subtitle || '',
+    bio: profile.bio || '',
+    profilePictureUrl: profile.profilePictureUrl || '',
     entries,
     totalActivities: profile.totalActivities,
     totalDistanceMeters: profile.totalDistanceMeters,
