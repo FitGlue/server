@@ -179,19 +179,33 @@ async function handleUpdateSlug(
 }
 
 // --- Route: POST /profile/picture ---
+const ALLOWED_IMAGE_TYPES = ['image/webp', 'image/jpeg', 'image/png', 'image/gif'];
+const EXT_MAP: Record<string, string> = {
+    'image/webp': 'webp',
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/gif': 'gif',
+};
+
 async function handlePictureUpload(
-    userId: string
+    userId: string,
+    body: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
+    const contentType = (typeof body.contentType === 'string' && ALLOWED_IMAGE_TYPES.includes(body.contentType))
+        ? body.contentType
+        : 'image/webp';
+    const ext = EXT_MAP[contentType] || 'webp';
+
     const storage = getStorage();
     const bucket = storage.bucket(PROFILE_PICTURE_BUCKET);
-    const filePath = `showcase-profiles/${userId}/avatar.webp`;
+    const filePath = `showcase-profiles/${userId}/avatar.${ext}`;
     const file = bucket.file(filePath);
 
     const [uploadUrl] = await file.getSignedUrl({
         version: 'v4',
         action: 'write',
         expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-        contentType: 'image/webp',
+        contentType,
         extensionHeaders: {
             'x-goog-content-length-range': `0,${PROFILE_PICTURE_MAX_SIZE}`,
         },
@@ -202,7 +216,7 @@ async function handlePictureUpload(
     return {
         uploadUrl,
         publicUrl,
-        contentType: 'image/webp',
+        contentType,
         maxSizeBytes: PROFILE_PICTURE_MAX_SIZE,
     };
 }
@@ -377,7 +391,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
 
     // POST /profile/picture
     if (method === 'POST' && path.endsWith('/profile/picture')) {
-        return handlePictureUpload(userId);
+        return handlePictureUpload(userId, (req.body as Record<string, unknown>) || {});
     }
 
     // DELETE /profile/entries/:showcaseId
