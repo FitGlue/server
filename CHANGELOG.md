@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.2.0](https://github.com/FitGlue/server/compare/v14.1.1...v14.2.0) (2026-02-12)
+
+
+### Features
+
+* generate nice OG information for showcase links ([3a5d6fd](https://github.com/FitGlue/server/commit/3a5d6fd3a608ce36fb27ccdf128d242e6e21277d))
+
+
+### Bug Fixes
+
+* download pipeline run as zip ([a70a654](https://github.com/FitGlue/server/commit/a70a6544d36ad1c749a3f8bc1036903eaa885434))
+* tests fail ([2a2627f](https://github.com/FitGlue/server/commit/2a2627fe8c9c096ed5154639cb059d769e887481))
+
 ### [14.1.1](https://github.com/FitGlue/server/compare/v14.1.0...v14.1.1) (2026-02-11)
 
 ## [14.1.0](https://github.com/FitGlue/server/compare/v14.0.0...v14.1.0) (2026-02-11)
