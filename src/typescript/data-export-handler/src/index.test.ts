@@ -112,6 +112,7 @@ jest.mock('jszip', () => {
         folder: jest.fn().mockReturnThis(),
     };
     return jest.fn().mockImplementation(() => ({
+        file: jest.fn().mockReturnThis(),
         folder: jest.fn().mockReturnValue(mockFolder),
         generateAsync: jest.fn().mockResolvedValue(Buffer.from('zip-content')),
     }));
