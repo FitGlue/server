@@ -674,6 +674,17 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
+	// Same-Source Detection: When source matches a destination, signal uploaders
+	// to do a straight overwrite of title/description instead of section-based merge.
+	// The activity already exists on the platform, so we just need to update metadata.
+	sourceDestName := strings.ToLower(strings.TrimPrefix(pipeline.Source, "SOURCE_"))
+	for _, dest := range pipeline.Destinations {
+		destName := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
+		if sourceDestName == destName {
+			finalEvent.EnrichmentMetadata["same_source_destination_"+destName] = "true"
+		}
+	}
+
 	// Build AppliedEnrichments list and merge metadata from results
 	for i, res := range results {
 		if res == nil {

@@ -397,42 +397,53 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		return nil, fmt.Errorf("failed to decode existing activity: %w", err)
 	}
 
-	// 3. Merge description: use DESTINATION's description as base (fetched via GET above)
-	// then apply section replacement with the enricher's new content
-	mergedDescription := existingActivity.Description // From destination API, NOT eventPayload
-	if eventPayload.Description != "" {
-		// Check for section header in metadata (signals replaceable section)
-		sectionHeader := ""
-		for key, val := range eventPayload.EnrichmentMetadata {
-			if strings.HasPrefix(key, "section_header_") {
-				sectionHeader = val
-				break
-			}
-		}
+	// 3. Merge description
+	// Same-source: straight overwrite of title/description (activity already exists on this platform)
+	// Resume/other: section-based replacement preserving user customizations
+	isSameSource := eventPayload.EnrichmentMetadata["same_source_destination_strava"] == "true"
 
-		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-			// Extract just the section content from eventPayload.Description
-			// The payload contains the full description, but we only want the specific section
-			newSectionContent := description.ExtractSection(eventPayload.Description, sectionHeader)
-			if newSectionContent != "" {
-				mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
-				fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
-			} else {
-				fwCtx.Logger.Warn("Section header found in metadata but content not found in payload", "header", sectionHeader)
+	var mergedDescription string
+	if isSameSource {
+		// Same-source update: overwrite with enriched values
+		mergedDescription = eventPayload.Description
+		fwCtx.Logger.Info("Same-source update: overwriting title/description",
+			"newTitle", eventPayload.Name,
+			"newDescLength", len(mergedDescription))
+	} else {
+		// Resume/standard update: use destination's description as base
+		mergedDescription = existingActivity.Description
+		if eventPayload.Description != "" {
+			// Check for section header in metadata (signals replaceable section)
+			sectionHeader := ""
+			for key, val := range eventPayload.EnrichmentMetadata {
+				if strings.HasPrefix(key, "section_header_") {
+					sectionHeader = val
+					break
+				}
 			}
-		} else if mergedDescription != "" {
-			// Fallback to append
-			mergedDescription += "\n\n" + eventPayload.Description
-		} else {
-			mergedDescription = eventPayload.Description
+
+			if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
+				newSectionContent := description.ExtractSection(eventPayload.Description, sectionHeader)
+				if newSectionContent != "" {
+					mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
+					fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+				} else {
+					fwCtx.Logger.Warn("Section header found in metadata but content not found in payload", "header", sectionHeader)
+				}
+			} else if mergedDescription != "" {
+				mergedDescription += "\n\n" + eventPayload.Description
+			} else {
+				mergedDescription = eventPayload.Description
+			}
 		}
 	}
 
 	// 4. Build update payload
-	// In UPDATE mode, we intentionally do NOT update the title.
-	// The activity already exists on Strava, and the user may have customized the title there.
-	// We only update the description with new enrichment content.
 	updateBody := map[string]interface{}{}
+	// Same-source: always overwrite title (enrichers may change it based on the run)
+	if isSameSource && eventPayload.Name != "" && eventPayload.Name != existingActivity.Name {
+		updateBody["name"] = eventPayload.Name
+	}
 	if mergedDescription != existingActivity.Description {
 		updateBody["description"] = mergedDescription
 	}
@@ -490,9 +501,11 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 	// Note: synchronized_activities is deprecated - pipeline_runs is now the source of truth
 	// We no longer update synchronized_activities here
 
-	// Increment sync count for billing (per successful destination sync)
-	if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
-		fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
+	// Increment sync count for billing (skip for same-source updates - activity already existed)
+	if !isSameSource {
+		if err := svc.DB.IncrementSyncCount(ctx, eventPayload.UserId); err != nil {
+			fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", eventPayload.UserId)
+		}
 	}
 
 	// Record upload for loop prevention (same as create path)

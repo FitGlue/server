@@ -260,41 +260,55 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		"existingDescLength", len(existingDesc),
 		"exerciseCount", exerciseCount)
 
-	// 2. Merge description: use DESTINATION's description as base (fetched via GET above)
-	// then apply section replacement with the enricher's new content
-	mergedDescription := existingDesc // From destination API, NOT event
-	if event.Description != "" {
-		// Check for section header in metadata (signals replaceable section)
-		sectionHeader := ""
-		for key, val := range event.EnrichmentMetadata {
-			if strings.HasPrefix(key, "section_header_") {
-				sectionHeader = val
-				break
-			}
-		}
+	// 2. Merge description
+	// Same-source: straight overwrite of title/description (activity already exists on this platform)
+	// Resume/other: section-based replacement preserving user customizations
+	isSameSource := event.EnrichmentMetadata["same_source_destination_hevy"] == "true"
 
-		if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
-			// Extract just the section content from event.Description
-			// The payload contains the full description, but we only want the specific section
-			newSectionContent := description.ExtractSection(event.Description, sectionHeader)
-			if newSectionContent != "" {
-				mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
-				fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
-			} else {
-				fwCtx.Logger.Warn("Section header found in metadata but content not found in payload", "header", sectionHeader)
+	var mergedDescription string
+	var mergedTitle string
+	if isSameSource {
+		// Same-source update: overwrite with enriched values
+		mergedDescription = event.Description
+		mergedTitle = event.Name
+		fwCtx.Logger.Info("Same-source update: overwriting title/description",
+			"newTitle", mergedTitle,
+			"newDescLength", len(mergedDescription))
+	} else {
+		// Resume/standard update: use destination's description as base
+		mergedDescription = existingDesc
+		mergedTitle = existingTitle
+		if event.Description != "" {
+			// Check for section header in metadata (signals replaceable section)
+			sectionHeader := ""
+			for key, val := range event.EnrichmentMetadata {
+				if strings.HasPrefix(key, "section_header_") {
+					sectionHeader = val
+					break
+				}
 			}
-		} else if mergedDescription != "" {
-			// Fallback to append
-			mergedDescription += "\n\n" + event.Description
-		} else {
-			mergedDescription = event.Description
+
+			if sectionHeader != "" && description.HasSection(mergedDescription, sectionHeader) {
+				newSectionContent := description.ExtractSection(event.Description, sectionHeader)
+				if newSectionContent != "" {
+					mergedDescription = description.ReplaceSection(mergedDescription, sectionHeader, newSectionContent)
+					fwCtx.Logger.Info("Replaced description section", "header", sectionHeader)
+				} else {
+					fwCtx.Logger.Warn("Section header found in metadata but content not found in payload", "header", sectionHeader)
+				}
+			} else if mergedDescription != "" {
+				mergedDescription += "\n\n" + event.Description
+			} else {
+				mergedDescription = event.Description
+			}
 		}
 	}
 
 	// 3. Determine what changed (for logging/response only)
-	// In UPDATE mode, we intentionally do NOT update the title.
-	// The activity already exists on Hevy, and the user may have customized the title there.
 	updatedFields := map[string]interface{}{}
+	if mergedTitle != existingTitle {
+		updatedFields["title"] = "updated"
+	}
 	if mergedDescription != existingDesc {
 		updatedFields["description"] = "updated"
 	}
@@ -399,7 +413,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 			StartTime   *string                             `json:"start_time,omitempty"`
 			Title       *string                             `json:"title,omitempty"`
 		}{
-			Title:       &existingTitle,
+			Title:       &mergedTitle,
 			Description: &mergedDescription,
 			StartTime:   existingWorkout.StartTime,
 			EndTime:     existingWorkout.EndTime,
@@ -467,9 +481,11 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 		fwCtx.Logger.Warn("Failed to record uploaded activity for loop prevention", "error", err)
 	}
 
-	// Increment sync count for billing
-	if err := svc.DB.IncrementSyncCount(ctx, event.UserId); err != nil {
-		fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", event.UserId)
+	// Increment sync count for billing (skip for same-source updates - activity already existed)
+	if !isSameSource {
+		if err := svc.DB.IncrementSyncCount(ctx, event.UserId); err != nil {
+			fwCtx.Logger.Warn("Failed to increment sync count", "error", err, "userId", event.UserId)
+		}
 	}
 
 	// Update PipelineRun destination as synced

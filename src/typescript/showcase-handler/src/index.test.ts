@@ -317,7 +317,7 @@ describe('showcase-handler', () => {
 
       const result = await showcaseHandler(req, ctx);
       expect((result as unknown as FrameworkResponse).options.headers).toMatchObject({
-        'Cache-Control': 'public, max-age=31536000, immutable',
+        'Cache-Control': 'public, max-age=300',
       });
     });
   });

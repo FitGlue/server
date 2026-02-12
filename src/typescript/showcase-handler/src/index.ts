@@ -190,7 +190,7 @@ async function handleApiShowcase(
     body: response,
     headers: {
       ...corsHeaders,
-      'Cache-Control': 'public, max-age=31536000, immutable'
+      'Cache-Control': 'public, max-age=300'
     }
   });
 }
@@ -321,7 +321,7 @@ async function handleHtmlShowcase(
     headers: {
       ...corsHeaders,
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'public, max-age=3600',
+      'Cache-Control': 'public, max-age=300',
     }
   });
 }
