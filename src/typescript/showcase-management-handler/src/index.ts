@@ -3,6 +3,7 @@ import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from 
 import { HttpError } from '@fitglue/shared/errors';
 import { ShowcaseProfileStore, ShowcaseStore, UserStore } from '@fitglue/shared/storage';
 import { requireAthleteTier } from '@fitglue/shared/domain';
+import { Destination } from '@fitglue/shared/types';
 import { getStorage } from 'firebase-admin/storage';
 import { Timestamp as FirestoreTimestamp } from 'firebase-admin/firestore';
 
@@ -323,7 +324,6 @@ async function handleApplyToExisting(
         throw new HttpError(400, 'Missing pipelineIds array');
     }
 
-    const DESTINATION_SHOWCASE = 2;
     let updated = 0;
 
     for (const pipelineId of pipelineIds) {
@@ -336,8 +336,8 @@ async function handleApplyToExisting(
         const pipelineData = pipelineDoc.data() as Record<string, unknown>;
         const destinations = (pipelineData.destinations as number[]) || [];
 
-        if (!destinations.includes(DESTINATION_SHOWCASE)) {
-            destinations.push(DESTINATION_SHOWCASE);
+        if (!destinations.includes(Destination.DESTINATION_SHOWCASE)) {
+            destinations.push(Destination.DESTINATION_SHOWCASE);
             await pipelineRef.update({ destinations });
             updated++;
         }
