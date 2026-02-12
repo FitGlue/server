@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.3.0](https://github.com/FitGlue/server/compare/v14.2.0...v14.3.0) (2026-02-12)
+
+
+### Features
+
+* **showcase:** add profile management, editable profiles, and enhanced showcase UI ([6a015c2](https://github.com/FitGlue/server/commit/6a015c2e346921aaa6b4dc6b50fa42ef85d146d6))
+
+
+### Bug Fixes
+
+* build lint etc ([139ca2d](https://github.com/FitGlue/server/commit/139ca2ddfb4bae519948ceb5d8e3c3af877ca882))
+* destination fallback configs ([f7d2504](https://github.com/FitGlue/server/commit/f7d2504c42bb8c18ff8bfe7c31fe1a3e56f468d6))
+* googlesheets uploader max hr ([beb28e0](https://github.com/FitGlue/server/commit/beb28e020ee13c3b6b3f1fe1c4b81549317cddac))
+* linting ([a720163](https://github.com/FitGlue/server/commit/a7201631fbd3dcb2c64efdb75f2a42c48b7aa0dc))
+* linting, requireAthleteTier ([011df4c](https://github.com/FitGlue/server/commit/011df4cf6b4db29f5f03bfe8fb8465f838d2fd1e))
+
 ## [14.2.0](https://github.com/FitGlue/server/compare/v14.1.1...v14.2.0) (2026-02-12)
 
 
