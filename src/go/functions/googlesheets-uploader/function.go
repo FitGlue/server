@@ -346,7 +346,7 @@ func buildSheetRow(event *pb.EnrichedActivityEvent, includeVisuals bool) []inter
 	}
 	row = append(row, calories)
 
-	// Average HR (calculate from records if available)
+	// Average HR (calculate from records if available, fallback to enrichment metadata)
 	avgHR := ""
 	if event.ActivityData != nil && len(event.ActivityData.Sessions) > 0 {
 		var hrSum, hrCount int
@@ -362,9 +362,14 @@ func buildSheetRow(event *pb.EnrichedActivityEvent, includeVisuals bool) []inter
 			avgHR = fmt.Sprintf("%.0f", float64(hrSum)/float64(hrCount))
 		}
 	}
+	if avgHR == "" && event.EnrichmentMetadata != nil {
+		if v, ok := event.EnrichmentMetadata["hr_avg"]; ok && v != "" {
+			avgHR = v
+		}
+	}
 	row = append(row, avgHR)
 
-	// Max HR (calculate from records, fallback to session field)
+	// Max HR (calculate from records, fallback to session field, then enrichment metadata)
 	maxHR := ""
 	if event.ActivityData != nil && len(event.ActivityData.Sessions) > 0 {
 		var maxHRVal int32
@@ -379,6 +384,11 @@ func buildSheetRow(event *pb.EnrichedActivityEvent, includeVisuals bool) []inter
 			maxHR = fmt.Sprintf("%d", maxHRVal)
 		} else if mhr := event.ActivityData.Sessions[0].GetMaxHeartRate(); mhr > 0 {
 			maxHR = fmt.Sprintf("%d", mhr)
+		}
+	}
+	if maxHR == "" && event.EnrichmentMetadata != nil {
+		if v, ok := event.EnrichmentMetadata["hr_max"]; ok && v != "" {
+			maxHR = v
 		}
 	}
 	row = append(row, maxHR)

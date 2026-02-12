@@ -238,3 +238,78 @@ func TestGetHeaderRow_MatchesDataColumns(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildSheetRow_MaxHRFromEnrichment(t *testing.T) {
+	// When no records AND no session MaxHeartRate, fall back to enrichment metadata
+	event := &pb.EnrichedActivityEvent{
+		ActivityId:   "test-max-hr-enrichment",
+		Name:         "HR Enrichment Test",
+		ActivityType: pb.ActivityType_ACTIVITY_TYPE_RUN,
+		EnrichmentMetadata: map[string]string{
+			"hr_max": "192",
+		},
+	}
+
+	row := buildSheetRow(event, false)
+
+	if row[9] != "192" {
+		t.Errorf("Expected max HR '192' from enrichment, got '%v'", row[9])
+	}
+}
+
+func TestBuildSheetRow_AvgHRFromEnrichment(t *testing.T) {
+	// When no records, fall back to enrichment metadata for avg HR
+	event := &pb.EnrichedActivityEvent{
+		ActivityId:   "test-avg-hr-enrichment",
+		Name:         "Avg HR Enrichment Test",
+		ActivityType: pb.ActivityType_ACTIVITY_TYPE_RUN,
+		EnrichmentMetadata: map[string]string{
+			"hr_avg": "145",
+		},
+	}
+
+	row := buildSheetRow(event, false)
+
+	if row[8] != "145" {
+		t.Errorf("Expected avg HR '145' from enrichment, got '%v'", row[8])
+	}
+}
+
+func TestBuildSheetRow_RecordsTakePrecedenceOverEnrichmentHR(t *testing.T) {
+	// Records should take precedence over enrichment metadata
+	event := &pb.EnrichedActivityEvent{
+		ActivityId:   "test-hr-precedence",
+		Name:         "HR Precedence Test",
+		ActivityType: pb.ActivityType_ACTIVITY_TYPE_RUN,
+		ActivityData: &pb.StandardizedActivity{
+			Sessions: []*pb.Session{
+				{
+					Laps: []*pb.Lap{
+						{
+							Records: []*pb.Record{
+								{HeartRate: 130},
+								{HeartRate: 160},
+								{HeartRate: 180},
+							},
+						},
+					},
+				},
+			},
+		},
+		EnrichmentMetadata: map[string]string{
+			"hr_avg": "999",
+			"hr_max": "999",
+		},
+	}
+
+	row := buildSheetRow(event, false)
+
+	// Avg HR from records: (130+160+180)/3 = 157
+	if row[8] != "157" {
+		t.Errorf("Expected avg HR '157' from records (not enrichment), got '%v'", row[8])
+	}
+	// Max HR from records: 180
+	if row[9] != "180" {
+		t.Errorf("Expected max HR '180' from records (not enrichment), got '%v'", row[9])
+	}
+}
