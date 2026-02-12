@@ -714,7 +714,10 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	// Inject destination configs into metadata (prefixed with destination ID)
 	// For each destination, merge pipeline config with user default (pipeline wins)
+	// Track which destinations have been processed via DestinationConfigs
+	processedDests := make(map[string]bool)
 	for destId, destCfg := range pipeline.DestinationConfigs {
+		processedDests[destId] = true
 		if destCfg != nil && len(destCfg.Config) > 0 {
 			for k, v := range destCfg.Config {
 				finalEvent.EnrichmentMetadata[destId+"_"+k] = v
@@ -727,6 +730,22 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				}
 				logger.Info("Using user default for destination config", "destination", destId)
 			}
+		}
+	}
+
+	// Also check pipeline.Destinations for any destinations not in DestinationConfigs
+	// These destinations have no per-pipeline config, so fall back to plugin_defaults
+	for _, dest := range pipeline.Destinations {
+		destId := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
+		if processedDests[destId] {
+			continue // Already handled above
+		}
+		// Fall back to user plugin default
+		if def, err := o.database.GetPluginDefault(ctx, payload.UserId, destId); err == nil && def != nil {
+			for k, v := range def.Config {
+				finalEvent.EnrichmentMetadata[destId+"_"+k] = v
+			}
+			logger.Info("Using user default for destination config (from Destinations list)", "destination", destId)
 		}
 	}
 
