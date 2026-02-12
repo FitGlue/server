@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.3.1](https://github.com/FitGlue/server/compare/v14.3.0...v14.3.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* missing indexes ([1120d0e](https://github.com/FitGlue/server/commit/1120d0eeb3ede11f67fba57c5f27330b48d20f16))
+
 ## [14.3.0](https://github.com/FitGlue/server/compare/v14.2.0...v14.3.0) (2026-02-12)
 
 
