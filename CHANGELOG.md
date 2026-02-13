@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.5.0](https://github.com/FitGlue/server/compare/v14.4.0...v14.5.0) (2026-02-13)
+
+
+### Features
+
+* **showcase:** owner avatar in OG/API, same-source fallback, and upload UX ([c3ea3d0](https://github.com/FitGlue/server/commit/c3ea3d00704a291c8e4556fdfdcb58aeebf77291))
+
 ## [14.4.0](https://github.com/FitGlue/server/compare/v14.3.1...v14.4.0) (2026-02-13)
 
 
