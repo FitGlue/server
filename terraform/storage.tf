@@ -12,6 +12,13 @@ resource "google_storage_bucket" "artifacts_bucket" {
       type = "Delete"
     }
   }
+
+  cors {
+    origin          = [var.base_url]
+    method          = ["PUT", "POST", "GET", "HEAD"]
+    response_header = ["Content-Type", "Content-Length", "x-goog-content-length-range"]
+    max_age_seconds = 3600
+  }
 }
 
 # Version config bucket - stores unified FitGlue version across web/server repos

@@ -103,7 +103,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		if err != nil {
 			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId,
 				pb.Destination_DESTINATION_GITHUB, pb.DestinationStatus_DESTINATION_STATUS_FAILED,
-				"", fmt.Sprintf("config error: %s", err), eventPayload.Name, fwCtx.Logger)
+				"", fmt.Sprintf("config error: %s", err), eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to load GitHub config: %w", err)
 		}
 
@@ -179,7 +179,7 @@ func handleGithubCreate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 		fwCtx.Logger.Error("GitHub file creation failed", "error", err)
 		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId,
 			pb.Destination_DESTINATION_GITHUB, pb.DestinationStatus_DESTINATION_STATUS_FAILED,
-			"", fmt.Sprintf("API error: %s", err), eventPayload.Name, fwCtx.Logger)
+			"", fmt.Sprintf("API error: %s", err), eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("GitHub create failed: %w", err)
 	}
 
@@ -206,7 +206,7 @@ func handleGithubCreate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 	// Update PipelineRun destination as synced
 	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId,
 		pb.Destination_DESTINATION_GITHUB, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		externalID, "", eventPayload.Name, fwCtx.Logger)
+		externalID, "", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":        "SUCCESS",
@@ -234,7 +234,7 @@ func handleGithubUpdate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 			"activity_id", eventPayload.ActivityId, "error", err)
 		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId,
 			pb.Destination_DESTINATION_GITHUB, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED,
-			"", "activity_not_found", eventPayload.Name, fwCtx.Logger)
+			"", "activity_not_found", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "activity_not_found",
@@ -256,7 +256,7 @@ func handleGithubUpdate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 		fwCtx.Logger.Info("No GitHub destination in pipeline run for UPDATE - skipping")
 		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId,
 			pb.Destination_DESTINATION_GITHUB, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED,
-			"", "no_github_destination", eventPayload.Name, fwCtx.Logger)
+			"", "no_github_destination", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":      "SKIPPED",
 			"skip_reason": "no_github_destination",
@@ -303,7 +303,7 @@ func handleGithubUpdate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 	if err != nil {
 		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId,
 			pb.Destination_DESTINATION_GITHUB, pb.DestinationStatus_DESTINATION_STATUS_FAILED,
-			"", fmt.Sprintf("update error: %s", err), eventPayload.Name, fwCtx.Logger)
+			"", fmt.Sprintf("update error: %s", err), eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("GitHub update failed: %w", err)
 	}
 
@@ -314,7 +314,7 @@ func handleGithubUpdate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 
 	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId,
 		pb.Destination_DESTINATION_GITHUB, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		externalID, "", eventPayload.Name, fwCtx.Logger)
+		externalID, "", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":        "SUCCESS",

@@ -93,13 +93,13 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// 1. Get user's TrainingPeaks integration
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
-			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), eventPayload.Name, fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
 		if user.Integrations == nil || user.Integrations.Trainingpeaks == nil || !user.Integrations.Trainingpeaks.Enabled {
 			fwCtx.Logger.Warn("User has no TrainingPeaks integration configured", "userId", eventPayload.UserId)
-			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "TrainingPeaks integration not configured", eventPayload.Name, fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "TrainingPeaks integration not configured", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 			return map[string]interface{}{
 				"status": "FAILED",
 				"reason": "no_trainingpeaks_integration",
@@ -132,7 +132,7 @@ func handleTrainingPeaksCreate(ctx context.Context, httpClient *http.Client, eve
 	// POST to TrainingPeaks API
 	workoutID, err := createTrainingPeaksWorkout(ctx, httpClient, athleteID, workout, fwCtx)
 	if err != nil {
-		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), eventPayload.Name, fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to create TrainingPeaks workout: %w", err)
 	}
 
@@ -170,7 +170,7 @@ func handleTrainingPeaksCreate(ctx context.Context, httpClient *http.Client, eve
 	}
 
 	// Update PipelineRun destination as synced
-	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", eventPayload.Name, fwCtx.Logger)
+	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutID, "", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":             "SUCCESS",
@@ -259,7 +259,7 @@ func handleTrainingpeaksUpdate(ctx context.Context, httpClient *http.Client, eve
 	if !hasChanges {
 		fwCtx.Logger.Info("No changes to update, skipping PUT")
 		// Update PipelineRun destination as success (no changes needed, but activity is already synced)
-		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutIDStr, "", eventPayload.Name, fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_TRAININGPEAKS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, workoutIDStr, "", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 		return map[string]interface{}{
 			"status":           "SUCCESS",
 			"trainingpeaks_id": workoutIDStr,

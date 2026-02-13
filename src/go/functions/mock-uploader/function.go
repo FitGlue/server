@@ -90,7 +90,7 @@ func mockHandler() framework.HandlerFunc {
 		)
 
 		// Update PipelineRun destination as synced
-		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_MOCK, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, mockExternalID, "", eventPayload.Name, fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_MOCK, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, mockExternalID, "", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 
 		return map[string]interface{}{
 			"status":           "SUCCESS",

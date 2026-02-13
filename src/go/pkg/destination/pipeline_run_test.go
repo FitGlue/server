@@ -141,7 +141,7 @@ func TestUpdateStatus_SendsNotificationOnSynced(t *testing.T) {
 	// When Hevy also succeeds → all complete → SYNCED → notification should fire
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
 		pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"hevy-123", "", "Morning Run", logger)
+		"hevy-123", "", "Morning Run", "activity-1", logger)
 
 	if len(notifications.Sent) != 1 {
 		t.Fatalf("expected 1 notification, got %d", len(notifications.Sent))
@@ -153,8 +153,11 @@ func TestUpdateStatus_SendsNotificationOnSynced(t *testing.T) {
 	if !strings.Contains(n.Body, "Strava") || !strings.Contains(n.Body, "Hevy") {
 		t.Errorf("expected body to mention both destinations, got: %s", n.Body)
 	}
-	if n.Data["type"] != "PIPELINE_SYNCED" {
-		t.Errorf("expected PIPELINE_SYNCED type, got: %s", n.Data["type"])
+	if n.Data["type"] != "PIPELINE_SUCCESS" {
+		t.Errorf("expected PIPELINE_SUCCESS type, got: %s", n.Data["type"])
+	}
+	if n.Data["activity_id"] != "activity-1" {
+		t.Errorf("expected activity_id 'activity-1', got: %s", n.Data["activity_id"])
 	}
 }
 
@@ -175,7 +178,7 @@ func TestUpdateStatus_SendsNotificationOnPartial(t *testing.T) {
 	// When Hevy fails → PARTIAL → notification should fire with failure info
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
 		pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED,
-		"", "API error", "Morning Run", logger)
+		"", "API error", "Morning Run", "activity-2", logger)
 
 	if len(notifications.Sent) != 1 {
 		t.Fatalf("expected 1 notification, got %d", len(notifications.Sent))
@@ -187,8 +190,8 @@ func TestUpdateStatus_SendsNotificationOnPartial(t *testing.T) {
 	if !strings.Contains(n.Body, "Hevy") || !strings.Contains(n.Body, "failed") {
 		t.Errorf("expected body to mention Hevy failure, got: %s", n.Body)
 	}
-	if n.Data["type"] != "PIPELINE_PARTIAL" {
-		t.Errorf("expected PIPELINE_PARTIAL type, got: %s", n.Data["type"])
+	if n.Data["type"] != "PIPELINE_FAILED" {
+		t.Errorf("expected PIPELINE_FAILED type, got: %s", n.Data["type"])
 	}
 }
 
@@ -210,7 +213,7 @@ func TestUpdateStatus_NoNotificationWhileRunning(t *testing.T) {
 	// Only Hevy completes — Strava still pending → RUNNING → no notification
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
 		pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"hevy-123", "", "Morning Run", logger)
+		"hevy-123", "", "Morning Run", "activity-3", logger)
 
 	if len(notifications.Sent) != 0 {
 		t.Fatalf("expected 0 notifications while RUNNING, got %d", len(notifications.Sent))
@@ -235,7 +238,7 @@ func TestUpdateStatus_NoNotificationWhenPrefsDisabled(t *testing.T) {
 
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
 		pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", logger)
+		"strava-123", "", "Morning Run", "activity-4", logger)
 
 	if len(notifications.Sent) != 0 {
 		t.Fatalf("expected 0 notifications when prefs disabled, got %d", len(notifications.Sent))
@@ -256,7 +259,7 @@ func TestUpdateStatus_NilNotificationService(t *testing.T) {
 	// Should not panic with nil notifications
 	UpdateStatus(context.Background(), db, nil, "user1", "run1",
 		pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", logger)
+		"strava-123", "", "Morning Run", "activity-5", logger)
 }
 
 func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
@@ -267,7 +270,7 @@ func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
 	// Empty pipelineRunId → early return (legacy flow)
 	UpdateStatus(context.Background(), db, notifications, "user1", "",
 		pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"strava-123", "", "Morning Run", logger)
+		"strava-123", "", "Morning Run", "activity-6", logger)
 
 	if len(notifications.Sent) != 0 {
 		t.Fatalf("expected 0 notifications for empty pipelineRunId, got %d", len(notifications.Sent))

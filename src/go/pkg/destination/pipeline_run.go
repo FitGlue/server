@@ -35,7 +35,7 @@ type Database interface {
 //   - errMsg: optional error message if status is FAILED
 //   - activityName: the activity name for the push notification title
 //   - logger: logger for debugging
-func UpdateStatus(ctx context.Context, db Database, notifications shared.NotificationService, userId string, pipelineRunId string, dest pb.Destination, status pb.DestinationStatus, externalId string, errMsg string, activityName string, logger *slog.Logger) {
+func UpdateStatus(ctx context.Context, db Database, notifications shared.NotificationService, userId string, pipelineRunId string, dest pb.Destination, status pb.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger *slog.Logger) {
 	if pipelineRunId == "" {
 		return // No pipeline run to update - legacy flow
 	}
@@ -107,14 +107,14 @@ func UpdateStatus(ctx context.Context, db Database, notifications shared.Notific
 
 	// Send push notification when all destinations have reached a terminal status
 	if newStatus == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED || newStatus == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
-		sendSyncNotification(ctx, db, notifications, userId, activityName, newStatus, outcomes, logger)
+		sendSyncNotification(ctx, db, notifications, userId, activityName, activityId, newStatus, outcomes, logger)
 	}
 }
 
 // sendSyncNotification sends a push notification when all destinations have completed.
 // For SYNCED: "Successfully synced to: Strava, Hevy"
 // For PARTIAL: "Synced to Strava, but Hevy failed"
-func sendSyncNotification(ctx context.Context, db Database, notifications shared.NotificationService, userId string, activityName string, status pb.PipelineRunStatus, outcomes []*pb.DestinationOutcome, logger *slog.Logger) {
+func sendSyncNotification(ctx context.Context, db Database, notifications shared.NotificationService, userId string, activityName string, activityId string, status pb.PipelineRunStatus, outcomes []*pb.DestinationOutcome, logger *slog.Logger) {
 	if notifications == nil {
 		return
 	}
@@ -151,8 +151,9 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 
 	var title, body string
 	data := map[string]string{
-		"type":    "PIPELINE_SYNCED",
-		"user_id": userId,
+		"type":        "PIPELINE_SUCCESS",
+		"user_id":     userId,
+		"activity_id": activityId,
 	}
 
 	if status == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
@@ -165,7 +166,7 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 		} else if len(failed) > 0 {
 			body = fmt.Sprintf("Failed to sync to: %s", strings.Join(failed, ", "))
 		}
-		data["type"] = "PIPELINE_PARTIAL"
+		data["type"] = "PIPELINE_FAILED"
 	}
 
 	if err := notifications.SendPushNotification(ctx, userId, title, body, user.FcmTokens, data); err != nil {

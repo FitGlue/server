@@ -92,13 +92,13 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		// 1. Get user's Google Sheets integration
 		user, err := svc.DB.GetUser(ctx, eventPayload.UserId)
 		if err != nil {
-			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), eventPayload.Name, fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to get user: %s", err), eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 			return nil, fmt.Errorf("failed to get user: %w", err)
 		}
 
 		if user.Integrations == nil || user.Integrations.Google == nil || !user.Integrations.Google.Enabled {
 			fwCtx.Logger.Warn("User has no Google integration configured", "userId", eventPayload.UserId)
-			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Google integration not configured", eventPayload.Name, fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Google integration not configured", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 			return map[string]interface{}{
 				"status": "FAILED",
 				"reason": "no_google_integration",
@@ -123,7 +123,7 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 		}
 
 		if spreadsheetID == "" {
-			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "spreadsheet_id not configured", eventPayload.Name, fwCtx.Logger)
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", "spreadsheet_id not configured", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 			return nil, fmt.Errorf("spreadsheet_id not configured in metadata")
 		}
 
@@ -216,7 +216,7 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 	// Append to Google Sheets
 	rowNumber, err := appendToSheet(ctx, httpClient, spreadsheetID, sheetName, row, fwCtx)
 	if err != nil {
-		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), eventPayload.Name, fwCtx.Logger)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("API error: %s", err), eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to append to Google Sheets: %w", err)
 	}
 
@@ -255,7 +255,7 @@ func handleGoogleSheetsCreate(ctx context.Context, httpClient *http.Client, even
 	}
 
 	// Update PipelineRun destination as synced
-	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, googlesheetsDestID, "", eventPayload.Name, fwCtx.Logger)
+	destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_GOOGLESHEETS, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS, googlesheetsDestID, "", eventPayload.Name, eventPayload.ActivityId, fwCtx.Logger)
 
 	return map[string]interface{}{
 		"status":         "SUCCESS",
