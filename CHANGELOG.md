@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.4.0](https://github.com/FitGlue/server/compare/v14.3.1...v14.4.0) (2026-02-13)
+
+
+### Features
+
+* **showcase:** same-source uploader overwrite, image crop, and cache tuning ([7310018](https://github.com/FitGlue/server/commit/73100189fd2603e5a0b4b2d148f8ee6e4b47ef0d))
+
+
+### Bug Fixes
+
+* photo upload for profile ([8a9bed2](https://github.com/FitGlue/server/commit/8a9bed28110c574fef36e63fdc1fd54ab177052e))
+
 ### [14.3.1](https://github.com/FitGlue/server/compare/v14.3.0...v14.3.1) (2026-02-12)
 
 
