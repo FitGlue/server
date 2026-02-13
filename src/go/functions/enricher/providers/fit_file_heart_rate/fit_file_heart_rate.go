@@ -133,12 +133,20 @@ func (p *FitFileHRProvider) EnrichResume(ctx context.Context, activity *pb.Stand
 
 	// Extract heart rate data from parsed activity
 	hrSamples := extractHRSamples(parsedActivity)
+
+	// Extract TimeMarkers from parsed FIT file (exercise transitions from Set messages).
+	// These carry device-accurate timestamps and will be reconciled with StrengthSet
+	// exercise names (e.g., from Hevy) by the orchestrator's reconcileTimeMarkerLabels.
+	fitTimeMarkers := parsedActivity.GetTimeMarkers()
+
 	if len(hrSamples) == 0 {
 		return &providers.EnrichmentResult{
+			TimeMarkers: fitTimeMarkers,
 			Metadata: map[string]string{
 				"hr_source":     "fit_file",
 				"status_detail": "No heart rate data found in uploaded FIT file",
 				"points_found":  "0",
+				"time_markers":  fmt.Sprintf("%d", len(fitTimeMarkers)),
 			},
 		}, nil
 	}
@@ -186,11 +194,13 @@ func (p *FitFileHRProvider) EnrichResume(ctx context.Context, activity *pb.Stand
 
 	return &providers.EnrichmentResult{
 		HeartRateStream: stream,
+		TimeMarkers:     fitTimeMarkers,
 		Metadata: mergeMetadata(map[string]string{
 			"hr_source":     "fit_file",
 			"status_detail": "Success",
 			"points_found":  fmt.Sprintf("%d", len(hrSamples)),
 			"stream_length": fmt.Sprintf("%d", len(stream)),
+			"time_markers":  fmt.Sprintf("%d", len(fitTimeMarkers)),
 		}, alignmentMetadata),
 	}, nil
 }

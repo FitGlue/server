@@ -108,6 +108,17 @@ func uploadHandler(httpClient *http.Client) framework.HandlerFunc {
 			return handleStravaUpdate(ctx, httpClient, &eventPayload, fwCtx)
 		}
 
+		// Same-Source Detection: If Strava is both source AND destination,
+		// the activity already exists natively on Strava. Route to update.
+		if eventPayload.EnrichmentMetadata["same_source_destination_strava"] == "true" {
+			sourceExternalID := eventPayload.ActivityData.GetExternalId()
+			if sourceExternalID != "" {
+				fwCtx.Logger.Info("Same-source detected (Strava→Strava), routing to update",
+					"sourceExternalID", sourceExternalID)
+				return handleStravaUpdate(ctx, httpClient, &eventPayload, fwCtx)
+			}
+		}
+
 		// --- CREATE MODE ---
 		return handleStravaCreate(ctx, httpClient, &eventPayload, fwCtx)
 	}
@@ -307,54 +318,56 @@ func handleStravaUpdate(ctx context.Context, httpClient *http.Client, eventPaylo
 		"activity_id", eventPayload.ActivityId,
 		"user_id", eventPayload.UserId)
 
+	// Same-source check: when Strava is both source and destination,
+	// the activity already exists natively — use the source ExternalId directly
+	isSameSourceEarly := eventPayload.EnrichmentMetadata["same_source_destination_strava"] == "true"
+
 	// 1. Lookup PipelineRun to get Strava activity ID from destinations
+	var stravaIDStr string
 	pipelineRun, err := svc.DB.GetPipelineRunByActivityId(ctx, eventPayload.UserId, eventPayload.ActivityId)
-	if err != nil {
-		// Activity not found is expected in resume mode if original upload failed before storing
-		// Return SKIPPED (not error) to prevent Sentry noise
-		fwCtx.Logger.Info("Pipeline run not found for UPDATE - skipping",
-			"activity_id", eventPayload.ActivityId,
-			"error", err,
-		)
-		// Update PipelineRun destination as skipped
-		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", eventPayload.Name, fwCtx.Logger)
-		return map[string]interface{}{
-			"status":      "SKIPPED",
-			"skip_reason": "activity_not_found",
-			"activity_id": eventPayload.ActivityId,
-			"pipeline_id": eventPayload.PipelineId,
-			"mode":        "UPDATE",
-			"details":     "Original upload may have failed before storing pipeline run",
-		}, nil
-	}
-	if pipelineRun == nil {
-		fwCtx.Logger.Info("Pipeline run is nil for UPDATE - skipping",
-			"activity_id", eventPayload.ActivityId,
-		)
-		// Update PipelineRun destination as skipped
-		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", eventPayload.Name, fwCtx.Logger)
-		return map[string]interface{}{
-			"status":      "SKIPPED",
-			"skip_reason": "activity_not_found",
-			"activity_id": eventPayload.ActivityId,
-			"pipeline_id": eventPayload.PipelineId,
-			"mode":        "UPDATE",
-		}, nil
+	if err != nil || pipelineRun == nil {
+		// Same-source fallback: use the source activity's external ID
+		if isSameSourceEarly {
+			sourceExternalID := eventPayload.ActivityData.GetExternalId()
+			if sourceExternalID != "" {
+				fwCtx.Logger.Info("Same-source fallback: using source ExternalId",
+					"sourceExternalID", sourceExternalID)
+				stravaIDStr = sourceExternalID
+			}
+		}
+		if stravaIDStr == "" {
+			// Activity not found is expected in resume mode if original upload failed before storing
+			// Return SKIPPED (not error) to prevent Sentry noise
+			fwCtx.Logger.Info("Pipeline run not found for UPDATE - skipping",
+				"activity_id", eventPayload.ActivityId,
+				"error", err,
+			)
+			// Update PipelineRun destination as skipped
+			destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "activity_not_found", eventPayload.Name, fwCtx.Logger)
+			return map[string]interface{}{
+				"status":      "SKIPPED",
+				"skip_reason": "activity_not_found",
+				"activity_id": eventPayload.ActivityId,
+				"pipeline_id": eventPayload.PipelineId,
+				"mode":        "UPDATE",
+				"details":     "Original upload may have failed before storing pipeline run",
+			}, nil
+		}
 	}
 
-	// Extract Strava external ID from destinations array
-	var stravaIDStr string
-	for _, dest := range pipelineRun.Destinations {
-		if dest.Destination == pb.Destination_DESTINATION_STRAVA && dest.ExternalId != nil && *dest.ExternalId != "" {
-			stravaIDStr = *dest.ExternalId
-			break
+	// Extract Strava external ID from destinations array (if not already set by same-source fallback)
+	if stravaIDStr == "" && pipelineRun != nil {
+		for _, dest := range pipelineRun.Destinations {
+			if dest.Destination == pb.Destination_DESTINATION_STRAVA && dest.ExternalId != nil && *dest.ExternalId != "" {
+				stravaIDStr = *dest.ExternalId
+				break
+			}
 		}
 	}
 
 	if stravaIDStr == "" {
 		fwCtx.Logger.Info("No Strava destination in pipeline run for UPDATE - skipping",
 			"activity_id", eventPayload.ActivityId,
-			"destinations", pipelineRun.Destinations,
 		)
 		// Update PipelineRun destination as skipped
 		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, eventPayload.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SKIPPED, "", "no_strava_destination", eventPayload.Name, fwCtx.Logger)

@@ -117,6 +117,18 @@ func uploadHandler() framework.HandlerFunc {
 			return handleHevyUpdate(ctx, apiKey, &eventPayload, existingWorkoutID, fwCtx)
 		}
 
+		// 3b. Same-Source Detection: If Hevy is both source AND destination,
+		// the activity already exists natively on Hevy. Use the source's
+		// external ID as the workout ID for the update path.
+		if eventPayload.EnrichmentMetadata["same_source_destination_hevy"] == "true" {
+			sourceExternalID := eventPayload.ActivityData.GetExternalId()
+			if sourceExternalID != "" {
+				fwCtx.Logger.Info("Same-source detected (Hevy→Hevy), routing to update",
+					"sourceExternalID", sourceExternalID)
+				return handleHevyUpdate(ctx, apiKey, &eventPayload, sourceExternalID, fwCtx)
+			}
+		}
+
 		// 4. Create template resolver for exercise ID lookups
 		resolver := NewTemplateResolver(apiKey, fwCtx.Logger)
 

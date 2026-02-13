@@ -29,6 +29,9 @@ type EnrichmentResult struct {
 	PositionLatStream  []float64
 	PositionLongStream []float64
 
+	// TimeMarkers from enricher (e.g., exercise transitions from FIT file uploads)
+	TimeMarkers []*pb.TimeMarker
+
 	// Artifacts (Providers can still generate specific artifacts if independent)
 	// But main FIT generation should normally happen in Orchestrator fan-in.
 	FitFileContent []byte

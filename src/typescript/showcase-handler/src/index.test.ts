@@ -203,6 +203,7 @@ describe('showcase-handler', () => {
     };
     mockShowcaseProfileStore = {
       get: jest.fn(),
+      getByUserId: jest.fn().mockResolvedValue(null),
     };
     (ShowcaseStore as unknown as jest.Mock).mockImplementation(() => mockShowcaseStore);
     (MockShowcaseProfileStore as unknown as jest.Mock).mockImplementation(() => mockShowcaseProfileStore);
@@ -371,6 +372,28 @@ describe('showcase-handler', () => {
       const result = await showcaseHandler(req, ctx);
       const body = (result as unknown as FrameworkResponse).options.body as string;
       expect(body).toContain('Check out this activity on FitGlue');
+    });
+
+    it('uses owner profile picture as OG image when available', async () => {
+      req.path = '/showcase/my-activity';
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'my-activity',
+        userId: 'user-123',
+        title: 'Test Run',
+        ownerDisplayName: 'James',
+      });
+      mockShowcaseProfileStore.get.mockResolvedValue(null);
+      (MockShowcaseProfileStore as unknown as jest.Mock).mockImplementation(() => ({
+        ...mockShowcaseProfileStore,
+        getByUserId: jest.fn().mockResolvedValue({
+          profilePictureUrl: 'https://storage.example.com/photo.jpg',
+        }),
+      }));
+
+      const result = await showcaseHandler(req, ctx);
+      const body = (result as unknown as FrameworkResponse).options.body as string;
+      expect(body).toContain('og:image');
+      expect(body).toContain('https://storage.example.com/photo.jpg');
     });
   });
 

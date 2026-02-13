@@ -514,6 +514,9 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		if len(res.Tags) > 0 {
 			currentActivity.Tags = append(currentActivity.Tags, res.Tags...)
 		}
+		if len(res.TimeMarkers) > 0 {
+			currentActivity.TimeMarkers = append(currentActivity.TimeMarkers, res.TimeMarkers...)
+		}
 
 		// Apply description immediately (append with separator if not empty)
 		logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name(), "description", res.Description)

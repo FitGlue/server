@@ -46,7 +46,7 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
       method: 'GET',
       pattern: '/api/showcase/:id',
       handler: async (match) => {
-        return await handleApiShowcase(match.params.id, showcaseStore, db, corsHeaders, ctx.logger);
+        return await handleApiShowcase(match.params.id, showcaseStore, showcaseProfileStore, db, corsHeaders, ctx.logger);
       }
     },
     {
@@ -67,14 +67,14 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
       method: 'GET',
       pattern: '/u/:slug/:id',
       handler: async (match) => {
-        return await handleHtmlShowcase(match.params.id, showcaseStore, corsHeaders);
+        return await handleHtmlShowcase(match.params.id, showcaseStore, showcaseProfileStore, corsHeaders);
       }
     },
     {
       method: 'GET',
       pattern: '/showcase/:id',
       handler: async (match) => {
-        return await handleHtmlShowcase(match.params.id, showcaseStore, corsHeaders);
+        return await handleHtmlShowcase(match.params.id, showcaseStore, showcaseProfileStore, corsHeaders);
       }
     }
   ]);
@@ -120,6 +120,7 @@ async function fetchActivityDataFromGcs(
 async function handleApiShowcase(
   showcaseId: string,
   showcaseStore: ShowcaseStore,
+  profileStore: ShowcaseProfileStore,
   db: admin.firestore.Firestore,
   corsHeaders: Record<string, string>,
   logger: import('winston').Logger
@@ -140,6 +141,10 @@ async function handleApiShowcase(
   const user = await db.collection('users').doc(data.userId).get();
   const userData = user.data() as UserRecord;
   const effectiveTier = getEffectiveTier(userData);
+
+  // Fetch owner's profile picture
+  const ownerProfile = await profileStore.getByUserId(data.userId).catch(() => null);
+  const ownerProfilePictureUrl = ownerProfile?.profilePictureUrl || undefined;
 
   // Fetch activity data from GCS if not inline
   const activityData = data.activityData ?? await fetchActivityDataFromGcs(data.activityDataUri, logger);
@@ -182,6 +187,7 @@ async function handleApiShowcase(
     tags: data.tags || [],
     createdAt: data.createdAt?.toISOString(),
     ownerDisplayName: data.ownerDisplayName,
+    ownerProfilePictureUrl,
     // Don't expose: userId, activityId, fitFileUri, pipelineExecutionId, expiresAt
   };
 
@@ -289,6 +295,7 @@ function generateOgHtml(options: {
 async function handleHtmlShowcase(
   showcaseId: string,
   showcaseStore: ShowcaseStore,
+  profileStore: ShowcaseProfileStore,
   corsHeaders: Record<string, string>
 ): Promise<FrameworkResponse> {
   // Fetch from Firestore using ShowcaseStore
@@ -308,11 +315,17 @@ async function handleHtmlShowcase(
   const ogDescription = data.description || 'Check out this activity on FitGlue — Watch your workout become extraordinary.';
   const canonicalUrl = `${SITE_URL}/showcase/${showcaseId}`;
 
+  // Fetch owner's profile picture for OG image
+  const ownerProfile = data.userId
+    ? await profileStore.getByUserId(data.userId).catch(() => null)
+    : null;
+
   const html = generateOgHtml({
     title: ogTitle,
     description: ogDescription,
     url: canonicalUrl,
     redirectUrl: `/showcase.html?id=${showcaseId}`,
+    image: ownerProfile?.profilePictureUrl || undefined,
   });
 
   return new FrameworkResponse({
@@ -480,6 +493,7 @@ interface ShowcaseResponse {
   tags: string[];
   createdAt?: string;
   ownerDisplayName?: string;  // Public attribution - owner's display name or email prefix
+  ownerProfilePictureUrl?: string;  // Owner's profile picture URL
 }
 
 /**
