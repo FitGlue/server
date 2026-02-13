@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.5.1](https://github.com/FitGlue/server/compare/v14.5.0...v14.5.1) (2026-02-13)
+
+
+### Bug Fixes
+
+* notification links, avatar profile photo upload CORS ([84b9243](https://github.com/FitGlue/server/commit/84b9243b14d5739a44be34abadd3933ac961fd28))
+
 ## [14.5.0](https://github.com/FitGlue/server/compare/v14.4.0...v14.5.0) (2026-02-13)
 
 
