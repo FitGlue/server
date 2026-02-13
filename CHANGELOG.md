@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.5.2](https://github.com/FitGlue/server/compare/v14.5.1...v14.5.2) (2026-02-13)
+
+
+### Bug Fixes
+
+* use right gcs bucket for profile pic upload ([7965fdb](https://github.com/FitGlue/server/commit/7965fdbf5f54f39a309250e995f15b52b8369ad6))
+
 ### [14.5.1](https://github.com/FitGlue/server/compare/v14.5.0...v14.5.1) (2026-02-13)
 
 
