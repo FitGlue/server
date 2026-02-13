@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.5.3](https://github.com/FitGlue/server/compare/v14.5.2...v14.5.3) (2026-02-13)
+
+
+### Bug Fixes
+
+* showcase profile slug passdown ([ebafe7a](https://github.com/FitGlue/server/commit/ebafe7a38fb1cb8a865cbfcfb625fb54074beba2))
+
 ### [14.5.2](https://github.com/FitGlue/server/compare/v14.5.1...v14.5.2) (2026-02-13)
 
 
