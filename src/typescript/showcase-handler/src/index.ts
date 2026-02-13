@@ -187,6 +187,7 @@ async function handleApiShowcase(
     tags: data.tags || [],
     createdAt: data.createdAt?.toISOString(),
     ownerDisplayName: data.ownerDisplayName,
+    ownerProfileSlug: ownerProfile?.slug || undefined,
     ownerProfilePictureUrl,
     // Don't expose: userId, activityId, fitFileUri, pipelineExecutionId, expiresAt
   };
@@ -493,6 +494,7 @@ interface ShowcaseResponse {
   tags: string[];
   createdAt?: string;
   ownerDisplayName?: string;  // Public attribution - owner's display name or email prefix
+  ownerProfileSlug?: string;  // Owner's actual profile slug for linking
   ownerProfilePictureUrl?: string;  // Owner's profile picture URL
 }
 

@@ -304,6 +304,28 @@ describe('showcase-handler', () => {
       expect(responseData.isAthlete).toBe(true);
     });
 
+    it('includes ownerProfileSlug from profile when available', async () => {
+      mockShowcaseStore.get.mockResolvedValue({
+        showcaseId: 'test-id',
+        userId: 'user-123',
+        title: 'Morning Run',
+        ownerDisplayName: 'James King',
+        activityType: 27,
+        source: 1,
+      });
+
+      mockShowcaseProfileStore.getByUserId.mockResolvedValue({
+        slug: 'james-fit',
+        profilePictureUrl: 'https://example.com/photo.jpg',
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      expect((result as unknown as FrameworkResponse).options.status).toBe(200);
+      const responseData: any = (result as unknown as FrameworkResponse).options.body;
+      expect(responseData.ownerProfileSlug).toBe('james-fit');
+      expect(responseData.ownerDisplayName).toBe('James King');
+    });
+
     it('sets immutable cache headers', async () => {
       mockShowcaseStore.get.mockResolvedValue({
         showcaseId: 'test-id',
