@@ -1979,6 +1979,7 @@ resource "google_cloudfunctions2_function" "showcase_management_handler" {
       SENTRY_ORG           = var.sentry_org
       SENTRY_PROJECT       = var.sentry_project
       SENTRY_DSN           = var.sentry_dsn
+      ASSETS_BASE_URL      = "https://assets.${var.domain_name}"
     }
     service_account_email = google_service_account.cloud_function_sa.email
   }

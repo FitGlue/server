@@ -57,9 +57,9 @@ resource "google_storage_bucket" "showcase_assets_bucket" {
   # No lifecycle rule - showcase assets are referenced by Showcase pages forever
 
   cors {
-    origin          = ["*"]
-    method          = ["GET", "HEAD"]
-    response_header = ["Content-Type"]
+    origin          = [var.base_url, "*"]
+    method          = ["GET", "HEAD", "PUT"]
+    response_header = ["Content-Type", "Content-Length", "x-goog-content-length-range"]
     max_age_seconds = 3600
   }
 }

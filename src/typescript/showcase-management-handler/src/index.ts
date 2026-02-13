@@ -26,7 +26,7 @@ const profileStore = new ShowcaseProfileStore(db);
 const showcaseStore = new ShowcaseStore(db);
 const userStore = new UserStore(db);
 
-const PROFILE_PICTURE_BUCKET = `${process.env.GOOGLE_CLOUD_PROJECT || 'fitglue'}-artifacts`;
+const PROFILE_PICTURE_BUCKET = `${process.env.GOOGLE_CLOUD_PROJECT || 'fitglue'}-showcase-assets`;
 const PROFILE_PICTURE_MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
 function extractSegmentAfter(path: string, keyword: string): string {
@@ -211,7 +211,8 @@ async function handlePictureUpload(
         },
     });
 
-    const publicUrl = `https://storage.googleapis.com/${PROFILE_PICTURE_BUCKET}/${filePath}`;
+    const assetsBaseUrl = process.env.ASSETS_BASE_URL || `https://storage.googleapis.com/${PROFILE_PICTURE_BUCKET}`;
+    const publicUrl = `${assetsBaseUrl}/${filePath}`;
 
     return {
         uploadUrl,
