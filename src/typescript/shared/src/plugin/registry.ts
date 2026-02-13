@@ -4342,15 +4342,7 @@ registerIntegration({
 4. Review the requested permissions and click **Authorize FitGlue**
 5. You're connected! Choose a repository and folder to get started
 
-**Permissions:** FitGlue requests the \`repo\` scope, which allows reading and writing repository contents. This is required for both source (reading your activity files) and destination (committing enriched activities). FitGlue only accesses the specific repository and folder you configure.
-
-**Webhook Setup (Source only):** If you want to use GitHub as a source, you'll need to add a webhook to your repository:
-1. Go to your repository's **Settings → Webhooks → Add webhook**
-2. Set **Payload URL** to \`https://api.fitglue.com/github/webhook\`
-3. Set **Content type** to \`application/json\`
-4. Set **Secret** to the shared webhook secret shown in your FitGlue dashboard
-5. Select **Just the push event**
-6. Click **Add webhook**`,
+**Permissions:** FitGlue requests the \`repo\` scope, which allows reading and writing repository contents. This is required for both source (reading your activity files) and destination (committing enriched activities). FitGlue only accesses the specific repository and folder you configure.`,
   apiKeyLabel: '',
   apiKeyHelpUrl: '',
   marketingDescription: `
