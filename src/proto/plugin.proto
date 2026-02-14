@@ -84,6 +84,8 @@ message ConfigFieldSchema {
   repeated ConfigFieldOption value_options = 11;  // Options for the right side (value)
   // For DYNAMIC_SELECT: identifier for which endpoint to fetch options from
   optional string dynamic_source = 12;            // e.g., "user_counters" - UI fetches from /users/me/{dynamic_source}
+  // For KEY_VALUE_MAP: identifier for which endpoint to fetch value-side options from
+  optional string value_dynamic_source = 13;      // e.g., "counters" - UI fetches from /users/me/{value_dynamic_source}
 }
 
 // ConfigFieldDependency defines when a field should be visible

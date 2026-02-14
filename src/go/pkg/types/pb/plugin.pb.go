@@ -536,8 +536,10 @@ type ConfigFieldSchema struct {
 	ValueOptions []*ConfigFieldOption `protobuf:"bytes,11,rep,name=value_options,json=valueOptions,proto3" json:"value_options,omitempty"` // Options for the right side (value)
 	// For DYNAMIC_SELECT: identifier for which endpoint to fetch options from
 	DynamicSource *string `protobuf:"bytes,12,opt,name=dynamic_source,json=dynamicSource,proto3,oneof" json:"dynamic_source,omitempty"` // e.g., "user_counters" - UI fetches from /users/me/{dynamic_source}
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// For KEY_VALUE_MAP: identifier for which endpoint to fetch value-side options from
+	ValueDynamicSource *string `protobuf:"bytes,13,opt,name=value_dynamic_source,json=valueDynamicSource,proto3,oneof" json:"value_dynamic_source,omitempty"` // e.g., "counters" - UI fetches from /users/me/{value_dynamic_source}
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ConfigFieldSchema) Reset() {
@@ -650,6 +652,13 @@ func (x *ConfigFieldSchema) GetValueOptions() []*ConfigFieldOption {
 func (x *ConfigFieldSchema) GetDynamicSource() string {
 	if x != nil && x.DynamicSource != nil {
 		return *x.DynamicSource
+	}
+	return ""
+}
+
+func (x *ConfigFieldSchema) GetValueDynamicSource() string {
+	if x != nil && x.ValueDynamicSource != nil {
+		return *x.ValueDynamicSource
 	}
 	return ""
 }
@@ -1207,7 +1216,7 @@ const file_plugin_proto_rawDesc = "" +
 	"\vvisual_type\x18\x05 \x01(\tR\n" +
 	"visualType\x12\x1d\n" +
 	"\n" +
-	"after_html\x18\x06 \x01(\tR\tafterHtml\"\xdd\x04\n" +
+	"after_html\x18\x06 \x01(\tR\tafterHtml\"\xad\x05\n" +
 	"\x11ConfigFieldSchema\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12 \n" +
@@ -1226,9 +1235,11 @@ const file_plugin_proto_rawDesc = "" +
 	" \x03(\v2\x1a.fitglue.ConfigFieldOptionR\n" +
 	"keyOptions\x12?\n" +
 	"\rvalue_options\x18\v \x03(\v2\x1a.fitglue.ConfigFieldOptionR\fvalueOptions\x12*\n" +
-	"\x0edynamic_source\x18\f \x01(\tH\x01R\rdynamicSource\x88\x01\x01B\r\n" +
+	"\x0edynamic_source\x18\f \x01(\tH\x01R\rdynamicSource\x88\x01\x01\x125\n" +
+	"\x14value_dynamic_source\x18\r \x01(\tH\x02R\x12valueDynamicSource\x88\x01\x01B\r\n" +
 	"\v_depends_onB\x11\n" +
-	"\x0f_dynamic_source\"L\n" +
+	"\x0f_dynamic_sourceB\x17\n" +
+	"\x15_value_dynamic_source\"L\n" +
 	"\x15ConfigFieldDependency\x12\x1b\n" +
 	"\tfield_key\x18\x01 \x01(\tR\bfieldKey\x12\x16\n" +
 	"\x06values\x18\x02 \x03(\tR\x06values\"?\n" +
