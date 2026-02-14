@@ -65,12 +65,12 @@ export interface PluginManifest {
   enabled: boolean;
   /** For enrichers: links to the EnricherProviderType enum value */
   enricherProviderType?:
-    | number
-    | undefined;
+  | number
+  | undefined;
   /** For destinations: links to the Destination enum value */
   destinationType?:
-    | number
-    | undefined;
+  | number
+  | undefined;
   /** Marketing metadata */
   marketingDescription: string;
   /** List of features/capabilities to display */
@@ -84,40 +84,40 @@ export interface PluginManifest {
    * For internal destinations like Showcase, server injects env-specific base URL.
    */
   externalUrlTemplate?:
-    | string
-    | undefined;
+  | string
+  | undefined;
   /** Required tier to use this plugin (e.g., "pro" for Athlete-only features) */
   requiredTier?:
-    | string
-    | undefined;
+  | string
+  | undefined;
   /** UX Organization fields */
   category?:
-    | string
-    | undefined;
+  | string
+  | undefined;
   /** Ordering within category (lower = first) */
   sortOrder?:
-    | number
-    | undefined;
+  | number
+  | undefined;
   /** Display premium badge (Athlete-tier) */
   isPremium?:
-    | boolean
-    | undefined;
+  | boolean
+  | undefined;
   /** For "recommended" sorting in wizard */
   popularityScore?:
-    | number
-    | undefined;
+  | number
+  | undefined;
   /** SVG Icon support (for products with real logos) */
   iconType?:
-    | string
-    | undefined;
+  | string
+  | undefined;
   /** Path to SVG asset (e.g., "/assets/icons/strava.svg") */
   iconPath?:
-    | string
-    | undefined;
+  | string
+  | undefined;
   /** When true, plugin is hidden from app but still shown on marketing site with "Coming Soon" indicator */
   isTemporarilyUnavailable?:
-    | boolean
-    | undefined;
+  | boolean
+  | undefined;
   /** When true, this enricher can be added multiple times to a pipeline with different configs */
   allowMultipleInstances?: boolean | undefined;
 }
@@ -156,12 +156,12 @@ export interface ConfigFieldSchema {
   options: ConfigFieldOption[];
   /** Validation rules */
   validation?:
-    | ConfigFieldValidation
-    | undefined;
+  | ConfigFieldValidation
+  | undefined;
   /** Show only when dependency is met */
   dependsOn?:
-    | ConfigFieldDependency
-    | undefined;
+  | ConfigFieldDependency
+  | undefined;
   /**
    * For KEY_VALUE_MAP: independent options for left (key) and right (value) sides
    * If set, renders a dropdown instead of text input for that side
@@ -171,6 +171,8 @@ export interface ConfigFieldSchema {
   valueOptions: ConfigFieldOption[];
   /** For DYNAMIC_SELECT: identifier for which endpoint to fetch options from */
   dynamicSource?: string | undefined;
+  /** For KEY_VALUE_MAP: fetch value-side options from this dynamic source (same as dynamicSource but for value column) */
+  valueDynamicSource?: string | undefined;
 }
 
 /** ConfigFieldDependency defines when a field should be visible */
@@ -191,8 +193,8 @@ export interface ConfigFieldOption {
 export interface ConfigFieldValidation {
   minLength?: number | undefined;
   maxLength?:
-    | number
-    | undefined;
+  | number
+  | undefined;
   /** Regex pattern */
   pattern?: string | undefined;
   minValue?: number | undefined;
@@ -241,16 +243,16 @@ export interface IntegrationManifest {
   features: string[];
   /** SVG Icon support (for products with real logos) */
   iconType?:
-    | string
-    | undefined;
+  | string
+  | undefined;
   /** Path to icon asset (e.g., "/images/icons/strava.svg") */
   iconPath?:
-    | string
-    | undefined;
+  | string
+  | undefined;
   /** When true, integration is hidden from connections page but shown on marketing with "Coming Soon" */
   isTemporarilyUnavailable?:
-    | boolean
-    | undefined;
+  | boolean
+  | undefined;
   /** Available actions for connected integrations (e.g., import historical PRs) */
   actions: IntegrationAction[];
 }

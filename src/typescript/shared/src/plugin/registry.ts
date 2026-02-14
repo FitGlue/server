@@ -2043,6 +2043,7 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT, {
       required: true,
       defaultValue: '',
       options: [],
+      valueDynamicSource: 'counters',
     },
   ],
   marketingDescription: `
