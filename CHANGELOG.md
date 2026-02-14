@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.6.0](https://github.com/FitGlue/server/compare/v14.5.3...v14.6.0) (2026-02-14)
+
+
+### Features
+
+* enricher upgrades, sliding-window PRs, ACWR recovery, hero carousel, and splits renderer ([88dca99](https://github.com/FitGlue/server/commit/88dca998dac032e805b3025fbadca3bc311cd8d8))
+
+
+### Bug Fixes
+
+* github instructions [skip ci] ([2598cb2](https://github.com/FitGlue/server/commit/2598cb24ad9820500db217163face402abc830cf))
+
 ### [14.5.3](https://github.com/FitGlue/server/compare/v14.5.2...v14.5.3) (2026-02-13)
 
 
