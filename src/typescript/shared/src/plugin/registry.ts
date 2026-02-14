@@ -2030,44 +2030,41 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_AUTO_INCREMENT, {
   id: 'auto-increment',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Auto Increment',
-  description: 'Appends an incrementing counter number to activity titles',
+  description: 'Appends an incrementing counter number to activity titles based on title keywords',
   icon: '🔢',
   enabled: true,
   requiredIntegrations: [],
   configSchema: [
     {
-      key: 'counter_key',
-      label: 'Counter Key',
-      description: 'Select existing counter or create new one',
-      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+      key: 'counter_rules',
+      label: 'Counter Rules',
+      description: 'Map title keywords to counter keys. Enter the text to match (case-insensitive), then the counter name.',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
       required: true,
       defaultValue: '',
       options: [],
-      dynamicSource: 'counters', // Fetches from /users/me/counters
     },
-    { key: 'title_contains', label: 'Title Filter', description: 'Only increment if title contains this (optional)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_STRING, required: false, defaultValue: '', options: [] },
-    { key: 'initial_value', label: 'Initial Value', description: 'Starting number (optional, defaults to 1)', fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER, required: false, defaultValue: '1', options: [] },
   ],
   marketingDescription: `
 ### Numbered Activity Series
-Automatically add incrementing numbers to your activity titles. Great for tracking workout series.
+Automatically add incrementing numbers to your activity titles. Great for tracking workout series like Parkrun, Leg Day, or Sunday Long Run.
 
 ### How it works
-Define a counter key and optional title filter. Activities matching the filter get an incrementing number appended, like "Leg Day #1", "Leg Day #2", etc. Each counter key maintains its own sequence.
+Define rules that map title keywords to counter keys. When an activity title matches a keyword, the corresponding counter is incremented and appended — e.g. "Parkrun" → parkrun counter → "Parkrun (#8)". Each counter key maintains its own sequence, so you can track multiple series independently.
   `,
   features: [
-    '✅ Automatic sequential numbering',
-    '✅ Multiple independent counters',
-    '✅ Title filtering for targeted numbering',
+    '✅ Map title keywords to independent counters',
+    '✅ Multiple rules per instance',
+    '✅ Case-insensitive title matching',
     '✅ Configurable starting value',
   ],
   transformations: [
-    { field: 'title', label: 'Activity Title', before: 'Leg Day', after: 'Leg Day #42', visualType: '', afterHtml: '' },
+    { field: 'title', label: 'Activity Title', before: 'Leg Day', after: 'Leg Day (#42)', visualType: '', afterHtml: '' },
   ],
   useCases: [
-    'Number workout series',
-    'Track session counts',
-    'Create numbered runs',
+    'Number Parkrun sessions automatically',
+    'Track workout series (Leg Day #1, #2, etc.)',
+    'Count weekly long runs',
   ],
   // UX Organization
   category: 'summaries',
@@ -3558,24 +3555,60 @@ registerEnricher(EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR, {
   id: 'recovery-advisor',
   type: PluginType.PLUGIN_TYPE_ENRICHER,
   name: 'Recovery Advisor',
-  description: 'Calculate training load and suggest recovery time',
+  description: 'ACWR-based training load analysis with smart recovery recommendations',
   icon: '💤',
   enabled: true,
   requiredIntegrations: [],
   requiredTier: 'athlete',
-  configSchema: [],
+  configSchema: [
+    {
+      key: 'max_hr',
+      label: 'Max Heart Rate',
+      description: 'Your maximum heart rate (default: 190)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: false,
+      defaultValue: '190',
+      options: [],
+    },
+    {
+      key: 'rest_hr',
+      label: 'Resting Heart Rate',
+      description: 'Your resting heart rate (default: 60)',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_NUMBER,
+      required: false,
+      defaultValue: '60',
+      options: [],
+    },
+    {
+      key: 'gender',
+      label: 'Gender',
+      description: 'Used for TRIMP coefficient calculation',
+      fieldType: ConfigFieldType.CONFIG_FIELD_TYPE_SELECT,
+      required: false,
+      defaultValue: 'male',
+      options: [
+        { value: 'male', label: 'Male' },
+        { value: 'female', label: 'Female' },
+      ],
+    },
+  ],
   marketingDescription: `
 ### Know When to Rest
-Uses TRIMP (Training Impulse) to estimate your training load and suggest optimal recovery time.
+Uses TRIMP (Training Impulse) with the Acute:Chronic Workload Ratio (ACWR) model to estimate your training load and suggest optimal recovery time.
 
-### 7-Day Load Tracking
-Monitors your accumulated training stress over the past week to give context-aware recovery recommendations.
+### Smart Load Tracking
+Monitors your 7-day acute load alongside your 28-day chronic load to calculate your ACWR. This industry-standard metric flags overreaching (ACWR > 1.5) and detraining (ACWR < 0.8), giving you context-aware recovery recommendations.
+
+### Fatigue Detection
+Detects consecutive hard training days and adjusts recovery recommendations to account for accumulated fatigue — just like your watch does.
   `,
   features: [
-    '✅ TRIMP-based training load calculation',
-    '✅ 7-day rolling load history',
-    '✅ Smart recovery recommendations',
-    '✅ Intensity classification',
+    '✅ ACWR-based training load analysis',
+    '✅ 7-day acute + 28-day chronic load tracking',
+    '✅ Overreaching and detraining detection',
+    '✅ Consecutive hard day fatigue warnings',
+    '✅ Customizable heart rate settings',
+    '✅ Graduated recovery recommendations',
   ],
   transformations: [
     {
@@ -3584,13 +3617,14 @@ Monitors your accumulated training stress over the past week to give context-awa
       before: 'Hard Interval Session',
       after: '',
       visualType: '',
-      afterHtml: '💤 Recovery Advisor<br>• Session load: 150 TRIMP (Hard)<br>• 7-day load: 520 TRIMP<br>• 💡 Suggested recovery: 36 hours',
+      afterHtml: '💤 Recovery Advisor<br>• Session load: 150 TRIMP (Hard)<br>• 7-day load: 620 TRIMP • 28-day avg: 380 TRIMP<br>• ACWR: 1.63 (Overreaching ⚠️)<br>• 💡 Suggested recovery: 64 hours (2 days)',
     },
   ],
   useCases: [
-    'Prevent overtraining',
+    'Prevent overtraining with ACWR monitoring',
     'Optimize recovery between sessions',
-    'Balance training load across the week',
+    'Detect fatigue from consecutive hard days',
+    'Balance training load across weeks',
   ],
   category: 'summaries',
   sortOrder: 9,

@@ -54,11 +54,17 @@ func TestRecoveryAdvisor_SingleActivity(t *testing.T) {
 	if !strings.Contains(result.Description, "7-day load:") {
 		t.Errorf("Missing 7-day load in description: %s", result.Description)
 	}
+	if !strings.Contains(result.Description, "28-day avg:") {
+		t.Errorf("Missing 28-day avg in description: %s", result.Description)
+	}
 	if !strings.Contains(result.Description, "Suggested recovery:") {
 		t.Errorf("Missing recovery suggestion in description: %s", result.Description)
 	}
 	if result.Metadata["trimp"] == "" || result.Metadata["trimp"] == "0" {
 		t.Errorf("Expected non-zero trimp, got %s", result.Metadata["trimp"])
+	}
+	if result.Metadata["acwr"] == "" {
+		t.Errorf("Expected acwr in metadata")
 	}
 }
 
@@ -99,16 +105,15 @@ func TestRecoveryAdvisor_MultiActivitySameDay(t *testing.T) {
 		t.Fatalf("Enrich failed: %v", err)
 	}
 
-	// The 7-day load should include the existing TRIMP for today
-	weeklyLoad := result.Metadata["weekly_load"]
-	if weeklyLoad == "" {
-		t.Fatal("Expected weekly_load in metadata")
+	// The acute load should include the existing TRIMP for today
+	acuteLoad := result.Metadata["acute_load"]
+	if acuteLoad == "" {
+		t.Fatal("Expected acute_load in metadata")
 	}
-	// Weekly load should be at least the existing TRIMP (80) + this activity's TRIMP
-	var weekly float64
-	fmt.Sscanf(weeklyLoad, "%f", &weekly)
-	if weekly <= existingTrimp {
-		t.Errorf("Weekly load %.0f should be > existing today TRIMP %.0f", weekly, existingTrimp)
+	var acute float64
+	fmt.Sscanf(acuteLoad, "%f", &acute)
+	if acute <= existingTrimp {
+		t.Errorf("Acute load %.0f should be > existing today TRIMP %.0f", acute, existingTrimp)
 	}
 }
 
@@ -173,47 +178,207 @@ func TestRecoveryAdvisor_HighWeeklyLoad(t *testing.T) {
 		t.Fatalf("Enrich failed: %v", err)
 	}
 
-	// Weekly load should be > 500, triggering +12h adjustment
-	var weekly float64
-	fmt.Sscanf(result.Metadata["weekly_load"], "%f", &weekly)
-	if weekly <= 500 {
-		t.Errorf("Expected weekly load > 500, got %.0f", weekly)
+	// Acute load should be > 500
+	var acute float64
+	fmt.Sscanf(result.Metadata["acute_load"], "%f", &acute)
+	if acute <= 500 {
+		t.Errorf("Expected acute load > 500, got %.0f", acute)
 	}
 
-	// Recovery hours should include the +12h high-load adjustment
-	// 60min@170bpm ≈ 165 TRIMP (Very Hard = 48h base + 12h high-load = 60h)
+	// Recovery hours should include graduated load adjustment
 	var hours float64
 	fmt.Sscanf(result.Metadata["recovery_hours"], "%f", &hours)
-	if hours < 60 {
-		t.Errorf("Expected >= 60h recovery with high weekly load, got %.0f", hours)
+	if hours < 48 {
+		t.Errorf("Expected >= 48h recovery with high weekly load, got %.0f", hours)
+	}
+}
+
+func TestRecoveryAdvisor_ACWROverreaching(t *testing.T) {
+	now := time.Now()
+
+	mockDB := &mocks.MockDatabase{
+		GetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+			data := map[string]interface{}{}
+			// Very heavy recent week: 150 TRIMP/day for days 1-6
+			for i := 1; i <= 6; i++ {
+				dateKey := now.AddDate(0, 0, -i).Format("2006-01-02")
+				data[dateKey] = 150.0
+			}
+			// Light chronic base: 30 TRIMP/day for days 8-28
+			for i := 8; i <= 28; i++ {
+				dateKey := now.AddDate(0, 0, -i).Format("2006-01-02")
+				data[dateKey] = 30.0
+			}
+			return data, nil
+		},
+		SetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+			return nil
+		},
+	}
+
+	provider := NewRecoveryAdvisor()
+	provider.Service = &bootstrap.Service{DB: mockDB}
+
+	// Hard session today
+	activity := makeActivity(60, 170)
+	user := &pb.UserRecord{UserId: "test-user"}
+
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
+	if err != nil {
+		t.Fatalf("Enrich failed: %v", err)
+	}
+
+	// ACWR should be > 1.5 (overreaching)
+	var acwr float64
+	fmt.Sscanf(result.Metadata["acwr"], "%f", &acwr)
+	if acwr <= 1.5 {
+		t.Errorf("Expected ACWR > 1.5 (overreaching), got %.2f", acwr)
+	}
+
+	if result.Metadata["acwr_label"] != "Overreaching" {
+		t.Errorf("Expected Overreaching label, got %s", result.Metadata["acwr_label"])
+	}
+
+	// Should contain overreaching warning in description
+	if !strings.Contains(result.Description, "Overreaching") {
+		t.Errorf("Expected Overreaching in description: %s", result.Description)
+	}
+}
+
+func TestRecoveryAdvisor_ConsecutiveHardDays(t *testing.T) {
+	now := time.Now()
+
+	mockDB := &mocks.MockDatabase{
+		GetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
+			data := map[string]interface{}{}
+			// 4 consecutive hard days before today (TRIMP > 60)
+			for i := 1; i <= 4; i++ {
+				dateKey := now.AddDate(0, 0, -i).Format("2006-01-02")
+				data[dateKey] = 80.0
+			}
+			return data, nil
+		},
+		SetBoosterDataFunc: func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error {
+			return nil
+		},
+	}
+
+	provider := NewRecoveryAdvisor()
+	provider.Service = &bootstrap.Service{DB: mockDB}
+
+	// Another hard session today (TRIMP > 60)
+	activity := makeActivity(60, 160)
+	user := &pb.UserRecord{UserId: "test-user"}
+
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
+	if err != nil {
+		t.Fatalf("Enrich failed: %v", err)
+	}
+
+	// Should detect 5 consecutive hard days (4 prior + today)
+	if result.Metadata["consecutive_hard_days"] != "5" {
+		t.Errorf("Expected 5 consecutive hard days, got %s", result.Metadata["consecutive_hard_days"])
+	}
+
+	// Should contain fatigue warning
+	if !strings.Contains(result.Description, "consecutive hard days") {
+		t.Errorf("Expected fatigue warning in description: %s", result.Description)
+	}
+}
+
+func TestRecoveryAdvisor_ConfigurableInputs(t *testing.T) {
+	provider := NewRecoveryAdvisor()
+	provider.Service = &bootstrap.Service{}
+
+	activity := makeActivity(30, 150)
+	user := &pb.UserRecord{UserId: "test-user"}
+
+	// Run with default inputs
+	resultDefault, err := provider.Enrich(context.Background(), slog.Default(), activity, user, nil, false)
+	if err != nil {
+		t.Fatalf("Enrich failed: %v", err)
+	}
+
+	// Run with custom inputs (wider HR range = lower HRR = lower TRIMP)
+	customInputs := map[string]string{
+		"max_hr":  "210",
+		"rest_hr": "40",
+		"gender":  "female",
+	}
+	resultCustom, err := provider.Enrich(context.Background(), slog.Default(), activity, user, customInputs, false)
+	if err != nil {
+		t.Fatalf("Enrich with custom inputs failed: %v", err)
+	}
+
+	// Different HR range and gender coefficient should produce different TRIMP
+	if resultDefault.Metadata["trimp"] == resultCustom.Metadata["trimp"] {
+		t.Errorf("Expected different TRIMP with custom inputs, both got %s", resultDefault.Metadata["trimp"])
 	}
 }
 
 func TestGetRecoveryRecommendation(t *testing.T) {
 	tests := []struct {
-		trimp      float64
-		weeklyLoad float64
-		wantHours  float64
-		wantLabel  string
+		trimp               float64
+		acuteLoad           float64
+		acwr                float64
+		consecutiveHardDays int
+		wantMinHours        float64
+		wantMaxHours        float64
+		wantLabel           string
 	}{
-		{15, 200, 8, "Recovery"},
-		{45, 300, 12, "Easy"},
-		{75, 400, 24, "Moderate"},
-		{120, 400, 36, "Hard"},
-		{200, 400, 48, "Very Hard"},
-		// High weekly load adjustments
-		{15, 600, 20, "Recovery"},   // 8 + 12
-		{120, 600, 48, "Hard"},      // 36 + 12
-		{200, 600, 60, "Very Hard"}, // 48 + 12
+		// Base intensity tests (no load/ACWR adjustments)
+		{15, 200, 1.0, 0, 8, 12, "Recovery"},
+		{45, 200, 1.0, 0, 12, 16, "Easy"},
+		{75, 200, 1.0, 0, 24, 28, "Moderate"},
+		{120, 200, 1.0, 0, 36, 40, "Hard"},
+		{200, 200, 1.0, 0, 48, 52, "Very Hard"},
+
+		// Graduated load adjustments
+		{15, 400, 1.0, 0, 12, 16, "Recovery"}, // +4 for 300-500 range
+		{15, 600, 1.0, 0, 16, 20, "Recovery"}, // +8 for 500-700 range
+		{15, 800, 1.0, 0, 20, 24, "Recovery"}, // +12 for 700+ range
+
+		// ACWR adjustments
+		{75, 200, 1.6, 0, 40, 44, "Moderate"}, // +16 for overreaching
+		{75, 200, 1.3, 0, 32, 36, "Moderate"}, // +8 for building
+		{75, 200, 0.5, 0, 20, 24, "Moderate"}, // -4 for detraining
+
+		// Consecutive hard days
+		{75, 200, 1.0, 3, 32, 36, "Moderate"}, // +8 for 3+ consecutive
+
+		// Combined: high load + overreaching + consecutive
+		{200, 800, 1.6, 4, 80, 88, "Very Hard"}, // 48 + 12 + 16 + 8 = 84
 	}
 
 	for _, tt := range tests {
-		hours, intensity := getRecoveryRecommendation(tt.trimp, tt.weeklyLoad)
-		if hours != tt.wantHours {
-			t.Errorf("trimp=%.0f weeklyLoad=%.0f: got hours=%.0f, want %.0f", tt.trimp, tt.weeklyLoad, hours, tt.wantHours)
+		hours, intensity := getRecoveryRecommendation(tt.trimp, tt.acuteLoad, tt.acwr, tt.consecutiveHardDays)
+		if hours < tt.wantMinHours || hours > tt.wantMaxHours {
+			t.Errorf("trimp=%.0f acuteLoad=%.0f acwr=%.1f consecutiveHard=%d: got hours=%.0f, want %.0f-%.0f",
+				tt.trimp, tt.acuteLoad, tt.acwr, tt.consecutiveHardDays, hours, tt.wantMinHours, tt.wantMaxHours)
 		}
 		if intensity != tt.wantLabel {
-			t.Errorf("trimp=%.0f weeklyLoad=%.0f: got intensity=%s, want %s", tt.trimp, tt.weeklyLoad, intensity, tt.wantLabel)
+			t.Errorf("trimp=%.0f acuteLoad=%.0f acwr=%.1f: got intensity=%s, want %s",
+				tt.trimp, tt.acuteLoad, tt.acwr, intensity, tt.wantLabel)
+		}
+	}
+}
+
+func TestGetACWRLabel(t *testing.T) {
+	tests := []struct {
+		acwr     float64
+		expected string
+	}{
+		{1.8, "Overreaching"},
+		{1.3, "Building"},
+		{1.0, "Optimal"},
+		{0.5, "Detraining"},
+		{0.0, "No History"},
+	}
+
+	for _, tt := range tests {
+		label := getACWRLabel(tt.acwr)
+		if label != tt.expected {
+			t.Errorf("getACWRLabel(%.1f) = %q, want %q", tt.acwr, label, tt.expected)
 		}
 	}
 }
@@ -228,6 +393,8 @@ func TestFormatRecoveryTime(t *testing.T) {
 		{36, "36 hours (1 day)"},
 		{48, "48 hours (2 days)"},
 		{60, "60 hours (2 days)"},
+		{72, "72 hours (3 days)"},
+		{84, "84 hours (3 days)"},
 	}
 
 	for _, tt := range tests {
@@ -235,5 +402,57 @@ func TestFormatRecoveryTime(t *testing.T) {
 		if result != tt.expected {
 			t.Errorf("formatRecoveryTime(%.0f) = %q, want %q", tt.hours, result, tt.expected)
 		}
+	}
+}
+
+func TestCountConsecutiveHardDays(t *testing.T) {
+	now := time.Now()
+
+	tests := []struct {
+		name      string
+		todayLoad float64
+		data      map[string]interface{}
+		want      int
+	}{
+		{
+			name:      "today not hard",
+			todayLoad: 30,
+			data:      nil,
+			want:      0,
+		},
+		{
+			name:      "today hard, no history",
+			todayLoad: 80,
+			data:      nil,
+			want:      1,
+		},
+		{
+			name:      "3 consecutive hard days",
+			todayLoad: 80,
+			data: map[string]interface{}{
+				now.AddDate(0, 0, -1).Format("2006-01-02"): 70.0,
+				now.AddDate(0, 0, -2).Format("2006-01-02"): 90.0,
+				now.AddDate(0, 0, -3).Format("2006-01-02"): 20.0, // breaks streak
+			},
+			want: 3,
+		},
+		{
+			name:      "gap breaks streak",
+			todayLoad: 80,
+			data: map[string]interface{}{
+				now.AddDate(0, 0, -1).Format("2006-01-02"): 40.0, // not hard
+				now.AddDate(0, 0, -2).Format("2006-01-02"): 90.0,
+			},
+			want: 1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := countConsecutiveHardDays(tt.data, tt.todayLoad, now)
+			if got != tt.want {
+				t.Errorf("countConsecutiveHardDays() = %d, want %d", got, tt.want)
+			}
+		})
 	}
 }

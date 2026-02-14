@@ -35,9 +35,6 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 		if res.Metadata["auto_increment_applied"] != "false" {
 			t.Errorf("Expected auto_increment_applied=false, got %v", res.Metadata["auto_increment_applied"])
 		}
-		if res.Metadata["reason"] != "Title does not contain filter" {
-			t.Errorf("Expected reason='Title does not contain filter', got %v", res.Metadata["reason"])
-		}
 	})
 
 	t.Run("Creates new counter if missing", func(t *testing.T) {
@@ -121,7 +118,7 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 		}
 	})
 
-	t.Run("Respects initial value", func(t *testing.T) {
+	t.Run("New counter starts at 1", func(t *testing.T) {
 		var setCounter *pb.Counter
 		mockDB := &mocks.MockDatabase{
 			GetCounterFunc: func(ctx context.Context, userId, id string) (*pb.Counter, error) {
@@ -139,8 +136,7 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 		activity := &pb.StandardizedActivity{Name: "Parkrun"}
 		user := &pb.UserRecord{UserId: "u1"}
 		inputs := map[string]string{
-			"counter_key":   "parkrun",
-			"initial_value": "100",
+			"counter_key": "parkrun",
 		}
 
 		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
@@ -148,14 +144,15 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 			t.Fatalf("Unexpected error: %v", err)
 		}
 
-		// Verify result - Should be #100
-		if res.NameSuffix != " (#100)" {
-			t.Errorf("Expected suffix ' (#100)', got '%s'", res.NameSuffix)
+		if res.NameSuffix != " (#1)" {
+			t.Errorf("Expected suffix ' (#1)', got '%s'", res.NameSuffix)
 		}
 
-		// Verify DB persistence - Should be stored as 100
-		if setCounter.Count != 100 {
-			t.Errorf("Expected persisted count 100, got %d", setCounter.Count)
+		if setCounter == nil {
+			t.Fatal("Expected SetCounter to be called")
+		}
+		if setCounter.Count != 1 {
+			t.Errorf("Expected persisted count 1, got %d", setCounter.Count)
 		}
 	})
 	t.Run("Matches title case insensitive", func(t *testing.T) {
@@ -194,4 +191,138 @@ func TestAutoIncrement_Enrich(t *testing.T) {
 			t.Error("Expected SetCounter to be called")
 		}
 	})
+}
+
+func TestAutoIncrement_CounterRules(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Matches counter_rules single rule", func(t *testing.T) {
+		var setCounter *pb.Counter
+		mockDB := &mocks.MockDatabase{
+			GetCounterFunc: func(ctx context.Context, userId, id string) (*pb.Counter, error) {
+				return nil, nil
+			},
+			SetCounterFunc: func(ctx context.Context, userId string, counter *pb.Counter) error {
+				setCounter = counter
+				return nil
+			},
+		}
+
+		provider := &AutoIncrementProvider{}
+		provider.SetService(&bootstrap.Service{DB: mockDB})
+
+		activity := &pb.StandardizedActivity{Name: "Parkrun"}
+		user := &pb.UserRecord{UserId: "u1"}
+		inputs := map[string]string{
+			"counter_rules": `{"parkrun": "parkrun_counter"}`,
+		}
+
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if res.NameSuffix != " (#1)" {
+			t.Errorf("Expected suffix ' (#1)', got '%s'", res.NameSuffix)
+		}
+		if res.Metadata["auto_increment_key"] != "parkrun_counter" {
+			t.Errorf("Expected key 'parkrun_counter', got '%s'", res.Metadata["auto_increment_key"])
+		}
+		if setCounter == nil {
+			t.Fatal("Expected SetCounter to be called")
+		}
+	})
+
+	t.Run("No rule matches skips increment", func(t *testing.T) {
+		mockDB := &mocks.MockDatabase{}
+		provider := &AutoIncrementProvider{}
+		provider.SetService(&bootstrap.Service{DB: mockDB})
+
+		activity := &pb.StandardizedActivity{Name: "Weight Training"}
+		user := &pb.UserRecord{UserId: "u1"}
+		inputs := map[string]string{
+			"counter_rules": `{"parkrun": "parkrun_counter"}`,
+		}
+
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if res.Metadata["auto_increment_applied"] != "false" {
+			t.Errorf("Expected auto_increment_applied=false, got %v", res.Metadata["auto_increment_applied"])
+		}
+	})
+
+	t.Run("Case-insensitive counter_rules matching", func(t *testing.T) {
+		var setCounter *pb.Counter
+		mockDB := &mocks.MockDatabase{
+			GetCounterFunc: func(ctx context.Context, userId, id string) (*pb.Counter, error) {
+				return &pb.Counter{Id: "leg_day", Count: 3}, nil
+			},
+			SetCounterFunc: func(ctx context.Context, userId string, counter *pb.Counter) error {
+				setCounter = counter
+				return nil
+			},
+		}
+
+		provider := &AutoIncrementProvider{}
+		provider.SetService(&bootstrap.Service{DB: mockDB})
+
+		activity := &pb.StandardizedActivity{Name: "LEG DAY Session"}
+		user := &pb.UserRecord{UserId: "u1"}
+		inputs := map[string]string{
+			"counter_rules": `{"leg day": "leg_day"}`,
+		}
+
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if res.NameSuffix != " (#4)" {
+			t.Errorf("Expected suffix ' (#4)', got '%s'", res.NameSuffix)
+		}
+		if setCounter == nil {
+			t.Fatal("Expected SetCounter to be called")
+		}
+	})
+
+	t.Run("Empty counter_rules skips", func(t *testing.T) {
+		mockDB := &mocks.MockDatabase{}
+		provider := &AutoIncrementProvider{}
+		provider.SetService(&bootstrap.Service{DB: mockDB})
+
+		activity := &pb.StandardizedActivity{Name: "Parkrun"}
+		user := &pb.UserRecord{UserId: "u1"}
+		inputs := map[string]string{
+			"counter_rules": `{}`,
+		}
+
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if res.Metadata["auto_increment_applied"] != "false" {
+			t.Errorf("Expected auto_increment_applied=false, got %v", res.Metadata["auto_increment_applied"])
+		}
+	})
+
+	t.Run("Invalid counter_rules JSON skips", func(t *testing.T) {
+		mockDB := &mocks.MockDatabase{}
+		provider := &AutoIncrementProvider{}
+		provider.SetService(&bootstrap.Service{DB: mockDB})
+
+		activity := &pb.StandardizedActivity{Name: "Parkrun"}
+		user := &pb.UserRecord{UserId: "u1"}
+		inputs := map[string]string{
+			"counter_rules": `{invalid}`,
+		}
+
+		res, err := provider.Enrich(ctx, slog.Default(), activity, user, inputs, false)
+		if err != nil {
+			t.Fatalf("Unexpected error: %v", err)
+		}
+		if res.Metadata["auto_increment_applied"] != "false" {
+			t.Errorf("Expected auto_increment_applied=false, got %v", res.Metadata["auto_increment_applied"])
+		}
+	})
+
 }

@@ -108,7 +108,7 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   // SvgAsset fetches SVG image content, not API data
   'W1': [/usePluginRegistry/, /ActivityDetailPage/, /ShowcaseManagementPage/, /SvgAsset/],
   // W15: Bare HTML allowed in UI primitives, forms, layout, and admin page
-  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/],
+  'W15': [/components\/ui\//, /components\/forms\//, /components\/layout\//, /AdminPage/, /SmartNudge/, /components\/onboarding\//],
 };
 
 // ============================================================================

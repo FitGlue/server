@@ -123,17 +123,16 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 	return result, nil
 }
 
-// checkCardioRecords checks for cardio PRs and persists them to Firestore
+// checkCardioRecords checks for cardio PRs and persists them to Firestore.
+// Uses sliding window over record/lap data to find the genuinely fastest segment
+// for each distance threshold, rather than naive proportional extrapolation.
 func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, userID string) ([]NewPRResult, error) {
 	var results []NewPRResult
 
-	// Calculate total distance and duration
+	// Calculate total distance for threshold gating
 	var totalDistanceM float64
-	var totalDurationSec float64
-
 	for _, session := range activity.Sessions {
 		totalDistanceM += session.TotalDistance
-		totalDurationSec += session.TotalElapsedTime
 	}
 
 	if totalDistanceM == 0 {
@@ -142,39 +141,17 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, logger
 
 	// Check time-based records for running activities
 	if IsRunningActivity(activity.Type) {
-		// Fastest 5K
-		if totalDistanceM >= Distance5K {
-			time5K := calculate5KTime(totalDistanceM, totalDurationSec)
-			if time5K > 0 {
-				pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordFastest5K), time5K, "seconds", activity, true)
-				if err != nil {
-					logger.Warn("Failed to check 5K record", "error", err)
-				} else if pr != nil {
-					results = append(results, *pr)
-				}
+		// Iterate over all distance thresholds
+		for _, threshold := range AllDistanceThresholds() {
+			if totalDistanceM < threshold.DistanceM {
+				continue
 			}
-		}
 
-		// Fastest 10K
-		if totalDistanceM >= Distance10K {
-			time10K := calculate10KTime(totalDistanceM, totalDurationSec)
-			if time10K > 0 {
-				pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordFastest10K), time10K, "seconds", activity, true)
+			fastestTime := findFastestSegment(activity, threshold.DistanceM)
+			if fastestTime > 0 {
+				pr, err := p.checkAndUpdateRecord(ctx, userID, string(threshold.RecordType), fastestTime, "seconds", activity, true)
 				if err != nil {
-					logger.Warn("Failed to check 10K record", "error", err)
-				} else if pr != nil {
-					results = append(results, *pr)
-				}
-			}
-		}
-
-		// Fastest Half Marathon
-		if totalDistanceM >= DistanceHalfMarathon {
-			timeHM := calculateHalfMarathonTime(totalDistanceM, totalDurationSec)
-			if timeHM > 0 {
-				pr, err := p.checkAndUpdateRecord(ctx, userID, string(RecordFastestHalfMarathon), timeHM, "seconds", activity, true)
-				if err != nil {
-					logger.Warn("Failed to check half marathon record", "error", err)
+					logger.Warn("Failed to check distance record", "error", err, "record_type", threshold.RecordType)
 				} else if pr != nil {
 					results = append(results, *pr)
 				}
@@ -531,14 +508,15 @@ func (p *PersonalRecordsProvider) formatPRMessage(recordType string, newValue fl
 
 // formatRecordTypeForDisplay converts record type to human-readable format
 func formatRecordTypeForDisplay(recordType string) string {
-	// Handle special cardio record types
+	// Check distance thresholds first (covers all 23 fastest_* types)
+	for _, threshold := range AllDistanceThresholds() {
+		if recordType == string(threshold.RecordType) {
+			return threshold.Display
+		}
+	}
+
+	// Handle other cardio record types
 	switch recordType {
-	case string(RecordFastest5K):
-		return "Fastest 5K"
-	case string(RecordFastest10K):
-		return "Fastest 10K"
-	case string(RecordFastestHalfMarathon):
-		return "Fastest Half Marathon"
 	case string(RecordLongestRun):
 		return "Longest Run"
 	case string(RecordLongestRide):
@@ -634,29 +612,4 @@ func formatVolume(kg float64) string {
 		return fmt.Sprintf("%.1f tonnes", kg/1000)
 	}
 	return fmt.Sprintf("%.0fkg", kg)
-}
-
-// calculate5KTime estimates the 5K time from total distance and duration
-func calculate5KTime(totalDistanceM, totalDurationSec float64) float64 {
-	if totalDistanceM < Distance5K {
-		return 0
-	}
-	// Proportional time for 5K based on total activity
-	return (Distance5K / totalDistanceM) * totalDurationSec
-}
-
-// calculate10KTime estimates the 10K time from total distance and duration
-func calculate10KTime(totalDistanceM, totalDurationSec float64) float64 {
-	if totalDistanceM < Distance10K {
-		return 0
-	}
-	return (Distance10K / totalDistanceM) * totalDurationSec
-}
-
-// calculateHalfMarathonTime estimates the half marathon time from total distance and duration
-func calculateHalfMarathonTime(totalDistanceM, totalDurationSec float64) float64 {
-	if totalDistanceM < DistanceHalfMarathon {
-		return 0
-	}
-	return (DistanceHalfMarathon / totalDistanceM) * totalDurationSec
 }

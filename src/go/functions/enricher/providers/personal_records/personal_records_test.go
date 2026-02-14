@@ -2,6 +2,9 @@ package personal_records
 
 import (
 	"testing"
+
+	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestCalculate1RM(t *testing.T) {
@@ -310,39 +313,212 @@ func TestFormatVolume(t *testing.T) {
 	}
 }
 
-func TestCalculate5KTime(t *testing.T) {
+func TestFindFastestSegment_RecordLevel(t *testing.T) {
+	// Create an activity with 1Hz speed data simulating variable pace over 10K
+	// First 5K: 6 min/km pace (speed = 1000/360 = ~2.78 m/s) in 1800 seconds
+	// Second 5K: 5 min/km pace (speed = 1000/300 = ~3.33 m/s) in 1500 seconds
+	activity := makeActivityWithRecords(t, []recordSegment{
+		{speedMs: 2.778, durationSec: 1800}, // ~5K at 6:00/km
+		{speedMs: 3.333, durationSec: 1500}, // ~5K at 5:00/km
+	})
+
+	fastest5K := findFastestSegment(activity, Distance5K)
+	if fastest5K <= 0 {
+		t.Fatal("Expected non-zero fastest 5K time")
+	}
+
+	// The fastest 5K should be significantly less than 1800 seconds (the slow first half)
+	// because the sliding window should find the fast second half
+	if fastest5K >= 1750 {
+		t.Errorf("Fastest 5K = %.1f seconds, expected significantly less than 1800 (the slow first 5K)", fastest5K)
+	}
+
+	// The fastest 5K should be close to 1500 seconds (the fast second half)
+	if fastest5K > 1550 || fastest5K < 1450 {
+		t.Errorf("Fastest 5K = %.1f seconds, expected close to 1500 (the fast second 5K)", fastest5K)
+	}
+}
+
+func TestFindFastestSegment_ProportionalFallback(t *testing.T) {
+	// Activity with only session-level totals (no records, no laps)
+	activity := makeActivitySessionOnly(10000, 3000) // 10K in 50 minutes
+
+	fastest5K := findFastestSegment(activity, Distance5K)
+	if fastest5K <= 0 {
+		t.Fatal("Expected non-zero fastest 5K time from proportional fallback")
+	}
+
+	// Should be proportional: (5000/10000) * 3000 = 1500
+	if !approximatelyEqual(fastest5K, 1500, 1) {
+		t.Errorf("Fastest 5K = %.1f, expected 1500 from proportional", fastest5K)
+	}
+}
+
+func TestFindFastestSegment_LapLevel(t *testing.T) {
+	// Activity with lap data (4 × 1K laps with varying pace, total 4K - but we'll test 2K)
+	activity := makeActivityWithLaps([]lapData{
+		{distanceM: 1000, elapsedSec: 360}, // 6:00/km
+		{distanceM: 1000, elapsedSec: 300}, // 5:00/km
+		{distanceM: 1000, elapsedSec: 280}, // 4:40/km
+		{distanceM: 1000, elapsedSec: 320}, // 5:20/km
+	})
+
+	fastest2K := findFastestSegment(activity, Distance2K)
+	if fastest2K <= 0 {
+		t.Fatal("Expected non-zero fastest 2K time from lap-level")
+	}
+
+	// The fastest contiguous 2K should be laps 2+3 (300 + 280 = 580 seconds)
+	if !approximatelyEqual(fastest2K, 580, 5) {
+		t.Errorf("Fastest 2K = %.1f seconds, expected ~580 (laps 2+3)", fastest2K)
+	}
+}
+
+func TestFindFastestSegment_InsufficientDistance(t *testing.T) {
+	activity := makeActivitySessionOnly(4000, 1200) // 4K - not enough for 5K
+
+	fastest5K := findFastestSegment(activity, Distance5K)
+	if fastest5K != 0 {
+		t.Errorf("Expected 0 for insufficient distance, got %.1f", fastest5K)
+	}
+}
+
+func TestAllDistanceThresholds(t *testing.T) {
+	thresholds := AllDistanceThresholds()
+
+	if len(thresholds) != 23 {
+		t.Errorf("Expected 23 distance thresholds, got %d", len(thresholds))
+	}
+
+	// Verify ascending distance order
+	for i := 1; i < len(thresholds); i++ {
+		if thresholds[i].DistanceM < thresholds[i-1].DistanceM {
+			t.Errorf("Thresholds not in ascending order: %s (%.0fm) comes after %s (%.0fm)",
+				thresholds[i].Display, thresholds[i].DistanceM,
+				thresholds[i-1].Display, thresholds[i-1].DistanceM)
+		}
+	}
+
+	// Verify all have non-empty fields
+	for _, th := range thresholds {
+		if th.RecordType == "" {
+			t.Error("Empty RecordType found in thresholds")
+		}
+		if th.Display == "" {
+			t.Error("Empty Display found in thresholds")
+		}
+		if th.DistanceM <= 0 {
+			t.Errorf("Invalid distance for %s: %.1f", th.Display, th.DistanceM)
+		}
+	}
+}
+
+func TestFormatRecordTypeForDisplay_NewTypes(t *testing.T) {
 	tests := []struct {
-		name        string
-		distanceM   float64
-		durationSec float64
-		want        float64
+		recordType string
+		want       string
 	}{
-		{
-			name:        "exactly 5K",
-			distanceM:   5000,
-			durationSec: 1500, // 25 minutes
-			want:        1500,
-		},
-		{
-			name:        "10K run extrapolates to 5K time",
-			distanceM:   10000,
-			durationSec: 3000, // 50 minutes for 10K
-			want:        1500, // 25 minutes for 5K
-		},
-		{
-			name:        "less than 5K returns 0",
-			distanceM:   4000,
-			durationSec: 1200,
-			want:        0,
-		},
+		{"fastest_100m", "Fastest 100m"},
+		{"fastest_1k", "Fastest 1K"},
+		{"fastest_1_mile", "Fastest 1 Mile"},
+		{"fastest_5k", "Fastest 5K"},
+		{"fastest_10k", "Fastest 10K"},
+		{"fastest_half_marathon", "Fastest Half Marathon"},
+		{"fastest_marathon", "Fastest Marathon"},
+		{"fastest_ultra_marathon", "Fastest Ultra Marathon"},
+		{"longest_run", "Longest Run"},
+		{"longest_ride", "Longest Ride"},
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := calculate5KTime(tt.distanceM, tt.durationSec)
+		t.Run(tt.recordType, func(t *testing.T) {
+			got := formatRecordTypeForDisplay(tt.recordType)
 			if got != tt.want {
-				t.Errorf("calculate5KTime(%v, %v) = %v, want %v", tt.distanceM, tt.durationSec, got, tt.want)
+				t.Errorf("formatRecordTypeForDisplay(%q) = %q, want %q", tt.recordType, got, tt.want)
 			}
 		})
+	}
+}
+
+// --- Test helpers ---
+
+type recordSegment struct {
+	speedMs     float64
+	durationSec int
+}
+
+type lapData struct {
+	distanceM  float64
+	elapsedSec float64
+}
+
+func makeActivityWithRecords(t *testing.T, segments []recordSegment) *pb.StandardizedActivity {
+	t.Helper()
+	var records []*pb.Record
+	baseTime := int64(1700000000)
+	currentTime := baseTime
+
+	for _, seg := range segments {
+		for i := 0; i < seg.durationSec; i++ {
+			records = append(records, &pb.Record{
+				Timestamp: &timestamppb.Timestamp{Seconds: currentTime},
+				Speed:     seg.speedMs,
+			})
+			currentTime++
+		}
+	}
+
+	// Calculate total distance and time
+	totalTimeSec := float64(currentTime - baseTime)
+	var totalDistance float64
+	for _, seg := range segments {
+		totalDistance += seg.speedMs * float64(seg.durationSec)
+	}
+
+	return &pb.StandardizedActivity{
+		Sessions: []*pb.Session{
+			{
+				TotalDistance:    totalDistance,
+				TotalElapsedTime: totalTimeSec,
+				Laps: []*pb.Lap{
+					{
+						Records: records,
+					},
+				},
+			},
+		},
+	}
+}
+
+func makeActivitySessionOnly(distanceM, elapsedSec float64) *pb.StandardizedActivity {
+	return &pb.StandardizedActivity{
+		Sessions: []*pb.Session{
+			{
+				TotalDistance:    distanceM,
+				TotalElapsedTime: elapsedSec,
+			},
+		},
+	}
+}
+
+func makeActivityWithLaps(laps []lapData) *pb.StandardizedActivity {
+	var totalDist, totalTime float64
+	var pbLaps []*pb.Lap
+	for _, l := range laps {
+		totalDist += l.distanceM
+		totalTime += l.elapsedSec
+		pbLaps = append(pbLaps, &pb.Lap{
+			TotalDistance:    l.distanceM,
+			TotalElapsedTime: l.elapsedSec,
+		})
+	}
+	return &pb.StandardizedActivity{
+		Sessions: []*pb.Session{
+			{
+				TotalDistance:    totalDist,
+				TotalElapsedTime: totalTime,
+				Laps:             pbLaps,
+			},
+		},
 	}
 }

@@ -247,9 +247,33 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	}
 
 	// Parse into generated Workout type (which includes exercises)
+	// The Hevy GET API may return {"workout": {...}} or a flat object
 	var existingWorkout hevy.Workout
-	if err := json.NewDecoder(getResp.Body).Decode(&existingWorkout); err != nil {
-		return nil, fmt.Errorf("failed to decode existing workout: %w", err)
+	var getRespBytes bytes.Buffer
+	getRespBytes.ReadFrom(getResp.Body)
+	getRespData := getRespBytes.Bytes()
+
+	fwCtx.Logger.Debug("Hevy GET response", "body", string(getRespData))
+
+	// Try to detect the wrapped format first: {"workout": {...}}
+	var rawGetResp map[string]interface{}
+	if err := json.Unmarshal(getRespData, &rawGetResp); err == nil {
+		if workoutObj, ok := rawGetResp["workout"]; ok {
+			// Re-marshal just the workout object and decode into the typed struct
+			workoutBytes, marshalErr := json.Marshal(workoutObj)
+			if marshalErr == nil {
+				if decodeErr := json.Unmarshal(workoutBytes, &existingWorkout); decodeErr != nil {
+					return nil, fmt.Errorf("failed to decode unwrapped workout: %w", decodeErr)
+				}
+			}
+		} else {
+			// Flat response - decode directly
+			if err := json.Unmarshal(getRespData, &existingWorkout); err != nil {
+				return nil, fmt.Errorf("failed to decode existing workout: %w", err)
+			}
+		}
+	} else {
+		return nil, fmt.Errorf("failed to decode existing workout response: %w", err)
 	}
 
 	existingTitle := ""
@@ -545,32 +569,33 @@ func createHevyWorkout(ctx context.Context, apiKey string, workout *hevy.PostWor
 		return "", err
 	}
 
-	// Parse response to get workout ID (response is a full Workout object)
-	// CRITICAL: The Hevy API actually returns "workoutId" in the JSON response,
-	// but the generated Workout struct only has json:"id". We decode into a
-	// secondary struct to capture the real field name.
-	var respBody hevy.Workout
-	var rawResp map[string]interface{}
-
-	// Read body once and decode into both targets
+	// Parse response to get workout ID
+	// The Hevy API returns: {"workout": [{"id": "...", ...}]}
+	// It's a JSON object with a "workout" key containing an ARRAY of workout objects.
 	var bodyBuf bytes.Buffer
 	bodyBuf.ReadFrom(resp.Body)
 	respBytes := bodyBuf.Bytes()
 
-	if err := json.Unmarshal(respBytes, &respBody); err != nil {
+	fwCtx.Logger.Debug("Hevy POST response", "body", string(respBytes))
+
+	var rawResp map[string]interface{}
+	if err := json.Unmarshal(respBytes, &rawResp); err != nil {
 		return "", fmt.Errorf("failed to decode Hevy response: %w", err)
 	}
-	// Also decode raw to check for workoutId field (Hevy API uses workoutId, not id)
-	_ = json.Unmarshal(respBytes, &rawResp)
 
-	// Prefer workoutId from raw response (actual Hevy API field), fall back to id from generated struct
-	if wid, ok := rawResp["workoutId"]; ok {
-		if widStr, ok := wid.(string); ok && widStr != "" {
-			return widStr, nil
+	// Extract workout ID from {"workout": [{"id": "..."}]}
+	if workoutArr, ok := rawResp["workout"]; ok {
+		if arr, ok := workoutArr.([]interface{}); ok && len(arr) > 0 {
+			if first, ok := arr[0].(map[string]interface{}); ok {
+				if id, ok := first["id"]; ok {
+					if idStr, ok := id.(string); ok && idStr != "" {
+						return idStr, nil
+					}
+				}
+			}
 		}
 	}
-	if respBody.Id != nil {
-		return *respBody.Id, nil
-	}
+
+	fwCtx.Logger.Warn("Could not extract workout ID from Hevy response", "body", string(respBytes))
 	return "", nil
 }
