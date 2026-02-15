@@ -86,8 +86,25 @@ func (p *Intervals) Enrich(
 		}, nil
 	}
 
+	// Require at least 2 distinct intensity types to confirm structured intervals.
+	// Auto-split laps (every km/mile) only have "active" intensity on every lap,
+	// which duplicates the Splits enricher output.
+	intensitySet := make(map[string]bool)
+	for _, l := range laps {
+		intensitySet[l.intensity] = true
+	}
+	if len(intensitySet) < 2 {
+		logger.Info("Skipping non-structured intervals (single intensity type)", "intensity", laps[0].intensity)
+		return &providers.EnrichmentResult{
+			Metadata: map[string]string{
+				"intervals_status": "skipped",
+				"status_detail":    "Non-structured intervals (single intensity type)",
+			},
+		}, nil
+	}
+
 	// Determine workout name
-	workoutName := "Structured Intervals"
+	workoutName := ""
 	if activity.Workout != nil && activity.Workout.Name != "" {
 		workoutName = activity.Workout.Name
 	}
@@ -149,7 +166,7 @@ func (p *Intervals) Enrich(
 		if firstPace > 0 && lastPace > 0 {
 			fadePercent := ((lastPace - firstPace) / firstPace) * 100
 			if fadePercent > 0 {
-				sb.WriteString(fmt.Sprintf("\n📉 Sprint fade: %s → %s/km • +%.0f%% slower",
+				sb.WriteString(fmt.Sprintf("\n📉 Fade: %s → %s/km • +%.0f%% slower",
 					formatPace(firstPace), formatPace(lastPace), fadePercent))
 			} else if fadePercent < -1 {
 				sb.WriteString(fmt.Sprintf("\n📈 Getting faster: %s → %s/km • %.0f%% improvement",
@@ -170,9 +187,13 @@ func (p *Intervals) Enrich(
 		}
 	}
 
+	metadataWorkoutName := workoutName
+	if metadataWorkoutName == "" {
+		metadataWorkoutName = "Structured Intervals"
+	}
 	metadata := map[string]string{
 		"intervals_status":     "success",
-		"intervals_workout":    workoutName,
+		"intervals_workout":    metadataWorkoutName,
 		"intervals_active":     fmt.Sprintf("%d", totalActive),
 		"intervals_recovery":   fmt.Sprintf("%d", totalRecovery),
 		"intervals_total_laps": fmt.Sprintf("%d", len(laps)),
@@ -189,7 +210,7 @@ func (p *Intervals) Enrich(
 
 	return &providers.EnrichmentResult{
 		Description:   desc,
-		SectionHeader: fmt.Sprintf("⏱️ Intervals — %s:", workoutName),
+		SectionHeader: formatSectionHeader(workoutName),
 		Metadata:      metadata,
 	}, nil
 }
@@ -387,7 +408,7 @@ func writeActiveGroup(sb *strings.Builder, g intervalGroup, showAll bool) {
 	if peakHR > 0 {
 		hrStr = fmt.Sprintf(", peak %dbpm", int(peakHR))
 	}
-	sb.WriteString(fmt.Sprintf("\n💨 %d×%s sprints: avg %s/km%s",
+	sb.WriteString(fmt.Sprintf("\n💨 %d×%s intervals: avg %s/km%s",
 		n, durLabel, formatPace(avgPace), hrStr))
 
 	// Individual intervals when show_all_intervals is on
@@ -441,4 +462,14 @@ func formatDuration(seconds float64) string {
 		return fmt.Sprintf("%d:%02d", mins, secs)
 	}
 	return fmt.Sprintf("0:%02d", secs)
+}
+
+// formatSectionHeader builds the G40 section header.
+// With a workout name: "⏱️ Intervals — 4×6:"
+// Without: "⏱️ Intervals:"
+func formatSectionHeader(workoutName string) string {
+	if workoutName == "" {
+		return "⏱️ Intervals:"
+	}
+	return fmt.Sprintf("⏱️ Intervals — %s:", workoutName)
 }

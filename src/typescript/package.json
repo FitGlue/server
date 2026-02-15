@@ -41,7 +41,8 @@
     "github-handler",
     "github-oauth-handler",
     "data-export-handler",
-    "showcase-management-handler"
+    "showcase-management-handler",
+    "auth-email-handler"
   ],
   "scripts": {
     "build": "npm run build --workspace=@fitglue/shared && npm run build --workspaces --if-present",

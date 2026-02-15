@@ -53,7 +53,7 @@ export const showcaseHandler = createCloudFunction(async (req: Request, ctx: Fra
       method: 'GET',
       pattern: '/api/showcase/profile/:slug',
       handler: async (match) => {
-        return await handleProfileApi(match.params.slug, showcaseProfileStore, corsHeaders);
+        return await handleProfileApi(match.params.slug, match.query, showcaseProfileStore, corsHeaders);
       }
     },
     {
@@ -397,6 +397,7 @@ async function handleHtmlProfile(
  */
 async function handleProfileApi(
   slug: string,
+  query: Record<string, string>,
   profileStore: ShowcaseProfileStore,
   corsHeaders: Record<string, string>
 ): Promise<FrameworkResponse> {
@@ -405,8 +406,24 @@ async function handleProfileApi(
     throw new HttpError(404, 'Profile not found');
   }
 
+  // Pagination: default 20 per page, max 100
+  const page = Math.max(1, parseInt(query.page) || 1);
+  const limit = Math.min(100, Math.max(1, parseInt(query.limit) || 20));
+
+  // Sort entries newest-first, then paginate
+  const sortedEntries = profile.entries.slice().sort((a, b) => {
+    const aTime = a.startTime ? a.startTime.getTime() : 0;
+    const bTime = b.startTime ? b.startTime.getTime() : 0;
+    return bTime - aTime;
+  });
+
+  const totalEntries = sortedEntries.length;
+  const totalPages = Math.max(1, Math.ceil(totalEntries / limit));
+  const startIdx = (page - 1) * limit;
+  const paginatedEntries = sortedEntries.slice(startIdx, startIdx + limit);
+
   // Map entries to public-safe format with formatted fields
-  const entries = profile.entries.map(entry => ({
+  const entries = paginatedEntries.map(entry => ({
     showcaseId: entry.showcaseId,
     title: entry.title,
     activityType: entry.activityType,
@@ -427,6 +444,13 @@ async function handleProfileApi(
     bio: profile.bio || '',
     profilePictureUrl: profile.profilePictureUrl || '',
     entries,
+    pagination: {
+      page,
+      limit,
+      totalEntries,
+      totalPages,
+      hasMore: page < totalPages,
+    },
     totalActivities: profile.totalActivities,
     totalDistanceMeters: profile.totalDistanceMeters,
     totalDurationSeconds: profile.totalDurationSeconds,

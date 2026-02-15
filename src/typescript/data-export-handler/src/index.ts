@@ -157,6 +157,7 @@ function getEmailPassword(): string {
 }
 
 async function sendExportEmail(userEmail: string, downloadUrl: string): Promise<void> {
+    const { dataExportTemplate } = await import('@fitglue/shared/email');
     const emailPassword = await getEmailPassword();
 
     const transporter = nodemailer.createTransport({
@@ -170,14 +171,7 @@ async function sendExportEmail(userEmail: string, downloadUrl: string): Promise<
         from: `"FitGlue" <${SENDER_EMAIL}>`,
         to: userEmail,
         subject: '[FitGlue] Your data export is ready',
-        html: [
-            '<h2>📦 Your Data Export is Ready</h2>',
-            '<p>Your FitGlue data export has been prepared and is ready to download.</p>',
-            `<p><a href="${downloadUrl}" style="display:inline-block;padding:12px 24px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:8px;font-weight:bold;">Download My Data</a></p>`,
-            '<p style="color:#666;font-size:12px;">This link will expire in 24 hours. If you did not request this export, please contact support@fitglue.tech.</p>',
-            '<hr>',
-            '<p style="color:#666;font-size:12px;">FitGlue — Your fitness data, your way.</p>',
-        ].join('\n'),
+        html: dataExportTemplate(downloadUrl),
     });
 }
 

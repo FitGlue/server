@@ -286,6 +286,12 @@
         "infra-http",
         "storage"
       ]
+    },
+    "email": {
+      "paths": [
+        "src/email"
+      ],
+      "depends_on": []
     }
   },
   "import_patterns": {
@@ -354,6 +360,9 @@
     ],
     "@fitglue/shared/integrations/github": [
       "int-github"
+    ],
+    "@fitglue/shared/email": [
+      "email"
     ],
     "@fitglue/shared/dist/types/pb": [
       "types-pb"
@@ -447,6 +456,9 @@
     ],
     "@fitglue/shared/dist/integrations/github": [
       "int-github"
+    ],
+    "@fitglue/shared/dist/email": [
+      "email"
     ]
   }
 }

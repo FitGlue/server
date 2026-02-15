@@ -448,6 +448,125 @@ describe('showcase-handler', () => {
     });
   });
 
+  describe('profile API (/api/showcase/profile/:slug)', () => {
+    function makeEntries(count: number) {
+      return Array.from({ length: count }, (_, i) => ({
+        showcaseId: `activity-${i}`,
+        title: `Activity ${i}`,
+        activityType: 27,
+        source: 1,
+        startTime: new Date(2026, 0, count - i), // newest first when sorted
+        routeThumbnailUrl: '',
+        distanceMeters: 5000 + i * 100,
+        durationSeconds: 1800 + i * 60,
+        totalSets: 0,
+        totalReps: 0,
+        totalWeightKg: 0,
+      }));
+    }
+
+    it('returns paginated entries with default page size of 20', async () => {
+      req.path = '/api/showcase/profile/james-fit';
+      req.query = {};
+      mockShowcaseProfileStore.get.mockResolvedValue({
+        slug: 'james-fit',
+        displayName: 'James',
+        entries: makeEntries(25),
+        totalActivities: 25,
+        totalDistanceMeters: 50000,
+        totalDurationSeconds: 36000,
+        totalSets: 0,
+        totalReps: 0,
+        totalWeightKg: 0,
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      const body: any = (result as unknown as FrameworkResponse).options.body;
+      expect(body.entries).toHaveLength(20);
+      expect(body.pagination).toEqual({
+        page: 1,
+        limit: 20,
+        totalEntries: 25,
+        totalPages: 2,
+        hasMore: true,
+      });
+    });
+
+    it('respects custom page and limit query params', async () => {
+      req.path = '/api/showcase/profile/james-fit';
+      req.query = { page: '2', limit: '10' };
+      mockShowcaseProfileStore.get.mockResolvedValue({
+        slug: 'james-fit',
+        displayName: 'James',
+        entries: makeEntries(25),
+        totalActivities: 25,
+        totalDistanceMeters: 50000,
+        totalDurationSeconds: 36000,
+        totalSets: 0,
+        totalReps: 0,
+        totalWeightKg: 0,
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      const body: any = (result as unknown as FrameworkResponse).options.body;
+      expect(body.entries).toHaveLength(10);
+      expect(body.pagination.page).toBe(2);
+      expect(body.pagination.limit).toBe(10);
+      expect(body.pagination.hasMore).toBe(true);
+    });
+
+    it('sets hasMore to false on the last page', async () => {
+      req.path = '/api/showcase/profile/james-fit';
+      req.query = { page: '3', limit: '10' };
+      mockShowcaseProfileStore.get.mockResolvedValue({
+        slug: 'james-fit',
+        displayName: 'James',
+        entries: makeEntries(25),
+        totalActivities: 25,
+        totalDistanceMeters: 50000,
+        totalDurationSeconds: 36000,
+        totalSets: 0,
+        totalReps: 0,
+        totalWeightKg: 0,
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      const body: any = (result as unknown as FrameworkResponse).options.body;
+      expect(body.entries).toHaveLength(5);
+      expect(body.pagination.hasMore).toBe(false);
+      expect(body.pagination.totalPages).toBe(3);
+    });
+
+    it('returns all entries when count is within limit', async () => {
+      req.path = '/api/showcase/profile/james-fit';
+      req.query = {};
+      mockShowcaseProfileStore.get.mockResolvedValue({
+        slug: 'james-fit',
+        displayName: 'James',
+        entries: makeEntries(5),
+        totalActivities: 5,
+        totalDistanceMeters: 10000,
+        totalDurationSeconds: 9000,
+        totalSets: 0,
+        totalReps: 0,
+        totalWeightKg: 0,
+      });
+
+      const result = await showcaseHandler(req, ctx);
+      const body: any = (result as unknown as FrameworkResponse).options.body;
+      expect(body.entries).toHaveLength(5);
+      expect(body.pagination.hasMore).toBe(false);
+      expect(body.pagination.totalPages).toBe(1);
+    });
+
+    it('returns 404 for non-existent profile', async () => {
+      req.path = '/api/showcase/profile/unknown';
+      req.query = {};
+      mockShowcaseProfileStore.get.mockResolvedValue(null);
+      await expect(showcaseHandler(req, ctx)).rejects.toThrow(HttpError);
+    });
+  });
+
   describe('error handling', () => {
     it('throws on Firestore errors', async () => {
       mockShowcaseStore.get.mockRejectedValue(new Error('Firestore error'));

@@ -92,8 +92,8 @@ func TestIntervals_BasicIntervals(t *testing.T) {
 	if !contains(result.Description, "Cooldown") {
 		t.Errorf("Description should contain Cooldown, got: %s", result.Description)
 	}
-	if !contains(result.Description, "3×0:40 sprints") {
-		t.Errorf("Description should contain grouped sprints '3×0:40 sprints', got: %s", result.Description)
+	if !contains(result.Description, "3×0:40 intervals") {
+		t.Errorf("Description should contain grouped intervals '3×0:40 intervals', got: %s", result.Description)
 	}
 
 	t.Logf("Description:\n%s", result.Description)
@@ -141,6 +141,7 @@ func TestIntervals_FallbackWorkoutName(t *testing.T) {
 			{
 				Laps: []*pb.Lap{
 					{StartTime: timestamppb.New(now), TotalElapsedTime: 40, TotalDistance: 193, Intensity: "active"},
+					{StartTime: timestamppb.New(now.Add(1 * time.Minute)), TotalElapsedTime: 20, TotalDistance: 63, Intensity: "recovery"},
 				},
 			},
 		},
@@ -154,6 +155,39 @@ func TestIntervals_FallbackWorkoutName(t *testing.T) {
 
 	if result.Metadata["intervals_workout"] != "Structured Intervals" {
 		t.Errorf("Expected fallback workout name 'Structured Intervals', got %q", result.Metadata["intervals_workout"])
+	}
+
+	// SectionHeader should NOT include the generic subtitle
+	if result.SectionHeader != "⏱️ Intervals:" {
+		t.Errorf("Expected SectionHeader '⏱️ Intervals:', got %q", result.SectionHeader)
+	}
+}
+
+func TestIntervals_AutoSplitSkipped(t *testing.T) {
+	p := NewIntervals()
+	now := time.Now()
+
+	// Simulate auto-split laps: all laps have "active" intensity only (every km)
+	activity := &pb.StandardizedActivity{
+		Sessions: []*pb.Session{
+			{
+				Laps: []*pb.Lap{
+					{StartTime: timestamppb.New(now), TotalElapsedTime: 360, TotalDistance: 1000, Intensity: "active"},
+					{StartTime: timestamppb.New(now.Add(6 * time.Minute)), TotalElapsedTime: 340, TotalDistance: 1000, Intensity: "active"},
+					{StartTime: timestamppb.New(now.Add(12 * time.Minute)), TotalElapsedTime: 350, TotalDistance: 1000, Intensity: "active"},
+					{StartTime: timestamppb.New(now.Add(18 * time.Minute)), TotalElapsedTime: 355, TotalDistance: 984, Intensity: "active"},
+				},
+			},
+		},
+	}
+
+	result, err := p.Enrich(context.Background(), slog.Default(), activity, &pb.UserRecord{}, nil, false)
+	if err != nil {
+		t.Fatalf("Unexpected error: %v", err)
+	}
+
+	if result.Metadata["intervals_status"] != "skipped" {
+		t.Errorf("Expected skipped for auto-split laps, got %s", result.Metadata["intervals_status"])
 	}
 }
 

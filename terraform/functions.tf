@@ -217,6 +217,11 @@ resource "google_storage_bucket_object" "data_export_handler_zip" {
   source = "/tmp/fitglue-function-zips/data-export-handler.zip"
 }
 
+resource "google_storage_bucket_object" "auth_email_handler_zip" {
+  name   = "auth-email-handler-${filemd5("/tmp/fitglue-function-zips/auth-email-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/auth-email-handler.zip"
+}
 
 
 # ----------------- Enricher Service -----------------
@@ -2434,6 +2439,55 @@ resource "google_cloud_run_service_iam_member" "data_export_handler_self_invoker
   service  = google_cloudfunctions2_function.data_export_handler.name
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+}
+
+# ----------------- Auth Email Handler -----------------
+# Sends branded authentication emails (verification, password reset, email change)
+resource "google_cloudfunctions2_function" "auth_email_handler" {
+  name        = "auth-email-handler"
+  location    = var.region
+  description = "Sends branded authentication emails via custom templates"
+
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "authEmailHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.auth_email_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
+    }
+
+    secret_environment_variables {
+      key        = "EMAIL_APP_PASSWORD"
+      project_id = var.project_id
+      secret     = google_secret_manager_secret.email_app_password.secret_id
+      version    = "latest"
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "auth_email_handler_invoker" {
+  project  = google_cloudfunctions2_function.auth_email_handler.project
+  location = google_cloudfunctions2_function.auth_email_handler.location
+  service  = google_cloudfunctions2_function.auth_email_handler.name
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
 
 # ----------------- Cloud Tasks Queue for Data Export -----------------

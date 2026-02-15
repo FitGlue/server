@@ -178,3 +178,8 @@ exports.showcaseManagementHandler = (req, res) => {
   const showcaseManagement = require('./showcase-management-handler/dist/index');
   return showcaseManagement.showcaseManagementHandler(req, res);
 };
+
+exports.authEmailHandler = (req, res) => {
+  const authEmail = require('./auth-email-handler/dist/index');
+  return authEmail.authEmailHandler(req, res);
+};

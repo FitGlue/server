@@ -87,13 +87,17 @@ resource "google_dns_record_set" "firebase_a" {
   rrdatas      = ["199.36.158.100"]
 }
 
-# TXT record for domain verification (all environments)
+# TXT records for domain verification + email authentication (all environments)
+# Cloud DNS requires a single record set per name+type, so SPF must be merged here
 resource "google_dns_record_set" "firebase_txt" {
   managed_zone = google_dns_managed_zone.main.name
   name         = "${var.domain_name}."
   type         = "TXT"
   ttl          = 300
-  rrdatas      = ["hosting-site=${var.project_id}"]
+  rrdatas = [
+    "\"hosting-site=${var.project_id}\"",
+    "\"v=spf1 include:_spf.google.com ~all\"",
+  ]
 }
 
 # Assets subdomain A record - points to Cloud Load Balancer for showcase assets CDN
@@ -104,5 +108,14 @@ resource "google_dns_record_set" "assets_a" {
   type         = "A"
   ttl          = 300
   rrdatas      = [google_compute_global_forwarding_rule.showcase_assets_https.ip_address]
+}
+
+# DMARC record for email authentication
+resource "google_dns_record_set" "dmarc" {
+  managed_zone = google_dns_managed_zone.main.name
+  name         = "_dmarc.${var.domain_name}."
+  type         = "TXT"
+  ttl          = 300
+  rrdatas      = ["\"v=DMARC1; p=none; rua=mailto:system@fitglue.tech\""]
 }
 

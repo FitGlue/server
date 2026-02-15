@@ -96,6 +96,10 @@
       "types": "./dist/integrations/github/index.d.ts",
       "default": "./dist/integrations/github/index.js"
     },
+    "./email": {
+      "types": "./dist/email/index.d.ts",
+      "default": "./dist/email/index.js"
+    },
     "./dist/*": "./dist/*"
   },
   "typesVersions": {
@@ -165,6 +169,9 @@
       ],
       "integrations/github": [
         "dist/integrations/github/index.d.ts"
+      ],
+      "email": [
+        "dist/email/index.d.ts"
       ]
     }
   },
