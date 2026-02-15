@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.8.2](https://github.com/FitGlue/server/compare/v14.8.1...v14.8.2) (2026-02-15)
+
+
+### Bug Fixes
+
+* use correct email ([6fe2639](https://github.com/FitGlue/server/commit/6fe2639d2aeca2fd0999bf243f264426ff8e0be1))
+
 ### [14.8.1](https://github.com/FitGlue/server/compare/v14.8.0...v14.8.1) (2026-02-15)
 
 
