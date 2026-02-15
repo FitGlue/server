@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.7.0](https://github.com/FitGlue/server/compare/v14.6.0...v14.7.0) (2026-02-15)
+
+
+### Features
+
+* **auto-increment:** add dynamic counter selection with valueDynamicSource ([f105b50](https://github.com/FitGlue/server/commit/f105b50ecf3242a1ae7140b17b8ee530eb81fa58))
+
+
+### Bug Fixes
+
+* linting ([db0fdf2](https://github.com/FitGlue/server/commit/db0fdf260b1dcf9386c1053c404605462d6b7897))
+
 ## [14.6.0](https://github.com/FitGlue/server/compare/v14.5.3...v14.6.0) (2026-02-14)
 
 
