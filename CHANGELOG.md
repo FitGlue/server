@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.8.0](https://github.com/FitGlue/server/compare/v14.7.0...v14.8.0) (2026-02-15)
+
+
+### Features
+
+* add auth-email-handler, branded email templates, and intervals enricher improvements ([b7a09f4](https://github.com/FitGlue/server/commit/b7a09f427da5a39bb96e72712e5341ffea2e30b7))
+
+
+### Bug Fixes
+
+* email export ([c289bf8](https://github.com/FitGlue/server/commit/c289bf8dbd26fb0ada0152e57ab37275cf2e5741))
+
 ## [14.7.0](https://github.com/FitGlue/server/compare/v14.6.0...v14.7.0) (2026-02-15)
 
 
