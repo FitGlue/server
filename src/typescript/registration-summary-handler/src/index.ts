@@ -10,7 +10,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import { getAuth } from 'firebase-admin/auth';
 import { SecretManagerServiceClient } from '@google-cloud/secret-manager';
 import * as nodemailer from 'nodemailer';
-import { registrationSummaryTemplate } from '@fitglue/shared/email';
+import { registrationSummaryTemplate, getBaseUrl } from '@fitglue/shared/email';
 import { UserStore } from '@fitglue/shared/storage';
 import { CloudEvent } from '@google-cloud/functions-framework';
 
@@ -54,7 +54,7 @@ function buildEmailContent(users: UserSummary[], dateStr: string): string {
     email: u.email,
     accessEnabled: u.accessEnabled,
     createdAt: u.createdAt,
-  })));
+  })), getBaseUrl());
 }
 
 /**

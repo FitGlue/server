@@ -19,6 +19,7 @@ import {
     passwordResetTemplate,
     welcomeTemplate,
     changeEmailTemplate,
+    getBaseUrl,
 } from '@fitglue/shared/email';
 import * as admin from 'firebase-admin';
 import * as nodemailer from 'nodemailer';
@@ -26,13 +27,14 @@ import * as nodemailer from 'nodemailer';
 // ─── Config ─────────────────────────────────────────────────────────
 
 const SENDER_EMAIL = 'system@fitglue.tech';
-const BASE_URL = 'https://fitglue.tech';
 
-// Action code settings tell Firebase where to redirect after email actions
-const actionCodeSettings = {
-    url: `${BASE_URL}/auth/verify-email`,
-    handleCodeInApp: false,
-};
+// Action code settings tell Firebase to link directly to our custom pages
+function getActionCodeSettings(url: string) {
+    return {
+        url,
+        handleCodeInApp: true,
+    };
+}
 
 // ─── Email Transport ────────────────────────────────────────────────
 
@@ -90,13 +92,13 @@ async function handleSendVerification(
 
     const verificationLink = await auth.generateEmailVerificationLink(
         user.email,
-        { ...actionCodeSettings, url: `${BASE_URL}/auth/verify-email` }
+        getActionCodeSettings(`${getBaseUrl()}/auth/verify-email`)
     );
 
     await sendEmail(
         user.email,
         'Verify your FitGlue email',
-        verifyEmailTemplate(verificationLink)
+        verifyEmailTemplate(verificationLink, getBaseUrl())
     );
 
     logger.info('Verification email sent', { userId, email: user.email });
@@ -122,13 +124,13 @@ async function handleSendPasswordReset(
         const auth = admin.auth();
         const resetLink = await auth.generatePasswordResetLink(
             email,
-            { ...actionCodeSettings, url: `${BASE_URL}/auth/reset-password` }
+            getActionCodeSettings(`${getBaseUrl()}/auth/reset-password`)
         );
 
         await sendEmail(
             email,
             'Reset your FitGlue password',
-            passwordResetTemplate(resetLink)
+            passwordResetTemplate(resetLink, getBaseUrl())
         );
 
         logger.info('Password reset email sent', { email });
@@ -159,13 +161,13 @@ async function handleSendEmailChange(
     const verifyLink = await auth.generateVerifyAndChangeEmailLink(
         newEmail,
         newEmail,
-        { ...actionCodeSettings, url: `${BASE_URL}/auth/verify-email-change` }
+        getActionCodeSettings(`${getBaseUrl()}/auth/verify-email-change`)
     );
 
     await sendEmail(
         newEmail,
         'Confirm your new FitGlue email',
-        changeEmailTemplate(verifyLink, newEmail)
+        changeEmailTemplate(verifyLink, newEmail, getBaseUrl())
     );
 
     logger.info('Email change verification sent', { userId, newEmail });
@@ -191,7 +193,7 @@ async function handleSendWelcome(
     await sendEmail(
         user.email,
         'Welcome to FitGlue! 🎉',
-        welcomeTemplate()
+        welcomeTemplate(getBaseUrl())
     );
 
     logger.info('Welcome email sent', { userId, email: user.email });
