@@ -159,8 +159,14 @@ async function handleSendEmailChange(
     }
 
     const auth = admin.auth();
+    const user = await auth.getUser(userId);
+
+    if (!user.email) {
+        throw new HttpError(400, 'User has no email address');
+    }
+
     const verifyLink = await auth.generateVerifyAndChangeEmailLink(
-        newEmail,
+        user.email,
         newEmail,
         getActionCodeSettings(`${getBaseUrl()}/auth/verify-email-change`)
     );
