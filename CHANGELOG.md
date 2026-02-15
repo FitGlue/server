@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.8.1](https://github.com/FitGlue/server/compare/v14.8.0...v14.8.1) (2026-02-15)
+
+
+### Bug Fixes
+
+* env aware urls for emails, use in app for firebase auth pages ([c9635fa](https://github.com/FitGlue/server/commit/c9635faff9614d5a7aa7fcac9ce8845638475135))
+* use new routing ([91e926d](https://github.com/FitGlue/server/commit/91e926da659474dc6bf2016c7e1d0b8cf4447f3e))
+
 ## [14.8.0](https://github.com/FitGlue/server/compare/v14.7.0...v14.8.0) (2026-02-15)
 
 
