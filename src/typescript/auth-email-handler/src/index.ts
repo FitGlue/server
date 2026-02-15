@@ -121,24 +121,27 @@ async function handleSendPasswordReset(
     }
 
     // Always return success to prevent email enumeration attacks
+    let resetLink: string;
     try {
         const auth = admin.auth();
-        const resetLink = await auth.generatePasswordResetLink(
+        resetLink = await auth.generatePasswordResetLink(
             email,
             getActionCodeSettings(`${getBaseUrl()}/auth/reset-password`)
         );
-
-        await sendEmail(
-            email,
-            'Reset your FitGlue password',
-            passwordResetTemplate(resetLink, getBaseUrl())
-        );
-
-        logger.info('Password reset email sent', { email });
     } catch (_error) {
         // Silently handle user-not-found to prevent enumeration
         logger.info('Password reset requested for unknown email', { email });
+        return { success: true, message: 'If an account exists with this email, a reset link has been sent' };
     }
+
+    // Send the email - let errors propagate so they show in logs
+    await sendEmail(
+        email,
+        'Reset your FitGlue password',
+        passwordResetTemplate(resetLink, getBaseUrl())
+    );
+
+    logger.info('Password reset email sent', { email });
 
     return { success: true, message: 'If an account exists with this email, a reset link has been sent' };
 }
