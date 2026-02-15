@@ -1,6 +1,7 @@
 // Module-level imports for smart pruning
 import { createCloudFunction, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch, RoutableRequest } from '@fitglue/shared/routing';
 import { ShowcaseProfileStore, ShowcaseStore, UserStore } from '@fitglue/shared/storage';
 import { requireAthleteTier } from '@fitglue/shared/domain';
 import { Destination } from '@fitglue/shared/types';
@@ -29,11 +30,7 @@ const userStore = new UserStore(db);
 const PROFILE_PICTURE_BUCKET = `${process.env.GOOGLE_CLOUD_PROJECT || 'fitglue'}-showcase-assets`;
 const PROFILE_PICTURE_MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
-function extractSegmentAfter(path: string, keyword: string): string {
-    const segments = path.split('/').filter((s: string) => s.length > 0);
-    const idx = segments.findIndex((s: string) => s === keyword);
-    return segments[idx + 1] || '';
-}
+
 
 function slugify(text: string): string {
     return text.toLowerCase()
@@ -362,69 +359,63 @@ async function handleApplyToExisting(
 }
 
 // --- Main handler ---
-// eslint-disable-next-line complexity
 export const handler: FrameworkHandler = async (req, ctx) => {
     if (!ctx.userId) {
         throw new HttpError(401, 'Unauthorized');
     }
 
     const userId = ctx.userId;
-    const path = req.path;
-    const method = req.method;
 
     // Tier check for all routes
     await requireAthleteTier(userStore, userId);
 
-    // GET /profile
-    if (method === 'GET' && path.endsWith('/profile')) {
-        return handleGetProfile(userId);
-    }
-
-    // PATCH /profile/slug
-    if (method === 'PATCH' && path.endsWith('/profile/slug')) {
-        return handleUpdateSlug(userId, req.body as Record<string, unknown>);
-    }
-
-    // PATCH /profile
-    if (method === 'PATCH' && path.endsWith('/profile')) {
-        return handleUpdateProfile(userId, req.body as Record<string, unknown>);
-    }
-
-    // POST /profile/picture
-    if (method === 'POST' && path.endsWith('/profile/picture')) {
-        return handlePictureUpload(userId, (req.body as Record<string, unknown>) || {});
-    }
-
-    // DELETE /profile/entries/:showcaseId
-    if (method === 'DELETE' && path.includes('/profile/entries/')) {
-        const showcaseId = extractSegmentAfter(path, 'entries');
-        if (!showcaseId) throw new HttpError(400, 'Missing showcase ID');
-        return handleRemoveEntry(userId, showcaseId);
-    }
-
-    // POST /profile/entries/:showcaseId
-    if (method === 'POST' && path.includes('/profile/entries/')) {
-        const showcaseId = extractSegmentAfter(path, 'entries');
-        if (!showcaseId) throw new HttpError(400, 'Missing showcase ID');
-        return handleAddEntry(userId, showcaseId);
-    }
-
-    // GET /preferences
-    if (method === 'GET' && path.endsWith('/preferences')) {
-        return handleGetPreferences(userId);
-    }
-
-    // PATCH /preferences
-    if (method === 'PATCH' && path.endsWith('/preferences')) {
-        return handleUpdatePreferences(userId, req.body as Record<string, unknown>);
-    }
-
-    // POST /preferences/apply-to-existing
-    if (method === 'POST' && path.endsWith('/preferences/apply-to-existing')) {
-        return handleApplyToExisting(userId, req.body as Record<string, unknown>);
-    }
-
-    throw new HttpError(404, 'Not found');
+    return await routeRequest(req as RoutableRequest, ctx, [
+        {
+            method: 'GET',
+            pattern: '*/profile',
+            handler: async () => handleGetProfile(userId),
+        },
+        {
+            method: 'PATCH',
+            pattern: '*/profile/slug',
+            handler: async () => handleUpdateSlug(userId, req.body as Record<string, unknown>),
+        },
+        {
+            method: 'PATCH',
+            pattern: '*/profile',
+            handler: async () => handleUpdateProfile(userId, req.body as Record<string, unknown>),
+        },
+        {
+            method: 'POST',
+            pattern: '*/profile/picture',
+            handler: async () => handlePictureUpload(userId, (req.body as Record<string, unknown>) || {}),
+        },
+        {
+            method: 'DELETE',
+            pattern: '*/profile/entries/:showcaseId',
+            handler: async (match: RouteMatch) => handleRemoveEntry(userId, match.params.showcaseId),
+        },
+        {
+            method: 'POST',
+            pattern: '*/profile/entries/:showcaseId',
+            handler: async (match: RouteMatch) => handleAddEntry(userId, match.params.showcaseId),
+        },
+        {
+            method: 'GET',
+            pattern: '*/preferences',
+            handler: async () => handleGetPreferences(userId),
+        },
+        {
+            method: 'PATCH',
+            pattern: '*/preferences',
+            handler: async () => handleUpdatePreferences(userId, req.body as Record<string, unknown>),
+        },
+        {
+            method: 'POST',
+            pattern: '*/preferences/apply-to-existing',
+            handler: async () => handleApplyToExisting(userId, req.body as Record<string, unknown>),
+        },
+    ]);
 };
 
 // Export the wrapped function

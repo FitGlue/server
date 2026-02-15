@@ -10,6 +10,7 @@
 // Module-level imports for smart pruning
 import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, FrameworkHandler } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RoutableRequest } from '@fitglue/shared/routing';
 import { getEffectiveTier } from '@fitglue/shared/domain';
 import { parseDestination, getDestinationName } from '@fitglue/shared/types';
 import { PubSub } from '@google-cloud/pubsub';
@@ -143,17 +144,23 @@ export const handler: FrameworkHandler = async (req, ctx) => {
   }
 
   // Route to appropriate handler
-  const path = req.path;
-
-  if (path.endsWith('/missed-destination')) {
-    return await handleMissedDestination(req, ctx, userId);
-  } else if (path.endsWith('/retry-destination')) {
-    return await handleRetryDestination(req, ctx, userId);
-  } else if (path.endsWith('/full-pipeline')) {
-    return await handleFullPipeline(req, ctx, userId);
-  } else {
-    throw new HttpError(404, 'Not Found');
-  }
+  return await routeRequest(req as RoutableRequest, ctx, [
+    {
+      method: 'POST',
+      pattern: '*/missed-destination',
+      handler: async () => handleMissedDestination(req, ctx, userId),
+    },
+    {
+      method: 'POST',
+      pattern: '*/retry-destination',
+      handler: async () => handleRetryDestination(req, ctx, userId),
+    },
+    {
+      method: 'POST',
+      pattern: '*/full-pipeline',
+      handler: async () => handleFullPipeline(req, ctx, userId),
+    },
+  ]);
 };
 
 /**

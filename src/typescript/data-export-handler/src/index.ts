@@ -1,6 +1,7 @@
 // Module-level imports for smart pruning
 import { createCloudFunction, FirebaseAuthStrategy, PayloadUserStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch, RoutableRequest } from '@fitglue/shared/routing';
 import { dataExportTemplate, getBaseUrl } from '@fitglue/shared/email';
 import { CloudTasksClient } from '@google-cloud/tasks';
 
@@ -202,11 +203,7 @@ async function sendExportNotification(userId: string): Promise<void> {
     }
 }
 
-function extractSegmentAfter(path: string, keyword: string): string {
-    const segments = path.split('/').filter((s: string) => s.length > 0);
-    const idx = segments.findIndex((s: string) => s === keyword);
-    return segments[idx + 1] || '';
-}
+
 
 async function addRunBlobsToFolder(
     runsFolder: JSZip,
@@ -320,12 +317,8 @@ async function handleTriggerExport(
 // --- Route: GET /export/status/:jobId ---
 async function handlePollStatus(
     userId: string,
-    path: string
+    jobId: string
 ): Promise<Record<string, unknown>> {
-    const jobId = extractSegmentAfter(path, 'status');
-    if (!jobId) {
-        throw new HttpError(400, 'Missing job ID');
-    }
 
     const jobDoc = await db.collection('users').doc(userId)
         .collection('action_jobs').doc(jobId).get();
@@ -352,12 +345,8 @@ async function handlePollStatus(
 // --- Route: GET /export/run/:runId ---
 async function handleRunExport(
     userId: string,
-    path: string
+    runId: string
 ): Promise<Record<string, unknown>> {
-    const runId = extractSegmentAfter(path, 'run');
-    if (!runId) {
-        throw new HttpError(400, 'Missing run ID');
-    }
 
     const runDoc = await db.collection('users').doc(userId)
         .collection('pipeline_runs').doc(runId).get();
@@ -514,14 +503,10 @@ async function buildExportZip(userId: string): Promise<Buffer> {
 
 // --- Route: POST /execute/:jobId (Cloud Tasks callback) ---
 async function handleExecuteExport(
-    path: string,
+    jobId: string,
     body: { userId: string },
     logger: { info: (msg: string, meta?: Record<string, unknown>) => void; warn: (msg: string, meta?: Record<string, unknown>) => void; error: (msg: string, meta?: Record<string, unknown>) => void }
 ): Promise<Record<string, unknown>> {
-    const jobId = extractSegmentAfter(path, 'execute');
-    if (!jobId) {
-        throw new HttpError(400, 'Missing job ID');
-    }
 
     const jobUserId = body.userId;
     const jobRef = db.collection('users').doc(jobUserId).collection('action_jobs').doc(jobId);
@@ -568,26 +553,32 @@ export const handler: FrameworkHandler = async (req, ctx) => {
         throw new HttpError(401, 'Unauthorized');
     }
 
-    const path = req.path;
-    const method = req.method;
-
-    if (method === 'POST' && path.endsWith('/export/full')) {
-        return handleTriggerExport(ctx.userId, ctx.logger);
-    }
-
-    if (method === 'GET' && path.includes('/export/status/')) {
-        return handlePollStatus(ctx.userId, path);
-    }
-
-    if (method === 'GET' && path.includes('/export/run/')) {
-        return handleRunExport(ctx.userId, path);
-    }
-
-    if (method === 'POST' && path.includes('/execute/')) {
-        return handleExecuteExport(path, req.body as { userId: string }, ctx.logger);
-    }
-
-    throw new HttpError(404, 'Not found');
+    return await routeRequest(req as RoutableRequest, ctx, [
+        {
+            method: 'POST',
+            pattern: '*/export/full',
+            handler: async () => handleTriggerExport(ctx.userId!, ctx.logger),
+        },
+        {
+            method: 'GET',
+            pattern: '*/export/status/:jobId',
+            handler: async (match: RouteMatch) => handlePollStatus(ctx.userId!, match.params.jobId),
+        },
+        {
+            method: 'GET',
+            pattern: '*/export/run/:jobId',
+            handler: async (match: RouteMatch) => handleRunExport(ctx.userId!, match.params.jobId),
+        },
+        {
+            method: 'POST',
+            pattern: '*/execute/:jobId',
+            handler: async (match: RouteMatch) => handleExecuteExport(
+                match.params.jobId,
+                req.body as { userId: string },
+                ctx.logger
+            ),
+        },
+    ]);
 };
 
 // Export the wrapped function

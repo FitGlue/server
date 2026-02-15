@@ -14,6 +14,7 @@
 
 import { createCloudFunction, FrameworkHandler } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RoutableRequest } from '@fitglue/shared/routing';
 import {
     verifyEmailTemplate,
     passwordResetTemplate,
@@ -203,43 +204,50 @@ async function handleSendWelcome(
 // ─── Main Handler ───────────────────────────────────────────────────
 
 const handler: FrameworkHandler = async (req, ctx) => {
-    const path = req.path;
-    const method = req.method;
-
-    if (method !== 'POST') {
+    if (req.method !== 'POST') {
         throw new HttpError(405, 'Method not allowed');
     }
 
-    // Password reset is the only unauthenticated route
-    if (path.endsWith('/send-password-reset')) {
-        return handleSendPasswordReset(
-            req.body as { email?: string },
-            ctx.logger
-        );
-    }
-
-    // All other routes require authentication
-    if (!ctx.userId) {
-        throw new HttpError(401, 'Unauthorized');
-    }
-
-    if (path.endsWith('/send-verification')) {
-        return handleSendVerification(ctx.userId, ctx.logger);
-    }
-
-    if (path.endsWith('/send-email-change')) {
-        return handleSendEmailChange(
-            ctx.userId,
-            req.body as { newEmail?: string },
-            ctx.logger
-        );
-    }
-
-    if (path.endsWith('/send-welcome')) {
-        return handleSendWelcome(ctx.userId, ctx.logger);
-    }
-
-    throw new HttpError(404, 'Not found');
+    // Password reset is unauthenticated; all other routes require auth.
+    // routeRequest handles 404 for unmatched routes automatically.
+    return await routeRequest(req as RoutableRequest, ctx, [
+        {
+            method: 'POST',
+            pattern: '*/send-password-reset',
+            handler: async () => handleSendPasswordReset(
+                req.body as { email?: string },
+                ctx.logger
+            ),
+        },
+        {
+            method: 'POST',
+            pattern: '*/send-verification',
+            handler: async () => {
+                if (!ctx.userId) throw new HttpError(401, 'Unauthorized');
+                return handleSendVerification(ctx.userId, ctx.logger);
+            },
+        },
+        {
+            method: 'POST',
+            pattern: '*/send-email-change',
+            handler: async () => {
+                if (!ctx.userId) throw new HttpError(401, 'Unauthorized');
+                return handleSendEmailChange(
+                    ctx.userId,
+                    req.body as { newEmail?: string },
+                    ctx.logger
+                );
+            },
+        },
+        {
+            method: 'POST',
+            pattern: '*/send-welcome',
+            handler: async () => {
+                if (!ctx.userId) throw new HttpError(401, 'Unauthorized');
+                return handleSendWelcome(ctx.userId, ctx.logger);
+            },
+        },
+    ]);
 };
 
 // ─── Export ─────────────────────────────────────────────────────────

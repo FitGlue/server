@@ -38,12 +38,22 @@ const mockLogger = {
     error: jest.fn(),
 };
 
-jest.mock('@fitglue/shared/framework', () => ({
-    createCloudFunction: jest.fn((h: any) => h),
-    FirebaseAuthStrategy: jest.fn(),
-    PayloadUserStrategy: jest.fn(),
-    db: mockDb,
-}));
+jest.mock('@fitglue/shared/framework', () => {
+    class HttpError extends Error {
+        statusCode: number;
+        constructor(statusCode: number, message: string) {
+            super(message);
+            this.statusCode = statusCode;
+        }
+    }
+    return {
+        createCloudFunction: jest.fn((h: any) => h),
+        FirebaseAuthStrategy: jest.fn(),
+        PayloadUserStrategy: jest.fn(),
+        HttpError,
+        db: mockDb,
+    };
+});
 
 jest.mock('@fitglue/shared/errors', () => ({
     HttpError: class HttpError extends Error {

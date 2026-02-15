@@ -1,6 +1,7 @@
 // Module-level imports for smart pruning
 import { createCloudFunction, FirebaseAuthStrategy, PayloadUserStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch, RoutableRequest } from '@fitglue/shared/routing';
 import { CloudTasksClient } from '@google-cloud/tasks';
 import { getMessaging } from 'firebase-admin/messaging';
 import { FieldValue, Timestamp } from 'firebase-admin/firestore';
@@ -61,157 +62,154 @@ interface ActionResult {
 
 const tasksClient = new CloudTasksClient();
 
-// eslint-disable-next-line complexity
 export const handler: FrameworkHandler = async (req, ctx) => {
     if (!ctx.userId) {
         throw new HttpError(401, 'Unauthorized');
     }
 
-    const path = req.path;
-    const method = req.method;
     const userId = ctx.userId;
 
-    // --- List Actions for Source ---
-    // GET /actions/:sourceId
-    if (method === 'GET' && path.includes('/actions/')) {
-        const segments = path.split('/').filter(s => s.length > 0);
-        const actionsIndex = segments.findIndex(s => s === 'actions');
-        const sourceId = segments[actionsIndex - 1];
+    return await routeRequest(req as RoutableRequest, ctx, [
+        {
+            method: 'GET',
+            pattern: '*/integrations/:sourceId/actions',
+            handler: async (match: RouteMatch) => handleListActions(match.params.sourceId),
+        },
+        {
+            method: 'POST',
+            pattern: '*/integrations/:sourceId/actions/:actionId',
+            handler: async (match: RouteMatch) => handleTriggerAction(
+                userId, match.params.sourceId, match.params.actionId, ctx
+            ),
+        },
+        {
+            method: 'POST',
+            pattern: '*/execute/:jobId',
+            handler: async (match: RouteMatch) => handleExecuteJob(
+                match.params.jobId, req.body as { userId: string; sourceId: string; actionId: string }, ctx
+            ),
+        },
+    ]);
+};
 
-        if (!sourceId) {
-            throw new HttpError(400, 'Missing source ID');
-        }
+// --- List available actions for a source ---
+function handleListActions(sourceId: string): { actions: ActionDefinition[] } {
+    const actions = SOURCE_ACTIONS[sourceId] ?? [];
+    return { actions };
+}
 
-        const actions = SOURCE_ACTIONS[sourceId] ?? [];
-        return { actions };
+// --- Trigger an action (enqueue to Cloud Tasks) ---
+async function handleTriggerAction(
+    userId: string,
+    sourceId: string,
+    actionId: string,
+    ctx: { logger: { info: (msg: string, data?: Record<string, unknown>) => void } }
+): Promise<Record<string, unknown>> {
+    // Validate action exists
+    const actions = SOURCE_ACTIONS[sourceId];
+    if (!actions || !actions.find(a => a.id === actionId)) {
+        throw new HttpError(404, `Action ${actionId} not found for source ${sourceId}`);
     }
 
-    // --- Trigger Action (enqueue to Cloud Tasks) ---
-    // POST /actions/:sourceId/:actionId
-    if (method === 'POST' && path.includes('/actions/') && !path.includes('/execute/')) {
-        const segments = path.split('/').filter(s => s.length > 0);
-        const actionsIndex = segments.findIndex(s => s === 'actions');
-        const sourceId = segments[actionsIndex - 1];
-        const actionId = segments[actionsIndex + 1];
+    // Create job document
+    const jobId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    const job: ActionJob = {
+        jobId,
+        userId,
+        sourceId,
+        actionId,
+        status: 'PENDING',
+        createdAt: new Date().toISOString(),
+    };
 
-        if (!sourceId || !actionId) {
-            throw new HttpError(400, 'Missing source ID or action ID');
-        }
+    // Store job in Firestore
+    await db.collection('users').doc(userId).collection('action_jobs').doc(jobId).set({
+        ...job,
+        created_at: Timestamp.now(),
+    });
 
-        // Validate action exists
-        const actions = SOURCE_ACTIONS[sourceId];
-        if (!actions || !actions.find(a => a.id === actionId)) {
-            throw new HttpError(404, `Action ${actionId} not found for source ${sourceId}`);
-        }
+    // Enqueue to Cloud Tasks
+    const projectId = process.env.GOOGLE_CLOUD_PROJECT;
+    if (!projectId) {
+        throw new Error('GOOGLE_CLOUD_PROJECT environment variable is not set');
+    }
+    const location = process.env.FUNCTION_REGION || 'us-central1';
+    const queueName = 'connection-actions';
 
-        // Create job document
-        const jobId = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        const job: ActionJob = {
-            jobId,
-            userId,
-            sourceId,
-            actionId,
-            status: 'PENDING',
-            createdAt: new Date().toISOString(),
-        };
+    const parent = tasksClient.queuePath(projectId, location, queueName);
+    const serviceUrl = process.env.CONNECTION_ACTIONS_URL || `https://${location}-${projectId}.cloudfunctions.net/connection-actions-handler`;
 
-        // Store job in Firestore
-        await db.collection('users').doc(userId).collection('action_jobs').doc(jobId).set({
-            ...job,
-            created_at: Timestamp.now(),
-        });
-
-        // Enqueue to Cloud Tasks
-        const projectId = process.env.GOOGLE_CLOUD_PROJECT;
-        if (!projectId) {
-            throw new Error('GOOGLE_CLOUD_PROJECT environment variable is not set');
-        }
-        const location = process.env.FUNCTION_REGION || 'us-central1';
-        const queueName = 'connection-actions';
-
-        const parent = tasksClient.queuePath(projectId, location, queueName);
-        const serviceUrl = process.env.CONNECTION_ACTIONS_URL || `https://${location}-${projectId}.cloudfunctions.net/connection-actions-handler`;
-
-        await tasksClient.createTask({
-            parent,
-            task: {
-                httpRequest: {
-                    httpMethod: 'POST',
-                    url: `${serviceUrl}/execute/${jobId}`,
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: Buffer.from(JSON.stringify({
-                        jobId,
-                        userId,
-                        sourceId,
-                        actionId,
-                    })).toString('base64'),
-                    oidcToken: {
-                        serviceAccountEmail: `${projectId}@appspot.gserviceaccount.com`,
-                        audience: serviceUrl,
-                    },
+    await tasksClient.createTask({
+        parent,
+        task: {
+            httpRequest: {
+                httpMethod: 'POST',
+                url: `${serviceUrl}/execute/${jobId}`,
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: Buffer.from(JSON.stringify({
+                    jobId,
+                    userId,
+                    sourceId,
+                    actionId,
+                })).toString('base64'),
+                oidcToken: {
+                    serviceAccountEmail: `${projectId}@appspot.gserviceaccount.com`,
+                    audience: serviceUrl,
                 },
             },
+        },
+    });
+
+    ctx.logger.info('Enqueued connection action', { userId, sourceId, actionId, jobId });
+    return { success: true, jobId, message: 'Action queued for processing' };
+}
+
+// --- Execute a job (called by Cloud Tasks) ---
+async function handleExecuteJob(
+    jobId: string,
+    body: { userId: string; sourceId: string; actionId: string },
+    ctx: { logger: { info: (msg: string, data?: Record<string, unknown>) => void; error: (msg: string, data?: Record<string, unknown>) => void } }
+): Promise<Record<string, unknown>> {
+    const { userId: jobUserId, sourceId, actionId } = body;
+
+    // Update job status to RUNNING
+    const jobRef = db.collection('users').doc(jobUserId).collection('action_jobs').doc(jobId);
+    await jobRef.update({ status: 'RUNNING' });
+
+    try {
+        // Execute the action
+        const result = await executeAction(ctx, jobUserId, sourceId, actionId);
+
+        // Update job with result
+        await jobRef.update({
+            status: 'COMPLETED',
+            completed_at: Timestamp.now(),
+            result,
         });
 
-        ctx.logger.info('Enqueued connection action', { userId, sourceId, actionId, jobId });
-        return { success: true, jobId, message: 'Action queued for processing' };
+        // Send push notification
+        await sendCompletionNotification(jobUserId, sourceId, actionId, result);
+
+        ctx.logger.info('Connection action completed', { jobId, sourceId, actionId, recordsImported: result.recordsImported });
+        return { success: true, result };
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        await jobRef.update({
+            status: 'FAILED',
+            completed_at: Timestamp.now(),
+            error: errorMessage,
+        });
+
+        // Send failure notification
+        await sendFailureNotification(jobUserId, sourceId, actionId, errorMessage);
+
+        ctx.logger.error('Connection action failed', { jobId, error: errorMessage });
+        throw error;
     }
-
-    // --- Execute Job (called by Cloud Tasks) ---
-    // POST /execute/:jobId
-    if (method === 'POST' && path.includes('/execute/')) {
-        const segments = path.split('/').filter(s => s.length > 0);
-        const executeIndex = segments.findIndex(s => s === 'execute');
-        const jobId = segments[executeIndex + 1];
-
-        if (!jobId) {
-            throw new HttpError(400, 'Missing job ID');
-        }
-
-        const body = req.body as { userId: string; sourceId: string; actionId: string };
-        const { userId: jobUserId, sourceId, actionId } = body;
-
-        // Update job status to RUNNING
-        const jobRef = db.collection('users').doc(jobUserId).collection('action_jobs').doc(jobId);
-        await jobRef.update({ status: 'RUNNING' });
-
-        try {
-            // Execute the action
-            const result = await executeAction(ctx, jobUserId, sourceId, actionId);
-
-            // Update job with result
-            await jobRef.update({
-                status: 'COMPLETED',
-                completed_at: Timestamp.now(),
-                result,
-            });
-
-            // Send push notification
-            await sendCompletionNotification(jobUserId, sourceId, actionId, result);
-
-            ctx.logger.info('Connection action completed', { jobId, sourceId, actionId, recordsImported: result.recordsImported });
-            return { success: true, result };
-
-        } catch (error) {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            await jobRef.update({
-                status: 'FAILED',
-                completed_at: Timestamp.now(),
-                error: errorMessage,
-            });
-
-            // Send failure notification
-            await sendFailureNotification(jobUserId, sourceId, actionId, errorMessage);
-
-            ctx.logger.error('Connection action failed', { jobId, error: errorMessage });
-            throw error;
-        }
-    }
-
-    throw new HttpError(404, 'Not found');
-};
+}
 
 // Execute the specified action
 async function executeAction(
