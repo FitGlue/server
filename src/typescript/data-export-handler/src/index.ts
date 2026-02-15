@@ -1,6 +1,7 @@
 // Module-level imports for smart pruning
 import { createCloudFunction, FirebaseAuthStrategy, PayloadUserStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
+import { dataExportTemplate } from '@fitglue/shared/email';
 import { CloudTasksClient } from '@google-cloud/tasks';
 
 import { getMessaging } from 'firebase-admin/messaging';
@@ -157,7 +158,6 @@ function getEmailPassword(): string {
 }
 
 async function sendExportEmail(userEmail: string, downloadUrl: string): Promise<void> {
-    const { dataExportTemplate } = await import('@fitglue/shared/email');
     const emailPassword = await getEmailPassword();
 
     const transporter = nodemailer.createTransport({
