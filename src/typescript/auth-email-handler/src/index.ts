@@ -29,10 +29,11 @@ import * as nodemailer from 'nodemailer';
 
 const SENDER_EMAIL = 'system@fitglue.tech';
 
-// Action code settings for Firebase link generation
+// Action code settings — handleCodeInApp embeds the oobCode in our URL directly
 function getActionCodeSettings(url: string) {
     return {
         url,
+        handleCodeInApp: true,
     };
 }
 
@@ -119,31 +120,30 @@ async function handleSendPasswordReset(
         throw new HttpError(400, 'Email address is required');
     }
 
-    // Always return success to prevent email enumeration attacks
+    // Only silently handle user-not-found to prevent email enumeration.
+    // All other errors (config, permissions, domain) must propagate.
     let resetLink: string;
     try {
         const auth = admin.auth();
-        logger.info('Generating password reset link', { email });
         resetLink = await auth.generatePasswordResetLink(
             email,
             getActionCodeSettings(`${getBaseUrl()}/auth/reset-password`)
         );
-        logger.info('Password reset link generated successfully', { email });
-    } catch (error) {
-        logger.info('Password reset link generation failed', { email, error: String(error) });
-        // Silently handle user-not-found to prevent enumeration
-        logger.info('Password reset requested for unknown email', { email });
-        return { success: true, message: 'If an account exists with this email, a reset link has been sent' };
+    } catch (error: unknown) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        if (errorMsg.includes('no user record') || errorMsg.includes('USER_NOT_FOUND')) {
+            logger.info('Password reset requested for unknown email', { email });
+            return { success: true, message: 'If an account exists with this email, a reset link has been sent' };
+        }
+        // Re-throw config/infra errors so they surface properly
+        throw error;
     }
 
-    // Send the email - let errors propagate so they show in logs
-    logger.info('Sending password reset email', { email });
     await sendEmail(
         email,
         'Reset your FitGlue password',
         passwordResetTemplate(resetLink, getBaseUrl())
     );
-    logger.info('Password reset email sent successfully', { email });
 
     logger.info('Password reset email sent', { email });
 
