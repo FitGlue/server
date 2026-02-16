@@ -300,11 +300,16 @@ func mapCardioActivityToExercise(ctx context.Context, event *pb.EnrichedActivity
 		DurationSeconds: &duration,
 	}}
 
-	return hevy.PostWorkoutsRequestExercise{
+	exercise := hevy.PostWorkoutsRequestExercise{
 		ExerciseTemplateId: &templateID,
-		Notes:              &event.Description,
 		Sets:               &sets,
-	}, nil
+	}
+	// Only set Notes if description is non-empty — Hevy API rejects empty string notes
+	if event.Description != "" {
+		exercise.Notes = &event.Description
+	}
+
+	return exercise, nil
 }
 
 // getCardioExerciseName returns the exercise name to search for the given activity type

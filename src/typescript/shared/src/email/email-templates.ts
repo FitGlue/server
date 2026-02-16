@@ -99,6 +99,8 @@ function renderLayout({ content, previewText, baseUrl }: EmailLayoutOptions): st
                   <td style="text-align:center;padding-bottom:12px;">
                     <a href="${baseUrl}" style="color:${BRAND.textMuted};font-size:12px;text-decoration:none;margin:0 8px;">Website</a>
                     <span style="color:${BRAND.border};">•</span>
+                    <a href="https://discord.gg/fitglue" style="color:${BRAND.textMuted};font-size:12px;text-decoration:none;margin:0 8px;">Community</a>
+                    <span style="color:${BRAND.border};">•</span>
                     <a href="mailto:support@fitglue.tech" style="color:${BRAND.textMuted};font-size:12px;text-decoration:none;margin:0 8px;">Support</a>
                   </td>
                 </tr>

@@ -136,3 +136,62 @@ func TestFormatPace(t *testing.T) {
 		}
 	}
 }
+
+func TestPaceSummary_SplitTimeMarkers(t *testing.T) {
+	provider := NewPaceSummary()
+	provider.Service = &bootstrap.Service{}
+	now := time.Now()
+
+	activity := &pb.StandardizedActivity{
+		StartTime: timestamppb.New(now),
+		Sessions: []*pb.Session{
+			{
+				TotalElapsedTime: 1800,
+				Laps: []*pb.Lap{
+					{
+						StartTime:        timestamppb.New(now),
+						TotalElapsedTime: 360,
+						TotalDistance:    1000,
+						Records:          []*pb.Record{{Speed: 2.78}},
+					},
+					{
+						StartTime:        timestamppb.New(now.Add(6 * time.Minute)),
+						TotalElapsedTime: 340,
+						TotalDistance:    1000,
+						Records:          []*pb.Record{{Speed: 2.94}},
+					},
+					{
+						StartTime:        timestamppb.New(now.Add(12 * time.Minute)),
+						TotalElapsedTime: 350,
+						TotalDistance:    1000,
+						Records:          []*pb.Record{{Speed: 2.86}},
+					},
+				},
+			},
+		},
+	}
+
+	user := &pb.UserRecord{UserId: "test-user"}
+	inputs := map[string]string{"show_splits": "true"}
+
+	result, err := provider.Enrich(context.Background(), slog.Default(), activity, user, inputs, false)
+	if err != nil {
+		t.Fatalf("Enrich failed: %v", err)
+	}
+
+	// 3 km splits = 3 time markers
+	if len(result.TimeMarkers) != 3 {
+		t.Errorf("Expected 3 time markers, got %d", len(result.TimeMarkers))
+	}
+	if len(result.TimeMarkers) > 0 {
+		if result.TimeMarkers[0].Label != "Km 1" {
+			t.Errorf("Expected first marker label 'Km 1', got %q", result.TimeMarkers[0].Label)
+		}
+		if result.TimeMarkers[0].MarkerType != "split" {
+			t.Errorf("Expected marker type 'split', got %q", result.TimeMarkers[0].MarkerType)
+		}
+	}
+	if result.Metadata["time_markers"] != "3" {
+		t.Errorf("Expected metadata time_markers='3', got %q", result.Metadata["time_markers"])
+	}
+}

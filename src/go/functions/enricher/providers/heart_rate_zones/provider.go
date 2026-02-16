@@ -23,7 +23,7 @@ type HeartRateZone struct {
 
 // StandardZones defines the 6-zone heart rate training model (Zone 0-5)
 var StandardZones = []HeartRateZone{
-	{Name: "Zone 0 (Rest)", MinPct: 0.00, MaxPct: 0.50, Emoji: "⬜"},
+	{Name: "Zone 0 (Rest)", MinPct: 0.00, MaxPct: 0.50, Emoji: "🟪"},
 	{Name: "Zone 1 (Recovery)", MinPct: 0.50, MaxPct: 0.60, Emoji: "🟦"},
 	{Name: "Zone 2 (Endurance)", MinPct: 0.60, MaxPct: 0.70, Emoji: "🟩"},
 	{Name: "Zone 3 (Tempo)", MinPct: 0.70, MaxPct: 0.80, Emoji: "🟨"},

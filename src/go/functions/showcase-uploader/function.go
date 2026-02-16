@@ -327,6 +327,13 @@ func showcaseHandler() framework.HandlerFunc {
 				var activitySets int32
 				var activityReps int32
 				var activityWeightKg float64
+				if eventPayload.ActivityData == nil {
+					fwCtx.Logger.Warn("Activity data nil when computing profile entry stats - pills will be empty",
+						"showcase_id", showcaseID,
+						"activity_id", eventPayload.ActivityId,
+						"activity_data_uri", eventPayload.ActivityDataUri,
+					)
+				}
 				if eventPayload.ActivityData != nil {
 					for _, session := range eventPayload.ActivityData.Sessions {
 						activityDistance += session.TotalDistance

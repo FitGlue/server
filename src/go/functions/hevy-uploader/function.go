@@ -425,7 +425,10 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 			putEx := hevy.PostWorkoutsRequestExercise{
 				ExerciseTemplateId: ex.ExerciseTemplateId,
-				Notes:              ex.Notes,
+			}
+			// Only set Notes if non-nil and non-empty — Hevy API rejects empty string notes
+			if ex.Notes != nil && *ex.Notes != "" {
+				putEx.Notes = ex.Notes
 			}
 			if len(putSets) > 0 {
 				putEx.Sets = &putSets

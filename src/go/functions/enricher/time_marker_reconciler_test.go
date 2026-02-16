@@ -87,6 +87,47 @@ func TestReconcileTimeMarkerLabels(t *testing.T) {
 			},
 			expectedLabels: []string{"Original Label"},
 		},
+		{
+			name: "position-based fallback when all sets share same timestamp (Hevy scenario)",
+			activity: &pb.StandardizedActivity{
+				TimeMarkers: []*pb.TimeMarker{
+					{Label: "Sit Up", Timestamp: timestamppb.New(baseTime), MarkerType: "exercise_start"},
+					{Label: "Cardio", Timestamp: timestamppb.New(baseTime.Add(5 * time.Minute)), MarkerType: "exercise_start"},
+					{Label: "Flye", Timestamp: timestamppb.New(baseTime.Add(10 * time.Minute)), MarkerType: "exercise_start"},
+				},
+				Sessions: []*pb.Session{{
+					StrengthSets: []*pb.StrengthSet{
+						// All sets have the SAME startTime (workout start) - this is what Hevy does
+						{ExerciseName: "Weighted Crunches", StartTime: timestamppb.New(baseTime)},
+						{ExerciseName: "Weighted Crunches", StartTime: timestamppb.New(baseTime)},
+						{ExerciseName: "Weighted Crunches", StartTime: timestamppb.New(baseTime)},
+						{ExerciseName: "Jump Rope", StartTime: timestamppb.New(baseTime)},
+						{ExerciseName: "Jump Rope", StartTime: timestamppb.New(baseTime)},
+						{ExerciseName: "Dumbbell Fly", StartTime: timestamppb.New(baseTime)},
+						{ExerciseName: "Dumbbell Fly", StartTime: timestamppb.New(baseTime)},
+					},
+				}},
+			},
+			expectedLabels: []string{"Weighted Crunches", "Jump Rope", "Dumbbell Fly"},
+		},
+		{
+			name: "position-based fallback with more markers than exercise groups",
+			activity: &pb.StandardizedActivity{
+				TimeMarkers: []*pb.TimeMarker{
+					{Label: "Exercise A", Timestamp: timestamppb.New(baseTime), MarkerType: "exercise_start"},
+					{Label: "Exercise B", Timestamp: timestamppb.New(baseTime.Add(5 * time.Minute)), MarkerType: "exercise_start"},
+					{Label: "Exercise C", Timestamp: timestamppb.New(baseTime.Add(10 * time.Minute)), MarkerType: "exercise_start"},
+				},
+				Sessions: []*pb.Session{{
+					StrengthSets: []*pb.StrengthSet{
+						{ExerciseName: "Bench Press", StartTime: timestamppb.New(baseTime)},
+						{ExerciseName: "Squat", StartTime: timestamppb.New(baseTime)},
+					},
+				}},
+			},
+			// Only first 2 markers get relabeled; third keeps original
+			expectedLabels: []string{"Bench Press", "Squat", "Exercise C"},
+		},
 	}
 
 	for _, tt := range tests {

@@ -96,6 +96,23 @@ func TestIntervals_BasicIntervals(t *testing.T) {
 		t.Errorf("Description should contain grouped intervals '3×0:40 intervals', got: %s", result.Description)
 	}
 
+	// Verify time markers were generated
+	// 1 warmup + 3 active + 2 recovery + 1 cooldown = 7 markers
+	if len(result.TimeMarkers) != 7 {
+		t.Errorf("Expected 7 time markers, got %d", len(result.TimeMarkers))
+	}
+	if len(result.TimeMarkers) > 0 {
+		if result.TimeMarkers[0].MarkerType != "warmup_start" {
+			t.Errorf("Expected first marker type 'warmup_start', got %q", result.TimeMarkers[0].MarkerType)
+		}
+		if result.TimeMarkers[len(result.TimeMarkers)-1].MarkerType != "cooldown_start" {
+			t.Errorf("Expected last marker type 'cooldown_start', got %q", result.TimeMarkers[len(result.TimeMarkers)-1].MarkerType)
+		}
+	}
+	if result.Metadata["time_markers"] != "7" {
+		t.Errorf("Expected metadata time_markers='7', got %q", result.Metadata["time_markers"])
+	}
+
 	t.Logf("Description:\n%s", result.Description)
 }
 

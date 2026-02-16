@@ -10,6 +10,7 @@ import (
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Intervals detects structured interval data in activities and produces a
@@ -43,11 +44,12 @@ func (p *Intervals) ProviderType() pb.EnricherProviderType {
 // intervalLap holds parsed data for a single interval.
 type intervalLap struct {
 	intensity string
-	duration  float64 // seconds
-	distance  float64 // metres
-	avgSpeed  float64 // m/s (derived from distance/duration)
-	avgHR     float64 // bpm (average of records)
-	peakHR    float64 // bpm (max of records)
+	duration  float64                // seconds
+	distance  float64                // metres
+	avgSpeed  float64                // m/s (derived from distance/duration)
+	avgHR     float64                // bpm (average of records)
+	peakHR    float64                // bpm (max of records)
+	startTime *timestamppb.Timestamp // original lap start time for time markers
 }
 
 // intervalGroup collects consecutive laps that share the same intensity and
@@ -123,6 +125,9 @@ func (p *Intervals) Enrich(
 	var firstActiveGroup, lastActiveGroup *intervalGroup
 	var activeGroupSpeeds []float64
 
+	// Generate time markers for graph visualization
+	timeMarkers := generateIntervalTimeMarkers(laps)
+
 	for _, g := range groups {
 		switch g.intensity {
 		case "warmup":
@@ -197,13 +202,15 @@ func (p *Intervals) Enrich(
 		"intervals_active":     fmt.Sprintf("%d", totalActive),
 		"intervals_recovery":   fmt.Sprintf("%d", totalRecovery),
 		"intervals_total_laps": fmt.Sprintf("%d", len(laps)),
+		"time_markers":         fmt.Sprintf("%d", len(timeMarkers)),
 	}
 
 	logger.Info("Intervals enrichment complete",
 		"workout", workoutName,
 		"active_intervals", totalActive,
 		"recovery_intervals", totalRecovery,
-		"total_laps", len(laps))
+		"total_laps", len(laps),
+		"time_markers", len(timeMarkers))
 
 	// Trim leading newline since we no longer have a header content line
 	desc := strings.TrimLeft(sb.String(), "\n")
@@ -211,6 +218,7 @@ func (p *Intervals) Enrich(
 	return &providers.EnrichmentResult{
 		Description:   desc,
 		SectionHeader: formatSectionHeader(workoutName),
+		TimeMarkers:   timeMarkers,
 		Metadata:      metadata,
 	}, nil
 }
@@ -228,6 +236,7 @@ func collectIntervalLaps(activity *pb.StandardizedActivity) []intervalLap {
 				intensity: lap.Intensity,
 				duration:  lap.TotalElapsedTime,
 				distance:  lap.TotalDistance,
+				startTime: lap.StartTime,
 			}
 			if il.duration > 0 {
 				il.avgSpeed = il.distance / il.duration
@@ -472,4 +481,46 @@ func formatSectionHeader(workoutName string) string {
 		return "⏱️ Intervals:"
 	}
 	return fmt.Sprintf("⏱️ Intervals — %s:", workoutName)
+}
+
+// generateIntervalTimeMarkers creates TimeMarker entries for each interval
+// transition (warmup → active → recovery → cooldown) for graph visualization.
+func generateIntervalTimeMarkers(laps []intervalLap) []*pb.TimeMarker {
+	var markers []*pb.TimeMarker
+	activeCount := 0
+	recoveryCount := 0
+
+	for _, l := range laps {
+		if l.startTime == nil {
+			continue
+		}
+
+		var label, markerType string
+		switch l.intensity {
+		case "warmup":
+			label = "🔥 Warmup"
+			markerType = "warmup_start"
+		case "active":
+			activeCount++
+			label = fmt.Sprintf("💨 Interval %d", activeCount)
+			markerType = "interval_start"
+		case "recovery":
+			recoveryCount++
+			label = fmt.Sprintf("😮\u200d💨 Recovery %d", recoveryCount)
+			markerType = "recovery_start"
+		case "cooldown":
+			label = "❄️ Cooldown"
+			markerType = "cooldown_start"
+		default:
+			continue
+		}
+
+		markers = append(markers, &pb.TimeMarker{
+			Timestamp:  l.startTime,
+			Label:      label,
+			MarkerType: markerType,
+		})
+	}
+
+	return markers
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/fitglue/server/src/go/functions/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // PaceSummary calculates and appends pace statistics (min/km) to the activity description.
@@ -22,9 +23,10 @@ type PaceSummary struct {
 
 // Split represents a single km/mile split
 type Split struct {
-	Distance float64       // in meters
-	Duration time.Duration // time for this split
-	Pace     float64       // min/km
+	Distance  float64                // in meters
+	Duration  time.Duration          // time for this split
+	Pace      float64                // min/km
+	StartTime *timestamppb.Timestamp // original lap start time for time markers
 }
 
 func init() {
@@ -191,8 +193,16 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		metadata["splits_count"] = fmt.Sprintf("%d", len(splits))
 	}
 
+	// Generate time markers for split boundaries
+	var timeMarkers []*pb.TimeMarker
+	if showSplits && len(splits) > 0 {
+		timeMarkers = generateSplitTimeMarkers(splits)
+		metadata["time_markers"] = fmt.Sprintf("%d", len(timeMarkers))
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
+		TimeMarkers: timeMarkers,
 		Metadata:    metadata,
 	}, nil
 }
@@ -208,20 +218,28 @@ func calculateSplitsFromLaps(activity *pb.StandardizedActivity) []Split {
 				duration := time.Duration(lap.TotalElapsedTime * float64(time.Second))
 				pace := (lap.TotalElapsedTime / lap.TotalDistance) * 1000 / 60 // min/km
 				splits = append(splits, Split{
-					Distance: lap.TotalDistance,
-					Duration: duration,
-					Pace:     pace,
+					Distance:  lap.TotalDistance,
+					Duration:  duration,
+					Pace:      pace,
+					StartTime: lap.StartTime,
 				})
 			} else if lap.TotalDistance > 1100 {
 				// Longer lap - estimate number of km splits within
 				numKm := int(math.Floor(lap.TotalDistance / 1000))
 				if numKm > 0 {
 					avgPace := (lap.TotalElapsedTime / lap.TotalDistance) * 1000 / 60
+					lapDuration := lap.TotalElapsedTime / float64(numKm)
 					for i := 0; i < numKm; i++ {
+						var splitStart *timestamppb.Timestamp
+						if lap.StartTime != nil {
+							offset := time.Duration(float64(i) * lapDuration * float64(time.Second))
+							splitStart = timestamppb.New(lap.StartTime.AsTime().Add(offset))
+						}
 						splits = append(splits, Split{
-							Distance: 1000,
-							Duration: time.Duration(lap.TotalElapsedTime/float64(numKm)) * time.Second,
-							Pace:     avgPace,
+							Distance:  1000,
+							Duration:  time.Duration(lapDuration) * time.Second,
+							Pace:      avgPace,
+							StartTime: splitStart,
 						})
 					}
 				}
@@ -230,6 +248,22 @@ func calculateSplitsFromLaps(activity *pb.StandardizedActivity) []Split {
 	}
 
 	return splits
+}
+
+// generateSplitTimeMarkers creates TimeMarker entries for each km split boundary.
+func generateSplitTimeMarkers(splits []Split) []*pb.TimeMarker {
+	var markers []*pb.TimeMarker
+	for i, split := range splits {
+		if split.StartTime == nil {
+			continue
+		}
+		markers = append(markers, &pb.TimeMarker{
+			Timestamp:  split.StartTime,
+			Label:      fmt.Sprintf("Km %d", i+1),
+			MarkerType: "split",
+		})
+	}
+	return markers
 }
 
 // formatPace converts pace in minutes (float) to MM:SS format
