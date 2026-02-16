@@ -99,6 +99,22 @@ async function handleListIntegrations(userId: string, ctx: FrameworkContext) {
     };
   }
 
+  // Mobile health integrations (APP_SYNC type — connected automatically by mobile app)
+  // These fields exist in Firestore but not in the typed UserIntegrations proto.
+  const raw = integrations as Record<string, { enabled?: boolean; lastUsedAt?: Date } | undefined>;
+  if (raw.apple_health) {
+    summary['apple-health'] = {
+      connected: !!raw.apple_health.enabled,
+      lastUsedAt: raw.apple_health.lastUsedAt,
+    };
+  }
+  if (raw.health_connect) {
+    summary['health-connect'] = {
+      connected: !!raw.health_connect.enabled,
+      lastUsedAt: raw.health_connect.lastUsedAt,
+    };
+  }
+
   return summary;
 }
 

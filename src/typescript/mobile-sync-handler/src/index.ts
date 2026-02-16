@@ -7,8 +7,9 @@
  */
 
 // Module-level imports for smart pruning
-import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, db } from '@fitglue/shared/framework';
+import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
+import { routeRequest, RouteMatch } from '@fitglue/shared/routing';
 import { Request } from 'express';
 import {
   MobileSyncRequest,
@@ -17,21 +18,62 @@ import {
 } from './types';
 
 /**
- * Main handler for mobile sync requests
+ * Router for mobile endpoints
  */
-export const handler = async (req: Request, ctx: FrameworkContext): Promise<MobileSyncResponse> => {
-  const { logger, stores } = ctx;
+export const handler: FrameworkHandler = async (req, ctx) => {
   const userId = ctx.userId;
-
   if (!userId) {
     throw new HttpError(401, 'Unauthorized');
   }
 
-  // Only accept POST requests
-  if (req.method !== 'POST') {
-    throw new HttpError(405, 'Method not allowed');
+  return await routeRequest(req, ctx, [
+    {
+      method: 'POST',
+      pattern: '/api/mobile/sync',
+      handler: async () => await handleSync(req, userId, ctx)
+    },
+    {
+      method: 'POST',
+      pattern: '/api/mobile/connect/:provider',
+      handler: async (match: RouteMatch) => await handleConnect(userId, match.params.provider, ctx)
+    },
+  ]);
+};
+
+/**
+ * Register a mobile health integration as connected.
+ * Called by the mobile app after the user grants HealthKit / Health Connect permissions.
+ */
+async function handleConnect(userId: string, provider: string, ctx: FrameworkContext) {
+  const { logger } = ctx;
+
+  // Only accept mobile health providers
+  const validProviders: Record<string, string> = {
+    'apple-health': 'apple_health',
+    'health-connect': 'health_connect',
+  };
+
+  const firestoreKey = validProviders[provider];
+  if (!firestoreKey) {
+    throw new HttpError(400, `Invalid mobile provider: ${provider}. Use 'apple-health' or 'health-connect'.`);
   }
 
+  // Mark integration as connected in Firestore (raw update — not in typed UserIntegrations)
+  await db.collection('users').doc(userId).update({
+    [`integrations.${firestoreKey}.enabled`]: true,
+    [`integrations.${firestoreKey}.last_used_at`]: new Date(),
+  });
+
+  logger.info('Mobile integration connected', { userId, provider: firestoreKey });
+  return { message: `${provider} connected successfully` };
+}
+
+/**
+ * Handle activity sync from mobile app
+ */
+async function handleSync(req: Request, userId: string, ctx: FrameworkContext): Promise<MobileSyncResponse> {
+  const { logger, stores } = ctx;
+  // Validate request body
   const syncRequest = req.body as MobileSyncRequest;
 
   // Validate request
@@ -105,6 +147,27 @@ export const handler = async (req: Request, ctx: FrameworkContext): Promise<Mobi
         activityName: activity.activityName,
       });
       skippedCount++;
+    }
+  }
+
+  // Auto-connect the mobile health integration so the pipeline wizard
+  // shows it as available. Uses raw Firestore update to bypass typed
+  // UserIntegrations (which doesn't have these fields in proto yet).
+  if (processedCount > 0 && syncRequest.activities.length > 0) {
+    const firstSource = syncRequest.activities[0].source;
+    const integrationKey = firstSource === 'healthkit' ? 'apple_health' : 'health_connect';
+    try {
+      await db.collection('users').doc(userId).update({
+        [`integrations.${integrationKey}.enabled`]: true,
+        [`integrations.${integrationKey}.last_used_at`]: new Date(),
+      });
+      logger.info('Auto-connected mobile integration', { integrationKey });
+    } catch (err) {
+      // Non-fatal — integration connection is best-effort
+      logger.warn('Failed to auto-connect mobile integration', {
+        integrationKey,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
