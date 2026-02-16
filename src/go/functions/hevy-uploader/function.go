@@ -230,12 +230,14 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	getURL := fmt.Sprintf("https://api.hevyapp.com/v1/workouts/%s", workoutID)
 	getReq, err := http.NewRequestWithContext(ctx, "GET", getURL, nil)
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to create GET request: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to create GET request: %w", err)
 	}
 	getReq.Header.Set("api-key", apiKey)
 
 	getResp, err := client.Do(getReq)
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to GET existing workout: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to GET existing workout: %w", err)
 	}
 	defer getResp.Body.Close()
@@ -243,7 +245,9 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	if getResp.StatusCode != http.StatusOK {
 		var errorBody bytes.Buffer
 		errorBody.ReadFrom(getResp.Body)
-		return nil, fmt.Errorf("GET workout failed: status %d, body: %s", getResp.StatusCode, errorBody.String())
+		errMsg := fmt.Sprintf("GET workout failed: status %d, body: %s", getResp.StatusCode, errorBody.String())
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, event.Name, event.ActivityId, fwCtx.Logger)
+		return nil, fmt.Errorf("%s", errMsg)
 	}
 
 	// Parse into generated Workout type (which includes exercises)
@@ -263,16 +267,19 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 			workoutBytes, marshalErr := json.Marshal(workoutObj)
 			if marshalErr == nil {
 				if decodeErr := json.Unmarshal(workoutBytes, &existingWorkout); decodeErr != nil {
+					destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to decode unwrapped workout: %s", decodeErr), event.Name, event.ActivityId, fwCtx.Logger)
 					return nil, fmt.Errorf("failed to decode unwrapped workout: %w", decodeErr)
 				}
 			}
 		} else {
 			// Flat response - decode directly
 			if err := json.Unmarshal(getRespData, &existingWorkout); err != nil {
+				destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to decode existing workout: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 				return nil, fmt.Errorf("failed to decode existing workout: %w", err)
 			}
 		}
 	} else {
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to decode existing workout response: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to decode existing workout response: %w", err)
 	}
 
@@ -466,6 +473,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 	bodyJSON, err := json.Marshal(putPayload)
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to marshal update body: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to marshal update body: %w", err)
 	}
 
@@ -477,6 +485,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	putURL := fmt.Sprintf("https://api.hevyapp.com/v1/workouts/%s", workoutID)
 	putReq, err := http.NewRequestWithContext(ctx, "PUT", putURL, bytes.NewReader(bodyJSON))
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to create PUT request: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to create PUT request: %w", err)
 	}
 	putReq.Header.Set("api-key", apiKey)
@@ -490,6 +499,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 
 	putResp, err := client.Do(putReq)
 	if err != nil {
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("failed to PUT workout: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 		return nil, fmt.Errorf("failed to PUT workout: %w", err)
 	}
 	defer putResp.Body.Close()
@@ -497,6 +507,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	if putResp.StatusCode >= 400 {
 		err := httputil.WrapResponseError(putResp, "Hevy PUT failed")
 		fwCtx.Logger.Error("Hevy PUT failed", "status", putResp.StatusCode, "error", err)
+		destination.UpdateStatus(ctx, svc.DB, svc.Notifications, event.UserId, fwCtx.PipelineExecutionId, pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED, "", fmt.Sprintf("Hevy PUT failed: %s", err), event.Name, event.ActivityId, fwCtx.Logger)
 		return nil, err
 	}
 

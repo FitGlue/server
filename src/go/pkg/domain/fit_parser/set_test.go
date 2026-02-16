@@ -61,10 +61,9 @@ func TestParseFitFile_StrengthSets(t *testing.T) {
 			i+1, m.Label, m.Timestamp.AsTime().Format("15:04:05"), m.MarkerType)
 	}
 
-	// Time markers should group consecutive same-exercise sets
-	// 13 sets but some are same exercise consecutively, so markers < 13
-	if len(activity.TimeMarkers) >= 13 {
-		t.Errorf("Expected time markers to group consecutive exercises, got %d markers for 13 sets", len(activity.TimeMarkers))
+	// Each Set message gets its own marker — no grouping
+	if len(activity.TimeMarkers) != 13 {
+		t.Errorf("Expected 13 time markers (one per set), got %d", len(activity.TimeMarkers))
 	}
 
 	// All markers should have exercise_start type
@@ -98,13 +97,13 @@ func TestGenerateExerciseTimeMarkers(t *testing.T) {
 			wantLen: 1,
 		},
 		{
-			name: "consecutive same exercise grouped",
+			name: "consecutive same exercise not grouped",
 			sets: []setInfo{
 				{exerciseName: "Bench Press"},
 				{exerciseName: "Bench Press"},
 				{exerciseName: "Bench Press"},
 			},
-			wantLen: 1,
+			wantLen: 3,
 		},
 		{
 			name: "different exercises get separate markers",
@@ -130,7 +129,7 @@ func TestGenerateExerciseTimeMarkers(t *testing.T) {
 				{exerciseName: ""},
 				{exerciseName: ""},
 			},
-			wantLen: 1, // Both become "Exercise" and are grouped
+			wantLen: 2, // Each set gets its own marker
 		},
 	}
 

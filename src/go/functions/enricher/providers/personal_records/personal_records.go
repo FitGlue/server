@@ -186,9 +186,10 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 
 	// Group sets by normalized exercise name
 	exerciseData := make(map[string]struct {
-		Best1RM     float64
-		TotalVolume float64
-		MaxReps     int32
+		Best1RM       float64
+		BestSetVolume float64
+		TotalVolume   float64
+		MaxReps       int32
 	})
 
 	for _, session := range activity.Sessions {
@@ -211,8 +212,12 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 				data.Best1RM = estimated1RM
 			}
 
-			// Accumulate volume
-			data.TotalVolume += CalculateSetVolume(set.WeightKg, set.Reps)
+			// Track volume
+			setVolume := CalculateSetVolume(set.WeightKg, set.Reps)
+			if setVolume > data.BestSetVolume {
+				data.BestSetVolume = setVolume
+			}
+			data.TotalVolume += setVolume
 
 			// Track max reps in a single set
 			if set.Reps > data.MaxReps {
@@ -236,12 +241,23 @@ func (p *PersonalRecordsProvider) checkStrengthRecords(ctx context.Context, logg
 			}
 		}
 
-		// Check volume
+		// Check best set volume
+		if data.BestSetVolume > 0 {
+			recordType := exerciseName + string(SuffixSetVolume)
+			pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, data.BestSetVolume, "kg", activity, false)
+			if err != nil {
+				logger.Warn("Failed to check set volume record", "error", err, "exercise", exerciseName)
+			} else if pr != nil {
+				results = append(results, *pr)
+			}
+		}
+
+		// Check total exercise volume
 		if data.TotalVolume > 0 {
 			recordType := exerciseName + string(SuffixVolume)
 			pr, err := p.checkAndUpdateRecord(ctx, userID, recordType, data.TotalVolume, "kg", activity, false)
 			if err != nil {
-				logger.Warn("Failed to check volume record", "error", err, "exercise", exerciseName)
+				logger.Warn("Failed to check total volume record", "error", err, "exercise", exerciseName)
 			} else if pr != nil {
 				results = append(results, *pr)
 			}
@@ -441,7 +457,9 @@ func (p *PersonalRecordsProvider) checkAndUpdateRecord(ctx context.Context, user
 func (p *PersonalRecordsProvider) formatPRMessage(recordType string, newValue float64, previousValue, improvement *float64, unit string, lowerIsBetter bool) string {
 	// Determine emoji based on record type
 	emoji := "🏆"
-	if strings.Contains(recordType, "_volume") {
+	if strings.Contains(recordType, "_set_volume") {
+		emoji = "💪"
+	} else if strings.Contains(recordType, "_volume") {
 		emoji = "💪"
 	} else if strings.HasPrefix(recordType, "fastest_") {
 		emoji = "🎉"
@@ -530,9 +548,13 @@ func formatRecordTypeForDisplay(recordType string) string {
 		exerciseName := strings.TrimSuffix(recordType, string(Suffix1RM))
 		return formatExerciseName(exerciseName) + " 1RM"
 	}
+	if strings.HasSuffix(recordType, string(SuffixSetVolume)) {
+		exerciseName := strings.TrimSuffix(recordType, string(SuffixSetVolume))
+		return formatExerciseName(exerciseName) + " Best Set Volume"
+	}
 	if strings.HasSuffix(recordType, string(SuffixVolume)) {
 		exerciseName := strings.TrimSuffix(recordType, string(SuffixVolume))
-		return formatExerciseName(exerciseName) + " Volume"
+		return formatExerciseName(exerciseName) + " Total Volume"
 	}
 	if strings.HasSuffix(recordType, string(SuffixReps)) {
 		exerciseName := strings.TrimSuffix(recordType, string(SuffixReps))

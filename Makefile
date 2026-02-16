@@ -169,12 +169,9 @@ typecheck-ts:
 	@cd $(TS_SRC_DIR) && npm exec --workspaces --if-present -- tsc --noEmit
 
 clean-ts:
-	@echo "Cleaning TypeScript..."
-	@# We can't easily use workspaces for cleaning specific dirs without a script,
-	@# but we can just ask every workspace to run its clean script if it exists?
-	@# Most don't have a 'clean' script. The previous logic was reliable.
-	@# Let's keep the find logic for cleaning as it's robust against missing scripts.
-	@for dir in $(TS_DIRS); do \
+	@echo "Cleaning TypeScript handlers..."
+	@# Clean only handler workspaces - tools (mcp-server, admin-cli) are preserved
+	@for dir in $(TS_HANDLER_DIRS) $(TS_SRC_DIR)/shared; do \
 		if [ -f "$$dir/package.json" ]; then \
 			echo "Cleaning $$dir..."; \
 			rm -rf $$dir/dist $$dir/build; \
@@ -199,7 +196,6 @@ lint:
 # P4: Parallel clean
 clean:
 	@$(MAKE) -j2 clean-go clean-ts
-	rm -rf bin/
 
 # --- Codebase Consistency Check ---
 lint-codebase:

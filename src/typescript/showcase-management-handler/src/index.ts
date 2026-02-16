@@ -270,15 +270,67 @@ async function handleAddEntry(
         return { success: true, message: 'Entry already in profile' };
     }
 
-    // Build entry from showcased activity
+    // Fetch activity data from GCS to compute pill stats
+    let distanceMeters = 0;
+    let durationSeconds = 0;
+    let totalSets = 0;
+    let totalReps = 0;
+    let totalWeightKg = 0;
+    let routeThumbnailUrl = '';
+
+    if (activity.activityDataUri) {
+        try {
+            const gcsMatch = activity.activityDataUri.match(/^gs:\/\/([^/]+)\/(.+)$/);
+            if (gcsMatch) {
+                const [, bucketName, filePath] = gcsMatch;
+                const bucket = getStorage().bucket(bucketName);
+                const [contents] = await bucket.file(filePath).download();
+                const parsed = JSON.parse(contents.toString());
+
+                // Handle both EnrichedActivityEvent wrapper and direct StandardizedActivity
+                const activityData = parsed.activity_data || parsed.activityData || (parsed.sessions ? parsed : null);
+
+                if (activityData?.sessions) {
+                    for (const session of activityData.sessions) {
+                        distanceMeters += session.totalDistance ?? session.total_distance ?? 0;
+                        durationSeconds += session.totalElapsedTime ?? session.total_elapsed_time ?? 0;
+                        const strengthSets = session.strengthSets || session.strength_sets || [];
+                        for (const s of strengthSets) {
+                            totalSets++;
+                            totalReps += s.reps || 0;
+                            const weight = s.weightKg ?? s.weight_kg ?? 0;
+                            totalWeightKg += weight * (s.reps || 0);
+                        }
+                    }
+                }
+            }
+        } catch {
+            // Non-fatal: stats will be zero if GCS fetch fails
+        }
+    }
+
+    // Check enrichment metadata for route thumbnail
+    if (activity.enrichmentMetadata?.route_thumbnail_url) {
+        routeThumbnailUrl = activity.enrichmentMetadata.route_thumbnail_url;
+    }
+
+    // Build entry from showcased activity (including pill data)
     const newEntry: Record<string, unknown> = {
         showcase_id: activity.showcaseId,
         title: activity.title,
         activity_type: activity.activityType,
         source: activity.source,
+        distance_meters: distanceMeters,
+        duration_seconds: durationSeconds,
+        total_sets: totalSets,
+        total_reps: totalReps,
+        total_weight_kg: totalWeightKg,
     };
     if (activity.startTime) {
         newEntry.start_time = activity.startTime;
+    }
+    if (routeThumbnailUrl) {
+        newEntry.route_thumbnail_url = routeThumbnailUrl;
     }
 
     // Get raw doc for array manipulation

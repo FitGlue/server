@@ -389,6 +389,8 @@ const getEnricherProviderName = (providerType: EnricherProviderType): string => 
         [EnricherProviderType.ENRICHER_PROVIDER_STREAK_TRACKER]: 'Streak Tracker',
         [EnricherProviderType.ENRICHER_PROVIDER_DISTANCE_MILESTONES]: 'Distance Milestones',
         [EnricherProviderType.ENRICHER_PROVIDER_RECOVERY_ADVISOR]: 'Recovery Advisor',
+        [EnricherProviderType.ENRICHER_PROVIDER_EFFORT_SCORE]: 'Effort Score',
+        [EnricherProviderType.ENRICHER_PROVIDER_INTERVALS]: 'Intervals',
         [EnricherProviderType.ENRICHER_PROVIDER_MOCK]: 'Mock',
         [EnricherProviderType.UNRECOGNIZED]: 'Unrecognized',
     };
@@ -745,7 +747,9 @@ program.command('users:add-pipeline')
                 source: sourceAnswers.source,
                 enrichers,
                 destinations: destAnswers.destinations,
-                disabled: false
+                disabled: false,
+                sourceConfig: {},
+                destinationConfigs: {}
             });
             console.log(`Pipeline added successfully! ID: ${pipelineId}`);
 

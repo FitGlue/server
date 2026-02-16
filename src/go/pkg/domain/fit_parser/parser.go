@@ -793,14 +793,15 @@ func generateActivityName(activityType pb.ActivityType, startTime time.Time) str
 }
 
 // generateExerciseTimeMarkers creates TimeMarker objects from FIT Set messages.
-// Groups consecutive sets by exercise name so each exercise block gets one marker.
+// Each Set message represents a distinct exercise/move and gets its own marker.
+// The reconciler will later overwrite these generic category labels with proper
+// exercise names from sources like Hevy.
 func generateExerciseTimeMarkers(sets []setInfo) []*pb.TimeMarker {
 	if len(sets) == 0 {
 		return nil
 	}
 
 	var markers []*pb.TimeMarker
-	currentExercise := ""
 
 	for _, s := range sets {
 		name := s.exerciseName
@@ -808,15 +809,11 @@ func generateExerciseTimeMarkers(sets []setInfo) []*pb.TimeMarker {
 			name = "Exercise"
 		}
 
-		// Only create a marker when the exercise name changes (new block)
-		if name != currentExercise {
-			markers = append(markers, &pb.TimeMarker{
-				Timestamp:  timestamppb.New(s.startTime),
-				Label:      name,
-				MarkerType: "exercise_start",
-			})
-			currentExercise = name
-		}
+		markers = append(markers, &pb.TimeMarker{
+			Timestamp:  timestamppb.New(s.startTime),
+			Label:      name,
+			MarkerType: "exercise_start",
+		})
 	}
 
 	return markers

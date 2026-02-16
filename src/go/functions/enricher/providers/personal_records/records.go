@@ -52,9 +52,10 @@ const (
 type StrengthRecordSuffix string
 
 const (
-	Suffix1RM    StrengthRecordSuffix = "_1rm"
-	SuffixVolume StrengthRecordSuffix = "_volume"
-	SuffixReps   StrengthRecordSuffix = "_reps"
+	Suffix1RM       StrengthRecordSuffix = "_1rm"
+	SuffixSetVolume StrengthRecordSuffix = "_set_volume"
+	SuffixVolume    StrengthRecordSuffix = "_volume"
+	SuffixReps      StrengthRecordSuffix = "_reps"
 )
 
 // Distance thresholds in meters

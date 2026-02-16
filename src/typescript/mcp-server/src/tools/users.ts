@@ -371,7 +371,9 @@ export function registerUserTools(registerTool: (tool: any, handler: (args: any)
         source,
         enrichers,
         destinations,
-        disabled: false
+        disabled: false,
+        sourceConfig: {},
+        destinationConfigs: {}
       });
       return { pipelineId, message: 'Pipeline added' };
     }
