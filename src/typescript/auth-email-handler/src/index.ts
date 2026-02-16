@@ -29,11 +29,10 @@ import * as nodemailer from 'nodemailer';
 
 const SENDER_EMAIL = 'system@fitglue.tech';
 
-// Action code settings tell Firebase to link directly to our custom pages
+// Action code settings for Firebase link generation
 function getActionCodeSettings(url: string) {
     return {
         url,
-        handleCodeInApp: true,
     };
 }
 
@@ -124,22 +123,27 @@ async function handleSendPasswordReset(
     let resetLink: string;
     try {
         const auth = admin.auth();
+        logger.info('Generating password reset link', { email });
         resetLink = await auth.generatePasswordResetLink(
             email,
             getActionCodeSettings(`${getBaseUrl()}/auth/reset-password`)
         );
-    } catch (_error) {
+        logger.info('Password reset link generated successfully', { email });
+    } catch (error) {
+        logger.info('Password reset link generation failed', { email, error: String(error) });
         // Silently handle user-not-found to prevent enumeration
         logger.info('Password reset requested for unknown email', { email });
         return { success: true, message: 'If an account exists with this email, a reset link has been sent' };
     }
 
     // Send the email - let errors propagate so they show in logs
+    logger.info('Sending password reset email', { email });
     await sendEmail(
         email,
         'Reset your FitGlue password',
         passwordResetTemplate(resetLink, getBaseUrl())
     );
+    logger.info('Password reset email sent successfully', { email });
 
     logger.info('Password reset email sent', { email });
 

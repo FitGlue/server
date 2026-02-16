@@ -443,6 +443,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 	}
 
 	// Build the full PUT payload
+	isPrivate := false
 	putPayload := hevy.PostWorkoutsRequestBody{
 		Workout: &struct {
 			Description *string                             `json:"description"`
@@ -456,6 +457,7 @@ func handleHevyUpdate(ctx context.Context, apiKey string, event *pb.EnrichedActi
 			Description: &mergedDescription,
 			StartTime:   existingWorkout.StartTime,
 			EndTime:     existingWorkout.EndTime,
+			IsPrivate:   &isPrivate,
 		},
 	}
 	if len(putExercises) > 0 {
