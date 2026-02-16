@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.9.0](https://github.com/FitGlue/server/compare/v14.8.3...v14.9.0) (2026-02-16)
+
+
+### Features
+
+* add time markers for intervals and splits, fix hevy uploader and HR zone styling ([dc9e485](https://github.com/FitGlue/server/commit/dc9e4856ea51622498232cfc3fa59f24a850cfa7))
+
 ### [14.8.3](https://github.com/FitGlue/server/compare/v14.8.2...v14.8.3) (2026-02-15)
 
 ### [14.8.2](https://github.com/FitGlue/server/compare/v14.8.1...v14.8.2) (2026-02-15)
