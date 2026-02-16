@@ -101,6 +101,11 @@ function serializeErrors(obj: any, visited = new WeakSet<any>()): any {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     result[key] = serializeErrors(obj[key], visited);
   }
+  // Preserve Symbol properties (Winston uses Symbol.for('level'), Symbol.for('message'),
+  // Symbol.for('splat') internally — dropping these causes silent log loss)
+  for (const sym of Object.getOwnPropertySymbols(obj)) {
+    result[sym] = obj[sym];
+  }
   return result;
 }
 
@@ -128,7 +133,9 @@ const logger = winston.createLogger({
           const gcpInfo: any = {
             timestamp: info.timestamp,
             ...info,
-            severity: info.level.toUpperCase(),
+            // Map Winston levels to GCP Cloud Logging severity strings
+            // (Winston uses 'warn' but GCP expects 'WARNING')
+            severity: info.level === 'warn' ? 'WARNING' : info.level.toUpperCase(),
             message: info.component ? `[${info.component}] ${info.message}` : info.message
           };
           // Remove default keys to avoid duplication/conflict
