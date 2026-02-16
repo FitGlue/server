@@ -1,7 +1,7 @@
 project_id  = "fitglue-server-prod"
 region      = "us-central1"
 environment = "prod"
-log_level    = "warn"
+log_level    = "info"
 retry_policy = "RETRY_POLICY_DO_NOT_RETRY"
 domain_name  = "fitglue.tech"
 base_url     = "https://fitglue.tech"
