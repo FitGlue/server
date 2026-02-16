@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.10.1](https://github.com/FitGlue/server/compare/v14.10.0...v14.10.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* typescript logging ([131e60b](https://github.com/FitGlue/server/commit/131e60b9bfed7996df407092e663d8257f241c74))
+
 ## [14.10.0](https://github.com/FitGlue/server/compare/v14.9.0...v14.10.0) (2026-02-16)
 
 
