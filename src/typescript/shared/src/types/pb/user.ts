@@ -294,6 +294,8 @@ export interface UserIntegrations {
   polar?: PolarIntegration | undefined;
   wahoo?: WahooIntegration | undefined;
   github?: GitHubIntegration | undefined;
+  appleHealth?: AppleHealthIntegration | undefined;
+  healthConnect?: HealthConnectIntegration | undefined;
 }
 
 export interface MockIntegration {
@@ -460,6 +462,18 @@ export interface GitHubIntegration {
   githubUsername: string;
   /** Granted OAuth scopes */
   scope: string;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface AppleHealthIntegration {
+  enabled: boolean;
+  createdAt?: Date | undefined;
+  lastUsedAt?: Date | undefined;
+}
+
+export interface HealthConnectIntegration {
+  enabled: boolean;
   createdAt?: Date | undefined;
   lastUsedAt?: Date | undefined;
 }

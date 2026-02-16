@@ -1,14 +1,25 @@
 import { handler } from './index';
 
 // Mock @fitglue/shared/framework
-jest.mock('@fitglue/shared/framework', () => ({
-  createCloudFunction: jest.fn((handler: any) => handler),
-  FrameworkContext: jest.fn(),
-  FirebaseAuthStrategy: jest.fn(),
-  db: {
-    collection: jest.fn(),
-  },
-}));
+jest.mock('@fitglue/shared/framework', () => {
+  class HttpError extends Error {
+    statusCode: number;
+    constructor(statusCode: number, message: string) {
+      super(message);
+      this.statusCode = statusCode;
+      this.name = 'HttpError';
+    }
+  }
+  return {
+    createCloudFunction: jest.fn((handler: any) => handler),
+    FrameworkContext: jest.fn(),
+    FirebaseAuthStrategy: jest.fn(),
+    HttpError,
+    db: {
+      collection: jest.fn(),
+    },
+  };
+});
 
 // Mock @fitglue/shared/errors
 jest.mock('@fitglue/shared/errors', () => {
@@ -21,6 +32,12 @@ jest.mock('@fitglue/shared/errors', () => {
     }
   }
   return { HttpError };
+});
+
+// Mock @fitglue/shared/routing
+jest.mock('@fitglue/shared/routing', () => {
+  const actual = jest.requireActual('@fitglue/shared/routing');
+  return actual;
 });
 
 // Get db from mocked module
@@ -42,17 +59,17 @@ describe('mobile-sync-handler', () => {
 
     (db.collection as jest.Mock).mockReturnValue(mockMobileActivitiesCollection);
 
-
-
     ctx = {
       userId: 'user-1',
       logger: {
         info: jest.fn(),
+        warn: jest.fn(),
         error: jest.fn(),
       },
       stores: {
         users: {
           get: jest.fn().mockResolvedValue({ id: 'user-1' }),
+          setIntegration: jest.fn().mockResolvedValue(undefined),
         },
       },
     };
@@ -66,19 +83,22 @@ describe('mobile-sync-handler', () => {
     ctx.userId = undefined;
     await expect(handler(({
       method: 'POST',
+      path: '/api/mobile/sync',
       body: { activities: [] },
     } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 401 }));
   });
 
-  it('returns 405 if not POST', async () => {
+  it('returns 404 for unmatched route', async () => {
     await expect(handler(({
       method: 'GET',
-    } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 405 }));
+      path: '/api/mobile/unknown',
+    } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
   });
 
   it('returns 400 if activities missing', async () => {
     await expect(handler(({
       method: 'POST',
+      path: '/api/mobile/sync',
       body: {},
     } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
   });
@@ -87,6 +107,7 @@ describe('mobile-sync-handler', () => {
     ctx.stores.users.get.mockResolvedValue(null);
     await expect(handler(({
       method: 'POST',
+      path: '/api/mobile/sync',
       body: { activities: [] },
     } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
   });
@@ -114,6 +135,7 @@ describe('mobile-sync-handler', () => {
 
     const result: any = await handler(({
       method: 'POST',
+      path: '/api/mobile/sync',
       body: { activities, device: { platform: 'ios' } },
     } as any), ctx);
 
@@ -135,6 +157,13 @@ describe('mobile-sync-handler', () => {
     const secondCallData = mockDocRef.set.mock.calls[1][0];
     expect(secondCallData.source).toBe('SOURCE_HEALTH_CONNECT');
     expect(secondCallData.activityType).toBe('WeightTraining');
+
+    // Verify integration was auto-updated
+    expect(ctx.stores.users.setIntegration).toHaveBeenCalledWith(
+      'user-1',
+      'appleHealth',
+      expect.objectContaining({ enabled: true })
+    );
   });
 
   it('handles individual activity processing errors', async () => {
@@ -161,6 +190,7 @@ describe('mobile-sync-handler', () => {
 
     const result: any = await handler(({
       method: 'POST',
+      path: '/api/mobile/sync',
       body: { activities },
     } as any), ctx);
 
@@ -169,5 +199,42 @@ describe('mobile-sync-handler', () => {
       processedCount: 1,
       skippedCount: 1,
     }));
+  });
+
+  describe('connect endpoint', () => {
+    it('connects health-connect integration', async () => {
+      const result: any = await handler(({
+        method: 'POST',
+        path: '/api/mobile/connect/health-connect',
+      } as any), ctx);
+
+      expect(result).toEqual({ message: 'health-connect connected successfully' });
+      expect(ctx.stores.users.setIntegration).toHaveBeenCalledWith(
+        'user-1',
+        'healthConnect',
+        expect.objectContaining({ enabled: true })
+      );
+    });
+
+    it('connects apple-health integration', async () => {
+      const result: any = await handler(({
+        method: 'POST',
+        path: '/api/mobile/connect/apple-health',
+      } as any), ctx);
+
+      expect(result).toEqual({ message: 'apple-health connected successfully' });
+      expect(ctx.stores.users.setIntegration).toHaveBeenCalledWith(
+        'user-1',
+        'appleHealth',
+        expect.objectContaining({ enabled: true })
+      );
+    });
+
+    it('returns 400 for invalid provider', async () => {
+      await expect(handler(({
+        method: 'POST',
+        path: '/api/mobile/connect/garmin',
+      } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 400 }));
+    });
   });
 });

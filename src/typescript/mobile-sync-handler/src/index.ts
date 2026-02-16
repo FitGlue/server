@@ -10,7 +10,7 @@
 import { createCloudFunction, FrameworkContext, FirebaseAuthStrategy, FrameworkHandler, db } from '@fitglue/shared/framework';
 import { HttpError } from '@fitglue/shared/errors';
 import { routeRequest, RouteMatch } from '@fitglue/shared/routing';
-import { Request } from 'express';
+
 import {
   MobileSyncRequest,
   MobileSyncResponse,
@@ -47,31 +47,32 @@ export const handler: FrameworkHandler = async (req, ctx) => {
 async function handleConnect(userId: string, provider: string, ctx: FrameworkContext) {
   const { logger } = ctx;
 
-  // Only accept mobile health providers
-  const validProviders: Record<string, string> = {
-    'apple-health': 'apple_health',
-    'health-connect': 'health_connect',
+  // Map URL param to typed integration key
+  const validProviders: Record<string, 'appleHealth' | 'healthConnect'> = {
+    'apple-health': 'appleHealth',
+    'health-connect': 'healthConnect',
   };
 
-  const firestoreKey = validProviders[provider];
-  if (!firestoreKey) {
+  const integrationKey = validProviders[provider];
+  if (!integrationKey) {
     throw new HttpError(400, `Invalid mobile provider: ${provider}. Use 'apple-health' or 'health-connect'.`);
   }
 
-  // Mark integration as connected in Firestore (raw update — not in typed UserIntegrations)
-  await db.collection('users').doc(userId).update({
-    [`integrations.${firestoreKey}.enabled`]: true,
-    [`integrations.${firestoreKey}.last_used_at`]: new Date(),
+  // Mark integration as connected using typed setIntegration
+  await ctx.stores.users.setIntegration(userId, integrationKey, {
+    enabled: true,
+    lastUsedAt: new Date(),
   });
 
-  logger.info('Mobile integration connected', { userId, provider: firestoreKey });
+  logger.info('Mobile integration connected', { userId, provider: integrationKey });
   return { message: `${provider} connected successfully` };
 }
 
 /**
  * Handle activity sync from mobile app
  */
-async function handleSync(req: Request, userId: string, ctx: FrameworkContext): Promise<MobileSyncResponse> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any, complexity
+async function handleSync(req: any, userId: string, ctx: FrameworkContext): Promise<MobileSyncResponse> {
   const { logger, stores } = ctx;
   // Validate request body
   const syncRequest = req.body as MobileSyncRequest;
@@ -150,21 +151,19 @@ async function handleSync(req: Request, userId: string, ctx: FrameworkContext): 
     }
   }
 
-  // Auto-connect the mobile health integration so the pipeline wizard
-  // shows it as available. Uses raw Firestore update to bypass typed
-  // UserIntegrations (which doesn't have these fields in proto yet).
+  // Update last_used_at on the mobile health integration
   if (processedCount > 0 && syncRequest.activities.length > 0) {
     const firstSource = syncRequest.activities[0].source;
-    const integrationKey = firstSource === 'healthkit' ? 'apple_health' : 'health_connect';
+    const integrationKey = firstSource === 'healthkit' ? 'appleHealth' : 'healthConnect' as const;
     try {
-      await db.collection('users').doc(userId).update({
-        [`integrations.${integrationKey}.enabled`]: true,
-        [`integrations.${integrationKey}.last_used_at`]: new Date(),
+      await stores.users.setIntegration(userId, integrationKey, {
+        enabled: true,
+        lastUsedAt: new Date(),
       });
-      logger.info('Auto-connected mobile integration', { integrationKey });
+      logger.info('Updated mobile integration last_used_at', { integrationKey });
     } catch (err) {
-      // Non-fatal — integration connection is best-effort
-      logger.warn('Failed to auto-connect mobile integration', {
+      // Non-fatal — integration tracking is best-effort
+      logger.warn('Failed to update mobile integration', {
         integrationKey,
         error: err instanceof Error ? err.message : String(err),
       });
@@ -186,7 +185,7 @@ async function handleSync(req: Request, userId: string, ctx: FrameworkContext): 
   });
 
   return response;
-};
+}
 
 // Export the wrapped function with Firebase Auth
 export const mobileSyncHandler = createCloudFunction(handler, {

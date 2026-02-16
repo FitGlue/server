@@ -142,4 +142,16 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
     externalUserIdField: 'githubUsername',
     configurableFields: [], // OAuth configured via flow
   },
+  appleHealth: {
+    key: 'appleHealth',
+    displayName: 'Apple Health',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
+    configurableFields: [], // Connected via mobile app
+  },
+  healthConnect: {
+    key: 'healthConnect',
+    displayName: 'Health Connect',
+    authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
+    configurableFields: [], // Connected via mobile app
+  },
 };
