@@ -179,6 +179,20 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 				"last_used_at":    u.Integrations.Github.LastUsedAt.AsTime(),
 			}
 		}
+		if u.Integrations.AppleHealth != nil {
+			integrations["apple_health"] = map[string]interface{}{
+				"enabled":      u.Integrations.AppleHealth.Enabled,
+				"created_at":   u.Integrations.AppleHealth.CreatedAt.AsTime(),
+				"last_used_at": u.Integrations.AppleHealth.LastUsedAt.AsTime(),
+			}
+		}
+		if u.Integrations.HealthConnect != nil {
+			integrations["health_connect"] = map[string]interface{}{
+				"enabled":      u.Integrations.HealthConnect.Enabled,
+				"created_at":   u.Integrations.HealthConnect.CreatedAt.AsTime(),
+				"last_used_at": u.Integrations.HealthConnect.LastUsedAt.AsTime(),
+			}
+		}
 		m["integrations"] = integrations
 	}
 
@@ -349,6 +363,20 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 				Scope:          getString(ghMap, "scope"),
 				CreatedAt:      getTime(ghMap, "created_at"),
 				LastUsedAt:     getTime(ghMap, "last_used_at"),
+			}
+		}
+		if ahMap, ok := iMap["apple_health"].(map[string]interface{}); ok {
+			u.Integrations.AppleHealth = &pb.AppleHealthIntegration{
+				Enabled:    getBool(ahMap, "enabled"),
+				CreatedAt:  getTime(ahMap, "created_at"),
+				LastUsedAt: getTime(ahMap, "last_used_at"),
+			}
+		}
+		if hcMap, ok := iMap["health_connect"].(map[string]interface{}); ok {
+			u.Integrations.HealthConnect = &pb.HealthConnectIntegration{
+				Enabled:    getBool(hcMap, "enabled"),
+				CreatedAt:  getTime(hcMap, "created_at"),
+				LastUsedAt: getTime(hcMap, "last_used_at"),
 			}
 		}
 	}
