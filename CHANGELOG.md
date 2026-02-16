@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.10.0](https://github.com/FitGlue/server/compare/v14.9.0...v14.10.0) (2026-02-16)
+
+
+### Features
+
+* add set-level strength PRs, hevy update error tracking, and showcase profile stats ([8f78663](https://github.com/FitGlue/server/commit/8f7866318827389815037816d6e3c14755661b73))
+
+
+### Bug Fixes
+
+* hevy upload issue, more debugging for auth-email-handler ([f2423b0](https://github.com/FitGlue/server/commit/f2423b0f7e0493f71a5463fb6b8222c15a4ba97f))
+
 ## [14.9.0](https://github.com/FitGlue/server/compare/v14.8.3...v14.9.0) (2026-02-16)
 
 
