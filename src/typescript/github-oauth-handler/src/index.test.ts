@@ -25,8 +25,7 @@ jest.mock('@fitglue/shared/infrastructure/oauth', () => ({
     storeOAuthTokens: jest.fn(),
 }));
 
-// Mock @fitglue/shared/types
-jest.mock('@fitglue/shared/types', () => ({}));
+
 
 import { githubOAuthHandler } from './index';
 
@@ -173,7 +172,7 @@ describe('githubOAuthHandler', () => {
             })
         );
 
-        // Verify token storage
+        // Verify token storage with extras
         expect(mockStoreOAuthTokens).toHaveBeenCalledWith(
             'user-123',
             'github',
@@ -182,19 +181,15 @@ describe('githubOAuthHandler', () => {
                 refreshToken: '',
                 externalUserId: '42',
             }),
-            ctx.stores
-        );
-
-        // Verify GitHub-specific metadata storage
-        expect(ctx.stores.users.setIntegration).toHaveBeenCalledWith(
-            'user-123',
-            'github',
-            expect.objectContaining({
-                enabled: true,
+            ctx.stores,
+            {
                 githubUsername: 'janedoe',
                 scope: 'repo',
-            })
+            }
         );
+
+        // Verify no separate setIntegration call (single write via storeOAuthTokens)
+        expect(ctx.stores.users.setIntegration).not.toHaveBeenCalled();
 
         expect(ctx.logger.info).toHaveBeenCalledWith('Successfully connected GitHub account', {
             userId: 'user-123',

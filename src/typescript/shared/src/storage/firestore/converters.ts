@@ -138,12 +138,11 @@ export const mapGenericIntegrationToFirestore = (i: Record<string, unknown>, key
   if ('createdAt' in i) out.created_at = i.createdAt;
   if ('lastUsedAt' in i) out.last_used_at = i.lastUsedAt;
 
-  // Handle OAuth specific fields
+  // Handle OAuth specific fields (guard against undefined for partial updates)
   if (isOAuthIntegration(def)) {
-    out.access_token = i.accessToken;
-    out.refresh_token = i.refreshToken;
-
-    out.expires_at = i.expiresAt;
+    if ('accessToken' in i) out.access_token = i.accessToken;
+    if ('refreshToken' in i) out.refresh_token = i.refreshToken;
+    if ('expiresAt' in i) out.expires_at = i.expiresAt;
 
     // Map the externalUserIdField from proto key to snake_case DB key
     const extId = def.externalUserIdField ? i[def.externalUserIdField] : undefined;
@@ -152,6 +151,10 @@ export const mapGenericIntegrationToFirestore = (i: Record<string, unknown>, key
       const dbKey = def.externalUserIdField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
       out[dbKey] = extId;
     }
+
+    // GitHub-specific extra fields
+    if ('githubUserId' in i) out.github_user_id = i.githubUserId;
+    if ('scope' in i) out.scope = i.scope;
   } else {
     // API Key based (Hevy) or Public ID (Parkrun)
     if ('apiKey' in i) out.api_key = i.apiKey;
@@ -214,6 +217,12 @@ const mapGenericIntegrationFromFirestore = (data: GenericIntegrationData, key: s
       } else {
         out[extField] = val || '';
       }
+    }
+
+    // GitHub-specific extra fields
+    if (key === 'github') {
+      out.githubUserId = data.github_user_id || data.githubUserId || '';
+      out.scope = data.scope || '';
     }
   } else {
     // API Key (Hevy) or Public ID (Parkrun)

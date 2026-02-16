@@ -18,14 +18,14 @@ export async function storeOAuthTokens(
     expiresAt: Date;
     externalUserId: string;
   },
-  stores?: { users: UserStore; integrationIdentities: IntegrationIdentityStore }
+  stores?: { users: UserStore; integrationIdentities: IntegrationIdentityStore },
+  extras?: Record<string, unknown>
 ): Promise<void> {
   // If stores not provided, create them (for backward compatibility)
   const db = admin.firestore();
   const userStore = stores?.users || new UserStore(db);
   const identityStore = stores?.integrationIdentities || new IntegrationIdentityStore(db);
 
-  // Update user's integration tokens
   // Update user's integration tokens (using new typed method)
   await userStore.setIntegration(userId, provider, {
     enabled: true,
@@ -43,7 +43,9 @@ export async function storeOAuthTokens(
     ...(provider === 'polar' ? { polarUserId: tokens.externalUserId } : {}),
     ...(provider === 'wahoo' ? { wahooUserId: tokens.externalUserId } : {}),
     ...(provider === 'oura' ? { ouraUserId: tokens.externalUserId } : {}),
-    ...(provider === 'github' ? { githubUserId: tokens.externalUserId } : {})
+    ...(provider === 'github' ? { githubUserId: tokens.externalUserId } : {}),
+    // Provider-specific extra fields (e.g. githubUsername, scope)
+    ...extras,
   } as (typeof provider extends 'strava' ? StravaIntegration : typeof provider extends 'fitbit' ? FitbitIntegration : typeof provider extends 'trainingpeaks' ? TrainingPeaksIntegration : typeof provider extends 'spotify' ? SpotifyIntegration : typeof provider extends 'google' ? GoogleIntegration : typeof provider extends 'polar' ? PolarIntegration : typeof provider extends 'wahoo' ? WahooIntegration : typeof provider extends 'github' ? GitHubIntegration : OuraIntegration));
 
 

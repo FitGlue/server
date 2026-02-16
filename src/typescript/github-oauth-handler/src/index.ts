@@ -1,7 +1,6 @@
 // Module-level imports for smart pruning - only includes framework and oauth modules
 import { createCloudFunction, FrameworkContext, FrameworkResponse } from '@fitglue/shared/framework';
 import { validateOAuthState, storeOAuthTokens } from '@fitglue/shared/infrastructure/oauth';
-import { GitHubIntegration } from '@fitglue/shared/types';
 
 // Helper to create redirect responses
 const redirect = (url: string) => new FrameworkResponse({ status: 302, headers: { Location: url } });
@@ -100,22 +99,17 @@ const handler = async (req: any, ctx: FrameworkContext) => {
             login: string;
         };
 
-        // Store tokens in Firestore
+        // Store tokens and GitHub-specific metadata in a single write
         // Note: GitHub OAuth tokens don't expire (no refresh token needed)
         await storeOAuthTokens(userId, 'github', {
             accessToken,
             refreshToken: '', // GitHub tokens don't expire or use refresh tokens
             expiresAt: new Date('2099-12-31'), // Never expires
             externalUserId: githubUser.id.toString(),
-        }, stores);
-
-        // Store additional GitHub-specific metadata (username, granted scopes)
-        // Uses setIntegration with merge to add fields alongside the tokens stored above
-        await stores.users.setIntegration(userId, 'github', {
-            enabled: true,
+        }, stores, {
             githubUsername: githubUser.login,
             scope,
-        } as Partial<GitHubIntegration> as GitHubIntegration);
+        });
 
         logger.info('Successfully connected GitHub account', {
             userId,
