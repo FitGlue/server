@@ -105,25 +105,41 @@ export interface MobileSyncResponse {
 }
 
 /**
- * Map mobile activity type to FitGlue activity type
+ * Map mobile activity type to FitGlue activity type.
+ *
+ * Must cover all names sent by:
+ * - Android Health Connect (via EXERCISE_TYPE_MAP in AndroidHealthService.ts)
+ * - iOS HealthKit (via WORKOUT_ACTIVITY_TYPES in AppleHealthService.ts)
+ *
+ * Values here correspond to FitGlue's Strava-centric ActivityType display names
+ * (e.g., 'Run', 'Ride', 'WeightTraining').
  */
 export function mapMobileActivityType(activityName: string): string {
   const lowerName = activityName.toLowerCase();
 
   const typeMap: Record<string, string> = {
-    // Cardio
+    // === Cardio / Running ===
     'running': 'Run',
     'run': 'Run',
+    'trailrun': 'TrailRun',
+    'trail run': 'TrailRun',
+
+    // === Walking ===
     'walking': 'Walk',
     'walk': 'Walk',
+
+    // === Cycling ===
     'cycling': 'Ride',
     'biking': 'Ride',
     'bike': 'Ride',
     'ride': 'Ride',
+
+    // === Swimming ===
     'swimming': 'Swim',
     'swim': 'Swim',
+    'waterpolo': 'Swim',
 
-    // Strength
+    // === Strength ===
     'weighttraining': 'WeightTraining',
     'weight_training': 'WeightTraining',
     'weight training': 'WeightTraining',
@@ -132,21 +148,95 @@ export function mapMobileActivityType(activityName: string): string {
     'strength training': 'WeightTraining',
     'gym': 'WeightTraining',
 
-    // Cardio Equipment
+    // === Cardio Equipment ===
     'elliptical': 'Elliptical',
     'rowing': 'Rowing',
-    'stairclimber': 'StairStepper',
+    'stairclimbing': 'StairStepper',
     'stair_climbing': 'StairStepper',
+    'stairstepper': 'StairStepper',
 
-    // Other
+    // === Mind & Body ===
     'yoga': 'Yoga',
-    'pilates': 'Yoga',
+    'pilates': 'Pilates',
+    'meditation': 'Yoga',
+    'stretching': 'Yoga',
+
+    // === HIIT / CrossFit ===
     'hiit': 'HIIT',
     'crossfit': 'Crossfit',
+    'crosstraining': 'Crossfit',
+
+    // === Hiking ===
     'hiking': 'Hike',
     'hike': 'Hike',
 
-    // Default
+    // === Winter Sports ===
+    'alpineski': 'AlpineSki',
+    'alpine ski': 'AlpineSki',
+    'nordicski': 'NordicSki',
+    'nordic ski': 'NordicSki',
+    'snowboarding': 'Snowboard',
+    'snowshoeing': 'Snowshoe',
+    'iceskating': 'IceSkate',
+    'ice skating': 'IceSkate',
+
+    // === Racket Sports ===
+    'tennis': 'Tennis',
+    'tabletennis': 'TableTennis',
+    'table tennis': 'TableTennis',
+    'badminton': 'Badminton',
+    'squash': 'Squash',
+    'racquetball': 'Racquetball',
+    'pickleball': 'Pickleball',
+
+    // === Team Sports ===
+    'soccer': 'Soccer',
+    'basketball': 'Basketball',
+    'volleyball': 'Volleyball',
+    'handball': 'Handball',
+    'rugby': 'Rugby',
+    'football': 'Workout',
+    'hockey': 'Workout',
+    'baseball': 'Workout',
+    'softball': 'Workout',
+    'cricket': 'Cricket',
+
+    // === Water Sports ===
+    'kayaking': 'Kayaking',
+    'sailing': 'Sail',
+    'surfing': 'Surfing',
+    'standuppaddling': 'StandUpPaddling',
+    'stand up paddling': 'StandUpPaddling',
+    'scubadiving': 'Workout',
+
+    // === Combat ===
+    'boxing': 'Workout',
+    'martialarts': 'Workout',
+    'martial arts': 'Workout',
+    'fencing': 'Workout',
+
+    // === Climbing ===
+    'rockclimbing': 'RockClimbing',
+    'rock climbing': 'RockClimbing',
+
+    // === Other ===
+    'golf': 'Golf',
+    'gymnastics': 'Workout',
+    'dancing': 'Workout',
+    'coretraining': 'Workout',
+    'core training': 'Workout',
+    'flexibility': 'Yoga',
+    'cardio': 'Workout',
+    'jumprope': 'Workout',
+    'jump rope': 'Workout',
+    'wheelchair': 'Wheelchair',
+    'horsebackriding': 'Workout',
+    'horseback riding': 'Workout',
+    'paragliding': 'Workout',
+    'frisbee': 'Workout',
+    'housework': 'Workout',
+
+    // === Generic ===
     'workout': 'Workout',
     'exercise': 'Workout',
   };
