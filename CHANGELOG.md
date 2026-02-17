@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+### [14.11.1](https://github.com/FitGlue/server/compare/v14.11.0...v14.11.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* intervals section header, recovery formatting, and pipeline status hygiene ([667f947](https://github.com/FitGlue/server/commit/667f9472620316e5fc45d5957b9d201ad3a2f053))
+
 ## [14.11.0](https://github.com/FitGlue/server/compare/v14.10.2...v14.11.0) (2026-02-17)
 
 
