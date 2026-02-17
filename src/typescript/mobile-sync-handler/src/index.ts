@@ -192,4 +192,5 @@ export const mobileSyncHandler = createCloudFunction(handler, {
   auth: {
     strategies: [new FirebaseAuthStrategy()],
   },
+  skipExecutionLogging: true,
 });
