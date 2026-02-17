@@ -144,7 +144,7 @@ export const INTEGRATIONS: Record<keyof UserIntegrations, IntegrationDefinition>
   },
   appleHealth: {
     key: 'appleHealth',
-    displayName: 'Apple Health',
+    displayName: 'Apple HealthKit',
     authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
     configurableFields: [], // Connected via mobile app
   },

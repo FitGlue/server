@@ -1,5 +1,6 @@
 import * as admin from 'firebase-admin';
 import * as converters from './converters';
+import { camelToSnake } from './converters';
 
 import { UserRecord } from '../../types/pb/user';
 
@@ -184,8 +185,9 @@ export class UserStore {
    * Delete an integration from a user (removes the field entirely, not just disables).
    */
   async deleteIntegration(userId: string, provider: string): Promise<void> {
+    const firestoreField = camelToSnake(provider);
     await this.collection().doc(userId).update({
-      [`integrations.${provider}`]: admin.firestore.FieldValue.delete()
+      [`integrations.${firestoreField}`]: admin.firestore.FieldValue.delete()
     });
   }
 
@@ -198,8 +200,9 @@ export class UserStore {
     provider: K,
     data: import('../../types/pb/user').UserIntegrations[K]
   ): Promise<void> {
-    // Construct the dot-notation key for updating nested field
-    const fieldPath = `integrations.${provider}`;
+    // Convert camelCase TS key to snake_case Firestore field name
+    const firestoreField = camelToSnake(provider);
+    const fieldPath = `integrations.${firestoreField}`;
 
     // Use generic converter to ensure snake_case mapping based on logic
     // We cast data to Record<string, unknown> because we know it matches the generic integration structure
@@ -222,7 +225,8 @@ export class UserStore {
    * Update the last_used_at timestamp for a specific integration.
    */
   async updateLastUsed(userId: string, provider: string): Promise<void> {
-    const fieldPath = `integrations.${provider}.last_used_at`;
+    const firestoreField = camelToSnake(provider);
+    const fieldPath = `integrations.${firestoreField}.last_used_at`;
     await this.collection().doc(userId).update({
       [fieldPath]: new Date()
     });

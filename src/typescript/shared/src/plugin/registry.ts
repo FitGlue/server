@@ -281,7 +281,7 @@ registerSource({
 registerSource({
   id: 'apple_health',
   type: PluginType.PLUGIN_TYPE_SOURCE,
-  name: 'Apple Health',
+  name: 'Apple HealthKit',
   description: 'Import workouts and health data from iOS devices',
   icon: '🍎',
   enabled: true,
@@ -3933,13 +3933,13 @@ FitGlue connects to your Strava account via OAuth and can upload your boosted ac
 
 registerIntegration({
   id: 'apple-health',
-  name: 'Apple Health',
+  name: 'Apple HealthKit',
   description: 'Sync workouts and health data from your iOS device',
   icon: '🍎',
   authType: IntegrationAuthType.INTEGRATION_AUTH_TYPE_APP_SYNC,
   enabled: true,
   docsUrl: '',
-  setupTitle: 'Connect Apple Health',
+  setupTitle: 'Connect Apple HealthKit',
   setupInstructions: `To connect Apple Health, install the **FitGlue mobile app** on your iOS device:
 
 1. Download **FitGlue** from the App Store

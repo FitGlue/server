@@ -64,7 +64,7 @@ const ERROR_RULES = new Set([
   'T20', // Module barrel exports required for smart pruning
   // Note: T19 (No Root Barrel) is WARNING only to allow gradual migration
   // Cross-Language
-  'X1', 'X2', 'X3', 'X4', 'X6',
+  'X1', 'X2', 'X3', 'X4', 'X6', 'X7',
   // Web
   'W1', 'W3', 'W4', 'W7', 'W8', 'W9', 'W12', 'W13', 'W15',
   // Enum
@@ -1507,6 +1507,82 @@ function checkIntegrationConverterCoverage(): CheckResult {
     warnings
   };
 }
+
+// ============================================================================
+// Check X7: No Hardcoded Integration Key Mappings
+// ============================================================================
+
+/**
+ * Ensures no file contains hardcoded camelCase-to-snake_case (or kebab-case)
+ * integration key mapping tables. These should use the generic camelToSnake
+ * utility from converters instead of maintaining separate lookup tables.
+ *
+ * Catches patterns like:
+ *   appleHealth: 'apple_health'
+ *   healthConnect: 'health-connect'
+ */
+function checkNoHardcodedIntegrationKeyMappings(): CheckResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
+  // Pattern: camelCase key mapped to snake_case or kebab-case value for known multi-word integrations
+  // This catches explicit mapping tables like { appleHealth: 'apple_health' }
+  const FORBIDDEN_PATTERNS = [
+    // Hardcoded camelCase -> snake_case mappings
+    /appleHealth\s*[:=]\s*['"]apple_health['"]/,
+    /healthConnect\s*[:=]\s*['"]health_connect['"]/,
+    // Hardcoded camelCase -> kebab-case mappings
+    /appleHealth\s*[:=]\s*['"]apple-health['"]/,
+    /healthConnect\s*[:=]\s*['"]health-connect['"]/,
+    // Hardcoded snake_case -> kebab-case mappings
+    /apple_health\s*[:=]\s*['"]apple-health['"]/,
+    /health_connect\s*[:=]\s*['"]health-connect['"]/,
+  ];
+
+  // Scan TypeScript source files (server + web)
+  const searchDirs = [
+    path.join(TS_SRC_DIR, 'shared/src'),
+    path.join(TS_SRC_DIR, 'mobile-sync-handler/src'),
+    path.join(TS_SRC_DIR, 'user-integrations-handler/src'),
+  ];
+
+  // Also check web if it exists
+  const webSrcDir = path.join(SERVER_ROOT, '..', 'web', 'src');
+  if (fs.existsSync(webSrcDir)) {
+    searchDirs.push(webSrcDir);
+  }
+
+  for (const dir of searchDirs) {
+    if (!fs.existsSync(dir)) continue;
+    const files = getFilesRecursive(dir, '.ts');
+
+    for (const file of files) {
+      // Skip test and generated files
+      if (file.includes('.test.') || file.includes('.spec.') || file.includes('/dist/') || file.includes('/pb/')) continue;
+
+      const content = fs.readFileSync(file, 'utf-8');
+      const relPath = path.relative(SERVER_ROOT, file);
+
+      for (const pattern of FORBIDDEN_PATTERNS) {
+        if (pattern.test(content)) {
+          errors.push(
+            `${relPath}: contains hardcoded integration key mapping (${pattern.source}). ` +
+            `Use camelToSnake() from converters instead of maintaining a lookup table.`
+          );
+          break; // One error per file is enough
+        }
+      }
+    }
+  }
+
+  return {
+    name: 'No Hardcoded Integration Key Mappings',
+    passed: errors.length === 0,
+    errors,
+    warnings
+  };
+}
+
 
 // ============================================================================
 // Check 12: Loop Prevention in Destinations
@@ -5496,6 +5572,7 @@ function main(): void {
         { id: 'X4', fn: () => ({ ...checkDestinationEnumCoverage(), name: 'X4: Destination Enum Coverage' }) },
         { id: 'X5', fn: () => ({ ...checkConverterProtobufFieldParity(), name: 'X5: Converter Protobuf Field Parity' }) },
         { id: 'X6', fn: () => ({ ...checkIntegrationConverterCoverage(), name: 'X6: UserIntegrations Converter Coverage' }) },
+        { id: 'X7', fn: () => ({ ...checkNoHardcodedIntegrationKeyMappings(), name: 'X7: No Hardcoded Integration Key Mappings' }) },
       ]
     },
     {

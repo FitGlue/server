@@ -102,6 +102,10 @@ export const executionConverter: FirestoreDataConverter<ExecutionRecord> = {
 
 // --- User Record Mapping Complex Logic ---
 
+/** Generic camelCase to snake_case conversion. */
+export const camelToSnake = (s: string): string =>
+  s.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
+
 // --- User Record Mapping Generic Logic ---
 
 interface GenericIntegrationData {
@@ -147,9 +151,7 @@ export const mapGenericIntegrationToFirestore = (i: Record<string, unknown>, key
     // Map the externalUserIdField from proto key to snake_case DB key
     const extId = def.externalUserIdField ? i[def.externalUserIdField] : undefined;
     if (extId && def.externalUserIdField) {
-      // Convention: camelCase -> snake_case
-      const dbKey = def.externalUserIdField.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`);
-      out[dbKey] = extId;
+      out[camelToSnake(def.externalUserIdField)] = extId;
     }
 
     // GitHub-specific extra fields
@@ -176,7 +178,7 @@ const mapUserIntegrationsToFirestore = (i?: UserIntegrations): Record<string, un
   for (const key of Object.keys(INTEGRATIONS)) {
     const k = key as keyof UserIntegrations;
     if (i[k]) {
-      out[key] = mapGenericIntegrationToFirestore(i[k] as unknown as Record<string, unknown>, key);
+      out[camelToSnake(key)] = mapGenericIntegrationToFirestore(i[k] as unknown as Record<string, unknown>, key);
     }
   }
 
@@ -245,9 +247,12 @@ const mapUserIntegrationsFromFirestore = (data: Record<string, unknown> | undefi
 
   for (const key of Object.keys(INTEGRATIONS)) {
     const k = key as keyof UserIntegrations;
-    if (data[key]) {
+    const firestoreKey = camelToSnake(key);
+    // Accept both snake_case (correct) and legacy camelCase keys
+    const value = data[firestoreKey] || data[key];
+    if (value) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      out[k] = mapGenericIntegrationFromFirestore(data[key] as GenericIntegrationData, key) as any;
+      out[k] = mapGenericIntegrationFromFirestore(value as GenericIntegrationData, key) as any;
     }
   }
 
