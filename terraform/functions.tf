@@ -91,6 +91,12 @@ resource "google_storage_bucket_object" "mobile_sync_handler_zip" {
   source = "/tmp/fitglue-function-zips/mobile-sync-handler.zip"
 }
 
+resource "google_storage_bucket_object" "mobile_source_handler_zip" {
+  name   = "mobile-source-handler-${filemd5("/tmp/fitglue-function-zips/mobile-source-handler.zip")}.zip"
+  bucket = google_storage_bucket.source_bucket.name
+  source = "/tmp/fitglue-function-zips/mobile-source-handler.zip"
+}
+
 resource "google_storage_bucket_object" "mock_source_handler_zip" {
   name   = "mock-source-handler-${filemd5("/tmp/fitglue-function-zips/mock-source-handler.zip")}.zip"
   bucket = google_storage_bucket.source_bucket.name
@@ -1591,6 +1597,57 @@ resource "google_cloud_run_service_iam_member" "mobile_sync_handler_invoker" {
   service  = google_cloudfunctions2_function.mobile_sync_handler.name
   role     = "roles/run.invoker"
   member   = "allUsers"
+}
+
+# ----------------- Mobile Source Handler -----------------
+# Pub/Sub-triggered: consumes topic-mobile-activity, maps to StandardizedActivity,
+# publishes to topic-raw-activity
+resource "google_cloudfunctions2_function" "mobile_source_handler" {
+  name        = "mobile-source-handler"
+  location    = var.region
+  description = "Processes mobile health activities into StandardizedActivity format"
+
+  build_config {
+    runtime     = "nodejs22"
+    entry_point = "mobileSourceHandler"
+    source {
+      storage_source {
+        bucket = google_storage_bucket.source_bucket.name
+        object = google_storage_bucket_object.mobile_source_handler_zip.name
+      }
+    }
+    environment_variables = {}
+  }
+
+  service_config {
+    available_memory = "256Mi"
+    timeout_seconds  = 60
+    environment_variables = {
+      LOG_LEVEL            = var.log_level
+      GOOGLE_CLOUD_PROJECT = var.project_id
+      GCS_ARTIFACT_BUCKET  = "${var.project_id}-artifacts"
+      SENTRY_ORG           = var.sentry_org
+      SENTRY_PROJECT       = var.sentry_project
+      SENTRY_DSN           = var.sentry_dsn
+    }
+
+    service_account_email = google_service_account.cloud_function_sa.email
+  }
+
+  event_trigger {
+    trigger_region = var.region
+    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
+    pubsub_topic   = google_pubsub_topic.mobile_activity.id
+    retry_policy   = var.retry_policy
+  }
+}
+
+resource "google_cloud_run_service_iam_member" "mobile_source_handler_invoker" {
+  project  = google_cloudfunctions2_function.mobile_source_handler.project
+  location = google_cloudfunctions2_function.mobile_source_handler.location
+  service  = google_cloudfunctions2_function.mobile_source_handler.name
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_function_sa.email}"
 }
 
 # ----------------- User Pipelines Handler -----------------

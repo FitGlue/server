@@ -95,7 +95,7 @@ const EXCLUSIONS: Record<string, RegExp[]> = {
   'G9': [/strava-uploader/],
   'G10': [/showcase-uploader/, /strava-uploader/],
   // T5: Mobile sync handler has different proto import pattern
-  'T5': [/mobile-sync-handler/],
+  'T5': [/mobile-sync-handler/, /mobile-source-handler/],
   // T8: Many legacy env var usages - needs gradual migration
   'T8': [/.*/], // Demote to warning-only - too many violations
   // W4: Complex pages - acceptable for wizard/edit pages
@@ -822,6 +822,7 @@ function checkFirebaseRouting(): CheckResult {
     'mcp-server',         // MCP server, not a Cloud Function
     'shared',             // Library package
     'registration-summary-handler', // Pub/Sub trigger (Cloud Scheduler), not HTTP
+    'mobile-source-handler',        // Pub/Sub trigger (topic-mobile-activity), not HTTP
   ];
 
   const firebaseJsonPath = path.join(SERVER_ROOT, '..', 'web', 'firebase.json');

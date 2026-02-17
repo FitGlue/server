@@ -23,6 +23,7 @@
     "registry-handler",
     "integration-request-handler",
     "mobile-sync-handler",
+    "mobile-source-handler",
     "billing-handler",
     "showcase-handler",
     "repost-handler",

@@ -40,8 +40,45 @@ jest.mock('@fitglue/shared/routing', () => {
   return actual;
 });
 
+// Mock CloudEventPublisher
+const mockPublish = jest.fn().mockResolvedValue('msg-id-123');
+jest.mock('@fitglue/shared/infrastructure/pubsub', () => ({
+  CloudEventPublisher: jest.fn().mockImplementation(() => ({
+    publish: mockPublish,
+  })),
+}));
+
+// Mock @fitglue/shared/types barrel (events enums + helpers)
+jest.mock('@fitglue/shared/types', () => ({
+  CloudEventType: { CLOUD_EVENT_TYPE_ACTIVITY_CREATED: 1 },
+  CloudEventSource: {
+    CLOUD_EVENT_SOURCE_APPLE_HEALTH: 15,
+    CLOUD_EVENT_SOURCE_HEALTH_CONNECT: 16,
+  },
+  getCloudEventSource: jest.fn((s: number) => `/integrations/${s}`),
+  getCloudEventType: jest.fn((t: number) => `com.fitglue.activity.${t}`),
+}));
+
+// Mock firebase-admin/storage — avoid hoisting issues by defining mocks inside factory
+jest.mock('firebase-admin/storage', () => {
+  const mockSave = jest.fn().mockResolvedValue(undefined);
+  const mockFile = jest.fn().mockReturnValue({ save: mockSave });
+  const mockBucket = jest.fn().mockReturnValue({ file: mockFile });
+  return {
+    getStorage: jest.fn().mockReturnValue({ bucket: mockBucket }),
+    __mocks: { mockSave, mockFile, mockBucket },
+  };
+});
+
 // Get db from mocked module
 import { db } from '@fitglue/shared/framework';
+
+// Access GCS mocks from factory
+const storageMocks = () => require('firebase-admin/storage').__mocks as {
+  mockSave: jest.Mock;
+  mockFile: jest.Mock;
+  mockBucket: jest.Mock;
+};
 
 describe('mobile-sync-handler', () => {
 
@@ -57,7 +94,14 @@ describe('mobile-sync-handler', () => {
       doc: jest.fn().mockReturnValue(mockDocRef),
     };
 
-    (db.collection as jest.Mock).mockReturnValue(mockMobileActivitiesCollection);
+    // Mock user sub-collection: db.collection('users').doc(userId).collection('mobile_activities')
+    const mockUserDoc = {
+      collection: jest.fn().mockReturnValue(mockMobileActivitiesCollection),
+    };
+    const mockUsersCollection = {
+      doc: jest.fn().mockReturnValue(mockUserDoc),
+    };
+    (db.collection as jest.Mock).mockReturnValue(mockUsersCollection);
 
     ctx = {
       userId: 'user-1',
@@ -72,7 +116,10 @@ describe('mobile-sync-handler', () => {
           setIntegration: jest.fn().mockResolvedValue(undefined),
         },
       },
+      pubsub: {},
     };
+
+    jest.clearAllMocks();
   });
 
   afterEach(() => {
@@ -112,7 +159,7 @@ describe('mobile-sync-handler', () => {
     } as any), ctx)).rejects.toThrow(expect.objectContaining({ statusCode: 404 }));
   });
 
-  it('processes activities successfully', async () => {
+  it('processes activities and stores to user sub-collection', async () => {
     const activities = [
       {
         externalId: 'ext-1',
@@ -145,15 +192,19 @@ describe('mobile-sync-handler', () => {
       skippedCount: 0,
     }));
 
-    expect(mockMobileActivitiesCollection.doc).toHaveBeenCalledWith('ext-1');
-    expect(mockMobileActivitiesCollection.doc).toHaveBeenCalledWith(expect.stringContaining('health_connect-'));
+    // Verify sub-collection path: db.collection('users').doc(userId).collection('mobile_activities')
+    expect(db.collection).toHaveBeenCalledWith('users');
+
+    // Verify both activities were stored
     expect(mockDocRef.set).toHaveBeenCalledTimes(2);
 
-    // Verify mapping
+    // Verify first activity mapping
     const firstCallData = mockDocRef.set.mock.calls[0][0];
     expect(firstCallData.source).toBe('SOURCE_APPLE_HEALTH');
     expect(firstCallData.activityType).toBe('Run');
+    expect(firstCallData.status).toBe('stored');
 
+    // Verify second activity mapping
     const secondCallData = mockDocRef.set.mock.calls[1][0];
     expect(secondCallData.source).toBe('SOURCE_HEALTH_CONNECT');
     expect(secondCallData.activityType).toBe('WeightTraining');
@@ -164,6 +215,150 @@ describe('mobile-sync-handler', () => {
       'appleHealth',
       expect.objectContaining({ enabled: true })
     );
+  });
+
+  it('publishes to topic-mobile-activity for each activity', async () => {
+    const activities = [
+      {
+        externalId: 'ext-1',
+        source: 'healthkit',
+        activityName: 'Running',
+        startTime: '2026-01-01T12:00:00Z',
+        endTime: '2026-01-01T12:30:00Z',
+        duration: 1800,
+      },
+    ];
+
+    await handler(({
+      method: 'POST',
+      path: '/api/mobile/sync',
+      body: { activities },
+    } as any), ctx);
+
+    // Verify CloudEventPublisher was called with topic-mobile-activity
+    const { CloudEventPublisher } = require('@fitglue/shared/infrastructure/pubsub');
+    expect(CloudEventPublisher).toHaveBeenCalledWith(
+      ctx.pubsub,
+      'topic-mobile-activity',
+      expect.any(String),
+      expect.any(String),
+      ctx.logger
+    );
+
+    // Verify publish was called with the correct message
+    expect(mockPublish).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 'user-1',
+        activityId: 'ext-1',
+        source: 'healthkit',
+      }),
+      'ext-1'
+    );
+  });
+
+  it('offloads telemetry to GCS when HR samples present', async () => {
+    const activities = [
+      {
+        externalId: 'ext-hr',
+        source: 'healthkit',
+        activityName: 'Running',
+        startTime: '2026-01-01T12:00:00Z',
+        endTime: '2026-01-01T12:30:00Z',
+        duration: 1800,
+        heartRateSamples: [
+          { timestamp: '2026-01-01T12:00:00Z', bpm: 120 },
+          { timestamp: '2026-01-01T12:01:00Z', bpm: 135 },
+        ],
+      },
+    ];
+
+    await handler(({
+      method: 'POST',
+      path: '/api/mobile/sync',
+      body: { activities },
+    } as any), ctx);
+
+    // Verify GCS upload was called
+    const { mockBucket, mockFile, mockSave } = storageMocks();
+    expect(mockBucket).toHaveBeenCalled();
+    expect(mockFile).toHaveBeenCalledWith('mobile_activities/user-1/ext-hr.json');
+    expect(mockSave).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ contentType: 'application/json' })
+    );
+
+    // Verify the saved content contains HR samples
+    const savedContent = JSON.parse(mockSave.mock.calls[0][0]);
+    expect(savedContent.heartRateSamples).toHaveLength(2);
+    expect(savedContent.heartRateSamples[0].bpm).toBe(120);
+
+    // Verify Firestore doc has telemetry_uri reference
+    const storedData = mockDocRef.set.mock.calls[0][0];
+    expect(storedData.telemetryUri).toContain('gs://');
+    expect(storedData.telemetryUri).toContain('mobile_activities/user-1/ext-hr.json');
+    expect(storedData.heartRateSampleCount).toBe(2);
+  });
+
+  it('offloads telemetry to GCS when GPS route present', async () => {
+    const activities = [
+      {
+        externalId: 'ext-gps',
+        source: 'health_connect',
+        activityName: 'Running',
+        startTime: '2026-01-01T12:00:00Z',
+        endTime: '2026-01-01T12:30:00Z',
+        duration: 1800,
+        route: [
+          { timestamp: '2026-01-01T12:00:00Z', latitude: 52.95, longitude: -1.15, altitude: 50 },
+          { timestamp: '2026-01-01T12:01:00Z', latitude: 52.96, longitude: -1.16, altitude: 52 },
+        ],
+      },
+    ];
+
+    await handler(({
+      method: 'POST',
+      path: '/api/mobile/sync',
+      body: { activities },
+    } as any), ctx);
+
+    // Verify GCS upload was called with route data
+    const { mockSave } = storageMocks();
+    const savedContent = JSON.parse(mockSave.mock.calls[0][0]);
+    expect(savedContent.route).toHaveLength(2);
+    expect(savedContent.route[0].latitude).toBe(52.95);
+    expect(savedContent.heartRateSamples).toHaveLength(0);
+
+    // Verify Firestore doc tracks route count
+    const storedData = mockDocRef.set.mock.calls[0][0];
+    expect(storedData.routePointCount).toBe(2);
+    expect(storedData.telemetryUri).toContain('gs://');
+  });
+
+  it('skips GCS upload when no telemetry data', async () => {
+    const activities = [
+      {
+        externalId: 'ext-basic',
+        source: 'healthkit',
+        activityName: 'WeightTraining',
+        startTime: '2026-01-01T12:00:00Z',
+        endTime: '2026-01-01T13:00:00Z',
+        duration: 3600,
+      },
+    ];
+
+    await handler(({
+      method: 'POST',
+      path: '/api/mobile/sync',
+      body: { activities },
+    } as any), ctx);
+
+    // No GCS upload should happen
+    const { mockSave } = storageMocks();
+    expect(mockSave).not.toHaveBeenCalled();
+
+    // Firestore doc should have null telemetry_uri
+    const storedData = mockDocRef.set.mock.calls[0][0];
+    expect(storedData.telemetryUri).toBeNull();
   });
 
   it('handles individual activity processing errors', async () => {
@@ -199,6 +394,29 @@ describe('mobile-sync-handler', () => {
       processedCount: 1,
       skippedCount: 1,
     }));
+  });
+
+  it('generates deterministic activity ID when externalId missing', async () => {
+    const activities = [
+      {
+        source: 'health_connect',
+        activityName: 'Walk',
+        startTime: '2026-01-01T13:00:00Z',
+        endTime: '2026-01-01T14:00:00Z',
+        duration: 3600,
+      }
+    ];
+
+    await handler(({
+      method: 'POST',
+      path: '/api/mobile/sync',
+      body: { activities },
+    } as any), ctx);
+
+    // Should generate ID from source + timestamp
+    expect(mockMobileActivitiesCollection.doc).toHaveBeenCalledWith(
+      expect.stringContaining('health_connect-')
+    );
   });
 
   describe('connect endpoint', () => {

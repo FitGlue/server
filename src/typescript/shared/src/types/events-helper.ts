@@ -44,6 +44,8 @@ export const CloudEventSourceURN: Record<number, string> = {
   [CloudEventSource.CLOUD_EVENT_SOURCE_ROUTER]: '/core/router',
   [CloudEventSource.CLOUD_EVENT_SOURCE_INPUTS_HANDLER]: '/core/inputs-handler',
   [CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER]: '/core/pipeline-splitter',
+  [CloudEventSource.CLOUD_EVENT_SOURCE_APPLE_HEALTH]: '/integrations/apple-health',
+  [CloudEventSource.CLOUD_EVENT_SOURCE_HEALTH_CONNECT]: '/integrations/health-connect',
 };
 
 // Map Destination enum to Pub/Sub topic

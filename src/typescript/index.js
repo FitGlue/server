@@ -84,6 +84,11 @@ exports.mobileSyncHandler = (req, res) => {
   return mobileSync.mobileSyncHandler(req, res);
 };
 
+exports.mobileSourceHandler = (req, res) => {
+  const mobileSource = require('./mobile-source-handler/dist/index');
+  return mobileSource.mobileSourceHandler(req, res);
+};
+
 exports.billingHandler = (req, res) => {
   const billing = require('./billing-handler/dist/index');
   return billing.billingHandler(req, res);

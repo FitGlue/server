@@ -51,6 +51,8 @@ enum CloudEventSource {
   CLOUD_EVENT_SOURCE_WAHOO = 12 [(ce_source) = "/integrations/wahoo"];
   CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER = 13 [(ce_source) = "/core/pipeline-splitter"];
   CLOUD_EVENT_SOURCE_GITHUB = 14 [(ce_source) = "/integrations/github"];
+  CLOUD_EVENT_SOURCE_APPLE_HEALTH = 15 [(ce_source) = "/integrations/apple-health"];
+  CLOUD_EVENT_SOURCE_HEALTH_CONNECT = 16 [(ce_source) = "/integrations/health-connect"];
   CLOUD_EVENT_SOURCE_MOCK = 99 [(ce_source) = "/integrations/mock"];
 }
 

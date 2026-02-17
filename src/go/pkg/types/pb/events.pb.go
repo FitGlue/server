@@ -114,6 +114,8 @@ const (
 	CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO             CloudEventSource = 12
 	CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER CloudEventSource = 13
 	CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB            CloudEventSource = 14
+	CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH      CloudEventSource = 15
+	CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT    CloudEventSource = 16
 	CloudEventSource_CLOUD_EVENT_SOURCE_MOCK              CloudEventSource = 99
 )
 
@@ -135,6 +137,8 @@ var (
 		12: "CLOUD_EVENT_SOURCE_WAHOO",
 		13: "CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER",
 		14: "CLOUD_EVENT_SOURCE_GITHUB",
+		15: "CLOUD_EVENT_SOURCE_APPLE_HEALTH",
+		16: "CLOUD_EVENT_SOURCE_HEALTH_CONNECT",
 		99: "CLOUD_EVENT_SOURCE_MOCK",
 	}
 	CloudEventSource_value = map[string]int32{
@@ -153,6 +157,8 @@ var (
 		"CLOUD_EVENT_SOURCE_WAHOO":             12,
 		"CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER": 13,
 		"CLOUD_EVENT_SOURCE_GITHUB":            14,
+		"CLOUD_EVENT_SOURCE_APPLE_HEALTH":      15,
+		"CLOUD_EVENT_SOURCE_HEALTH_CONNECT":    16,
 		"CLOUD_EVENT_SOURCE_MOCK":              99,
 	}
 )
@@ -579,7 +585,7 @@ const file_events_proto_rawDesc = "" +
 	"$CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION\x10\x04\x1a#\x82\xb5\x18\x1fcom.fitglue.fitbit.notification\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_ENRICHMENT_LAG\x10\x05\x1a\x1e\x82\xb5\x18\x1acom.fitglue.enrichment.lag\x12C\n" +
 	"\x1fCLOUD_EVENT_TYPE_INPUT_RESOLVED\x10\x06\x1a\x1e\x82\xb5\x18\x1acom.fitglue.input.resolved\x12E\n" +
-	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\xd1\a\n" +
+	" CLOUD_EVENT_TYPE_PARKRUN_RESULTS\x10\a\x1a\x1f\x82\xb5\x18\x1bcom.fitglue.parkrun.results*\xdf\b\n" +
 	"\x10CloudEventSource\x12\"\n" +
 	"\x1eCLOUD_EVENT_SOURCE_UNSPECIFIED\x10\x00\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_HEVY\x10\x01\x1a\x16\x8a\xb5\x18\x12/integrations/hevy\x12G\n" +
@@ -596,7 +602,9 @@ const file_events_proto_rawDesc = "" +
 	" CLOUD_EVENT_SOURCE_POLAR_WEBHOOK\x10\v\x1a\x1f\x8a\xb5\x18\x1b/integrations/polar/webhook\x125\n" +
 	"\x18CLOUD_EVENT_SOURCE_WAHOO\x10\f\x1a\x17\x8a\xb5\x18\x13/integrations/wahoo\x12E\n" +
 	"$CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER\x10\r\x1a\x1b\x8a\xb5\x18\x17/core/pipeline-splitter\x127\n" +
-	"\x19CLOUD_EVENT_SOURCE_GITHUB\x10\x0e\x1a\x18\x8a\xb5\x18\x14/integrations/github\x123\n" +
+	"\x19CLOUD_EVENT_SOURCE_GITHUB\x10\x0e\x1a\x18\x8a\xb5\x18\x14/integrations/github\x12C\n" +
+	"\x1fCLOUD_EVENT_SOURCE_APPLE_HEALTH\x10\x0f\x1a\x1e\x8a\xb5\x18\x1a/integrations/apple-health\x12G\n" +
+	"!CLOUD_EVENT_SOURCE_HEALTH_CONNECT\x10\x10\x1a \x8a\xb5\x18\x1c/integrations/health-connect\x123\n" +
 	"\x17CLOUD_EVENT_SOURCE_MOCK\x10c\x1a\x16\x8a\xb5\x18\x12/integrations/mock*\xee\x03\n" +
 	"\vDestination\x12\x1b\n" +
 	"\x17DESTINATION_UNSPECIFIED\x10\x00\x123\n" +

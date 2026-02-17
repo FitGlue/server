@@ -978,6 +978,14 @@ const CloudEventSourceNames: Record<string, string> = {
     'GITHUB': 'Github',
     'Github': 'Github',
     '14': 'Github',
+    'CLOUD_EVENT_SOURCE_APPLE_HEALTH': 'Apple Health',
+    'APPLE_HEALTH': 'Apple Health',
+    'Apple Health': 'Apple Health',
+    '15': 'Apple Health',
+    'CLOUD_EVENT_SOURCE_HEALTH_CONNECT': 'Health Connect',
+    'HEALTH_CONNECT': 'Health Connect',
+    'Health Connect': 'Health Connect',
+    '16': 'Health Connect',
     'CLOUD_EVENT_SOURCE_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -1018,6 +1026,8 @@ export function formatCloudEventSource(value: CloudEventSource | number | string
     case CloudEventSource.CLOUD_EVENT_SOURCE_WAHOO: return 'Wahoo';
     case CloudEventSource.CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER: return 'Pipeline Splitter';
     case CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB: return 'Github';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_APPLE_HEALTH: return 'Apple Health';
+    case CloudEventSource.CLOUD_EVENT_SOURCE_HEALTH_CONNECT: return 'Health Connect';
     case CloudEventSource.CLOUD_EVENT_SOURCE_MOCK: return 'Mock';
     default: return 'Unknown';
   }
@@ -1076,6 +1086,14 @@ const CloudEventSourceValues: Record<string, CloudEventSource> = {
     'cloud_event_source_github': CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB,
     'github': CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB,
     '14': CloudEventSource.CLOUD_EVENT_SOURCE_GITHUB,
+    'cloud_event_source_apple_health': CloudEventSource.CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+    'apple_health': CloudEventSource.CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+    'apple health': CloudEventSource.CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+    '15': CloudEventSource.CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+    'cloud_event_source_health_connect': CloudEventSource.CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+    'health_connect': CloudEventSource.CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+    'health connect': CloudEventSource.CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+    '16': CloudEventSource.CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
     'cloud_event_source_mock': CloudEventSource.CLOUD_EVENT_SOURCE_MOCK,
     'mock': CloudEventSource.CLOUD_EVENT_SOURCE_MOCK,
     '99': CloudEventSource.CLOUD_EVENT_SOURCE_MOCK,

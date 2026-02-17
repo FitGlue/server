@@ -534,6 +534,10 @@ func FormatCloudEventSource(value pb.CloudEventSource) string {
 		return "Pipeline Splitter"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB:
 		return "Github"
+	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH:
+		return "Apple Health"
+	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT:
+		return "Health Connect"
 	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK:
 		return "Mock"
 	default:
@@ -586,6 +590,12 @@ func ParseCloudEventSource(input string) pb.CloudEventSource {
 		"pipeline splitter":                    pb.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
 		"cloud_event_source_github":            pb.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB,
 		"github":                               pb.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB,
+		"cloud_event_source_apple_health":      pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+		"apple_health":                         pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+		"apple health":                         pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+		"cloud_event_source_health_connect":    pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+		"health_connect":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+		"health connect":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
 		"cloud_event_source_mock":              pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK,
 		"mock":                                 pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK,
 	}
