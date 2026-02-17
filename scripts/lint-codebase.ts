@@ -1017,11 +1017,12 @@ function checkPipelineExecutionLogging(): CheckResult {
   const warnings: string[] = [];
 
   // Pipeline handlers that MUST log executions (sources and destinations use TypeScript framework)
+  // Note: mobile-sync-handler is excluded — it stores to mobile_activities directly and
+  // does not go through the pipeline engine, so execution logging is not needed.
   const PIPELINE_HANDLERS = [
     'fitbit-handler',      // Source
     'hevy-handler',        // Source
     'mock-source-handler', // Source
-    'mobile-sync-handler', // Source
   ];
 
   for (const handler of PIPELINE_HANDLERS) {
