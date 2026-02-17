@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.12.0](https://github.com/FitGlue/server/compare/v14.11.1...v14.12.0) (2026-02-17)
+
+
+### Features
+
+* health kit/connect renaming ([1458bb2](https://github.com/FitGlue/server/commit/1458bb2459ee28d176b38a8e28fbd078bf0adf68))
+
+
+### Bug Fixes
+
+* don't log executions for mobile-sync-handler ([cfb181c](https://github.com/FitGlue/server/commit/cfb181cfd2dfeb40c88cec31910ad63c8245fd37))
+* linting ([1c0abcf](https://github.com/FitGlue/server/commit/1c0abcfbfc3a958d3373adc2f68f919efdfd9fe3))
+* map mobile types ([d5b7a14](https://github.com/FitGlue/server/commit/d5b7a14544e0d30590751724274e26f14f3dce3f))
+
 ### [14.11.1](https://github.com/FitGlue/server/compare/v14.11.0...v14.11.1) (2026-02-17)
 
 
