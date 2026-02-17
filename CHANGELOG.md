@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.11.0](https://github.com/FitGlue/server/compare/v14.10.2...v14.11.0) (2026-02-17)
+
+
+### Features
+
+* Add Apple Health and Health Connect integrations with dedicated mobile sync and connect endpoints. ([5df68d2](https://github.com/FitGlue/server/commit/5df68d2a2629e59d6144fc0e27de8ccb2f1d2cd9))
+* Add explicit and automatic connection for mobile health integrations and report their status. ([643770d](https://github.com/FitGlue/server/commit/643770dea4be2c7240713bce0e7f7f82567b6e49))
+* Enhance `storeOAuthTokens` to accept and store additional provider-specific metadata in a single write, and enable partial updates for OAuth integration fields in Firestore converters. ([40226c9](https://github.com/FitGlue/server/commit/40226c91112af8b5cf47f459558a0287766dbd7f))
+
+
+### Bug Fixes
+
+* converters for app connections ([204ae50](https://github.com/FitGlue/server/commit/204ae50c3ae1d9eaeeef7d28dabf0e12b96a42bb))
+
 ### [14.10.2](https://github.com/FitGlue/server/compare/v14.10.1...v14.10.2) (2026-02-16)
 
 
