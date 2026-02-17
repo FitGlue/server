@@ -114,9 +114,8 @@ func (p *Intervals) Enrich(
 	// Group consecutive same-intensity same-duration laps as repeats
 	groups := groupIntervals(laps)
 
-	// Build description
-	// NOTE: The workout name is included in the SectionHeader for G40 title parsing.
-	// Content lines start directly with interval data (no duplicate header line).
+	// Build description - section header is prepended to align with other enrichers
+	// (Parkrun, AI Companion) that inline their headers in the description content.
 	var sb strings.Builder
 
 	// Active stats accumulators for summary
@@ -212,12 +211,13 @@ func (p *Intervals) Enrich(
 		"total_laps", len(laps),
 		"time_markers", len(timeMarkers))
 
-	// Trim leading newline since we no longer have a header content line
-	desc := strings.TrimLeft(sb.String(), "\n")
+	// Prepend section header to description (same pattern as Parkrun and AI Companion)
+	sectionHeader := formatSectionHeader(workoutName)
+	desc := sectionHeader + "\n" + strings.TrimLeft(sb.String(), "\n")
 
 	return &providers.EnrichmentResult{
 		Description:   desc,
-		SectionHeader: formatSectionHeader(workoutName),
+		SectionHeader: sectionHeader,
 		TimeMarkers:   timeMarkers,
 		Metadata:      metadata,
 	}, nil

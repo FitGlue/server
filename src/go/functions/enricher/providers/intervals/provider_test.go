@@ -82,9 +82,9 @@ func TestIntervals_BasicIntervals(t *testing.T) {
 		t.Errorf("Expected SectionHeader '⏱️ Intervals — Test Sprints:', got %q", result.SectionHeader)
 	}
 
-	// Description should contain interval info (workout name is in SectionHeader, not description)
-	if contains(result.Description, "Test Sprints") {
-		t.Errorf("Description should NOT contain workout name (it's in SectionHeader), got: %s", result.Description)
+	// Description should start with the section header (inlined, same pattern as Parkrun)
+	if !contains(result.Description, "⏱️ Intervals — Test Sprints:") {
+		t.Errorf("Description should contain section header '⏱️ Intervals — Test Sprints:', got: %s", result.Description)
 	}
 	if !contains(result.Description, "Warmup") {
 		t.Errorf("Description should contain Warmup, got: %s", result.Description)
@@ -177,6 +177,10 @@ func TestIntervals_FallbackWorkoutName(t *testing.T) {
 	// SectionHeader should NOT include the generic subtitle
 	if result.SectionHeader != "⏱️ Intervals:" {
 		t.Errorf("Expected SectionHeader '⏱️ Intervals:', got %q", result.SectionHeader)
+	}
+	// Description should also contain the inlined section header
+	if !contains(result.Description, "⏱️ Intervals:") {
+		t.Errorf("Description should contain inlined section header '⏱️ Intervals:', got: %s", result.Description)
 	}
 }
 

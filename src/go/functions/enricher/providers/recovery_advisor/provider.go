@@ -331,11 +331,5 @@ func getACWRLabel(acwr float64) string {
 }
 
 func formatRecoveryTime(hours float64) string {
-	if hours >= 48 {
-		days := int(hours / 24)
-		return fmt.Sprintf("%.0f hours (%d days)", hours, days)
-	} else if hours >= 24 {
-		return fmt.Sprintf("%.0f hours (1 day)", hours)
-	}
 	return fmt.Sprintf("%.0f hours", hours)
 }

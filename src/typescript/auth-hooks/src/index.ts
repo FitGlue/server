@@ -1,11 +1,11 @@
 
 import { initializeApp } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, Timestamp } from 'firebase-admin/firestore';
 import { UserService } from '@fitglue/shared/domain/services';
 
 // Initialize Firebase Admin
 initializeApp();
-import { UserStore, ActivityStore, PipelineStore, PluginDefaultsStore } from '@fitglue/shared/storage';
+import { UserStore, ActivityStore, PipelineStore, PluginDefaultsStore, ShowcaseProfileStore } from '@fitglue/shared/storage';
 
 
 // Initialize Firebase Admin
@@ -14,6 +14,7 @@ const userStore = new UserStore(db);
 const activityStore = new ActivityStore(db);
 const pipelineStore = new PipelineStore(db);
 const pluginDefaultsStore = new PluginDefaultsStore(db);
+const showcaseProfileStore = new ShowcaseProfileStore(db);
 const userService = new UserService(userStore, activityStore, pipelineStore, pluginDefaultsStore);
 
 /**
@@ -40,6 +41,38 @@ export const authOnCreate = async (event: AuthUserRecord) => {
     await userService.createUser(uid);
 
     console.log(`Successfully ensured user document for ${uid}`);
+
+    // Create a base showcase profile so the management page is accessible immediately.
+    // Slug is the first 8 chars of the uid (unique since UIDs are unique).
+    // Profile starts hidden (visible: false) until the user opts in.
+    try {
+      const slug = uid.substring(0, 8).toLowerCase();
+      const now = Timestamp.now();
+
+      await showcaseProfileStore.set(slug, {
+        slug,
+        user_id: uid,
+        display_name: '',
+        entries: [],
+        total_activities: 0,
+        total_distance_meters: 0,
+        total_duration_seconds: 0,
+        total_sets: 0,
+        total_reps: 0,
+        total_weight_kg: 0,
+        subtitle: '',
+        bio: '',
+        profile_picture_url: '',
+        visible: false,
+        created_at: now,
+        updated_at: now,
+      });
+
+      console.log(`Created base showcase profile for ${uid} with slug: ${slug}`);
+    } catch (showcaseError) {
+      // Non-fatal: user document is the critical path
+      console.error('Failed to create base showcase profile (non-fatal):', showcaseError);
+    }
 
   } catch (error) {
     console.error('Error in authOnCreate:', error);

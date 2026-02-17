@@ -111,7 +111,8 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 		// Celebrate milestone!
 		biggest := crossedMilestones[len(crossedMilestones)-1]
 		emoji := getMilestoneEmoji(biggest)
-		sb.WriteString(fmt.Sprintf("%s MILESTONE: %.0f km lifetime!\n", emoji, biggest))
+		sb.WriteString(fmt.Sprintf("%s Lifetime %s:\n", emoji, getSportLabel(sport)))
+		sb.WriteString(fmt.Sprintf("🎉 MILESTONE: %.0f km reached!\n", biggest))
 		sb.WriteString(fmt.Sprintf("• Total: %.1f km\n", newDistance))
 		sb.WriteString(fmt.Sprintf("• This %s: +%.1f km", getSportLabel(sport), distanceKm))
 

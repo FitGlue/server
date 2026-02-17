@@ -389,12 +389,12 @@ func TestFormatRecoveryTime(t *testing.T) {
 		expected string
 	}{
 		{12, "12 hours"},
-		{24, "24 hours (1 day)"},
-		{36, "36 hours (1 day)"},
-		{48, "48 hours (2 days)"},
-		{60, "60 hours (2 days)"},
-		{72, "72 hours (3 days)"},
-		{84, "84 hours (3 days)"},
+		{24, "24 hours"},
+		{36, "36 hours"},
+		{48, "48 hours"},
+		{60, "60 hours"},
+		{72, "72 hours"},
+		{84, "84 hours"},
 	}
 
 	for _, tt := range tests {

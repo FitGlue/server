@@ -78,6 +78,7 @@ export class PipelineRunStore {
     ): Promise<void> {
         const update: Record<string, unknown> = {
             status,
+            status_message: null,
             updated_at: new Date(),
         };
         if (errorMessage) {
