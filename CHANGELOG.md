@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.13.0](https://github.com/FitGlue/server/compare/v14.12.0...v14.13.0) (2026-02-17)
+
+
+### Features
+
+* add mobile-source-handler and Apple Health/Health Connect event sources ([6001cbd](https://github.com/FitGlue/server/commit/6001cbd9cc2e92f3dd6beb7081ef8bddc2ac2829))
+
 ## [14.12.0](https://github.com/FitGlue/server/compare/v14.11.1...v14.12.0) (2026-02-17)
 
 
