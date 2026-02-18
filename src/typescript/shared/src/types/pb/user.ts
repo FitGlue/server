@@ -188,23 +188,23 @@ export interface UserRecord {
   userId: string;
   createdAt?: Date | undefined;
   integrations?:
-  | UserIntegrations
-  | undefined;
+    | UserIntegrations
+    | undefined;
   /** Field 4 was pipelines (moved to sub-collection users/{userId}/pipelines) */
   fcmTokens: string[];
   /** Pricing tier */
   tier: UserTier;
   /** Athlete trial end date (null = no trial, set to now+30d on signup) */
   trialEndsAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Admin override - grants Pro access without payment */
   isAdmin: boolean;
   /** Monthly sync tracking */
   syncCountThisMonth: number;
   syncCountResetAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Track prevented syncs for marketing/upsell */
   preventedSyncCount: number;
   /** Stripe customer ID for billing */
@@ -255,8 +255,11 @@ export interface PipelineConfig_DestinationConfigsEntry {
 /** Configuration for a single destination plugin */
 export interface DestinationConfig {
   config: { [key: string]: string };
-  /** Enricher provider types to exclude from this destination's description output */
-  excludedEnrichers?: string[];
+  /**
+   * Enricher provider types to exclude from this destination's description output
+   * e.g., ["ENRICHER_PROVIDER_PERSONAL_RECORDS", "ENRICHER_PROVIDER_PARKRUN"]
+   */
+  excludedEnrichers: string[];
 }
 
 export interface DestinationConfig_ConfigEntry {
@@ -380,8 +383,8 @@ export interface TrainingPeaksIntegration {
   accessToken: string;
   refreshToken: string;
   expiresAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** TrainingPeaks athlete ID */
   athleteId: string;
   createdAt?: Date | undefined;
@@ -403,8 +406,8 @@ export interface OuraIntegration {
   accessToken: string;
   refreshToken: string;
   expiresAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Oura user ID */
   ouraUserId: string;
   createdAt?: Date | undefined;
@@ -416,8 +419,8 @@ export interface GoogleIntegration {
   accessToken: string;
   refreshToken: string;
   expiresAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Google user ID */
   googleUserId: string;
   createdAt?: Date | undefined;
@@ -429,8 +432,8 @@ export interface PolarIntegration {
   accessToken: string;
   refreshToken: string;
   expiresAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Polar AccessLink user ID */
   polarUserId: string;
   createdAt?: Date | undefined;
@@ -442,8 +445,8 @@ export interface WahooIntegration {
   accessToken: string;
   refreshToken: string;
   expiresAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Wahoo Cloud user ID */
   wahooUserId: string;
   createdAt?: Date | undefined;
@@ -456,8 +459,8 @@ export interface GitHubIntegration {
   /** GitHub tokens don't expire; placeholder for consistency */
   refreshToken: string;
   expiresAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** GitHub user ID */
   githubUserId: string;
   /** GitHub login username */
@@ -511,8 +514,8 @@ export interface PersonalRecord {
   activityType: ActivityType;
   /** Previous PR value (for improvement tracking) */
   previousValue?:
-  | number
-  | undefined;
+    | number
+    | undefined;
   /** Percentage improvement */
   improvement?: number | undefined;
 }
@@ -534,12 +537,12 @@ export interface ShowcasedActivity {
   activityType: ActivityType;
   source: ActivitySource;
   startTime?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Full activity data for rendering */
   activityData?:
-  | StandardizedActivity
-  | undefined;
+    | StandardizedActivity
+    | undefined;
   /** GCS URI for FIT file */
   fitFileUri: string;
   /** Enrichment info */
@@ -547,16 +550,16 @@ export interface ShowcasedActivity {
   enrichmentMetadata: { [key: string]: string };
   tags: string[];
   pipelineExecutionId?:
-  | string
-  | undefined;
+    | string
+    | undefined;
   /** Lifecycle */
   createdAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** null = never expires (Athlete tier) */
   expiresAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Public attribution */
   ownerDisplayName: string;
   /** GCS URI for pre-parsed activity JSON (avoids Firestore 1MB limit) */
@@ -578,8 +581,8 @@ export interface ShowcaseProfileEntry {
   activityType: ActivityType;
   source: ActivitySource;
   startTime?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Optional route thumbnail from enrichment metadata */
   routeThumbnailUrl: string;
   /** For per-activity stat display */
@@ -611,8 +614,8 @@ export interface ShowcaseProfile {
   totalDistanceMeters: number;
   totalDurationSeconds: number;
   latestActivityAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Strength aggregates */
   totalSets: number;
   totalReps: number;
@@ -620,8 +623,8 @@ export interface ShowcaseProfile {
   /** Lifecycle */
   createdAt?: Date | undefined;
   updatedAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** User-editable profile fields */
   subtitle: string;
   /** Free-text bio */
@@ -654,14 +657,14 @@ export interface PipelineRun {
   description: string;
   type: ActivityType;
   startTime?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Pipeline Status */
   status: PipelineRunStatus;
   createdAt?: Date | undefined;
   updatedAt?:
-  | Date
-  | undefined;
+    | Date
+    | undefined;
   /** Booster Executions */
   boosters: BoosterExecution[];
   /** Destination Outcomes */
@@ -669,8 +672,8 @@ export interface PipelineRun {
   /** Status tracking */
   statusMessage?: string | undefined;
   pendingInputId?:
-  | string
-  | undefined;
+    | string
+    | undefined;
   /** GCS URI: gs://{bucket}/payloads/{userId}/{activityId}.json */
   originalPayloadUri: string;
   /** GCS URI: gs://{bucket}/enriched_events/{userId}/{pipelineRunId}.json */

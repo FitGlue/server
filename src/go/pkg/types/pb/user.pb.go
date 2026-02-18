@@ -7,13 +7,12 @@
 package pb
 
 import (
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
-
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
+	reflect "reflect"
+	sync "sync"
+	unsafe "unsafe"
 )
 
 const (
@@ -967,9 +966,11 @@ func (x *PipelineConfig) GetDestinationConfigs() map[string]*DestinationConfig {
 
 // Configuration for a single destination plugin
 type DestinationConfig struct {
-	state             protoimpl.MessageState `protogen:"open.v1"`
-	Config            map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	ExcludedEnrichers []string               `protobuf:"bytes,2,rep,name=excluded_enrichers,json=excludedEnrichers,proto3" json:"excluded_enrichers,omitempty"`
+	state  protoimpl.MessageState `protogen:"open.v1"`
+	Config map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	// Enricher provider types to exclude from this destination's description output
+	// e.g., ["ENRICHER_PROVIDER_PERSONAL_RECORDS", "ENRICHER_PROVIDER_PARKRUN"]
+	ExcludedEnrichers []string `protobuf:"bytes,2,rep,name=excluded_enrichers,json=excludedEnrichers,proto3" json:"excluded_enrichers,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -3705,9 +3706,10 @@ const file_user_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\x1aa\n" +
 	"\x17DestinationConfigsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x120\n" +
-	"\x05value\x18\x02 \x01(\v2\x1a.fitglue.DestinationConfigR\x05value:\x028\x01\"\x8e\x01\n" +
+	"\x05value\x18\x02 \x01(\v2\x1a.fitglue.DestinationConfigR\x05value:\x028\x01\"\xbd\x01\n" +
 	"\x11DestinationConfig\x12>\n" +
-	"\x06config\x18\x01 \x03(\v2&.fitglue.DestinationConfig.ConfigEntryR\x06config\x1a9\n" +
+	"\x06config\x18\x01 \x03(\v2&.fitglue.DestinationConfig.ConfigEntryR\x06config\x12-\n" +
+	"\x12excluded_enrichers\x18\x02 \x03(\tR\x11excludedEnrichers\x1a9\n" +
 	"\vConfigEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\x99\x02\n" +

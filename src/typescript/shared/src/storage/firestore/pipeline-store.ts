@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { PipelineConfig } from '../../types/pb/user';
+import { DestinationConfig, PipelineConfig } from '../../types/pb/user';
 
 /**
  * Firestore converter for pipeline documents.
@@ -38,11 +38,11 @@ export const pipelineConverter: admin.firestore.FirestoreDataConverter<PipelineC
   fromFirestore(snapshot: admin.firestore.QueryDocumentSnapshot): PipelineConfig {
     const data = snapshot.data();
     const destConfigsRaw = (data.destination_configs || {}) as Record<string, { config?: Record<string, string>; excluded_enrichers?: string[] }>;
-    const destinationConfigs: Record<string, { config: Record<string, string>; excludedEnrichers?: string[] }> = {};
+    const destinationConfigs: Record<string, DestinationConfig> = {};
     for (const [k, v] of Object.entries(destConfigsRaw)) {
       destinationConfigs[k] = {
         config: (v?.config || {}) as Record<string, string>,
-        excludedEnrichers: v?.excluded_enrichers || undefined,
+        excludedEnrichers: v?.excluded_enrichers || [],
       };
     }
     return {

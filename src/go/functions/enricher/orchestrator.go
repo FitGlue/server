@@ -20,6 +20,7 @@ import (
 	"github.com/fitglue/server/src/go/functions/enricher/providers/user_input"
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -1022,27 +1023,10 @@ func groupDestinationsByExclusions(destinations []pb.Destination, destConfigs ma
 	return groups
 }
 
-// cloneEnrichedEvent creates a shallow copy of an EnrichedActivityEvent with
-// independent Destinations, AppliedEnrichments, and EnrichmentMetadata slices/maps.
+// cloneEnrichedEvent creates a deep copy of an EnrichedActivityEvent using proto.Clone.
 // ActivityData is shared (not deep-cloned) since only description text is filtered.
 func cloneEnrichedEvent(src *pb.EnrichedActivityEvent) *pb.EnrichedActivityEvent {
-	clone := *src // shallow copy
-
-	// Independent destination list
-	clone.Destinations = make([]pb.Destination, len(src.Destinations))
-	copy(clone.Destinations, src.Destinations)
-
-	// Independent applied enrichments
-	clone.AppliedEnrichments = make([]string, len(src.AppliedEnrichments))
-	copy(clone.AppliedEnrichments, src.AppliedEnrichments)
-
-	// Independent metadata map
-	clone.EnrichmentMetadata = make(map[string]string, len(src.EnrichmentMetadata))
-	for k, v := range src.EnrichmentMetadata {
-		clone.EnrichmentMetadata[k] = v
-	}
-
-	return &clone
+	return proto.Clone(src).(*pb.EnrichedActivityEvent)
 }
 
 type configuredPipeline struct {
