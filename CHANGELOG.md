@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [14.14.0](https://github.com/FitGlue/server/compare/v14.13.0...v14.14.0) (2026-02-18)
+
+
+### Features
+
+* add deferred enricher execution, same-source dedup, and per-destination enricher exclusion ([e6244c6](https://github.com/FitGlue/server/commit/e6244c617674e327668b5083af87dc107443dabf))
+* add per-destination enricher exclusion and simplify event cloning ([13f514c](https://github.com/FitGlue/server/commit/13f514cbaca22babe32389c5cb0182886daaf412))
+
 ## [14.13.0](https://github.com/FitGlue/server/compare/v14.12.0...v14.13.0) (2026-02-17)
 
 
