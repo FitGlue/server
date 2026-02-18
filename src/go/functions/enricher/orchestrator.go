@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
 	"strings"
 	"time"
 
@@ -245,13 +246,25 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	currentActivity := payload.StandardizedActivity
 
 	// Save the original description and build enriched description separately
-	// to prevent stacking across reposts
+	// to prevent stacking across reposts.
+	// Use slot-based description to preserve pipeline ordering when deferred enrichers
+	// are executed out of order (Phase 2). Each enricher writes to its pipeline index.
 	originalDescription := currentActivity.Description
-	var descriptionBuilder strings.Builder
+	descriptionSlots := make([]string, len(configs)+1) // +1 for original description slot
 	if originalDescription != "" {
-		descriptionBuilder.WriteString(originalDescription)
+		descriptionSlots[0] = originalDescription
 	}
 
+	// Collect deferred enrichers during Phase 1 for Phase 2 execution
+	type deferredEnricher struct {
+		index    int
+		cfg      configuredEnricher
+		provider providers.Provider
+	}
+
+	var deferredEnrichers []deferredEnricher
+
+	// ---- Phase 1: Execute non-deferred enrichers, collect deferred ones ----
 	for i, cfg := range configs {
 		var provider providers.Provider
 		var ok bool
@@ -311,6 +324,17 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			}
 		}
 
+		// 3a.2 Deferred Execution: Collect deferrable providers for Phase 2
+		if deferrable, isDeferrable := provider.(providers.DeferrableProvider); isDeferrable && deferrable.ShouldDefer() && !isResumeMode {
+			logger.Info("Deferring enricher to Phase 2", "name", provider.Name(), "index", i)
+			deferredEnrichers = append(deferredEnrichers, deferredEnricher{
+				index:    i,
+				cfg:      cfg,
+				provider: provider,
+			})
+			continue
+		}
+
 		startTime := time.Now()
 		execID := uuid.NewString()
 
@@ -327,7 +351,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 		enricherConfig["pipeline_execution_id"] = pipelineExecutionID
 		enricherConfig["pipeline_id"] = pipeline.ID
-		enricherConfig["activity_id"] = activityId // For pending input linking
+		enricherConfig["activity_id"] = activityId                      // For pending input linking
+		enricherConfig["external_id"] = currentActivity.GetExternalId() // For same-source dedup
 
 		// Clear stale pending inputs when re-running (not resuming)
 		// This allows users to provide different input on a fresh re-run.
@@ -518,15 +543,12 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			currentActivity.TimeMarkers = append(currentActivity.TimeMarkers, res.TimeMarkers...)
 		}
 
-		// Apply description immediately (append with separator if not empty)
+		// Apply description to slot (preserves pipeline ordering for deferred enrichers)
 		logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name(), "description", res.Description)
 		if res.Description != "" {
 			trimmed := strings.TrimSpace(res.Description)
 			if trimmed != "" {
-				if descriptionBuilder.Len() > 0 {
-					descriptionBuilder.WriteString("\n\n")
-				}
-				descriptionBuilder.WriteString(trimmed)
+				descriptionSlots[i+1] = trimmed // +1 because slot 0 is original description
 			}
 		}
 
@@ -626,6 +648,122 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
+	// ---- Phase 2: Execute deferred enrichers with full context ----
+	if len(deferredEnrichers) > 0 {
+		// Build the Phase 1 accumulated description to inject into deferred enricher configs
+		phase1Description := buildDescriptionFromSlots(descriptionSlots)
+		logger.Info("Starting Phase 2: deferred enricher execution",
+			"deferred_count", len(deferredEnrichers),
+			"phase1_description_length", len(phase1Description),
+		)
+
+		for _, deferred := range deferredEnrichers {
+			provider := deferred.provider
+			cfg := deferred.cfg
+			i := deferred.index
+
+			startTime := time.Now()
+			execID := uuid.NewString()
+
+			pe := ProviderExecution{
+				ProviderName: provider.Name(),
+				ExecutionID:  execID,
+				Status:       "STARTED",
+			}
+
+			// Build enricher config with injected enriched_description
+			enricherConfig := make(map[string]string)
+			for k, v := range cfg.TypedConfig {
+				enricherConfig[k] = v
+			}
+			enricherConfig["pipeline_execution_id"] = pipelineExecutionID
+			enricherConfig["pipeline_id"] = pipeline.ID
+			enricherConfig["activity_id"] = activityId
+			enricherConfig["enriched_description"] = phase1Description // Phase 2 context injection
+
+			// Execute
+			providerLogger := slog.Default().With("provider", provider.Name(), "phase", "deferred")
+			res, err := provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
+			duration := time.Since(startTime).Milliseconds()
+			pe.DurationMs = duration
+
+			if err != nil {
+				// Check for expected control flow errors
+				if retryErr, ok := err.(*providers.RetryableError); ok {
+					logger.Info(fmt.Sprintf("Deferred provider requires retry: %v", provider.Name()), "name", provider.Name(), "reason", retryErr.Reason)
+					pe.Status = "RETRY"
+					pe.Error = retryErr.Reason
+					providerExecutions = append(providerExecutions, pe)
+					o.updatePipelineRunStatus(ctx, logger, payload.UserId, pipelineExecutionID,
+						pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+						fmt.Sprintf("Retry scheduled: %s", retryErr.Reason),
+						providerExecutions)
+					return &ProcessResult{
+						Events:             []*pb.EnrichedActivityEvent{},
+						ProviderExecutions: providerExecutions,
+						Status:             pb.ExecutionStatus_STATUS_LAGGED_RETRY,
+					}, retryErr
+				}
+
+				// Genuine error
+				logger.Error(fmt.Sprintf("Deferred provider failed: %v", provider.Name()), "name", provider.Name(), "error", err, "duration_ms", duration)
+				pe.Status = "FAILED"
+				pe.Error = err.Error()
+				providerExecutions = append(providerExecutions, pe)
+
+				o.updatePipelineRunStatus(ctx, logger, payload.UserId, pipelineExecutionID,
+					pb.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED,
+					fmt.Sprintf("Enricher failed: %s - %v", provider.Name(), err),
+					providerExecutions)
+
+				return &ProcessResult{
+					Events:             []*pb.EnrichedActivityEvent{},
+					ProviderExecutions: providerExecutions,
+				}, fmt.Errorf("enricher failed: %s: %v", provider.Name(), err)
+			}
+
+			if res == nil {
+				logger.Warn(fmt.Sprintf("Deferred provider returned nil result: %v", provider.Name()))
+				pe.Status = "SKIPPED"
+				pe.Error = "nil result"
+				providerExecutions = append(providerExecutions, pe)
+				continue
+			}
+
+			pe.Status = "SUCCESS"
+			pe.Metadata = res.Metadata
+			results[i] = res
+			providerExecutions = append(providerExecutions, pe)
+
+			logger.Info(fmt.Sprintf("Deferred provider completed: %v", provider.Name()), "name", provider.Name(), "duration_ms", duration)
+
+			// Apply mutations from deferred enricher
+			if res.Name != "" {
+				currentActivity.Name = res.Name
+			}
+			if res.NameSuffix != "" {
+				currentActivity.Name += res.NameSuffix
+			}
+			if res.ActivityType != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+				currentActivity.Type = res.ActivityType
+			}
+			if len(res.Tags) > 0 {
+				currentActivity.Tags = append(currentActivity.Tags, res.Tags...)
+			}
+			if len(res.TimeMarkers) > 0 {
+				currentActivity.TimeMarkers = append(currentActivity.TimeMarkers, res.TimeMarkers...)
+			}
+
+			// Apply description to correct slot
+			if res.Description != "" {
+				trimmed := strings.TrimSpace(res.Description)
+				if trimmed != "" {
+					descriptionSlots[i+1] = trimmed
+				}
+			}
+		}
+	}
+
 	// Post-enrichment: Reconcile TimeMarker labels with StrengthSet exercise names.
 	// After all enrichers have run, the StrengthSets may have better names than
 	// the generic FIT category-based labels on the TimeMarkers (e.g., from Hevy data).
@@ -642,16 +780,16 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", brandingProvider.Name(), len(brandingRes.Description)), "name", brandingProvider.Name(), "description", brandingRes.Description)
 			trimmed := strings.TrimSpace(brandingRes.Description)
 			if trimmed != "" {
-				if descriptionBuilder.Len() > 0 {
-					descriptionBuilder.WriteString("\n\n")
-				}
-				descriptionBuilder.WriteString(trimmed)
-				// Track that branding was applied
+				// Branding goes in the last slot (after all enrichers)
+				descriptionSlots = append(descriptionSlots, trimmed)
 				brandingApplied = true
 			}
 		}
 	}
-	currentActivity.Description = descriptionBuilder.String()
+
+	// Build final description from slots
+	finalDescription := buildDescriptionFromSlots(descriptionSlots)
+	currentActivity.Description = finalDescription
 
 	// Build final event structure (no Fan-In needed - currentActivity is already fully enriched)
 	finalEvent := &pb.EnrichedActivityEvent{
@@ -661,7 +799,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		ActivityData:        currentActivity, // Already fully enriched
 		ActivityType:        currentActivity.Type,
 		Name:                currentActivity.Name,
-		Description:         descriptionBuilder.String(),
+		Description:         finalDescription,
 		AppliedEnrichments:  []string{},
 		EnrichmentMetadata:  make(map[string]string),
 		Destinations:        pipeline.Destinations,
@@ -782,11 +920,129 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// Note: Success/partial notifications are now sent by destination.UpdateStatus
 	// when all destinations have reported their final status (SYNCED or PARTIAL).
 
+	// --- Destination-specific enricher exclusions ---
+	// Group destinations by their exclusion sets. Destinations with identical
+	// ExcludedEnrichers lists share a single event; different sets get separate events
+	// with filtered descriptions and appliedEnrichments.
+	groups := groupDestinationsByExclusions(pipeline.Destinations, pipeline.DestinationConfigs)
+
+	if len(groups) <= 1 {
+		// No exclusion diversity — all destinations get the same event (common case)
+		return &ProcessResult{
+			Events:             []*pb.EnrichedActivityEvent{finalEvent},
+			ProviderExecutions: providerExecutions,
+			Status:             pb.ExecutionStatus_STATUS_SUCCESS,
+		}, nil
+	}
+
+	// Multiple exclusion groups — emit one event per group
+	var events []*pb.EnrichedActivityEvent
+	for exclusionKey, dests := range groups {
+		if exclusionKey == "" {
+			// Default group (no exclusions) — use the full event with narrowed destinations
+			evt := cloneEnrichedEvent(finalEvent)
+			evt.Destinations = dests
+			events = append(events, evt)
+			continue
+		}
+
+		// Build excluded set from the comma-separated key
+		excludedSet := make(map[string]bool)
+		for _, e := range strings.Split(exclusionKey, ",") {
+			excludedSet[e] = true
+		}
+
+		// Build filtered description by zeroing excluded slots
+		filteredSlots := make([]string, len(descriptionSlots))
+		copy(filteredSlots, descriptionSlots)
+		for i, cfg := range configs {
+			if excludedSet[cfg.ProviderType.String()] {
+				filteredSlots[i+1] = "" // Zero the excluded enricher's slot
+			}
+		}
+		filteredDesc := buildDescriptionFromSlots(filteredSlots)
+
+		// Filter appliedEnrichments
+		var filteredApplied []string
+		for _, ae := range finalEvent.AppliedEnrichments {
+			if !excludedSet[ae] {
+				filteredApplied = append(filteredApplied, ae)
+			}
+		}
+
+		evt := cloneEnrichedEvent(finalEvent)
+		evt.Description = filteredDesc
+		evt.AppliedEnrichments = filteredApplied
+		evt.Destinations = dests
+		events = append(events, evt)
+
+		logger.Info("Emitting filtered event for destination group",
+			"excluded", exclusionKey,
+			"destinations", len(dests),
+			"appliedEnrichments", len(filteredApplied))
+	}
+
 	return &ProcessResult{
-		Events:             []*pb.EnrichedActivityEvent{finalEvent},
+		Events:             events,
 		ProviderExecutions: providerExecutions,
 		Status:             pb.ExecutionStatus_STATUS_SUCCESS,
 	}, nil
+}
+
+// buildDescriptionFromSlots joins non-empty description slots with double newlines.
+// This preserves pipeline ordering: each enricher's description appears at its
+// configured position regardless of execution order (Phase 1 vs Phase 2).
+func buildDescriptionFromSlots(slots []string) string {
+	var parts []string
+	for _, s := range slots {
+		if s != "" {
+			parts = append(parts, s)
+		}
+	}
+	return strings.Join(parts, "\n\n")
+}
+
+// groupDestinationsByExclusions groups destinations by their exclusion sets.
+// Returns a map from exclusion key (sorted, comma-joined provider type strings) to destinations.
+// An empty key means no exclusions (the default group).
+func groupDestinationsByExclusions(destinations []pb.Destination, destConfigs map[string]*pb.DestinationConfig) map[string][]pb.Destination {
+	groups := map[string][]pb.Destination{}
+	for _, dest := range destinations {
+		destId := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
+		cfg := destConfigs[destId]
+		key := "" // empty = no exclusions
+		if cfg != nil && len(cfg.ExcludedEnrichers) > 0 {
+			sorted := make([]string, len(cfg.ExcludedEnrichers))
+			copy(sorted, cfg.ExcludedEnrichers)
+			sort.Strings(sorted)
+			key = strings.Join(sorted, ",")
+		}
+		groups[key] = append(groups[key], dest)
+	}
+	return groups
+}
+
+// cloneEnrichedEvent creates a shallow copy of an EnrichedActivityEvent with
+// independent Destinations, AppliedEnrichments, and EnrichmentMetadata slices/maps.
+// ActivityData is shared (not deep-cloned) since only description text is filtered.
+func cloneEnrichedEvent(src *pb.EnrichedActivityEvent) *pb.EnrichedActivityEvent {
+	clone := *src // shallow copy
+
+	// Independent destination list
+	clone.Destinations = make([]pb.Destination, len(src.Destinations))
+	copy(clone.Destinations, src.Destinations)
+
+	// Independent applied enrichments
+	clone.AppliedEnrichments = make([]string, len(src.AppliedEnrichments))
+	copy(clone.AppliedEnrichments, src.AppliedEnrichments)
+
+	// Independent metadata map
+	clone.EnrichmentMetadata = make(map[string]string, len(src.EnrichmentMetadata))
+	for k, v := range src.EnrichmentMetadata {
+		clone.EnrichmentMetadata[k] = v
+	}
+
+	return &clone
 }
 
 type configuredPipeline struct {

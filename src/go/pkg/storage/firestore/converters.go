@@ -36,6 +36,23 @@ func getBool(m map[string]interface{}, key string) bool {
 	return false
 }
 
+// Helper to safely get string slice from map (handles Firestore's []interface{})
+func getStringSlice(m map[string]interface{}, key string) []string {
+	if v, ok := m[key].([]interface{}); ok {
+		strs := make([]string, 0, len(v))
+		for _, s := range v {
+			if str, ok := s.(string); ok {
+				strs = append(strs, str)
+			}
+		}
+		return strs
+	}
+	if v, ok := m[key].([]string); ok {
+		return v
+	}
+	return nil
+}
+
 // Helper to safely get time from map (handles time.Time from Firestore)
 func getTime(m map[string]interface{}, key string) *timestamppb.Timestamp {
 	if v, ok := m[key]; ok {
@@ -490,9 +507,13 @@ func PipelineToFirestore(p *pb.PipelineConfig) map[string]interface{} {
 		destConfigs := make(map[string]interface{})
 		for k, v := range p.DestinationConfigs {
 			if v != nil {
-				destConfigs[k] = map[string]interface{}{
+				dc := map[string]interface{}{
 					"config": v.Config,
 				}
+				if len(v.ExcludedEnrichers) > 0 {
+					dc["excluded_enrichers"] = v.ExcludedEnrichers
+				}
+				destConfigs[k] = dc
 			}
 		}
 		m["destination_configs"] = destConfigs
@@ -584,7 +605,10 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 						}
 					}
 				}
-				destConfigs[destId] = &pb.DestinationConfig{Config: cfg}
+				destConfigs[destId] = &pb.DestinationConfig{
+					Config:            cfg,
+					ExcludedEnrichers: getStringSlice(dcObj, "excluded_enrichers"),
+				}
 			}
 		}
 	}

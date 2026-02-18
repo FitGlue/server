@@ -41,6 +41,10 @@ func (p *AICompanionProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION
 }
 
+func (p *AICompanionProvider) ShouldDefer() bool {
+	return true
+}
+
 func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	// Tier check - Athlete tier only
 	if tier.GetEffectiveTier(user) != tier.TierAthlete {
@@ -67,6 +71,11 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, a
 
 	// Build context from activity
 	activityContext := buildActivityContext(activity)
+
+	// Include enriched description from other enrichers (injected by orchestrator Phase 2)
+	if enrichedDesc := inputs["enriched_description"]; enrichedDesc != "" {
+		activityContext += "\n\nOther Enricher Descriptions:\n" + enrichedDesc
+	}
 
 	// Get Gemini API key
 	apiKey := os.Getenv("GEMINI_API_KEY")

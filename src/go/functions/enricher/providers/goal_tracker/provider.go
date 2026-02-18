@@ -65,6 +65,10 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	var currentPeriod string
 	boosterId := fmt.Sprintf("goal_tracker_%s_%s", period, metric)
 
+	var lastExternalId string
+	var cachedDescription string
+	var cachedMetadata map[string]string
+
 	if p.Service != nil && p.Service.DB != nil {
 		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
 		if err != nil {
@@ -78,7 +82,36 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 				}
 				// If period changed, reset (new week/month/year)
 			}
+			if v, ok := data["last_external_id"].(string); ok {
+				lastExternalId = v
+			}
+			if v, ok := data["last_result_description"].(string); ok {
+				cachedDescription = v
+			}
+			if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
+				cachedMetadata = make(map[string]string)
+				for k, val := range v {
+					if s, ok := val.(string); ok {
+						cachedMetadata[k] = s
+					}
+				}
+			}
 		}
+	}
+
+	// Same-source dedup: if this activity was already processed, return cached result
+	externalId := inputs["external_id"]
+	if externalId != "" && lastExternalId == externalId && cachedDescription != "" {
+		logger.Info("goal_tracker: returning cached result for same-source activity",
+			"external_id", externalId)
+		if cachedMetadata == nil {
+			cachedMetadata = map[string]string{}
+		}
+		cachedMetadata["dedup"] = "true"
+		return &providers.EnrichmentResult{
+			Description: cachedDescription,
+			Metadata:    cachedMetadata,
+		}, nil
 	}
 
 	// Calculate new total
@@ -86,20 +119,6 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	percentage := (newTotal / target) * 100
 	if percentage > 100 {
 		percentage = 100
-	}
-
-	// Persist updated progress
-	if p.Service != nil && p.Service.DB != nil && activityValue > 0 {
-		if currentPeriod == "" {
-			currentPeriod = getPeriodKey(period)
-		}
-		updateData := map[string]interface{}{
-			"accumulated": newTotal,
-			"period_key":  currentPeriod,
-		}
-		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
-			logger.Warn("Failed to save goal progress", "error", err)
-		}
 	}
 
 	// Build output
@@ -135,15 +154,38 @@ func (p *GoalTracker) Enrich(ctx context.Context, logger *slog.Logger, activity 
 		"percentage", percentage,
 	)
 
+	resultMetadata := map[string]string{
+		"goal_status":      fmt.Sprintf("%.0f%%", percentage),
+		"goal_accumulated": fmt.Sprintf("%.2f", newTotal),
+		"goal_target":      fmt.Sprintf("%.0f", target),
+		"goal_period":      period,
+		"goal_metric":      metric,
+	}
+
+	// Persist updated progress + cached result for same-source dedup
+	if p.Service != nil && p.Service.DB != nil && activityValue > 0 {
+		if currentPeriod == "" {
+			currentPeriod = getPeriodKey(period)
+		}
+		metadataMap := make(map[string]interface{})
+		for k, v := range resultMetadata {
+			metadataMap[k] = v
+		}
+		updateData := map[string]interface{}{
+			"accumulated":             newTotal,
+			"period_key":              currentPeriod,
+			"last_external_id":        externalId,
+			"last_result_description": sb.String(),
+			"last_result_metadata":    metadataMap,
+		}
+		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
+			logger.Warn("Failed to save goal progress", "error", err)
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
-		Metadata: map[string]string{
-			"goal_status":      fmt.Sprintf("%.0f%%", percentage),
-			"goal_accumulated": fmt.Sprintf("%.2f", newTotal),
-			"goal_target":      fmt.Sprintf("%.0f", target),
-			"goal_period":      period,
-			"goal_metric":      metric,
-		},
+		Metadata:    resultMetadata,
 	}, nil
 }
 

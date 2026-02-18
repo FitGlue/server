@@ -170,4 +170,46 @@ describe('FirestoreTokenSource', () => {
     const body = call[1].body as URLSearchParams;
     expect(body.get('client_id')).toBe('test-client-id');
   });
+
+  it('should return GitHub token without requiring refreshToken', async () => {
+    (mockUserStore.get as jest.Mock).mockResolvedValue({
+      userId,
+      integrations: {
+        github: {
+          enabled: true,
+          accessToken: 'ghp_test_token',
+          refreshToken: '', // GitHub doesn't use refresh tokens
+          expiresAt: new Date('2099-12-31'),
+        }
+      }
+    });
+
+    const source = new FirestoreTokenSource(mockUserStore, userId, 'github');
+    const token = await source.getToken();
+
+    expect(token.accessToken).toBe('ghp_test_token');
+    expect(token.refreshToken).toBe('');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(mockUserStore.setIntegration).not.toHaveBeenCalled();
+  });
+
+  it('should not attempt refresh for GitHub even with past expiry', async () => {
+    (mockUserStore.get as jest.Mock).mockResolvedValue({
+      userId,
+      integrations: {
+        github: {
+          enabled: true,
+          accessToken: 'ghp_test_token',
+          refreshToken: '',
+          expiresAt: new Date(now.getTime() - 60000), // 1 min in the past
+        }
+      }
+    });
+
+    const source = new FirestoreTokenSource(mockUserStore, userId, 'github');
+    const token = await source.getToken();
+
+    expect(token.accessToken).toBe('ghp_test_token');
+    expect(global.fetch).not.toHaveBeenCalled(); // No refresh attempt
+  });
 });

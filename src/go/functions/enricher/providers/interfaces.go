@@ -70,3 +70,15 @@ type ResumableProvider interface {
 	// The pendingInput contains the resolved InputData from the background polling service.
 	EnrichResume(ctx context.Context, activity *pb.StandardizedActivity, user *pb.UserRecord, pendingInput *pb.PendingInput) (*EnrichmentResult, error)
 }
+
+// DeferrableProvider is an optional interface for providers that benefit from
+// running after all other enrichers have completed (e.g., AI providers).
+// The orchestrator defers their execution to Phase 2 but preserves their
+// pipeline position for description ordering. Deferred providers receive
+// an "enriched_description" key in their config containing the accumulated
+// description from all non-deferred enrichers.
+type DeferrableProvider interface {
+	Provider
+	// ShouldDefer returns true if this provider should be deferred to Phase 2.
+	ShouldDefer() bool
+}

@@ -14,6 +14,13 @@ import (
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 )
 
+// nonRefreshableProviders are providers whose OAuth tokens don't expire
+// and don't use refresh tokens (e.g. GitHub). For these providers we skip
+// the refresh-token requirement and never attempt token refresh.
+var nonRefreshableProviders = map[string]bool{
+	"github": true,
+}
+
 // Token represents the OAuth token structure we care about
 type Token struct {
 	AccessToken  string
@@ -48,6 +55,11 @@ func NewFirestoreTokenSource(svc *bootstrap.Service, userID, provider string) *F
 func (s *FirestoreTokenSource) ForceRefresh(ctx context.Context) (*Token, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
+	// Non-refreshable providers cannot be refreshed; the user must re-connect.
+	if nonRefreshableProviders[s.provider] {
+		return nil, fmt.Errorf("%s tokens cannot be refreshed; user must re-connect", s.provider)
+	}
 
 	// 1. Fetch refresh token explicitly from DB again to be safe
 	userData, err := s.db.DB.GetUser(ctx, s.userID)
@@ -86,11 +98,6 @@ func (s *FirestoreTokenSource) ForceRefresh(ctx context.Context) (*Token, error)
 			return nil, fmt.Errorf("google not linked/enabled")
 		}
 		refreshToken = userData.Integrations.Google.RefreshToken
-	case "github":
-		if userData.Integrations.Github == nil || !userData.Integrations.Github.Enabled {
-			return nil, fmt.Errorf("github not linked/enabled")
-		}
-		refreshToken = userData.Integrations.Github.RefreshToken
 	case "spotify":
 		if userData.Integrations.Spotify == nil || !userData.Integrations.Spotify.Enabled {
 			return nil, fmt.Errorf("spotify not linked/enabled")
@@ -193,8 +200,22 @@ func (s *FirestoreTokenSource) Token(ctx context.Context) (*Token, error) {
 		return nil, fmt.Errorf("unknown provider %s", s.provider)
 	}
 
-	if accessToken == "" || refreshToken == "" {
-		return nil, fmt.Errorf("missing tokens for %s", s.provider)
+	if accessToken == "" {
+		return nil, fmt.Errorf("missing access token for %s", s.provider)
+	}
+
+	// Non-refreshable providers (e.g. GitHub): return the token directly,
+	// no refresh token or expiry check needed.
+	if nonRefreshableProviders[s.provider] {
+		return &Token{
+			AccessToken:  accessToken,
+			RefreshToken: "",
+			Expiry:       expiry,
+		}, nil
+	}
+
+	if refreshToken == "" {
+		return nil, fmt.Errorf("missing refresh token for %s", s.provider)
 	}
 
 	// 2. Check Expiry (Proactive Refresh)

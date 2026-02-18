@@ -110,12 +110,47 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 	now := time.Now()
 	var data map[string]interface{}
 
+	var lastExternalId string
+	var cachedDescription string
+	var cachedMetadata map[string]string
+
 	if p.Service != nil && p.Service.DB != nil {
 		var err error
 		data, err = p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
 		if err != nil {
 			logger.Warn("Failed to fetch recovery data", "error", err)
 		}
+		if data != nil {
+			if v, ok := data["last_external_id"].(string); ok {
+				lastExternalId = v
+			}
+			if v, ok := data["last_result_description"].(string); ok {
+				cachedDescription = v
+			}
+			if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
+				cachedMetadata = make(map[string]string)
+				for k, val := range v {
+					if s, ok := val.(string); ok {
+						cachedMetadata[k] = s
+					}
+				}
+			}
+		}
+	}
+
+	// Same-source dedup: if this activity was already processed, return cached result
+	externalId := inputs["external_id"]
+	if externalId != "" && lastExternalId == externalId && cachedDescription != "" {
+		logger.Info("recovery_advisor: returning cached result for same-source activity",
+			"external_id", externalId)
+		if cachedMetadata == nil {
+			cachedMetadata = map[string]string{}
+		}
+		cachedMetadata["dedup"] = "true"
+		return &providers.EnrichmentResult{
+			Description: cachedDescription,
+			Metadata:    cachedMetadata,
+		}, nil
 	}
 
 	// Compute acute (7-day) and chronic (28-day) loads from stored data
@@ -177,16 +212,6 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		acwr = acuteDailyAvg / chronicDailyAvg
 	}
 
-	// Persist today's load
-	if p.Service != nil && p.Service.DB != nil {
-		updateData := map[string]interface{}{
-			today: todayLoad,
-		}
-		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
-			logger.Warn("Failed to save recovery data", "error", err)
-		}
-	}
-
 	// Calculate recovery recommendation
 	recoveryHours, intensity := getRecoveryRecommendation(trimp, totalAcuteLoad, acwr, consecutiveHardDays)
 
@@ -225,18 +250,37 @@ func (p *RecoveryAdvisor) Enrich(ctx context.Context, logger *slog.Logger, activ
 		"intensity", intensity,
 	)
 
+	resultMetadata := map[string]string{
+		"trimp":                 fmt.Sprintf("%.0f", trimp),
+		"acute_load":            fmt.Sprintf("%.0f", totalAcuteLoad),
+		"chronic_load":          fmt.Sprintf("%.0f", totalChronicLoad),
+		"acwr":                  fmt.Sprintf("%.2f", acwr),
+		"acwr_label":            acwrLabel,
+		"recovery_hours":        fmt.Sprintf("%.0f", recoveryHours),
+		"intensity":             intensity,
+		"consecutive_hard_days": fmt.Sprintf("%d", consecutiveHardDays),
+	}
+
+	// Persist today's load + cached result for same-source dedup
+	if p.Service != nil && p.Service.DB != nil {
+		metadataMap := make(map[string]interface{})
+		for k, v := range resultMetadata {
+			metadataMap[k] = v
+		}
+		updateData := map[string]interface{}{
+			today:                     todayLoad,
+			"last_external_id":        externalId,
+			"last_result_description": sb.String(),
+			"last_result_metadata":    metadataMap,
+		}
+		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
+			logger.Warn("Failed to save recovery data", "error", err)
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
-		Metadata: map[string]string{
-			"trimp":                 fmt.Sprintf("%.0f", trimp),
-			"acute_load":            fmt.Sprintf("%.0f", totalAcuteLoad),
-			"chronic_load":          fmt.Sprintf("%.0f", totalChronicLoad),
-			"acwr":                  fmt.Sprintf("%.2f", acwr),
-			"acwr_label":            acwrLabel,
-			"recovery_hours":        fmt.Sprintf("%.0f", recoveryHours),
-			"intensity":             intensity,
-			"consecutive_hard_days": fmt.Sprintf("%d", consecutiveHardDays),
-		},
+		Metadata:    resultMetadata,
 	}, nil
 }
 

@@ -67,6 +67,9 @@ message PipelineConfig {
 // Configuration for a single destination plugin
 message DestinationConfig {
   map<string, string> config = 1;
+  // Enricher provider types to exclude from this destination's description output
+  // e.g., ["ENRICHER_PROVIDER_PERSONAL_RECORDS", "ENRICHER_PROVIDER_PARKRUN"]
+  repeated string excluded_enrichers = 2;
 }
 
 // PluginDefault stores user-level default configuration for a source or destination plugin.

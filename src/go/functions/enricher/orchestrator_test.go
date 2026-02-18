@@ -568,3 +568,237 @@ func TestOrchestrator_Process(t *testing.T) {
 		}
 	})
 }
+
+// MockDeferrableProvider implements both providers.Provider and providers.DeferrableProvider
+type MockDeferrableProvider struct {
+	NameFunc         func() string
+	ProviderTypeFunc func() pb.EnricherProviderType
+	EnrichFunc       func(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error)
+	ShouldDeferFunc  func() bool
+}
+
+func (m *MockDeferrableProvider) Name() string {
+	if m.NameFunc != nil {
+		return m.NameFunc()
+	}
+	return "mock-deferrable"
+}
+
+func (m *MockDeferrableProvider) ProviderType() pb.EnricherProviderType {
+	if m.ProviderTypeFunc != nil {
+		return m.ProviderTypeFunc()
+	}
+	return pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK
+}
+
+func (m *MockDeferrableProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+	if m.EnrichFunc != nil {
+		return m.EnrichFunc(ctx, logger, activity, user, inputConfig, doNotRetry)
+	}
+	return &providers.EnrichmentResult{}, nil
+}
+
+func (m *MockDeferrableProvider) ShouldDefer() bool {
+	if m.ShouldDeferFunc != nil {
+		return m.ShouldDeferFunc()
+	}
+	return true
+}
+
+func TestOrchestrator_DeferredExecution(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("Deferred enricher receives enriched_description", func(t *testing.T) {
+		// Pipeline: [normalProvider(WEATHER), deferredProvider(AI_COMPANION)]
+		// Normal provider contributes description "Weather: Sunny"
+		// Deferred provider should receive "Weather: Sunny" in its enriched_description config
+		var capturedConfig map[string]string
+
+		mockDB := &MockDatabase{
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{UserId: id}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+				return []*pb.PipelineConfig{
+					{
+						Id:           "p1",
+						Source:       "SOURCE_HEVY",
+						Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
+						Enrichers: []*pb.EnricherConfig{
+							{ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER},
+							{ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION},
+						},
+					},
+				}, nil
+			},
+		}
+
+		normalProvider := &MockProvider{
+			NameFunc:         func() string { return "weather" },
+			ProviderTypeFunc: func() pb.EnricherProviderType { return pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER },
+			EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+				return &providers.EnrichmentResult{
+					Description: "☀️ Weather: Sunny, 22°C",
+				}, nil
+			},
+		}
+
+		deferredProvider := &MockDeferrableProvider{
+			NameFunc:         func() string { return "ai-companion" },
+			ProviderTypeFunc: func() pb.EnricherProviderType { return pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION },
+			EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+				capturedConfig = inputConfig
+				return &providers.EnrichmentResult{
+					Description: "✨ AI Summary: Great sunny run!",
+				}, nil
+			},
+		}
+
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
+		orchestrator.Register(normalProvider)
+		orchestrator.Register(deferredProvider)
+
+		pipelineID := "p1"
+		payload := &pb.ActivityPayload{
+			UserId:     "user-1",
+			Source:     pb.ActivitySource_SOURCE_HEVY,
+			PipelineId: &pipelineID,
+			Timestamp:  timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+			StandardizedActivity: &pb.StandardizedActivity{
+				Name: "Morning Run",
+				Sessions: []*pb.Session{
+					{
+						StartTime:        timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+						TotalElapsedTime: 60,
+					},
+				},
+			},
+		}
+
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "exec-1", "pipe-exec-1", false)
+		if err != nil {
+			t.Fatalf("Process failed: %v", err)
+		}
+
+		// Verify deferred provider received enriched_description
+		if capturedConfig == nil {
+			t.Fatal("Deferred provider was not called")
+		}
+		enrichedDesc := capturedConfig["enriched_description"]
+		if !strings.Contains(enrichedDesc, "Weather: Sunny") {
+			t.Errorf("Expected enriched_description to contain weather description, got: %q", enrichedDesc)
+		}
+
+		// Verify final description has both (in pipeline order)
+		if len(result.Events) != 1 {
+			t.Fatalf("Expected 1 event, got %d", len(result.Events))
+		}
+		desc := result.Events[0].Description
+		weatherIdx := strings.Index(desc, "Weather")
+		aiIdx := strings.Index(desc, "AI Summary")
+		if weatherIdx < 0 || aiIdx < 0 {
+			t.Errorf("Expected both descriptions in output, got: %q", desc)
+		}
+		if weatherIdx > aiIdx {
+			t.Errorf("Expected Weather before AI Summary (pipeline order), got: %q", desc)
+		}
+	})
+
+	t.Run("Description ordering preserves pipeline position", func(t *testing.T) {
+		// Pipeline: [deferredProvider, normalProvider]
+		// Even though deferred runs AFTER normal, its description should appear FIRST
+		mockDB := &MockDatabase{
+			GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
+				return &pb.UserRecord{UserId: id}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+				return []*pb.PipelineConfig{
+					{
+						Id:           "p1",
+						Source:       "SOURCE_HEVY",
+						Destinations: []pb.Destination{pb.Destination_DESTINATION_STRAVA},
+						Enrichers: []*pb.EnricherConfig{
+							{ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION}, // Deferred, but FIRST in pipeline
+							{ProviderType: pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER},      // Normal, SECOND in pipeline
+						},
+					},
+				}, nil
+			},
+		}
+
+		executionOrder := []string{}
+
+		deferredProvider := &MockDeferrableProvider{
+			NameFunc:         func() string { return "ai-companion" },
+			ProviderTypeFunc: func() pb.EnricherProviderType { return pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION },
+			EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+				executionOrder = append(executionOrder, "ai-companion")
+				return &providers.EnrichmentResult{
+					Description: "✨ AI Summary",
+				}, nil
+			},
+		}
+
+		normalProvider := &MockProvider{
+			NameFunc:         func() string { return "weather" },
+			ProviderTypeFunc: func() pb.EnricherProviderType { return pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER },
+			EnrichFunc: func(ctx context.Context, _ *slog.Logger, activity *pb.StandardizedActivity, user *pb.UserRecord, inputConfig map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
+				executionOrder = append(executionOrder, "weather")
+				return &providers.EnrichmentResult{
+					Description: "☀️ Weather",
+				}, nil
+			},
+		}
+
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
+		orchestrator.Register(deferredProvider)
+		orchestrator.Register(normalProvider)
+
+		pipelineID := "p1"
+		payload := &pb.ActivityPayload{
+			UserId:     "user-1",
+			Source:     pb.ActivitySource_SOURCE_HEVY,
+			PipelineId: &pipelineID,
+			Timestamp:  timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+			StandardizedActivity: &pb.StandardizedActivity{
+				Name: "Morning Run",
+				Sessions: []*pb.Session{
+					{
+						StartTime:        timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+						TotalElapsedTime: 60,
+					},
+				},
+			},
+		}
+
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "exec-1", "pipe-exec-1", false)
+		if err != nil {
+			t.Fatalf("Process failed: %v", err)
+		}
+
+		// Verify execution order: weather runs first (Phase 1), ai-companion runs second (Phase 2)
+		if len(executionOrder) != 2 {
+			t.Fatalf("Expected 2 executions, got %d: %v", len(executionOrder), executionOrder)
+		}
+		if executionOrder[0] != "weather" {
+			t.Errorf("Expected weather to execute first (Phase 1), got %s", executionOrder[0])
+		}
+		if executionOrder[1] != "ai-companion" {
+			t.Errorf("Expected ai-companion to execute second (Phase 2), got %s", executionOrder[1])
+		}
+
+		// Verify description ordering: AI Summary appears FIRST (pipeline position 0), Weather SECOND (pipeline position 1)
+		if len(result.Events) != 1 {
+			t.Fatalf("Expected 1 event, got %d", len(result.Events))
+		}
+		desc := result.Events[0].Description
+		aiIdx := strings.Index(desc, "AI Summary")
+		weatherIdx := strings.Index(desc, "Weather")
+		if aiIdx < 0 || weatherIdx < 0 {
+			t.Errorf("Expected both descriptions in output, got: %q", desc)
+		}
+		if aiIdx > weatherIdx {
+			t.Errorf("Expected AI Summary BEFORE Weather (pipeline order, not execution order), got: %q", desc)
+		}
+	})
+}

@@ -42,6 +42,10 @@ func (p *MuscleHeatmapImageProvider) ProviderType() pb.EnricherProviderType {
 	return pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE
 }
 
+func (p *MuscleHeatmapImageProvider) ShouldDefer() bool {
+	return true
+}
+
 // MuscleScore represents activation level for a muscle group
 type MuscleScore struct {
 	SVGIDs     []string // One or more SVG IDs to target

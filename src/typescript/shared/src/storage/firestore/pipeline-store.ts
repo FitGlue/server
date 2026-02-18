@@ -22,9 +22,13 @@ export const pipelineConverter: admin.firestore.FirestoreDataConverter<PipelineC
       data.source_config = model.sourceConfig;
     }
     if (model.destinationConfigs && Object.keys(model.destinationConfigs).length > 0) {
-      const destConfigs: Record<string, { config: Record<string, string> }> = {};
+      const destConfigs: Record<string, { config: Record<string, string>; excluded_enrichers?: string[] }> = {};
       for (const [k, v] of Object.entries(model.destinationConfigs)) {
-        destConfigs[k] = { config: v.config || {} };
+        const dc: { config: Record<string, string>; excluded_enrichers?: string[] } = { config: v.config || {} };
+        if (v.excludedEnrichers && v.excludedEnrichers.length > 0) {
+          dc.excluded_enrichers = v.excludedEnrichers;
+        }
+        destConfigs[k] = dc;
       }
       data.destination_configs = destConfigs;
     }
@@ -33,10 +37,13 @@ export const pipelineConverter: admin.firestore.FirestoreDataConverter<PipelineC
 
   fromFirestore(snapshot: admin.firestore.QueryDocumentSnapshot): PipelineConfig {
     const data = snapshot.data();
-    const destConfigsRaw = (data.destination_configs || {}) as Record<string, { config?: Record<string, string> }>;
-    const destinationConfigs: Record<string, { config: Record<string, string> }> = {};
+    const destConfigsRaw = (data.destination_configs || {}) as Record<string, { config?: Record<string, string>; excluded_enrichers?: string[] }>;
+    const destinationConfigs: Record<string, { config: Record<string, string>; excludedEnrichers?: string[] }> = {};
     for (const [k, v] of Object.entries(destConfigsRaw)) {
-      destinationConfigs[k] = { config: (v?.config || {}) as Record<string, string> };
+      destinationConfigs[k] = {
+        config: (v?.config || {}) as Record<string, string>,
+        excludedEnrichers: v?.excluded_enrichers || undefined,
+      };
     }
     return {
       id: data.id as string,

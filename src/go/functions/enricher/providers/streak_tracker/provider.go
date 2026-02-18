@@ -58,6 +58,10 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 	var lastActivityDate string
 	boosterId := fmt.Sprintf("streak_tracker_%s", activityTypes)
 
+	var lastExternalId string
+	var cachedDescription string
+	var cachedMetadata map[string]string
+
 	if p.Service != nil && p.Service.DB != nil {
 		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
 		if err != nil {
@@ -68,7 +72,36 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 			if val, ok := data["last_activity_date"].(string); ok {
 				lastActivityDate = val
 			}
+			if v, ok := data["last_external_id"].(string); ok {
+				lastExternalId = v
+			}
+			if v, ok := data["last_result_description"].(string); ok {
+				cachedDescription = v
+			}
+			if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
+				cachedMetadata = make(map[string]string)
+				for k, val := range v {
+					if s, ok := val.(string); ok {
+						cachedMetadata[k] = s
+					}
+				}
+			}
 		}
+	}
+
+	// Same-source dedup: if this activity was already processed, return cached result
+	externalId := inputs["external_id"]
+	if externalId != "" && lastExternalId == externalId && cachedDescription != "" {
+		logger.Info("streak_tracker: returning cached result for same-source activity",
+			"external_id", externalId)
+		if cachedMetadata == nil {
+			cachedMetadata = map[string]string{}
+		}
+		cachedMetadata["dedup"] = "true"
+		return &providers.EnrichmentResult{
+			Description: cachedDescription,
+			Metadata:    cachedMetadata,
+		}, nil
 	}
 
 	// Determine streak continuation
@@ -108,18 +141,6 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 		longestStreak = currentStreak
 	}
 
-	// Persist updated streak
-	if p.Service != nil && p.Service.DB != nil && isNewDay {
-		updateData := map[string]interface{}{
-			"current_streak":     currentStreak,
-			"longest_streak":     longestStreak,
-			"last_activity_date": activityDate,
-		}
-		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
-			logger.Warn("Failed to save streak data", "error", err)
-		}
-	}
-
 	// Build output
 	activityLabel := getActivityLabel(activityTypes)
 	var sb strings.Builder
@@ -147,13 +168,34 @@ func (p *StreakTracker) Enrich(ctx context.Context, logger *slog.Logger, activit
 		"streak_broken", streakBroken,
 	)
 
+	resultMetadata := map[string]string{
+		"streak_current":       fmt.Sprintf("%d", currentStreak),
+		"streak_longest":       fmt.Sprintf("%d", longestStreak),
+		"activity_type_filter": activityTypes,
+	}
+
+	// Persist updated streak + cached result for same-source dedup
+	if p.Service != nil && p.Service.DB != nil && isNewDay {
+		metadataMap := make(map[string]interface{})
+		for k, v := range resultMetadata {
+			metadataMap[k] = v
+		}
+		updateData := map[string]interface{}{
+			"current_streak":          currentStreak,
+			"longest_streak":          longestStreak,
+			"last_activity_date":      activityDate,
+			"last_external_id":        externalId,
+			"last_result_description": sb.String(),
+			"last_result_metadata":    metadataMap,
+		}
+		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
+			logger.Warn("Failed to save streak data", "error", err)
+		}
+	}
+
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
-		Metadata: map[string]string{
-			"streak_current":       fmt.Sprintf("%d", currentStreak),
-			"streak_longest":       fmt.Sprintf("%d", longestStreak),
-			"activity_type_filter": activityTypes,
-		},
+		Metadata:    resultMetadata,
 	}, nil
 }
 

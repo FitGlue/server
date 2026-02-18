@@ -14,6 +14,13 @@ export interface TokenSource {
 /** All supported OAuth providers */
 export type OAuthProvider = 'strava' | 'fitbit' | 'oura' | 'polar' | 'spotify' | 'wahoo' | 'trainingpeaks' | 'github';
 
+/**
+ * Providers whose OAuth tokens don't expire and don't use refresh tokens.
+ * For these providers we skip the refresh-token requirement and never
+ * attempt token refresh.
+ */
+const NON_REFRESHABLE_PROVIDERS: ReadonlySet<OAuthProvider> = new Set(['github']);
+
 /** Provider-specific configuration for token refresh */
 interface ProviderConfig {
   tokenUrl: string;
@@ -97,15 +104,28 @@ export class FirestoreTokenSource implements TokenSource {
     const refreshToken = integration.refreshToken;
     const expiresAtRaw = integration.expiresAt;
 
-    if (!accessToken || !refreshToken) {
-      throw new Error(`Missing tokens for ${this.provider}`);
+    if (!accessToken) {
+      throw new Error(`Missing access token for ${this.provider}`);
     }
 
-    // 2. Check Expiry
+    // Non-refreshable providers (e.g. GitHub): return the token directly,
+    // no refresh token or expiry check needed.
+    if (NON_REFRESHABLE_PROVIDERS.has(this.provider)) {
+      return {
+        accessToken,
+        refreshToken: '',
+        expiresAt: expiresAtRaw || new Date('2099-12-31'),
+      };
+    }
+
+    if (!refreshToken) {
+      throw new Error(`Missing refresh token for ${this.provider}`);
+    }
+
+    // Check Expiry
     // converters.ts guarantees this is a Date or undefined
     const expiresAt = expiresAtRaw || new Date(0);
 
-    // 2. Check Expiry
     const now = new Date();
     const isExpired = expiresAt <= now;
 

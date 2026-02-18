@@ -64,6 +64,37 @@ func (p *AutoIncrementProvider) Enrich(ctx context.Context, logger *slog.Logger,
 		}, fmt.Errorf("service not initialized")
 	}
 
+	// Same-source dedup: check if this activity was already processed for this counter
+	externalId := inputs["external_id"]
+	if externalId != "" && p.service.DB != nil {
+		boosterId := fmt.Sprintf("auto_increment_%s", key)
+		data, err := p.service.DB.GetBoosterData(ctx, user.UserId, boosterId)
+		if err == nil && data != nil {
+			if storedExtId, ok := data["last_external_id"].(string); ok && storedExtId == externalId {
+				// Return cached result
+				cachedSuffix := ""
+				if v, ok := data["last_result_suffix"].(string); ok {
+					cachedSuffix = v
+				}
+				cachedVal := ""
+				if v, ok := data["last_result_val"].(string); ok {
+					cachedVal = v
+				}
+				logger.Info("auto_increment: returning cached result for same-source activity",
+					"external_id", externalId, "cached_suffix", cachedSuffix)
+				return &providers.EnrichmentResult{
+					NameSuffix: cachedSuffix,
+					Metadata: map[string]string{
+						"auto_increment_applied": "true",
+						"auto_increment_key":     key,
+						"auto_increment_val":     cachedVal,
+						"dedup":                  "true",
+					},
+				}, nil
+			}
+		}
+	}
+
 	// 2. Get/Increment Counter
 	counter, err := p.service.DB.GetCounter(ctx, user.UserId, key)
 	if err != nil {
@@ -103,7 +134,7 @@ func (p *AutoIncrementProvider) Enrich(ctx context.Context, logger *slog.Logger,
 		"new_count", newCount,
 	)
 
-	// Persist
+	// Persist counter
 	if err := p.service.DB.SetCounter(ctx, user.UserId, counter); err != nil {
 		logger.Debug("auto_increment: error persisting counter",
 			"error", err.Error(),
@@ -111,14 +142,29 @@ func (p *AutoIncrementProvider) Enrich(ctx context.Context, logger *slog.Logger,
 		return nil, fmt.Errorf("failed to update counter: %w", err)
 	}
 
+	nameSuffix := fmt.Sprintf(" (#%d)", newCount)
+
+	// Cache result for same-source dedup
+	if externalId != "" && p.service.DB != nil {
+		boosterId := fmt.Sprintf("auto_increment_%s", key)
+		cacheData := map[string]interface{}{
+			"last_external_id":   externalId,
+			"last_result_suffix": nameSuffix,
+			"last_result_val":    fmt.Sprintf("%d", newCount),
+		}
+		if err := p.service.DB.SetBoosterData(ctx, user.UserId, boosterId, cacheData); err != nil {
+			logger.Warn("auto_increment: failed to cache dedup result", "error", err)
+		}
+	}
+
 	logger.Debug("auto_increment: successfully applied",
 		"key", key,
 		"new_count", newCount,
-		"suffix", fmt.Sprintf(" (#%d)", newCount),
+		"suffix", nameSuffix,
 	)
 
 	return &providers.EnrichmentResult{
-		NameSuffix: fmt.Sprintf(" (#%d)", newCount),
+		NameSuffix: nameSuffix,
 		Metadata: map[string]string{
 			"auto_increment_applied": "true",
 			"auto_increment_key":     key,

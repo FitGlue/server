@@ -73,13 +73,46 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 	var lifetimeDistance float64
 	boosterId := fmt.Sprintf("distance_milestones_%s", sport)
 
+	var lastExternalId string
+	var cachedDescription string
+	var cachedMetadata map[string]string
+
 	if p.Service != nil && p.Service.DB != nil {
 		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
 		if err != nil {
 			logger.Warn("Failed to fetch lifetime distance", "error", err)
 		} else if data != nil {
 			lifetimeDistance = providers.ToFloat64(data["lifetime_distance"])
+			if v, ok := data["last_external_id"].(string); ok {
+				lastExternalId = v
+			}
+			if v, ok := data["last_result_description"].(string); ok {
+				cachedDescription = v
+			}
+			if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
+				cachedMetadata = make(map[string]string)
+				for k, val := range v {
+					if s, ok := val.(string); ok {
+						cachedMetadata[k] = s
+					}
+				}
+			}
 		}
+	}
+
+	// Same-source dedup: if this activity was already processed, return cached result
+	externalId := inputs["external_id"]
+	if externalId != "" && lastExternalId == externalId && cachedDescription != "" {
+		logger.Info("distance_milestones: returning cached result for same-source activity",
+			"external_id", externalId)
+		if cachedMetadata == nil {
+			cachedMetadata = map[string]string{}
+		}
+		cachedMetadata["dedup"] = "true"
+		return &providers.EnrichmentResult{
+			Description: cachedDescription,
+			Metadata:    cachedMetadata,
+		}, nil
 	}
 
 	// Calculate new total
@@ -94,18 +127,11 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 		}
 	}
 
-	// Persist updated lifetime distance
-	if p.Service != nil && p.Service.DB != nil {
-		updateData := map[string]interface{}{
-			"lifetime_distance": newDistance,
-		}
-		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
-			logger.Warn("Failed to save lifetime distance", "error", err)
-		}
-	}
+	// Persist updated lifetime distance + cached result for same-source dedup
 
 	// Build output
 	var sb strings.Builder
+	resultMetadata := map[string]string{}
 
 	if len(crossedMilestones) > 0 {
 		// Celebrate milestone!
@@ -122,36 +148,49 @@ func (p *DistanceMilestones) Enrich(ctx context.Context, logger *slog.Logger, ac
 			"sport", sport,
 		)
 
-		return &providers.EnrichmentResult{
-			Description: sb.String(),
-			Metadata: map[string]string{
-				"milestone_reached": fmt.Sprintf("%.0f", biggest),
-				"lifetime_distance": fmt.Sprintf("%.1f", newDistance),
-				"activity_distance": fmt.Sprintf("%.1f", distanceKm),
-			},
-		}, nil
+		resultMetadata["milestone_reached"] = fmt.Sprintf("%.0f", biggest)
+		resultMetadata["lifetime_distance"] = fmt.Sprintf("%.1f", newDistance)
+		resultMetadata["activity_distance"] = fmt.Sprintf("%.1f", distanceKm)
+	} else {
+		// No milestone, show progress
+		nextMilestone := getNextMilestone(newDistance)
+		remaining := nextMilestone - newDistance
+
+		sb.WriteString(fmt.Sprintf("📊 Lifetime %s:\n", getSportLabel(sport)))
+		sb.WriteString(fmt.Sprintf("• %.1f km total\n", newDistance))
+		sb.WriteString(fmt.Sprintf("• Next milestone: %.0f km (%.1f km to go)", nextMilestone, remaining))
+
+		logger.Info("Distance milestones processed",
+			"lifetime_distance", newDistance,
+			"next_milestone", nextMilestone,
+			"sport", sport,
+		)
+
+		resultMetadata["lifetime_distance"] = fmt.Sprintf("%.1f", newDistance)
+		resultMetadata["next_milestone"] = fmt.Sprintf("%.0f", nextMilestone)
 	}
 
-	// No milestone, just add to description
-	nextMilestone := getNextMilestone(newDistance)
-	remaining := nextMilestone - newDistance
-
-	sb.WriteString(fmt.Sprintf("📊 Lifetime %s:\n", getSportLabel(sport)))
-	sb.WriteString(fmt.Sprintf("• %.1f km total\n", newDistance))
-	sb.WriteString(fmt.Sprintf("• Next milestone: %.0f km (%.1f km to go)", nextMilestone, remaining))
-
-	logger.Info("Distance milestones processed",
-		"lifetime_distance", newDistance,
-		"next_milestone", nextMilestone,
-		"sport", sport,
-	)
+	// Persist state + cached result for same-source dedup
+	if p.Service != nil && p.Service.DB != nil {
+		// Convert metadata to interface map for Firestore
+		metadataMap := make(map[string]interface{})
+		for k, v := range resultMetadata {
+			metadataMap[k] = v
+		}
+		updateData := map[string]interface{}{
+			"lifetime_distance":       newDistance,
+			"last_external_id":        externalId,
+			"last_result_description": sb.String(),
+			"last_result_metadata":    metadataMap,
+		}
+		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, boosterId, updateData); err != nil {
+			logger.Warn("Failed to save lifetime distance", "error", err)
+		}
+	}
 
 	return &providers.EnrichmentResult{
 		Description: sb.String(),
-		Metadata: map[string]string{
-			"lifetime_distance": fmt.Sprintf("%.1f", newDistance),
-			"next_milestone":    fmt.Sprintf("%.0f", nextMilestone),
-		},
+		Metadata:    resultMetadata,
 	}, nil
 }
 

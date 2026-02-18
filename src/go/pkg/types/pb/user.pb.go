@@ -7,12 +7,13 @@
 package pb
 
 import (
-	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
-	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
+
+	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
+	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -966,10 +967,11 @@ func (x *PipelineConfig) GetDestinationConfigs() map[string]*DestinationConfig {
 
 // Configuration for a single destination plugin
 type DestinationConfig struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Config        map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Config            map[string]string      `protobuf:"bytes,1,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	ExcludedEnrichers []string               `protobuf:"bytes,2,rep,name=excluded_enrichers,json=excludedEnrichers,proto3" json:"excluded_enrichers,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *DestinationConfig) Reset() {
@@ -1005,6 +1007,13 @@ func (*DestinationConfig) Descriptor() ([]byte, []int) {
 func (x *DestinationConfig) GetConfig() map[string]string {
 	if x != nil {
 		return x.Config
+	}
+	return nil
+}
+
+func (x *DestinationConfig) GetExcludedEnrichers() []string {
+	if x != nil {
+		return x.ExcludedEnrichers
 	}
 	return nil
 }

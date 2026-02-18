@@ -51,6 +51,45 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 	trackStrength := inputs["strength_records"] != "false" // Default true
 	celebrateInTitle := inputs["celebrate_in_title"] == "true"
 
+	// Same-source dedup: check if this activity was already processed
+	externalId := inputs["external_id"]
+	if externalId != "" && p.Service != nil && p.Service.DB != nil {
+		boosterId := "personal_records_cache"
+		data, err := p.Service.DB.GetBoosterData(ctx, user.UserId, boosterId)
+		if err == nil && data != nil {
+			if storedExtId, ok := data["last_external_id"].(string); ok && storedExtId == externalId {
+				cachedDesc := ""
+				if v, ok := data["last_result_description"].(string); ok {
+					cachedDesc = v
+				}
+				cachedName := ""
+				if v, ok := data["last_result_name"].(string); ok {
+					cachedName = v
+				}
+				cachedMetadata := map[string]string{}
+				if v, ok := data["last_result_metadata"].(map[string]interface{}); ok {
+					for k, val := range v {
+						if s, ok := val.(string); ok {
+							cachedMetadata[k] = s
+						}
+					}
+				}
+				cachedMetadata["dedup"] = "true"
+
+				logger.Info("personal_records: returning cached result for same-source activity",
+					"external_id", externalId)
+				result := &providers.EnrichmentResult{
+					Description: cachedDesc,
+					Metadata:    cachedMetadata,
+				}
+				if cachedName != "" {
+					result.Name = cachedName
+				}
+				return result, nil
+			}
+		}
+	}
+
 	var newPRs []NewPRResult
 	userID := user.UserId
 
@@ -86,6 +125,16 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 	}
 
 	if len(newPRs) == 0 {
+		// Cache "no PRs" result for dedup
+		if externalId != "" && p.Service != nil && p.Service.DB != nil {
+			cacheData := map[string]interface{}{
+				"last_external_id":        externalId,
+				"last_result_description": "",
+				"last_result_name":        "",
+				"last_result_metadata":    map[string]interface{}{"pr_status": "no_new_prs"},
+			}
+			_ = p.Service.DB.SetBoosterData(ctx, user.UserId, "personal_records_cache", cacheData)
+		}
 		return &providers.EnrichmentResult{
 			Metadata: map[string]string{
 				"pr_status": "no_new_prs",
@@ -119,6 +168,23 @@ func (p *PersonalRecordsProvider) Enrich(ctx context.Context, logger *slog.Logge
 		"pr_count", len(newPRs),
 		"activity_type", activity.Type.String(),
 	)
+
+	// Cache result for same-source dedup
+	if externalId != "" && p.Service != nil && p.Service.DB != nil {
+		metadataMap := make(map[string]interface{})
+		for k, v := range result.Metadata {
+			metadataMap[k] = v
+		}
+		cacheData := map[string]interface{}{
+			"last_external_id":        externalId,
+			"last_result_description": result.Description,
+			"last_result_name":        result.Name,
+			"last_result_metadata":    metadataMap,
+		}
+		if err := p.Service.DB.SetBoosterData(ctx, user.UserId, "personal_records_cache", cacheData); err != nil {
+			logger.Warn("personal_records: failed to cache dedup result", "error", err)
+		}
+	}
 
 	return result, nil
 }
