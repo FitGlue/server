@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.0.0](https://github.com/FitGlue/server/compare/v14.14.0...v15.0.0) (2026-02-19)
+
+
+### ⚠ BREAKING CHANGES
+
+* user-data-handler /counters endpoint now returns the
+array directly instead of wrapping it in { counters: [...] }.
+
+- Add ShowcaseTheme proto message and field on ShowcaseProfile
+- Implement theme validation and persistence in showcase-management-handler
+- Expose theme data in showcase-handler API responses for activity and profile pages
+- Add FIT file download from GCS and binary commit to GitHub in github-uploader
+- Ground AI banner image prompts in real-world fitness settings with exercise-specific guidance
+- Fix destination display names (TrainingPeaks, Intervals.icu, Google Sheets, GitHub) in
+  generated enum formatters and Go formatters; delegate FormatDestinationName to shared formatters
+- Refactor mobile-source-handler to use shared CloudEvent unwrapping from framework
+- Expand cascade delete in user-profile-handler to cover all subcollections and API keys
+- Fix pipeline-runs-store to only clear status_message on success, not on error
+- Add Firestore converter for ShowcaseTheme
+
+### Features
+
+* add showcase theming, GitHub FIT uploads, and improve AI image prompts ([36bb8b2](https://github.com/FitGlue/server/commit/36bb8b22ed995b93d58fb8e916a3561a2e61ce85))
+
 ## [14.14.0](https://github.com/FitGlue/server/compare/v14.13.0...v14.14.0) (2026-02-18)
 
 
