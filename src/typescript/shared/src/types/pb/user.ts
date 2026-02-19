@@ -596,6 +596,21 @@ export interface ShowcaseProfileEntry {
 }
 
 /**
+ * ShowcaseTheme contains the visual customization settings for a user's showcase.
+ * Applied to both profile and individual activity pages.
+ */
+export interface ShowcaseTheme {
+  /** Preset ID (e.g., "default", "midnight", "ember") */
+  themeId: string;
+  /** Optional hex override (e.g., "#FF6B35"), empty = use theme default */
+  customAccentColor: string;
+  /** Background animation (e.g., "particles", "aurora", "none") */
+  animationId: string;
+  /** Card rendering style (e.g., "glass", "outline", "solid", "minimal") */
+  cardStyle: string;
+}
+
+/**
  * ShowcaseProfile is a materialized profile document for a user's public showcase homepage.
  * Stored in top-level showcase_profiles/{slug} collection.
  * Athlete tier only - created/updated by the showcase-uploader on each showcase write.
@@ -633,6 +648,8 @@ export interface ShowcaseProfile {
   profilePictureUrl: string;
   /** Whether the profile is publicly visible (default true) */
   visible: boolean;
+  /** Visual customization (Athlete tier only) */
+  theme?: ShowcaseTheme | undefined;
 }
 
 /**

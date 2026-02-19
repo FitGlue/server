@@ -10,7 +10,7 @@ import (
 
 func TestBuildMarkdownContent(t *testing.T) {
 	event := createTestEvent()
-	content := buildMarkdownContent(event)
+	content := buildMarkdownContent(event, "")
 
 	if content == "" {
 		t.Error("Expected non-empty markdown content")
@@ -36,6 +36,24 @@ func TestBuildMarkdownContent(t *testing.T) {
 	}
 	if !contains(content, "<!-- fitglue:end -->") {
 		t.Error("Expected fitglue:end marker")
+	}
+}
+
+func TestBuildMarkdownContent_WithFitFile(t *testing.T) {
+	event := createTestEvent()
+	content := buildMarkdownContent(event, "activity.fit")
+
+	if !contains(content, "fit_file: activity.fit") {
+		t.Error("Expected fit_file in frontmatter when FIT file is provided")
+	}
+}
+
+func TestBuildMarkdownContent_WithoutFitFile(t *testing.T) {
+	event := createTestEvent()
+	content := buildMarkdownContent(event, "")
+
+	if contains(content, "fit_file") {
+		t.Error("Expected no fit_file in frontmatter when FIT file is not provided")
 	}
 }
 

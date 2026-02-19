@@ -359,4 +359,83 @@ describe('mobile-source-handler', () => {
         const parsed = JSON.parse(publishedPayload.originalPayloadJson);
         expect(parsed.activityId).toBe('act-1');
     });
+
+    describe('parseMessage CloudEvent unwrapping', () => {
+        it('handles framework-unwrapped CloudEvent payload for Health Connect', async () => {
+            // After the framework fix, req.body arrives as the direct payload
+            mockActivityDocRef.get.mockResolvedValue({
+                exists: true,
+                data: () => ({
+                    ...firestoreMetadata,
+                    source: 'SOURCE_HEALTH_CONNECT',
+                    telemetryUri: null,
+                }),
+            });
+
+            const req = {
+                body: {
+                    userId: 'user-1',
+                    activityId: 'act-1',
+                    source: 'health_connect',
+                },
+            };
+
+            const result: any = await handler(req as any, ctx);
+
+            expect(result.status).toBe('published');
+            expect(result.activityId).toBe('act-1');
+            expect(mockPublish).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    source: 9, // SOURCE_HEALTH_CONNECT
+                    userId: 'user-1',
+                }),
+                'act-1'
+            );
+        });
+
+        it('handles framework-unwrapped CloudEvent payload for Apple Health', async () => {
+            const req = {
+                body: {
+                    userId: 'user-1',
+                    activityId: 'act-1',
+                    source: 'healthkit',
+                },
+            };
+
+            const result: any = await handler(req as any, ctx);
+
+            expect(result.status).toBe('published');
+            expect(result.activityId).toBe('act-1');
+        });
+
+        it('falls back to Pub/Sub decoding with inner CloudEvent', async () => {
+            // Tests the parseMessage fallback: single-level Pub/Sub wrapping
+            // with a CloudEvent JSON inside (e.g. if framework unwrapping fails)
+            const cloudEventJson = JSON.stringify({
+                specversion: '1.0',
+                type: 'com.fitglue.activity.created',
+                source: '/integrations/health_connect',
+                id: 'test-ce-id',
+                data: {
+                    userId: 'user-1',
+                    activityId: 'act-1',
+                    source: 'healthkit',
+                },
+                datacontenttype: 'application/json',
+            });
+
+            const req = {
+                body: {
+                    message: {
+                        data: Buffer.from(cloudEventJson).toString('base64'),
+                    },
+                },
+            };
+
+            const result: any = await handler(req as any, ctx);
+
+            expect(result.status).toBe('published');
+            expect(result.activityId).toBe('act-1');
+        });
+    });
 });

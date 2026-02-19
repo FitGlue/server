@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -175,25 +176,9 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 }
 
 // FormatDestinationName returns a human-readable name for a destination.
+// Delegates to the generated formatters package for consistency across Go and TypeScript.
 func FormatDestinationName(dest pb.Destination) string {
-	switch dest {
-	case pb.Destination_DESTINATION_STRAVA:
-		return "Strava"
-	case pb.Destination_DESTINATION_SHOWCASE:
-		return "Showcase"
-	case pb.Destination_DESTINATION_HEVY:
-		return "Hevy"
-	case pb.Destination_DESTINATION_TRAININGPEAKS:
-		return "TrainingPeaks"
-	case pb.Destination_DESTINATION_INTERVALS:
-		return "Intervals.icu"
-	case pb.Destination_DESTINATION_GOOGLESHEETS:
-		return "Google Sheets"
-	case pb.Destination_DESTINATION_MOCK:
-		return "Mock"
-	default:
-		return dest.String()
-	}
+	return formatters.FormatDestination(dest)
 }
 
 // ComputePipelineRunStatus determines overall status from destination outcomes

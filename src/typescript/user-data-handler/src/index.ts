@@ -62,7 +62,7 @@ export const handler: FrameworkHandler = async (req, ctx) => {
                             new Date().toISOString()
                     };
                 });
-                return { counters };
+                return counters;
             },
         },
         {

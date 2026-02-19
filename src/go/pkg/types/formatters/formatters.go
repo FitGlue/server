@@ -389,13 +389,13 @@ func FormatDestination(value pb.Destination) string {
 	case pb.Destination_DESTINATION_HEVY:
 		return "Hevy"
 	case pb.Destination_DESTINATION_TRAININGPEAKS:
-		return "Trainingpeaks"
+		return "TrainingPeaks"
 	case pb.Destination_DESTINATION_INTERVALS:
-		return "Intervals"
+		return "Intervals.icu"
 	case pb.Destination_DESTINATION_GOOGLESHEETS:
-		return "Googlesheets"
+		return "Google Sheets"
 	case pb.Destination_DESTINATION_GITHUB:
-		return "Github"
+		return "GitHub"
 	case pb.Destination_DESTINATION_MOCK:
 		return "Mock"
 	default:
@@ -424,8 +424,10 @@ func ParseDestination(input string) pb.Destination {
 		"trainingpeaks":             pb.Destination_DESTINATION_TRAININGPEAKS,
 		"destination_intervals":     pb.Destination_DESTINATION_INTERVALS,
 		"intervals":                 pb.Destination_DESTINATION_INTERVALS,
+		"intervals.icu":             pb.Destination_DESTINATION_INTERVALS,
 		"destination_googlesheets":  pb.Destination_DESTINATION_GOOGLESHEETS,
 		"googlesheets":              pb.Destination_DESTINATION_GOOGLESHEETS,
+		"google sheets":             pb.Destination_DESTINATION_GOOGLESHEETS,
 		"destination_github":        pb.Destination_DESTINATION_GITHUB,
 		"github":                    pb.Destination_DESTINATION_GITHUB,
 		"destination_mock":          pb.Destination_DESTINATION_MOCK,

@@ -189,6 +189,13 @@ async function handleApiShowcase(
     ownerDisplayName: data.ownerDisplayName,
     ownerProfileSlug: ownerProfile?.slug || undefined,
     ownerProfilePictureUrl,
+    // Include owner's theme so activity pages can render with their customization
+    theme: ownerProfile?.theme ? {
+      themeId: ownerProfile.theme.themeId || 'default',
+      customAccentColor: ownerProfile.theme.customAccentColor || '',
+      animationId: ownerProfile.theme.animationId || 'particles',
+      cardStyle: ownerProfile.theme.cardStyle || 'glass',
+    } : undefined,
     // Don't expose: userId, activityId, fitFileUri, pipelineExecutionId, expiresAt
   };
 
@@ -458,6 +465,13 @@ async function handleProfileApi(
     totalReps: profile.totalReps,
     totalWeightKg: profile.totalWeightKg,
     latestActivityAt: profile.latestActivityAt?.toISOString(),
+    // Theme customization for rendering
+    theme: profile.theme ? {
+      themeId: profile.theme.themeId || 'default',
+      customAccentColor: profile.theme.customAccentColor || '',
+      animationId: profile.theme.animationId || 'particles',
+      cardStyle: profile.theme.cardStyle || 'glass',
+    } : { themeId: 'default', customAccentColor: '', animationId: 'particles', cardStyle: 'glass' },
   };
 
   return new FrameworkResponse({
@@ -520,6 +534,12 @@ interface ShowcaseResponse {
   ownerDisplayName?: string;  // Public attribution - owner's display name or email prefix
   ownerProfileSlug?: string;  // Owner's actual profile slug for linking
   ownerProfilePictureUrl?: string;  // Owner's profile picture URL
+  theme?: {  // Owner's theme customization
+    themeId: string;
+    customAccentColor: string;
+    animationId: string;
+    cardStyle: string;
+  };
 }
 
 /**

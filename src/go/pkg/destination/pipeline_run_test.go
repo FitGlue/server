@@ -288,6 +288,7 @@ func TestFormatDestinationName(t *testing.T) {
 		{pb.Destination_DESTINATION_TRAININGPEAKS, "TrainingPeaks"},
 		{pb.Destination_DESTINATION_INTERVALS, "Intervals.icu"},
 		{pb.Destination_DESTINATION_GOOGLESHEETS, "Google Sheets"},
+		{pb.Destination_DESTINATION_GITHUB, "GitHub"},
 		{pb.Destination_DESTINATION_MOCK, "Mock"},
 	}
 

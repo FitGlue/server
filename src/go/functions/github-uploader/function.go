@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -156,9 +157,6 @@ func loadGitHubConfig(eventPayload *pb.EnrichedActivityEvent) (*gitHubConfig, er
 
 // handleGithubCreate commits a new activity file to GitHub
 func handleGithubCreate(ctx context.Context, ghClient *ghclient.ClientWithResponses, eventPayload *pb.EnrichedActivityEvent, config *gitHubConfig, fwCtx *framework.FrameworkContext) (interface{}, error) {
-	// Build the Markdown content
-	markdownContent := buildMarkdownContent(eventPayload)
-
 	// Build the file path
 	activityDate := time.Now()
 	if eventPayload.StartTime != nil {
@@ -166,10 +164,34 @@ func handleGithubCreate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 	}
 	filePath := buildFilePath(config.Folder, eventPayload, activityDate)
 
+	// Download and commit FIT file if available
+	fitFileName := ""
+	if eventPayload.FitFileUri != "" {
+		fitData, fitErr := downloadFitFile(ctx, eventPayload.FitFileUri, fwCtx)
+		if fitErr != nil {
+			fwCtx.Logger.Warn("Failed to download FIT file, continuing without it", "error", fitErr)
+		} else {
+			fitFileName = "activity.fit"
+			fitPath := path.Join(path.Dir(filePath), fitFileName)
+			// Commit FIT file first (before Markdown references it)
+			fitCommitMsg := fmt.Sprintf("Add FIT data for %s", eventPayload.Name)
+			if _, fitCommitErr := createOrUpdateBinaryFile(ctx, ghClient, config, fitPath, fitData, fitCommitMsg, nil); fitCommitErr != nil {
+				fwCtx.Logger.Warn("Failed to commit FIT file, continuing without it", "error", fitCommitErr)
+				fitFileName = "" // Clear so frontmatter doesn't reference it
+			} else {
+				fwCtx.Logger.Info("Committed FIT file to GitHub", "path", fitPath, "size", len(fitData))
+			}
+		}
+	}
+
+	// Build the Markdown content (with optional FIT file reference)
+	markdownContent := buildMarkdownContent(eventPayload, fitFileName)
+
 	fwCtx.Logger.Info("Creating file in GitHub",
 		"repo", config.Repo,
 		"path", filePath,
 		"content_length", len(markdownContent),
+		"has_fit_file", fitFileName != "",
 	)
 
 	// Create the file via GitHub Contents API
@@ -217,6 +239,7 @@ func handleGithubCreate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 		"activity_name": eventPayload.Name,
 		"activity_type": eventPayload.ActivityType.String(),
 		"description":   eventPayload.Description,
+		"has_fit_file":  fitFileName != "",
 		"mode":          "CREATE",
 	}, nil
 }
@@ -292,8 +315,29 @@ func handleGithubUpdate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 		}
 	}
 
+	// Update FIT file if available
+	fitFileName := ""
+	if eventPayload.FitFileUri != "" {
+		fitData, fitErr := downloadFitFile(ctx, eventPayload.FitFileUri, fwCtx)
+		if fitErr != nil {
+			fwCtx.Logger.Warn("Failed to download FIT file for update, continuing without it", "error", fitErr)
+		} else {
+			fitFileName = "activity.fit"
+			fitPath := path.Join(path.Dir(existingFilePath), fitFileName)
+			// Check if FIT file already exists to get its SHA
+			existingFitSHA, _, _ := getFileContent(ctx, ghClient, config, fitPath)
+			fitCommitMsg := fmt.Sprintf("Update FIT data for %s", eventPayload.Name)
+			if _, fitCommitErr := createOrUpdateBinaryFile(ctx, ghClient, config, fitPath, fitData, fitCommitMsg, existingFitSHA); fitCommitErr != nil {
+				fwCtx.Logger.Warn("Failed to commit FIT file during update", "error", fitCommitErr)
+				fitFileName = ""
+			} else {
+				fwCtx.Logger.Info("Updated FIT file in GitHub", "path", fitPath, "size", len(fitData))
+			}
+		}
+	}
+
 	// Build new content, preserving user content below <!-- fitglue:end -->
-	markdownContent := buildMarkdownContent(eventPayload)
+	markdownContent := buildMarkdownContent(eventPayload, fitFileName)
 	if existingContent != "" {
 		markdownContent = mergeWithUserContent(markdownContent, existingContent)
 	}
@@ -324,12 +368,14 @@ func handleGithubUpdate(ctx context.Context, ghClient *ghclient.ClientWithRespon
 		"activity_name": eventPayload.Name,
 		"activity_type": eventPayload.ActivityType.String(),
 		"description":   eventPayload.Description,
+		"has_fit_file":  fitFileName != "",
 		"mode":          "UPDATE",
 	}, nil
 }
 
-// buildMarkdownContent generates the Markdown file content from the enriched activity
-func buildMarkdownContent(event *pb.EnrichedActivityEvent) string {
+// buildMarkdownContent generates the Markdown file content from the enriched activity.
+// fitFileName is the name of the sibling FIT file (e.g. "activity.fit"), or empty if none.
+func buildMarkdownContent(event *pb.EnrichedActivityEvent, fitFileName string) string {
 	var sb strings.Builder
 
 	// YAML frontmatter
@@ -342,6 +388,9 @@ func buildMarkdownContent(event *pb.EnrichedActivityEvent) string {
 	sb.WriteString(fmt.Sprintf("source: %s\n", event.Source.String()))
 	sb.WriteString(fmt.Sprintf("activity_id: %s\n", event.ActivityId))
 	sb.WriteString(fmt.Sprintf("pipeline_id: %s\n", event.PipelineId))
+	if fitFileName != "" {
+		sb.WriteString(fmt.Sprintf("fit_file: %s\n", fitFileName))
+	}
 	if len(event.AppliedEnrichments) > 0 {
 		sb.WriteString(fmt.Sprintf("enrichments: [%s]\n", strings.Join(event.AppliedEnrichments, ", ")))
 	}
@@ -456,6 +505,50 @@ func createOrUpdateFile(ctx context.Context, ghClient *ghclient.ClientWithRespon
 
 	// Return the file path as the external ID (used for updates)
 	return filePath, nil
+}
+
+// createOrUpdateBinaryFile commits binary data (e.g. FIT files) to the repository.
+// Unlike createOrUpdateFile which takes string content, this takes raw bytes.
+func createOrUpdateBinaryFile(ctx context.Context, ghClient *ghclient.ClientWithResponses, config *gitHubConfig, filePath string, data []byte, message string, existingSHA *string) (string, error) {
+	committerName := "FitGlue Bot"
+	committerEmail := "bot@fitglue.com"
+
+	reqBody := ghclient.CreateOrUpdateFileRequest{
+		Message: message,
+		Content: base64.StdEncoding.EncodeToString(data),
+		Sha:     existingSHA,
+		Committer: &ghclient.CommitAuthor{
+			Name:  committerName,
+			Email: committerEmail,
+		},
+	}
+
+	resp, err := ghClient.ReposcreateOrUpdateFileContentsWithResponse(ctx,
+		config.Owner, config.Name, filePath, reqBody, gitHubHeaders)
+	if err != nil {
+		return "", fmt.Errorf("GitHub API request failed: %w", err)
+	}
+
+	if resp.StatusCode() >= 400 {
+		return "", fmt.Errorf("GitHub API error: status %d, body: %s", resp.StatusCode(), string(resp.Body))
+	}
+
+	return filePath, nil
+}
+
+// downloadFitFile downloads a FIT file from GCS using the same pattern as strava-uploader.
+func downloadFitFile(ctx context.Context, fitFileUri string, fwCtx *framework.FrameworkContext) ([]byte, error) {
+	bucketName := fwCtx.Service.Config.GCSArtifactBucket
+	if bucketName == "" {
+		bucketName = "fitglue-server-dev-artifacts"
+	}
+	objectName := strings.TrimPrefix(fitFileUri, "gs://"+bucketName+"/")
+
+	data, err := fwCtx.Service.Store.Read(ctx, bucketName, objectName)
+	if err != nil {
+		return nil, fmt.Errorf("GCS read error for FIT file: %w", err)
+	}
+	return data, nil
 }
 
 // getFileContent fetches an existing file's content and SHA from GitHub

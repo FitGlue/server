@@ -718,22 +718,22 @@ const DestinationNames: Record<string, string> = {
     'HEVY': 'Hevy',
     'Hevy': 'Hevy',
     '3': 'Hevy',
-    'DESTINATION_TRAININGPEAKS': 'Trainingpeaks',
-    'TRAININGPEAKS': 'Trainingpeaks',
-    'Trainingpeaks': 'Trainingpeaks',
-    '4': 'Trainingpeaks',
-    'DESTINATION_INTERVALS': 'Intervals',
-    'INTERVALS': 'Intervals',
-    'Intervals': 'Intervals',
-    '5': 'Intervals',
-    'DESTINATION_GOOGLESHEETS': 'Googlesheets',
-    'GOOGLESHEETS': 'Googlesheets',
-    'Googlesheets': 'Googlesheets',
-    '6': 'Googlesheets',
-    'DESTINATION_GITHUB': 'Github',
-    'GITHUB': 'Github',
-    'Github': 'Github',
-    '7': 'Github',
+    'DESTINATION_TRAININGPEAKS': 'TrainingPeaks',
+    'TRAININGPEAKS': 'TrainingPeaks',
+    'TrainingPeaks': 'TrainingPeaks',
+    '4': 'TrainingPeaks',
+    'DESTINATION_INTERVALS': 'Intervals.icu',
+    'INTERVALS': 'Intervals.icu',
+    'Intervals.icu': 'Intervals.icu',
+    '5': 'Intervals.icu',
+    'DESTINATION_GOOGLESHEETS': 'Google Sheets',
+    'GOOGLESHEETS': 'Google Sheets',
+    'Google Sheets': 'Google Sheets',
+    '6': 'Google Sheets',
+    'DESTINATION_GITHUB': 'GitHub',
+    'GITHUB': 'GitHub',
+    'GitHub': 'GitHub',
+    '7': 'GitHub',
     'DESTINATION_MOCK': 'Mock',
     'MOCK': 'Mock',
     'Mock': 'Mock',
@@ -763,10 +763,10 @@ export function formatDestination(value: Destination | number | string | undefin
     case Destination.DESTINATION_STRAVA: return 'Strava';
     case Destination.DESTINATION_SHOWCASE: return 'Showcase';
     case Destination.DESTINATION_HEVY: return 'Hevy';
-    case Destination.DESTINATION_TRAININGPEAKS: return 'Trainingpeaks';
-    case Destination.DESTINATION_INTERVALS: return 'Intervals';
-    case Destination.DESTINATION_GOOGLESHEETS: return 'Googlesheets';
-    case Destination.DESTINATION_GITHUB: return 'Github';
+    case Destination.DESTINATION_TRAININGPEAKS: return 'TrainingPeaks';
+    case Destination.DESTINATION_INTERVALS: return 'Intervals.icu';
+    case Destination.DESTINATION_GOOGLESHEETS: return 'Google Sheets';
+    case Destination.DESTINATION_GITHUB: return 'GitHub';
     case Destination.DESTINATION_MOCK: return 'Mock';
     default: return 'Unknown';
   }
@@ -791,9 +791,11 @@ const DestinationValues: Record<string, Destination> = {
     '4': Destination.DESTINATION_TRAININGPEAKS,
     'destination_intervals': Destination.DESTINATION_INTERVALS,
     'intervals': Destination.DESTINATION_INTERVALS,
+    'intervals.icu': Destination.DESTINATION_INTERVALS,
     '5': Destination.DESTINATION_INTERVALS,
     'destination_googlesheets': Destination.DESTINATION_GOOGLESHEETS,
     'googlesheets': Destination.DESTINATION_GOOGLESHEETS,
+    'google sheets': Destination.DESTINATION_GOOGLESHEETS,
     '6': Destination.DESTINATION_GOOGLESHEETS,
     'destination_github': Destination.DESTINATION_GITHUB,
     'github': Destination.DESTINATION_GITHUB,

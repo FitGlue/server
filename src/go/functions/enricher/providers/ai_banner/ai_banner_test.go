@@ -314,8 +314,8 @@ func TestBuildLLMPrompt(t *testing.T) {
 			contains: []string{
 				"image prompt generator",
 				"vibrant",
-				"abstract scenery",
-				"NO people",
+				"No people",
+				"EQUIPMENT",
 			},
 		},
 		{
@@ -325,7 +325,7 @@ func TestBuildLLMPrompt(t *testing.T) {
 			subject: "abstract",
 			contains: []string{
 				"minimalist",
-				"abstract scenery",
+				"No people",
 			},
 		},
 		{
@@ -363,8 +363,8 @@ func TestBuildLLMPrompt(t *testing.T) {
 			subject: "abstract",
 			contains: []string{
 				"CRITICAL RULES",
-				"NEVER mention any text",
-				"visual elements",
+				"NEVER mention text",
+				"REAL-WORLD FITNESS SETTING",
 			},
 		},
 	}

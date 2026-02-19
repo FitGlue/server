@@ -442,6 +442,15 @@ export const FirestoreToShowcaseProfileEntry = (data: Record<string, unknown>): 
   };
 };
 
+export const FirestoreToShowcaseTheme = (data: Record<string, unknown>): import('../../types/pb/user').ShowcaseTheme => {
+  return {
+    themeId: data.theme_id as string || 'default',
+    customAccentColor: data.custom_accent_color as string || '',
+    animationId: data.animation_id as string || 'particles',
+    cardStyle: data.card_style as string || 'glass',
+  };
+};
+
 export const FirestoreToShowcaseProfile = (data: Record<string, unknown>): import('../../types/pb/user').ShowcaseProfile => {
   const entriesRaw = (data.entries as Record<string, unknown>[]) || [];
   return {
@@ -462,6 +471,7 @@ export const FirestoreToShowcaseProfile = (data: Record<string, unknown>): impor
     bio: data.bio as string || '',
     profilePictureUrl: data.profile_picture_url as string || '',
     visible: data.visible !== undefined ? Boolean(data.visible) : true,
+    theme: data.theme ? FirestoreToShowcaseTheme(data.theme as Record<string, unknown>) : undefined,
   };
 };
 

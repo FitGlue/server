@@ -436,6 +436,15 @@ message ShowcaseProfileEntry {
   double total_weight_kg = 11;
 }
 
+// ShowcaseTheme contains the visual customization settings for a user's showcase.
+// Applied to both profile and individual activity pages.
+message ShowcaseTheme {
+  string theme_id = 1;              // Preset ID (e.g., "default", "midnight", "ember")
+  string custom_accent_color = 2;   // Optional hex override (e.g., "#FF6B35"), empty = use theme default
+  string animation_id = 3;          // Background animation (e.g., "particles", "aurora", "none")
+  string card_style = 4;            // Card rendering style (e.g., "glass", "outline", "solid", "minimal")
+}
+
 // ShowcaseProfile is a materialized profile document for a user's public showcase homepage.
 // Stored in top-level showcase_profiles/{slug} collection.
 // Athlete tier only - created/updated by the showcase-uploader on each showcase write.
@@ -465,6 +474,9 @@ message ShowcaseProfile {
   string bio = 15;                  // Free-text bio
   string profile_picture_url = 16;  // URL to profile picture in GCS
   bool visible = 17;                // Whether the profile is publicly visible (default true)
+
+  // Visual customization (Athlete tier only)
+  ShowcaseTheme theme = 18;         // Theme settings (background, accent, animation, card style)
 }
 
 // PipelineRun tracks a complete pipeline execution lifecycle.

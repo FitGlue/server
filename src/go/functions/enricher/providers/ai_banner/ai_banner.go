@@ -115,8 +115,10 @@ func (p *AIBannerProvider) Enrich(ctx context.Context, logger *slog.Logger, acti
 	activityContext := buildActivityContext(activity)
 
 	// Include enriched description from other enrichers (injected by orchestrator Phase 2)
+	// The full booster output (muscle heatmap, heart rate, training load, etc.) provides
+	// valuable context for generating relevant fitness imagery.
 	if enrichedDesc := inputs["enriched_description"]; enrichedDesc != "" {
-		activityContext += "\n\nOther Enricher Descriptions:\n" + enrichedDesc
+		activityContext += "\n\nEnriched Activity Description:\n" + enrichedDesc
 	}
 
 	// Step 2: Use text LLM to generate an image description
@@ -260,33 +262,51 @@ func buildLLMPrompt(activityContext, style, subject string) string {
 	subjectGuidance := ""
 	switch subject {
 	case "male":
-		subjectGuidance = "The image should feature a male athlete as the main subject."
+		subjectGuidance = `SUBJECT: Feature a male athlete as the main subject.
+- Show them mid-action performing one of the specific exercises listed in the activity data
+- Focus on the movement, form, and environment rather than physique
+- Avoid generic "muscular man posing" or stock-photo bodybuilder imagery
+- The person should look natural and focused, not a model`
 	case "female":
-		subjectGuidance = "The image should feature a female athlete as the main subject."
+		subjectGuidance = `SUBJECT: Feature a female athlete as the main subject.
+- Show them mid-action performing one of the specific exercises listed in the activity data
+- Focus on the movement, form, and environment rather than physique
+- Avoid generic fitness model or stock-photo imagery
+- The person should look natural and focused, not a model`
 	default: // "abstract"
-		subjectGuidance = "The image should be abstract scenery only, with NO people or human figures."
+		subjectGuidance = `SUBJECT: No people or human figures in the image.
+- Instead, depict the EQUIPMENT, ENVIRONMENT, or SETTING relevant to the workout
+- For strength/gym workouts: dumbbells, barbells, kettlebells, weight plates, gym floor, exercise mat, pull-up bar
+- For running: running shoes, track, trail path, road at dawn/dusk
+- For cycling: bicycle, road, velodrome, cycling gear
+- For swimming: pool lanes, open water, goggles
+- For stretching/yoga: yoga mat, foam roller, resistance bands in a calm space
+- Show the equipment as if someone just used it or is about to — lived-in, not a catalog photo`
 	}
 
 	styleGuidance := ""
 	switch style {
 	case "minimal":
-		styleGuidance = "Style: minimalist, clean lines, muted colors, simple geometric shapes."
+		styleGuidance = "Style: minimalist, clean lines, muted colors, shallow depth of field, simple composition."
 	case "dramatic":
-		styleGuidance = "Style: dramatic, bold contrast, dynamic composition, intense colors."
+		styleGuidance = "Style: dramatic lighting, bold contrast, dynamic angles, intense atmosphere."
 	default: // "vibrant"
-		styleGuidance = "Style: vibrant, energetic, bold colors, athletic and dynamic mood."
+		styleGuidance = "Style: vibrant, energetic, warm lighting, bold colors, athletic mood."
 	}
 
-	return fmt.Sprintf(`You are an image prompt generator for an AI image generation model.
+	return fmt.Sprintf(`You are an image prompt generator for a fitness activity banner.
 
-Given the following fitness activity data, generate a short, descriptive prompt for creating a banner image.
+Given the activity data below, generate a short visual description for an image that DEPICTS THIS SPECIFIC WORKOUT.
 
 CRITICAL RULES:
-1. Output ONLY the image description - no explanations, no preamble, no quotes
-2. NEVER mention any text, titles, captions, watermarks, or written content
-3. NEVER include the activity name or any words that should appear in the image
-4. Describe ONLY visual elements: scenes, colors, lighting, composition, mood, atmosphere
-5. Keep it under 100 words
+1. Output ONLY the image description — no explanations, preamble, or quotes
+2. NEVER mention text, titles, captions, watermarks, or written words
+3. The image MUST be grounded in a REAL-WORLD FITNESS SETTING (gym, track, trail, pool, home workout space, park)
+4. NEVER use sci-fi, fantasy, cosmic, space, underwater, or surreal themes
+5. NEVER use abstract art, geometric shapes, or non-fitness imagery
+6. Match the image to the SPECIFIC exercises and activity type — a core workout should look different from a heavy leg day
+7. Consider the time of day for lighting (morning = golden light, night = warm indoor/ambient lighting)
+8. Keep it under 80 words
 
 %s
 %s

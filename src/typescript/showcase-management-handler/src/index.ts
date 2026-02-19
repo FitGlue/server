@@ -30,6 +30,11 @@ const userStore = new UserStore(db);
 const PROFILE_PICTURE_BUCKET = `${process.env.GOOGLE_CLOUD_PROJECT || 'fitglue'}-showcase-assets`;
 const PROFILE_PICTURE_MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
+// Theme validation constants
+const VALID_THEME_IDS = ['default', 'midnight', 'ember', 'forest', 'neon', 'arctic', 'golden', 'stealth'];
+const VALID_ANIMATION_IDS = ['particles', 'pulse', 'aurora', 'rain', 'none'];
+const VALID_CARD_STYLES = ['glass', 'solid', 'outline', 'minimal'];
+const HEX_COLOR_REGEX = /^#[0-9A-Fa-f]{6}$/;
 
 
 function slugify(text: string): string {
@@ -126,6 +131,31 @@ async function handleUpdateProfile(
     }
     if (typeof body.visible === 'boolean') {
         updates.visible = body.visible;
+    }
+
+    // Theme customization (validated against allowed values)
+    if (body.theme && typeof body.theme === 'object') {
+        const t = body.theme as Record<string, unknown>;
+        const theme: Record<string, unknown> = {};
+
+        if (typeof t.themeId === 'string' && VALID_THEME_IDS.includes(t.themeId)) {
+            theme.theme_id = t.themeId;
+        }
+        if (typeof t.customAccentColor === 'string') {
+            // Allow empty string (reset to theme default) or valid hex
+            theme.custom_accent_color = (t.customAccentColor === '' || HEX_COLOR_REGEX.test(t.customAccentColor))
+                ? t.customAccentColor : '';
+        }
+        if (typeof t.animationId === 'string' && VALID_ANIMATION_IDS.includes(t.animationId)) {
+            theme.animation_id = t.animationId;
+        }
+        if (typeof t.cardStyle === 'string' && VALID_CARD_STYLES.includes(t.cardStyle)) {
+            theme.card_style = t.cardStyle;
+        }
+
+        if (Object.keys(theme).length > 0) {
+            updates.theme = theme;
+        }
     }
 
     await profileStore.update(profile.slug, updates);

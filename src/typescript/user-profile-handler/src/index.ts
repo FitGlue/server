@@ -186,57 +186,67 @@ export const handler: FrameworkHandler = async (req, ctx) => {
   if (subPath === '/users/me' && req.method === 'DELETE') {
     logger.warn('DELETE /users/me: Starting cascade delete', { userId });
 
-    // 1. Delete all synchronized activities subcollection
-    const syncActivityRef = db.collection('users').doc(userId).collection('synchronized_activities');
-    const syncActivitySnapshot = await syncActivityRef.get();
-    const syncDeleteBatch = db.batch();
-    syncActivitySnapshot.forEach(doc => syncDeleteBatch.delete(doc.ref));
-    if (!syncActivitySnapshot.empty) {
-      await syncDeleteBatch.commit();
-      logger.info('Deleted synchronized activities', { count: syncActivitySnapshot.size, userId });
+    const userDocRef = db.collection('users').doc(userId);
+
+    // Helper: delete all docs in a sub-collection using batched writes
+    const deleteSubCollection = async (name: string) => {
+      const ref = userDocRef.collection(name);
+      const snapshot = await ref.get();
+      if (snapshot.empty) return;
+      const batch = db.batch();
+      snapshot.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      logger.info(`Deleted ${name}`, { count: snapshot.size, userId });
+    };
+
+    // Helper: delete all docs in a top-level collection matching userId
+    const deleteTopLevelByUserId = async (collectionName: string) => {
+      const snapshot = await db.collection(collectionName).where('user_id', '==', userId).get();
+      if (snapshot.empty) return;
+      const batch = db.batch();
+      snapshot.forEach(doc => batch.delete(doc.ref));
+      await batch.commit();
+      logger.info(`Deleted ${collectionName}`, { count: snapshot.size, userId });
+    };
+
+    // 1. Delete pipeline_runs (must delete nested destination_outcomes first)
+    const pipelineRunsRef = userDocRef.collection('pipeline_runs');
+    const pipelineRunsSnapshot = await pipelineRunsRef.get();
+    if (!pipelineRunsSnapshot.empty) {
+      for (const runDoc of pipelineRunsSnapshot.docs) {
+        const outcomesSnapshot = await runDoc.ref.collection('destination_outcomes').get();
+        if (!outcomesSnapshot.empty) {
+          const outcomesBatch = db.batch();
+          outcomesSnapshot.forEach(doc => outcomesBatch.delete(doc.ref));
+          await outcomesBatch.commit();
+        }
+      }
+      const runsBatch = db.batch();
+      pipelineRunsSnapshot.forEach(doc => runsBatch.delete(doc.ref));
+      await runsBatch.commit();
+      logger.info('Deleted pipeline_runs', { count: pipelineRunsSnapshot.size, userId });
     }
 
-    // 2. Delete all raw activities subcollection
-    const rawActivityRef = db.collection('users').doc(userId).collection('raw_activities');
-    const rawActivitySnapshot = await rawActivityRef.get();
-    const rawDeleteBatch = db.batch();
-    rawActivitySnapshot.forEach(doc => rawDeleteBatch.delete(doc.ref));
-    if (!rawActivitySnapshot.empty) {
-      await rawDeleteBatch.commit();
-      logger.info('Deleted raw activities', { count: rawActivitySnapshot.size, userId });
-    }
+    // 2-9. Delete all user sub-collections
+    await deleteSubCollection('synchronized_activities');
+    await deleteSubCollection('raw_activities');
+    await deleteSubCollection('executions');
+    await deleteSubCollection('pending_inputs');
+    await deleteSubCollection('pipelines');
+    await deleteSubCollection('counters');
+    await deleteSubCollection('booster_data');
+    await deleteSubCollection('personal_records');
+    await deleteSubCollection('uploaded_activities');
+    await deleteSubCollection('plugin_defaults');
 
-    // 3. Delete all API keys for this user (using collection query)
-    const apiKeyRef = db.collection('ingress_api_keys').where('user_id', '==', userId);
-    const apiKeySnapshot = await apiKeyRef.get();
-    const apiKeyDeleteBatch = db.batch();
-    apiKeySnapshot.forEach(doc => apiKeyDeleteBatch.delete(doc.ref));
-    if (!apiKeySnapshot.empty) {
-      await apiKeyDeleteBatch.commit();
-      logger.info('Deleted API keys', { count: apiKeySnapshot.size, userId });
-    }
+    // 10. Delete API keys (top-level, queried by user_id)
+    await deleteTopLevelByUserId('ingress_api_keys');
 
-    // 4. Delete all execution records for this user (now in user sub-collection)
-    const executionRef = db.collection('users').doc(userId).collection('executions');
-    const executionSnapshot = await executionRef.get();
-    const executionDeleteBatch = db.batch();
-    executionSnapshot.forEach(doc => executionDeleteBatch.delete(doc.ref));
-    if (!executionSnapshot.empty) {
-      await executionDeleteBatch.commit();
-      logger.info('Deleted execution records', { count: executionSnapshot.size, userId });
-    }
+    // 11-12. Delete showcase data (top-level, queried by user_id)
+    await deleteTopLevelByUserId('showcased_activities');
+    await deleteTopLevelByUserId('showcase_profiles');
 
-    // 5. Delete pending inputs (now in user sub-collection)
-    const pendingInputsRef = db.collection('users').doc(userId).collection('pending_inputs');
-    const pendingInputsSnapshot = await pendingInputsRef.get();
-    const pendingDeleteBatch = db.batch();
-    pendingInputsSnapshot.forEach(doc => pendingDeleteBatch.delete(doc.ref));
-    if (!pendingInputsSnapshot.empty) {
-      await pendingDeleteBatch.commit();
-      logger.info('Deleted pending inputs', { count: pendingInputsSnapshot.size, userId });
-    }
-
-    // 6. Finally, delete the user document
+    // 13. Finally, delete the user document + Firebase Auth
     await userService.deleteUser(userId);
     logger.warn('User account deleted', { userId });
 

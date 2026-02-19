@@ -42,28 +42,41 @@ interface MobileActivityMessage {
 
 /**
  * Parse the Pub/Sub message from the request body.
- * The framework wraps Pub/Sub messages as { message: { data: base64string } }
+ *
+ * For CloudEvent triggers, the framework unwraps the Pub/Sub envelope
+ * and CloudEvent wrapper, so req.body should contain the direct payload.
+ * Falls back to manual Pub/Sub decoding for edge cases.
  */
 function parseMessage(req: { body: unknown }): MobileActivityMessage {
-    const body = req.body as {
-        message?: { data?: string };
-        userId?: string;
-        activityId?: string;
-        source?: string;
-    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const body = req.body as any;
 
-    // If already decoded (framework decodes for us in some paths)
-    if (body.userId && body.activityId && body.source) {
+    // Direct payload (framework already unwrapped)
+    if (body && body.userId && body.activityId && body.source) {
         return body as MobileActivityMessage;
     }
 
-    // Decode from Pub/Sub envelope
-    if (body.message?.data) {
-        const decoded = Buffer.from(body.message.data, 'base64').toString('utf-8');
-        return JSON.parse(decoded) as MobileActivityMessage;
+    // Fallback: manual Pub/Sub envelope decoding
+    if (body?.message?.data && typeof body.message.data === 'string') {
+        try {
+            const decoded = Buffer.from(body.message.data, 'base64').toString('utf-8');
+            const parsed = JSON.parse(decoded);
+
+            // Handle CloudEvent wrapper
+            if (parsed.specversion && parsed.data) {
+                return parsed.data as MobileActivityMessage;
+            }
+
+            return parsed as MobileActivityMessage;
+        } catch {
+            // Fall through to error
+        }
     }
 
-    throw new Error('Invalid message format: missing userId, activityId, or source');
+    throw new Error(
+        'Invalid message format: missing userId, activityId, or source. ' +
+        `Got keys: ${body ? Object.keys(body).join(', ') : 'null'}`
+    );
 }
 
 /**

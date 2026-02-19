@@ -354,13 +354,38 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
         method: 'POST', // Synthetic method
         query: {}
       };
-      // CloudEvents (v2) often come with data property directly
-      if (event.data && typeof event.data === 'string') {
-        // Handle base64 encoded data if raw
-        req.body = { message: { data: event.data } };
-      } else if (event.data) {
-        // Direct object
-        req.body = { message: { data: Buffer.from(JSON.stringify(event.data)).toString('base64') } };
+
+      if (event.data) {
+        // For Pub/Sub CloudEvent triggers (google.cloud.pubsub.topic.v1.messagePublished),
+        // event.data is already a Pub/Sub envelope: { message: { data: "base64..." } }
+        // We need to unwrap to the actual message payload, not re-wrap it.
+        const eventData = event.data;
+
+        if (eventData.message?.data && typeof eventData.message.data === 'string') {
+          // event.data is a Pub/Sub envelope — decode the inner message
+          try {
+            const innerDecoded = Buffer.from(eventData.message.data, 'base64').toString('utf-8');
+            const innerParsed = JSON.parse(innerDecoded);
+
+            // Check if inner payload is a CloudEvent (published by CloudEventPublisher)
+            if (innerParsed.specversion && innerParsed.data !== undefined) {
+              // Extract the actual data from the CloudEvent envelope
+              req.body = innerParsed.data;
+            } else {
+              // Inner payload is the raw message data
+              req.body = innerParsed;
+            }
+          } catch {
+            // Fallback: pass the Pub/Sub envelope as message structure
+            req.body = { message: { data: eventData.message.data } };
+          }
+        } else if (typeof eventData === 'string') {
+          // Raw string data
+          req.body = { message: { data: eventData } };
+        } else {
+          // Direct object (non-Pub/Sub CloudEvent)
+          req.body = { message: { data: Buffer.from(JSON.stringify(eventData)).toString('base64') } };
+        }
       }
 
       // Mock Response object for the handler to use without crashing
@@ -543,7 +568,12 @@ export const createCloudFunction = (handler: SafeHandler, options?: CloudFunctio
       };
 
       // Capture original payload for logging
-      const originalPayload = isHttp ? req.body : (req.body?.message?.data ? JSON.parse(Buffer.from(req.body.message.data, 'base64').toString()) : req.body);
+      // For CloudEvent triggers, req.body is already unwrapped to the actual payload
+      const originalPayload = isHttp
+        ? req.body
+        : (req.body?.message?.data
+          ? JSON.parse(Buffer.from(req.body.message.data, 'base64').toString())
+          : req.body);
 
       // Log execution start (update to running + payload)
       if (shouldLogExecution) {

@@ -70,6 +70,10 @@ const ENUM_CONFIGS: EnumConfig[] = [
     prefix: 'DESTINATION_',
     displayNameOverrides: {
       'UNSPECIFIED': 'Unknown',
+      'GITHUB': 'GitHub',
+      'TRAININGPEAKS': 'TrainingPeaks',
+      'GOOGLESHEETS': 'Google Sheets',
+      'INTERVALS': 'Intervals.icu',
     },
     defaultValue: 'Unknown',
   },

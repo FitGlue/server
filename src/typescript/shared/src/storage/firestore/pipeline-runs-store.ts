@@ -78,11 +78,13 @@ export class PipelineRunStore {
     ): Promise<void> {
         const update: Record<string, unknown> = {
             status,
-            status_message: null,
             updated_at: new Date(),
         };
         if (errorMessage) {
+            update.status_message = errorMessage;
             update.error_message = errorMessage;
+        } else {
+            update.status_message = null;
         }
         await this.collection(userId).doc(pipelineRunId).update(update);
     }
