@@ -45,5 +45,8 @@ export function mapMobileActivityType(activityName: string): string {
         if (lowerName.includes(key)) return value;
     }
 
-    return activityName.charAt(0).toUpperCase() + activityName.slice(1);
+    // Default: split PascalCase into words (e.g. "WeightTraining" → "Weight Training")
+    const split = activityName.replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+    return split.charAt(0).toUpperCase() + split.slice(1);
 }

@@ -253,8 +253,31 @@ export function mapMobileActivityType(activityName: string): string {
     }
   }
 
-  // Default to the original name with proper casing
-  return activityName.charAt(0).toUpperCase() + activityName.slice(1);
+  // Default: split PascalCase into words (e.g. "WeightTraining" → "Weight Training")
+  const split = activityName.replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+  return split.charAt(0).toUpperCase() + split.slice(1);
+}
+
+/**
+ * Format a PascalCase or camelCase activity name into a human-readable display name.
+ * e.g. "WeightTraining" → "Weight Training", "RockClimbing" → "Rock Climbing"
+ * Preserves consecutive uppercase runs (e.g. "HIIT" stays "HIIT").
+ * Names that already contain spaces are returned as-is with title casing.
+ */
+export function formatActivityDisplayName(name: string): string {
+  if (!name) return name;
+
+  // If it already has spaces, just title-case it
+  if (name.includes(' ')) {
+    return name.replace(/\b\w/g, c => c.toUpperCase());
+  }
+
+  // Split on transitions: lowercase→uppercase, or end of uppercase run before lowercase
+  // e.g. "WeightTraining" → "Weight Training", "HIIT" → "HIIT"
+  const split = name.replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+  return split.charAt(0).toUpperCase() + split.slice(1);
 }
 
 /**

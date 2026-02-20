@@ -24,6 +24,7 @@ import {
   MobileActivity,
   mapMobileActivityType,
   getMobileSourceId,
+  formatActivityDisplayName,
 } from './types';
 
 /**
@@ -57,6 +58,11 @@ export const handler: FrameworkHandler = async (req, ctx) => {
       pattern: '/api/mobile/connect/:provider',
       handler: async (match: RouteMatch) => await handleConnect(userId, match.params.provider, ctx)
     },
+    {
+      method: 'GET',
+      pattern: '/api/mobile/activities',
+      handler: async () => await handleGetActivities(userId, ctx)
+    },
   ]);
 };
 
@@ -86,6 +92,26 @@ async function handleConnect(userId: string, provider: string, ctx: FrameworkCon
 
   logger.info('Mobile integration connected', { userId, provider: integrationKey });
   return { message: `${provider} connected successfully` };
+}
+
+/**
+ * Return the list of activity IDs already stored for this user.
+ * Used by the mobile app to rebuild synced-status badges after reinstall.
+ */
+async function handleGetActivities(userId: string, ctx: FrameworkContext) {
+  const { logger } = ctx;
+
+  const snapshot = await db
+    .collection('users')
+    .doc(userId)
+    .collection('mobile_activities')
+    .select()          // ID-only — no document data transferred
+    .get();
+
+  const activityIds = snapshot.docs.map((doc) => doc.id);
+
+  logger.info('Returning stored mobile activity IDs', { userId, count: activityIds.length });
+  return { activityIds };
 }
 
 /**
@@ -175,7 +201,7 @@ async function handleSync(req: any, userId: string, ctx: FrameworkContext): Prom
         activityId,
         source: getMobileSourceId(activity.source),
         activityType: mapMobileActivityType(activity.activityName),
-        name: activity.activityName,
+        name: formatActivityDisplayName(activity.activityName),
         startTime: new Date(activity.startTime),
         endTime: new Date(activity.endTime),
         durationSeconds: activity.duration,
