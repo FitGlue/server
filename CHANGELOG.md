@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [15.1.0](https://github.com/FitGlue/server/compare/v15.0.0...v15.1.0) (2026-02-21)
+
+
+### Features
+
+* add mobile activity listing endpoint and improve activity name formatting ([b3319f1](https://github.com/FitGlue/server/commit/b3319f15e4cdc767c77c1daf566a35dcc01d6005))
+
 ## [15.0.0](https://github.com/FitGlue/server/compare/v14.14.0...v15.0.0) (2026-02-19)
 
 
