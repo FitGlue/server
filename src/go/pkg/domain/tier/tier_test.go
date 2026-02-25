@@ -1,69 +1,80 @@
 package tier
 
 import (
+	user "github.com/fitglue/server/src/go/pkg/domain/user"
+
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+
 	"testing"
 	"time"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestGetEffectiveTier(t *testing.T) {
 	tests := []struct {
 		name     string
-		user     *pb.UserRecord
+		user     *user.Record
 		expected EffectiveTier
 	}{
 		{
 			name: "Admin gets Athlete",
-			user: &pb.UserRecord{
-				IsAdmin: true,
-				Tier:    pb.UserTier_USER_TIER_HOBBYIST,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:    pbuser.UserTier_USER_TIER_HOBBYIST,
+					IsAdmin: true,
+				},
 			},
 			expected: TierAthlete,
 		},
 		{
 			name: "Active trial gets Athlete",
-			user: &pb.UserRecord{
-				TrialEndsAt: timestamppb.New(time.Now().Add(time.Hour)),
-				Tier:        pb.UserTier_USER_TIER_HOBBYIST,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:        pbuser.UserTier_USER_TIER_HOBBYIST,
+					TrialEndsAt: timestamppb.New(time.Now().Add(time.Hour)),
+				},
 			},
 			expected: TierAthlete,
 		},
 		{
 			name: "Stored hobbyist tier gets Hobbyist",
-			user: &pb.UserRecord{
-				Tier: pb.UserTier_USER_TIER_HOBBYIST,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{Tier: pbuser.UserTier_USER_TIER_HOBBYIST},
 			},
 			expected: TierHobbyist,
 		},
 		{
 			name: "Unspecified tier gets Hobbyist",
-			user: &pb.UserRecord{
-				Tier: pb.UserTier_USER_TIER_UNSPECIFIED,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{Tier: pbuser.UserTier_USER_TIER_UNSPECIFIED},
 			},
 			expected: TierHobbyist,
 		},
 		{
 			name: "Stored athlete tier gets Athlete",
-			user: &pb.UserRecord{
-				Tier: pb.UserTier_USER_TIER_ATHLETE,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{Tier: pbuser.UserTier_USER_TIER_ATHLETE},
 			},
 			expected: TierAthlete,
 		},
 		{
 			name: "Expired trial with hobbyist tier gets Hobbyist",
-			user: &pb.UserRecord{
-				TrialEndsAt: timestamppb.New(time.Now().Add(-time.Hour)),
-				Tier:        pb.UserTier_USER_TIER_HOBBYIST,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:        pbuser.UserTier_USER_TIER_HOBBYIST,
+					TrialEndsAt: timestamppb.New(time.Now().Add(-time.Hour)),
+				},
 			},
 			expected: TierHobbyist,
 		},
 		{
 			name: "Expired trial with athlete tier gets Athlete",
-			user: &pb.UserRecord{
-				TrialEndsAt: timestamppb.New(time.Now().Add(-time.Hour)),
-				Tier:        pb.UserTier_USER_TIER_ATHLETE,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:        pbuser.UserTier_USER_TIER_ATHLETE,
+					TrialEndsAt: timestamppb.New(time.Now().Add(-time.Hour)),
+				},
 			},
 			expected: TierAthlete,
 		},
@@ -81,30 +92,36 @@ func TestGetEffectiveTier(t *testing.T) {
 func TestCanSync(t *testing.T) {
 	tests := []struct {
 		name    string
-		user    *pb.UserRecord
+		user    *user.Record
 		allowed bool
 	}{
 		{
 			name: "Athlete can always sync",
-			user: &pb.UserRecord{
-				Tier:               pb.UserTier_USER_TIER_ATHLETE,
-				SyncCountThisMonth: 1000,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:               pbuser.UserTier_USER_TIER_ATHLETE,
+					SyncCountThisMonth: 1000,
+				},
 			},
 			allowed: true,
 		},
 		{
 			name: "Hobbyist under limit can sync",
-			user: &pb.UserRecord{
-				Tier:               pb.UserTier_USER_TIER_HOBBYIST,
-				SyncCountThisMonth: 10,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:               pbuser.UserTier_USER_TIER_HOBBYIST,
+					SyncCountThisMonth: 10,
+				},
 			},
 			allowed: true,
 		},
 		{
 			name: "Hobbyist at limit cannot sync",
-			user: &pb.UserRecord{
-				Tier:               pb.UserTier_USER_TIER_HOBBYIST,
-				SyncCountThisMonth: 25,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:               pbuser.UserTier_USER_TIER_HOBBYIST,
+					SyncCountThisMonth: 25,
+				},
 			},
 			allowed: false,
 		},
@@ -126,22 +143,22 @@ func TestShouldResetSyncCount(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		user     *pb.UserRecord
+		user     *user.Record
 		expected bool
 	}{
 		{
 			name:     "Nil reset date should reset",
-			user:     &pb.UserRecord{SyncCountResetAt: nil},
+			user:     &user.Record{UserProfile: &pbuser.UserProfile{SyncCountResetAt: nil}},
 			expected: true,
 		},
 		{
 			name:     "Same month should NOT reset",
-			user:     &pb.UserRecord{SyncCountResetAt: timestamppb.New(now)},
+			user:     &user.Record{UserProfile: &pbuser.UserProfile{SyncCountResetAt: timestamppb.New(now)}},
 			expected: false,
 		},
 		{
 			name:     "Different month should reset",
-			user:     &pb.UserRecord{SyncCountResetAt: timestamppb.New(lastMonth)},
+			user:     &user.Record{UserProfile: &pbuser.UserProfile{SyncCountResetAt: timestamppb.New(lastMonth)}},
 			expected: true,
 		},
 	}
@@ -162,22 +179,22 @@ func TestGetTrialDaysRemaining(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		user     *pb.UserRecord
+		user     *user.Record
 		expected int
 	}{
 		{
 			name:     "No trial",
-			user:     &pb.UserRecord{TrialEndsAt: nil},
+			user:     &user.Record{UserProfile: &pbuser.UserProfile{Tier: pbuser.UserTier_USER_TIER_HOBBYIST, TrialEndsAt: nil}},
 			expected: -1,
 		},
 		{
 			name:     "Active trial",
-			user:     &pb.UserRecord{TrialEndsAt: timestamppb.New(future)},
+			user:     &user.Record{UserProfile: &pbuser.UserProfile{TrialEndsAt: timestamppb.New(future)}},
 			expected: 10, // Matches implementation: Sub is 9.something days -> 9 + 1 = 10
 		},
 		{
 			name:     "Expired trial",
-			user:     &pb.UserRecord{TrialEndsAt: timestamppb.New(past)},
+			user:     &user.Record{UserProfile: &pbuser.UserProfile{TrialEndsAt: timestamppb.New(past)}},
 			expected: 0,
 		},
 	}
@@ -194,52 +211,57 @@ func TestGetTrialDaysRemaining(t *testing.T) {
 func TestShouldShowBranding(t *testing.T) {
 	tests := []struct {
 		name     string
-		user     *pb.UserRecord
+		user     *user.Record
 		expected bool
 	}{
 		{
 			name: "Hobbyist tier shows branding",
-			user: &pb.UserRecord{
-				Tier: pb.UserTier_USER_TIER_HOBBYIST,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{Tier: pbuser.UserTier_USER_TIER_HOBBYIST},
 			},
 			expected: true,
 		},
 		{
 			name: "Unspecified tier shows branding",
-			user: &pb.UserRecord{
-				Tier: pb.UserTier_USER_TIER_UNSPECIFIED,
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{Tier: pbuser.UserTier_USER_TIER_UNSPECIFIED},
 			},
 			expected: true,
 		},
 		{
 			name: "Athlete tier on active trial shows branding",
-			user: &pb.UserRecord{
-				Tier:        pb.UserTier_USER_TIER_ATHLETE,
-				TrialEndsAt: timestamppb.New(time.Now().Add(time.Hour)),
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:        pbuser.UserTier_USER_TIER_ATHLETE,
+					TrialEndsAt: timestamppb.New(time.Now().Add(time.Hour)),
+				},
 			},
 			expected: true,
 		},
 		{
 			name: "Athlete tier via admin shows branding",
-			user: &pb.UserRecord{
-				Tier:    pb.UserTier_USER_TIER_ATHLETE,
-				IsAdmin: true,
-			},
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:    pbuser.UserTier_USER_TIER_ATHLETE,
+					IsAdmin: true}},
 			expected: true,
 		},
 		{
 			name: "Paid athlete tier hides branding",
-			user: &pb.UserRecord{
-				Tier:    pb.UserTier_USER_TIER_ATHLETE,
-				IsAdmin: false,
-			},
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:    pbuser.UserTier_USER_TIER_ATHLETE,
+					IsAdmin: false,
+				}},
 			expected: false,
 		},
 		{
 			name: "Expired trial athlete hides branding",
-			user: &pb.UserRecord{
-				Tier:        pb.UserTier_USER_TIER_ATHLETE,
-				TrialEndsAt: timestamppb.New(time.Now().Add(-time.Hour)),
+			user: &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					Tier:        pbuser.UserTier_USER_TIER_ATHLETE,
+					TrialEndsAt: timestamppb.New(time.Now().Add(-time.Hour)),
+				},
 			},
 			expected: false,
 		},

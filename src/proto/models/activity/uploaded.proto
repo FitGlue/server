@@ -1,0 +1,99 @@
+syntax = "proto3";
+
+package fitglue.models.activity;
+
+import "google/protobuf/timestamp.proto";
+import "models/activity/source.proto";
+import "models/plugin/provider.proto";
+import "models/activity/standardized.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
+
+message UploadedActivityRecord {
+  string id = 1;
+  string user_id = 2;
+
+  ActivitySource source = 3;           
+  string external_id = 4;              
+  google.protobuf.Timestamp start_time = 5;  
+
+  fitglue.models.plugin.DestinationType destination = 6;  
+  string destination_id = 7;           
+
+  google.protobuf.Timestamp uploaded_at = 8;
+}
+
+// ShowcasedActivity represents a publicly shareable activity snapshot.
+message ShowcasedActivity {
+  string showcase_id = 1;              
+  string activity_id = 2;              
+  string user_id = 3;                  
+
+  string title = 4;
+  string description = 5;
+  ActivityType activity_type = 6;
+  ActivitySource source = 7;
+  google.protobuf.Timestamp start_time = 8;
+
+  fitglue.models.activity.StandardizedActivity activity_data = 9;
+  string fit_file_uri = 10;            
+
+  repeated string applied_enrichments = 11;
+  map<string, string> enrichment_metadata = 12;
+  repeated string tags = 13;
+  optional string pipeline_execution_id = 14;
+
+  google.protobuf.Timestamp created_at = 15;
+  google.protobuf.Timestamp expires_at = 16;  
+
+  string owner_display_name = 17;  
+  string activity_data_uri = 18;
+}
+
+message ShowcaseProfileEntry {
+  string showcase_id = 1;
+  string title = 2;
+  ActivityType activity_type = 3;
+  ActivitySource source = 4;
+  google.protobuf.Timestamp start_time = 5;
+  string route_thumbnail_url = 6;  
+  double distance_meters = 7;      
+  double duration_seconds = 8;     
+
+  int32 total_sets = 9;
+  int32 total_reps = 10;
+  double total_weight_kg = 11;
+}
+
+message ShowcaseTheme {
+  string theme_id = 1;              
+  string custom_accent_color = 2;   
+  string animation_id = 3;          
+  string card_style = 4;            
+}
+
+message ShowcaseProfile {
+  string slug = 1;                            
+  string user_id = 2;                         
+  string display_name = 3;                    
+  repeated ShowcaseProfileEntry entries = 4;  
+
+  int32 total_activities = 5;
+  double total_distance_meters = 6;
+  double total_duration_seconds = 7;
+  google.protobuf.Timestamp latest_activity_at = 8;
+
+  int32 total_sets = 11;
+  int32 total_reps = 12;
+  double total_weight_kg = 13;
+
+  google.protobuf.Timestamp created_at = 9;
+  google.protobuf.Timestamp updated_at = 10;
+
+  string subtitle = 14;             
+  string bio = 15;                  
+  string profile_picture_url = 16;  
+  bool visible = 17;                
+
+  ShowcaseTheme theme = 18;         
+}

@@ -3,7 +3,14 @@ package firestore
 import (
 	"time"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/domain/user"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -65,7 +72,7 @@ func getTime(m map[string]interface{}, key string) *timestamppb.Timestamp {
 
 // --- UserRecord Converters ---
 
-func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
+func UserToFirestore(u *user.Record) map[string]interface{} {
 	m := map[string]interface{}{
 		"user_id":    u.UserId,
 		"created_at": u.CreatedAt.AsTime(),
@@ -220,7 +227,7 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 	// Pipelines moved to sub-collection users/{userId}/pipelines
 
 	// Tier management fields
-	if u.Tier == pb.UserTier_USER_TIER_ATHLETE {
+	if u.Tier == pbuser.UserTier_USER_TIER_ATHLETE {
 		m["tier"] = "athlete"
 	} else {
 		m["tier"] = "hobbyist"
@@ -230,33 +237,37 @@ func UserToFirestore(u *pb.UserRecord) map[string]interface{} {
 	}
 	m["is_admin"] = u.IsAdmin
 	m["sync_count_this_month"] = u.SyncCountThisMonth
-	if u.SyncCountResetAt != nil {
-		m["sync_count_reset_at"] = u.SyncCountResetAt.AsTime()
+	if u.Billing != nil {
+		m["stripe_customer_id"] = u.Billing.StripeCustomerId
 	}
-	m["stripe_customer_id"] = u.StripeCustomerId
 	m["access_enabled"] = u.AccessEnabled
 	m["prevented_sync_count"] = u.PreventedSyncCount
 
 	return m
 }
 
-func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
-	u := &pb.UserRecord{
-		UserId:    getString(m, "user_id"),
-		CreatedAt: getTime(m, "created_at"),
+func FirestoreToUser(m map[string]interface{}) *user.Record {
+	u := &user.Record{
+		UserProfile: &pbuser.UserProfile{
+			UserId:    getString(m, "user_id"),
+			CreatedAt: getTime(m, "created_at"),
+		},
+		Billing: &pbuser.SubscriptionState{
+			StripeCustomerId: getString(m, "stripe_customer_id"),
+		},
 	}
 
 	if iMap, ok := m["integrations"].(map[string]interface{}); ok {
-		u.Integrations = &pb.UserIntegrations{}
+		u.Integrations = &pbuser.UserIntegrations{}
 		if hMap, ok := iMap["hevy"].(map[string]interface{}); ok {
-			u.Integrations.Hevy = &pb.HevyIntegration{
+			u.Integrations.Hevy = &pbuser.HevyIntegration{
 				Enabled: getBool(hMap, "enabled"),
 				ApiKey:  getString(hMap, "api_key"),
 				UserId:  getString(hMap, "user_id"),
 			}
 		}
 		if fMap, ok := iMap["fitbit"].(map[string]interface{}); ok {
-			u.Integrations.Fitbit = &pb.FitbitIntegration{
+			u.Integrations.Fitbit = &pbuser.FitbitIntegration{
 				Enabled:      getBool(fMap, "enabled"),
 				AccessToken:  getString(fMap, "access_token"),
 				RefreshToken: getString(fMap, "refresh_token"),
@@ -265,7 +276,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if sMap, ok := iMap["strava"].(map[string]interface{}); ok {
-			u.Integrations.Strava = &pb.StravaIntegration{
+			u.Integrations.Strava = &pbuser.StravaIntegration{
 				Enabled:      getBool(sMap, "enabled"),
 				AccessToken:  getString(sMap, "access_token"),
 				RefreshToken: getString(sMap, "refresh_token"),
@@ -285,7 +296,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if pMap, ok := iMap["parkrun"].(map[string]interface{}); ok {
-			u.Integrations.Parkrun = &pb.ParkrunIntegration{
+			u.Integrations.Parkrun = &pbuser.ParkrunIntegration{
 				Enabled:      getBool(pMap, "enabled"),
 				AthleteId:    getString(pMap, "athlete_id"),
 				CountryUrl:   getString(pMap, "country_url"),
@@ -295,7 +306,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if spMap, ok := iMap["spotify"].(map[string]interface{}); ok {
-			u.Integrations.Spotify = &pb.SpotifyIntegration{
+			u.Integrations.Spotify = &pbuser.SpotifyIntegration{
 				Enabled:       getBool(spMap, "enabled"),
 				AccessToken:   getString(spMap, "access_token"),
 				RefreshToken:  getString(spMap, "refresh_token"),
@@ -306,7 +317,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if tpMap, ok := iMap["trainingpeaks"].(map[string]interface{}); ok {
-			u.Integrations.Trainingpeaks = &pb.TrainingPeaksIntegration{
+			u.Integrations.Trainingpeaks = &pbuser.TrainingPeaksIntegration{
 				Enabled:      getBool(tpMap, "enabled"),
 				AccessToken:  getString(tpMap, "access_token"),
 				RefreshToken: getString(tpMap, "refresh_token"),
@@ -317,7 +328,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if ivMap, ok := iMap["intervals"].(map[string]interface{}); ok {
-			u.Integrations.Intervals = &pb.IntervalsIntegration{
+			u.Integrations.Intervals = &pbuser.IntervalsIntegration{
 				Enabled:    getBool(ivMap, "enabled"),
 				ApiKey:     getString(ivMap, "api_key"),
 				AthleteId:  getString(ivMap, "athlete_id"),
@@ -326,7 +337,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if oMap, ok := iMap["oura"].(map[string]interface{}); ok {
-			u.Integrations.Oura = &pb.OuraIntegration{
+			u.Integrations.Oura = &pbuser.OuraIntegration{
 				Enabled:      getBool(oMap, "enabled"),
 				AccessToken:  getString(oMap, "access_token"),
 				RefreshToken: getString(oMap, "refresh_token"),
@@ -337,7 +348,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if gMap, ok := iMap["google"].(map[string]interface{}); ok {
-			u.Integrations.Google = &pb.GoogleIntegration{
+			u.Integrations.Google = &pbuser.GoogleIntegration{
 				Enabled:      getBool(gMap, "enabled"),
 				AccessToken:  getString(gMap, "access_token"),
 				RefreshToken: getString(gMap, "refresh_token"),
@@ -348,7 +359,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if polMap, ok := iMap["polar"].(map[string]interface{}); ok {
-			u.Integrations.Polar = &pb.PolarIntegration{
+			u.Integrations.Polar = &pbuser.PolarIntegration{
 				Enabled:      getBool(polMap, "enabled"),
 				AccessToken:  getString(polMap, "access_token"),
 				RefreshToken: getString(polMap, "refresh_token"),
@@ -359,7 +370,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if wMap, ok := iMap["wahoo"].(map[string]interface{}); ok {
-			u.Integrations.Wahoo = &pb.WahooIntegration{
+			u.Integrations.Wahoo = &pbuser.WahooIntegration{
 				Enabled:      getBool(wMap, "enabled"),
 				AccessToken:  getString(wMap, "access_token"),
 				RefreshToken: getString(wMap, "refresh_token"),
@@ -370,7 +381,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if ghMap, ok := iMap["github"].(map[string]interface{}); ok {
-			u.Integrations.Github = &pb.GitHubIntegration{
+			u.Integrations.Github = &pbuser.GitHubIntegration{
 				Enabled:        getBool(ghMap, "enabled"),
 				AccessToken:    getString(ghMap, "access_token"),
 				RefreshToken:   getString(ghMap, "refresh_token"),
@@ -383,14 +394,14 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 			}
 		}
 		if ahMap, ok := iMap["apple_health"].(map[string]interface{}); ok {
-			u.Integrations.AppleHealth = &pb.AppleHealthIntegration{
+			u.Integrations.AppleHealth = &pbuser.AppleHealthIntegration{
 				Enabled:    getBool(ahMap, "enabled"),
 				CreatedAt:  getTime(ahMap, "created_at"),
 				LastUsedAt: getTime(ahMap, "last_used_at"),
 			}
 		}
 		if hcMap, ok := iMap["health_connect"].(map[string]interface{}); ok {
-			u.Integrations.HealthConnect = &pb.HealthConnectIntegration{
+			u.Integrations.HealthConnect = &pbuser.HealthConnectIntegration{
 				Enabled:    getBool(hcMap, "enabled"),
 				CreatedAt:  getTime(hcMap, "created_at"),
 				LastUsedAt: getTime(hcMap, "last_used_at"),
@@ -404,38 +415,37 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 		case string:
 			switch val {
 			case "athlete", "pro":
-				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+				u.Tier = pbuser.UserTier_USER_TIER_ATHLETE
 			default:
-				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+				u.Tier = pbuser.UserTier_USER_TIER_HOBBYIST
 			}
 		case int64:
 			// Handle legacy numeric values (1=Hobbyist, 2=Athlete)
 			if val == 2 {
-				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+				u.Tier = pbuser.UserTier_USER_TIER_ATHLETE
 			} else {
-				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+				u.Tier = pbuser.UserTier_USER_TIER_HOBBYIST
 			}
 		case int:
 			if val == 2 {
-				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+				u.Tier = pbuser.UserTier_USER_TIER_ATHLETE
 			} else {
-				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+				u.Tier = pbuser.UserTier_USER_TIER_HOBBYIST
 			}
 		case float64:
 			if val == 2 {
-				u.Tier = pb.UserTier_USER_TIER_ATHLETE
+				u.Tier = pbuser.UserTier_USER_TIER_ATHLETE
 			} else {
-				u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+				u.Tier = pbuser.UserTier_USER_TIER_HOBBYIST
 			}
 		default:
-			u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+			u.Tier = pbuser.UserTier_USER_TIER_HOBBYIST
 		}
 	} else {
-		u.Tier = pb.UserTier_USER_TIER_HOBBYIST
+		u.Tier = pbuser.UserTier_USER_TIER_HOBBYIST
 	}
 	u.IsAdmin = getBool(m, "is_admin")
 	u.AccessEnabled = getBool(m, "access_enabled")
-	u.StripeCustomerId = getString(m, "stripe_customer_id")
 	u.TrialEndsAt = getTime(m, "trial_ends_at")
 	u.SyncCountResetAt = getTime(m, "sync_count_reset_at")
 
@@ -479,7 +489,7 @@ func FirestoreToUser(m map[string]interface{}) *pb.UserRecord {
 
 // --- PipelineConfig Converters ---
 
-func PipelineToFirestore(p *pb.PipelineConfig) map[string]interface{} {
+func PipelineToFirestore(p *pbpipeline.PipelineConfig) map[string]interface{} {
 	enrichers := make([]map[string]interface{}, len(p.Enrichers))
 	for i, e := range p.Enrichers {
 		enrichers[i] = map[string]interface{}{
@@ -522,11 +532,11 @@ func PipelineToFirestore(p *pb.PipelineConfig) map[string]interface{} {
 	return m
 }
 
-func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
+func FirestoreToPipeline(m map[string]interface{}) *pbpipeline.PipelineConfig {
 	// Enrichers
-	var enrichers []*pb.EnricherConfig
+	var enrichers []*pbpipeline.EnricherConfig
 	if eList, ok := m["enrichers"].([]interface{}); ok {
-		enrichers = make([]*pb.EnricherConfig, len(eList))
+		enrichers = make([]*pbpipeline.EnricherConfig, len(eList))
 		for j, eRaw := range eList {
 			if eMap, ok := eRaw.(map[string]interface{}); ok {
 				// TypedConfig
@@ -539,19 +549,19 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 					}
 				}
 
-				ptype := pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
+				ptype := pbplugin.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
 				if v, ok := eMap["provider_type"]; ok {
 					switch n := v.(type) {
 					case int64:
-						ptype = pb.EnricherProviderType(n)
+						ptype = pbplugin.EnricherProviderType(n)
 					case int:
-						ptype = pb.EnricherProviderType(n)
+						ptype = pbplugin.EnricherProviderType(n)
 					case float64:
-						ptype = pb.EnricherProviderType(int32(n))
+						ptype = pbplugin.EnricherProviderType(int32(n))
 					}
 				}
 
-				enrichers[j] = &pb.EnricherConfig{
+				enrichers[j] = &pbpipeline.EnricherConfig{
 					ProviderType: ptype,
 					TypedConfig:  typedConfig,
 				}
@@ -560,23 +570,23 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 	}
 
 	// Destinations - handle both legacy strings and new enum ints
-	var dests []pb.Destination
+	var dests []pbplugin.DestinationType
 	if dList, ok := m["destinations"].([]interface{}); ok {
 		for _, d := range dList {
 			switch val := d.(type) {
 			case int64:
-				dests = append(dests, pb.Destination(val))
+				dests = append(dests, pbplugin.DestinationType(val))
 			case int:
-				dests = append(dests, pb.Destination(val))
+				dests = append(dests, pbplugin.DestinationType(val))
 			case float64:
-				dests = append(dests, pb.Destination(int32(val)))
+				dests = append(dests, pbplugin.DestinationType(int32(val)))
 			case string:
 				// Legacy string support
 				switch val {
 				case "strava", "DESTINATION_STRAVA":
-					dests = append(dests, pb.Destination_DESTINATION_STRAVA)
+					dests = append(dests, pbplugin.DestinationType_DESTINATION_STRAVA)
 				case "mock", "DESTINATION_MOCK":
-					dests = append(dests, pb.Destination_DESTINATION_MOCK)
+					dests = append(dests, pbplugin.DestinationType_DESTINATION_MOCK)
 				}
 			}
 		}
@@ -593,7 +603,7 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 	}
 
 	// Destination configs
-	destConfigs := make(map[string]*pb.DestinationConfig)
+	destConfigs := make(map[string]*pbpipeline.DestinationConfig)
 	if dcMap, ok := m["destination_configs"].(map[string]interface{}); ok {
 		for destId, dcRaw := range dcMap {
 			if dcObj, ok := dcRaw.(map[string]interface{}); ok {
@@ -605,7 +615,7 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 						}
 					}
 				}
-				destConfigs[destId] = &pb.DestinationConfig{
+				destConfigs[destId] = &pbpipeline.DestinationConfig{
 					Config:            cfg,
 					ExcludedEnrichers: getStringSlice(dcObj, "excluded_enrichers"),
 				}
@@ -613,7 +623,7 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 		}
 	}
 
-	return &pb.PipelineConfig{
+	return &pbpipeline.PipelineConfig{
 		Id:                 getString(m, "id"),
 		Name:               getString(m, "name"),
 		Source:             getString(m, "source"),
@@ -627,7 +637,7 @@ func FirestoreToPipeline(m map[string]interface{}) *pb.PipelineConfig {
 
 // --- Execution Record ---
 
-func ExecutionToFirestore(e *pb.ExecutionRecord) map[string]interface{} {
+func ExecutionToFirestore(e *pbpipeline.ExecutionRecord) map[string]interface{} {
 	m := map[string]interface{}{
 		"execution_id":          e.ExecutionId,
 		"service":               e.Service,
@@ -646,8 +656,8 @@ func ExecutionToFirestore(e *pb.ExecutionRecord) map[string]interface{} {
 	return m
 }
 
-func FirestoreToExecution(m map[string]interface{}) *pb.ExecutionRecord {
-	e := &pb.ExecutionRecord{
+func FirestoreToExecution(m map[string]interface{}) *pbpipeline.ExecutionRecord {
+	e := &pbpipeline.ExecutionRecord{
 		ExecutionId:         getString(m, "execution_id"),
 		Service:             getString(m, "service"),
 		Timestamp:           getTime(m, "timestamp"),
@@ -666,15 +676,15 @@ func FirestoreToExecution(m map[string]interface{}) *pb.ExecutionRecord {
 		// Handle int or string legacy
 		switch val := v.(type) {
 		case int64:
-			e.Status = pb.ExecutionStatus(val)
+			e.Status = pbpipeline.ExecutionStatus(val)
 		case int:
-			e.Status = pb.ExecutionStatus(int32(val))
+			e.Status = pbpipeline.ExecutionStatus(int32(val))
 		case string:
 			// Use proto-generated map for all status values
-			if enumVal, ok := pb.ExecutionStatus_value[val]; ok {
-				e.Status = pb.ExecutionStatus(enumVal)
+			if enumVal, ok := pbpipeline.ExecutionStatus_value[val]; ok {
+				e.Status = pbpipeline.ExecutionStatus(enumVal)
 			} else {
-				e.Status = pb.ExecutionStatus_STATUS_UNKNOWN
+				e.Status = pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED
 			}
 		}
 	}
@@ -684,7 +694,7 @@ func FirestoreToExecution(m map[string]interface{}) *pb.ExecutionRecord {
 
 // --- Counter Converters ---
 
-func CounterToFirestore(c *pb.Counter) map[string]interface{} {
+func CounterToFirestore(c *pbuser.Counter) map[string]interface{} {
 	return map[string]interface{}{
 		"id":           c.Id,
 		"count":        c.Count,
@@ -692,8 +702,8 @@ func CounterToFirestore(c *pb.Counter) map[string]interface{} {
 	}
 }
 
-func FirestoreToCounter(m map[string]interface{}) *pb.Counter {
-	c := &pb.Counter{
+func FirestoreToCounter(m map[string]interface{}) *pbuser.Counter {
+	c := &pbuser.Counter{
 		Id:          getString(m, "id"),
 		LastUpdated: getTime(m, "last_updated"),
 	}
@@ -713,7 +723,7 @@ func FirestoreToCounter(m map[string]interface{}) *pb.Counter {
 
 // --- PersonalRecord Converters ---
 
-func PersonalRecordToFirestore(r *pb.PersonalRecord) map[string]interface{} {
+func PersonalRecordToFirestore(r *pbuser.PersonalRecord) map[string]interface{} {
 	m := map[string]interface{}{
 		"record_type":   r.RecordType,
 		"value":         r.Value,
@@ -731,8 +741,8 @@ func PersonalRecordToFirestore(r *pb.PersonalRecord) map[string]interface{} {
 	return m
 }
 
-func FirestoreToPersonalRecord(m map[string]interface{}) *pb.PersonalRecord {
-	r := &pb.PersonalRecord{
+func FirestoreToPersonalRecord(m map[string]interface{}) *pbuser.PersonalRecord {
+	r := &pbuser.PersonalRecord{
 		RecordType: getString(m, "record_type"),
 		Unit:       getString(m, "unit"),
 		ActivityId: getString(m, "activity_id"),
@@ -755,11 +765,11 @@ func FirestoreToPersonalRecord(m map[string]interface{}) *pb.PersonalRecord {
 	if v, ok := m["activity_type"]; ok {
 		switch val := v.(type) {
 		case int64:
-			r.ActivityType = pb.ActivityType(val)
+			r.ActivityType = pbactivity.ActivityType(val)
 		case int:
-			r.ActivityType = pb.ActivityType(int32(val))
+			r.ActivityType = pbactivity.ActivityType(int32(val))
 		case float64:
-			r.ActivityType = pb.ActivityType(int32(val))
+			r.ActivityType = pbactivity.ActivityType(int32(val))
 		}
 	}
 
@@ -796,7 +806,7 @@ func FirestoreToPersonalRecord(m map[string]interface{}) *pb.PersonalRecord {
 
 // --- PendingInput Converters ---
 
-func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {
+func PendingInputToFirestore(p *pbpipeline.PendingInput) map[string]interface{} {
 	m := map[string]interface{}{
 		"activity_id":                  p.ActivityId,
 		"user_id":                      p.UserId,
@@ -828,11 +838,11 @@ func PendingInputToFirestore(p *pb.PendingInput) map[string]interface{} {
 	return m
 }
 
-func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
-	p := &pb.PendingInput{
+func FirestoreToPendingInput(m map[string]interface{}) *pbpipeline.PendingInput {
+	p := &pbpipeline.PendingInput{
 		ActivityId: getString(m, "activity_id"),
 		UserId:     getString(m, "user_id"),
-		Status:     pb.PendingInput_Status(m["status"].(int64)),
+		Status:     pbpipeline.PendingInput_Status(m["status"].(int64)),
 		RequiredFields: func() []string {
 			if v, ok := m["required_fields"].([]string); ok {
 				return v
@@ -876,9 +886,9 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 	if v, ok := m["status"]; ok {
 		switch n := v.(type) {
 		case int64:
-			p.Status = pb.PendingInput_Status(n)
+			p.Status = pbpipeline.PendingInput_Status(n)
 		case int:
-			p.Status = pb.PendingInput_Status(int32(n))
+			p.Status = pbpipeline.PendingInput_Status(int32(n))
 		}
 	}
 
@@ -898,7 +908,7 @@ func FirestoreToPendingInput(m map[string]interface{}) *pb.PendingInput {
 
 // --- ShowcasedActivity Converters ---
 
-func ShowcasedActivityToFirestore(s *pb.ShowcasedActivity) map[string]interface{} {
+func ShowcasedActivityToFirestore(s *pbactivity.ShowcasedActivity) map[string]interface{} {
 	m := map[string]interface{}{
 		"showcase_id":         s.ShowcaseId,
 		"activity_id":         s.ActivityId,
@@ -936,8 +946,8 @@ func ShowcasedActivityToFirestore(s *pb.ShowcasedActivity) map[string]interface{
 	return m
 }
 
-func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivity {
-	s := &pb.ShowcasedActivity{
+func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.ShowcasedActivity {
+	s := &pbactivity.ShowcasedActivity{
 		ShowcaseId:          getString(m, "showcase_id"),
 		ActivityId:          getString(m, "activity_id"),
 		UserId:              getString(m, "user_id"),
@@ -956,11 +966,11 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 	if v, ok := m["activity_type"]; ok {
 		switch val := v.(type) {
 		case int64:
-			s.ActivityType = pb.ActivityType(val)
+			s.ActivityType = pbactivity.ActivityType(val)
 		case int:
-			s.ActivityType = pb.ActivityType(int32(val))
+			s.ActivityType = pbactivity.ActivityType(int32(val))
 		case float64:
-			s.ActivityType = pb.ActivityType(int32(val))
+			s.ActivityType = pbactivity.ActivityType(int32(val))
 		}
 	}
 
@@ -968,11 +978,11 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 	if v, ok := m["source"]; ok {
 		switch val := v.(type) {
 		case int64:
-			s.Source = pb.ActivitySource(val)
+			s.Source = pbactivity.ActivitySource(val)
 		case int:
-			s.Source = pb.ActivitySource(int32(val))
+			s.Source = pbactivity.ActivitySource(int32(val))
 		case float64:
-			s.Source = pb.ActivitySource(int32(val))
+			s.Source = pbactivity.ActivitySource(int32(val))
 		}
 	}
 
@@ -1016,7 +1026,7 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 			jsonStr = string(val)
 		}
 		if jsonStr != "" {
-			var data pb.StandardizedActivity
+			var data pbactivity.StandardizedActivity
 			if err := protojson.Unmarshal([]byte(jsonStr), &data); err == nil {
 				s.ActivityData = &data
 			}
@@ -1028,7 +1038,7 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pb.ShowcasedActivit
 
 // --- ShowcaseProfile Converters ---
 
-func ShowcaseProfileEntryToFirestore(e *pb.ShowcaseProfileEntry) map[string]interface{} {
+func ShowcaseProfileEntryToFirestore(e *pbactivity.ShowcaseProfileEntry) map[string]interface{} {
 	m := map[string]interface{}{
 		"showcase_id":   e.ShowcaseId,
 		"title":         e.Title,
@@ -1059,8 +1069,8 @@ func ShowcaseProfileEntryToFirestore(e *pb.ShowcaseProfileEntry) map[string]inte
 	return m
 }
 
-func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pb.ShowcaseProfileEntry {
-	e := &pb.ShowcaseProfileEntry{
+func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pbactivity.ShowcaseProfileEntry {
+	e := &pbactivity.ShowcaseProfileEntry{
 		ShowcaseId:        getString(m, "showcase_id"),
 		Title:             getString(m, "title"),
 		RouteThumbnailUrl: getString(m, "route_thumbnail_url"),
@@ -1071,9 +1081,9 @@ func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pb.ShowcaseProfi
 	if v, ok := m["activity_type"]; ok {
 		switch val := v.(type) {
 		case int64:
-			e.ActivityType = pb.ActivityType(val)
+			e.ActivityType = pbactivity.ActivityType(val)
 		case float64:
-			e.ActivityType = pb.ActivityType(int32(val))
+			e.ActivityType = pbactivity.ActivityType(int32(val))
 		}
 	}
 
@@ -1081,9 +1091,9 @@ func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pb.ShowcaseProfi
 	if v, ok := m["source"]; ok {
 		switch val := v.(type) {
 		case int64:
-			e.Source = pb.ActivitySource(val)
+			e.Source = pbactivity.ActivitySource(val)
 		case float64:
-			e.Source = pb.ActivitySource(int32(val))
+			e.Source = pbactivity.ActivitySource(int32(val))
 		}
 	}
 
@@ -1140,7 +1150,7 @@ func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pb.ShowcaseProfi
 	return e
 }
 
-func ShowcaseProfileToFirestore(p *pb.ShowcaseProfile) map[string]interface{} {
+func ShowcaseProfileToFirestore(p *pbactivity.ShowcaseProfile) map[string]interface{} {
 	entries := make([]map[string]interface{}, len(p.Entries))
 	for i, e := range p.Entries {
 		entries[i] = ShowcaseProfileEntryToFirestore(e)
@@ -1176,8 +1186,8 @@ func ShowcaseProfileToFirestore(p *pb.ShowcaseProfile) map[string]interface{} {
 	return m
 }
 
-func FirestoreToShowcaseProfile(m map[string]interface{}) *pb.ShowcaseProfile {
-	p := &pb.ShowcaseProfile{
+func FirestoreToShowcaseProfile(m map[string]interface{}) *pbactivity.ShowcaseProfile {
+	p := &pbactivity.ShowcaseProfile{
 		Slug:              getString(m, "slug"),
 		UserId:            getString(m, "user_id"),
 		DisplayName:       getString(m, "display_name"),
@@ -1230,7 +1240,7 @@ func FirestoreToShowcaseProfile(m map[string]interface{}) *pb.ShowcaseProfile {
 
 	// Entries
 	if eList, ok := m["entries"].([]interface{}); ok {
-		p.Entries = make([]*pb.ShowcaseProfileEntry, len(eList))
+		p.Entries = make([]*pbactivity.ShowcaseProfileEntry, len(eList))
 		for i, eRaw := range eList {
 			if eMap, ok := eRaw.(map[string]interface{}); ok {
 				p.Entries[i] = FirestoreToShowcaseProfileEntry(eMap)
@@ -1243,22 +1253,22 @@ func FirestoreToShowcaseProfile(m map[string]interface{}) *pb.ShowcaseProfile {
 
 // --- PluginDefault Converters ---
 
-func PluginDefaultToFirestore(p *pb.PluginDefault) map[string]interface{} {
+func PluginDefaultToFirestore(p *pbpipeline.PluginDefault) map[string]interface{} {
 	m := map[string]interface{}{
 		"plugin_id": p.PluginId,
 		"config":    p.Config,
 	}
-	if p.CreatedAt != nil {
-		m["created_at"] = p.CreatedAt.AsTime()
+	if p.CreatedAt != 0 {
+		m["created_at"] = p.CreatedAt
 	}
-	if p.UpdatedAt != nil {
-		m["updated_at"] = p.UpdatedAt.AsTime()
+	if p.UpdatedAt != 0 {
+		m["updated_at"] = p.UpdatedAt
 	}
 	return m
 }
 
-func FirestoreToPluginDefault(m map[string]interface{}) *pb.PluginDefault {
-	p := &pb.PluginDefault{
+func FirestoreToPluginDefault(m map[string]interface{}) *pbpipeline.PluginDefault {
+	p := &pbpipeline.PluginDefault{
 		PluginId: getString(m, "plugin_id"),
 	}
 	if cfg, ok := m["config"].(map[string]interface{}); ok {
@@ -1269,14 +1279,32 @@ func FirestoreToPluginDefault(m map[string]interface{}) *pb.PluginDefault {
 			}
 		}
 	}
-	p.CreatedAt = getTime(m, "created_at")
-	p.UpdatedAt = getTime(m, "updated_at")
+	if v, ok := m["created_at"]; ok {
+		switch n := v.(type) {
+		case int64:
+			p.CreatedAt = n
+		case float64:
+			p.CreatedAt = int64(n)
+		case int:
+			p.CreatedAt = int64(n)
+		}
+	}
+	if v, ok := m["updated_at"]; ok {
+		switch n := v.(type) {
+		case int64:
+			p.UpdatedAt = n
+		case float64:
+			p.UpdatedAt = int64(n)
+		case int:
+			p.UpdatedAt = int64(n)
+		}
+	}
 	return p
 }
 
 // --- UploadedActivityRecord Converters (Loop Prevention) ---
 
-func UploadedActivityToFirestore(r *pb.UploadedActivityRecord) map[string]interface{} {
+func UploadedActivityToFirestore(r *pbactivity.UploadedActivityRecord) map[string]interface{} {
 	m := map[string]interface{}{
 		"id":             r.Id,
 		"user_id":        r.UserId,
@@ -1296,8 +1324,8 @@ func UploadedActivityToFirestore(r *pb.UploadedActivityRecord) map[string]interf
 	return m
 }
 
-func FirestoreToUploadedActivity(m map[string]interface{}) *pb.UploadedActivityRecord {
-	r := &pb.UploadedActivityRecord{
+func FirestoreToUploadedActivity(m map[string]interface{}) *pbactivity.UploadedActivityRecord {
+	r := &pbactivity.UploadedActivityRecord{
 		Id:            getString(m, "id"),
 		UserId:        getString(m, "user_id"),
 		ExternalId:    getString(m, "external_id"),
@@ -1310,11 +1338,11 @@ func FirestoreToUploadedActivity(m map[string]interface{}) *pb.UploadedActivityR
 	if v, ok := m["source"]; ok {
 		switch val := v.(type) {
 		case int64:
-			r.Source = pb.ActivitySource(val)
+			r.Source = pbactivity.ActivitySource(val)
 		case int:
-			r.Source = pb.ActivitySource(int32(val))
+			r.Source = pbactivity.ActivitySource(int32(val))
 		case float64:
-			r.Source = pb.ActivitySource(int32(val))
+			r.Source = pbactivity.ActivitySource(int32(val))
 		}
 	}
 
@@ -1322,11 +1350,11 @@ func FirestoreToUploadedActivity(m map[string]interface{}) *pb.UploadedActivityR
 	if v, ok := m["destination"]; ok {
 		switch val := v.(type) {
 		case int64:
-			r.Destination = pb.Destination(val)
+			r.Destination = pbplugin.DestinationType(val)
 		case int:
-			r.Destination = pb.Destination(int32(val))
+			r.Destination = pbplugin.DestinationType(int32(val))
 		case float64:
-			r.Destination = pb.Destination(int32(val))
+			r.Destination = pbplugin.DestinationType(int32(val))
 		}
 	}
 
@@ -1335,7 +1363,7 @@ func FirestoreToUploadedActivity(m map[string]interface{}) *pb.UploadedActivityR
 
 // --- PipelineRun Converters ---
 
-func PipelineRunToFirestore(p *pb.PipelineRun) map[string]interface{} {
+func PipelineRunToFirestore(p *pbpipeline.PipelineRun) map[string]interface{} {
 	m := map[string]interface{}{
 		"id":                 p.Id,
 		"pipeline_id":        p.PipelineId,
@@ -1416,8 +1444,8 @@ func PipelineRunToFirestore(p *pb.PipelineRun) map[string]interface{} {
 	return m
 }
 
-func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
-	p := &pb.PipelineRun{
+func FirestoreToPipelineRun(m map[string]interface{}) *pbpipeline.PipelineRun {
+	p := &pbpipeline.PipelineRun{
 		Id:                 getString(m, "id"),
 		PipelineId:         getString(m, "pipeline_id"),
 		ActivityId:         getString(m, "activity_id"),
@@ -1437,11 +1465,11 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
 	if v, ok := m["type"]; ok {
 		switch val := v.(type) {
 		case int64:
-			p.Type = pb.ActivityType(val)
+			p.Type = pbactivity.ActivityType(val)
 		case int:
-			p.Type = pb.ActivityType(int32(val))
+			p.Type = pbactivity.ActivityType(int32(val))
 		case float64:
-			p.Type = pb.ActivityType(int32(val))
+			p.Type = pbactivity.ActivityType(int32(val))
 		}
 	}
 
@@ -1449,20 +1477,20 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
 	if v, ok := m["status"]; ok {
 		switch val := v.(type) {
 		case int64:
-			p.Status = pb.PipelineRunStatus(val)
+			p.Status = pbpipeline.PipelineRunStatus(val)
 		case int:
-			p.Status = pb.PipelineRunStatus(int32(val))
+			p.Status = pbpipeline.PipelineRunStatus(int32(val))
 		case float64:
-			p.Status = pb.PipelineRunStatus(int32(val))
+			p.Status = pbpipeline.PipelineRunStatus(int32(val))
 		}
 	}
 
 	// Boosters
 	if bList, ok := m["boosters"].([]interface{}); ok {
-		p.Boosters = make([]*pb.BoosterExecution, len(bList))
+		p.Boosters = make([]*pbpipeline.BoosterExecution, len(bList))
 		for i, bRaw := range bList {
 			if bMap, ok := bRaw.(map[string]interface{}); ok {
-				booster := &pb.BoosterExecution{
+				booster := &pbpipeline.BoosterExecution{
 					ProviderName: getString(bMap, "provider_name"),
 					Status:       getString(bMap, "status"),
 					Error:        stringPtrOrNil(getString(bMap, "error")),
@@ -1492,10 +1520,10 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
 
 	// Destinations
 	if dList, ok := m["destinations"].([]interface{}); ok {
-		p.Destinations = make([]*pb.DestinationOutcome, len(dList))
+		p.Destinations = make([]*pbpipeline.DestinationOutcome, len(dList))
 		for i, dRaw := range dList {
 			if dMap, ok := dRaw.(map[string]interface{}); ok {
-				dest := &pb.DestinationOutcome{
+				dest := &pbpipeline.DestinationOutcome{
 					ExternalId:  stringPtrOrNil(getString(dMap, "external_id")),
 					Error:       stringPtrOrNil(getString(dMap, "error")),
 					CompletedAt: getTime(dMap, "completed_at"),
@@ -1503,21 +1531,21 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pb.PipelineRun {
 				if v, ok := dMap["destination"]; ok {
 					switch val := v.(type) {
 					case int64:
-						dest.Destination = pb.Destination(val)
+						dest.Destination = pbplugin.DestinationType(val)
 					case int:
-						dest.Destination = pb.Destination(int32(val))
+						dest.Destination = pbplugin.DestinationType(int32(val))
 					case float64:
-						dest.Destination = pb.Destination(int32(val))
+						dest.Destination = pbplugin.DestinationType(int32(val))
 					}
 				}
 				if v, ok := dMap["status"]; ok {
 					switch val := v.(type) {
 					case int64:
-						dest.Status = pb.DestinationStatus(val)
+						dest.Status = pbpipeline.DestinationStatus(val)
 					case int:
-						dest.Status = pb.DestinationStatus(int32(val))
+						dest.Status = pbpipeline.DestinationStatus(int32(val))
 					case float64:
-						dest.Status = pb.DestinationStatus(int32(val))
+						dest.Status = pbpipeline.DestinationStatus(int32(val))
 					}
 				}
 				p.Destinations[i] = dest

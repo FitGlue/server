@@ -1,14 +1,15 @@
 package pubsub
 
 import (
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 )
 
 // GetCloudEventType returns the string URN for a given CloudEventType enum using the custom ce_type option.
-func GetCloudEventType(t pb.CloudEventType) string {
+func GetCloudEventType(t pbevents.CloudEventType) string {
 	// Get the Enum Descriptor
 	ed := t.Descriptor()
 	// Get the specific Enum Value Descriptor
@@ -22,8 +23,8 @@ func GetCloudEventType(t pb.CloudEventType) string {
 
 	// Use proto.GetExtension to retrieve the custom option
 	// Note: We need the concrete ExtensionType from the generated code (E_CeType)
-	if proto.HasExtension(opts, pb.E_CeType) {
-		val := proto.GetExtension(opts, pb.E_CeType)
+	if proto.HasExtension(opts, pbevents.E_CeType) {
+		val := proto.GetExtension(opts, pbevents.E_CeType)
 		if strVal, ok := val.(string); ok {
 			return strVal
 		}
@@ -32,7 +33,7 @@ func GetCloudEventType(t pb.CloudEventType) string {
 }
 
 // GetCloudEventSource returns the string URN for a given CloudEventSource enum using the custom ce_source option.
-func GetCloudEventSource(s pb.CloudEventSource) string {
+func GetCloudEventSource(s pbevents.CloudEventSource) string {
 	ed := s.Descriptor()
 	ev := ed.Values().ByNumber(protoreflect.EnumNumber(s))
 	if ev == nil {
@@ -40,8 +41,8 @@ func GetCloudEventSource(s pb.CloudEventSource) string {
 	}
 
 	opts := ev.Options()
-	if proto.HasExtension(opts, pb.E_CeSource) {
-		val := proto.GetExtension(opts, pb.E_CeSource)
+	if proto.HasExtension(opts, pbevents.E_CeSource) {
+		val := proto.GetExtension(opts, pbevents.E_CeSource)
 		if strVal, ok := val.(string); ok {
 			return strVal
 		}
@@ -51,7 +52,7 @@ func GetCloudEventSource(s pb.CloudEventSource) string {
 }
 
 // GetDestinationTopic returns the Pub/Sub topic name for a given Destination enum using the custom dest_topic option.
-func GetDestinationTopic(d pb.Destination) string {
+func GetDestinationTopic(d pbplugin.DestinationType) string {
 	ed := d.Descriptor()
 	ev := ed.Values().ByNumber(protoreflect.EnumNumber(d))
 	if ev == nil {
@@ -59,8 +60,8 @@ func GetDestinationTopic(d pb.Destination) string {
 	}
 
 	opts := ev.Options()
-	if proto.HasExtension(opts, pb.E_DestTopic) {
-		val := proto.GetExtension(opts, pb.E_DestTopic)
+	if proto.HasExtension(opts, pbplugin.E_DestTopic) {
+		val := proto.GetExtension(opts, pbplugin.E_DestTopic)
 		if strVal, ok := val.(string); ok {
 			return strVal
 		}

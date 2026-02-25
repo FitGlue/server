@@ -33,104 +33,12 @@ resource "google_pubsub_topic" "pipeline_activity" {
   message_retention_duration = "3600s"
 }
 
-resource "google_pubsub_topic" "job_upload_strava" {
-  name    = "topic-job-upload-strava"
-  project = var.project_id
-
-  # Enable message retention for replay (1 hour)
-  message_retention_duration = "3600s"
-}
-
-resource "google_pubsub_topic" "enrichment_lag" {
-  name    = "topic-enrichment-lag"
-  project = var.project_id
-}
-
-# Mock topic for testing (dev only)
-resource "google_pubsub_topic" "job_upload_mock" {
-  count   = var.environment == "dev" ? 1 : 0
-  name    = "topic-job-upload-mock"
-  project = var.project_id
-}
-
-# Showcase topic for public shareable activity URLs (all environments)
-resource "google_pubsub_topic" "job_upload_showcase" {
-  name    = "topic-job-upload-showcase"
+resource "google_pubsub_topic" "destination_upload" {
+  name    = "topic-destination-upload"
   project = var.project_id
 
   message_retention_duration = "3600s"
 }
-
-# Hevy topic for uploading activities to Hevy (all environments)
-resource "google_pubsub_topic" "job_upload_hevy" {
-  name    = "topic-job-upload-hevy"
-  project = var.project_id
-
-  message_retention_duration = "3600s"
-}
-
-# TrainingPeaks topic for uploading activities to TrainingPeaks (all environments)
-resource "google_pubsub_topic" "job_upload_trainingpeaks" {
-  name    = "topic-job-upload-trainingpeaks"
-  project = var.project_id
-
-  message_retention_duration = "3600s"
-}
-
-# Intervals.icu topic for uploading activities to Intervals.icu (all environments)
-resource "google_pubsub_topic" "job_upload_intervals" {
-  name    = "topic-job-upload-intervals"
-  project = var.project_id
-
-  message_retention_duration = "3600s"
-}
-
-# Google Sheets topic for uploading activities to Google Sheets (all environments)
-resource "google_pubsub_topic" "job_upload_googlesheets" {
-  name    = "topic-job-upload-googlesheets"
-  project = var.project_id
-
-  message_retention_duration = "3600s"
-}
-
-# GitHub topic for committing enriched activities to GitHub repos (all environments)
-resource "google_pubsub_topic" "job_upload_github" {
-  name    = "topic-job-upload-github"
-  project = var.project_id
-
-  message_retention_duration = "3600s"
-}
-
-
-resource "google_pubsub_subscription" "enrichment_lag_sub" {
-  name    = "sub-enrichment-lag"
-  topic   = google_pubsub_topic.enrichment_lag.name
-  project = var.project_id
-
-  # 20 minutes max retention (or longer to be safe, e.g. 1h, if backoff is long)
-  message_retention_duration = "3600s"
-
-  retry_policy {
-    # 60s minimum backoff
-    minimum_backoff = "60s"
-    # 10 minutes max backoff
-    maximum_backoff = "600s"
-  }
-
-  # Use a Push Subscription to enforce a custom retry policy (backoff).
-  # Standard EventArc triggers created by Cloud Functions do not support granular backoff configuration.
-  # We use a separate HTTP-triggered function that properly returns HTTP 500 on errors.
-
-  push_config {
-    push_endpoint = google_cloudfunctions2_function.enricher_lag.service_config[0].uri
-
-    oidc_token {
-      service_account_email = google_service_account.cloud_function_sa.email
-    }
-  }
-}
-
-# NOTE: topic-job-update-strava removed - UPDATE operations now use the standard strava-uploader topic
 
 
 resource "google_pubsub_topic" "parkrun_results_trigger" {
@@ -142,4 +50,78 @@ resource "google_pubsub_topic" "parkrun_results_trigger" {
 resource "google_pubsub_topic" "registration_summary_trigger" {
   name    = "topic-registration-summary-trigger"
   project = var.project_id
+}
+
+resource "google_pubsub_subscription" "destination_upload_sub" {
+  name  = "sub-destination-upload"
+  topic = google_pubsub_topic.destination_upload.name
+
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["destination"].uri}/"
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["destination"].email
+    }
+  }
+
+  ack_deadline_seconds = 600
+  message_retention_duration = "3600s"
+  
+  retry_policy {
+    minimum_backoff = "10s"
+    maximum_backoff = "600s"
+  }
+}
+
+resource "google_pubsub_subscription" "pipeline_raw_sub" {
+  name  = "sub-pipeline-raw"
+  topic = google_pubsub_topic.raw_activity.name
+  
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["pipeline"].uri}/pubsub/raw"
+    oidc_token { 
+      service_account_email = google_service_account.cloud_run_sa["pipeline"].email 
+    }
+  }
+  
+  ack_deadline_seconds = 600
+  retry_policy { 
+    minimum_backoff = "10s"
+    maximum_backoff = "600s" 
+  }
+}
+
+resource "google_pubsub_subscription" "pipeline_enriched_sub" {
+  name  = "sub-pipeline-enriched"
+  topic = google_pubsub_topic.enriched_activity.name
+  
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["pipeline"].uri}/pubsub/enriched"
+    oidc_token { 
+      service_account_email = google_service_account.cloud_run_sa["pipeline"].email 
+    }
+  }
+  
+  ack_deadline_seconds = 600
+  retry_policy { 
+    minimum_backoff = "10s"
+    maximum_backoff = "600s" 
+  }
+}
+
+resource "google_pubsub_subscription" "pipeline_run_sub" {
+  name  = "sub-pipeline-run"
+  topic = google_pubsub_topic.pipeline_activity.name
+  
+  push_config {
+    push_endpoint = "${google_cloud_run_v2_service.backend["pipeline"].uri}/pubsub/run"
+    oidc_token { 
+      service_account_email = google_service_account.cloud_run_sa["pipeline"].email 
+    }
+  }
+  
+  ack_deadline_seconds = 600
+  retry_policy { 
+    minimum_backoff = "10s"
+    maximum_backoff = "600s" 
+  }
 }

@@ -1,3 +1,4 @@
+// nolint:proto-json
 package framework
 
 import (
@@ -11,9 +12,11 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/execution"
+
 	sentryPkg "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 	"github.com/fitglue/server/src/go/pkg/types"
-	"github.com/fitglue/server/src/go/pkg/types/pb"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	"github.com/getsentry/sentry-go"
 )
 
@@ -234,15 +237,15 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 		}
 
 		if customStatus != "" {
-			var statusEnum pb.ExecutionStatus
-			if val, ok := pb.ExecutionStatus_value[customStatus]; ok {
-				statusEnum = pb.ExecutionStatus(val)
-			} else if val, ok := pb.ExecutionStatus_value["STATUS_"+strings.ToUpper(customStatus)]; ok {
-				statusEnum = pb.ExecutionStatus(val)
-			} else if val, ok := pb.ExecutionStatus_value[strings.ToUpper(customStatus)]; ok {
-				statusEnum = pb.ExecutionStatus(val)
+			var statusEnum pbpipeline.ExecutionStatus
+			if val, ok := pbpipeline.ExecutionStatus_value[customStatus]; ok {
+				statusEnum = pbpipeline.ExecutionStatus(val)
+			} else if val, ok := pbpipeline.ExecutionStatus_value["STATUS_"+strings.ToUpper(customStatus)]; ok {
+				statusEnum = pbpipeline.ExecutionStatus(val)
+			} else if val, ok := pbpipeline.ExecutionStatus_value[strings.ToUpper(customStatus)]; ok {
+				statusEnum = pbpipeline.ExecutionStatus(val)
 			} else {
-				statusEnum = pb.ExecutionStatus_STATUS_UNKNOWN
+				statusEnum = pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED
 				logger.Warn("Unknown custom status returned", "status", customStatus)
 			}
 

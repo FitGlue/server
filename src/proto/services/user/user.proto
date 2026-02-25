@@ -1,0 +1,266 @@
+syntax = "proto3";
+
+package fitglue.services.user;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/api/annotations.proto";
+import "models/user/profile.proto";
+import "models/user/integration.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/services/user";
+
+service UserService {
+  rpc CreateUser(CreateUserRequest) returns (fitglue.models.user.UserProfile) {
+    option (google.api.http) = {
+      post: "/v2/user"
+      body: "*"
+    };
+  }
+  rpc GetProfile(GetProfileRequest) returns (fitglue.models.user.UserProfile) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/profile"
+    };
+  }
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {
+      get: "/v2/admin/users"
+    };
+  }
+  rpc UpdateProfile(UpdateProfileRequest) returns (fitglue.models.user.UserProfile) {
+    option (google.api.http) = {
+      patch: "/v2/user/{user_id}/profile"
+      body: "profile"
+    };
+  }
+  
+  rpc GetIntegration(GetIntegrationRequest) returns (GetIntegrationResponse) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/integrations/{provider}"
+    };
+  }
+  rpc SetIntegration(SetIntegrationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/v2/user/{user_id}/integrations/{provider}"
+      body: "*"
+    };
+  }
+  rpc DeleteIntegration(DeleteIntegrationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/user/{user_id}/integrations/{provider}"
+    };
+  }
+  rpc ListIntegrations(ListIntegrationsRequest) returns (fitglue.models.user.UserIntegrations) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/integrations"
+    };
+  }
+  
+  rpc GetNotificationPrefs(GetNotificationPrefsRequest) returns (fitglue.models.user.NotificationPreferences) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/notifications"
+    };
+  }
+  rpc UpdateNotificationPrefs(UpdateNotificationPrefsRequest) returns (fitglue.models.user.NotificationPreferences) {
+    option (google.api.http) = {
+      patch: "/v2/user/{user_id}/notifications"
+      body: "prefs"
+    };
+  }
+  
+  rpc ListCounters(ListCountersRequest) returns (ListCountersResponse) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/counters"
+    };
+  }
+  rpc UpdateCounter(UpdateCounterRequest) returns (fitglue.models.user.Counter) {
+    option (google.api.http) = {
+      patch: "/v2/user/{user_id}/counters/{counter_id}"
+      body: "*"
+    };
+  }
+  
+  rpc GetBoosterData(GetBoosterDataRequest) returns (GetBoosterDataResponse) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/booster-data"
+    };
+  }
+  rpc SetBoosterData(SetBoosterDataRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/v2/user/{user_id}/booster-data/{booster_id}"
+      body: "data"
+    };
+  }
+  rpc DeleteBoosterData(DeleteBoosterDataRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/user/{user_id}/booster-data/{booster_id}"
+    };
+  }
+  
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/user/{user_id}"
+    };
+  }
+  
+  // Email Auth RPCs
+  rpc SendVerificationEmail(SendVerificationEmailRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/user/{user_id}/email/verify"
+      body: "*"
+    };
+  }
+  rpc SendPasswordResetEmail(SendPasswordResetEmailRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/user/email/reset-password"
+      body: "*"
+    };
+  }
+  rpc SendEmailChangeVerification(SendEmailChangeVerificationRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/user/{user_id}/email/change"
+      body: "*"
+    };
+  }
+  // Administrative RPCs
+  rpc GenerateRegistrationSummary(GenerateRegistrationSummaryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/admin/registration-summary"
+      body: "*"
+    };
+  }
+  // Integration Webhook Resolution
+  rpc ResolveUserByIntegration(ResolveUserByIntegrationRequest) returns (ResolveUserByIntegrationResponse) {
+    option (google.api.http) = {
+      get: "/v2/user/resolve/{provider}/{provider_uid}"
+    };
+  }
+}
+
+message ResolveUserByIntegrationRequest {
+  string provider = 1;
+  string provider_uid = 2;
+}
+
+message ResolveUserByIntegrationResponse {
+  fitglue.models.user.UserProfile profile = 1;
+}
+
+message SendVerificationEmailRequest {
+  string user_id = 1;
+}
+
+message SendPasswordResetEmailRequest {
+  string email = 1;
+}
+
+message SendEmailChangeVerificationRequest {
+  string user_id = 1;
+  string new_email = 2;
+}
+
+message SendWelcomeEmailRequest {
+  string user_id = 1;
+}
+
+message GenerateRegistrationSummaryRequest {
+  // Optional date override (e.g. "2026-02-23"), uses previous 24 hours if empty
+  string date_override = 1;
+}
+
+message CreateUserRequest {
+  string user_id = 1;
+}
+
+message ListUsersRequest {
+  int32 limit = 1;
+  string page_token = 2;
+}
+
+message ListUsersResponse {
+  repeated fitglue.models.user.UserProfile users = 1;
+  string next_page_token = 2;
+}
+
+message GetProfileRequest {
+  string user_id = 1;
+}
+
+message UpdateProfileRequest {
+  string user_id = 1;
+  fitglue.models.user.UserProfile profile = 2;
+}
+
+message GetIntegrationRequest {
+  string user_id = 1;
+  string provider = 2;
+}
+
+message GetIntegrationResponse {
+  // Uses a generic bytes payload or structured oneOf depending on how we decide to send it
+  // For now, returning the whole UserIntegrations tree is easiest
+  fitglue.models.user.UserIntegrations integrations = 1;
+}
+
+message SetIntegrationRequest {
+  string user_id = 1;
+  string provider = 2;
+  google.protobuf.Struct integration_data = 3;
+}
+
+message DeleteIntegrationRequest {
+  string user_id = 1;
+  string provider = 2;
+}
+
+message ListIntegrationsRequest {
+  string user_id = 1;
+}
+
+message GetNotificationPrefsRequest {
+  string user_id = 1;
+}
+
+message UpdateNotificationPrefsRequest {
+  string user_id = 1;
+  fitglue.models.user.NotificationPreferences prefs = 2;
+}
+
+message ListCountersRequest {
+  string user_id = 1;
+}
+
+message ListCountersResponse {
+  repeated fitglue.models.user.Counter counters = 1;
+}
+
+message UpdateCounterRequest {
+  string user_id = 1;
+  string counter_id = 2;
+  int64 count = 3;
+}
+
+message DeleteUserRequest {
+  string user_id = 1;
+}
+
+message GetBoosterDataRequest {
+  string user_id = 1;
+  string booster_id = 2; // Optional: If empty, returns all booster data for the user
+}
+
+message GetBoosterDataResponse {
+  // Map of booster_id to its JSON payload
+  map<string, google.protobuf.Struct> data = 1;
+}
+
+message SetBoosterDataRequest {
+  string user_id = 1;
+  string booster_id = 2;
+  google.protobuf.Struct data = 3;
+}
+
+message DeleteBoosterDataRequest {
+  string user_id = 1;
+  string booster_id = 2;
+}

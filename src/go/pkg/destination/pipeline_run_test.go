@@ -1,25 +1,31 @@
 package destination
 
 import (
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+
+	user "github.com/fitglue/server/src/go/pkg/domain/user"
+
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+
 	"context"
 	"fmt"
 	"log/slog"
 	"strings"
 	"testing"
-
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // --- Mock Database ---
 
 type MockDatabase struct {
-	Outcomes       []*pb.DestinationOutcome
-	SetOutcomeFunc func(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error
+	Outcomes       []*pbpipeline.DestinationOutcome
+	SetOutcomeFunc func(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error
 	UpdateRunFunc  func(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	GetUserFunc    func(ctx context.Context, id string) (*pb.UserRecord, error)
+	GetUserFunc    func(ctx context.Context, id string) (*user.Record, error)
 }
 
-func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error {
 	if m.SetOutcomeFunc != nil {
 		return m.SetOutcomeFunc(ctx, userId, pipelineRunId, outcome)
 	}
@@ -27,7 +33,7 @@ func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string,
 	return nil
 }
 
-func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error) {
 	return m.Outcomes, nil
 }
 
@@ -38,7 +44,7 @@ func (m *MockDatabase) UpdatePipelineRun(ctx context.Context, userId string, id 
 	return nil
 }
 
-func (m *MockDatabase) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
+func (m *MockDatabase) GetUser(ctx context.Context, id string) (*user.Record, error) {
 	if m.GetUserFunc != nil {
 		return m.GetUserFunc(ctx, id)
 	}
@@ -74,51 +80,51 @@ func (m *MockNotifications) SendPushNotification(ctx context.Context, userID str
 
 func TestComputePipelineRunStatus_Empty(t *testing.T) {
 	status := ComputePipelineRunStatus(nil)
-	if status != pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING {
+	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING {
 		t.Errorf("expected RUNNING for empty outcomes, got %v", status)
 	}
 }
 
 func TestComputePipelineRunStatus_AllSuccess(t *testing.T) {
-	outcomes := []*pb.DestinationOutcome{
-		{Destination: pb.Destination_DESTINATION_STRAVA, Status: pb.DestinationStatus_DESTINATION_STATUS_SUCCESS},
-		{Destination: pb.Destination_DESTINATION_HEVY, Status: pb.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+	outcomes := []*pbpipeline.DestinationOutcome{
+		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 	}
 	status := ComputePipelineRunStatus(outcomes)
-	if status != pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
 		t.Errorf("expected SYNCED, got %v", status)
 	}
 }
 
 func TestComputePipelineRunStatus_SomePending(t *testing.T) {
-	outcomes := []*pb.DestinationOutcome{
-		{Destination: pb.Destination_DESTINATION_STRAVA, Status: pb.DestinationStatus_DESTINATION_STATUS_SUCCESS},
-		{Destination: pb.Destination_DESTINATION_HEVY, Status: pb.DestinationStatus_DESTINATION_STATUS_PENDING},
+	outcomes := []*pbpipeline.DestinationOutcome{
+		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING},
 	}
 	status := ComputePipelineRunStatus(outcomes)
-	if status != pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING {
+	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING {
 		t.Errorf("expected RUNNING, got %v", status)
 	}
 }
 
 func TestComputePipelineRunStatus_SomeFailed(t *testing.T) {
-	outcomes := []*pb.DestinationOutcome{
-		{Destination: pb.Destination_DESTINATION_STRAVA, Status: pb.DestinationStatus_DESTINATION_STATUS_SUCCESS},
-		{Destination: pb.Destination_DESTINATION_HEVY, Status: pb.DestinationStatus_DESTINATION_STATUS_FAILED},
+	outcomes := []*pbpipeline.DestinationOutcome{
+		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED},
 	}
 	status := ComputePipelineRunStatus(outcomes)
-	if status != pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
 		t.Errorf("expected PARTIAL, got %v", status)
 	}
 }
 
 func TestComputePipelineRunStatus_SuccessAndSkipped(t *testing.T) {
-	outcomes := []*pb.DestinationOutcome{
-		{Destination: pb.Destination_DESTINATION_STRAVA, Status: pb.DestinationStatus_DESTINATION_STATUS_SUCCESS},
-		{Destination: pb.Destination_DESTINATION_HEVY, Status: pb.DestinationStatus_DESTINATION_STATUS_SKIPPED},
+	outcomes := []*pbpipeline.DestinationOutcome{
+		{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		{Destination: pbplugin.DestinationType_DESTINATION_HEVY, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SKIPPED},
 	}
 	status := ComputePipelineRunStatus(outcomes)
-	if status != pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+	if status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
 		t.Errorf("expected SYNCED (skipped doesn't count as failure), got %v", status)
 	}
 }
@@ -127,12 +133,14 @@ func TestUpdateStatus_SendsNotificationOnSynced(t *testing.T) {
 	notifications := &MockNotifications{}
 	db := &MockDatabase{
 		// Pre-populate with one already-complete destination
-		Outcomes: []*pb.DestinationOutcome{
-			{Destination: pb.Destination_DESTINATION_STRAVA, Status: pb.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		Outcomes: []*pbpipeline.DestinationOutcome{
+			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 		},
-		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
-			return &pb.UserRecord{
-				FcmTokens: []string{"token1"},
+		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+			return &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					FcmTokens: []string{"token1"},
+				},
 			}, nil
 		},
 	}
@@ -140,7 +148,7 @@ func TestUpdateStatus_SendsNotificationOnSynced(t *testing.T) {
 
 	// When Hevy also succeeds → all complete → SYNCED → notification should fire
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
-		pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"hevy-123", "", "Morning Run", "activity-1", logger)
 
 	if len(notifications.Sent) != 1 {
@@ -164,12 +172,14 @@ func TestUpdateStatus_SendsNotificationOnSynced(t *testing.T) {
 func TestUpdateStatus_SendsNotificationOnPartial(t *testing.T) {
 	notifications := &MockNotifications{}
 	db := &MockDatabase{
-		Outcomes: []*pb.DestinationOutcome{
-			{Destination: pb.Destination_DESTINATION_STRAVA, Status: pb.DestinationStatus_DESTINATION_STATUS_SUCCESS},
+		Outcomes: []*pbpipeline.DestinationOutcome{
+			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS},
 		},
-		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
-			return &pb.UserRecord{
-				FcmTokens: []string{"token1"},
+		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+			return &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					FcmTokens: []string{"token1"},
+				},
 			}, nil
 		},
 	}
@@ -177,7 +187,7 @@ func TestUpdateStatus_SendsNotificationOnPartial(t *testing.T) {
 
 	// When Hevy fails → PARTIAL → notification should fire with failure info
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
-		pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_FAILED,
+		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED,
 		"", "API error", "Morning Run", "activity-2", logger)
 
 	if len(notifications.Sent) != 1 {
@@ -199,12 +209,14 @@ func TestUpdateStatus_NoNotificationWhileRunning(t *testing.T) {
 	notifications := &MockNotifications{}
 	db := &MockDatabase{
 		// One destination still PENDING
-		Outcomes: []*pb.DestinationOutcome{
-			{Destination: pb.Destination_DESTINATION_STRAVA, Status: pb.DestinationStatus_DESTINATION_STATUS_PENDING},
+		Outcomes: []*pbpipeline.DestinationOutcome{
+			{Destination: pbplugin.DestinationType_DESTINATION_STRAVA, Status: pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING},
 		},
-		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
-			return &pb.UserRecord{
-				FcmTokens: []string{"token1"},
+		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+			return &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					FcmTokens: []string{"token1"},
+				},
 			}, nil
 		},
 	}
@@ -212,7 +224,7 @@ func TestUpdateStatus_NoNotificationWhileRunning(t *testing.T) {
 
 	// Only Hevy completes — Strava still pending → RUNNING → no notification
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
-		pb.Destination_DESTINATION_HEVY, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		pbplugin.DestinationType_DESTINATION_HEVY, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"hevy-123", "", "Morning Run", "activity-3", logger)
 
 	if len(notifications.Sent) != 0 {
@@ -224,12 +236,14 @@ func TestUpdateStatus_NoNotificationWhenPrefsDisabled(t *testing.T) {
 	notifications := &MockNotifications{}
 	db := &MockDatabase{
 		// Only one destination, so it goes to SYNCED immediately
-		Outcomes: []*pb.DestinationOutcome{},
-		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
-			return &pb.UserRecord{
-				FcmTokens: []string{"token1"},
-				NotificationPreferences: &pb.NotificationPreferences{
-					NotifyPipelineSuccess: false,
+		Outcomes: []*pbpipeline.DestinationOutcome{},
+		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+			return &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					FcmTokens: []string{"token1"},
+					NotificationPreferences: &pbuser.NotificationPreferences{
+						NotifyPipelineSuccess: false,
+					},
 				},
 			}, nil
 		},
@@ -237,7 +251,7 @@ func TestUpdateStatus_NoNotificationWhenPrefsDisabled(t *testing.T) {
 	logger := slog.Default()
 
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
-		pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"strava-123", "", "Morning Run", "activity-4", logger)
 
 	if len(notifications.Sent) != 0 {
@@ -247,10 +261,12 @@ func TestUpdateStatus_NoNotificationWhenPrefsDisabled(t *testing.T) {
 
 func TestUpdateStatus_NilNotificationService(t *testing.T) {
 	db := &MockDatabase{
-		Outcomes: []*pb.DestinationOutcome{},
-		GetUserFunc: func(ctx context.Context, id string) (*pb.UserRecord, error) {
-			return &pb.UserRecord{
-				FcmTokens: []string{"token1"},
+		Outcomes: []*pbpipeline.DestinationOutcome{},
+		GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+			return &user.Record{
+				UserProfile: &pbuser.UserProfile{
+					FcmTokens: []string{"token1"},
+				},
 			}, nil
 		},
 	}
@@ -258,7 +274,7 @@ func TestUpdateStatus_NilNotificationService(t *testing.T) {
 
 	// Should not panic with nil notifications
 	UpdateStatus(context.Background(), db, nil, "user1", "run1",
-		pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"strava-123", "", "Morning Run", "activity-5", logger)
 }
 
@@ -269,7 +285,7 @@ func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
 
 	// Empty pipelineRunId → early return (legacy flow)
 	UpdateStatus(context.Background(), db, notifications, "user1", "",
-		pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
 		"strava-123", "", "Morning Run", "activity-6", logger)
 
 	if len(notifications.Sent) != 0 {
@@ -279,17 +295,17 @@ func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
 
 func TestFormatDestinationName(t *testing.T) {
 	tests := []struct {
-		dest     pb.Destination
+		dest     pbplugin.DestinationType
 		expected string
 	}{
-		{pb.Destination_DESTINATION_STRAVA, "Strava"},
-		{pb.Destination_DESTINATION_HEVY, "Hevy"},
-		{pb.Destination_DESTINATION_SHOWCASE, "Showcase"},
-		{pb.Destination_DESTINATION_TRAININGPEAKS, "TrainingPeaks"},
-		{pb.Destination_DESTINATION_INTERVALS, "Intervals.icu"},
-		{pb.Destination_DESTINATION_GOOGLESHEETS, "Google Sheets"},
-		{pb.Destination_DESTINATION_GITHUB, "GitHub"},
-		{pb.Destination_DESTINATION_MOCK, "Mock"},
+		{pbplugin.DestinationType_DESTINATION_STRAVA, "Strava"},
+		{pbplugin.DestinationType_DESTINATION_HEVY, "Hevy"},
+		{pbplugin.DestinationType_DESTINATION_SHOWCASE, "Showcase"},
+		{pbplugin.DestinationType_DESTINATION_TRAININGPEAKS, "TrainingPeaks"},
+		{pbplugin.DestinationType_DESTINATION_INTERVALS, "Intervals.icu"},
+		{pbplugin.DestinationType_DESTINATION_GOOGLESHEETS, "Google Sheets"},
+		{pbplugin.DestinationType_DESTINATION_GITHUB, "GitHub"},
+		{pbplugin.DestinationType_DESTINATION_MOCK, "Mock"},
 	}
 
 	for _, tt := range tests {

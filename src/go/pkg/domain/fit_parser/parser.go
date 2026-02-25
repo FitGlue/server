@@ -11,7 +11,7 @@ import (
 	"github.com/muktihari/fit/profile/typedef"
 	"github.com/muktihari/fit/proto"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -21,7 +21,7 @@ import (
 
 // ParseFitFile parses a FIT file and returns a StandardizedActivity.
 // If the file contains multiple sessions, they are merged into a single session.
-func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
+func ParseFitFile(data []byte) (*pbactivity.StandardizedActivity, error) {
 	if len(data) == 0 {
 		return nil, fmt.Errorf("empty FIT data")
 	}
@@ -29,14 +29,14 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 	fitDec := decoder.New(bytes.NewReader(data))
 
 	// Collect all data first, then organize
-	var allRecords []*pb.Record
+	var allRecords []*pbactivity.Record
 	var lapInfos []lapInfo
 	var sessionInfos []sessionInfo
 	var setInfos []setInfo
 	var workoutSteps []workoutStepInfo
 	var workoutName string
 
-	var activityType pb.ActivityType
+	var activityType pbactivity.ActivityType
 	var activityName string
 	var startTime time.Time
 
@@ -109,7 +109,7 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 				})
 
 				// Set activity type from first session
-				if activityType == pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+				if activityType == pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
 					activityType = mapFitSportToActivityType(sessionMsg.Sport, sessionMsg.SubSport)
 				}
 				if activityName == "" && sessionMsg.SportProfileName != "" {
@@ -176,7 +176,7 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 	}
 
 	// Merge multiple sessions into one
-	var mergedSession *pb.Session
+	var mergedSession *pbactivity.Session
 	if len(sessions) > 1 {
 		mergedSession = MergeSessions(sessions)
 	} else {
@@ -188,23 +188,23 @@ func ParseFitFile(data []byte) (*pb.StandardizedActivity, error) {
 		activityName = generateActivityName(activityType, startTime)
 	}
 
-	activity := &pb.StandardizedActivity{
-		Source:      "SOURCE_FILE_UPLOAD",
+	activity := &pbactivity.StandardizedActivity{
+		Source:      pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
 		StartTime:   timestamppb.New(startTime),
 		Name:        activityName,
 		Type:        activityType,
-		Sessions:    []*pb.Session{mergedSession},
+		Sessions:    []*pbactivity.Session{mergedSession},
 		TimeMarkers: generateExerciseTimeMarkers(setInfos),
 	}
 
 	// Populate workout definition if present
 	if workoutName != "" || len(workoutSteps) > 0 {
-		wkDefn := &pb.WorkoutDefinition{}
+		wkDefn := &pbactivity.WorkoutDefinition{}
 		if workoutName != "" {
 			wkDefn.Name = workoutName
 		}
 		for _, wsi := range workoutSteps {
-			wkDefn.Steps = append(wkDefn.Steps, &pb.WorkoutStep{
+			wkDefn.Steps = append(wkDefn.Steps, &pbactivity.WorkoutStep{
 				Intensity:     wsi.intensity,
 				DurationType:  wsi.durationType,
 				DurationValue: wsi.durationValue,
@@ -257,7 +257,7 @@ type setInfo struct {
 }
 
 // buildSessions organizes records into laps and sessions based on timestamps
-func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sessionInfo, setInfos []setInfo) []*pb.Session {
+func buildSessions(records []*pbactivity.Record, lapInfos []lapInfo, sessionInfos []sessionInfo, setInfos []setInfo) []*pbactivity.Session {
 	if len(records) == 0 {
 		return nil
 	}
@@ -271,34 +271,34 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 			duration = last.Sub(first).Seconds()
 		}
 
-		lap := &pb.Lap{
+		lap := &pbactivity.Lap{
 			StartTime:        records[0].Timestamp,
 			TotalElapsedTime: duration,
 			Records:          records,
 		}
 
-		return []*pb.Session{{
+		return []*pbactivity.Session{{
 			StartTime:        records[0].Timestamp,
 			TotalElapsedTime: duration,
-			Laps:             []*pb.Lap{lap},
+			Laps:             []*pbactivity.Lap{lap},
 		}}
 	}
 
 	// If no lap info, create one lap per session containing all records
 	if len(lapInfos) == 0 {
 		session := &sessionInfos[0]
-		lap := &pb.Lap{
+		lap := &pbactivity.Lap{
 			StartTime:        timestamppb.New(session.startTime),
 			TotalElapsedTime: session.totalElapsedTime,
 			TotalDistance:    session.totalDistance,
 			Records:          records,
 		}
 
-		return []*pb.Session{{
+		return []*pbactivity.Session{{
 			StartTime:        timestamppb.New(session.startTime),
 			TotalElapsedTime: session.totalElapsedTime,
 			TotalDistance:    session.totalDistance,
-			Laps:             []*pb.Lap{lap},
+			Laps:             []*pbactivity.Lap{lap},
 		}}
 	}
 
@@ -307,13 +307,13 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 	mergedLapInfos := mergeLapInfosByWorkoutStep(lapInfos)
 
 	// Assign records to laps based on timestamps
-	laps := make([]*pb.Lap, len(mergedLapInfos))
+	laps := make([]*pbactivity.Lap, len(mergedLapInfos))
 	for i, li := range mergedLapInfos {
-		laps[i] = &pb.Lap{
+		laps[i] = &pbactivity.Lap{
 			StartTime:        timestamppb.New(li.startTime),
 			TotalElapsedTime: li.totalElapsedTime,
 			TotalDistance:    li.totalDistance,
-			Records:          []*pb.Record{},
+			Records:          []*pbactivity.Record{},
 		}
 		// Preserve interval intensity on the proto Lap
 		if li.intensity != nil {
@@ -355,13 +355,13 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 	}
 
 	// Build sessions with laps
-	sessions := make([]*pb.Session, len(sessionInfos))
+	sessions := make([]*pbactivity.Session, len(sessionInfos))
 	for i, si := range sessionInfos {
-		sessions[i] = &pb.Session{
+		sessions[i] = &pbactivity.Session{
 			StartTime:        timestamppb.New(si.startTime),
 			TotalElapsedTime: si.totalElapsedTime,
 			TotalDistance:    si.totalDistance,
-			Laps:             []*pb.Lap{},
+			Laps:             []*pbactivity.Lap{},
 		}
 	}
 
@@ -399,7 +399,7 @@ func buildSessions(records []*pb.Record, lapInfos []lapInfo, sessionInfos []sess
 
 	// Convert setInfos to StrengthSets and assign to sessions
 	for _, si := range setInfos {
-		strengthSet := &pb.StrengthSet{
+		strengthSet := &pbactivity.StrengthSet{
 			ExerciseName:    si.exerciseName,
 			Reps:            si.reps,
 			DurationSeconds: int32(si.duration),
@@ -540,7 +540,7 @@ func mergeConsecutiveLapInfos(group []lapInfo) lapInfo {
 }
 
 // parseRecord extracts record data from a FIT message
-func parseRecord(msg *proto.Message) *pb.Record {
+func parseRecord(msg *proto.Message) *pbactivity.Record {
 	recordMsg := mesgdef.NewRecord(msg)
 
 	ts := recordMsg.Timestamp
@@ -548,7 +548,7 @@ func parseRecord(msg *proto.Message) *pb.Record {
 		return nil
 	}
 
-	record := &pb.Record{
+	record := &pbactivity.Record{
 		Timestamp: timestamppb.New(ts.UTC()),
 	}
 
@@ -624,7 +624,7 @@ func parseRecord(msg *proto.Message) *pb.Record {
 
 // MergeSessions merges multiple sessions into a single session.
 // This is useful for FIT files that contain multiple sessions from device auto-pause.
-func MergeSessions(sessions []*pb.Session) *pb.Session {
+func MergeSessions(sessions []*pbactivity.Session) *pbactivity.Session {
 	if len(sessions) == 0 {
 		return nil
 	}
@@ -632,12 +632,12 @@ func MergeSessions(sessions []*pb.Session) *pb.Session {
 		return sessions[0]
 	}
 
-	merged := &pb.Session{
+	merged := &pbactivity.Session{
 		StartTime:        sessions[0].StartTime,
 		TotalElapsedTime: 0,
 		TotalDistance:    0,
-		Laps:             make([]*pb.Lap, 0),
-		StrengthSets:     make([]*pb.StrengthSet, 0),
+		Laps:             make([]*pbactivity.Lap, 0),
+		StrengthSets:     make([]*pbactivity.StrengthSet, 0),
 	}
 
 	for _, session := range sessions {
@@ -651,110 +651,110 @@ func MergeSessions(sessions []*pb.Session) *pb.Session {
 }
 
 // mapFitSportToActivityType converts FIT SDK sport types to our ActivityType enum
-func mapFitSportToActivityType(sport typedef.Sport, subSport typedef.SubSport) pb.ActivityType {
+func mapFitSportToActivityType(sport typedef.Sport, subSport typedef.SubSport) pbactivity.ActivityType {
 	switch sport {
 	case typedef.SportRunning:
 		switch subSport {
 		case typedef.SubSportTrail:
-			return pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN
+			return pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN
 		case typedef.SubSportVirtualActivity:
-			return pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN
+			return pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN
 		default:
-			return pb.ActivityType_ACTIVITY_TYPE_RUN
+			return pbactivity.ActivityType_ACTIVITY_TYPE_RUN
 		}
 
 	case typedef.SportCycling:
 		switch subSport {
 		case typedef.SubSportVirtualActivity:
-			return pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE
+			return pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE
 		case typedef.SubSportMountain:
-			return pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE
+			return pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE
 		case typedef.SubSportGravelCycling:
-			return pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE
+			return pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE
 		case typedef.SubSportEBikeMountain:
-			return pb.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE
+			return pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE
 		case typedef.SubSportEBikeFitness:
-			return pb.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE
+			return pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE
 		default:
-			return pb.ActivityType_ACTIVITY_TYPE_RIDE
+			return pbactivity.ActivityType_ACTIVITY_TYPE_RIDE
 		}
 
 	case typedef.SportSwimming:
-		return pb.ActivityType_ACTIVITY_TYPE_SWIM
+		return pbactivity.ActivityType_ACTIVITY_TYPE_SWIM
 
 	case typedef.SportWalking:
-		return pb.ActivityType_ACTIVITY_TYPE_WALK
+		return pbactivity.ActivityType_ACTIVITY_TYPE_WALK
 
 	case typedef.SportHiking:
-		return pb.ActivityType_ACTIVITY_TYPE_HIKE
+		return pbactivity.ActivityType_ACTIVITY_TYPE_HIKE
 
 	case typedef.SportTraining:
 		switch subSport {
 		case typedef.SubSportStrengthTraining:
-			return pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING
+			return pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING
 		case typedef.SubSportYoga:
-			return pb.ActivityType_ACTIVITY_TYPE_YOGA
+			return pbactivity.ActivityType_ACTIVITY_TYPE_YOGA
 		case typedef.SubSportHiit:
-			return pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING
+			return pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING
 		case typedef.SubSportPilates:
-			return pb.ActivityType_ACTIVITY_TYPE_PILATES
+			return pbactivity.ActivityType_ACTIVITY_TYPE_PILATES
 		case typedef.SubSportElliptical:
-			return pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL
+			return pbactivity.ActivityType_ACTIVITY_TYPE_ELLIPTICAL
 		case typedef.SubSportStairClimbing:
-			return pb.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER
+			return pbactivity.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER
 		default:
-			return pb.ActivityType_ACTIVITY_TYPE_WORKOUT
+			return pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT
 		}
 
 	case typedef.SportRowing:
-		return pb.ActivityType_ACTIVITY_TYPE_ROWING
+		return pbactivity.ActivityType_ACTIVITY_TYPE_ROWING
 
 	case typedef.SportAlpineSkiing:
-		return pb.ActivityType_ACTIVITY_TYPE_ALPINE_SKI
+		return pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI
 
 	case typedef.SportCrossCountrySkiing:
-		return pb.ActivityType_ACTIVITY_TYPE_NORDIC_SKI
+		return pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI
 
 	case typedef.SportSnowboarding:
-		return pb.ActivityType_ACTIVITY_TYPE_SNOWBOARD
+		return pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD
 
 	case typedef.SportSoccer:
-		return pb.ActivityType_ACTIVITY_TYPE_SOCCER
+		return pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER
 
 	case typedef.SportTennis:
-		return pb.ActivityType_ACTIVITY_TYPE_TENNIS
+		return pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS
 
 	case typedef.SportGolf:
-		return pb.ActivityType_ACTIVITY_TYPE_GOLF
+		return pbactivity.ActivityType_ACTIVITY_TYPE_GOLF
 
 	case typedef.SportPaddling:
-		return pb.ActivityType_ACTIVITY_TYPE_KAYAKING
+		return pbactivity.ActivityType_ACTIVITY_TYPE_KAYAKING
 
 	case typedef.SportStandUpPaddleboarding:
-		return pb.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING
+		return pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING
 
 	case typedef.SportSurfing:
-		return pb.ActivityType_ACTIVITY_TYPE_SURFING
+		return pbactivity.ActivityType_ACTIVITY_TYPE_SURFING
 
 	case typedef.SportSailing:
-		return pb.ActivityType_ACTIVITY_TYPE_SAIL
+		return pbactivity.ActivityType_ACTIVITY_TYPE_SAIL
 
 	case typedef.SportIceSkating:
-		return pb.ActivityType_ACTIVITY_TYPE_ICE_SKATE
+		return pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE
 
 	case typedef.SportInlineSkating:
-		return pb.ActivityType_ACTIVITY_TYPE_INLINE_SKATE
+		return pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE
 
 	case typedef.SportRockClimbing:
-		return pb.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING
+		return pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING
 
 	default:
-		return pb.ActivityType_ACTIVITY_TYPE_WORKOUT
+		return pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT
 	}
 }
 
 // generateActivityName creates a default activity name based on type and time
-func generateActivityName(activityType pb.ActivityType, startTime time.Time) string {
+func generateActivityName(activityType pbactivity.ActivityType, startTime time.Time) string {
 	hour := startTime.Hour()
 	var timeOfDay string
 	switch {
@@ -770,20 +770,20 @@ func generateActivityName(activityType pb.ActivityType, startTime time.Time) str
 
 	var activityName string
 	switch activityType {
-	case pb.ActivityType_ACTIVITY_TYPE_RUN, pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN, pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RUN, pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN, pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:
 		activityName = "Run"
-	case pb.ActivityType_ACTIVITY_TYPE_RIDE, pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE, pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
-		pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE, pb.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE, pb.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RIDE, pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE, pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE, pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE, pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE:
 		activityName = "Ride"
-	case pb.ActivityType_ACTIVITY_TYPE_SWIM:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SWIM:
 		activityName = "Swim"
-	case pb.ActivityType_ACTIVITY_TYPE_WALK:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WALK:
 		activityName = "Walk"
-	case pb.ActivityType_ACTIVITY_TYPE_HIKE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HIKE:
 		activityName = "Hike"
-	case pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
 		activityName = "Workout"
-	case pb.ActivityType_ACTIVITY_TYPE_YOGA:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_YOGA:
 		activityName = "Yoga"
 	default:
 		activityName = "Activity"
@@ -796,12 +796,12 @@ func generateActivityName(activityType pb.ActivityType, startTime time.Time) str
 // Each Set message represents a distinct exercise/move and gets its own marker.
 // The reconciler will later overwrite these generic category labels with proper
 // exercise names from sources like Hevy.
-func generateExerciseTimeMarkers(sets []setInfo) []*pb.TimeMarker {
+func generateExerciseTimeMarkers(sets []setInfo) []*pbactivity.TimeMarker {
 	if len(sets) == 0 {
 		return nil
 	}
 
-	var markers []*pb.TimeMarker
+	var markers []*pbactivity.TimeMarker
 
 	for _, s := range sets {
 		name := s.exerciseName
@@ -809,7 +809,7 @@ func generateExerciseTimeMarkers(sets []setInfo) []*pb.TimeMarker {
 			name = "Exercise"
 		}
 
-		markers = append(markers, &pb.TimeMarker{
+		markers = append(markers, &pbactivity.TimeMarker{
 			Timestamp:  timestamppb.New(s.startTime),
 			Label:      name,
 			MarkerType: "exercise_start",

@@ -2,7 +2,12 @@ package firestore
 
 import (
 	"cloud.google.com/go/firestore"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	"github.com/fitglue/server/src/go/pkg/domain/user"
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 )
 
 type Client struct {
@@ -17,8 +22,8 @@ func (c *Client) Close() error {
 	return c.fs.Close()
 }
 
-func (c *Client) Users() *Collection[pb.UserRecord] {
-	return &Collection[pb.UserRecord]{
+func (c *Client) Users() *Collection[user.Record] {
+	return &Collection[user.Record]{
 		Ref:           c.fs.Collection("users"),
 		ToFirestore:   UserToFirestore,
 		FromFirestore: FirestoreToUser,
@@ -28,8 +33,8 @@ func (c *Client) Users() *Collection[pb.UserRecord] {
 // Executions returns the legacy root-level collection.
 // DEPRECATED: Use UserExecutions(userId) for new code.
 // This remains for backward compatibility during migration.
-func (c *Client) Executions() *Collection[pb.ExecutionRecord] {
-	return &Collection[pb.ExecutionRecord]{
+func (c *Client) Executions() *Collection[pbpipeline.ExecutionRecord] {
+	return &Collection[pbpipeline.ExecutionRecord]{
 		Ref:           c.fs.Collection("executions"),
 		ToFirestore:   ExecutionToFirestore,
 		FromFirestore: FirestoreToExecution,
@@ -38,8 +43,8 @@ func (c *Client) Executions() *Collection[pb.ExecutionRecord] {
 
 // UserExecutions are sub-collections of Users: users/{uid}/executions/{id}
 // PREFERRED: Use this instead of Executions() for new code
-func (c *Client) UserExecutions(userId string) *Collection[pb.ExecutionRecord] {
-	return &Collection[pb.ExecutionRecord]{
+func (c *Client) UserExecutions(userId string) *Collection[pbpipeline.ExecutionRecord] {
+	return &Collection[pbpipeline.ExecutionRecord]{
 		Ref:           c.fs.Collection("users").Doc(userId).Collection("executions"),
 		ToFirestore:   ExecutionToFirestore,
 		FromFirestore: FirestoreToExecution,
@@ -49,16 +54,16 @@ func (c *Client) UserExecutions(userId string) *Collection[pb.ExecutionRecord] {
 // OrphanedExecutions stores executions without a userId.
 // These are code smells and should be investigated.
 // Consider setting up alerts on this collection's write activity.
-func (c *Client) OrphanedExecutions() *Collection[pb.ExecutionRecord] {
-	return &Collection[pb.ExecutionRecord]{
+func (c *Client) OrphanedExecutions() *Collection[pbpipeline.ExecutionRecord] {
+	return &Collection[pbpipeline.ExecutionRecord]{
 		Ref:           c.fs.Collection("orphaned_executions"),
 		ToFirestore:   ExecutionToFirestore,
 		FromFirestore: FirestoreToExecution,
 	}
 }
 
-func (c *Client) PendingInputs() *Collection[pb.PendingInput] {
-	return &Collection[pb.PendingInput]{
+func (c *Client) PendingInputs() *Collection[pbpipeline.PendingInput] {
+	return &Collection[pbpipeline.PendingInput]{
 		Ref:           c.fs.Collection("pending_inputs"),
 		ToFirestore:   PendingInputToFirestore,
 		FromFirestore: FirestoreToPendingInput,
@@ -67,8 +72,8 @@ func (c *Client) PendingInputs() *Collection[pb.PendingInput] {
 
 // UserPendingInputs are sub-collections of Users: users/{uid}/pending_inputs/{id}
 // PREFERRED: Use this instead of PendingInputs() for new code
-func (c *Client) UserPendingInputs(userId string) *Collection[pb.PendingInput] {
-	return &Collection[pb.PendingInput]{
+func (c *Client) UserPendingInputs(userId string) *Collection[pbpipeline.PendingInput] {
+	return &Collection[pbpipeline.PendingInput]{
 		Ref:           c.fs.Collection("users").Doc(userId).Collection("pending_inputs"),
 		ToFirestore:   PendingInputToFirestore,
 		FromFirestore: FirestoreToPendingInput,
@@ -76,8 +81,8 @@ func (c *Client) UserPendingInputs(userId string) *Collection[pb.PendingInput] {
 }
 
 // Counters are sub-collections of Users: users/{uid}/counters/{id}
-func (c *Client) Counters(userId string) *Collection[pb.Counter] {
-	return &Collection[pb.Counter]{
+func (c *Client) Counters(userId string) *Collection[pbuser.Counter] {
+	return &Collection[pbuser.Counter]{
 		Ref:           c.fs.Collection("users").Doc(userId).Collection("counters"),
 		ToFirestore:   CounterToFirestore,
 		FromFirestore: FirestoreToCounter,
@@ -85,8 +90,8 @@ func (c *Client) Counters(userId string) *Collection[pb.Counter] {
 }
 
 // PersonalRecords are sub-collections of Users: users/{uid}/personal_records/{recordType}
-func (c *Client) PersonalRecords(userId string) *Collection[pb.PersonalRecord] {
-	return &Collection[pb.PersonalRecord]{
+func (c *Client) PersonalRecords(userId string) *Collection[pbuser.PersonalRecord] {
+	return &Collection[pbuser.PersonalRecord]{
 		Ref:           c.fs.Collection("users").Doc(userId).Collection("personal_records"),
 		ToFirestore:   PersonalRecordToFirestore,
 		FromFirestore: FirestoreToPersonalRecord,
@@ -94,8 +99,8 @@ func (c *Client) PersonalRecords(userId string) *Collection[pb.PersonalRecord] {
 }
 
 // ShowcasedActivities is a top-level collection: showcased_activities/{showcase_id}
-func (c *Client) ShowcasedActivities() *Collection[pb.ShowcasedActivity] {
-	return &Collection[pb.ShowcasedActivity]{
+func (c *Client) ShowcasedActivities() *Collection[pbactivity.ShowcasedActivity] {
+	return &Collection[pbactivity.ShowcasedActivity]{
 		Ref:           c.fs.Collection("showcased_activities"),
 		ToFirestore:   ShowcasedActivityToFirestore,
 		FromFirestore: FirestoreToShowcasedActivity,
@@ -103,8 +108,8 @@ func (c *Client) ShowcasedActivities() *Collection[pb.ShowcasedActivity] {
 }
 
 // ShowcaseProfiles is a top-level collection: showcase_profiles/{slug}
-func (c *Client) ShowcaseProfiles() *Collection[pb.ShowcaseProfile] {
-	return &Collection[pb.ShowcaseProfile]{
+func (c *Client) ShowcaseProfiles() *Collection[pbactivity.ShowcaseProfile] {
+	return &Collection[pbactivity.ShowcaseProfile]{
 		Ref:           c.fs.Collection("showcase_profiles"),
 		ToFirestore:   ShowcaseProfileToFirestore,
 		FromFirestore: FirestoreToShowcaseProfile,
@@ -113,8 +118,8 @@ func (c *Client) ShowcaseProfiles() *Collection[pb.ShowcaseProfile] {
 
 // UploadedActivities are sub-collections of Users: users/{uid}/uploaded_activities/{id}
 // Used for loop prevention to track activities we've posted to destinations
-func (c *Client) UploadedActivities(userId string) *Collection[pb.UploadedActivityRecord] {
-	return &Collection[pb.UploadedActivityRecord]{
+func (c *Client) UploadedActivities(userId string) *Collection[pbactivity.UploadedActivityRecord] {
+	return &Collection[pbactivity.UploadedActivityRecord]{
 		Ref:           c.fs.Collection("users").Doc(userId).Collection("uploaded_activities"),
 		ToFirestore:   UploadedActivityToFirestore,
 		FromFirestore: FirestoreToUploadedActivity,
@@ -123,8 +128,8 @@ func (c *Client) UploadedActivities(userId string) *Collection[pb.UploadedActivi
 
 // PipelineRuns are sub-collections of Users: users/{uid}/pipeline_runs/{id}
 // Tracks complete pipeline execution lifecycle including boosters and destinations
-func (c *Client) PipelineRuns(userId string) *Collection[pb.PipelineRun] {
-	return &Collection[pb.PipelineRun]{
+func (c *Client) PipelineRuns(userId string) *Collection[pbpipeline.PipelineRun] {
+	return &Collection[pbpipeline.PipelineRun]{
 		Ref:           c.fs.Collection("users").Doc(userId).Collection("pipeline_runs"),
 		ToFirestore:   PipelineRunToFirestore,
 		FromFirestore: FirestoreToPipelineRun,
@@ -133,8 +138,8 @@ func (c *Client) PipelineRuns(userId string) *Collection[pb.PipelineRun] {
 
 // PluginDefaults are sub-collections of Users: users/{uid}/plugin_defaults/{pluginId}
 // Stores user-level default config for source and destination plugins
-func (c *Client) PluginDefaults(userId string) *Collection[pb.PluginDefault] {
-	return &Collection[pb.PluginDefault]{
+func (c *Client) PluginDefaults(userId string) *Collection[pbpipeline.PluginDefault] {
+	return &Collection[pbpipeline.PluginDefault]{
 		Ref:           c.fs.Collection("users").Doc(userId).Collection("plugin_defaults"),
 		ToFirestore:   PluginDefaultToFirestore,
 		FromFirestore: FirestoreToPluginDefault,

@@ -81,16 +81,16 @@ The script will prompt you for the Client ID and Client Secret (hidden input) an
 
 ### 3. Deploy OAuth Handlers
 
-The OAuth handler functions are defined in `terraform/oauth_functions.tf`. Deploy them:
+OAuth handlers are part of `service.api.webhook` (callback endpoints) and `service.user` (token storage). Deploy via Terraform:
 
 ```bash
 cd terraform
 terraform apply -var-file=envs/dev.tfvars
 ```
 
-This creates two publicly accessible Cloud Functions:
-- `strava-oauth-handler` at `https://strava-oauth-handler-XXX.run.app`
-- `fitbit-oauth-handler` at `https://fitbit-oauth-handler-XXX.run.app`
+This deploys all Cloud Run services including the OAuth callback endpoints:
+- `https://dev.fitglue.tech/auth/strava/callback`
+- `https://dev.fitglue.tech/auth/fitbit/callback`
 
 ## Usage
 
@@ -115,12 +115,12 @@ This creates two publicly accessible Cloud Functions:
    fitglue-admin users:list
    ```
 
-### Via Web Dashboard (Future)
+### Via Web Dashboard
 
-The web dashboard will provide a "Connect Strava" / "Connect Fitbit" button that:
-1. Calls the backend to generate a state token
-2. Redirects the user to the OAuth authorization URL
-3. Handles the callback automatically
+The web dashboard provides "Connect Strava" / "Connect Fitbit" buttons that:
+1. Call `service.api.client` to generate a state token
+2. Redirect the user to the OAuth authorization URL
+3. Handle the callback automatically via `service.api.webhook`
 
 ## Token Refresh
 
@@ -199,8 +199,5 @@ integrations/fitbit/ids/{fitbitUserId}
 
 ## Future Enhancements
 
-- [ ] Implement automatic token refresh
-- [ ] Add webhook support for real-time activity updates
-- [ ] Support for disconnecting integrations
-- [ ] OAuth flow in web dashboard
 - [ ] Rate limiting and retry logic for API calls
+- [ ] Granular scope management per integration

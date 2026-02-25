@@ -1,0 +1,147 @@
+syntax = "proto3";
+
+package fitglue.services.pipeline;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "models/pipeline/config.proto";
+import "models/pipeline/execution.proto";
+import "models/pipeline/pending_input.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline";
+
+service PipelineService {
+  rpc ListPipelines(ListPipelinesRequest) returns (ListPipelinesResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/pipelines"
+    };
+  }
+  rpc GetPipeline(GetPipelineRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/pipelines/{pipeline_id}"
+    };
+  }
+  rpc CreatePipeline(CreatePipelineRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/pipelines"
+      body: "pipeline"
+    };
+  }
+  rpc UpdatePipeline(UpdatePipelineRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      patch: "/v2/users/{user_id}/pipelines/{pipeline_id}"
+      body: "pipeline"
+    };
+  }
+  rpc DeletePipeline(DeletePipelineRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/users/{user_id}/pipelines/{pipeline_id}"
+    };
+  }
+  
+  rpc SubmitInput(SubmitInputRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/pending-inputs/{pending_input_id}/submit"
+      body: "*"
+    };
+  }
+  rpc ListPendingInputs(ListPendingInputsRequest) returns (ListPendingInputsResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/pending-inputs"
+    };
+  }
+  rpc ResolvePendingInput(ResolvePendingInputRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/pending-inputs/{pending_input_id}/resolve"
+      body: "*"
+    };
+  }
+  
+  rpc RepostActivity(RepostActivityRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/activities/{activity_id}/repost"
+      body: "*"
+    };
+  }
+  
+  rpc GetPipelineRun(GetPipelineRunRequest) returns (fitglue.models.pipeline.PipelineRun) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/pipeline-runs/{run_id}"
+    };
+  }
+  rpc ListPipelineRuns(ListPipelineRunsRequest) returns (ListPipelineRunsResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/pipeline-runs"
+    };
+  }
+}
+
+message ListPipelinesRequest {
+  string user_id = 1;
+}
+
+message ListPipelinesResponse {
+  repeated fitglue.models.pipeline.PipelineConfig pipelines = 1;
+}
+
+message GetPipelineRequest {
+  string user_id = 1;
+  string pipeline_id = 2;
+}
+
+message CreatePipelineRequest {
+  string user_id = 1;
+  fitglue.models.pipeline.PipelineConfig pipeline = 2;
+}
+
+message UpdatePipelineRequest {
+  string user_id = 1;
+  string pipeline_id = 2;
+  fitglue.models.pipeline.PipelineConfig pipeline = 3;
+}
+
+message DeletePipelineRequest {
+  string user_id = 1;
+  string pipeline_id = 2;
+}
+
+message SubmitInputRequest {
+  string user_id = 1;
+  string pending_input_id = 2;
+  map<string, string> input_data = 3;
+}
+
+message ListPendingInputsRequest {
+  string user_id = 1;
+}
+
+message ListPendingInputsResponse {
+  repeated fitglue.models.pipeline.PendingInput inputs = 1;
+}
+
+message ResolvePendingInputRequest {
+  string user_id = 1;
+  string pending_input_id = 2;
+}
+
+message RepostActivityRequest {
+  string user_id = 1;
+  string activity_id = 2;
+}
+
+message GetPipelineRunRequest {
+  string user_id = 1;
+  string run_id = 2;
+}
+
+message ListPipelineRunsRequest {
+  string user_id = 1;
+  string pipeline_id = 2;
+  int32 limit = 3;
+  string page_token = 4;
+}
+
+message ListPipelineRunsResponse {
+  repeated fitglue.models.pipeline.PipelineRun runs = 1;
+  string next_page_token = 2;
+}

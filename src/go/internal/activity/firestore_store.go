@@ -1,0 +1,199 @@
+// nolint:proto-json
+package activity
+
+import (
+	"context"
+	"encoding/json"
+
+	"cloud.google.com/go/firestore"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+	"google.golang.org/api/iterator"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/reflect/protoreflect"
+)
+
+type FirestoreStore struct {
+	client *firestore.Client
+}
+
+func NewFirestoreStore(client *firestore.Client) *FirestoreStore {
+	return &FirestoreStore{client: client}
+}
+
+func (s *FirestoreStore) GetActivity(ctx context.Context, userID, activityID string) (*pbactivity.StandardizedActivity, error) {
+	return nil, status.Error(codes.Unimplemented, "unimplemented")
+}
+func (s *FirestoreStore) ListActivities(ctx context.Context, userID string, limit int32, pageToken string) ([]*pbactivity.StandardizedActivity, string, error) {
+	return nil, "", status.Error(codes.Unimplemented, "unimplemented")
+}
+func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID string, limit int32, pageToken string) ([]*pbpipeline.PipelineRun, string, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+
+	iter := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").
+		OrderBy("created_at", firestore.Desc).
+		Limit(int(limit)).
+		Documents(ctx)
+
+	defer iter.Stop()
+
+	var runs []*pbpipeline.PipelineRun
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, "", err
+		}
+
+		var run pbpipeline.PipelineRun
+		if err := decodeProtoMap(doc.Data(), &run); err != nil {
+			return nil, "", err
+		}
+		runs = append(runs, &run)
+	}
+
+	return runs, "", nil
+}
+func (s *FirestoreStore) DeleteActivity(ctx context.Context, userID, activityID string) error {
+	return status.Error(codes.Unimplemented, "unimplemented")
+}
+func (s *FirestoreStore) GetShowcase(ctx context.Context, userID, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
+	doc, err := s.client.Collection("showcased_activities").Doc(showcaseID).Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var act pbactivity.ShowcasedActivity
+	if err := decodeProtoMap(doc.Data(), &act); err != nil {
+		return nil, err
+	}
+	return &act, nil
+}
+func (s *FirestoreStore) ListShowcases(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error) {
+	iter := s.client.Collection("showcased_activities").
+		Where("user_id", "==", userID).
+		OrderBy("created_at", firestore.Desc).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var showcases []*pbactivity.ShowcaseProfileEntry
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var entry pbactivity.ShowcaseProfileEntry
+		if err := decodeProtoMap(doc.Data(), &entry); err != nil {
+			return nil, err
+		}
+		showcases = append(showcases, &entry)
+	}
+	return showcases, nil
+}
+func (s *FirestoreStore) CreateShowcase(ctx context.Context, userID string, showcase *pbactivity.ShowcasedActivity) (*pbactivity.ShowcasedActivity, error) {
+	data, err := encodeProtoMap(showcase)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.client.Collection("showcased_activities").Doc(showcase.ShowcaseId).Set(ctx, data)
+	return showcase, err
+}
+func (s *FirestoreStore) UpdateShowcase(ctx context.Context, userID string, showcase *pbactivity.ShowcasedActivity) (*pbactivity.ShowcasedActivity, error) {
+	data, err := encodeProtoMap(showcase)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.client.Collection("showcased_activities").Doc(showcase.ShowcaseId).Set(ctx, data)
+	return showcase, err
+}
+func (s *FirestoreStore) DeleteShowcase(ctx context.Context, userID, showcaseID string) error {
+	_, err := s.client.Collection("showcased_activities").Doc(showcaseID).Delete(ctx)
+	return err
+}
+
+func (s *FirestoreStore) GetShowcasePreferences(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error) {
+	doc, err := s.client.Collection("users").Doc(userID).Collection("settings").Doc("showcase_profile").Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var prefs pbactivity.ShowcaseProfile
+	if err := decodeProtoMap(doc.Data(), &prefs); err != nil {
+		return nil, err
+	}
+	return &prefs, nil
+}
+
+func (s *FirestoreStore) UpdateShowcasePreferences(ctx context.Context, userID string, prefs *pbactivity.ShowcaseProfile) (*pbactivity.ShowcaseProfile, error) {
+	data, err := encodeProtoMap(prefs)
+	if err != nil {
+		return nil, err
+	}
+	_, err = s.client.Collection("users").Doc(userID).Collection("settings").Doc("showcase_profile").Set(ctx, data)
+	return prefs, err
+}
+
+func (s *FirestoreStore) GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
+	doc, err := s.client.Collection("showcased_activities").Doc(showcaseID).Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var act pbactivity.ShowcasedActivity
+	if err := decodeProtoMap(doc.Data(), &act); err != nil {
+		return nil, err
+	}
+	return &act, nil
+}
+func (s *FirestoreStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pbpipeline.PipelineRun, error) {
+	doc, err := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").Doc(runID).Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var run pbpipeline.PipelineRun
+	if err := decodeProtoMap(doc.Data(), &run); err != nil {
+		return nil, err
+	}
+	return &run, nil
+}
+func (s *FirestoreStore) DeletePipelineRun(ctx context.Context, userID, runID string) error {
+	_, err := s.client.Collection("users").Doc(userID).Collection("pipeline_runs").Doc(runID).Delete(ctx)
+	return err
+}
+
+// Helpers
+func encodeProtoMap(msg protoreflect.ProtoMessage) (map[string]interface{}, error) {
+	b, err := protojson.MarshalOptions{EmitUnpopulated: false}.Marshal(msg)
+	if err != nil {
+		return nil, err
+	}
+	var m map[string]interface{}
+	err = json.Unmarshal(b, &m)
+	return m, err
+}
+
+func decodeProtoMap(m map[string]interface{}, msg protoreflect.ProtoMessage) error {
+	b, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+	return protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(b, msg)
+}

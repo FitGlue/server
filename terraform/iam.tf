@@ -1,60 +1,61 @@
-resource "google_project_iam_member" "cloud_function_sa_datastore_user" {
-  project = var.project_id
-  role    = "roles/datastore.user"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+locals {
+  firestore_services = ["user", "billing", "pipeline", "activity", "registry"]
+  pubsub_publishers  = ["api-webhook", "pipeline"]
+  secret_accessors   = ["user", "billing", "pipeline", "activity", "destination", "registry", "api-webhook"]
 }
 
-resource "google_project_iam_member" "cloud_function_sa_pubsub_publisher" {
-  project = var.project_id
-  role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+resource "google_project_iam_member" "cr_firestore_user" {
+  for_each = toset(local.firestore_services)
+  project  = var.project_id
+  role     = "roles/datastore.user"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa[each.key].email}"
 }
 
-resource "google_project_iam_member" "cloud_function_sa_secret_accessor" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+resource "google_project_iam_member" "cr_pubsub_publisher" {
+  for_each = toset(local.pubsub_publishers)
+  project  = var.project_id
+  role     = "roles/pubsub.publisher"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa[each.key].email}"
 }
 
-resource "google_project_iam_member" "cloud_function_sa_storage_admin" {
+resource "google_project_iam_member" "cr_secret_accessor" {
+  for_each = toset(local.secret_accessors)
+  project  = var.project_id
+  role     = "roles/secretmanager.secretAccessor"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa[each.key].email}"
+}
+
+resource "google_project_iam_member" "cr_storage_admin" {
   project = var.project_id
   role    = "roles/storage.objectAdmin"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa["activity"].email}"
 }
 
-resource "google_project_iam_member" "cloud_function_sa_fcm_admin" {
+resource "google_project_iam_member" "cr_fcm_admin" {
   project = var.project_id
   role    = "roles/firebasecloudmessaging.admin"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa["destination"].email}"
 }
 
-# Firebase Auth Admin - allows GetUser() for display name lookup AND deleteUser() for account deletion
-resource "google_project_iam_member" "cloud_function_sa_firebase_auth_admin" {
+# Firebase Auth Admin - allows get/delete user
+resource "google_project_iam_member" "cr_firebase_auth_admin" {
   project = var.project_id
   role    = "roles/firebaseauth.admin"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa["user"].email}"
 }
 
-# AI Platform User - allows enricher to call Vertex AI Imagen API for AI Banner generation
-resource "google_project_iam_member" "cloud_function_sa_aiplatform_user" {
+# AI Platform User - allows enricher to call Vertex AI Imagen API
+resource "google_project_iam_member" "cr_aiplatform_user" {
   project = var.project_id
   role    = "roles/aiplatform.user"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa["pipeline"].email}"
 }
 
-# Service Account User - allows Cloud Function SA to create Cloud Tasks with OIDC tokens
-# targeting the App Engine default service account
-resource "google_project_iam_member" "cloud_function_sa_service_account_user" {
-  project = var.project_id
-  role    = "roles/iam.serviceAccountUser"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
-}
-
-# Service Account Token Creator - allows getSignedUrl() for GCS objects (data export, etc.)
-resource "google_project_iam_member" "cloud_function_sa_token_creator" {
+# Service Account Token Creator - allows getSignedUrl() for GCS objects
+resource "google_project_iam_member" "cr_token_creator" {
   project = var.project_id
   role    = "roles/iam.serviceAccountTokenCreator"
-  member  = "serviceAccount:${google_service_account.cloud_function_sa.email}"
+  member  = "serviceAccount:${google_service_account.cloud_run_sa["activity"].email}"
 }
 
 resource "google_project_iam_member" "web_deployer_run_viewer" {

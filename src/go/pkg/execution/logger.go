@@ -1,3 +1,4 @@
+// nolint:proto-json
 package execution
 
 import (
@@ -6,13 +7,13 @@ import (
 	"fmt"
 	"time"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // Database interface for Firestore operations
 type Database interface {
-	SetExecution(ctx context.Context, record *pb.ExecutionRecord) error
+	SetExecution(ctx context.Context, record *pbpipeline.ExecutionRecord) error
 	UpdateExecution(ctx context.Context, userId string, id string, data map[string]interface{}) error
 }
 
@@ -39,10 +40,10 @@ func LogPending(ctx context.Context, db Database, service string, opts Execution
 
 	now := timestamppb.Now()
 
-	record := &pb.ExecutionRecord{
+	record := &pbpipeline.ExecutionRecord{
 		ExecutionId: execID,
 		Service:     service,
-		Status:      pb.ExecutionStatus_STATUS_PENDING,
+		Status:      pbpipeline.ExecutionStatus_STATUS_PENDING,
 		Timestamp:   now,
 		StartTime:   now,
 		UserId:      stringPtr(opts.UserID),
@@ -71,7 +72,7 @@ func LogStart(ctx context.Context, db Database, userId string, execID string, in
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
-		"status":     int32(pb.ExecutionStatus_STATUS_STARTED),
+		"status":     int32(pbpipeline.ExecutionStatus_STATUS_STARTED),
 		"start_time": now.AsTime(),
 	}
 
@@ -112,10 +113,10 @@ func LogChildExecutionStart(ctx context.Context, db Database, service string, pi
 
 	now := timestamppb.Now()
 
-	record := &pb.ExecutionRecord{
+	record := &pbpipeline.ExecutionRecord{
 		ExecutionId:         execID,
 		Service:             service,
-		Status:              pb.ExecutionStatus_STATUS_STARTED,
+		Status:              pbpipeline.ExecutionStatus_STATUS_STARTED,
 		Timestamp:           now,
 		StartTime:           now,
 		UserId:              stringPtr(opts.UserID),
@@ -145,7 +146,7 @@ func LogSuccess(ctx context.Context, db Database, userId string, execID string, 
 
 	// Update using snake_case keys manually as we use map[string]interface{}
 	updates := map[string]interface{}{
-		"status":    int32(pb.ExecutionStatus_STATUS_SUCCESS),
+		"status":    int32(pbpipeline.ExecutionStatus_STATUS_SUCCESS),
 		"timestamp": now.AsTime(),
 		"end_time":  now.AsTime(),
 	}
@@ -170,7 +171,7 @@ func LogFailure(ctx context.Context, db Database, userId string, execID string, 
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{
-		"status":        int32(pb.ExecutionStatus_STATUS_FAILED),
+		"status":        int32(pbpipeline.ExecutionStatus_STATUS_FAILED),
 		"timestamp":     now.AsTime(),
 		"end_time":      now.AsTime(),
 		"error_message": err.Error(),
@@ -192,7 +193,7 @@ func LogFailure(ctx context.Context, db Database, userId string, execID string, 
 }
 
 // LogExecutionStatus updates an execution record with a custom status
-func LogExecutionStatus(ctx context.Context, db Database, userId string, execID string, status pb.ExecutionStatus, outputs interface{}) error {
+func LogExecutionStatus(ctx context.Context, db Database, userId string, execID string, status pbpipeline.ExecutionStatus, outputs interface{}) error {
 	now := timestamppb.Now()
 
 	updates := map[string]interface{}{

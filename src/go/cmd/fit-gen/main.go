@@ -9,7 +9,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/fitglue/server/src/go/pkg/domain/file_generators"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 )
 
 func main() {
@@ -29,7 +29,7 @@ func main() {
 	}
 
 	// 2. Unmarshal to Proto
-	var activity pb.StandardizedActivity
+	var activity pbactivity.StandardizedActivity
 	unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
 	if err := unmarshalOpts.Unmarshal(data, &activity); err != nil {
 		log.Fatalf("Failed to parse JSON: %v", err)

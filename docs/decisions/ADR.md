@@ -299,3 +299,34 @@ Integrated into CI/CD as `make lint-codebase`.
 ### Consequences
 -   **Pros**: Catches consistency issues before deployment. Enforces architectural boundaries automatically.
 -   **Cons**: Additional CI step (~10s). False positives require explicit ignores.
+
+## 015 - Go Architecture Migration Complete (2026-02)
+
+### Context
+ADR 014 and prior decisions were made in the context of a hybrid TypeScript/Go Cloud Functions architecture (48 individually deployed functions). The `architecture-overhaul-proposal.md` document (now at `decisions/history/go-migration-proposal.md`) proposed a complete migration to 10 domain-owning Go Cloud Run services.
+
+### Decision
+The migration was approved and fully implemented. The FitGlue server backend now consists exclusively of Go services:
+
+| # | Service | Type |
+|---|---|---|
+| 1 | `service.api.client` | Authenticated user HTTP gateway |
+| 2 | `service.api.admin` | Admin HTTP gateway |
+| 3 | `service.api.public` | Unauthenticated HTTP gateway |
+| 4 | `service.api.webhook` | Inbound webhook processor |
+| 5 | `service.user` | User profiles, integrations, OAuth tokens |
+| 6 | `service.billing` | Subscriptions, Stripe, tier enforcement |
+| 7 | `service.pipeline` | Pipeline CRUD, enrichment, routing |
+| 8 | `service.activity` | Activities, showcases, exports |
+| 9 | `service.registry` | Plugin manifests, categories, icons |
+| 10 | `service.destination` | All destination uploaders |
+
+All TypeScript server code (`src/typescript/`) has been removed. Inter-service communication uses gRPC with protobuf-defined contracts. The API layer is a thin HTTP marshalling layer; domain services own their Firestore collections.
+
+### Consequences
+-   **Pros**: Single language (Go), 79% reduction in deployable units, ~93% faster cold starts, compile-time type checking across service boundaries, single `go.mod`.
+-   **Cons**: Loss of TypeScript test suites (replaced by Go table-driven tests), Go expertise requirement for all server contributions.
+
+### Reference
+Full proposal and rationale: [decisions/history/go-migration-proposal.md](history/go-migration-proposal.md)
+

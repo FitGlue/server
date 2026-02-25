@@ -5,13 +5,11 @@ import (
 	"regexp"
 	"strconv"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 )
 
 // ValidateConfigAgainstSchema validates config against a schema
-
-// ValidateConfigAgainstSchema validates config against a schema
-func ValidateConfigAgainstSchema(config map[string]string, schema []*pb.ConfigFieldSchema) error {
+func ValidateConfigAgainstSchema(config map[string]string, schema []*pbplugin.ConfigFieldSchema) error {
 	for _, field := range schema {
 		value, exists := config[field.Key]
 
@@ -26,7 +24,7 @@ func ValidateConfigAgainstSchema(config map[string]string, schema []*pb.ConfigFi
 
 		// Validate based on field type
 		switch field.FieldType {
-		case pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER:
+		case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER:
 			num, err := strconv.ParseFloat(value, 64)
 			if err != nil {
 				return fmt.Errorf("field %q must be a number", field.Key)
@@ -41,12 +39,12 @@ func ValidateConfigAgainstSchema(config map[string]string, schema []*pb.ConfigFi
 				}
 			}
 
-		case pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN:
+		case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN:
 			if value != "true" && value != "false" {
 				return fmt.Errorf("field %q must be 'true' or 'false'", field.Key)
 			}
 
-		case pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT:
+		case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT:
 			valid := false
 			for _, opt := range field.Options {
 				if opt.Value == value {
@@ -58,7 +56,7 @@ func ValidateConfigAgainstSchema(config map[string]string, schema []*pb.ConfigFi
 				return fmt.Errorf("field %q has invalid value %q", field.Key, value)
 			}
 
-		case pb.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT:
+		case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT:
 			// Multi-select values are comma-separated
 			if value != "" {
 				values := splitMultiSelect(value)
@@ -76,7 +74,7 @@ func ValidateConfigAgainstSchema(config map[string]string, schema []*pb.ConfigFi
 				}
 			}
 
-		case pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING:
+		case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING:
 			if field.Validation != nil {
 				if field.Validation.MinLength != nil && len(value) < int(*field.Validation.MinLength) {
 					return fmt.Errorf("field %q must be at least %d characters", field.Key, *field.Validation.MinLength)

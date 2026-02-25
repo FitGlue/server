@@ -1,0 +1,175 @@
+syntax = "proto3";
+
+package fitglue.services.activity;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+import "models/activity/standardized.proto";
+import "models/activity/uploaded.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/services/activity";
+
+service ActivityService {
+  rpc GetActivity(GetActivityRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/activities/{activity_id}"
+    };
+  }
+  rpc ListActivities(ListActivitiesRequest) returns (ListActivitiesResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/activities"
+    };
+  }
+  rpc DeleteActivity(DeleteActivityRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/users/{user_id}/activities/{activity_id}"
+    };
+  }
+  
+  rpc GetShowcase(GetShowcaseRequest) returns (fitglue.models.activity.ShowcasedActivity) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/showcases/{showcase_id}"
+    };
+  }
+  rpc ListShowcases(ListShowcasesRequest) returns (ListShowcasesResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/showcases"
+    };
+  }
+  rpc CreateShowcase(CreateShowcaseRequest) returns (fitglue.models.activity.ShowcasedActivity) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/showcases"
+      body: "showcase"
+    };
+  }
+  rpc UpdateShowcase(UpdateShowcaseRequest) returns (fitglue.models.activity.ShowcasedActivity) {
+    option (google.api.http) = {
+      patch: "/v2/users/{user_id}/showcases/{showcase_id}"
+      body: "showcase"
+    };
+  }
+  rpc DeleteShowcase(DeleteShowcaseRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/users/{user_id}/showcases/{showcase_id}"
+    };
+  }
+  
+  rpc ExportData(ExportDataRequest) returns (ExportDataResponse) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/export-data"
+      body: "*"
+    };
+  }
+  rpc ParseFitFile(ParseFitFileRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/parse-fit"
+      body: "*"
+    };
+  }
+  rpc GetShowcasePreferences(GetShowcasePreferencesRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/showcase-management/preferences"
+    };
+  }
+  rpc UpdateShowcasePreferences(UpdateShowcasePreferencesRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      put: "/v2/users/{user_id}/showcase-management/preferences"
+      body: "preferences"
+    };
+  }
+  rpc GenerateShowcaseImages(GenerateShowcaseImagesRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/showcases/{showcase_id}/generate"
+      body: "*"
+    };
+  }
+  rpc GetPublicShowcase(GetPublicShowcaseRequest) returns (fitglue.models.activity.ShowcasedActivity) {
+    option (google.api.http) = {
+      get: "/v2/public/showcases/{showcase_id}"
+    };
+  }
+}
+
+message GetActivityRequest {
+  string user_id = 1;
+  string activity_id = 2;
+}
+
+message ListActivitiesRequest {
+  string user_id = 1;
+  int32 limit = 2;
+  string page_token = 3;
+}
+
+message ListActivitiesResponse {
+  repeated fitglue.models.activity.StandardizedActivity activities = 1;
+  string next_page_token = 2;
+}
+
+message DeleteActivityRequest {
+  string user_id = 1;
+  string activity_id = 2;
+}
+
+message GetShowcaseRequest {
+  string user_id = 1;
+  string showcase_id = 2;
+}
+
+message ListShowcasesRequest {
+  string user_id = 1;
+}
+
+message ListShowcasesResponse {
+  repeated fitglue.models.activity.ShowcaseProfileEntry showcases = 1;
+}
+
+message CreateShowcaseRequest {
+  string user_id = 1;
+  fitglue.models.activity.ShowcasedActivity showcase = 2;
+}
+
+message UpdateShowcaseRequest {
+  string user_id = 1;
+  string showcase_id = 2;
+  fitglue.models.activity.ShowcasedActivity showcase = 3;
+}
+
+message DeleteShowcaseRequest {
+  string user_id = 1;
+  string showcase_id = 2;
+}
+
+message ExportDataRequest {
+  string user_id = 1;
+}
+
+message ExportDataResponse {
+  string download_url = 1;
+}
+
+message ParseFitFileRequest {
+  string user_id = 1;
+  bytes fit_file_content = 2;
+  string title = 3;
+  string description = 4;
+  string pipeline_id = 5;
+}
+
+message GetShowcasePreferencesRequest {
+  string user_id = 1;
+}
+
+message UpdateShowcasePreferencesRequest {
+  string user_id = 1;
+  fitglue.models.activity.ShowcaseProfile preferences = 2;
+}
+
+message GenerateShowcaseImagesRequest {
+  string user_id = 1;
+  string showcase_id = 2;
+}
+
+message GetPublicShowcaseRequest {
+  string showcase_id = 1;
+}

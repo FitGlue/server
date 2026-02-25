@@ -1,6 +1,9 @@
 # Enricher Testing Guide
 
-This guide provides comprehensive testing procedures for all enricher providers in the FitGlue pipeline.
+This guide provides testing procedures for enricher providers in the FitGlue pipeline.
+
+> [!NOTE]
+> The `./fitglue-admin` CLI referenced in the setup steps below no longer exists — it was a TypeScript tool that has been retired. User and pipeline setup is now done via `service.api.admin` endpoints. The test scenarios and validation steps themselves remain accurate; only the setup commands need translating to API calls.
 
 ## Overview
 
@@ -420,25 +423,25 @@ Workout Summary:
 
 ### Unit Tests
 ```bash
-# Go provider tests
+# Go enricher provider tests
 cd src/go
-go test ./pkg/enricher_providers/... -v
+go test -v ./internal/pipeline/...
 
-# TypeScript shared library tests
-cd src/typescript/shared
-npm test
+# With coverage
+go test -coverprofile=coverage.out ./internal/pipeline/...
+go tool cover -html=coverage.out
 ```
 
 ### Integration Tests
 ```bash
-# Local environment
-npm run test:local
+# Against local stack
+make test-e2e
 
-# Deployed environment
-npm run test:dev
+# Against dev environment
+make test-integration
 ```
 
-See [Testing Guide](../development/testing.md) for detailed integration testing procedures.
+- [Testing Guide](../development/testing.md) - Full test strategy and patterns
 
 ---
 

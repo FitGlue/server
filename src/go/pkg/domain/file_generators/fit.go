@@ -11,12 +11,12 @@ import (
 	"github.com/muktihari/fit/profile/typedef"
 	"github.com/muktihari/fit/proto"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 )
 
 // GenerateFitFile creates a FIT file from StandardizedActivity
 // Supports multiple sport types and rich record data
-func GenerateFitFile(activity *pb.StandardizedActivity) ([]byte, error) {
+func GenerateFitFile(activity *pbactivity.StandardizedActivity) ([]byte, error) {
 	if activity == nil {
 		return nil, fmt.Errorf("activity cannot be nil")
 	}
@@ -57,7 +57,7 @@ func GenerateFitFile(activity *pb.StandardizedActivity) ([]byte, error) {
 		SetNumSessions(1)
 
 	// 3a. DeviceInfo: Source App (e.g. Hevy)
-	manuf, product := mapSourceToDevice(activity.Source)
+	manuf, product := mapSourceToDevice(activity.Source.String())
 	sourceDeviceMsg := mesgdef.NewDeviceInfo(nil).
 		SetTimestamp(startTime).
 		SetManufacturer(manuf).
@@ -228,65 +228,65 @@ func GenerateFitFile(activity *pb.StandardizedActivity) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func mapSport(activityType pb.ActivityType) (typedef.Sport, typedef.SubSport) {
+func mapSport(activityType pbactivity.ActivityType) (typedef.Sport, typedef.SubSport) {
 	switch activityType {
 	// Running
-	case pb.ActivityType_ACTIVITY_TYPE_RUN, pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN, pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RUN, pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN, pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:
 		return typedef.SportRunning, typedef.SubSportGeneric
 
 	// Cycling
-	case pb.ActivityType_ACTIVITY_TYPE_RIDE, pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
-		pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE, pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
-		pb.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE, pb.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
-		pb.ActivityType_ACTIVITY_TYPE_VELOMOBILE, pb.ActivityType_ACTIVITY_TYPE_HANDCYCLE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RIDE, pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE, pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE, pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
+		pbactivity.ActivityType_ACTIVITY_TYPE_VELOMOBILE, pbactivity.ActivityType_ACTIVITY_TYPE_HANDCYCLE:
 		return typedef.SportCycling, typedef.SubSportGeneric
 
 	// Swimming
-	case pb.ActivityType_ACTIVITY_TYPE_SWIM:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SWIM:
 		return typedef.SportSwimming, typedef.SubSportLapSwimming
 
 	// Walking/Hiking
-	case pb.ActivityType_ACTIVITY_TYPE_WALK:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WALK:
 		return typedef.SportWalking, typedef.SubSportGeneric
-	case pb.ActivityType_ACTIVITY_TYPE_HIKE, pb.ActivityType_ACTIVITY_TYPE_SNOWSHOE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HIKE, pbactivity.ActivityType_ACTIVITY_TYPE_SNOWSHOE:
 		return typedef.SportHiking, typedef.SubSportGeneric
 
 	// Training / Gym
-	case pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
 		return typedef.SportTraining, typedef.SubSportStrengthTraining
-	case pb.ActivityType_ACTIVITY_TYPE_WORKOUT, pb.ActivityType_ACTIVITY_TYPE_CROSSFIT,
-		pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL, pb.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
-		pb.ActivityType_ACTIVITY_TYPE_PILATES:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT, pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT,
+		pbactivity.ActivityType_ACTIVITY_TYPE_ELLIPTICAL, pbactivity.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
+		pbactivity.ActivityType_ACTIVITY_TYPE_PILATES:
 		return typedef.SportTraining, typedef.SubSportGeneric
-	case pb.ActivityType_ACTIVITY_TYPE_YOGA:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_YOGA:
 		return typedef.SportTraining, typedef.SubSportYoga
-	case pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING:
 		return typedef.SportTraining, typedef.SubSportHiit
 
 	// Water Sports
-	case pb.ActivityType_ACTIVITY_TYPE_ROWING, pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
-		pb.ActivityType_ACTIVITY_TYPE_CANOEING, pb.ActivityType_ACTIVITY_TYPE_KAYAKING,
-		pb.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING, pb.ActivityType_ACTIVITY_TYPE_SURFING,
-		pb.ActivityType_ACTIVITY_TYPE_WINDSURF, pb.ActivityType_ACTIVITY_TYPE_KITESURF,
-		pb.ActivityType_ACTIVITY_TYPE_SAIL:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROWING, pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
+		pbactivity.ActivityType_ACTIVITY_TYPE_CANOEING, pbactivity.ActivityType_ACTIVITY_TYPE_KAYAKING,
+		pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING, pbactivity.ActivityType_ACTIVITY_TYPE_SURFING,
+		pbactivity.ActivityType_ACTIVITY_TYPE_WINDSURF, pbactivity.ActivityType_ACTIVITY_TYPE_KITESURF,
+		pbactivity.ActivityType_ACTIVITY_TYPE_SAIL:
 		return typedef.SportRowing, typedef.SubSportGeneric
 
 	// Winter Sports
-	case pb.ActivityType_ACTIVITY_TYPE_ALPINE_SKI, pb.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
-		pb.ActivityType_ACTIVITY_TYPE_NORDIC_SKI, pb.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
-		pb.ActivityType_ACTIVITY_TYPE_SNOWBOARD, pb.ActivityType_ACTIVITY_TYPE_ICE_SKATE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI, pbactivity.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+		pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI, pbactivity.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
+		pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD, pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE:
 		return typedef.SportGeneric, typedef.SubSportGeneric
 
 	// Team / Racket Sports
-	case pb.ActivityType_ACTIVITY_TYPE_SOCCER, pb.ActivityType_ACTIVITY_TYPE_GOLF,
-		pb.ActivityType_ACTIVITY_TYPE_TENNIS, pb.ActivityType_ACTIVITY_TYPE_SQUASH,
-		pb.ActivityType_ACTIVITY_TYPE_RACQUETBALL, pb.ActivityType_ACTIVITY_TYPE_BADMINTON,
-		pb.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS, pb.ActivityType_ACTIVITY_TYPE_PICKLEBALL:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER, pbactivity.ActivityType_ACTIVITY_TYPE_GOLF,
+		pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS, pbactivity.ActivityType_ACTIVITY_TYPE_SQUASH,
+		pbactivity.ActivityType_ACTIVITY_TYPE_RACQUETBALL, pbactivity.ActivityType_ACTIVITY_TYPE_BADMINTON,
+		pbactivity.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS, pbactivity.ActivityType_ACTIVITY_TYPE_PICKLEBALL:
 		return typedef.SportGeneric, typedef.SubSportGeneric
 
 	// Other
-	case pb.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING, pb.ActivityType_ACTIVITY_TYPE_SKATEBOARD,
-		pb.ActivityType_ACTIVITY_TYPE_WHEELCHAIR, pb.ActivityType_ACTIVITY_TYPE_INLINE_SKATE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING, pbactivity.ActivityType_ACTIVITY_TYPE_SKATEBOARD,
+		pbactivity.ActivityType_ACTIVITY_TYPE_WHEELCHAIR, pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE:
 		return typedef.SportGeneric, typedef.SubSportGeneric
 
 	default:

@@ -1,0 +1,142 @@
+syntax = "proto3";
+
+package fitglue.models.plugin;
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin";
+
+enum PluginType {
+  PLUGIN_TYPE_UNSPECIFIED = 0;
+  PLUGIN_TYPE_SOURCE = 1;
+  PLUGIN_TYPE_ENRICHER = 2;
+  PLUGIN_TYPE_DESTINATION = 3;
+}
+
+message PluginManifest {
+  string id = 1;                              
+  PluginType type = 2;                        
+  string name = 3;                            
+  string description = 4;                     
+  string icon = 5;                            
+  repeated ConfigFieldSchema config_schema = 6;  
+  repeated string required_integrations = 7;   
+  bool enabled = 8;                           
+
+  optional int32 enricher_provider_type = 9;
+  optional int32 destination_type = 10;
+
+  string marketing_description = 11;          
+  repeated string features = 12;              
+  repeated Transformation transformations = 13; 
+  repeated string use_cases = 14;             
+
+  optional string external_url_template = 15;
+  optional string required_tier = 16;
+
+  optional string category = 17;              
+  optional int32 sort_order = 18;             
+  optional bool is_premium = 19;              
+  optional int32 popularity_score = 20;       
+
+  optional string icon_type = 21;             
+  optional string icon_path = 22;             
+  optional bool is_temporarily_unavailable = 23;
+  optional bool allow_multiple_instances = 24;
+}
+
+message Transformation {
+  string field = 1;                           
+  string label = 2;                           
+  string before = 3;                          
+  string after = 4;                           
+  string visual_type = 5;                     
+  string after_html = 6;                      
+}
+
+message ConfigFieldSchema {
+  string key = 1;                             
+  string label = 2;                           
+  string description = 3;                     
+  ConfigFieldType field_type = 4;             
+  bool required = 5;                          
+  string default_value = 6;                   
+  repeated ConfigFieldOption options = 7;     
+  ConfigFieldValidation validation = 8;       
+  optional ConfigFieldDependency depends_on = 9;  
+  repeated ConfigFieldOption key_options = 10;    
+  repeated ConfigFieldOption value_options = 11;  
+  optional string dynamic_source = 12;            
+  optional string value_dynamic_source = 13;      
+}
+
+message ConfigFieldDependency {
+  string field_key = 1;        
+  repeated string values = 2;  
+}
+
+enum ConfigFieldType {
+  CONFIG_FIELD_TYPE_UNSPECIFIED = 0;
+  CONFIG_FIELD_TYPE_STRING = 1;
+  CONFIG_FIELD_TYPE_NUMBER = 2;
+  CONFIG_FIELD_TYPE_BOOLEAN = 3;
+  CONFIG_FIELD_TYPE_SELECT = 4;               
+  CONFIG_FIELD_TYPE_MULTI_SELECT = 5;         
+  CONFIG_FIELD_TYPE_KEY_VALUE_MAP = 6;        
+  CONFIG_FIELD_TYPE_DYNAMIC_SELECT = 7;       
+}
+
+message ConfigFieldOption {
+  string value = 1;                           
+  string label = 2;                           
+}
+
+message ConfigFieldValidation {
+  optional int32 min_length = 1;
+  optional int32 max_length = 2;
+  optional string pattern = 3;                
+  optional double min_value = 4;
+  optional double max_value = 5;
+}
+
+enum IntegrationAuthType {
+  INTEGRATION_AUTH_TYPE_UNSPECIFIED = 0;
+  INTEGRATION_AUTH_TYPE_OAUTH = 1;
+  INTEGRATION_AUTH_TYPE_API_KEY = 2;
+  INTEGRATION_AUTH_TYPE_APP_SYNC = 3;  
+  INTEGRATION_AUTH_TYPE_PUBLIC_ID = 4; 
+}
+
+message IntegrationAction {
+  string id = 1;                              
+  string label = 2;                           
+  string description = 3;                     
+  string icon = 4;                            
+}
+
+message IntegrationManifest {
+  string id = 1;                              
+  string name = 2;                            
+  string description = 3;                     
+  string icon = 4;                            
+  IntegrationAuthType auth_type = 5;          
+  bool enabled = 6;                           
+  string docs_url = 7;                        
+  string setup_title = 8;                     
+  string setup_instructions = 9;              
+  string api_key_label = 10;                  
+  string api_key_help_url = 11;               
+  string marketing_description = 12;          
+  repeated string features = 13;              
+
+  optional string icon_type = 15;             
+  optional string icon_path = 16;             
+  optional bool is_temporarily_unavailable = 14;
+
+  repeated IntegrationAction actions = 17;
+}
+
+message PluginRegistryResponse {
+  repeated PluginManifest sources = 1;
+  repeated PluginManifest enrichers = 2;
+  repeated PluginManifest destinations = 3;
+  repeated IntegrationManifest integrations = 4;
+}

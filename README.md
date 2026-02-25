@@ -1,169 +1,135 @@
-# FitGlue
+# FitGlue Server
 
-**FitGlue** is a serverless fitness data aggregation and routing platform built on Google Cloud Platform. It ingests workout data from multiple sources (Hevy, Fitbit), enriches it with standardized formats (FIT files), and routes it to connected services like Strava.
+**FitGlue** is a fitness data aggregation and routing platform built on Google Cloud Platform. It ingests workout data from multiple sources (Hevy, Fitbit, Strava, Polar, Oura, Wahoo, Apple Health, Health Connect), enriches it through configurable pipelines, and routes it to connected services.
 
 ## Architecture
 
-FitGlue uses an event-driven, microservices architecture deployed as Google Cloud Functions (Gen 2):
+FitGlue uses a domain-service architecture: 10 Go Cloud Run services communicating via gRPC, with a thin API gateway layer for HTTP clients.
 
-```
-┌─────────────────┐
-│  Data Sources   │
-│     (Hevy)      │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐      ┌──────────────┐
-│ Ingestion Layer │─────▶│  Pub/Sub     │
-│ (Webhooks/Poll) │      │ (Raw Events) │
-└─────────────────┘      └──────┬───────┘
-                                │
-                                ▼
-                         ┌──────────────┐      ┌─────────────────┐
-                         │  Enricher    │◀────▶│ External Data   │
-                         │ (FIT Gen)    │      │ (e.g. FitBit)   │
-                         └──────┬───────┘      └─────────────────┘
-                                │
-                                ▼
-                         ┌──────────────┐
-                         │    Router    │
-                         └──────┬───────┘
-                                │
-                                ▼
-                         ┌──────────────┐
-                         │    Egress    │
-                         │ Destinations │
-                         │ (e.g. Strava)│
-                         └──────────────┘
+```text
+┌─────────────────┐      ┌──────────────────────┐
+│  Data Sources   │─────▶│  service.api.webhook  │
+│ (Hevy/Strava/   │      │  (HMAC / OAuth auth)  │
+│  Fitbit / etc.) │      └──────────┬────────────┘
+└─────────────────┘                 │ Pub/Sub
+                                    ▼
+                          ┌──────────────────────┐
+                          │   service.pipeline    │
+                          │   (enrich, split,     │
+                          │    route)             │
+                          └──────────┬────────────┘
+                                     │ Pub/Sub
+                                     ▼
+                          ┌──────────────────────┐
+                          │  service.destination  │
+                          │  (upload to Strava,   │
+                          │   TrainingPeaks, etc.)│
+                          └──────────────────────┘
 ```
 
-### Components
+**API gateways** sit in front for HTTP clients:
+- `service.api.client` — Web app / mobile (Firebase JWT)
+- `service.api.admin` — Admin tooling
+- `service.api.public` — Unauthenticated (registry, showcase)
 
-- **Hevy Handler** (TypeScript): Webhook receiver for Hevy workout data
-- **Enricher** (Go): Converts raw activity data to FIT files and stores in GCS
-- **Router** (Go): Routes enriched activities to configured destinations
-- **Strava Uploader** (Go): Uploads FIT files to Strava via OAuth
+**Domain services** own their Firestore data and expose gRPC interfaces:
+- `service.user`, `service.billing`, `service.pipeline`, `service.activity`, `service.registry`
 
-### Enrichment Pipeline
+See [Architecture Overview](docs/architecture/overview.md) for the full system diagram.
 
-The Enricher supports a flexible, configurable pipeline of providers that transform and enhance activities:
-
-| Provider | Purpose | Output |
-|----------|---------|--------|
-| **Workout Summary** | Exercise breakdown with sets/reps/weight | Description text |
-| **Muscle Heatmap** | Visual muscle activation chart | Description (emoji bars) |
-| **Fitbit Heart Rate** | Fetches HR data from Fitbit API | Heart rate stream |
-| **Virtual GPS** | Synthetic GPS routes for indoor activities | Lat/Long streams |
-| **Source Link** | Links back to original workout | Description (URL) |
-| **Metadata Passthrough** | Preserves source metadata | Name, Description |
-| **Type Mapper** | Maps activity types (e.g., Ride → VirtualRide) | Activity type |
-| **Parkrun** | Detects Parkrun events by location/time | Title, tags |
-| **Condition Matcher** | Rule-based title/description templates | Title, Description |
-| **Auto Increment** | Appends incrementing counter to titles | Title |
-| **User Input** | Pauses for user input (title, description) | User-supplied values |
-| **Activity Filter** | Skips activities matching patterns | Pipeline halt |
-| **Branding** | Adds footer branding | Description |
-
-See [Plugin System Architecture](docs/architecture/plugin-system.md) for details.
-
-## Features
-
-- 🔄 **Multi-source ingestion**: Hevy webhooks, extensible for Fitbit/Garmin/other sources
-- 📦 **Standardized output**: Generates industry-standard FIT files
-- 🚀 **Serverless**: Auto-scaling Cloud Functions with Pub/Sub event routing
-- 🔐 **Secure**: Secret Manager integration, HMAC signature verification
-- 🧪 **Testable**: Comprehensive unit tests, integration tests with test run ID tracking
-- 📊 **Observable**: Structured logging, automatic execution tracking, Firestore audit logs
-
-- 🎯 **Framework-driven**: Consistent execution logging across all functions (Go & TypeScript)
 ## Tech Stack
 
-- **Languages**: Go 1.25, TypeScript 5.x
-- **Infrastructure**: Terraform, Google Cloud Functions v2
-- **Storage**: Cloud Storage (FIT files), Firestore (metadata)
-- **Messaging**: Cloud Pub/Sub
-- **CI/CD**: CircleCI with OIDC authentication
-
-## Documentation
-
-### Getting Started
-- **[Architecture Overview](docs/architecture/overview.md)** - System components and data flow
-- **[Local Development](docs/development/local-development.md)** - Running the stack locally
-- **[Admin CLI](docs/reference/admin-cli.md)** - User management and pipeline configuration
-
-### Plugin Development
-- **[Plugin System](docs/architecture/plugin-system.md)** - Architecture and scaffolding
-- **[Plugin Registry](docs/reference/registry.md)** - Self-describing plugin API
-
-### Testing
-- **[Testing Guide](docs/development/testing.md)** - Unit, integration, and manual QA
-- **[Enricher Testing](docs/guides/enricher-testing.md)** - Testing enrichment providers
-- **[Debugging](docs/development/debugging.md)** - Troubleshooting guide
-
-### Architecture
-- **[Services & Stores](docs/architecture/services-and-stores.md)** - Business logic vs data access
-- **[Security](docs/architecture/security.md)** - Authorization and access control
-- **[Connectors](docs/architecture/connectors.md)** - Data source integrations
-- **[Execution Logging](docs/architecture/execution-logging.md)** - Observability framework
-- **[Architecture Decisions](docs/decisions/ADR.md)** - Key design choices
-
-### Infrastructure
-- **[CI/CD Guide](docs/infrastructure/cicd.md)** - Deployment pipeline
-- **[Terraform](docs/infrastructure/terraform.md)** - Infrastructure as code
-
-### Reference
-- **[Error Codes](docs/reference/errors.md)** - Structured error types
-
-### Guides
-- **[OAuth Integration](docs/guides/oauth-integration.md)** - Strava and Fitbit OAuth
-- **[Fitbit Setup](docs/guides/fitbit-setup.md)** - Step-by-step configuration
-- **[FIT Generation](docs/guides/fit-generation.md)** - Generating FIT files
-- **[OpenAPI Clients](docs/guides/openapi-clients.md)** - API client generation
+| Component | Technology |
+|-----------|------------|
+| Language | Go 1.22+ |
+| Compute | Cloud Run (Docker containers) |
+| Messaging | Cloud Pub/Sub |
+| Database | Cloud Firestore |
+| Storage | Cloud Storage (FIT files, GCS payloads) |
+| Inter-service | gRPC (protobuf) |
+| CI/CD | CircleCI + OIDC |
+| Infrastructure | Terraform |
+| Observability | Sentry, structured `slog` |
 
 ## Quick Start
 
 ### Prerequisites
 
-- Go 1.25+
-- Node.js 20+
+- Go 1.22+
+- Docker + Docker Compose
 - `protoc` (Protocol Buffers compiler)
-- Google Cloud SDK (for deployment)
+- Google Cloud SDK
 
 ### Setup
 
 ```bash
-# Install dependencies and generate code
+# Install Go dependencies and generate proto stubs
 make setup
+make generate
 
 # Build all services
 make build
 
-# Run tests
+# Run unit tests
 make test
 
-# Start local development environment
+# Start local development stack (all 10 services)
 make local
 ```
 
-See [Local Development](docs/LOCAL_DEVELOPMENT.md) for detailed instructions.
+See [Local Development](docs/development/local-development.md) for detailed instructions.
 
 ## Project Structure
 
-```
+```text
 fitglue-server/
 ├── src/
-│   ├── go/                 # Go monorepo
-│   │   ├── functions/      # Cloud Functions
-│   │   └── pkg/            # Shared libraries
-│   ├── typescript/         # TypeScript workspace
-│   │   ├── hevy-handler/
-│   │   └── shared/         # @fitglue/shared
-│   └── proto/              # Protocol Buffer definitions
-├── terraform/              # Infrastructure as Code
-├── scripts/                # Local development scripts
-├── integration-tests/      # E2E tests
-└── docs/                   # Documentation
+│   ├── go/                    # Go monorepo
+│   │   ├── services/          # 10 Cloud Run services (main.go per service)
+│   │   ├── internal/          # Domain logic (owned by services)
+│   │   ├── pkg/               # Shared packages (proto stubs, integrations)
+│   │   ├── cmd/               # CLI tools (fit-gen, fit-inspect)
+│   │   └── tests/e2e/         # Cucumber/godog E2E tests
+│   └── proto/                 # Protocol Buffer definitions
+├── terraform/                 # Infrastructure as Code
+├── docs/                      # Documentation
+│   ├── api/                   # OpenAPI spec (auto-generated)
+│   ├── architecture/          # Architecture guides
+│   ├── decisions/             # ADRs + history
+│   ├── development/           # Dev guides
+│   ├── guides/                # How-to guides
+│   ├── infrastructure/        # CI/CD, Terraform
+│   └── reference/             # Admin CLI, errors, registry
+├── scripts/                   # Dev and CI scripts
+└── Makefile                   # Build, test, generate, deploy commands
 ```
+
+## Documentation
+
+### Getting Started
+- [Architecture Overview](docs/architecture/overview.md) — System topology and data flow
+- [Go Services](docs/architecture/go-services.md) — Service structure, IoC pattern, directory map
+- [Local Development](docs/development/local-development.md) — Running the stack locally
+- [API Layers](docs/architecture/api-layers.md) — Admin API via `service.api.admin`
+
+### Architecture
+- [API Layers](docs/architecture/api-layers.md) — The four HTTP gateways
+- [Service Communication](docs/architecture/service-communication.md) — gRPC inter-service RPC
+- [Services & Stores](docs/architecture/services-and-stores.md) — Domain service patterns
+- [Plugin System](docs/architecture/plugin-system.md) — Sources, enrichers, destinations
+- [Security](docs/architecture/security.md) — Auth and access control
+
+### Development
+- [Testing Guide](docs/development/testing.md) — Unit, E2E, and integration tests
+- [Enricher Testing](docs/guides/enricher-testing.md) — Testing enrichment providers
+- [OAuth Integration](docs/guides/oauth-integration.md) — Strava and Fitbit OAuth setup
+
+### Infrastructure
+- [CI/CD Guide](docs/infrastructure/cicd.md) — Pipeline and Cloud Run deployments
+
+### Decisions
+- [Architecture Decisions (ADR)](docs/decisions/ADR.md) — Key design choices
+- [Go Migration Proposal](docs/decisions/history/go-migration-proposal.md) — Historical migration rationale
 
 ## Contributing
 

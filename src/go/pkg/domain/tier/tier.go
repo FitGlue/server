@@ -1,9 +1,10 @@
 package tier
 
 import (
+	"github.com/fitglue/server/src/go/pkg/domain/user"
 	"time"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 
 // GetEffectiveTier determines the user's effective tier based on admin status,
 // trial period, and stored tier.
-func GetEffectiveTier(user *pb.UserRecord) EffectiveTier {
+func GetEffectiveTier(user *user.Record) EffectiveTier {
 	// Admin override always grants Athlete
 	if user.IsAdmin {
 		return TierAthlete
@@ -33,7 +34,7 @@ func GetEffectiveTier(user *pb.UserRecord) EffectiveTier {
 	}
 
 	// Fall back to stored tier (default: hobbyist)
-	if user.Tier == pb.UserTier_USER_TIER_ATHLETE {
+	if user.Tier == pbuser.UserTier_USER_TIER_ATHLETE {
 		return TierAthlete
 	}
 
@@ -41,7 +42,7 @@ func GetEffectiveTier(user *pb.UserRecord) EffectiveTier {
 }
 
 // CanSync checks if user can perform a sync within their tier limits.
-func CanSync(user *pb.UserRecord) (allowed bool, reason string) {
+func CanSync(user *user.Record) (allowed bool, reason string) {
 	tier := GetEffectiveTier(user)
 
 	if tier == TierAthlete {
@@ -57,7 +58,7 @@ func CanSync(user *pb.UserRecord) (allowed bool, reason string) {
 }
 
 // CanAddConnection checks if user can add a new connection within their tier limits.
-func CanAddConnection(user *pb.UserRecord, currentCount int) (allowed bool, reason string) {
+func CanAddConnection(user *user.Record, currentCount int) (allowed bool, reason string) {
 	tier := GetEffectiveTier(user)
 
 	if tier == TierAthlete {
@@ -72,7 +73,7 @@ func CanAddConnection(user *pb.UserRecord, currentCount int) (allowed bool, reas
 }
 
 // ShouldResetSyncCount checks if the sync counter should be reset (monthly)
-func ShouldResetSyncCount(user *pb.UserRecord) bool {
+func ShouldResetSyncCount(user *user.Record) bool {
 	if user.SyncCountResetAt == nil {
 		return true
 	}
@@ -85,7 +86,7 @@ func ShouldResetSyncCount(user *pb.UserRecord) bool {
 }
 
 // GetTrialDaysRemaining returns the number of days left in trial, or -1 if not on trial
-func GetTrialDaysRemaining(user *pb.UserRecord) int {
+func GetTrialDaysRemaining(user *user.Record) int {
 	if user.TrialEndsAt == nil {
 		return -1
 	}
@@ -106,9 +107,9 @@ func GetTrialDaysRemaining(user *pb.UserRecord) int {
 //   - Athlete trial: show branding (not paying yet)
 //   - Admin-only athlete: show branding (admin access, not paying)
 //   - Paid athlete: hide branding (actually paying)
-func ShouldShowBranding(user *pb.UserRecord) bool {
+func ShouldShowBranding(user *user.Record) bool {
 	// Hobbyist tier: show branding
-	if user.Tier != pb.UserTier_USER_TIER_ATHLETE {
+	if user.Tier != pbuser.UserTier_USER_TIER_ATHLETE {
 		return true
 	}
 

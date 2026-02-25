@@ -4,32 +4,39 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fitglue/server/src/go/pkg/domain/user"
+
 	"github.com/cloudevents/sdk-go/v2/event"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 )
 
 // --- Mock Database ---
 type MockDatabase struct {
-	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
+	SetExecutionFunc    func(ctx context.Context, record *pbpipeline.ExecutionRecord) error
 	UpdateExecutionFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	GetUserFunc         func(ctx context.Context, id string) (*pb.UserRecord, error)
+	GetUserFunc         func(ctx context.Context, id string) (*user.Record, error)
 	UpdateUserFunc      func(ctx context.Context, id string, data map[string]interface{}) error
 
-	CreatePendingInputFunc func(ctx context.Context, userId string, input *pb.PendingInput) error
-	GetPendingInputFunc    func(ctx context.Context, userId string, id string) (*pb.PendingInput, error)
+	CreatePendingInputFunc func(ctx context.Context, userId string, input *pbpipeline.PendingInput) error
+	GetPendingInputFunc    func(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error)
 	UpdatePendingInputFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	ListPendingInputsFunc  func(ctx context.Context, userID string) ([]*pb.PendingInput, error)
+	ListPendingInputsFunc  func(ctx context.Context, userID string) ([]*pbpipeline.PendingInput, error)
 
-	GetCounterFunc       func(ctx context.Context, userId string, id string) (*pb.Counter, error)
-	SetCounterFunc       func(ctx context.Context, userId string, counter *pb.Counter) error
-	ListCountersFunc     func(ctx context.Context, userId string) ([]*pb.Counter, error)
-	GetUserPipelinesFunc func(ctx context.Context, userId string) ([]*pb.PipelineConfig, error)
+	GetCounterFunc       func(ctx context.Context, userId string, id string) (*pbuser.Counter, error)
+	SetCounterFunc       func(ctx context.Context, userId string, counter *pbuser.Counter) error
+	ListCountersFunc     func(ctx context.Context, userId string) ([]*pbuser.Counter, error)
+	GetUserPipelinesFunc func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error)
 
 	GetBoosterDataFunc func(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error)
 	SetBoosterDataFunc func(ctx context.Context, userId string, boosterId string, data map[string]interface{}) error
 }
 
-func (m *MockDatabase) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
+func (m *MockDatabase) SetExecution(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
 	if m.SetExecutionFunc != nil {
 		return m.SetExecutionFunc(ctx, record)
 	}
@@ -41,7 +48,7 @@ func (m *MockDatabase) UpdateExecution(ctx context.Context, userId string, id st
 	}
 	return nil
 }
-func (m *MockDatabase) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
+func (m *MockDatabase) GetUser(ctx context.Context, id string) (*user.Record, error) {
 	if m.GetUserFunc != nil {
 		return m.GetUserFunc(ctx, id)
 	}
@@ -54,14 +61,14 @@ func (m *MockDatabase) UpdateUser(ctx context.Context, id string, data map[strin
 	return nil
 }
 
-func (m *MockDatabase) CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error {
+func (m *MockDatabase) CreatePendingInput(ctx context.Context, userId string, input *pbpipeline.PendingInput) error {
 	if m.CreatePendingInputFunc != nil {
 		return m.CreatePendingInputFunc(ctx, userId, input)
 	}
 	return nil
 }
 
-func (m *MockDatabase) GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
+func (m *MockDatabase) GetPendingInput(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error) {
 	if m.GetPendingInputFunc != nil {
 		return m.GetPendingInputFunc(ctx, userId, id)
 	}
@@ -75,7 +82,7 @@ func (m *MockDatabase) UpdatePendingInput(ctx context.Context, userId string, id
 	return nil
 }
 
-func (m *MockDatabase) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
+func (m *MockDatabase) ListPendingInputs(ctx context.Context, userID string) ([]*pbpipeline.PendingInput, error) {
 	if m.ListPendingInputsFunc != nil {
 		return m.ListPendingInputsFunc(ctx, userID)
 	}
@@ -87,21 +94,21 @@ func (m *MockDatabase) DeletePendingInput(ctx context.Context, userId string, id
 	return nil
 }
 
-func (m *MockDatabase) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
+func (m *MockDatabase) GetCounter(ctx context.Context, userId string, id string) (*pbuser.Counter, error) {
 	if m.GetCounterFunc != nil {
 		return m.GetCounterFunc(ctx, userId, id)
 	}
 	return nil, nil
 }
 
-func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
+func (m *MockDatabase) SetCounter(ctx context.Context, userId string, counter *pbuser.Counter) error {
 	if m.SetCounterFunc != nil {
 		return m.SetCounterFunc(ctx, userId, counter)
 	}
 	return nil
 }
 
-func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
+func (m *MockDatabase) ListCounters(ctx context.Context, userId string) ([]*pbuser.Counter, error) {
 	if m.ListCountersFunc != nil {
 		return m.ListCountersFunc(ctx, userId)
 	}
@@ -130,7 +137,7 @@ func (m *MockDatabase) ResetSyncCount(ctx context.Context, userID string) error 
 	return nil
 }
 
-func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
+func (m *MockDatabase) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pbpipeline.PendingInput_Status) ([]*pbpipeline.PendingInput, error) {
 	// No-op for tests by default
 	return nil, nil
 }
@@ -142,27 +149,27 @@ func (m *MockDatabase) ShowcaseActivityExists(ctx context.Context, showcaseId st
 	return false, nil
 }
 
-func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error {
+func (m *MockDatabase) SetShowcasedActivity(ctx context.Context, activity *pbactivity.ShowcasedActivity) error {
 	// No-op for tests by default
 	return nil
 }
 
-func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
+func (m *MockDatabase) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pbactivity.ShowcasedActivity, error) {
 	// No-op for tests by default
 	return nil, nil
 }
 
-func (m *MockDatabase) SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error {
+func (m *MockDatabase) SetShowcaseProfile(ctx context.Context, profile *pbactivity.ShowcaseProfile) error {
 	// No-op for tests by default
 	return nil
 }
 
-func (m *MockDatabase) GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error) {
+func (m *MockDatabase) GetShowcaseProfile(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error) {
 	// No-op for tests by default
 	return nil, nil
 }
 
-func (m *MockDatabase) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pb.ShowcaseProfile, error) {
+func (m *MockDatabase) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pbactivity.ShowcaseProfile, error) {
 	// No-op for tests by default
 	return nil, nil
 }
@@ -174,17 +181,17 @@ func (m *MockDatabase) DeleteShowcaseProfile(ctx context.Context, slug string) e
 
 // --- Personal Records ---
 
-func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
+func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pbuser.PersonalRecord, error) {
 	// No-op for tests by default
 	return nil, nil
 }
 
-func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+func (m *MockDatabase) SetPersonalRecord(ctx context.Context, userId string, record *pbuser.PersonalRecord) error {
 	// No-op for tests by default
 	return nil
 }
 
-func (m *MockDatabase) ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error) {
+func (m *MockDatabase) ListPersonalRecords(ctx context.Context, userId string) ([]*pbuser.PersonalRecord, error) {
 	// No-op for tests by default
 	return nil, nil
 }
@@ -196,51 +203,51 @@ func (m *MockDatabase) DeletePersonalRecord(ctx context.Context, userId string, 
 
 // --- Pipelines (Sub-collection) ---
 
-func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+func (m *MockDatabase) GetUserPipelines(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
 	if m.GetUserPipelinesFunc != nil {
 		return m.GetUserPipelinesFunc(ctx, userId)
 	}
 	// No-op for tests by default - return empty slice
-	return []*pb.PipelineConfig{}, nil
+	return []*pbpipeline.PipelineConfig{}, nil
 }
 
 // --- Plugin Defaults (user-level default config) ---
 
-func (m *MockDatabase) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pb.PluginDefault, error) {
+func (m *MockDatabase) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pbpipeline.PluginDefault, error) {
 	// No-op for tests by default
 	return nil, nil
 }
 
-func (m *MockDatabase) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pb.PluginDefault) error {
+func (m *MockDatabase) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pbpipeline.PluginDefault) error {
 	// No-op for tests by default
 	return nil
 }
 
 // --- Uploaded Activities (for loop prevention) ---
 
-func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
+func (m *MockDatabase) SetUploadedActivity(ctx context.Context, userId string, record *pbactivity.UploadedActivityRecord) error {
 	// No-op for tests by default
 	return nil
 }
 
-func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
+func (m *MockDatabase) GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error) {
 	// No-op for tests by default - return nil (not found)
 	return nil, nil
 }
 
 // --- Pipeline Runs (lifecycle tracking) ---
 
-func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error {
+func (m *MockDatabase) CreatePipelineRun(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error {
 	// No-op for tests by default
 	return nil
 }
 
-func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
+func (m *MockDatabase) GetPipelineRun(ctx context.Context, userId string, id string) (*pbpipeline.PipelineRun, error) {
 	// No-op for tests by default
 	return nil, nil
 }
 
-func (m *MockDatabase) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error) {
+func (m *MockDatabase) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pbpipeline.PipelineRun, error) {
 	// No-op for tests by default
 	return nil, nil
 }
@@ -252,12 +259,12 @@ func (m *MockDatabase) UpdatePipelineRun(ctx context.Context, userId string, id 
 
 // --- Destination Outcomes (subcollection of Pipeline Runs) ---
 
-func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+func (m *MockDatabase) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error {
 	// No-op for tests by default
 	return nil
 }
 
-func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+func (m *MockDatabase) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error) {
 	// No-op for tests by default
 	return nil, nil
 }
@@ -297,8 +304,9 @@ func (m *MockPublisher) PublishCloudEvent(ctx context.Context, topic string, e e
 
 // --- Mock Storage ---
 type MockBlobStore struct {
-	WriteFunc func(ctx context.Context, bucket, object string, data []byte) error
-	ReadFunc  func(ctx context.Context, bucket, object string) ([]byte, error)
+	WriteFunc  func(ctx context.Context, bucket, object string, data []byte) error
+	GetFunc    func(ctx context.Context, bucket, object string) ([]byte, error)
+	DeleteFunc func(ctx context.Context, bucket, object string) error
 }
 
 func (m *MockBlobStore) Write(ctx context.Context, bucket, object string, data []byte) error {
@@ -307,9 +315,15 @@ func (m *MockBlobStore) Write(ctx context.Context, bucket, object string, data [
 	}
 	return nil
 }
-func (m *MockBlobStore) Read(ctx context.Context, bucket, object string) ([]byte, error) {
-	if m.ReadFunc != nil {
-		return m.ReadFunc(ctx, bucket, object)
+func (m *MockBlobStore) Get(ctx context.Context, bucket, object string) ([]byte, error) {
+	if m.GetFunc != nil {
+		return m.GetFunc(ctx, bucket, object)
 	}
 	return []byte("mock-data"), nil
+}
+func (m *MockBlobStore) Delete(ctx context.Context, bucket, object string) error {
+	if m.DeleteFunc != nil {
+		return m.DeleteFunc(ctx, bucket, object)
+	}
+	return nil
 }

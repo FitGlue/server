@@ -12,6 +12,10 @@ echo "Checking for potential Protobuf JSON misuse..."
 FAILED=0
 
 for file in $GO_FILES; do
+    # skip if file has nolint:proto-json
+    if grep -q "nolint:proto-json" "$file"; then
+        continue
+    fi
     # Check if file imports the pb package
     if grep -q "github.com/fitglue/server/src/go/pkg/types/pb" "$file"; then
         # Check if file uses encoding/json

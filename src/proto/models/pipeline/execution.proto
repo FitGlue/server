@@ -1,0 +1,105 @@
+syntax = "proto3";
+
+package fitglue.models.pipeline;
+
+import "google/protobuf/timestamp.proto";
+import "models/activity/source.proto";
+import "models/plugin/provider.proto";
+import "models/events/pipeline.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline";
+
+message PipelineRun {
+  string id = 1;                           
+  string pipeline_id = 2;                  
+  string activity_id = 3;                  
+
+  string source = 4;                       
+  string source_activity_id = 5;           
+
+  string title = 6;
+  string description = 7;
+  fitglue.models.activity.ActivityType type = 8;
+  google.protobuf.Timestamp start_time = 9;
+
+  PipelineRunStatus status = 10;
+  google.protobuf.Timestamp created_at = 11;
+  google.protobuf.Timestamp updated_at = 12;
+
+  repeated BoosterExecution boosters = 13;
+  repeated DestinationOutcome destinations = 14;
+
+  optional string status_message = 15;  
+  optional string pending_input_id = 16;
+  
+  string original_payload_uri = 22;  
+  string enriched_event_uri = 23;    
+}
+
+enum PipelineRunStatus {
+  PIPELINE_RUN_STATUS_UNSPECIFIED = 0;
+  PIPELINE_RUN_STATUS_RUNNING = 1;      
+  PIPELINE_RUN_STATUS_SYNCED = 2;       
+  PIPELINE_RUN_STATUS_PARTIAL = 3;      
+  PIPELINE_RUN_STATUS_FAILED = 4;       
+  PIPELINE_RUN_STATUS_PENDING = 5;      
+  PIPELINE_RUN_STATUS_SKIPPED = 6;      
+  PIPELINE_RUN_STATUS_ARCHIVED = 7;     
+  PIPELINE_RUN_STATUS_TIER_BLOCKED = 8; 
+}
+
+message BoosterExecution {
+  string provider_name = 1;              
+  string status = 2;                     
+  int64 duration_ms = 3;
+  map<string, string> metadata = 4;      
+  optional string error = 5;
+}
+
+message DestinationOutcome {
+  fitglue.models.plugin.DestinationType destination = 1;
+  DestinationStatus status = 2;
+  optional string external_id = 3;       
+  optional string error = 4;
+  google.protobuf.Timestamp completed_at = 5;
+}
+
+enum DestinationStatus {
+  DESTINATION_STATUS_UNSPECIFIED = 0;
+  DESTINATION_STATUS_PENDING = 1;
+  DESTINATION_STATUS_SUCCESS = 2;
+  DESTINATION_STATUS_FAILED = 3;
+  DESTINATION_STATUS_SKIPPED = 4;        
+}
+
+message ExecutionRecord {
+  string execution_id = 1;  
+  string service = 2;        
+  ExecutionStatus status = 3; 
+  google.protobuf.Timestamp timestamp = 4; 
+  string trigger_type = 7;   
+
+  optional string user_id = 5;
+  optional string test_run_id = 6;  
+
+  optional google.protobuf.Timestamp start_time = 8;
+  optional google.protobuf.Timestamp end_time = 9;
+
+  optional string error_message = 10;
+  optional string inputs_json = 11;   
+  optional string outputs_json = 12;  
+  optional google.protobuf.Timestamp expire_at = 14; 
+
+  optional string pipeline_execution_id = 15;  
+}
+
+enum ExecutionStatus {
+  STATUS_UNSPECIFIED = 0;
+  STATUS_STARTED = 1;
+  STATUS_SUCCESS = 2;
+  STATUS_FAILED = 3;
+  STATUS_PENDING = 4;
+  STATUS_WAITING = 5;
+  STATUS_LAGGED_RETRY = 6;
+  STATUS_SKIPPED = 7;  
+}

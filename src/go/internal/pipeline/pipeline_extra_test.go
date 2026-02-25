@@ -1,0 +1,357 @@
+// nolint:proto-json
+package pipeline
+
+import (
+	"context"
+	"errors"
+	"testing"
+
+	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+	"github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+)
+
+// ErrorStore wraps MockPipelineStore to inject errors on specific methods.
+type ErrorStore struct {
+	*MockPipelineStore
+	listPipelinesErr    error
+	getPipelineErr      error
+	createPipelineErr   error
+	updatePipelineErr   error
+	deletePipelineErr   error
+	listPendingErr      error
+	getPendingErr       error
+	updatePendingErr    error
+	getPipelineRunErr   error
+	listPipelineRunsErr error
+}
+
+func (e *ErrorStore) ListPipelines(ctx context.Context, userID string) ([]*pipeline.PipelineConfig, error) {
+	if e.listPipelinesErr != nil {
+		return nil, e.listPipelinesErr
+	}
+	return e.MockPipelineStore.ListPipelines(ctx, userID)
+}
+func (e *ErrorStore) GetPipeline(ctx context.Context, userID, pipelineID string) (*pipeline.PipelineConfig, error) {
+	if e.getPipelineErr != nil {
+		return nil, e.getPipelineErr
+	}
+	return e.MockPipelineStore.GetPipeline(ctx, userID, pipelineID)
+}
+func (e *ErrorStore) CreatePipeline(ctx context.Context, userID string, cfg *pipeline.PipelineConfig) (*pipeline.PipelineConfig, error) {
+	if e.createPipelineErr != nil {
+		return nil, e.createPipelineErr
+	}
+	return e.MockPipelineStore.CreatePipeline(ctx, userID, cfg)
+}
+func (e *ErrorStore) UpdatePipeline(ctx context.Context, userID string, cfg *pipeline.PipelineConfig) (*pipeline.PipelineConfig, error) {
+	if e.updatePipelineErr != nil {
+		return nil, e.updatePipelineErr
+	}
+	return e.MockPipelineStore.UpdatePipeline(ctx, userID, cfg)
+}
+func (e *ErrorStore) DeletePipeline(ctx context.Context, userID, pipelineID string) error {
+	if e.deletePipelineErr != nil {
+		return e.deletePipelineErr
+	}
+	return e.MockPipelineStore.DeletePipeline(ctx, userID, pipelineID)
+}
+func (e *ErrorStore) ListPendingInputs(ctx context.Context, userID string) ([]*pipeline.PendingInput, error) {
+	if e.listPendingErr != nil {
+		return nil, e.listPendingErr
+	}
+	return e.MockPipelineStore.ListPendingInputs(ctx, userID)
+}
+func (e *ErrorStore) GetPendingInput(ctx context.Context, userID, inputID string) (*pipeline.PendingInput, error) {
+	if e.getPendingErr != nil {
+		return nil, e.getPendingErr
+	}
+	return e.MockPipelineStore.GetPendingInput(ctx, userID, inputID)
+}
+func (e *ErrorStore) UpdatePendingInput(ctx context.Context, userID string, input *pipeline.PendingInput) error {
+	if e.updatePendingErr != nil {
+		return e.updatePendingErr
+	}
+	return e.MockPipelineStore.UpdatePendingInput(ctx, userID, input)
+}
+func (e *ErrorStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pipeline.PipelineRun, error) {
+	if e.getPipelineRunErr != nil {
+		return nil, e.getPipelineRunErr
+	}
+	return e.MockPipelineStore.GetPipelineRun(ctx, userID, runID)
+}
+func (e *ErrorStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string) ([]*pipeline.PipelineRun, string, error) {
+	if e.listPipelineRunsErr != nil {
+		return nil, "", e.listPipelineRunsErr
+	}
+	return e.MockPipelineStore.ListPipelineRuns(ctx, userID, pipelineID, limit, pageToken)
+}
+func (e *ErrorStore) UpdatePipelineRun(ctx context.Context, userID, runID string, data map[string]interface{}) error {
+	return e.MockPipelineStore.UpdatePipelineRun(ctx, userID, runID, data)
+}
+
+// --- Validation error tests ---
+
+func TestPipeline_Validation(t *testing.T) {
+	svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+	ctx := context.Background()
+
+	t.Run("ListPipelines_missing_user_id", func(t *testing.T) {
+		_, err := svc.ListPipelines(ctx, &pbsvc.ListPipelinesRequest{})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("GetPipeline_missing_ids", func(t *testing.T) {
+		_, err := svc.GetPipeline(ctx, &pbsvc.GetPipelineRequest{UserId: "u1"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("CreatePipeline_missing_source", func(t *testing.T) {
+		_, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
+			UserId:   "u1",
+			Pipeline: &pipeline.PipelineConfig{Destinations: []plugin.DestinationType{1}},
+		})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("CreatePipeline_missing_destinations", func(t *testing.T) {
+		_, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
+			UserId:   "u1",
+			Pipeline: &pipeline.PipelineConfig{Source: "SOURCE_STRAVA"},
+		})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("UpdatePipeline_missing_pipeline_id", func(t *testing.T) {
+		_, err := svc.UpdatePipeline(ctx, &pbsvc.UpdatePipelineRequest{
+			UserId:   "u1",
+			Pipeline: &pipeline.PipelineConfig{Source: "SOURCE_STRAVA", Destinations: []plugin.DestinationType{1}},
+		})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("DeletePipeline_missing_ids", func(t *testing.T) {
+		_, err := svc.DeletePipeline(ctx, &pbsvc.DeletePipelineRequest{UserId: "u1"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("SubmitInput_missing_fields", func(t *testing.T) {
+		_, err := svc.SubmitInput(ctx, &pbsvc.SubmitInputRequest{UserId: "u1"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("ListPendingInputs_missing_user_id", func(t *testing.T) {
+		_, err := svc.ListPendingInputs(ctx, &pbsvc.ListPendingInputsRequest{})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("ResolvePendingInput_missing_ids", func(t *testing.T) {
+		_, err := svc.ResolvePendingInput(ctx, &pbsvc.ResolvePendingInputRequest{UserId: "u1"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("GetPipelineRun_missing_ids", func(t *testing.T) {
+		_, err := svc.GetPipelineRun(ctx, &pbsvc.GetPipelineRunRequest{UserId: "u1"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("ListPipelineRuns_missing_user_id", func(t *testing.T) {
+		_, err := svc.ListPipelineRuns(ctx, &pbsvc.ListPipelineRunsRequest{})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_missing_ids", func(t *testing.T) {
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument, got %v", err)
+		}
+	})
+}
+
+// --- Store error tests ---
+
+func TestPipeline_StoreErrors(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("ListPipelines_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), listPipelinesErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.ListPipelines(ctx, &pbsvc.ListPipelinesRequest{UserId: "u1"})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal, got %v", err)
+		}
+	})
+
+	t.Run("CreatePipeline_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), createPipelineErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.CreatePipeline(ctx, &pbsvc.CreatePipelineRequest{
+			UserId: "u1",
+			Pipeline: &pipeline.PipelineConfig{
+				Source:       "SOURCE_STRAVA",
+				Destinations: []plugin.DestinationType{1},
+			},
+		})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal, got %v", err)
+		}
+	})
+
+	t.Run("UpdatePipeline_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), updatePipelineErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.UpdatePipeline(ctx, &pbsvc.UpdatePipelineRequest{
+			UserId: "u1",
+			Pipeline: &pipeline.PipelineConfig{
+				Id:           "p1",
+				Source:       "SOURCE_STRAVA",
+				Destinations: []plugin.DestinationType{1},
+			},
+		})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal, got %v", err)
+		}
+	})
+
+	t.Run("DeletePipeline_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), deletePipelineErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.DeletePipeline(ctx, &pbsvc.DeletePipelineRequest{UserId: "u1", PipelineId: "p1"})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal, got %v", err)
+		}
+	})
+
+	t.Run("ListPendingInputs_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), listPendingErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.ListPendingInputs(ctx, &pbsvc.ListPendingInputsRequest{UserId: "u1"})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal, got %v", err)
+		}
+	})
+
+	t.Run("GetPipelineRun_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), getPipelineRunErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.GetPipelineRun(ctx, &pbsvc.GetPipelineRunRequest{UserId: "u1", RunId: "r1"})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal, got %v", err)
+		}
+	})
+
+	t.Run("ListPipelineRuns_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), listPipelineRunsErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.ListPipelineRuns(ctx, &pbsvc.ListPipelineRunsRequest{UserId: "u1"})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal, got %v", err)
+		}
+	})
+}
+
+func TestPipeline_HappyPaths(t *testing.T) {
+	ctx := context.Background()
+
+	t.Run("ListPipelines_success", func(t *testing.T) {
+		store := NewMockStore()
+		store.Pipelines["u1_p1"] = &pipeline.PipelineConfig{Id: "p1", Name: "Pipeline 1"}
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		resp, err := svc.ListPipelines(ctx, &pbsvc.ListPipelinesRequest{UserId: "u1"})
+		if err != nil || len(resp.Pipelines) != 1 {
+			t.Errorf("expected 1 pipeline, got %v, err=%v", len(resp.Pipelines), err)
+		}
+	})
+
+	t.Run("ListPendingInputs_success", func(t *testing.T) {
+		store := NewMockStore()
+		store.PendingInputs["u1_i1"] = &pipeline.PendingInput{ActivityId: "i1"}
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		resp, err := svc.ListPendingInputs(ctx, &pbsvc.ListPendingInputsRequest{UserId: "u1"})
+		if err != nil || len(resp.Inputs) != 1 {
+			t.Errorf("expected 1 input, got %v, err=%v", len(resp.Inputs), err)
+		}
+	})
+
+	t.Run("GetPipelineRun_notFound", func(t *testing.T) {
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.GetPipelineRun(ctx, &pbsvc.GetPipelineRunRequest{UserId: "u1", RunId: "missing"})
+		if status.Code(err) != codes.NotFound {
+			t.Errorf("expected NotFound, got %v", err)
+		}
+	})
+
+	t.Run("GetPipelineRun_success", func(t *testing.T) {
+		store := NewMockStore()
+		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1"}
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		resp, err := svc.GetPipelineRun(ctx, &pbsvc.GetPipelineRunRequest{UserId: "u1", RunId: "r1"})
+		if err != nil || resp.Id != "r1" {
+			t.Errorf("expected run r1, got %v, err=%v", resp, err)
+		}
+	})
+
+	t.Run("ListPipelineRuns_success", func(t *testing.T) {
+		store := NewMockStore()
+		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1"}
+		store.Runs["u1_r2"] = &pipeline.PipelineRun{Id: "r2"}
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		resp, err := svc.ListPipelineRuns(ctx, &pbsvc.ListPipelineRunsRequest{UserId: "u1"})
+		if err != nil || len(resp.Runs) != 2 {
+			t.Errorf("expected 2 runs, got %d, err=%v", len(resp.Runs), err)
+		}
+	})
+
+	t.Run("ResolvePendingInput_notFound", func(t *testing.T) {
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.ResolvePendingInput(ctx, &pbsvc.ResolvePendingInputRequest{UserId: "u1", PendingInputId: "missing"})
+		if status.Code(err) != codes.NotFound {
+			t.Errorf("expected NotFound, got %v", err)
+		}
+	})
+
+	t.Run("ResolvePendingInput_success", func(t *testing.T) {
+		store := NewMockStore()
+		store.PendingInputs["u1_i1"] = &pipeline.PendingInput{
+			ActivityId: "i1",
+			Status:     pipeline.PendingInput_STATUS_WAITING,
+		}
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.ResolvePendingInput(ctx, &pbsvc.ResolvePendingInputRequest{UserId: "u1", PendingInputId: "i1"})
+		if err != nil {
+			t.Errorf("expected success, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_unimplemented", func(t *testing.T) {
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1"})
+		if status.Code(err) != codes.Unimplemented {
+			t.Errorf("expected Unimplemented, got %v", err)
+		}
+	})
+}

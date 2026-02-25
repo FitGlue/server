@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  api-client:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_NAME: api-client
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+
+  api-admin:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: api-admin
+    ports:
+      - "8081:8080"
+    environment:
+      - PORT=8080
+
+  api-public:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: api-public
+    ports:
+      - "8082:8080"
+    environment:
+      - PORT=8080
+
+  api-webhook:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: api-webhook
+    ports:
+      - "8083:8080"
+    environment:
+      - PORT=8080
+
+  user:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: user
+    ports:
+      - "50051:8080"
+    environment:
+      - PORT=8080
+
+  billing:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: billing
+    ports:
+      - "50052:8080"
+    environment:
+      - PORT=8080
+
+  pipeline:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: pipeline
+    ports:
+      - "50053:8080"
+    environment:
+      - PORT=8080
+
+  activity:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: activity
+    ports:
+      - "50054:8080"
+    environment:
+      - PORT=8080
+
+  registry:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: registry
+    ports:
+      - "50055:8080"
+    environment:
+      - PORT=8080
+
+  destination:
+    build:
+      context: .
+      args:
+        SERVICE_NAME: destination
+    environment:
+      - PORT=8080

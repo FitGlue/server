@@ -39,6 +39,32 @@ jobs:
             - ~/.npm
             - src/typescript/node_modules
       - run:
+          name: Install Buf
+          command: |
+             PREFIX="/usr/local"
+             VERSION="1.32.1"
+             sudo curl -sSL \
+                "https://github.com/bufbuild/buf/releases/download/v${VERSION}/buf-$$(uname -s)-$$(uname -m)" \
+                -o "$${PREFIX}/bin/buf"
+             sudo chmod +x "$${PREFIX}/bin/buf"
+      - run:
+          name: Protobuf Linting
+          command: buf lint src/proto
+      - run:
+          name: Verify Generated Code Drift
+          command: |
+            make generate
+            if ! git diff --quiet; then
+              echo "Error: Generated files are out of sync. Please run 'make generate' locally and commit the changes."
+              git diff
+              exit 1
+            fi
+      - run:
+          name: Protobuf Breaking Changes
+          command: |
+            git fetch origin main
+            buf breaking src/proto --against '.git#branch=origin/main,subdir=server/src/proto' || true
+      - run:
           name: Build
           command: make build
       - run:
@@ -47,6 +73,12 @@ jobs:
       - run:
           name: Run Tests
           command: make test
+      - store_artifacts:
+          path: src/typescript/shared/src/types/pb
+          destination: protobuf-types
+      - store_artifacts:
+          path: docs/api/openapi.yaml
+          destination: openapi-spec
       - persist_to_workspace:
           root: .
           paths:
@@ -64,10 +96,12 @@ jobs:
     steps:
       - attach_workspace:
           at: .
+      - setup_remote_docker:
+          version: 20.10.14
       - run:
           name: Install dependencies
           command: |
-            apk add --no-cache python3 py3-pip curl bash make nodejs npm go
+            apk add --no-cache python3 py3-pip curl bash make nodejs npm go docker-cli
       - run:
           name: Authenticate with GCP via OIDC
           command: |
@@ -105,12 +139,40 @@ jobs:
              export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
              terraform -chdir=terraform init -backend-config=envs/<< parameters.target >>.backend.tfvars
       - run:
-          name: Deploy to << parameters.target >>
+          name: Build and Push Docker Images
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
-            # Deploy without release_version - functions will use K_REVISION instead
+            gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+            
+            SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
+            for svc in $SERVICES; do
+              IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:latest"
+              echo "Building $$IMAGE for $$svc..."
+              docker build -t $$IMAGE --build-arg SERVICE_NAME=$$svc .
+              echo "Pushing $$IMAGE..."
+              docker push $$IMAGE
+            done
+      - run:
+          name: Deploy to << parameters.target >> (Terraform)
+          command: |
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            # Deploy infrastructure (IAM, PubSub, Secrets, Cloud Run specs)
             terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
               -var-file="envs/<< parameters.target >>.tfvars"
+      - run:
+          name: Deploy Cloud Run Services
+          command: |
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
+            for svc in $SERVICES; do
+              IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:latest"
+              echo "Rolling out $$svc to Cloud Run..."
+              gcloud run deploy $$svc \
+                --image $$IMAGE \
+                --region us-central1 \
+                --project fitglue-server-<< parameters.target >> \
+                --quiet
+            done
 
   upload-sourcemaps:
     executor: unified-executor

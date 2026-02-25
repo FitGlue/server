@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package fitglue.models.pipeline;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline";
+
+message PendingInput {
+  string activity_id = 1;
+  string user_id = 2;
+
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    STATUS_WAITING = 1;
+    STATUS_COMPLETED = 2;
+  }
+  Status status = 3;
+
+  repeated string required_fields = 4;
+  map<string, string> input_data = 5;
+  
+  string original_payload_uri = 17;
+
+  google.protobuf.Timestamp created_at = 7;
+  google.protobuf.Timestamp updated_at = 8;
+  google.protobuf.Timestamp completed_at = 9;
+
+  bool continued_without_resolution = 10;
+  string linked_activity_id = 11;       
+  string pipeline_id = 12;              
+  string enricher_provider_id = 13;     
+
+  bool auto_populated = 14;
+  google.protobuf.Timestamp auto_deadline = 15;  
+  map<string, string> provider_metadata = 16;
+}
+
+enum ParkrunResultsState {
+  PARKRUN_RESULTS_STATE_UNSPECIFIED = 0;
+  PARKRUN_RESULTS_STATE_PENDING = 1;        
+  PARKRUN_RESULTS_STATE_COMPLETE = 2;       
+  PARKRUN_RESULTS_STATE_EXPIRED = 3;        
+  PARKRUN_RESULTS_STATE_IMMEDIATE = 4;      
+}

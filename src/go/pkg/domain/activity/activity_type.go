@@ -5,12 +5,12 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/fitglue/server/src/go/pkg/types/formatters"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 )
 
 // GetStravaActivityType returns the Strava API string for a given ActivityType enum
 // using the custom strava_name option (e.g., "HighIntensityIntervalTraining").
-func GetStravaActivityType(t pb.ActivityType) string {
+func GetStravaActivityType(t pbactivity.ActivityType) string {
 	// Get the Enum Descriptor
 	ed := t.Descriptor()
 	// Get the specific Enum Value Descriptor
@@ -23,8 +23,8 @@ func GetStravaActivityType(t pb.ActivityType) string {
 	opts := ev.Options()
 
 	// Use proto.GetExtension to retrieve the custom option
-	if proto.HasExtension(opts, pb.E_StravaName) {
-		val := proto.GetExtension(opts, pb.E_StravaName)
+	if proto.HasExtension(opts, pbactivity.E_StravaName) {
+		val := proto.GetExtension(opts, pbactivity.E_StravaName)
 		if strVal, ok := val.(string); ok && strVal != "" {
 			return strVal
 		}
@@ -34,29 +34,29 @@ func GetStravaActivityType(t pb.ActivityType) string {
 
 // GetIntervalsActivityType returns the Intervals.icu API string for a given ActivityType enum.
 // Intervals.icu uses activity type strings like "Ride", "Run", "Swim", "WeightTraining".
-func GetIntervalsActivityType(t pb.ActivityType) string {
+func GetIntervalsActivityType(t pbactivity.ActivityType) string {
 	// Intervals.icu uses similar types to Strava but with some differences
-	intervalsTypes := map[pb.ActivityType]string{
-		pb.ActivityType_ACTIVITY_TYPE_RUN:                              "Run",
-		pb.ActivityType_ACTIVITY_TYPE_RIDE:                             "Ride",
-		pb.ActivityType_ACTIVITY_TYPE_SWIM:                             "Swim",
-		pb.ActivityType_ACTIVITY_TYPE_WALK:                             "Walk",
-		pb.ActivityType_ACTIVITY_TYPE_HIKE:                             "Hike",
-		pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:                  "WeightTraining",
-		pb.ActivityType_ACTIVITY_TYPE_YOGA:                             "Yoga",
-		pb.ActivityType_ACTIVITY_TYPE_WORKOUT:                          "Workout",
-		pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING: "HIIT",
-		pb.ActivityType_ACTIVITY_TYPE_CROSSFIT:                         "Crossfit",
-		pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL:                       "Elliptical",
-		pb.ActivityType_ACTIVITY_TYPE_ROWING:                           "Rowing",
-		pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:                        "TrailRun",
-		pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE:                     "VirtualRide",
-		pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:                      "VirtualRun",
-		pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE:               "MountainBikeRide",
-		pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE:                      "GravelRide",
-		pb.ActivityType_ACTIVITY_TYPE_PILATES:                          "Pilates",
-		pb.ActivityType_ACTIVITY_TYPE_TENNIS:                           "Tennis",
-		pb.ActivityType_ACTIVITY_TYPE_SOCCER:                           "Soccer",
+	intervalsTypes := map[pbactivity.ActivityType]string{
+		pbactivity.ActivityType_ACTIVITY_TYPE_RUN:                              "Run",
+		pbactivity.ActivityType_ACTIVITY_TYPE_RIDE:                             "Ride",
+		pbactivity.ActivityType_ACTIVITY_TYPE_SWIM:                             "Swim",
+		pbactivity.ActivityType_ACTIVITY_TYPE_WALK:                             "Walk",
+		pbactivity.ActivityType_ACTIVITY_TYPE_HIKE:                             "Hike",
+		pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:                  "WeightTraining",
+		pbactivity.ActivityType_ACTIVITY_TYPE_YOGA:                             "Yoga",
+		pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT:                          "Workout",
+		pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING: "HIIT",
+		pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT:                         "Crossfit",
+		pbactivity.ActivityType_ACTIVITY_TYPE_ELLIPTICAL:                       "Elliptical",
+		pbactivity.ActivityType_ACTIVITY_TYPE_ROWING:                           "Rowing",
+		pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:                        "TrailRun",
+		pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE:                     "VirtualRide",
+		pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:                      "VirtualRun",
+		pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE:               "MountainBikeRide",
+		pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE:                      "GravelRide",
+		pbactivity.ActivityType_ACTIVITY_TYPE_PILATES:                          "Pilates",
+		pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS:                           "Tennis",
+		pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER:                           "Soccer",
 	}
 
 	if intervalsType, ok := intervalsTypes[t]; ok {
@@ -68,28 +68,28 @@ func GetIntervalsActivityType(t pb.ActivityType) string {
 // ParseActivityTypeFromString parses a friendly string into an ActivityType enum.
 // Accepts enum names (e.g., "ACTIVITY_TYPE_RUN"), display names (e.g., "Run"),
 // and informal aliases (e.g., "running", "cycling", "bike") via the generated parser.
-func ParseActivityTypeFromString(input string) pb.ActivityType {
+func ParseActivityTypeFromString(input string) pbactivity.ActivityType {
 	// 1. Try exact proto enum name (fast path)
-	if v, ok := pb.ActivityType_value[input]; ok {
-		return pb.ActivityType(v)
+	if v, ok := pbactivity.ActivityType_value[input]; ok {
+		return pbactivity.ActivityType(v)
 	}
 
 	// 2. Try generated parser (handles display names, short names, aliases, case-insensitive)
 	parsed := formatters.ParseActivityType(input)
-	if parsed != pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
+	if parsed != pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED {
 		return parsed
 	}
 
 	// 3. Try matching strava_name (case-insensitive, for backward compat)
-	for _, enumVal := range pb.ActivityType_value {
-		at := pb.ActivityType(enumVal)
+	for _, enumVal := range pbactivity.ActivityType_value {
+		at := pbactivity.ActivityType(enumVal)
 		stravaName := GetStravaActivityType(at)
 		if stravaName != "" && equalFold(stravaName, input) {
 			return at
 		}
 	}
 
-	return pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+	return pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED
 }
 
 // equalFold is a simple case-insensitive string comparison

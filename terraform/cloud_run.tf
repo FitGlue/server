@@ -1,0 +1,184 @@
+locals {
+  frontend_services = {
+    "api-client"  = { is_public = true }
+    "api-admin"   = { is_public = true }
+    "api-public"  = { is_public = true }
+    "api-webhook" = { is_public = true }
+  }
+  backend_services = {
+    "user"        = { is_public = false }
+    "billing"     = { is_public = false }
+    "pipeline"    = { is_public = false }
+    "activity"    = { is_public = false }
+    "registry"    = { is_public = false }
+    "destination" = { is_public = false }
+  }
+  all_services = merge(local.frontend_services, local.backend_services)
+}
+
+resource "google_artifact_registry_repository" "services" {
+  location      = var.region
+  repository_id = "fitglue-services"
+  description   = "Docker repository for FitGlue Cloud Run services"
+  format        = "DOCKER"
+}
+
+resource "google_service_account" "cloud_run_sa" {
+  for_each     = local.all_services
+  account_id   = "cr-${each.key}-sa"
+  display_name = "Cloud Run Service Account for ${each.key}"
+}
+
+resource "google_cloud_run_v2_service" "backend" {
+  for_each = local.backend_services
+  name     = each.key
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account = google_service_account.cloud_run_sa[each.key].email
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:latest"
+      resources {
+        limits = {
+          cpu    = "1000m"
+          memory = "256Mi"
+        }
+      }
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+      env {
+        name  = "ENVIRONMENT"
+        value = var.environment
+      }
+      # Pipeline needs destination url
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name  = "DESTINATION_SERVICE_URL"
+          value = "https://destination-${data.google_project.project.number}.${var.region}.run.app"
+        }
+      }
+    }
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 10
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+    ]
+  }
+}
+
+
+
+resource "google_cloud_run_v2_service" "frontend" {
+  for_each = local.frontend_services
+  name     = each.key
+  location = var.region
+  ingress  = "INGRESS_TRAFFIC_ALL"
+
+  template {
+    service_account = google_service_account.cloud_run_sa[each.key].email
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:latest"
+      resources {
+        limits = {
+          cpu    = "1000m"
+          memory = "256Mi"
+        }
+      }
+      env {
+        name  = "PROJECT_ID"
+        value = var.project_id
+      }
+      env {
+        name  = "ENVIRONMENT"
+        value = var.environment
+      }
+      env {
+        name  = "USER_SERVICE_URL"
+        value = google_cloud_run_v2_service.backend["user"].uri
+      }
+      env {
+        name  = "BILLING_SERVICE_URL"
+        value = google_cloud_run_v2_service.backend["billing"].uri
+      }
+      env {
+        name  = "PIPELINE_SERVICE_URL"
+        value = google_cloud_run_v2_service.backend["pipeline"].uri
+      }
+      env {
+        name  = "ACTIVITY_SERVICE_URL"
+        value = google_cloud_run_v2_service.backend["activity"].uri
+      }
+      env {
+        name  = "REGISTRY_SERVICE_URL"
+        value = google_cloud_run_v2_service.backend["registry"].uri
+      }
+    }
+    scaling {
+      min_instance_count = 1
+      max_instance_count = 10
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+    ]
+  }
+}
+
+data "google_iam_policy" "noauth" {
+  binding {
+    role = "roles/run.invoker"
+    members = [
+      "allUsers",
+    ]
+  }
+}
+
+resource "google_cloud_run_service_iam_policy" "public_access" {
+  for_each = local.frontend_services
+  location    = google_cloud_run_v2_service.frontend[each.key].location
+  project     = google_cloud_run_v2_service.frontend[each.key].project
+  service     = google_cloud_run_v2_service.frontend[each.key].name
+  policy_data = data.google_iam_policy.noauth.policy_data
+}
+
+
+
+locals {
+  backend_invokers = flatten([
+    for be_k, be_v in local.backend_services : [
+      for fe_k, fe_v in local.frontend_services : {
+        backend  = be_k
+        frontend = fe_k
+      }
+    ]
+  ])
+}
+
+resource "google_cloud_run_v2_service_iam_member" "internal_invocation" {
+  for_each = {
+    for pair in local.backend_invokers : "${pair.backend}-${pair.frontend}" => pair
+  }
+  name     = google_cloud_run_v2_service.backend[each.value.backend].name
+  location = google_cloud_run_v2_service.backend[each.value.backend].location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa[each.value.frontend].email}"
+}
+
+# Pipeline also invokes Destination
+resource "google_cloud_run_v2_service_iam_member" "pipeline_to_destination" {
+  name     = google_cloud_run_v2_service.backend["destination"].name
+  location = google_cloud_run_v2_service.backend["destination"].location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa["pipeline"].email}"
+}

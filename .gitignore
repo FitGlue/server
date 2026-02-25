@@ -30,6 +30,18 @@ fitglue-strava-uploader
 functions/*/vendor/*
 src/go/vendor
 
+# Compiled Go Services
+src/go/services/activity/activity
+src/go/services/api-admin/api-admin
+src/go/services/api-client/api-client
+src/go/services/api-public/api-public
+src/go/services/api-webhook/api-webhook
+src/go/services/billing/billing
+src/go/services/destination/destination
+src/go/services/pipeline/pipeline
+src/go/services/registry/registry
+src/go/services/user/user
+
 # Zip Archives (Terraform Artifacts)
 *.zip
 
@@ -49,3 +61,6 @@ examples_output
 # Python cache
 __pycache__/
 *.pyc
+
+# Coverage output
+src/go/coverage.out

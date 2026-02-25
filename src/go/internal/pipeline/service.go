@@ -1,0 +1,274 @@
+// nolint:proto-json
+package pipeline
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	cloudevents "github.com/cloudevents/sdk-go/v2"
+	"github.com/fitglue/server/src/go/internal/infra"
+	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
+)
+
+// Service implements the pbsvc.PipelineServiceServer interface.
+type Service struct {
+	pbsvc.UnimplementedPipelineServiceServer
+	store     PipelineStore
+	publisher Publisher
+	blobStore BlobStore
+	logger    infra.Logger
+}
+
+func NewService(store PipelineStore, publisher Publisher, blobStore BlobStore, logger infra.Logger) *Service {
+	return &Service{
+		store:     store,
+		publisher: publisher,
+		blobStore: blobStore,
+		logger:    logger,
+	}
+}
+
+func (s *Service) ListPipelines(ctx context.Context, req *pbsvc.ListPipelinesRequest) (*pbsvc.ListPipelinesResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	pipelines, err := s.store.ListPipelines(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list pipelines", "error", err, "userId", req.UserId)
+		return nil, status.Error(codes.Internal, "failed to read pipelines")
+	}
+
+	return &pbsvc.ListPipelinesResponse{
+		Pipelines: pipelines,
+	}, nil
+}
+
+func (s *Service) GetPipeline(ctx context.Context, req *pbsvc.GetPipelineRequest) (*pipeline.PipelineConfig, error) {
+	if req.UserId == "" || req.PipelineId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and pipeline_id are required")
+	}
+
+	cfg, err := s.store.GetPipeline(ctx, req.UserId, req.PipelineId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get pipeline", "error", err)
+		return nil, status.Error(codes.Internal, "failed to read pipeline config")
+	}
+	if cfg == nil {
+		return nil, status.Error(codes.NotFound, "pipeline not found")
+	}
+
+	return cfg, nil
+}
+
+func (s *Service) CreatePipeline(ctx context.Context, req *pbsvc.CreatePipelineRequest) (*pipeline.PipelineConfig, error) {
+	if req.UserId == "" || req.Pipeline == nil {
+		return nil, status.Error(codes.InvalidArgument, "user_id and pipeline config are required")
+	}
+
+	if req.Pipeline.Source == "" {
+		return nil, status.Error(codes.InvalidArgument, "Missing required field: source")
+	}
+
+	if len(req.Pipeline.Destinations) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Missing required field: destinations (must be non-empty array)")
+	}
+
+	// Generate pipeline ID
+	req.Pipeline.Id = fmt.Sprintf("pipe_%d", time.Now().UnixMilli())
+	req.Pipeline.Disabled = false
+
+	created, err := s.store.CreatePipeline(ctx, req.UserId, req.Pipeline)
+	if err != nil {
+		s.logger.Error(ctx, "failed to create pipeline", "error", err)
+		return nil, status.Error(codes.Internal, "failed to create pipeline")
+	}
+
+	return created, nil
+}
+
+func (s *Service) UpdatePipeline(ctx context.Context, req *pbsvc.UpdatePipelineRequest) (*pipeline.PipelineConfig, error) {
+	if req.UserId == "" || req.Pipeline == nil || req.Pipeline.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "valid user_id and pipeline with ID are required")
+	}
+
+	if req.Pipeline.Source == "" {
+		return nil, status.Error(codes.InvalidArgument, "Missing required field: source")
+	}
+
+	if len(req.Pipeline.Destinations) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "Missing required field: destinations (must be non-empty array)")
+	}
+
+	updated, err := s.store.UpdatePipeline(ctx, req.UserId, req.Pipeline)
+	if err != nil {
+		s.logger.Error(ctx, "failed to update pipeline", "error", err)
+		return nil, status.Error(codes.Internal, "failed to update pipeline")
+	}
+
+	return updated, nil
+}
+
+func (s *Service) DeletePipeline(ctx context.Context, req *pbsvc.DeletePipelineRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.PipelineId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and pipeline_id are required")
+	}
+
+	if err := s.store.DeletePipeline(ctx, req.UserId, req.PipelineId); err != nil {
+		s.logger.Error(ctx, "failed to delete pipeline", "error", err)
+		return nil, status.Error(codes.Internal, "failed to delete pipeline")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Service) SubmitInput(ctx context.Context, req *pbsvc.SubmitInputRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.PendingInputId == "" || req.InputData == nil {
+		return nil, status.Error(codes.InvalidArgument, "user_id, pending_input_id, and input_data are required")
+	}
+
+	input, err := s.store.GetPendingInput(ctx, req.UserId, req.PendingInputId)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get pending input")
+	}
+	if input == nil {
+		return nil, status.Error(codes.NotFound, "pending input not found")
+	}
+
+	if input.Status != pipeline.PendingInput_STATUS_WAITING {
+		return nil, status.Error(codes.FailedPrecondition, "input is not in WAITING state")
+	}
+
+	if input.OriginalPayloadUri == "" || input.LinkedActivityId == "" {
+		return nil, status.Error(codes.Internal, "pending input missing payload URI or linked activity ID")
+	}
+
+	// Fetch payload from GCS
+	payloadBytes, err := s.blobStore.Get(ctx, input.OriginalPayloadUri)
+	if err != nil {
+		s.logger.Error(ctx, "failed to fetch original payload from GCS", "error", err, "uri", input.OriginalPayloadUri)
+		return nil, status.Error(codes.Internal, "failed to fetch original payload")
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return nil, status.Error(codes.Internal, "failed to parse original payload")
+	}
+
+	// Update payload for resume
+	payload["isResume"] = true
+	payload["resumePendingInputId"] = req.PendingInputId
+	payload["activityId"] = input.LinkedActivityId
+
+	// Re-serialize payload
+	updatedPayloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to serialize updated payload")
+	}
+
+	// Publish to topic-pipeline-activity
+	ce := cloudevents.NewEvent()
+	ce.SetID(fmt.Sprintf("%d", time.Now().UnixNano()))
+	ce.SetSource("com.fitglue.inputs_handler")
+	ce.SetType("com.fitglue.cloud_event.input_resolved")
+	ce.SetData(cloudevents.ApplicationJSON, updatedPayloadBytes)
+
+	if _, err := s.publisher.PublishCloudEvent(ctx, "topic-pipeline-activity", ce); err != nil {
+		s.logger.Error(ctx, "failed to publish resume event", "error", err)
+		return nil, status.Error(codes.Internal, "failed to publish resume event")
+	}
+
+	// Mark as resolved in store
+	input.InputData = req.InputData
+	input.Status = pipeline.PendingInput_STATUS_COMPLETED
+	if err := s.store.UpdatePendingInput(ctx, req.UserId, input); err != nil {
+		s.logger.Error(ctx, "failed to update pending input status", "error", err)
+		// We still return success as the resume event was published
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Service) ListPendingInputs(ctx context.Context, req *pbsvc.ListPendingInputsRequest) (*pbsvc.ListPendingInputsResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	inputs, err := s.store.ListPendingInputs(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list pending inputs", "error", err)
+		return nil, status.Error(codes.Internal, "failed to list inputs")
+	}
+
+	return &pbsvc.ListPendingInputsResponse{
+		Inputs: inputs,
+	}, nil
+}
+
+func (s *Service) ResolvePendingInput(ctx context.Context, req *pbsvc.ResolvePendingInputRequest) (*emptypb.Empty, error) {
+	// This acts as a dismiss action in the legacy TS code
+	if req.UserId == "" || req.PendingInputId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and pending_input_id are required")
+	}
+
+	input, err := s.store.GetPendingInput(ctx, req.UserId, req.PendingInputId)
+	if err != nil || input == nil {
+		return nil, status.Error(codes.NotFound, "pending input not found")
+	}
+
+	input.Status = pipeline.PendingInput_STATUS_COMPLETED
+	if err := s.store.UpdatePendingInput(ctx, req.UserId, input); err != nil {
+		s.logger.Error(ctx, "failed to dismiss pending input", "error", err)
+		return nil, status.Error(codes.Internal, "failed to dismiss pending input")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Service) RepostActivity(ctx context.Context, req *pbsvc.RepostActivityRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.ActivityId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")
+	}
+
+	return nil, status.Error(codes.Unimplemented, "repost logic requires complex parsing and is partially implemented in router")
+}
+
+func (s *Service) GetPipelineRun(ctx context.Context, req *pbsvc.GetPipelineRunRequest) (*pipeline.PipelineRun, error) {
+	if req.UserId == "" || req.RunId == "" {
+		return nil, status.Error(codes.InvalidArgument, "missing required fields")
+	}
+
+	run, err := s.store.GetPipelineRun(ctx, req.UserId, req.RunId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get pipeline run", "error", err)
+		return nil, status.Error(codes.Internal, "failed to read run")
+	}
+	if run == nil {
+		return nil, status.Error(codes.NotFound, "run not found")
+	}
+
+	return run, nil
+}
+
+func (s *Service) ListPipelineRuns(ctx context.Context, req *pbsvc.ListPipelineRunsRequest) (*pbsvc.ListPipelineRunsResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	runs, nextToken, err := s.store.ListPipelineRuns(ctx, req.UserId, req.PipelineId, req.Limit, req.PageToken)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list pipeline runs", "error", err)
+		return nil, status.Error(codes.Internal, "failed to list runs")
+	}
+
+	return &pbsvc.ListPipelineRunsResponse{
+		Runs:          runs,
+		NextPageToken: nextToken,
+	}, nil
+}

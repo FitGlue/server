@@ -1,11 +1,12 @@
 package file_generators
 
 import (
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
 	"bytes"
 	"testing"
 	"time"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"github.com/muktihari/fit/decoder"
 	"github.com/muktihari/fit/profile/typedef"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -14,23 +15,23 @@ import (
 func TestGenerateFitFile(t *testing.T) {
 	// Setup input
 	startTime := timestamppb.New(time.Now())
-	activity := &pb.StandardizedActivity{
+	activity := &pbactivity.StandardizedActivity{
 		StartTime: startTime,
-		Type:      pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		Sessions: []*pb.Session{
+		Type:      pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		Sessions: []*pbactivity.Session{
 			{
 				StartTime:        startTime,
 				TotalElapsedTime: 3,
-				Laps: []*pb.Lap{
+				Laps: []*pbactivity.Lap{
 					{
-						Records: []*pb.Record{
+						Records: []*pbactivity.Record{
 							{Timestamp: startTime, HeartRate: 140},
 							{Timestamp: startTime, HeartRate: 145}, // Logic usually adds seconds, simplified here
 							{Timestamp: startTime, HeartRate: 150},
 						},
 					},
 				},
-				StrengthSets: []*pb.StrengthSet{
+				StrengthSets: []*pbactivity.StrengthSet{
 					{
 						ExerciseName:    "Bench Press",
 						Reps:            10,
@@ -97,13 +98,13 @@ func TestGenerateFitFile(t *testing.T) {
 
 func TestGenerateFitFile_NoHR(t *testing.T) {
 	startTime := timestamppb.New(time.Now())
-	activity := &pb.StandardizedActivity{
+	activity := &pbactivity.StandardizedActivity{
 		StartTime: startTime,
-		Sessions: []*pb.Session{
+		Sessions: []*pbactivity.Session{
 			{
 				StartTime:        startTime,
 				TotalElapsedTime: 10,
-				StrengthSets: []*pb.StrengthSet{
+				StrengthSets: []*pbactivity.StrengthSet{
 					{
 						ExerciseName:    "Bench Press",
 						Reps:            10,

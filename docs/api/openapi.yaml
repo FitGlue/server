@@ -1,0 +1,2645 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: ""
+    version: 0.0.1
+paths:
+    /v2/admin/registration-summary:
+        post:
+            tags:
+                - UserService
+            description: Administrative RPCs
+            operationId: UserService_GenerateRegistrationSummary
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/GenerateRegistrationSummaryRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/billing/webhook:
+        post:
+            tags:
+                - BillingService
+            operationId: BillingService_HandleWebhookEvent
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/HandleWebhookEventRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/registry/categories:
+        get:
+            tags:
+                - RegistryService
+            operationId: RegistryService_ListCategories
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListCategoriesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/registry/destinations:
+        get:
+            tags:
+                - RegistryService
+            operationId: RegistryService_ListDestinations
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListDestinationsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/registry/plugins:
+        get:
+            tags:
+                - RegistryService
+            operationId: RegistryService_ListPlugins
+            parameters:
+                - name: category
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPluginsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/registry/plugins/{pluginId}:
+        get:
+            tags:
+                - RegistryService
+            operationId: RegistryService_GetPlugin
+            parameters:
+                - name: pluginId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PluginManifest'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/registry/plugins/{pluginId}/icon:
+        get:
+            tags:
+                - RegistryService
+            operationId: RegistryService_GetPluginIcon
+            parameters:
+                - name: pluginId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetPluginIconResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/registry/sources:
+        get:
+            tags:
+                - RegistryService
+            operationId: RegistryService_ListSources
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListSourcesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user:
+        post:
+            tags:
+                - UserService
+            operationId: UserService_CreateUser
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateUserRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/email/reset-password:
+        post:
+            tags:
+                - UserService
+            operationId: UserService_SendPasswordResetEmail
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SendPasswordResetEmailRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}:
+        delete:
+            tags:
+                - UserService
+            operationId: UserService_DeleteUser
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/booster-data:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_GetBoosterData
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: boosterId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetBoosterDataResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/booster-data/{boosterId}:
+        put:
+            tags:
+                - UserService
+            operationId: UserService_SetBoosterData
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: boosterId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - UserService
+            operationId: UserService_DeleteBoosterData
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: boosterId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/counters:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_ListCounters
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListCountersResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/counters/{counterId}:
+        patch:
+            tags:
+                - UserService
+            operationId: UserService_UpdateCounter
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: counterId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateCounterRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Counter'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/email/change:
+        post:
+            tags:
+                - UserService
+            operationId: UserService_SendEmailChangeVerification
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SendEmailChangeVerificationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/email/verify:
+        post:
+            tags:
+                - UserService
+            description: Email Auth RPCs
+            operationId: UserService_SendVerificationEmail
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SendVerificationEmailRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/integrations:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_ListIntegrations
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserIntegrations'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/integrations/{provider}:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_GetIntegration
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: provider
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetIntegrationResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - UserService
+            operationId: UserService_SetIntegration
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: provider
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetIntegrationRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - UserService
+            operationId: UserService_DeleteIntegration
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: provider
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/notifications:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_GetNotificationPrefs
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotificationPreferences'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - UserService
+            operationId: UserService_UpdateNotificationPrefs
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/NotificationPreferences'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/NotificationPreferences'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/user/{userId}/profile:
+        get:
+            tags:
+                - UserService
+            operationId: UserService_GetProfile
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - UserService
+            operationId: UserService_UpdateProfile
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UserProfile'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/activities:
+        get:
+            tags:
+                - ActivityService
+            operationId: ActivityService_ListActivities
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListActivitiesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/activities/{activityId}:
+        get:
+            tags:
+                - ActivityService
+            operationId: ActivityService_GetActivity
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: activityId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StandardizedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ActivityService
+            operationId: ActivityService_DeleteActivity
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: activityId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/activities/{activityId}/repost:
+        post:
+            tags:
+                - PipelineService
+            operationId: PipelineService_RepostActivity
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: activityId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RepostActivityRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/billing/cancel:
+        post:
+            tags:
+                - BillingService
+            operationId: BillingService_CancelSubscription
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CancelSubscriptionRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SubscriptionState'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/billing/checkout:
+        post:
+            tags:
+                - BillingService
+            operationId: BillingService_CreateCheckoutSession
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateCheckoutSessionRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateCheckoutSessionResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/billing/subscription:
+        get:
+            tags:
+                - BillingService
+            operationId: BillingService_GetSubscription
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SubscriptionState'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/billing/tier-status:
+        get:
+            tags:
+                - BillingService
+            operationId: BillingService_GetTierStatus
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetTierStatusResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/billing/trial:
+        post:
+            tags:
+                - BillingService
+            operationId: BillingService_StartTrial
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/StartTrialRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SubscriptionState'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/export-data:
+        post:
+            tags:
+                - ActivityService
+            operationId: ActivityService_ExportData
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ExportDataRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportDataResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/parse-fit:
+        post:
+            tags:
+                - ActivityService
+            operationId: ActivityService_ParseFitFile
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ParseFitFileRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StandardizedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/pending-inputs:
+        get:
+            tags:
+                - PipelineService
+            operationId: PipelineService_ListPendingInputs
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPendingInputsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/pending-inputs/{pendingInputId}/resolve:
+        post:
+            tags:
+                - PipelineService
+            operationId: PipelineService_ResolvePendingInput
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pendingInputId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ResolvePendingInputRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/pending-inputs/{pendingInputId}/submit:
+        post:
+            tags:
+                - PipelineService
+            operationId: PipelineService_SubmitInput
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pendingInputId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SubmitInputRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/pipeline-runs:
+        get:
+            tags:
+                - PipelineService
+            operationId: PipelineService_ListPipelineRuns
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPipelineRunsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/pipeline-runs/{runId}:
+        get:
+            tags:
+                - PipelineService
+            operationId: PipelineService_GetPipelineRun
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: runId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineRun'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/pipelines:
+        get:
+            tags:
+                - PipelineService
+            operationId: PipelineService_ListPipelines
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPipelinesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - PipelineService
+            operationId: PipelineService_CreatePipeline
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PipelineConfig'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/pipelines/{pipelineId}:
+        get:
+            tags:
+                - PipelineService
+            operationId: PipelineService_GetPipeline
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pipelineId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - PipelineService
+            operationId: PipelineService_DeletePipeline
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pipelineId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - PipelineService
+            operationId: PipelineService_UpdatePipeline
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: pipelineId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/PipelineConfig'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/showcases:
+        get:
+            tags:
+                - ActivityService
+            operationId: ActivityService_ListShowcases
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListShowcasesResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - ActivityService
+            operationId: ActivityService_CreateShowcase
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ShowcasedActivity'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcasedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /v2/users/{userId}/showcases/{showcaseId}:
+        get:
+            tags:
+                - ActivityService
+            operationId: ActivityService_GetShowcase
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: showcaseId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcasedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ActivityService
+            operationId: ActivityService_DeleteShowcase
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: showcaseId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        patch:
+            tags:
+                - ActivityService
+            operationId: ActivityService_UpdateShowcase
+            parameters:
+                - name: userId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: showcaseId
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ShowcasedActivity'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcasedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        AppleHealthIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        BoosterExecution:
+            type: object
+            properties:
+                providerName:
+                    type: string
+                status:
+                    type: string
+                durationMs:
+                    type: string
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+                error:
+                    type: string
+        CancelSubscriptionRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+        ConfigFieldDependency:
+            type: object
+            properties:
+                fieldKey:
+                    type: string
+                values:
+                    type: array
+                    items:
+                        type: string
+        ConfigFieldOption:
+            type: object
+            properties:
+                value:
+                    type: string
+                label:
+                    type: string
+        ConfigFieldSchema:
+            type: object
+            properties:
+                key:
+                    type: string
+                label:
+                    type: string
+                description:
+                    type: string
+                fieldType:
+                    type: integer
+                    format: enum
+                required:
+                    type: boolean
+                defaultValue:
+                    type: string
+                options:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ConfigFieldOption'
+                validation:
+                    $ref: '#/components/schemas/ConfigFieldValidation'
+                dependsOn:
+                    $ref: '#/components/schemas/ConfigFieldDependency'
+                keyOptions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ConfigFieldOption'
+                valueOptions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ConfigFieldOption'
+                dynamicSource:
+                    type: string
+                valueDynamicSource:
+                    type: string
+        ConfigFieldValidation:
+            type: object
+            properties:
+                minLength:
+                    type: integer
+                    format: int32
+                maxLength:
+                    type: integer
+                    format: int32
+                pattern:
+                    type: string
+                minValue:
+                    type: number
+                    format: double
+                maxValue:
+                    type: number
+                    format: double
+        Counter:
+            type: object
+            properties:
+                id:
+                    type: string
+                count:
+                    type: string
+                lastUpdated:
+                    type: string
+                    format: date-time
+        CreateCheckoutSessionRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                successUrl:
+                    type: string
+                cancelUrl:
+                    type: string
+        CreateCheckoutSessionResponse:
+            type: object
+            properties:
+                sessionUrl:
+                    type: string
+        CreateUserRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+        DestinationConfig:
+            type: object
+            properties:
+                config:
+                    type: object
+                    additionalProperties:
+                        type: string
+                excludedEnrichers:
+                    type: array
+                    items:
+                        type: string
+        DestinationOutcome:
+            type: object
+            properties:
+                destination:
+                    type: integer
+                    format: enum
+                status:
+                    type: integer
+                    format: enum
+                externalId:
+                    type: string
+                error:
+                    type: string
+                completedAt:
+                    type: string
+                    format: date-time
+        EnricherConfig:
+            type: object
+            properties:
+                providerType:
+                    type: integer
+                    format: enum
+                typedConfig:
+                    type: object
+                    additionalProperties:
+                        type: string
+        ExportDataRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+        ExportDataResponse:
+            type: object
+            properties:
+                downloadUrl:
+                    type: string
+        FitbitIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                fitbitUserId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        GenerateRegistrationSummaryRequest:
+            type: object
+            properties:
+                dateOverride:
+                    type: string
+                    description: Optional date override (e.g. "2026-02-23"), uses previous 24 hours if empty
+        GetBoosterDataResponse:
+            type: object
+            properties:
+                data:
+                    type: object
+                    additionalProperties:
+                        type: object
+                    description: Map of booster_id to its JSON payload
+        GetIntegrationResponse:
+            type: object
+            properties:
+                integrations:
+                    allOf:
+                        - $ref: '#/components/schemas/UserIntegrations'
+                    description: |-
+                        Uses a generic bytes payload or structured oneOf depending on how we decide to send it
+                         For now, returning the whole UserIntegrations tree is easiest
+        GetPluginIconResponse:
+            type: object
+            properties:
+                iconData:
+                    type: string
+                    format: bytes
+                contentType:
+                    type: string
+        GetTierStatusResponse:
+            type: object
+            properties:
+                effectiveTier:
+                    type: integer
+                    format: enum
+                isTrial:
+                    type: boolean
+        GitHubIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                githubUserId:
+                    type: string
+                githubUsername:
+                    type: string
+                scope:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        GoogleIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                googleUserId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        HandleWebhookEventRequest:
+            type: object
+            properties:
+                payload:
+                    type: string
+                    format: bytes
+                signature:
+                    type: string
+        HealthConnectIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        HevyIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                apiKey:
+                    type: string
+                userId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        IntervalsIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                apiKey:
+                    type: string
+                athleteId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        Lap:
+            type: object
+            properties:
+                startTime:
+                    type: string
+                    format: date-time
+                totalElapsedTime:
+                    type: number
+                    format: double
+                totalDistance:
+                    type: number
+                    format: double
+                records:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Record'
+                exerciseName:
+                    type: string
+                intensity:
+                    type: string
+        ListActivitiesResponse:
+            type: object
+            properties:
+                activities:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StandardizedActivity'
+                nextPageToken:
+                    type: string
+        ListCategoriesResponse:
+            type: object
+            properties:
+                categories:
+                    type: array
+                    items:
+                        type: string
+        ListCountersResponse:
+            type: object
+            properties:
+                counters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Counter'
+        ListDestinationsResponse:
+            type: object
+            properties:
+                destinations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PluginManifest'
+        ListPendingInputsResponse:
+            type: object
+            properties:
+                inputs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PendingInput'
+        ListPipelineRunsResponse:
+            type: object
+            properties:
+                runs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PipelineRun'
+        ListPipelinesResponse:
+            type: object
+            properties:
+                pipelines:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PipelineConfig'
+        ListPluginsResponse:
+            type: object
+            properties:
+                plugins:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PluginManifest'
+        ListShowcasesResponse:
+            type: object
+            properties:
+                showcases:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseProfileEntry'
+        ListSourcesResponse:
+            type: object
+            properties:
+                sources:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PluginManifest'
+        MockIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        NotificationPreferences:
+            type: object
+            properties:
+                notifyPendingInput:
+                    type: boolean
+                notifyPipelineSuccess:
+                    type: boolean
+                notifyPipelineFailure:
+                    type: boolean
+        OuraIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                ouraUserId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        ParkrunIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                athleteId:
+                    type: string
+                countryUrl:
+                    type: string
+                consentGiven:
+                    type: boolean
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        ParseFitFileRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                fitFileContent:
+                    type: string
+                    format: bytes
+                title:
+                    type: string
+                description:
+                    type: string
+                pipelineId:
+                    type: string
+        PendingInput:
+            type: object
+            properties:
+                activityId:
+                    type: string
+                userId:
+                    type: string
+                status:
+                    type: integer
+                    format: enum
+                requiredFields:
+                    type: array
+                    items:
+                        type: string
+                inputData:
+                    type: object
+                    additionalProperties:
+                        type: string
+                originalPayloadUri:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+                completedAt:
+                    type: string
+                    format: date-time
+                continuedWithoutResolution:
+                    type: boolean
+                linkedActivityId:
+                    type: string
+                pipelineId:
+                    type: string
+                enricherProviderId:
+                    type: string
+                autoPopulated:
+                    type: boolean
+                autoDeadline:
+                    type: string
+                    format: date-time
+                providerMetadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+        PipelineConfig:
+            type: object
+            properties:
+                id:
+                    type: string
+                source:
+                    type: string
+                enrichers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/EnricherConfig'
+                destinations:
+                    type: array
+                    items:
+                        type: integer
+                        format: enum
+                name:
+                    type: string
+                disabled:
+                    type: boolean
+                sourceConfig:
+                    type: object
+                    additionalProperties:
+                        type: string
+                destinationConfigs:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/DestinationConfig'
+        PipelineRun:
+            type: object
+            properties:
+                id:
+                    type: string
+                pipelineId:
+                    type: string
+                activityId:
+                    type: string
+                source:
+                    type: string
+                sourceActivityId:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                type:
+                    type: integer
+                    format: enum
+                startTime:
+                    type: string
+                    format: date-time
+                status:
+                    type: integer
+                    format: enum
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+                boosters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/BoosterExecution'
+                destinations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DestinationOutcome'
+                statusMessage:
+                    type: string
+                pendingInputId:
+                    type: string
+                originalPayloadUri:
+                    type: string
+                enrichedEventUri:
+                    type: string
+        PluginManifest:
+            type: object
+            properties:
+                id:
+                    type: string
+                type:
+                    type: integer
+                    format: enum
+                name:
+                    type: string
+                description:
+                    type: string
+                icon:
+                    type: string
+                configSchema:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ConfigFieldSchema'
+                requiredIntegrations:
+                    type: array
+                    items:
+                        type: string
+                enabled:
+                    type: boolean
+                enricherProviderType:
+                    type: integer
+                    format: int32
+                destinationType:
+                    type: integer
+                    format: int32
+                marketingDescription:
+                    type: string
+                features:
+                    type: array
+                    items:
+                        type: string
+                transformations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Transformation'
+                useCases:
+                    type: array
+                    items:
+                        type: string
+                externalUrlTemplate:
+                    type: string
+                requiredTier:
+                    type: string
+                category:
+                    type: string
+                sortOrder:
+                    type: integer
+                    format: int32
+                isPremium:
+                    type: boolean
+                popularityScore:
+                    type: integer
+                    format: int32
+                iconType:
+                    type: string
+                iconPath:
+                    type: string
+                isTemporarilyUnavailable:
+                    type: boolean
+                allowMultipleInstances:
+                    type: boolean
+        PolarIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                polarUserId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        Record:
+            type: object
+            properties:
+                timestamp:
+                    type: string
+                    format: date-time
+                heartRate:
+                    type: integer
+                    format: int32
+                power:
+                    type: integer
+                    format: int32
+                cadence:
+                    type: integer
+                    format: int32
+                speed:
+                    type: number
+                    format: double
+                altitude:
+                    type: number
+                    format: double
+                positionLat:
+                    type: number
+                    format: double
+                positionLong:
+                    type: number
+                    format: double
+                groundContactTime:
+                    type: integer
+                    format: int32
+                verticalOscillation:
+                    type: integer
+                    format: int32
+                verticalRatio:
+                    type: integer
+                    format: int32
+                stepLength:
+                    type: number
+                    format: double
+        RepostActivityRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                activityId:
+                    type: string
+        ResolvePendingInputRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                pendingInputId:
+                    type: string
+        SendEmailChangeVerificationRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                newEmail:
+                    type: string
+        SendPasswordResetEmailRequest:
+            type: object
+            properties:
+                email:
+                    type: string
+        SendVerificationEmailRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+        Session:
+            type: object
+            properties:
+                startTime:
+                    type: string
+                    format: date-time
+                totalElapsedTime:
+                    type: number
+                    format: double
+                totalDistance:
+                    type: number
+                    format: double
+                laps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Lap'
+                strengthSets:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/StrengthSet'
+                totalCalories:
+                    type: number
+                    format: double
+                avgHeartRate:
+                    type: integer
+                    format: int32
+                maxHeartRate:
+                    type: integer
+                    format: int32
+        SetIntegrationRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                provider:
+                    type: string
+        ShowcaseProfileEntry:
+            type: object
+            properties:
+                showcaseId:
+                    type: string
+                title:
+                    type: string
+                activityType:
+                    type: integer
+                    format: enum
+                source:
+                    type: integer
+                    format: enum
+                startTime:
+                    type: string
+                    format: date-time
+                routeThumbnailUrl:
+                    type: string
+                distanceMeters:
+                    type: number
+                    format: double
+                durationSeconds:
+                    type: number
+                    format: double
+                totalSets:
+                    type: integer
+                    format: int32
+                totalReps:
+                    type: integer
+                    format: int32
+                totalWeightKg:
+                    type: number
+                    format: double
+        ShowcasedActivity:
+            type: object
+            properties:
+                showcaseId:
+                    type: string
+                activityId:
+                    type: string
+                userId:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                activityType:
+                    type: integer
+                    format: enum
+                source:
+                    type: integer
+                    format: enum
+                startTime:
+                    type: string
+                    format: date-time
+                activityData:
+                    $ref: '#/components/schemas/StandardizedActivity'
+                fitFileUri:
+                    type: string
+                appliedEnrichments:
+                    type: array
+                    items:
+                        type: string
+                enrichmentMetadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+                tags:
+                    type: array
+                    items:
+                        type: string
+                pipelineExecutionId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                expiresAt:
+                    type: string
+                    format: date-time
+                ownerDisplayName:
+                    type: string
+                activityDataUri:
+                    type: string
+            description: ShowcasedActivity represents a publicly shareable activity snapshot.
+        SpotifyIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                spotifyUserId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        StandardizedActivity:
+            type: object
+            properties:
+                source:
+                    type: integer
+                    format: enum
+                externalId:
+                    type: string
+                userId:
+                    type: string
+                startTime:
+                    type: string
+                    format: date-time
+                name:
+                    type: string
+                type:
+                    type: integer
+                    format: enum
+                sessions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/Session'
+                description:
+                    type: string
+                tags:
+                    type: array
+                    items:
+                        type: string
+                notes:
+                    type: string
+                timeMarkers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/TimeMarker'
+                workout:
+                    $ref: '#/components/schemas/WorkoutDefinition'
+        StartTrialRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        StravaIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                athleteId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        StrengthSet:
+            type: object
+            properties:
+                exerciseName:
+                    type: string
+                reps:
+                    type: integer
+                    format: int32
+                weightKg:
+                    type: number
+                    format: double
+                startTime:
+                    type: string
+                    format: date-time
+                durationSeconds:
+                    type: integer
+                    format: int32
+                notes:
+                    type: string
+                supersetId:
+                    type: string
+                primaryMuscleGroup:
+                    type: integer
+                    format: enum
+                secondaryMuscleGroups:
+                    type: array
+                    items:
+                        type: integer
+                        format: enum
+                distanceMeters:
+                    type: number
+                    format: double
+                setType:
+                    type: string
+        SubmitInputRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                pendingInputId:
+                    type: string
+                inputData:
+                    type: object
+                    additionalProperties:
+                        type: string
+        SubscriptionState:
+            type: object
+            properties:
+                userId:
+                    type: string
+                stripeCustomerId:
+                    type: string
+                    description: Stripe customer ID for billing
+                stripeSubscriptionId:
+                    type: string
+                trialEndsAt:
+                    type: string
+                    description: Athlete trial end date (null = no trial)
+                    format: date-time
+                subscriptionTier:
+                    type: integer
+                    description: The actual purchased tier (free users won't have this record or it will be free)
+                    format: enum
+                currentPeriodStart:
+                    type: string
+                    format: date-time
+                currentPeriodEnd:
+                    type: string
+                    format: date-time
+                cancelAtPeriodEnd:
+                    type: boolean
+                status:
+                    type: string
+            description: SubscriptionState tracks the user's billing info, decoupled from core profile.
+        TimeMarker:
+            type: object
+            properties:
+                timestamp:
+                    type: string
+                    format: date-time
+                label:
+                    type: string
+                markerType:
+                    type: string
+        TrainingPeaksIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                athleteId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        Transformation:
+            type: object
+            properties:
+                field:
+                    type: string
+                label:
+                    type: string
+                before:
+                    type: string
+                after:
+                    type: string
+                visualType:
+                    type: string
+                afterHtml:
+                    type: string
+        UpdateCounterRequest:
+            type: object
+            properties:
+                userId:
+                    type: string
+                counterId:
+                    type: string
+                count:
+                    type: string
+        UserIntegrations:
+            type: object
+            properties:
+                hevy:
+                    $ref: '#/components/schemas/HevyIntegration'
+                fitbit:
+                    $ref: '#/components/schemas/FitbitIntegration'
+                strava:
+                    $ref: '#/components/schemas/StravaIntegration'
+                mock:
+                    $ref: '#/components/schemas/MockIntegration'
+                parkrun:
+                    $ref: '#/components/schemas/ParkrunIntegration'
+                spotify:
+                    $ref: '#/components/schemas/SpotifyIntegration'
+                trainingpeaks:
+                    $ref: '#/components/schemas/TrainingPeaksIntegration'
+                intervals:
+                    $ref: '#/components/schemas/IntervalsIntegration'
+                google:
+                    $ref: '#/components/schemas/GoogleIntegration'
+                oura:
+                    $ref: '#/components/schemas/OuraIntegration'
+                polar:
+                    $ref: '#/components/schemas/PolarIntegration'
+                wahoo:
+                    $ref: '#/components/schemas/WahooIntegration'
+                github:
+                    $ref: '#/components/schemas/GitHubIntegration'
+                appleHealth:
+                    $ref: '#/components/schemas/AppleHealthIntegration'
+                healthConnect:
+                    $ref: '#/components/schemas/HealthConnectIntegration'
+            description: UserIntegrations represents all connected third-party providers.
+        UserProfile:
+            type: object
+            properties:
+                userId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                fcmTokens:
+                    type: array
+                    items:
+                        type: string
+                tier:
+                    type: integer
+                    format: enum
+                isAdmin:
+                    type: boolean
+                syncCountThisMonth:
+                    type: integer
+                    description: Monthly sync tracking
+                    format: int32
+                syncCountResetAt:
+                    type: string
+                    format: date-time
+                preventedSyncCount:
+                    type: integer
+                    format: int32
+                accessEnabled:
+                    type: boolean
+                    description: Waitlist gate - false until admin enables access
+                notificationPreferences:
+                    allOf:
+                        - $ref: '#/components/schemas/NotificationPreferences'
+                    description: User's push notification preferences
+                trialEndsAt:
+                    type: string
+                    format: date-time
+            description: "UserProfile represents the core user identity and preferences, \n cleanly separated from billing and integrations."
+        WahooIntegration:
+            type: object
+            properties:
+                enabled:
+                    type: boolean
+                accessToken:
+                    type: string
+                refreshToken:
+                    type: string
+                expiresAt:
+                    type: string
+                    format: date-time
+                wahooUserId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                lastUsedAt:
+                    type: string
+                    format: date-time
+        WorkoutDefinition:
+            type: object
+            properties:
+                name:
+                    type: string
+                steps:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/WorkoutStep'
+        WorkoutStep:
+            type: object
+            properties:
+                intensity:
+                    type: string
+                durationType:
+                    type: string
+                durationValue:
+                    type: integer
+                    format: uint32
+                targetType:
+                    type: string
+                targetLow:
+                    type: integer
+                    format: uint32
+                targetHigh:
+                    type: integer
+                    format: uint32
+tags:
+    - name: ActivityService
+    - name: BillingService
+    - name: PipelineService
+    - name: RegistryService
+    - name: UserService

@@ -11,7 +11,7 @@ Be respectful and constructive. We're all here to build something great.
 ### Prerequisites
 
 - Go 1.25+
-- Node.js 20+
+- Node.js 20+ (Required for Protobuf and OpenAPI frontend type generation)
 - `protoc` (Protocol Buffers compiler)
 - Google Cloud SDK (for deployment)
 
@@ -36,13 +36,9 @@ make test
 
 ### Adding New Features
 
-1. **New Plugin?** Use the scaffolding:
-   ```bash
-   make plugin-source name=newservice
-   make plugin-enricher name=newfeature
-   make plugin-destination name=newtarget
-   ```
-   See [Adding Plugins](docs/development/adding-plugins.md) for details.
+1. **New RPC Endpoint**: Define in `src/proto`, run `make generate`, and implement the interface in the respective `internal` package and `service`.
+2. **New Webhook Source**: Implement the `SourceProvider` interface in `internal/webhook` and register it inside `services/api-webhook/main.go`.
+3. **Deploying Independent Services**: Use standard CI/CD deployment or run `gcloud run deploy` after building the Docker artifact.
 
 2. **Proto changes?** Regenerate types:
    ```bash
@@ -58,7 +54,7 @@ make test
 ### Code Style
 
 - **Go**: Follow standard Go conventions, use `gofmt`
-- **TypeScript**: ESLint rules in `.eslintrc`
+- **TypeScript**: ESLint rules in `.eslintrc` (utilized strictly in frontend and tooling scripts)
 - **Commits**: Use conventional commits (feat, fix, docs, refactor, test, chore)
 
 ### Pull Request Guidelines
@@ -80,17 +76,12 @@ make test
 
 ## Project Structure
 
-```
+```text
 server/
 ├── src/go/               # Go monorepo
-│   ├── functions/        # Cloud Functions
+│   ├── services/         # Cloud Run Entrypoints
+│   ├── internal/         # Business Logic
 │   └── pkg/              # Shared libraries
-│       ├── errors/       # Structured errors
-│       ├── plugin/       # Plugin registry
-│       └── enricher_providers/  # Pipeline plugins
-├── src/typescript/       # TypeScript workspace
-│   ├── shared/           # @fitglue/shared library
-│   └── *-handler/        # Cloud Functions
 ├── src/proto/            # Protocol Buffer definitions
 ├── terraform/            # Infrastructure as Code
 └── scripts/              # Development scripts

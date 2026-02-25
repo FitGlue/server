@@ -1,94 +1,56 @@
 # CI/CD Deployment Guide
 
-This guide details the CI/CD pipeline configuration for `fitglue-server`, focusing on the OIDC authentication setup with Google Cloud Platform (GCP).
+This guide details the CI/CD pipeline for `fitglue-server`, including OIDC authentication with GCP and Cloud Run deployment.
 
 ## Overview
 
-We use **CircleCI** for our CI/CD pipeline, connecting to **GCP** using **OpenID Connect (OIDC)**. OIDC allows CircleCI to authenticate with GCP without managing long-lived service account keys, improving security.
+We use **CircleCI** for CI/CD, connecting to **GCP** using **OpenID Connect (OIDC)**. OIDC allows CircleCI to authenticate with GCP without managing long-lived service account keys.
 
 ## Pipeline Workflow
 
 The CI/CD pipeline automatically:
-1. **Lints codebase** - Runs `make lint-codebase` for consistency checks
-2. **Builds and tests** all code on every commit
-3. **Deploys to Dev** automatically on `main` branch
-4. **Deploys to Test** automatically after Dev deployment succeeds
-5. **Deploys to Prod** after manual approval
+1. **Lints codebase** — Runs `make lint` (Go formatting, vet, proto-JSON check)
+2. **Runs tests** — `make test` for unit tests; fails on any test failure
+3. **Enforces coverage** — `make test-coverage` enforces 80% minimum per package
+4. **Builds Docker images** — `make docker` for all 10 Cloud Run services
+5. **Deploys to Dev** — automatically on `main` branch merge
+6. **Deploys to Test** — automatically after Dev deployment succeeds
+7. **Deploys to Prod** — after manual approval gate
 
 ### Codebase Linter
 
-The `lint-codebase` step runs automated consistency checks:
+The `make lint` step runs:
 
 | Check | Description |
 |-------|-------------|
-| Enricher Registration | All proto enum values have registry entries |
-| Function Exports | All Cloud Functions export correctly |
-| Terraform Coverage | All functions have Terraform definitions |
-| Proto Sync | TypeScript and Go types match proto definitions |
-| Store Types | No `any` types in Store methods |
-| Service Boundaries | Services don't access database drivers directly |
+| Go formatting | All Go files pass `gofmt -l` |
+| Go vet | `go vet` on all packages except generated integrations |
+| Proto-JSON misuse | `scripts/lint-proto-json.sh` — no raw JSON marshalling of proto messages |
 
-See `scripts/lint-codebase.ts` for implementation details.
+### Docker Build
 
-### Shared Modules Linter
+All 10 services share a single multi-stage `Dockerfile` with `SERVICE_NAME` as a build argument:
 
-The `lint-shared-modules` step validates that `shared_modules.json` is in sync with the codebase:
-
-| Check | Description |
-|-------|-------------|
-| Paths Exist | All defined module paths actually exist |
-| Valid Dependencies | All module dependencies reference valid modules |
-| Import Patterns | All import patterns reference valid modules |
-| Coverage | Warns if new directories lack module definitions |
-
-See `scripts/validate_shared_modules.py` for implementation details.
-
-### Smart Pruning
-
-Both Go and TypeScript function ZIPs use **smart pruning** to minimize unnecessary rebuilds by only including the shared code each function actually needs.
-
-#### TypeScript Pruning
-
-TypeScript handlers are analyzed to determine which `@fitglue/shared` modules they import:
-
-1. **Analysis**: Each handler's imports are analyzed by `analyze_ts_imports.py`
-2. **Module Resolution**: Imports map to modules defined in `shared_modules.json`
-3. **Selective Copying**: Only required shared modules are included in the ZIP
-4. **Deterministic Hashing**: Terraform's `filemd5()` detects actual changes
-
-**Requirements**: Handlers should use module-level imports for maximum benefit:
-```typescript
-// ✅ Enables pruning
-import { createCloudFunction } from '@fitglue/shared/framework';
-
-// ⚠️ Includes everything (no pruning benefit)
-import { createCloudFunction } from '@fitglue/shared';
+```bash
+docker build -t fitglue-activity --build-arg SERVICE_NAME=activity .
+docker build -t fitglue-api-client --build-arg SERVICE_NAME=api-client .
+# ... etc for all 10 services
 ```
 
-See [Shared Modules Architecture](../architecture/shared-modules.md) for details.
+The Docker image compiles the Go binary for the named service, producing a minimal image (~15MB). No ZIPs, no pruning — Cloud Run receives the container image directly.
 
-#### Go Pruning
+### Cloud Run Deployment
 
-Go functions are analyzed using `go list -deps` to determine which `pkg/` packages they import:
+Terraform deploys each service as a Cloud Run revision:
 
-1. **Analysis**: Each function's transitive dependencies are resolved via `go list`
-2. **Filtering**: Only `pkg/` imports are considered (external dependencies come from `go.mod`)
-3. **Selective Copying**: Only required `pkg/` subdirectories are included in the ZIP
-4. **Deterministic Hashing**: Terraform's `filemd5()` detects actual changes
+```bash
+cd terraform
+terraform apply -var-file=envs/dev.tfvars
+```
 
-**Impact**: Go ZIP sizes reduced by ~67% (4.8 MB → 1.6 MB total across 12 functions).
+Cloud Run automatically performs rolling updates with health-check gating.
 
-| Function | Without Pruning | With Pruning | Reduction |
-|----------|----------------|--------------|-----------|
-| `fit-parser-handler` | 388 KB | 103 KB | 73% |
-| `router` | 388 KB | 105 KB | 73% |
-| `enricher` | 546 KB | 329 KB | 40% |
-
-Scripts:
-- `scripts/analyze_go_imports.py` - Analyze Go function dependencies
-- `scripts/build_function_zips.py` - Build Go ZIPs with pruning (use `--no-prune` to disable)
-
-All three environments (Dev, Test, Prod) are configured with OIDC authentication.
+All three environments (Dev, Test, Prod) use separate GCP projects with OIDC authentication.
 
 ## Setting Up OIDC for a New Environment
 

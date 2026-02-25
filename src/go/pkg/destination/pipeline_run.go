@@ -3,12 +3,16 @@ package destination
 import (
 	"context"
 	"fmt"
+	"github.com/fitglue/server/src/go/pkg/domain/user"
 	"log/slog"
 	"strings"
 
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/types/formatters"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -16,9 +20,9 @@ import (
 // This matches the shared Database interface in interfaces.go
 type Database interface {
 	UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error
-	SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error
-	GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error)
-	GetUser(ctx context.Context, id string) (*pb.UserRecord, error)
+	SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error
+	GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error)
+	GetUser(ctx context.Context, id string) (*user.Record, error)
 }
 
 // UpdateStatus updates a single destination's status using the subcollection pattern.
@@ -36,13 +40,13 @@ type Database interface {
 //   - errMsg: optional error message if status is FAILED
 //   - activityName: the activity name for the push notification title
 //   - logger: logger for debugging
-func UpdateStatus(ctx context.Context, db Database, notifications shared.NotificationService, userId string, pipelineRunId string, dest pb.Destination, status pb.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger *slog.Logger) {
+func UpdateStatus(ctx context.Context, db Database, notifications shared.NotificationService, userId string, pipelineRunId string, dest pbplugin.DestinationType, status pbpipeline.DestinationStatus, externalId string, errMsg string, activityName string, activityId string, logger *slog.Logger) {
 	if pipelineRunId == "" {
 		return // No pipeline run to update - legacy flow
 	}
 
 	// Build the outcome
-	outcome := &pb.DestinationOutcome{
+	outcome := &pbpipeline.DestinationOutcome{
 		Destination: dest,
 		Status:      status,
 		CompletedAt: timestamppb.Now(),
@@ -107,7 +111,7 @@ func UpdateStatus(ctx context.Context, db Database, notifications shared.Notific
 	}
 
 	// Send push notification when all destinations have reached a terminal status
-	if newStatus == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED || newStatus == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+	if newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED || newStatus == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
 		sendSyncNotification(ctx, db, notifications, userId, activityName, activityId, newStatus, outcomes, logger)
 	}
 }
@@ -115,7 +119,7 @@ func UpdateStatus(ctx context.Context, db Database, notifications shared.Notific
 // sendSyncNotification sends a push notification when all destinations have completed.
 // For SYNCED: "Successfully synced to: Strava, Hevy"
 // For PARTIAL: "Synced to Strava, but Hevy failed"
-func sendSyncNotification(ctx context.Context, db Database, notifications shared.NotificationService, userId string, activityName string, activityId string, status pb.PipelineRunStatus, outcomes []*pb.DestinationOutcome, logger *slog.Logger) {
+func sendSyncNotification(ctx context.Context, db Database, notifications shared.NotificationService, userId string, activityName string, activityId string, status pbpipeline.PipelineRunStatus, outcomes []*pbpipeline.DestinationOutcome, logger *slog.Logger) {
 	if notifications == nil {
 		return
 	}
@@ -127,11 +131,11 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 
 	// Check notification preferences (default to true if not set)
 	prefs := user.NotificationPreferences
-	if status == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+	if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
 		if prefs != nil && !prefs.NotifyPipelineSuccess {
 			return
 		}
-	} else if status == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
+	} else if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL {
 		if prefs != nil && !prefs.NotifyPipelineFailure {
 			return
 		}
@@ -143,9 +147,9 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 	for _, o := range outcomes {
 		name := FormatDestinationName(o.Destination)
 		switch o.Status {
-		case pb.DestinationStatus_DESTINATION_STATUS_SUCCESS:
+		case pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS:
 			succeeded = append(succeeded, name)
-		case pb.DestinationStatus_DESTINATION_STATUS_FAILED:
+		case pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED:
 			failed = append(failed, name)
 		}
 	}
@@ -157,7 +161,7 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 		"activity_id": activityId,
 	}
 
-	if status == pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+	if status == pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
 		title = fmt.Sprintf("Activity Synced: %s", activityName)
 		body = fmt.Sprintf("Successfully synced to: %s", strings.Join(succeeded, ", "))
 	} else {
@@ -177,14 +181,14 @@ func sendSyncNotification(ctx context.Context, db Database, notifications shared
 
 // FormatDestinationName returns a human-readable name for a destination.
 // Delegates to the generated formatters package for consistency across Go and TypeScript.
-func FormatDestinationName(dest pb.Destination) string {
+func FormatDestinationName(dest pbplugin.DestinationType) string {
 	return formatters.FormatDestination(dest)
 }
 
 // ComputePipelineRunStatus determines overall status from destination outcomes
-func ComputePipelineRunStatus(destinations []*pb.DestinationOutcome) pb.PipelineRunStatus {
+func ComputePipelineRunStatus(destinations []*pbpipeline.DestinationOutcome) pbpipeline.PipelineRunStatus {
 	if len(destinations) == 0 {
-		return pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING
+		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING
 	}
 
 	allSuccess := true
@@ -193,27 +197,27 @@ func ComputePipelineRunStatus(destinations []*pb.DestinationOutcome) pb.Pipeline
 
 	for _, d := range destinations {
 		switch d.Status {
-		case pb.DestinationStatus_DESTINATION_STATUS_PENDING:
+		case pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING:
 			allComplete = false
 			allSuccess = false
-		case pb.DestinationStatus_DESTINATION_STATUS_FAILED:
+		case pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED:
 			anyFailed = true
 			allSuccess = false
-		case pb.DestinationStatus_DESTINATION_STATUS_SUCCESS:
+		case pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS:
 			// Good
-		case pb.DestinationStatus_DESTINATION_STATUS_SKIPPED:
+		case pbpipeline.DestinationStatus_DESTINATION_STATUS_SKIPPED:
 			// Skipped doesn't count as failure
 		}
 	}
 
 	if !allComplete {
-		return pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING
+		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING
 	}
 	if allSuccess {
-		return pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED
+		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED
 	}
 	if anyFailed {
-		return pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL
+		return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL
 	}
-	return pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED
+	return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED
 }

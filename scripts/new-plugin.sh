@@ -168,7 +168,7 @@ export interface ${pascal_name}ConnectorConfig extends ConnectorConfig {
  * TODO:
  * 1. Implement extractId() to get activity ID from webhook payload
  * 2. Implement fetchAndMap() to fetch full activity and convert to StandardizedActivity
- * 3. Add CloudEventSource.CLOUD_EVENT_SOURCE_${upper_name} to events.proto
+ * 3. Add CloudEventSource.CLOUD_EVENT_SOURCE_${upper_name} to models/plugin/provider.proto
  * 4. Add ActivitySource.SOURCE_${upper_name} to activity.proto
  */
 export class ${pascal_name}Connector extends BaseConnector<${pascal_name}ConnectorConfig, unknown> {
@@ -255,7 +255,7 @@ EOF
 
     echo ""
     echo -e "${YELLOW}Next steps:${NC}"
-    echo "  1. Add CloudEventSource.CLOUD_EVENT_SOURCE_${upper_name} to src/proto/events.proto"
+    echo "  1. Add CloudEventSource.CLOUD_EVENT_SOURCE_${upper_name} to src/proto/models/plugin/provider.proto"
     echo "  2. Add ActivitySource.SOURCE_${upper_name} to src/proto/activity.proto"
     echo "  3. Run 'make generate' to regenerate types"
     echo "  4. Implement the connector in $handler_dir/src/connector.ts"
@@ -281,7 +281,7 @@ create_enricher() {
     echo -e "${GREEN}Creating enricher: $name${NC}"
 
     # Find next available enum value
-    local last_enum=$(grep -E "ENRICHER_PROVIDER_[A-Z_]+ = [0-9]+" "$PROTO_DIR/user.proto" | \
+    local last_enum=$(grep -E "ENRICHER_PROVIDER_[A-Z_]+ = [0-9]+" "$PROTO_DIR/models/plugin/provider.proto" | \
                       grep -v MOCK | \
                       sed 's/.*= \([0-9]*\).*/\1/' | \
                       sort -n | tail -1)
@@ -289,10 +289,10 @@ create_enricher() {
 
     echo "  Using enum value: $next_enum"
 
-    # Add enum to user.proto (before MOCK which is 99)
-    sed -i "/ENRICHER_PROVIDER_MOCK = 99;/i\\  ENRICHER_PROVIDER_${upper_name} = ${next_enum};" "$PROTO_DIR/user.proto"
+    # Add enum to models/plugin/provider.proto (before MOCK which is 99)
+    sed -i "/ENRICHER_PROVIDER_MOCK = 99;/i\\  ENRICHER_PROVIDER_${upper_name} = ${next_enum};" "$PROTO_DIR/models/plugin/provider.proto"
 
-    echo -e "${GREEN}✓ Added ENRICHER_PROVIDER_${upper_name} = ${next_enum} to user.proto${NC}"
+    echo -e "${GREEN}✓ Added ENRICHER_PROVIDER_${upper_name} = ${next_enum} to models/plugin/provider.proto${NC}"
 
     # Create Go provider file
     cat > "$provider_file" << EOF
@@ -397,18 +397,18 @@ create_destination() {
 
     echo -e "${GREEN}Creating destination: $name${NC}"
 
-    # Add enum to events.proto
+    # Add enum to models/plugin/provider.proto
     # Find the Destination enum and add new value
-    local last_dest_enum=$(grep -E "DESTINATION_[A-Z_]+ = [0-9]+" "$PROTO_DIR/events.proto" | \
+    local last_dest_enum=$(grep -E "DESTINATION_[A-Z_]+ = [0-9]+" "$PROTO_DIR/models/plugin/provider.proto" | \
                            grep -v MOCK | \
                            sed 's/.*= \([0-9]*\).*/\1/' | \
                            sort -n | tail -1)
     local next_dest_enum=$((last_dest_enum + 1))
 
     # Find DESTINATION_MOCK line and insert before it
-    if grep -q "DESTINATION_MOCK" "$PROTO_DIR/events.proto"; then
-        sed -i "/DESTINATION_MOCK/i\\  DESTINATION_${upper_name} = ${next_dest_enum};" "$PROTO_DIR/events.proto"
-        echo -e "${GREEN}✓ Added DESTINATION_${upper_name} = ${next_dest_enum} to events.proto${NC}"
+    if grep -q "DESTINATION_MOCK" "$PROTO_DIR/models/plugin/provider.proto"; then
+        sed -i "/DESTINATION_MOCK/i\\  DESTINATION_${upper_name} = ${next_dest_enum};" "$PROTO_DIR/models/plugin/provider.proto"
+        echo -e "${GREEN}✓ Added DESTINATION_${upper_name} = ${next_dest_enum} to models/plugin/provider.proto${NC}"
     else
         echo -e "${YELLOW}Note: Could not find DESTINATION_MOCK. Please add DESTINATION_${upper_name} manually.${NC}"
     fi

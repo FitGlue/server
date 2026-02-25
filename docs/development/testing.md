@@ -1,306 +1,193 @@
 # Testing Guide
 
-This guide covers all testing approaches for FitGlue: unit tests, integration tests, and manual QA procedures.
+This guide covers the testing strategy for FitGlue's Go services: unit tests, integration tests, and E2E tests.
 
 ## Overview
 
-FitGlue uses a multi-layered testing strategy:
-
-| Test Type | Purpose | Frequency |
-|-----------|---------|-----------|
-| Unit Tests | Validate individual functions and components | Every commit |
-| Integration Tests | Validate deployed Cloud Functions and pipelines | Per deployment |
-| Manual QA | End-to-end verification with real services | Major features |
+| Test Type | Command | Purpose |
+|-----------|---------|---------|
+| Unit Tests | `make test` | Validate individual service and package logic |
+| Integration Tests | `make test-integration` | Validate cross-service flows against dev GCP |
+| E2E Tests | `make test-e2e` | BDD cucumber scenarios against the full local stack |
+| Coverage Check | `make test-coverage` | Enforce 80% minimum per package |
 
 ---
 
 ## 1. Unit Tests
 
+Unit tests use Go's built-in `testing` package with table-driven patterns. All dependencies (stores, external clients) are injected via interfaces and mocked in tests.
+
 ### Running Tests
 
 ```bash
-# All tests
+# All unit tests
 make test
 
-# Go tests only
-make test-go
-
-# TypeScript tests only
-make test-ts
-```
-
-### Go Unit Tests
-
-Located in `src/go/pkg/**/*_test.go` and function directories.
-
-```bash
+# Specific package
 cd src/go
-go test ./pkg/enricher_providers/... -v
+go test -v ./internal/user/...
+go test -v ./services/api-client/...
+
+# With coverage
+go test -coverprofile=coverage.out ./pkg/... ./services/... ./internal/...
+go tool cover -html=coverage.out
 ```
 
-### TypeScript Unit Tests
+### Go Test Structure
 
-Located in `src/typescript/*/src/**/*.test.ts`.
+Tests live alongside the code they test (`*_test.go` files in the same package):
+
+```
+internal/user/
+  ├── service.go
+  ├── service_test.go      # Unit tests for service.go
+  ├── store.go
+  └── store_test.go
+```
+
+### Mock Pattern (Interface Injection)
+
+Domain services accept interfaces, making them trivially testable:
+
+```go
+// service_test.go
+type mockStore struct {
+    getUserFn func(ctx context.Context, userID string) (*pb.User, error)
+}
+
+func (m *mockStore) Get(ctx context.Context, userID string) (*pb.User, error) {
+    return m.getUserFn(ctx, userID)
+}
+
+func TestGetProfile(t *testing.T) {
+    tests := []struct {
+        name    string
+        userID  string
+        store   user.Store
+        wantErr bool
+    }{
+        {
+            name:   "returns profile successfully",
+            userID: "user-123",
+            store: &mockStore{
+                getUserFn: func(_ context.Context, id string) (*pb.User, error) {
+                    return &pb.User{Id: id, DisplayName: "Test User"}, nil
+                },
+            },
+        },
+        {
+            name:    "returns error when user not found",
+            userID:  "missing",
+            store:   &mockStore{getUserFn: func(_ context.Context, _ string) (*pb.User, error) {
+                return nil, errors.New("not found")
+            }},
+            wantErr: true,
+        },
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            svc := user.NewService(tt.store, testLogger, nil, nil)
+            resp, err := svc.GetProfile(context.Background(), &pb.GetProfileRequest{UserId: tt.userID})
+            if (err != nil) != tt.wantErr {
+                t.Errorf("GetProfile() error = %v, wantErr %v", err, tt.wantErr)
+            }
+            if !tt.wantErr && resp.User.Id != tt.userID {
+                t.Errorf("expected user ID %s, got %s", tt.userID, resp.User.Id)
+            }
+        })
+    }
+}
+```
+
+### Coverage Requirement
+
+An 80% minimum coverage is enforced per package by `scripts/check-coverage.sh`:
 
 ```bash
-cd src/typescript/shared
-npm test
+make test-coverage
 ```
+
+CI blocks on coverage drops below this threshold.
 
 ---
 
-## 2. Integration Tests
+## 2. E2E Tests (Cucumber / godog)
 
-Integration tests validate deployed Cloud Functions in GCP environments.
+E2E tests use the [godog](https://github.com/cucumber/godog) BDD framework with Gherkin `.feature` files.
 
-### Test Suites
+**Location:** `src/go/tests/e2e/`
 
-#### Local Validation (`local.test.ts`)
+```
+tests/e2e/
+  ├── features/
+  │   ├── pipeline.feature    # Full pipeline flow scenarios
+  │   ├── user.feature        # User management scenarios
+  │   └── webhook.feature     # Webhook ingestion scenarios
+  └── steps_test.go           # Step definitions
+```
 
-Tests local Functions Framework instances running on localhost.
+### Running E2E Tests
 
-- **Purpose**: Fast feedback during local development
-- **Triggers**: Direct HTTP calls to all functions (including Pub/Sub-triggered ones via CloudEvent format)
-- **Requirements**: Local functions must be running (`./scripts/local_run.sh`)
+Requires the full stack (`make local`) running:
 
-**Run:**
 ```bash
-./scripts/local_run.sh  # Start local functions
-npm run test:local
+# Terminal 1
+make local
+
+# Terminal 2
+make test-e2e
 ```
 
-#### Deployed Validation (`deployed.test.ts`)
+### Test Run ID Isolation
 
-Tests deployed Cloud Functions in GCP environments (dev, test, prod).
-
-- **Purpose**: Validate deployed infrastructure and end-to-end flows
-- **Triggers**:
-  - HTTP calls to public endpoints (`hevy-handler`)
-  - Pub/Sub message publishing for event-triggered functions (`enricher`, `router`, `strava-uploader`)
-- **Requirements**:
-  - GCP authentication configured (`gcloud auth application-default login`)
-  - `TEST_ENVIRONMENT` set to target environment
-
-**Run:**
-```bash
-# Authenticate with GCP
-gcloud auth application-default login
-
-# Test against Dev environment
-npm run test:dev
-
-# Test against Test environment
-npm run test:test
-```
-
-### Test Run ID Tracking
-
-Each test generates a unique `testRunId` that is propagated through all function executions:
-
-- **HTTP Functions**: Passed via `X-Test-Run-Id` header
-- **Pub/Sub Functions**: Passed via message attributes
-
-This enables:
-- ✅ Precise verification of test executions
-- ✅ Complete cleanup of test data
-- ✅ No test pollution between runs
-- ✅ Parallel test execution (future)
-
-**Example:**
-```typescript
-describe('My Test Suite', () => {
-  const testRunIds: string[] = []; // Track all test run IDs
-
-  it('should process activity', async () => {
-    const testRunId = randomUUID(); // Unique ID per test
-    testRunIds.push(testRunId);
-
-    // HTTP request
-    await axios.post(endpoint, payload, {
-      headers: { 'X-Test-Run-Id': testRunId }
-    });
-
-    // Pub/Sub message
-    await publishRawActivity(payload, testRunId);
-
-    // Verify by test run ID (not timestamp!)
-    await waitForExecutionActivity({
-      testRunId,
-      minExecutions: 1
-    });
-  });
-
-  afterAll(async () => {
-    // Clean up all executions from all tests
-    await cleanupExecutions(testRunIds);
-    await cleanupGCSArtifacts(userId);
-    await cleanupTestUser(userId);
-  });
-});
-```
-
-### Configuration
-
-#### Environment Variables
-
-Set `TEST_ENVIRONMENT` to control which environment to test:
-
-- `local` (default) - localhost Functions Framework instances
-- `dev` - fitglue-server-dev GCP project
-- `test` - fitglue-server-test GCP project
-- `prod` - fitglue-server-prod GCP project
-
-#### Environment Configuration
-
-Environment-specific settings are defined in `environments.json`:
-
-- Project ID
-- Region
-- GCS bucket name
-- Function endpoints (HTTP-triggered)
-- Pub/Sub topic names (event-triggered)
-
-### Architecture
-
-| Module | Purpose |
-|--------|---------|
-| `config.ts` | Loads environment-specific configuration |
-| `setup.ts` | Creates test users in Firestore |
-| `cleanup.ts` | Deletes execution records, users, and GCS artifacts |
-| `pubsub-helpers.ts` | Publishes messages to Pub/Sub topics |
-| `verification-helpers.ts` | Waits for and verifies executions |
-
-### Authentication
-
-**Local Tests**: No authentication required.
-
-**Deployed Tests**: Requires GCP Application Default Credentials:
-```bash
-gcloud auth application-default login
-```
+Each test generates a unique `testRunId` propagated via HTTP headers (`X-Test-Run-Id`) and Pub/Sub message attributes. This enables:
+- Precise test execution verification
+- Complete cleanup of test data after runs
+- No cross-test pollution
 
 ---
 
-## 3. Manual QA
+## 3. Integration Tests
 
-Manual QA is used for end-to-end verification with real external services (Hevy, Fitbit, Strava).
+Integration tests make real calls to the dev GCP environment:
 
-### Prerequisites
+```bash
+# Requires GCP Application Default Credentials
+gcloud auth application-default login
 
-- Access to `fitglue-admin` CLI
-- Running Dev environment (or Prod via correct GCloud project)
-- User's **Hevy API Key** (from Hevy App Settings → API)
-- **Client IDs** for Strava and Fitbit (from developer portals)
+make test-integration
+```
+
+These test tags are `Integration` and are excluded from `make test` (short mode).
+
+---
+
+## 4. Manual QA
+
+Manual QA validates end-to-end flows with real external services (Hevy, Fitbit, Strava).
 
 ### User Setup
 
-#### Step 1: Create the User & Ingress Key
+Use the admin API (`service.api.admin`) or direct Firestore access to set up test users and pipelines. See [API Layers](../architecture/api-layers.md) for admin endpoints.
 
-```bash
-./fitglue-admin users:create
-```
+### Verifying a Pipeline Run
 
-1. **Copy the User ID** (e.g., `user-123`)
-2. **Generate Ingress Key**: Select "Yes"
-3. **Label**: e.g., "Manual Test"
-4. **Copy the Ingress Key** (`fg_sk_...`)
-
-#### Step 2: Configure Hevy Integration
-
-```bash
-./fitglue-admin users:configure-hevy user-123
-```
-*Enter the user's personal Hevy API Key.*
-
-#### Step 3: Configure Hevy Webhook
-
-Add the webhook in the Hevy App or Dashboard:
-
-- **URL**: `https://[env].fitglue.tech/hooks/hevy` (e.g., `https://dev.fitglue.tech/hooks/hevy`)
-- **Secret**: Paste the **Ingress Key** from Step 1
-
-#### Step 4: Connect OAuth Services
-
-**Connect Strava:**
-```bash
-./fitglue-admin users:connect user-123 strava
-```
-
-**Connect Fitbit:**
-```bash
-./fitglue-admin users:connect user-123 fitbit
-```
-
-### Pipeline Configuration
-
-Example: Hevy → Fitbit HR → Strava
-
-```bash
-./fitglue-admin users:add-pipeline user-123
-```
-
-1. **Source**: Select `SOURCE_HEVY`
-2. **Enrichers**: Choose `fitbit-heart-rate`
-3. **Destinations**: Check `strava`
-
-### Verification
-
-#### Trigger a Workout
-
-1. **Real**: Finish a workout in Hevy
-2. **Simulation**: Use curl to send a dummy webhook
-
-#### Trace Execution
-
-```bash
-# Check each stage
-./fitglue-admin executions:list -s hevy-handler -u user-123
-./fitglue-admin executions:list -s enricher -u user-123
-./fitglue-admin executions:list -s router -u user-123
-./fitglue-admin executions:list -s strava-uploader-job -u user-123
-```
-
-**Success indicators:**
-- `STATUS_SUCCESS` on each stage
-- `published_count: 1` in enricher output
-- Activity appears in Strava feed
-
----
-
-## Troubleshooting
-
-### Integration Tests
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| "Timeout waiting for execution" | Function didn't execute | Check Cloud Functions logs, increase timeout |
-| "Pub/Sub topics not configured" | Wrong environment | Set `TEST_ENVIRONMENT=dev` |
-| Authentication errors | ADC expired | Run `gcloud auth application-default login` |
-| Execution records not found | test_run_id not extracted | Verify header/attribute passing |
-
-### Manual QA
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| "Provider not found" | Enricher name mismatch | Check registered provider in enricher/function.go |
-| No executions listed | Infrastructure error | Check Cloud Logging for 500 errors |
-| OAuth failures | Callback URL mismatch | Verify developer portal settings |
+Query Firestore `users/{userId}/pipeline_runs/` for execution records, or use the `synchronized:list` endpoint via `service.api.client` to inspect results.
 
 ---
 
 ## Best Practices
 
-1. **Generate test run ID per test** - Not per suite
-2. **Track all test run IDs** - For comprehensive cleanup
-3. **Verify by test run ID** - Never by timestamp
-4. **Clean up by test run ID** - Ensures complete cleanup
-5. **Use unique user IDs** - Avoid conflicts between test runs
-6. **Monitor costs** - Deployed tests invoke real Cloud Functions
+1. **Table-driven tests** — Use `[]struct{ name string; ... }` patterns for exhaustive coverage
+2. **Mock at the interface boundary** — Never mock concrete types
+3. **Test one thing per test** — Keep assertions focused
+4. **Use `t.Run(tt.name, ...)` always** — Makes failures identifiable
+5. **Clean up in `t.Cleanup` or `defer`** — Don't leak test data to shared environments
 
 ---
 
 ## Related Documentation
 
 - [Local Development](local-development.md) - Running the stack locally
-- [Execution Logging](../architecture/execution-logging.md) - Framework architecture
-- [Admin CLI Reference](../reference/admin-cli.md) - CLI commands
+- [Admin CLI Reference](../reference/admin-cli.md) - CLI commands for QA

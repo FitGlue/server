@@ -1,0 +1,161 @@
+syntax = "proto3";
+
+package fitglue.models.user;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/user";
+
+// UserIntegrations represents all connected third-party providers.
+message UserIntegrations {
+  HevyIntegration hevy = 1;
+  FitbitIntegration fitbit = 2;
+  StravaIntegration strava = 3;
+  MockIntegration mock = 4;
+  ParkrunIntegration parkrun = 5;
+  SpotifyIntegration spotify = 6;
+  TrainingPeaksIntegration trainingpeaks = 7;
+  IntervalsIntegration intervals = 8;
+  GoogleIntegration google = 9;
+  OuraIntegration oura = 10;
+  PolarIntegration polar = 11;
+  WahooIntegration wahoo = 12;
+  GitHubIntegration github = 13;
+  AppleHealthIntegration apple_health = 14;
+  HealthConnectIntegration health_connect = 15;
+}
+
+message MockIntegration {
+    bool enabled = 1;
+    google.protobuf.Timestamp created_at = 2;
+    google.protobuf.Timestamp last_used_at = 3;
+}
+
+message HevyIntegration {
+  bool enabled = 1;
+  string api_key = 2;
+  string user_id = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp last_used_at = 5;
+}
+
+message FitbitIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string fitbit_user_id = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message StravaIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    int64 athlete_id = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message ParkrunIntegration {
+    bool enabled = 1;
+    string athlete_id = 2;            
+    string country_url = 3;           
+    bool consent_given = 4;           
+    google.protobuf.Timestamp created_at = 5;
+    google.protobuf.Timestamp last_used_at = 6;
+}
+
+message SpotifyIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string spotify_user_id = 5;
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message TrainingPeaksIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string athlete_id = 5;                
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message IntervalsIntegration {
+    bool enabled = 1;
+    string api_key = 2;                   
+    string athlete_id = 3;                
+    google.protobuf.Timestamp created_at = 4;
+    google.protobuf.Timestamp last_used_at = 5;
+}
+
+message OuraIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string oura_user_id = 5;              
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message GoogleIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string google_user_id = 5;            
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message PolarIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string polar_user_id = 5;             
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message WahooIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;
+    google.protobuf.Timestamp expires_at = 4;
+    string wahoo_user_id = 5;             
+    google.protobuf.Timestamp created_at = 6;
+    google.protobuf.Timestamp last_used_at = 7;
+}
+
+message GitHubIntegration {
+    bool enabled = 1;
+    string access_token = 2;
+    string refresh_token = 3;             
+    google.protobuf.Timestamp expires_at = 4;
+    string github_user_id = 5;            
+    string github_username = 6;           
+    string scope = 7;                     
+    google.protobuf.Timestamp created_at = 8;
+    google.protobuf.Timestamp last_used_at = 9;
+}
+
+message AppleHealthIntegration {
+    bool enabled = 1;
+    google.protobuf.Timestamp created_at = 2;
+    google.protobuf.Timestamp last_used_at = 3;
+}
+
+message HealthConnectIntegration {
+    bool enabled = 1;
+    google.protobuf.Timestamp created_at = 2;
+    google.protobuf.Timestamp last_used_at = 3;
+}

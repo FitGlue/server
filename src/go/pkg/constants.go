@@ -6,6 +6,7 @@ const (
 	TopicRawActivity           = "topic-raw-activity"
 	TopicPipelineActivity      = "topic-pipeline-activity"
 	TopicEnrichedActivity      = "topic-enriched-activity"
+	TopicDestinationUpload     = "topic-destination-upload"
 	TopicJobUploadStrava       = "topic-job-upload-strava"
 	TopicFitbitUpdates         = "topic-fitbit-updates"
 	TopicEnrichmentLag         = "topic-enrichment-lag"

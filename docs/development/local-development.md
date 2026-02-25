@@ -1,204 +1,183 @@
 # Local Development
 
-This guide explains how to run the entire FitGlue stack locally without deploying to Google Cloud.
+This guide explains how to run the FitGlue server stack locally.
 
 ## Prerequisites
 
-- **Go 1.25+**: [Install Go](https://go.dev/doc/install)
-- **Node.js 20+**: [Install Node](https://nodejs.org/)
-- **Protocol Buffers Compiler**: `brew install protobuf` (macOS) or `sudo apt-get install protobuf-compiler` (Linux)
-- **Functions Framework**: Installed automatically via `make setup`
+- **Go 1.22+**: [Install Go](https://go.dev/doc/install)
+- **Docker + Docker Compose**: Required for `make local`
+- **Protocol Buffers**: `sudo apt-get install protobuf-compiler` (Linux) or `brew install protobuf` (macOS)
+- **buf** (optional, for proto regeneration): [Install buf](https://buf.build/docs/installation)
 
 ## 1. Initial Setup
 
-Install all dependencies and generate Protocol Buffer code:
+Install all dependencies:
 
 ```bash
+cd server
 make setup
 ```
 
-This will:
-- Download Go module dependencies
-- Install npm packages (workspace mode)
-- Link the `@fitglue/shared` TypeScript library
+This downloads Go module dependencies.
 
 ## 2. Configuration (`.env`)
-
-Create a `.env` file to configure local secrets (bypassing Google Secret Manager).
 
 ```bash
 cp .env.example .env
 ```
 
-Edit `.env` to set your mock secrets:
+Edit `.env` for local secrets (bypasses Google Secret Manager):
 
 ```bash
-GOOGLE_CLOUD_PROJECT=fitglue-local
-HEVY_SIGNING_SECRET=local-secret
+GOOGLE_CLOUD_PROJECT=fitglue-server-dev
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+EMAIL_APP_PASSWORD=local-only
+SYSTEM_EMAIL=noreply@fitglue.tech
 ```
 
 ## 3. Starting Services
 
-### All Services at Once
-
-Start all 5 services simultaneously using the orchestration script:
+### All 10 Services (Recommended)
 
 ```bash
-./scripts/local_run.sh
+make local
 ```
 
-This will spin up:
-- **Hevy Handler** (`:8080`) - Webhook receiver
-- **Enricher** (`:8081`) - FIT file generator
-- **Router** (`:8082`) - Activity router
-- **Strava Uploader** (`:8083`) - Strava integration
-
-Logs are written to individual log files in the root directory (`hevy.log`, `enricher.log`, etc.).
-
-Press **Ctrl+C** to stop all services.
-
-### Manual Start (Debugging)
-
-If you need to debug a single service, run it in isolation:
-
-| Service | Port | Command |
-|---------|------|---------|
-| Hevy Handler | 8080 | `cd src/typescript/hevy-handler && npm run dev` |
-| Enricher | 8081 | `cd src/go/functions/enricher && FUNCTION_TARGET=EnrichActivity go run cmd/main.go` |
-| Router | 8082 | `cd src/go/functions/router && FUNCTION_TARGET=RouteActivity go run cmd/main.go` |
-| Strava Uploader | 8083 | `cd src/go/functions/strava-uploader && FUNCTION_TARGET=UploadToStrava go run cmd/main.go` |
-
-## 4. Triggering Events (Simulations)
-
-We provide Node.js scripts to simulate various events in the pipeline. These scripts construct the correct CloudEvent or HTTP payloads expected by the functions.
-
-### A. Ingestion Layer
-
-**Simulate Hevy Webhook**
-
-Sends a signed JSON payload to the Hevy Handler.
+Starts all 10 Cloud Run emulators via Docker Compose. Services communicate with each other over the Docker internal network. Logs stream to stdout.
 
 ```bash
-node scripts/trigger_hevy.js
+make local-down   # Stop and remove containers
 ```
 
+### Single Service (Debugging)
 
-
-### B. Transformation Layer
-
-**Simulate Raw Activity Event**
-
-Injects a Pub/Sub message (RawActivity protobuffer) into the Enricher.
+Run an individual service directly as a Go binary:
 
 ```bash
-node scripts/trigger_enricher.js
+cd src/go
+go run ./services/user/...
+go run ./services/api-client/...
+go run ./services/api-webhook/...
 ```
 
-### C. Routing & Egress
+Each service reads its configuration from environment variables (see `.env`).
 
-**Simulate Enrichment Complete**
+## 4. Triggering Events
 
-Injects an EnrichedActivity event into the Router.
+### Via Admin API
 
-```bash
-node scripts/trigger_router.js
-```
+With `make local` running, use `service.api.admin` to manage users and pipelines. See [API Layers](../architecture/api-layers.md) for the admin endpoint reference.
 
-**Simulate Strava Upload Job**
+### Via Direct API Calls
 
-Injects an upload job directly to the Strava Uploader.
+With `make local` running, hit the API gateways directly:
 
 ```bash
-node scripts/trigger_uploader.js
+# Check health
+curl http://localhost:8080/health
+
+# Trigger a test webhook (Hevy)
+curl -X POST http://localhost:8080/webhook/source/hevy \
+  -H "X-Fitglue-Ingress-Key: <ingress-key>" \
+  -H "Content-Type: application/json" \
+  -d '{"event_type": "workout_created", "workout_id": "test-123"}'
 ```
 
 ## 5. Running Tests
 
-### All Tests
+### All Unit Tests
 
 ```bash
 make test
 ```
 
+Runs all Go unit tests (short mode) across `pkg/`, `services/`, `cmd/`, and `internal/`.
+
 ### Go Tests Only
 
 ```bash
-make test-go
+cd src/go
+go test ./...
+
+# Verbose output with coverage
+go test -v -coverprofile=coverage.out ./...
+go tool cover -html=coverage.out
 ```
 
-### TypeScript Tests Only
+### E2E Tests (Cucumber / godog)
+
+E2E tests require the full stack running (`make local`):
 
 ```bash
-make test-ts
+# Terminal 1
+make local
+
+# Terminal 2
+make test-e2e
 ```
 
 ### Integration Tests
 
-Integration tests require all services to be running locally:
-
 ```bash
-# Terminal 1: Start services
-./scripts/local_run.sh
-
-# Terminal 2: Run integration tests
-cd integration-tests
-npm test
+make test-integration
 ```
 
-## 6. Building
+Runs tests tagged `Integration` against the dev environment.
 
-### Build All
+## 6. Code Generation
 
-```bash
-make build
-```
-
-### Build Go Services
+After modifying any `.proto` file:
 
 ```bash
-make build-go
+make generate
 ```
 
-### Build TypeScript Services
+This regenerates:
+- Go gRPC stubs → `src/go/pkg/types/pb/`
+- OpenAPI spec → `docs/api/openapi.yaml`
+- TypeScript types → `../web/src/types/pb/`
+
+> [!IMPORTANT]
+> Always commit generated files alongside proto changes.
+
+## 7. Building
 
 ```bash
-make build-ts
+make build          # Build all Go services
+make build-go       # Same
+make docker         # Build Docker images for all 10 services
 ```
 
-## 7. Linting
+## 8. Linting
 
 ```bash
 make lint
 ```
 
-## 8. Cleaning
-
-Remove build artifacts:
-
-```bash
-make clean
-```
+Checks Go formatting (`gofmt`), vet, and the proto-JSON misuse linter.
 
 ## Troubleshooting
 
-### "Cannot find module '@fitglue/shared'"
+### Service fails to connect to another service
 
-Run `make setup` to ensure workspace linking is correct.
+Check Docker Compose service names in `docker-compose.yaml` match the env vars (e.g., `USER_SERVICE_ADDR`).
 
-### "Firestore credentials not found" in tests
+### "Firestore credentials not found"
 
-This is expected. Tests use mocks and don't require real GCP credentials.
+Ensure `GOOGLE_APPLICATION_CREDENTIALS` points to a valid service account key with Firestore access to `fitglue-server-dev`.
 
 ### Port already in use
 
-Kill existing processes:
-
 ```bash
-lsof -ti:8080 | xargs kill -9  # Replace 8080 with the conflicting port
+lsof -ti:8080 | xargs kill -9
 ```
 
-## Next Steps
+### Proto regeneration fails
 
-- See [CI/CD Guide](../infrastructure/cicd.md) for deployment instructions
-- See [OpenAPI Clients](../guides/openapi-clients.md) for external API integration patterns
-- See [Architecture Decisions](../decisions/ADR.md) for design rationale
+Ensure `protoc` and `buf` are installed. Run `protoc --version` and `buf --version` to verify.
+
+## Related Documentation
+
+- [Testing Guide](testing.md) - Test strategy and patterns
+- [CI/CD](../infrastructure/cicd.md) - Deployment pipeline
+- [API Layers](../architecture/api-layers.md) - Admin and webhook API reference

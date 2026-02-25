@@ -1,11 +1,12 @@
 package fit_parser
 
 import (
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
 	"os"
 	"testing"
 	"time"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 	"github.com/muktihari/fit/profile/typedef"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -27,7 +28,7 @@ func TestParseFitFile_GarminExample(t *testing.T) {
 		t.Fatal("Expected non-nil activity")
 	}
 
-	if activity.Source != "SOURCE_FILE_UPLOAD" {
+	if activity.Source != pbactivity.ActivitySource_SOURCE_FILE_UPLOAD {
 		t.Errorf("Expected source 'SOURCE_FILE_UPLOAD', got %q", activity.Source)
 	}
 
@@ -81,7 +82,7 @@ func TestParseFitFile_GarminExample(t *testing.T) {
 	}
 
 	// The file is a Run activity
-	if activity.Type != pb.ActivityType_ACTIVITY_TYPE_RUN {
+	if activity.Type != pbactivity.ActivityType_ACTIVITY_TYPE_RUN {
 		t.Errorf("Expected activity type RUN, got %v", activity.Type)
 	}
 
@@ -105,12 +106,12 @@ func TestParseFitFile_InvalidData(t *testing.T) {
 
 func TestMergeSessions(t *testing.T) {
 	now := time.Now()
-	sessions := []*pb.Session{
+	sessions := []*pbactivity.Session{
 		{
 			StartTime:        timestamppb.New(now),
 			TotalElapsedTime: 100,
 			TotalDistance:    1000,
-			Laps: []*pb.Lap{
+			Laps: []*pbactivity.Lap{
 				{StartTime: timestamppb.New(now), TotalElapsedTime: 100, TotalDistance: 1000},
 			},
 		},
@@ -118,7 +119,7 @@ func TestMergeSessions(t *testing.T) {
 			StartTime:        timestamppb.New(now.Add(2 * time.Minute)),
 			TotalElapsedTime: 200,
 			TotalDistance:    2000,
-			Laps: []*pb.Lap{
+			Laps: []*pbactivity.Lap{
 				{StartTime: timestamppb.New(now.Add(2 * time.Minute)), TotalElapsedTime: 200, TotalDistance: 2000},
 			},
 		},
@@ -146,7 +147,7 @@ func TestMergeSessions(t *testing.T) {
 
 func TestMergeSessions_Single(t *testing.T) {
 	now := time.Now()
-	sessions := []*pb.Session{
+	sessions := []*pbactivity.Session{
 		{
 			StartTime:        timestamppb.New(now),
 			TotalElapsedTime: 100,
@@ -162,7 +163,7 @@ func TestMergeSessions_Single(t *testing.T) {
 }
 
 func TestMergeSessions_Empty(t *testing.T) {
-	merged := MergeSessions([]*pb.Session{})
+	merged := MergeSessions([]*pbactivity.Session{})
 	if merged != nil {
 		t.Error("Expected nil for empty sessions")
 	}
@@ -172,22 +173,22 @@ func TestMapFitSportToActivityType(t *testing.T) {
 	tests := []struct {
 		sport    typedef.Sport
 		subSport typedef.SubSport
-		expected pb.ActivityType
+		expected pbactivity.ActivityType
 	}{
-		{typedef.SportRunning, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_RUN},
-		{typedef.SportRunning, typedef.SubSportTrail, pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN},
-		{typedef.SportRunning, typedef.SubSportVirtualActivity, pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN},
-		{typedef.SportCycling, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_RIDE},
-		{typedef.SportCycling, typedef.SubSportVirtualActivity, pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE},
-		{typedef.SportCycling, typedef.SubSportMountain, pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE},
-		{typedef.SportSwimming, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_SWIM},
-		{typedef.SportWalking, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_WALK},
-		{typedef.SportHiking, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_HIKE},
-		{typedef.SportTraining, typedef.SubSportStrengthTraining, pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING},
-		{typedef.SportTraining, typedef.SubSportYoga, pb.ActivityType_ACTIVITY_TYPE_YOGA},
-		{typedef.SportTraining, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_WORKOUT},
-		{typedef.SportGolf, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_GOLF},
-		{typedef.SportGeneric, typedef.SubSportGeneric, pb.ActivityType_ACTIVITY_TYPE_WORKOUT},
+		{typedef.SportRunning, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_RUN},
+		{typedef.SportRunning, typedef.SubSportTrail, pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN},
+		{typedef.SportRunning, typedef.SubSportVirtualActivity, pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN},
+		{typedef.SportCycling, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_RIDE},
+		{typedef.SportCycling, typedef.SubSportVirtualActivity, pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE},
+		{typedef.SportCycling, typedef.SubSportMountain, pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE},
+		{typedef.SportSwimming, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_SWIM},
+		{typedef.SportWalking, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_WALK},
+		{typedef.SportHiking, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_HIKE},
+		{typedef.SportTraining, typedef.SubSportStrengthTraining, pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING},
+		{typedef.SportTraining, typedef.SubSportYoga, pbactivity.ActivityType_ACTIVITY_TYPE_YOGA},
+		{typedef.SportTraining, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT},
+		{typedef.SportGolf, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_GOLF},
+		{typedef.SportGeneric, typedef.SubSportGeneric, pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT},
 	}
 
 	for _, tc := range tests {
@@ -205,16 +206,16 @@ func TestGenerateActivityName(t *testing.T) {
 	eveningTime := time.Date(2024, 1, 1, 18, 0, 0, 0, time.UTC)
 
 	tests := []struct {
-		activityType pb.ActivityType
+		activityType pbactivity.ActivityType
 		startTime    time.Time
 		expected     string
 	}{
-		{pb.ActivityType_ACTIVITY_TYPE_RUN, morningTime, "Morning Run"},
-		{pb.ActivityType_ACTIVITY_TYPE_RUN, afternoonTime, "Afternoon Run"},
-		{pb.ActivityType_ACTIVITY_TYPE_RIDE, eveningTime, "Evening Ride"},
-		{pb.ActivityType_ACTIVITY_TYPE_SWIM, morningTime, "Morning Swim"},
-		{pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING, afternoonTime, "Afternoon Workout"},
-		{pb.ActivityType_ACTIVITY_TYPE_YOGA, eveningTime, "Evening Yoga"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_RUN, morningTime, "Morning Run"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_RUN, afternoonTime, "Afternoon Run"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_RIDE, eveningTime, "Evening Ride"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_SWIM, morningTime, "Morning Swim"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING, afternoonTime, "Afternoon Workout"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_YOGA, eveningTime, "Evening Yoga"},
 	}
 
 	for _, tc := range tests {

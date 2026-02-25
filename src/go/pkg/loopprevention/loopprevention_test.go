@@ -1,41 +1,43 @@
 package loopprevention
 
 import (
-	"testing"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
+	"testing"
 )
 
 func TestGetCorrespondingDestination(t *testing.T) {
 	tests := []struct {
 		name     string
-		source   pb.ActivitySource
-		expected pb.Destination
+		source   pbactivity.ActivitySource
+		expected pbplugin.DestinationType
 	}{
 		{
 			name:     "Hevy source maps to Hevy destination",
-			source:   pb.ActivitySource_SOURCE_HEVY,
-			expected: pb.Destination_DESTINATION_HEVY,
+			source:   pbactivity.ActivitySource_SOURCE_HEVY,
+			expected: pbplugin.DestinationType_DESTINATION_HEVY,
 		},
 		{
 			name:     "Strava source maps to Strava destination",
-			source:   pb.ActivitySource_SOURCE_STRAVA,
-			expected: pb.Destination_DESTINATION_STRAVA,
+			source:   pbactivity.ActivitySource_SOURCE_STRAVA,
+			expected: pbplugin.DestinationType_DESTINATION_STRAVA,
 		},
 		{
 			name:     "File upload has no destination",
-			source:   pb.ActivitySource_SOURCE_FILE_UPLOAD,
-			expected: pb.Destination_DESTINATION_UNSPECIFIED,
+			source:   pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
+			expected: pbplugin.DestinationType_DESTINATION_UNSPECIFIED,
 		},
 		{
 			name:     "Parkrun results has no destination",
-			source:   pb.ActivitySource_SOURCE_PARKRUN_RESULTS,
-			expected: pb.Destination_DESTINATION_UNSPECIFIED,
+			source:   pbactivity.ActivitySource_SOURCE_PARKRUN_RESULTS,
+			expected: pbplugin.DestinationType_DESTINATION_UNSPECIFIED,
 		},
 		{
 			name:     "Unknown source has no destination",
-			source:   pb.ActivitySource_SOURCE_UNKNOWN,
-			expected: pb.Destination_DESTINATION_UNSPECIFIED,
+			source:   pbactivity.ActivitySource_SOURCE_UNSPECIFIED,
+			expected: pbplugin.DestinationType_DESTINATION_UNSPECIFIED,
 		},
 	}
 
@@ -52,19 +54,19 @@ func TestGetCorrespondingDestination(t *testing.T) {
 func TestBuildUploadedActivityID(t *testing.T) {
 	tests := []struct {
 		name          string
-		destination   pb.Destination
+		destination   pbplugin.DestinationType
 		destinationId string
 		expected      string
 	}{
 		{
 			name:          "Hevy destination ID",
-			destination:   pb.Destination_DESTINATION_HEVY,
+			destination:   pbplugin.DestinationType_DESTINATION_HEVY,
 			destinationId: "abc123",
 			expected:      "hevy:abc123",
 		},
 		{
 			name:          "Strava destination ID",
-			destination:   pb.Destination_DESTINATION_STRAVA,
+			destination:   pbplugin.DestinationType_DESTINATION_STRAVA,
 			destinationId: "12345678",
 			expected:      "strava:12345678",
 		},

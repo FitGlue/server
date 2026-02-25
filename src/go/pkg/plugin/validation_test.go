@@ -3,12 +3,12 @@ package plugin
 import (
 	"testing"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 )
 
 func TestValidateConfig_RequiredField(t *testing.T) {
-	schema := []*pb.ConfigFieldSchema{
-		{Key: "name", Label: "Name", FieldType: pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING, Required: true},
+	schema := []*pbplugin.ConfigFieldSchema{
+		{Key: "name", Label: "Name", FieldType: pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING, Required: true},
 	}
 
 	tests := []struct {
@@ -34,11 +34,11 @@ func TestValidateConfig_RequiredField(t *testing.T) {
 func TestValidateConfig_NumberField(t *testing.T) {
 	minVal := 1.0
 	maxVal := 10.0
-	schema := []*pb.ConfigFieldSchema{
+	schema := []*pbplugin.ConfigFieldSchema{
 		{
 			Key:       "count",
-			FieldType: pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
-			Validation: &pb.ConfigFieldValidation{
+			FieldType: pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
+			Validation: &pbplugin.ConfigFieldValidation{
 				MinValue: &minVal,
 				MaxValue: &maxVal,
 			},
@@ -69,11 +69,11 @@ func TestValidateConfig_NumberField(t *testing.T) {
 }
 
 func TestValidateConfig_SelectField(t *testing.T) {
-	schema := []*pb.ConfigFieldSchema{
+	schema := []*pbplugin.ConfigFieldSchema{
 		{
 			Key:       "format",
-			FieldType: pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-			Options: []*pb.ConfigFieldOption{
+			FieldType: pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
+			Options: []*pbplugin.ConfigFieldOption{
 				{Value: "compact", Label: "Compact"},
 				{Value: "detailed", Label: "Detailed"},
 			},
@@ -102,8 +102,8 @@ func TestValidateConfig_SelectField(t *testing.T) {
 }
 
 func TestValidateConfig_BooleanField(t *testing.T) {
-	schema := []*pb.ConfigFieldSchema{
-		{Key: "enabled", FieldType: pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN},
+	schema := []*pbplugin.ConfigFieldSchema{
+		{Key: "enabled", FieldType: pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN},
 	}
 
 	tests := []struct {
@@ -130,11 +130,11 @@ func TestValidateConfig_StringValidation(t *testing.T) {
 	minLen := int32(3)
 	maxLen := int32(10)
 	pattern := "^[a-z]+$"
-	schema := []*pb.ConfigFieldSchema{
+	schema := []*pbplugin.ConfigFieldSchema{
 		{
 			Key:       "code",
-			FieldType: pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-			Validation: &pb.ConfigFieldValidation{
+			FieldType: pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
+			Validation: &pbplugin.ConfigFieldValidation{
 				MinLength: &minLen,
 				MaxLength: &maxLen,
 				Pattern:   &pattern,
@@ -165,11 +165,11 @@ func TestValidateConfig_StringValidation(t *testing.T) {
 }
 
 func TestValidateConfig_MultiSelectField(t *testing.T) {
-	schema := []*pb.ConfigFieldSchema{
+	schema := []*pbplugin.ConfigFieldSchema{
 		{
 			Key:       "types",
-			FieldType: pb.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
-			Options: []*pb.ConfigFieldOption{
+			FieldType: pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
+			Options: []*pbplugin.ConfigFieldOption{
 				{Value: "running", Label: "Running"},
 				{Value: "cycling", Label: "Cycling"},
 				{Value: "swimming", Label: "Swimming"},

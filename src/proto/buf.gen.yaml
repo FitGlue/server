@@ -1,0 +1,12 @@
+version: v1
+plugins:
+  - plugin: buf.build/protocolbuffers/go
+    out: ../go/pkg/types/pb
+    opt: paths=source_relative
+  - plugin: buf.build/grpc/go
+    out: ../go/pkg/types/pb
+    opt: paths=source_relative
+
+
+  - plugin: buf.build/community/google-gnostic-openapi
+    out: ../../docs/api

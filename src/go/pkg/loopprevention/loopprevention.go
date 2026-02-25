@@ -14,35 +14,36 @@ import (
 	"fmt"
 	"strings"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 )
 
 // SourceToDestinationMap maps ActivitySource enums to their corresponding Destination enums.
 // Sources without destinations (e.g., FILE_UPLOAD) are not included.
-var SourceToDestinationMap = map[pb.ActivitySource]pb.Destination{
-	pb.ActivitySource_SOURCE_HEVY:   pb.Destination_DESTINATION_HEVY,
-	pb.ActivitySource_SOURCE_STRAVA: pb.Destination_DESTINATION_STRAVA,
-	pb.ActivitySource_SOURCE_FITBIT: pb.Destination_DESTINATION_UNSPECIFIED, // Future: DESTINATION_FITBIT
+var SourceToDestinationMap = map[pbactivity.ActivitySource]pbplugin.DestinationType{
+	pbactivity.ActivitySource_SOURCE_HEVY:   pbplugin.DestinationType_DESTINATION_HEVY,
+	pbactivity.ActivitySource_SOURCE_STRAVA: pbplugin.DestinationType_DESTINATION_STRAVA,
+	pbactivity.ActivitySource_SOURCE_FITBIT: pbplugin.DestinationType_DESTINATION_UNSPECIFIED, // Future: DESTINATION_FITBIT
 	// Note: SOURCE_FILE_UPLOAD, SOURCE_PARKRUN_RESULTS, etc. are source-only
 }
 
 // GetCorrespondingDestination returns the destination that corresponds to the given source.
 // Returns DESTINATION_UNSPECIFIED if the source has no corresponding destination.
-func GetCorrespondingDestination(source pb.ActivitySource) pb.Destination {
+func GetCorrespondingDestination(source pbactivity.ActivitySource) pbplugin.DestinationType {
 	if dest, ok := SourceToDestinationMap[source]; ok {
 		return dest
 	}
-	return pb.Destination_DESTINATION_UNSPECIFIED
+	return pbplugin.DestinationType_DESTINATION_UNSPECIFIED
 }
 
 // UploadedActivityStore defines the interface for persisting uploaded activity records.
 type UploadedActivityStore interface {
 	// SetUploadedActivity records that an activity was uploaded to a destination.
-	SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error
+	SetUploadedActivity(ctx context.Context, userId string, record *pbactivity.UploadedActivityRecord) error
 
 	// GetUploadedActivity retrieves an uploaded activity record by destination and destination ID.
 	// This matches how webhooks arrive: the destination (e.g., Hevy) sends its own ID.
-	GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error)
+	GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error)
 }
 
 // IsBounceback checks if an incoming activity from a webhook is a "bounceback" from
@@ -55,11 +56,11 @@ func IsBounceback(
 	ctx context.Context,
 	store UploadedActivityStore,
 	userId string,
-	source pb.ActivitySource,
+	source pbactivity.ActivitySource,
 	externalId string,
 ) (bool, error) {
 	correspondingDest := GetCorrespondingDestination(source)
-	if correspondingDest == pb.Destination_DESTINATION_UNSPECIFIED {
+	if correspondingDest == pbplugin.DestinationType_DESTINATION_UNSPECIFIED {
 		// Source has no destination counterpart, not a bounceback scenario
 		return false, nil
 	}
@@ -80,7 +81,7 @@ func IsBounceback(
 //
 // This is the KEY insight: when Hevy sends a webhook, the external ID will be
 // Hevy's workout ID. So we store records using the destination's ID, not the source's.
-func BuildUploadedActivityID(destination pb.Destination, destinationId string) string {
+func BuildUploadedActivityID(destination pbplugin.DestinationType, destinationId string) string {
 	// Use lowercase destination name without prefix
 	destName := strings.TrimPrefix(destination.String(), "DESTINATION_")
 	return fmt.Sprintf("%s:%s", strings.ToLower(destName), destinationId)

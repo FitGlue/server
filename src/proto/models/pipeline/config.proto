@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+package fitglue.models.pipeline;
+
+import "models/plugin/provider.proto";
+import "models/events/pipeline.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline";
+
+message PipelineConfig {
+  string id = 1; 
+  string source = 2; // e.g. "SOURCE_HEVY"
+  repeated EnricherConfig enrichers = 3;
+  repeated fitglue.models.plugin.DestinationType destinations = 4;
+  string name = 5; 
+  bool disabled = 6; 
+  map<string, string> source_config = 7;
+  map<string, DestinationConfig> destination_configs = 8;
+}
+
+message DestinationConfig {
+  map<string, string> config = 1;
+  repeated string excluded_enrichers = 2;
+}
+
+message SourceEnrichmentConfig {
+  repeated EnricherConfig enrichers = 1;
+}
+
+message EnricherConfig {
+  fitglue.models.plugin.EnricherProviderType provider_type = 1;
+  map<string, string> typed_config = 2;
+}
+
+message PluginDefault {
+  string plugin_id = 1;                  
+  map<string, string> config = 2;        
+  int64 created_at = 3; // using unix timestamp for simplicity without well-known types if preferable
+  int64 updated_at = 4;
+}

@@ -1,6 +1,17 @@
+// nolint:proto-json
 package framework
 
 import (
+	user "github.com/fitglue/server/src/go/pkg/domain/user"
+
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
 	"context"
 	"encoding/json"
 	"errors"
@@ -9,16 +20,15 @@ import (
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/types"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
 )
 
 // MockDB for Wrapper Test
 type MockDB struct {
-	SetExecutionFunc    func(ctx context.Context, record *pb.ExecutionRecord) error
+	SetExecutionFunc    func(ctx context.Context, record *pbpipeline.ExecutionRecord) error
 	UpdateExecutionFunc func(ctx context.Context, userId string, id string, data map[string]interface{}) error
 }
 
-func (m *MockDB) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
+func (m *MockDB) SetExecution(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
 	if m.SetExecutionFunc != nil {
 		return m.SetExecutionFunc(ctx, record)
 	}
@@ -30,34 +40,34 @@ func (m *MockDB) UpdateExecution(ctx context.Context, userId string, id string, 
 	}
 	return nil
 }
-func (m *MockDB) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
+func (m *MockDB) GetUser(ctx context.Context, id string) (*user.Record, error) {
 	return nil, nil
 }
 func (m *MockDB) UpdateUser(ctx context.Context, id string, data map[string]interface{}) error {
 	return nil
 }
-func (m *MockDB) CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error {
+func (m *MockDB) CreatePendingInput(ctx context.Context, userId string, input *pbpipeline.PendingInput) error {
 	return nil
 }
-func (m *MockDB) GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
+func (m *MockDB) GetPendingInput(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error) {
 	return nil, nil
 }
 func (m *MockDB) UpdatePendingInput(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return nil
 }
-func (m *MockDB) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
+func (m *MockDB) ListPendingInputs(ctx context.Context, userID string) ([]*pbpipeline.PendingInput, error) {
 	return nil, nil
 }
 func (m *MockDB) DeletePendingInput(ctx context.Context, userId string, id string) error {
 	return nil
 }
-func (m *MockDB) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
+func (m *MockDB) GetCounter(ctx context.Context, userId string, id string) (*pbuser.Counter, error) {
 	return nil, nil
 }
-func (m *MockDB) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
+func (m *MockDB) SetCounter(ctx context.Context, userId string, counter *pbuser.Counter) error {
 	return nil
 }
-func (m *MockDB) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
+func (m *MockDB) ListCounters(ctx context.Context, userId string) ([]*pbuser.Counter, error) {
 	return nil, nil
 }
 func (m *MockDB) DeleteCounter(ctx context.Context, userId string, id string) error {
@@ -72,73 +82,73 @@ func (m *MockDB) IncrementPreventedSyncCount(ctx context.Context, userID string)
 func (m *MockDB) ResetSyncCount(ctx context.Context, userID string) error {
 	return nil
 }
-func (m *MockDB) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
+func (m *MockDB) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pbpipeline.PendingInput_Status) ([]*pbpipeline.PendingInput, error) {
 	return nil, nil
 }
 func (m *MockDB) ShowcaseActivityExists(ctx context.Context, showcaseId string) (bool, error) {
 	return false, nil
 }
-func (m *MockDB) SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error {
+func (m *MockDB) SetShowcasedActivity(ctx context.Context, activity *pbactivity.ShowcasedActivity) error {
 	return nil
 }
-func (m *MockDB) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
+func (m *MockDB) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pbactivity.ShowcasedActivity, error) {
 	return nil, nil
 }
-func (m *MockDB) SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error {
+func (m *MockDB) SetShowcaseProfile(ctx context.Context, profile *pbactivity.ShowcaseProfile) error {
 	return nil
 }
-func (m *MockDB) GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error) {
+func (m *MockDB) GetShowcaseProfile(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error) {
 	return nil, nil
 }
-func (m *MockDB) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pb.ShowcaseProfile, error) {
+func (m *MockDB) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pbactivity.ShowcaseProfile, error) {
 	return nil, nil
 }
 func (m *MockDB) DeleteShowcaseProfile(ctx context.Context, slug string) error {
 	return nil
 }
-func (m *MockDB) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
+func (m *MockDB) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pbuser.PersonalRecord, error) {
 	return nil, nil
 }
-func (m *MockDB) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+func (m *MockDB) SetPersonalRecord(ctx context.Context, userId string, record *pbuser.PersonalRecord) error {
 	return nil
 }
-func (m *MockDB) ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error) {
+func (m *MockDB) ListPersonalRecords(ctx context.Context, userId string) ([]*pbuser.PersonalRecord, error) {
 	return nil, nil
 }
 func (m *MockDB) DeletePersonalRecord(ctx context.Context, userId string, recordType string) error {
 	return nil
 }
-func (m *MockDB) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
-	return []*pb.PipelineConfig{}, nil
+func (m *MockDB) GetUserPipelines(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
+	return []*pbpipeline.PipelineConfig{}, nil
 }
-func (m *MockDB) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pb.PluginDefault, error) {
+func (m *MockDB) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pbpipeline.PluginDefault, error) {
 	return nil, nil
 }
-func (m *MockDB) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pb.PluginDefault) error {
+func (m *MockDB) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pbpipeline.PluginDefault) error {
 	return nil
 }
-func (m *MockDB) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
+func (m *MockDB) SetUploadedActivity(ctx context.Context, userId string, record *pbactivity.UploadedActivityRecord) error {
 	return nil
 }
-func (m *MockDB) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
+func (m *MockDB) GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error) {
 	return nil, nil
 }
-func (m *MockDB) CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error {
+func (m *MockDB) CreatePipelineRun(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error {
 	return nil
 }
-func (m *MockDB) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
+func (m *MockDB) GetPipelineRun(ctx context.Context, userId string, id string) (*pbpipeline.PipelineRun, error) {
 	return nil, nil
 }
-func (m *MockDB) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error) {
+func (m *MockDB) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pbpipeline.PipelineRun, error) {
 	return nil, nil
 }
 func (m *MockDB) UpdatePipelineRun(ctx context.Context, userId string, id string, data map[string]interface{}) error {
 	return nil
 }
-func (m *MockDB) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+func (m *MockDB) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error {
 	return nil
 }
-func (m *MockDB) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+func (m *MockDB) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error) {
 	return nil, nil
 }
 func (m *MockDB) GetBoosterData(ctx context.Context, userId string, boosterId string) (map[string]interface{}, error) {
@@ -154,8 +164,8 @@ func (m *MockDB) DeleteBoosterData(ctx context.Context, userId string, boosterId
 // Update Wrapper Test to expect metadata in LogStart updates
 func TestWrapCloudEvent(t *testing.T) {
 	mockDB := &MockDB{
-		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
-			if record.Status != pb.ExecutionStatus_STATUS_PENDING {
+		SetExecutionFunc: func(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
+			if record.Status != pbpipeline.ExecutionStatus_STATUS_PENDING {
 				t.Errorf("Expected status pending, got %v", record.Status)
 			}
 			return nil
@@ -169,9 +179,9 @@ func TestWrapCloudEvent(t *testing.T) {
 				}
 				return nil // some other update
 			}
-			s := pb.ExecutionStatus(status)
+			s := pbpipeline.ExecutionStatus(status)
 			// Should be either STARTED or SUCCESS
-			if s != pb.ExecutionStatus_STATUS_STARTED && s != pb.ExecutionStatus_STATUS_SUCCESS {
+			if s != pbpipeline.ExecutionStatus_STATUS_STARTED && s != pbpipeline.ExecutionStatus_STATUS_SUCCESS {
 				t.Errorf("Unexpected status update: %v", s)
 			}
 			return nil
@@ -207,8 +217,8 @@ func TestWrapCloudEvent(t *testing.T) {
 
 func TestWrapCloudEvent_Failure(t *testing.T) {
 	mockDB := &MockDB{
-		SetExecutionFunc: func(ctx context.Context, record *pb.ExecutionRecord) error {
-			if record.Status != pb.ExecutionStatus_STATUS_PENDING {
+		SetExecutionFunc: func(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
+			if record.Status != pbpipeline.ExecutionStatus_STATUS_PENDING {
 				t.Errorf("Expected status pending, got %v", record.Status)
 			}
 			return nil
@@ -218,9 +228,9 @@ func TestWrapCloudEvent_Failure(t *testing.T) {
 			if !ok {
 				return nil
 			}
-			s := pb.ExecutionStatus(status)
+			s := pbpipeline.ExecutionStatus(status)
 			// Should be STARTED then FAILED
-			if s != pb.ExecutionStatus_STATUS_STARTED && s != pb.ExecutionStatus_STATUS_FAILED {
+			if s != pbpipeline.ExecutionStatus_STATUS_STARTED && s != pbpipeline.ExecutionStatus_STATUS_FAILED {
 				t.Errorf("Unexpected status update: %v", s)
 			}
 			return nil

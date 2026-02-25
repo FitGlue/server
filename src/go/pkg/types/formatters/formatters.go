@@ -4,1509 +4,1513 @@ package formatters
 import (
 	"strings"
 
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 )
 
-func FormatActivityType(value pb.ActivityType) string {
+func FormatActivityType(value pbactivity.ActivityType) string {
 	switch value {
-	case pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED:
 		return "Workout"
-	case pb.ActivityType_ACTIVITY_TYPE_ALPINE_SKI:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI:
 		return "Alpine Ski"
-	case pb.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI:
 		return "Backcountry Ski"
-	case pb.ActivityType_ACTIVITY_TYPE_BADMINTON:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_BADMINTON:
 		return "Badminton"
-	case pb.ActivityType_ACTIVITY_TYPE_CANOEING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_CANOEING:
 		return "Canoeing"
-	case pb.ActivityType_ACTIVITY_TYPE_CROSSFIT:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT:
 		return "Crossfit"
-	case pb.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE:
 		return "E-Bike Ride"
-	case pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ELLIPTICAL:
 		return "Elliptical"
-	case pb.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE:
 		return "E-Mountain Bike Ride"
-	case pb.ActivityType_ACTIVITY_TYPE_GOLF:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_GOLF:
 		return "Golf"
-	case pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE:
 		return "Gravel Ride"
-	case pb.ActivityType_ACTIVITY_TYPE_HANDCYCLE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HANDCYCLE:
 		return "Handcycle"
-	case pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING:
 		return "HIIT"
-	case pb.ActivityType_ACTIVITY_TYPE_HIKE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_HIKE:
 		return "Hike"
-	case pb.ActivityType_ACTIVITY_TYPE_ICE_SKATE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE:
 		return "Ice Skate"
-	case pb.ActivityType_ACTIVITY_TYPE_INLINE_SKATE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE:
 		return "Inline Skate"
-	case pb.ActivityType_ACTIVITY_TYPE_KAYAKING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_KAYAKING:
 		return "Kayaking"
-	case pb.ActivityType_ACTIVITY_TYPE_KITESURF:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_KITESURF:
 		return "Kitesurf"
-	case pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE:
 		return "Mountain Bike Ride"
-	case pb.ActivityType_ACTIVITY_TYPE_NORDIC_SKI:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI:
 		return "Nordic Ski"
-	case pb.ActivityType_ACTIVITY_TYPE_PICKLEBALL:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_PICKLEBALL:
 		return "Pickleball"
-	case pb.ActivityType_ACTIVITY_TYPE_PILATES:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_PILATES:
 		return "Pilates"
-	case pb.ActivityType_ACTIVITY_TYPE_RACQUETBALL:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RACQUETBALL:
 		return "Racquetball"
-	case pb.ActivityType_ACTIVITY_TYPE_RIDE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RIDE:
 		return "Ride"
-	case pb.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING:
 		return "Rock Climbing"
-	case pb.ActivityType_ACTIVITY_TYPE_ROLLER_SKI:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROLLER_SKI:
 		return "Roller Ski"
-	case pb.ActivityType_ACTIVITY_TYPE_ROWING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_ROWING:
 		return "Rowing"
-	case pb.ActivityType_ACTIVITY_TYPE_RUN:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_RUN:
 		return "Run"
-	case pb.ActivityType_ACTIVITY_TYPE_SAIL:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SAIL:
 		return "Sail"
-	case pb.ActivityType_ACTIVITY_TYPE_SKATEBOARD:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SKATEBOARD:
 		return "Skateboard"
-	case pb.ActivityType_ACTIVITY_TYPE_SNOWBOARD:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD:
 		return "Snowboard"
-	case pb.ActivityType_ACTIVITY_TYPE_SNOWSHOE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SNOWSHOE:
 		return "Snowshoe"
-	case pb.ActivityType_ACTIVITY_TYPE_SOCCER:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER:
 		return "Soccer"
-	case pb.ActivityType_ACTIVITY_TYPE_SQUASH:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SQUASH:
 		return "Squash"
-	case pb.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER:
 		return "Stair Stepper"
-	case pb.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING:
 		return "Stand Up Paddling"
-	case pb.ActivityType_ACTIVITY_TYPE_SURFING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SURFING:
 		return "Surfing"
-	case pb.ActivityType_ACTIVITY_TYPE_SWIM:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_SWIM:
 		return "Swim"
-	case pb.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS:
 		return "Table Tennis"
-	case pb.ActivityType_ACTIVITY_TYPE_TENNIS:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS:
 		return "Tennis"
-	case pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN:
 		return "Trail Run"
-	case pb.ActivityType_ACTIVITY_TYPE_VELOMOBILE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VELOMOBILE:
 		return "Velomobile"
-	case pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE:
 		return "Virtual Ride"
-	case pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW:
 		return "Virtual Row"
-	case pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN:
 		return "Virtual Run"
-	case pb.ActivityType_ACTIVITY_TYPE_WALK:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WALK:
 		return "Walk"
-	case pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
 		return "Weight Training"
-	case pb.ActivityType_ACTIVITY_TYPE_WHEELCHAIR:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WHEELCHAIR:
 		return "Wheelchair"
-	case pb.ActivityType_ACTIVITY_TYPE_WINDSURF:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WINDSURF:
 		return "Windsurf"
-	case pb.ActivityType_ACTIVITY_TYPE_WORKOUT:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT:
 		return "Workout"
-	case pb.ActivityType_ACTIVITY_TYPE_YOGA:
+	case pbactivity.ActivityType_ACTIVITY_TYPE_YOGA:
 		return "Yoga"
 	default:
 		return "Workout"
 	}
 }
 
-func ParseActivityType(input string) pb.ActivityType {
+func ParseActivityType(input string) pbactivity.ActivityType {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.ActivityType_value[input]; ok {
-		return pb.ActivityType(v)
+	if v, ok := pbactivity.ActivityType_value[input]; ok {
+		return pbactivity.ActivityType(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.ActivityType{
-		"activity_type_unspecified":         pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED,
-		"unspecified":                       pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED,
-		"workout":                           pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED,
-		"activity_type_alpine_ski":          pb.ActivityType_ACTIVITY_TYPE_ALPINE_SKI,
-		"alpine_ski":                        pb.ActivityType_ACTIVITY_TYPE_ALPINE_SKI,
-		"alpine ski":                        pb.ActivityType_ACTIVITY_TYPE_ALPINE_SKI,
-		"activity_type_backcountry_ski":     pb.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
-		"backcountry_ski":                   pb.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
-		"backcountry ski":                   pb.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
-		"activity_type_badminton":           pb.ActivityType_ACTIVITY_TYPE_BADMINTON,
-		"badminton":                         pb.ActivityType_ACTIVITY_TYPE_BADMINTON,
-		"activity_type_canoeing":            pb.ActivityType_ACTIVITY_TYPE_CANOEING,
-		"canoeing":                          pb.ActivityType_ACTIVITY_TYPE_CANOEING,
-		"activity_type_crossfit":            pb.ActivityType_ACTIVITY_TYPE_CROSSFIT,
-		"crossfit":                          pb.ActivityType_ACTIVITY_TYPE_CROSSFIT,
-		"activity_type_ebike_ride":          pb.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
-		"ebike_ride":                        pb.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
-		"e-bike ride":                       pb.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
-		"activity_type_elliptical":          pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL,
-		"elliptical":                        pb.ActivityType_ACTIVITY_TYPE_ELLIPTICAL,
-		"activity_type_emountain_bike_ride": pb.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
-		"emountain_bike_ride":               pb.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
-		"e-mountain bike ride":              pb.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
-		"activity_type_golf":                pb.ActivityType_ACTIVITY_TYPE_GOLF,
-		"golf":                              pb.ActivityType_ACTIVITY_TYPE_GOLF,
-		"activity_type_gravel_ride":         pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
-		"gravel_ride":                       pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
-		"gravel ride":                       pb.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
-		"activity_type_handcycle":           pb.ActivityType_ACTIVITY_TYPE_HANDCYCLE,
-		"handcycle":                         pb.ActivityType_ACTIVITY_TYPE_HANDCYCLE,
-		"activity_type_high_intensity_interval_training": pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
-		"high_intensity_interval_training":               pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
-		"hiit":                                           pb.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
-		"activity_type_hike":                             pb.ActivityType_ACTIVITY_TYPE_HIKE,
-		"hike":                                           pb.ActivityType_ACTIVITY_TYPE_HIKE,
-		"activity_type_ice_skate":                        pb.ActivityType_ACTIVITY_TYPE_ICE_SKATE,
-		"ice_skate":                                      pb.ActivityType_ACTIVITY_TYPE_ICE_SKATE,
-		"ice skate":                                      pb.ActivityType_ACTIVITY_TYPE_ICE_SKATE,
-		"activity_type_inline_skate":                     pb.ActivityType_ACTIVITY_TYPE_INLINE_SKATE,
-		"inline_skate":                                   pb.ActivityType_ACTIVITY_TYPE_INLINE_SKATE,
-		"inline skate":                                   pb.ActivityType_ACTIVITY_TYPE_INLINE_SKATE,
-		"activity_type_kayaking":                         pb.ActivityType_ACTIVITY_TYPE_KAYAKING,
-		"kayaking":                                       pb.ActivityType_ACTIVITY_TYPE_KAYAKING,
-		"activity_type_kitesurf":                         pb.ActivityType_ACTIVITY_TYPE_KITESURF,
-		"kitesurf":                                       pb.ActivityType_ACTIVITY_TYPE_KITESURF,
-		"activity_type_mountain_bike_ride":               pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
-		"mountain_bike_ride":                             pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
-		"mountain bike ride":                             pb.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
-		"activity_type_nordic_ski":                       pb.ActivityType_ACTIVITY_TYPE_NORDIC_SKI,
-		"nordic_ski":                                     pb.ActivityType_ACTIVITY_TYPE_NORDIC_SKI,
-		"nordic ski":                                     pb.ActivityType_ACTIVITY_TYPE_NORDIC_SKI,
-		"activity_type_pickleball":                       pb.ActivityType_ACTIVITY_TYPE_PICKLEBALL,
-		"pickleball":                                     pb.ActivityType_ACTIVITY_TYPE_PICKLEBALL,
-		"activity_type_pilates":                          pb.ActivityType_ACTIVITY_TYPE_PILATES,
-		"pilates":                                        pb.ActivityType_ACTIVITY_TYPE_PILATES,
-		"activity_type_racquetball":                      pb.ActivityType_ACTIVITY_TYPE_RACQUETBALL,
-		"racquetball":                                    pb.ActivityType_ACTIVITY_TYPE_RACQUETBALL,
-		"activity_type_ride":                             pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"ride":                                           pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"activity_type_rock_climbing":                    pb.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING,
-		"rock_climbing":                                  pb.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING,
-		"rock climbing":                                  pb.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING,
-		"activity_type_roller_ski":                       pb.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
-		"roller_ski":                                     pb.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
-		"roller ski":                                     pb.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
-		"activity_type_rowing":                           pb.ActivityType_ACTIVITY_TYPE_ROWING,
-		"rowing":                                         pb.ActivityType_ACTIVITY_TYPE_ROWING,
-		"activity_type_run":                              pb.ActivityType_ACTIVITY_TYPE_RUN,
-		"run":                                            pb.ActivityType_ACTIVITY_TYPE_RUN,
-		"activity_type_sail":                             pb.ActivityType_ACTIVITY_TYPE_SAIL,
-		"sail":                                           pb.ActivityType_ACTIVITY_TYPE_SAIL,
-		"activity_type_skateboard":                       pb.ActivityType_ACTIVITY_TYPE_SKATEBOARD,
-		"skateboard":                                     pb.ActivityType_ACTIVITY_TYPE_SKATEBOARD,
-		"activity_type_snowboard":                        pb.ActivityType_ACTIVITY_TYPE_SNOWBOARD,
-		"snowboard":                                      pb.ActivityType_ACTIVITY_TYPE_SNOWBOARD,
-		"activity_type_snowshoe":                         pb.ActivityType_ACTIVITY_TYPE_SNOWSHOE,
-		"snowshoe":                                       pb.ActivityType_ACTIVITY_TYPE_SNOWSHOE,
-		"activity_type_soccer":                           pb.ActivityType_ACTIVITY_TYPE_SOCCER,
-		"soccer":                                         pb.ActivityType_ACTIVITY_TYPE_SOCCER,
-		"activity_type_squash":                           pb.ActivityType_ACTIVITY_TYPE_SQUASH,
-		"squash":                                         pb.ActivityType_ACTIVITY_TYPE_SQUASH,
-		"activity_type_stair_stepper":                    pb.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
-		"stair_stepper":                                  pb.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
-		"stair stepper":                                  pb.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
-		"activity_type_stand_up_paddling":                pb.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING,
-		"stand_up_paddling":                              pb.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING,
-		"stand up paddling":                              pb.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING,
-		"activity_type_surfing":                          pb.ActivityType_ACTIVITY_TYPE_SURFING,
-		"surfing":                                        pb.ActivityType_ACTIVITY_TYPE_SURFING,
-		"activity_type_swim":                             pb.ActivityType_ACTIVITY_TYPE_SWIM,
-		"swim":                                           pb.ActivityType_ACTIVITY_TYPE_SWIM,
-		"activity_type_table_tennis":                     pb.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS,
-		"table_tennis":                                   pb.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS,
-		"table tennis":                                   pb.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS,
-		"activity_type_tennis":                           pb.ActivityType_ACTIVITY_TYPE_TENNIS,
-		"tennis":                                         pb.ActivityType_ACTIVITY_TYPE_TENNIS,
-		"activity_type_trail_run":                        pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
-		"trail_run":                                      pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
-		"trail run":                                      pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
-		"activity_type_velomobile":                       pb.ActivityType_ACTIVITY_TYPE_VELOMOBILE,
-		"velomobile":                                     pb.ActivityType_ACTIVITY_TYPE_VELOMOBILE,
-		"activity_type_virtual_ride":                     pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
-		"virtual_ride":                                   pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
-		"virtual ride":                                   pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
-		"activity_type_virtual_row":                      pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
-		"virtual_row":                                    pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
-		"virtual row":                                    pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
-		"activity_type_virtual_run":                      pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
-		"virtual_run":                                    pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
-		"virtual run":                                    pb.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
-		"activity_type_walk":                             pb.ActivityType_ACTIVITY_TYPE_WALK,
-		"walk":                                           pb.ActivityType_ACTIVITY_TYPE_WALK,
-		"activity_type_weight_training":                  pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"weight_training":                                pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"weight training":                                pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"activity_type_wheelchair":                       pb.ActivityType_ACTIVITY_TYPE_WHEELCHAIR,
-		"wheelchair":                                     pb.ActivityType_ACTIVITY_TYPE_WHEELCHAIR,
-		"activity_type_windsurf":                         pb.ActivityType_ACTIVITY_TYPE_WINDSURF,
-		"windsurf":                                       pb.ActivityType_ACTIVITY_TYPE_WINDSURF,
-		"activity_type_workout":                          pb.ActivityType_ACTIVITY_TYPE_WORKOUT,
-		"activity_type_yoga":                             pb.ActivityType_ACTIVITY_TYPE_YOGA,
-		"yoga":                                           pb.ActivityType_ACTIVITY_TYPE_YOGA,
-		"running":                                        pb.ActivityType_ACTIVITY_TYPE_RUN,
-		"cycling":                                        pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"biking":                                         pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"bike":                                           pb.ActivityType_ACTIVITY_TYPE_RIDE,
-		"swimming":                                       pb.ActivityType_ACTIVITY_TYPE_SWIM,
-		"walking":                                        pb.ActivityType_ACTIVITY_TYPE_WALK,
-		"hiking":                                         pb.ActivityType_ACTIVITY_TYPE_HIKE,
-		"weights":                                        pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"weighttraining":                                 pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"strength":                                       pb.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
-		"trailrun":                                       pb.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
+	lookup := map[string]pbactivity.ActivityType{
+		"activity_type_unspecified":         pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED,
+		"unspecified":                       pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED,
+		"workout":                           pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED,
+		"activity_type_alpine_ski":          pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI,
+		"alpine_ski":                        pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI,
+		"alpine ski":                        pbactivity.ActivityType_ACTIVITY_TYPE_ALPINE_SKI,
+		"activity_type_backcountry_ski":     pbactivity.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+		"backcountry_ski":                   pbactivity.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+		"backcountry ski":                   pbactivity.ActivityType_ACTIVITY_TYPE_BACKCOUNTRY_SKI,
+		"activity_type_badminton":           pbactivity.ActivityType_ACTIVITY_TYPE_BADMINTON,
+		"badminton":                         pbactivity.ActivityType_ACTIVITY_TYPE_BADMINTON,
+		"activity_type_canoeing":            pbactivity.ActivityType_ACTIVITY_TYPE_CANOEING,
+		"canoeing":                          pbactivity.ActivityType_ACTIVITY_TYPE_CANOEING,
+		"activity_type_crossfit":            pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT,
+		"crossfit":                          pbactivity.ActivityType_ACTIVITY_TYPE_CROSSFIT,
+		"activity_type_ebike_ride":          pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
+		"ebike_ride":                        pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
+		"e-bike ride":                       pbactivity.ActivityType_ACTIVITY_TYPE_EBIKE_RIDE,
+		"activity_type_elliptical":          pbactivity.ActivityType_ACTIVITY_TYPE_ELLIPTICAL,
+		"elliptical":                        pbactivity.ActivityType_ACTIVITY_TYPE_ELLIPTICAL,
+		"activity_type_emountain_bike_ride": pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+		"emountain_bike_ride":               pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+		"e-mountain bike ride":              pbactivity.ActivityType_ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE,
+		"activity_type_golf":                pbactivity.ActivityType_ACTIVITY_TYPE_GOLF,
+		"golf":                              pbactivity.ActivityType_ACTIVITY_TYPE_GOLF,
+		"activity_type_gravel_ride":         pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
+		"gravel_ride":                       pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
+		"gravel ride":                       pbactivity.ActivityType_ACTIVITY_TYPE_GRAVEL_RIDE,
+		"activity_type_handcycle":           pbactivity.ActivityType_ACTIVITY_TYPE_HANDCYCLE,
+		"handcycle":                         pbactivity.ActivityType_ACTIVITY_TYPE_HANDCYCLE,
+		"activity_type_high_intensity_interval_training": pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+		"high_intensity_interval_training":               pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+		"hiit":                                           pbactivity.ActivityType_ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING,
+		"activity_type_hike":                             pbactivity.ActivityType_ACTIVITY_TYPE_HIKE,
+		"hike":                                           pbactivity.ActivityType_ACTIVITY_TYPE_HIKE,
+		"activity_type_ice_skate":                        pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE,
+		"ice_skate":                                      pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE,
+		"ice skate":                                      pbactivity.ActivityType_ACTIVITY_TYPE_ICE_SKATE,
+		"activity_type_inline_skate":                     pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE,
+		"inline_skate":                                   pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE,
+		"inline skate":                                   pbactivity.ActivityType_ACTIVITY_TYPE_INLINE_SKATE,
+		"activity_type_kayaking":                         pbactivity.ActivityType_ACTIVITY_TYPE_KAYAKING,
+		"kayaking":                                       pbactivity.ActivityType_ACTIVITY_TYPE_KAYAKING,
+		"activity_type_kitesurf":                         pbactivity.ActivityType_ACTIVITY_TYPE_KITESURF,
+		"kitesurf":                                       pbactivity.ActivityType_ACTIVITY_TYPE_KITESURF,
+		"activity_type_mountain_bike_ride":               pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+		"mountain_bike_ride":                             pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+		"mountain bike ride":                             pbactivity.ActivityType_ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE,
+		"activity_type_nordic_ski":                       pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI,
+		"nordic_ski":                                     pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI,
+		"nordic ski":                                     pbactivity.ActivityType_ACTIVITY_TYPE_NORDIC_SKI,
+		"activity_type_pickleball":                       pbactivity.ActivityType_ACTIVITY_TYPE_PICKLEBALL,
+		"pickleball":                                     pbactivity.ActivityType_ACTIVITY_TYPE_PICKLEBALL,
+		"activity_type_pilates":                          pbactivity.ActivityType_ACTIVITY_TYPE_PILATES,
+		"pilates":                                        pbactivity.ActivityType_ACTIVITY_TYPE_PILATES,
+		"activity_type_racquetball":                      pbactivity.ActivityType_ACTIVITY_TYPE_RACQUETBALL,
+		"racquetball":                                    pbactivity.ActivityType_ACTIVITY_TYPE_RACQUETBALL,
+		"activity_type_ride":                             pbactivity.ActivityType_ACTIVITY_TYPE_RIDE,
+		"ride":                                           pbactivity.ActivityType_ACTIVITY_TYPE_RIDE,
+		"activity_type_rock_climbing":                    pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING,
+		"rock_climbing":                                  pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING,
+		"rock climbing":                                  pbactivity.ActivityType_ACTIVITY_TYPE_ROCK_CLIMBING,
+		"activity_type_roller_ski":                       pbactivity.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
+		"roller_ski":                                     pbactivity.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
+		"roller ski":                                     pbactivity.ActivityType_ACTIVITY_TYPE_ROLLER_SKI,
+		"activity_type_rowing":                           pbactivity.ActivityType_ACTIVITY_TYPE_ROWING,
+		"rowing":                                         pbactivity.ActivityType_ACTIVITY_TYPE_ROWING,
+		"activity_type_run":                              pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+		"run":                                            pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+		"activity_type_sail":                             pbactivity.ActivityType_ACTIVITY_TYPE_SAIL,
+		"sail":                                           pbactivity.ActivityType_ACTIVITY_TYPE_SAIL,
+		"activity_type_skateboard":                       pbactivity.ActivityType_ACTIVITY_TYPE_SKATEBOARD,
+		"skateboard":                                     pbactivity.ActivityType_ACTIVITY_TYPE_SKATEBOARD,
+		"activity_type_snowboard":                        pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD,
+		"snowboard":                                      pbactivity.ActivityType_ACTIVITY_TYPE_SNOWBOARD,
+		"activity_type_snowshoe":                         pbactivity.ActivityType_ACTIVITY_TYPE_SNOWSHOE,
+		"snowshoe":                                       pbactivity.ActivityType_ACTIVITY_TYPE_SNOWSHOE,
+		"activity_type_soccer":                           pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER,
+		"soccer":                                         pbactivity.ActivityType_ACTIVITY_TYPE_SOCCER,
+		"activity_type_squash":                           pbactivity.ActivityType_ACTIVITY_TYPE_SQUASH,
+		"squash":                                         pbactivity.ActivityType_ACTIVITY_TYPE_SQUASH,
+		"activity_type_stair_stepper":                    pbactivity.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
+		"stair_stepper":                                  pbactivity.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
+		"stair stepper":                                  pbactivity.ActivityType_ACTIVITY_TYPE_STAIR_STEPPER,
+		"activity_type_stand_up_paddling":                pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING,
+		"stand_up_paddling":                              pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING,
+		"stand up paddling":                              pbactivity.ActivityType_ACTIVITY_TYPE_STAND_UP_PADDLING,
+		"activity_type_surfing":                          pbactivity.ActivityType_ACTIVITY_TYPE_SURFING,
+		"surfing":                                        pbactivity.ActivityType_ACTIVITY_TYPE_SURFING,
+		"activity_type_swim":                             pbactivity.ActivityType_ACTIVITY_TYPE_SWIM,
+		"swim":                                           pbactivity.ActivityType_ACTIVITY_TYPE_SWIM,
+		"activity_type_table_tennis":                     pbactivity.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS,
+		"table_tennis":                                   pbactivity.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS,
+		"table tennis":                                   pbactivity.ActivityType_ACTIVITY_TYPE_TABLE_TENNIS,
+		"activity_type_tennis":                           pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS,
+		"tennis":                                         pbactivity.ActivityType_ACTIVITY_TYPE_TENNIS,
+		"activity_type_trail_run":                        pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
+		"trail_run":                                      pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
+		"trail run":                                      pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
+		"activity_type_velomobile":                       pbactivity.ActivityType_ACTIVITY_TYPE_VELOMOBILE,
+		"velomobile":                                     pbactivity.ActivityType_ACTIVITY_TYPE_VELOMOBILE,
+		"activity_type_virtual_ride":                     pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
+		"virtual_ride":                                   pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
+		"virtual ride":                                   pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RIDE,
+		"activity_type_virtual_row":                      pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
+		"virtual_row":                                    pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
+		"virtual row":                                    pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_ROW,
+		"activity_type_virtual_run":                      pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
+		"virtual_run":                                    pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
+		"virtual run":                                    pbactivity.ActivityType_ACTIVITY_TYPE_VIRTUAL_RUN,
+		"activity_type_walk":                             pbactivity.ActivityType_ACTIVITY_TYPE_WALK,
+		"walk":                                           pbactivity.ActivityType_ACTIVITY_TYPE_WALK,
+		"activity_type_weight_training":                  pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		"weight_training":                                pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		"weight training":                                pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		"activity_type_wheelchair":                       pbactivity.ActivityType_ACTIVITY_TYPE_WHEELCHAIR,
+		"wheelchair":                                     pbactivity.ActivityType_ACTIVITY_TYPE_WHEELCHAIR,
+		"activity_type_windsurf":                         pbactivity.ActivityType_ACTIVITY_TYPE_WINDSURF,
+		"windsurf":                                       pbactivity.ActivityType_ACTIVITY_TYPE_WINDSURF,
+		"activity_type_workout":                          pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT,
+		"activity_type_yoga":                             pbactivity.ActivityType_ACTIVITY_TYPE_YOGA,
+		"yoga":                                           pbactivity.ActivityType_ACTIVITY_TYPE_YOGA,
+		"running":                                        pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+		"cycling":                                        pbactivity.ActivityType_ACTIVITY_TYPE_RIDE,
+		"biking":                                         pbactivity.ActivityType_ACTIVITY_TYPE_RIDE,
+		"bike":                                           pbactivity.ActivityType_ACTIVITY_TYPE_RIDE,
+		"swimming":                                       pbactivity.ActivityType_ACTIVITY_TYPE_SWIM,
+		"walking":                                        pbactivity.ActivityType_ACTIVITY_TYPE_WALK,
+		"hiking":                                         pbactivity.ActivityType_ACTIVITY_TYPE_HIKE,
+		"weights":                                        pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		"weighttraining":                                 pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		"strength":                                       pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING,
+		"trailrun":                                       pbactivity.ActivityType_ACTIVITY_TYPE_TRAIL_RUN,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+	return pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED
 }
 
-func FormatMuscleGroup(value pb.MuscleGroup) string {
+func FormatMuscleGroup(value pbactivity.MuscleGroup) string {
 	switch value {
-	case pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED:
 		return "Unknown"
-	case pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_ABDOMINALS:
 		return "Abdominals"
-	case pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_SHOULDERS:
 		return "Shoulders"
-	case pb.MuscleGroup_MUSCLE_GROUP_BICEPS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_BICEPS:
 		return "Biceps"
-	case pb.MuscleGroup_MUSCLE_GROUP_TRICEPS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_TRICEPS:
 		return "Triceps"
-	case pb.MuscleGroup_MUSCLE_GROUP_FOREARMS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_FOREARMS:
 		return "Forearms"
-	case pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_QUADRICEPS:
 		return "Quadriceps"
-	case pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS:
 		return "Hamstrings"
-	case pb.MuscleGroup_MUSCLE_GROUP_CALVES:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_CALVES:
 		return "Calves"
-	case pb.MuscleGroup_MUSCLE_GROUP_GLUTES:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_GLUTES:
 		return "Glutes"
-	case pb.MuscleGroup_MUSCLE_GROUP_ABDUCTORS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_ABDUCTORS:
 		return "Abductors"
-	case pb.MuscleGroup_MUSCLE_GROUP_ADDUCTORS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_ADDUCTORS:
 		return "Adductors"
-	case pb.MuscleGroup_MUSCLE_GROUP_LATS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_LATS:
 		return "Lats"
-	case pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_UPPER_BACK:
 		return "Upper Back"
-	case pb.MuscleGroup_MUSCLE_GROUP_TRAPS:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_TRAPS:
 		return "Traps"
-	case pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_LOWER_BACK:
 		return "Lower Back"
-	case pb.MuscleGroup_MUSCLE_GROUP_CHEST:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_CHEST:
 		return "Chest"
-	case pb.MuscleGroup_MUSCLE_GROUP_CARDIO:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_CARDIO:
 		return "Cardio"
-	case pb.MuscleGroup_MUSCLE_GROUP_NECK:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_NECK:
 		return "Neck"
-	case pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_FULL_BODY:
 		return "Full Body"
-	case pb.MuscleGroup_MUSCLE_GROUP_OTHER:
+	case pbactivity.MuscleGroup_MUSCLE_GROUP_OTHER:
 		return "Other"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseMuscleGroup(input string) pb.MuscleGroup {
+func ParseMuscleGroup(input string) pbactivity.MuscleGroup {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.MuscleGroup_value[input]; ok {
-		return pb.MuscleGroup(v)
+	if v, ok := pbactivity.MuscleGroup_value[input]; ok {
+		return pbactivity.MuscleGroup(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.MuscleGroup{
-		"muscle_group_unspecified": pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED,
-		"unspecified":              pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED,
-		"unknown":                  pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED,
-		"muscle_group_abdominals":  pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS,
-		"abdominals":               pb.MuscleGroup_MUSCLE_GROUP_ABDOMINALS,
-		"muscle_group_shoulders":   pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS,
-		"shoulders":                pb.MuscleGroup_MUSCLE_GROUP_SHOULDERS,
-		"muscle_group_biceps":      pb.MuscleGroup_MUSCLE_GROUP_BICEPS,
-		"biceps":                   pb.MuscleGroup_MUSCLE_GROUP_BICEPS,
-		"muscle_group_triceps":     pb.MuscleGroup_MUSCLE_GROUP_TRICEPS,
-		"triceps":                  pb.MuscleGroup_MUSCLE_GROUP_TRICEPS,
-		"muscle_group_forearms":    pb.MuscleGroup_MUSCLE_GROUP_FOREARMS,
-		"forearms":                 pb.MuscleGroup_MUSCLE_GROUP_FOREARMS,
-		"muscle_group_quadriceps":  pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS,
-		"quadriceps":               pb.MuscleGroup_MUSCLE_GROUP_QUADRICEPS,
-		"muscle_group_hamstrings":  pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS,
-		"hamstrings":               pb.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS,
-		"muscle_group_calves":      pb.MuscleGroup_MUSCLE_GROUP_CALVES,
-		"calves":                   pb.MuscleGroup_MUSCLE_GROUP_CALVES,
-		"muscle_group_glutes":      pb.MuscleGroup_MUSCLE_GROUP_GLUTES,
-		"glutes":                   pb.MuscleGroup_MUSCLE_GROUP_GLUTES,
-		"muscle_group_abductors":   pb.MuscleGroup_MUSCLE_GROUP_ABDUCTORS,
-		"abductors":                pb.MuscleGroup_MUSCLE_GROUP_ABDUCTORS,
-		"muscle_group_adductors":   pb.MuscleGroup_MUSCLE_GROUP_ADDUCTORS,
-		"adductors":                pb.MuscleGroup_MUSCLE_GROUP_ADDUCTORS,
-		"muscle_group_lats":        pb.MuscleGroup_MUSCLE_GROUP_LATS,
-		"lats":                     pb.MuscleGroup_MUSCLE_GROUP_LATS,
-		"muscle_group_upper_back":  pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK,
-		"upper_back":               pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK,
-		"upper back":               pb.MuscleGroup_MUSCLE_GROUP_UPPER_BACK,
-		"muscle_group_traps":       pb.MuscleGroup_MUSCLE_GROUP_TRAPS,
-		"traps":                    pb.MuscleGroup_MUSCLE_GROUP_TRAPS,
-		"muscle_group_lower_back":  pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK,
-		"lower_back":               pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK,
-		"lower back":               pb.MuscleGroup_MUSCLE_GROUP_LOWER_BACK,
-		"muscle_group_chest":       pb.MuscleGroup_MUSCLE_GROUP_CHEST,
-		"chest":                    pb.MuscleGroup_MUSCLE_GROUP_CHEST,
-		"muscle_group_cardio":      pb.MuscleGroup_MUSCLE_GROUP_CARDIO,
-		"cardio":                   pb.MuscleGroup_MUSCLE_GROUP_CARDIO,
-		"muscle_group_neck":        pb.MuscleGroup_MUSCLE_GROUP_NECK,
-		"neck":                     pb.MuscleGroup_MUSCLE_GROUP_NECK,
-		"muscle_group_full_body":   pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY,
-		"full_body":                pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY,
-		"full body":                pb.MuscleGroup_MUSCLE_GROUP_FULL_BODY,
-		"muscle_group_other":       pb.MuscleGroup_MUSCLE_GROUP_OTHER,
-		"other":                    pb.MuscleGroup_MUSCLE_GROUP_OTHER,
+	lookup := map[string]pbactivity.MuscleGroup{
+		"muscle_group_unspecified": pbactivity.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED,
+		"unspecified":              pbactivity.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED,
+		"unknown":                  pbactivity.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED,
+		"muscle_group_abdominals":  pbactivity.MuscleGroup_MUSCLE_GROUP_ABDOMINALS,
+		"abdominals":               pbactivity.MuscleGroup_MUSCLE_GROUP_ABDOMINALS,
+		"muscle_group_shoulders":   pbactivity.MuscleGroup_MUSCLE_GROUP_SHOULDERS,
+		"shoulders":                pbactivity.MuscleGroup_MUSCLE_GROUP_SHOULDERS,
+		"muscle_group_biceps":      pbactivity.MuscleGroup_MUSCLE_GROUP_BICEPS,
+		"biceps":                   pbactivity.MuscleGroup_MUSCLE_GROUP_BICEPS,
+		"muscle_group_triceps":     pbactivity.MuscleGroup_MUSCLE_GROUP_TRICEPS,
+		"triceps":                  pbactivity.MuscleGroup_MUSCLE_GROUP_TRICEPS,
+		"muscle_group_forearms":    pbactivity.MuscleGroup_MUSCLE_GROUP_FOREARMS,
+		"forearms":                 pbactivity.MuscleGroup_MUSCLE_GROUP_FOREARMS,
+		"muscle_group_quadriceps":  pbactivity.MuscleGroup_MUSCLE_GROUP_QUADRICEPS,
+		"quadriceps":               pbactivity.MuscleGroup_MUSCLE_GROUP_QUADRICEPS,
+		"muscle_group_hamstrings":  pbactivity.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS,
+		"hamstrings":               pbactivity.MuscleGroup_MUSCLE_GROUP_HAMSTRINGS,
+		"muscle_group_calves":      pbactivity.MuscleGroup_MUSCLE_GROUP_CALVES,
+		"calves":                   pbactivity.MuscleGroup_MUSCLE_GROUP_CALVES,
+		"muscle_group_glutes":      pbactivity.MuscleGroup_MUSCLE_GROUP_GLUTES,
+		"glutes":                   pbactivity.MuscleGroup_MUSCLE_GROUP_GLUTES,
+		"muscle_group_abductors":   pbactivity.MuscleGroup_MUSCLE_GROUP_ABDUCTORS,
+		"abductors":                pbactivity.MuscleGroup_MUSCLE_GROUP_ABDUCTORS,
+		"muscle_group_adductors":   pbactivity.MuscleGroup_MUSCLE_GROUP_ADDUCTORS,
+		"adductors":                pbactivity.MuscleGroup_MUSCLE_GROUP_ADDUCTORS,
+		"muscle_group_lats":        pbactivity.MuscleGroup_MUSCLE_GROUP_LATS,
+		"lats":                     pbactivity.MuscleGroup_MUSCLE_GROUP_LATS,
+		"muscle_group_upper_back":  pbactivity.MuscleGroup_MUSCLE_GROUP_UPPER_BACK,
+		"upper_back":               pbactivity.MuscleGroup_MUSCLE_GROUP_UPPER_BACK,
+		"upper back":               pbactivity.MuscleGroup_MUSCLE_GROUP_UPPER_BACK,
+		"muscle_group_traps":       pbactivity.MuscleGroup_MUSCLE_GROUP_TRAPS,
+		"traps":                    pbactivity.MuscleGroup_MUSCLE_GROUP_TRAPS,
+		"muscle_group_lower_back":  pbactivity.MuscleGroup_MUSCLE_GROUP_LOWER_BACK,
+		"lower_back":               pbactivity.MuscleGroup_MUSCLE_GROUP_LOWER_BACK,
+		"lower back":               pbactivity.MuscleGroup_MUSCLE_GROUP_LOWER_BACK,
+		"muscle_group_chest":       pbactivity.MuscleGroup_MUSCLE_GROUP_CHEST,
+		"chest":                    pbactivity.MuscleGroup_MUSCLE_GROUP_CHEST,
+		"muscle_group_cardio":      pbactivity.MuscleGroup_MUSCLE_GROUP_CARDIO,
+		"cardio":                   pbactivity.MuscleGroup_MUSCLE_GROUP_CARDIO,
+		"muscle_group_neck":        pbactivity.MuscleGroup_MUSCLE_GROUP_NECK,
+		"neck":                     pbactivity.MuscleGroup_MUSCLE_GROUP_NECK,
+		"muscle_group_full_body":   pbactivity.MuscleGroup_MUSCLE_GROUP_FULL_BODY,
+		"full_body":                pbactivity.MuscleGroup_MUSCLE_GROUP_FULL_BODY,
+		"full body":                pbactivity.MuscleGroup_MUSCLE_GROUP_FULL_BODY,
+		"muscle_group_other":       pbactivity.MuscleGroup_MUSCLE_GROUP_OTHER,
+		"other":                    pbactivity.MuscleGroup_MUSCLE_GROUP_OTHER,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED
+	return pbactivity.MuscleGroup_MUSCLE_GROUP_UNSPECIFIED
 }
 
-func FormatDestination(value pb.Destination) string {
+func FormatDestination(value pbplugin.DestinationType) string {
 	switch value {
-	case pb.Destination_DESTINATION_UNSPECIFIED:
+	case pbplugin.DestinationType_DESTINATION_UNSPECIFIED:
 		return "Unknown"
-	case pb.Destination_DESTINATION_STRAVA:
+	case pbplugin.DestinationType_DESTINATION_STRAVA:
 		return "Strava"
-	case pb.Destination_DESTINATION_SHOWCASE:
+	case pbplugin.DestinationType_DESTINATION_SHOWCASE:
 		return "Showcase"
-	case pb.Destination_DESTINATION_HEVY:
+	case pbplugin.DestinationType_DESTINATION_HEVY:
 		return "Hevy"
-	case pb.Destination_DESTINATION_TRAININGPEAKS:
+	case pbplugin.DestinationType_DESTINATION_TRAININGPEAKS:
 		return "TrainingPeaks"
-	case pb.Destination_DESTINATION_INTERVALS:
+	case pbplugin.DestinationType_DESTINATION_INTERVALS:
 		return "Intervals.icu"
-	case pb.Destination_DESTINATION_GOOGLESHEETS:
+	case pbplugin.DestinationType_DESTINATION_GOOGLESHEETS:
 		return "Google Sheets"
-	case pb.Destination_DESTINATION_GITHUB:
+	case pbplugin.DestinationType_DESTINATION_GITHUB:
 		return "GitHub"
-	case pb.Destination_DESTINATION_MOCK:
+	case pbplugin.DestinationType_DESTINATION_MOCK:
 		return "Mock"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseDestination(input string) pb.Destination {
+func ParseDestination(input string) pbplugin.DestinationType {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.Destination_value[input]; ok {
-		return pb.Destination(v)
+	if v, ok := pbplugin.DestinationType_value[input]; ok {
+		return pbplugin.DestinationType(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.Destination{
-		"destination_unspecified":   pb.Destination_DESTINATION_UNSPECIFIED,
-		"unspecified":               pb.Destination_DESTINATION_UNSPECIFIED,
-		"unknown":                   pb.Destination_DESTINATION_UNSPECIFIED,
-		"destination_strava":        pb.Destination_DESTINATION_STRAVA,
-		"strava":                    pb.Destination_DESTINATION_STRAVA,
-		"destination_showcase":      pb.Destination_DESTINATION_SHOWCASE,
-		"showcase":                  pb.Destination_DESTINATION_SHOWCASE,
-		"destination_hevy":          pb.Destination_DESTINATION_HEVY,
-		"hevy":                      pb.Destination_DESTINATION_HEVY,
-		"destination_trainingpeaks": pb.Destination_DESTINATION_TRAININGPEAKS,
-		"trainingpeaks":             pb.Destination_DESTINATION_TRAININGPEAKS,
-		"destination_intervals":     pb.Destination_DESTINATION_INTERVALS,
-		"intervals":                 pb.Destination_DESTINATION_INTERVALS,
-		"intervals.icu":             pb.Destination_DESTINATION_INTERVALS,
-		"destination_googlesheets":  pb.Destination_DESTINATION_GOOGLESHEETS,
-		"googlesheets":              pb.Destination_DESTINATION_GOOGLESHEETS,
-		"google sheets":             pb.Destination_DESTINATION_GOOGLESHEETS,
-		"destination_github":        pb.Destination_DESTINATION_GITHUB,
-		"github":                    pb.Destination_DESTINATION_GITHUB,
-		"destination_mock":          pb.Destination_DESTINATION_MOCK,
-		"mock":                      pb.Destination_DESTINATION_MOCK,
+	lookup := map[string]pbplugin.DestinationType{
+		"destination_unspecified":   pbplugin.DestinationType_DESTINATION_UNSPECIFIED,
+		"unspecified":               pbplugin.DestinationType_DESTINATION_UNSPECIFIED,
+		"unknown":                   pbplugin.DestinationType_DESTINATION_UNSPECIFIED,
+		"destination_strava":        pbplugin.DestinationType_DESTINATION_STRAVA,
+		"strava":                    pbplugin.DestinationType_DESTINATION_STRAVA,
+		"destination_showcase":      pbplugin.DestinationType_DESTINATION_SHOWCASE,
+		"showcase":                  pbplugin.DestinationType_DESTINATION_SHOWCASE,
+		"destination_hevy":          pbplugin.DestinationType_DESTINATION_HEVY,
+		"hevy":                      pbplugin.DestinationType_DESTINATION_HEVY,
+		"destination_trainingpeaks": pbplugin.DestinationType_DESTINATION_TRAININGPEAKS,
+		"trainingpeaks":             pbplugin.DestinationType_DESTINATION_TRAININGPEAKS,
+		"destination_intervals":     pbplugin.DestinationType_DESTINATION_INTERVALS,
+		"intervals":                 pbplugin.DestinationType_DESTINATION_INTERVALS,
+		"intervals.icu":             pbplugin.DestinationType_DESTINATION_INTERVALS,
+		"destination_googlesheets":  pbplugin.DestinationType_DESTINATION_GOOGLESHEETS,
+		"googlesheets":              pbplugin.DestinationType_DESTINATION_GOOGLESHEETS,
+		"google sheets":             pbplugin.DestinationType_DESTINATION_GOOGLESHEETS,
+		"destination_github":        pbplugin.DestinationType_DESTINATION_GITHUB,
+		"github":                    pbplugin.DestinationType_DESTINATION_GITHUB,
+		"destination_mock":          pbplugin.DestinationType_DESTINATION_MOCK,
+		"mock":                      pbplugin.DestinationType_DESTINATION_MOCK,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.Destination_DESTINATION_UNSPECIFIED
+	return pbplugin.DestinationType_DESTINATION_UNSPECIFIED
 }
 
-func FormatCloudEventType(value pb.CloudEventType) string {
+func FormatCloudEventType(value pbevents.CloudEventType) string {
 	switch value {
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED:
 		return "Unspecified"
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED:
 		return "Activity Created"
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED:
 		return "Activity Enriched"
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED:
 		return "Job Routed"
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION:
 		return "Fitbit Notification"
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG:
 		return "Enrichment Lag"
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED:
 		return "Input Resolved"
-	case pb.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS:
+	case pbevents.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS:
 		return "Parkrun Results"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseCloudEventType(input string) pb.CloudEventType {
+func ParseCloudEventType(input string) pbevents.CloudEventType {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.CloudEventType_value[input]; ok {
-		return pb.CloudEventType(v)
+	if v, ok := pbevents.CloudEventType_value[input]; ok {
+		return pbevents.CloudEventType(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.CloudEventType{
-		"cloud_event_type_unspecified":         pb.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED,
-		"unspecified":                          pb.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED,
-		"cloud_event_type_activity_created":    pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
-		"activity_created":                     pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
-		"activity created":                     pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
-		"cloud_event_type_activity_enriched":   pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
-		"activity_enriched":                    pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
-		"activity enriched":                    pb.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
-		"cloud_event_type_job_routed":          pb.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED,
-		"job_routed":                           pb.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED,
-		"job routed":                           pb.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED,
-		"cloud_event_type_fitbit_notification": pb.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
-		"fitbit_notification":                  pb.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
-		"fitbit notification":                  pb.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
-		"cloud_event_type_enrichment_lag":      pb.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
-		"enrichment_lag":                       pb.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
-		"enrichment lag":                       pb.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
-		"cloud_event_type_input_resolved":      pb.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED,
-		"input_resolved":                       pb.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED,
-		"input resolved":                       pb.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED,
-		"cloud_event_type_parkrun_results":     pb.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
-		"parkrun_results":                      pb.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
-		"parkrun results":                      pb.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
+	lookup := map[string]pbevents.CloudEventType{
+		"cloud_event_type_unspecified":         pbevents.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED,
+		"unspecified":                          pbevents.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED,
+		"cloud_event_type_activity_created":    pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
+		"activity_created":                     pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
+		"activity created":                     pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_CREATED,
+		"cloud_event_type_activity_enriched":   pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
+		"activity_enriched":                    pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
+		"activity enriched":                    pbevents.CloudEventType_CLOUD_EVENT_TYPE_ACTIVITY_ENRICHED,
+		"cloud_event_type_job_routed":          pbevents.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED,
+		"job_routed":                           pbevents.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED,
+		"job routed":                           pbevents.CloudEventType_CLOUD_EVENT_TYPE_JOB_ROUTED,
+		"cloud_event_type_fitbit_notification": pbevents.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
+		"fitbit_notification":                  pbevents.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
+		"fitbit notification":                  pbevents.CloudEventType_CLOUD_EVENT_TYPE_FITBIT_NOTIFICATION,
+		"cloud_event_type_enrichment_lag":      pbevents.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
+		"enrichment_lag":                       pbevents.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
+		"enrichment lag":                       pbevents.CloudEventType_CLOUD_EVENT_TYPE_ENRICHMENT_LAG,
+		"cloud_event_type_input_resolved":      pbevents.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED,
+		"input_resolved":                       pbevents.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED,
+		"input resolved":                       pbevents.CloudEventType_CLOUD_EVENT_TYPE_INPUT_RESOLVED,
+		"cloud_event_type_parkrun_results":     pbevents.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
+		"parkrun_results":                      pbevents.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
+		"parkrun results":                      pbevents.CloudEventType_CLOUD_EVENT_TYPE_PARKRUN_RESULTS,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED
+	return pbevents.CloudEventType_CLOUD_EVENT_TYPE_UNSPECIFIED
 }
 
-func FormatCloudEventSource(value pb.CloudEventSource) string {
+func FormatCloudEventSource(value pbevents.CloudEventSource) string {
 	switch value {
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED:
 		return "Unspecified"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEVY:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_HEVY:
 		return "Hevy"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK:
 		return "Fitbit Webhook"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST:
 		return "Fitbit Ingest"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER:
 		return "Enricher"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER:
 		return "Router"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER:
 		return "Inputs Handler"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS:
 		return "Parkrun Results"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD:
 		return "File Upload"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA:
 		return "Strava"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_OURA:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_OURA:
 		return "Oura"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK:
 		return "Polar Webhook"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO:
 		return "Wahoo"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER:
 		return "Pipeline Splitter"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB:
 		return "Github"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH:
 		return "Apple Health"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT:
 		return "Health Connect"
-	case pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK:
+	case pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK:
 		return "Mock"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseCloudEventSource(input string) pb.CloudEventSource {
+func ParseCloudEventSource(input string) pbevents.CloudEventSource {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.CloudEventSource_value[input]; ok {
-		return pb.CloudEventSource(v)
+	if v, ok := pbevents.CloudEventSource_value[input]; ok {
+		return pbevents.CloudEventSource(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.CloudEventSource{
-		"cloud_event_source_unspecified":       pb.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED,
-		"unspecified":                          pb.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED,
-		"cloud_event_source_hevy":              pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEVY,
-		"hevy":                                 pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEVY,
-		"cloud_event_source_fitbit_webhook":    pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
-		"fitbit_webhook":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
-		"fitbit webhook":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
-		"cloud_event_source_fitbit_ingest":     pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST,
-		"fitbit_ingest":                        pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST,
-		"fitbit ingest":                        pb.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST,
-		"cloud_event_source_enricher":          pb.CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER,
-		"enricher":                             pb.CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER,
-		"cloud_event_source_router":            pb.CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER,
-		"router":                               pb.CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER,
-		"cloud_event_source_inputs_handler":    pb.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
-		"inputs_handler":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
-		"inputs handler":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
-		"cloud_event_source_parkrun_results":   pb.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
-		"parkrun_results":                      pb.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
-		"parkrun results":                      pb.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
-		"cloud_event_source_file_upload":       pb.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD,
-		"file_upload":                          pb.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD,
-		"file upload":                          pb.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD,
-		"cloud_event_source_strava":            pb.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA,
-		"strava":                               pb.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA,
-		"cloud_event_source_oura":              pb.CloudEventSource_CLOUD_EVENT_SOURCE_OURA,
-		"oura":                                 pb.CloudEventSource_CLOUD_EVENT_SOURCE_OURA,
-		"cloud_event_source_polar_webhook":     pb.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
-		"polar_webhook":                        pb.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
-		"polar webhook":                        pb.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
-		"cloud_event_source_wahoo":             pb.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO,
-		"wahoo":                                pb.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO,
-		"cloud_event_source_pipeline_splitter": pb.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
-		"pipeline_splitter":                    pb.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
-		"pipeline splitter":                    pb.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
-		"cloud_event_source_github":            pb.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB,
-		"github":                               pb.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB,
-		"cloud_event_source_apple_health":      pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
-		"apple_health":                         pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
-		"apple health":                         pb.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
-		"cloud_event_source_health_connect":    pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
-		"health_connect":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
-		"health connect":                       pb.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
-		"cloud_event_source_mock":              pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK,
-		"mock":                                 pb.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK,
+	lookup := map[string]pbevents.CloudEventSource{
+		"cloud_event_source_unspecified":       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED,
+		"unspecified":                          pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED,
+		"cloud_event_source_hevy":              pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_HEVY,
+		"hevy":                                 pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_HEVY,
+		"cloud_event_source_fitbit_webhook":    pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
+		"fitbit_webhook":                       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
+		"fitbit webhook":                       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_WEBHOOK,
+		"cloud_event_source_fitbit_ingest":     pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST,
+		"fitbit_ingest":                        pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST,
+		"fitbit ingest":                        pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FITBIT_INGEST,
+		"cloud_event_source_enricher":          pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER,
+		"enricher":                             pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_ENRICHER,
+		"cloud_event_source_router":            pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER,
+		"router":                               pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_ROUTER,
+		"cloud_event_source_inputs_handler":    pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
+		"inputs_handler":                       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
+		"inputs handler":                       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_INPUTS_HANDLER,
+		"cloud_event_source_parkrun_results":   pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
+		"parkrun_results":                      pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
+		"parkrun results":                      pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PARKRUN_RESULTS,
+		"cloud_event_source_file_upload":       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD,
+		"file_upload":                          pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD,
+		"file upload":                          pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_FILE_UPLOAD,
+		"cloud_event_source_strava":            pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA,
+		"strava":                               pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_STRAVA,
+		"cloud_event_source_oura":              pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_OURA,
+		"oura":                                 pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_OURA,
+		"cloud_event_source_polar_webhook":     pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
+		"polar_webhook":                        pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
+		"polar webhook":                        pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_POLAR_WEBHOOK,
+		"cloud_event_source_wahoo":             pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO,
+		"wahoo":                                pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_WAHOO,
+		"cloud_event_source_pipeline_splitter": pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
+		"pipeline_splitter":                    pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
+		"pipeline splitter":                    pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_PIPELINE_SPLITTER,
+		"cloud_event_source_github":            pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB,
+		"github":                               pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_GITHUB,
+		"cloud_event_source_apple_health":      pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+		"apple_health":                         pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+		"apple health":                         pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_APPLE_HEALTH,
+		"cloud_event_source_health_connect":    pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+		"health_connect":                       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+		"health connect":                       pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_HEALTH_CONNECT,
+		"cloud_event_source_mock":              pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK,
+		"mock":                                 pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_MOCK,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED
+	return pbevents.CloudEventSource_CLOUD_EVENT_SOURCE_UNSPECIFIED
 }
 
-func FormatActivitySource(value pb.ActivitySource) string {
+func FormatActivitySource(value pbactivity.ActivitySource) string {
 	switch value {
-	case pb.ActivitySource_SOURCE_UNKNOWN:
-		return "Unknown"
-	case pb.ActivitySource_SOURCE_HEVY:
+	case pbactivity.ActivitySource_SOURCE_UNSPECIFIED:
+		return "Unspecified"
+	case pbactivity.ActivitySource_SOURCE_HEVY:
 		return "Hevy"
-	case pb.ActivitySource_SOURCE_FITBIT:
+	case pbactivity.ActivitySource_SOURCE_FITBIT:
 		return "Fitbit"
-	case pb.ActivitySource_SOURCE_PARKRUN_RESULTS:
+	case pbactivity.ActivitySource_SOURCE_PARKRUN_RESULTS:
 		return "Parkrun Results"
-	case pb.ActivitySource_SOURCE_FILE_UPLOAD:
+	case pbactivity.ActivitySource_SOURCE_FILE_UPLOAD:
 		return "File Upload"
-	case pb.ActivitySource_SOURCE_STRAVA:
+	case pbactivity.ActivitySource_SOURCE_STRAVA:
 		return "Strava"
-	case pb.ActivitySource_SOURCE_GARMIN:
+	case pbactivity.ActivitySource_SOURCE_GARMIN:
 		return "Garmin"
-	case pb.ActivitySource_SOURCE_APPLE_HEALTH:
+	case pbactivity.ActivitySource_SOURCE_APPLE_HEALTH:
 		return "Apple Health"
-	case pb.ActivitySource_SOURCE_HEALTH_CONNECT:
+	case pbactivity.ActivitySource_SOURCE_HEALTH_CONNECT:
 		return "Health Connect"
-	case pb.ActivitySource_SOURCE_OURA:
+	case pbactivity.ActivitySource_SOURCE_OURA:
 		return "Oura"
-	case pb.ActivitySource_SOURCE_POLAR:
+	case pbactivity.ActivitySource_SOURCE_POLAR:
 		return "Polar"
-	case pb.ActivitySource_SOURCE_WAHOO:
+	case pbactivity.ActivitySource_SOURCE_WAHOO:
 		return "Wahoo"
-	case pb.ActivitySource_SOURCE_INTERVALS:
+	case pbactivity.ActivitySource_SOURCE_INTERVALS:
 		return "Intervals"
-	case pb.ActivitySource_SOURCE_TRAININGPEAKS:
+	case pbactivity.ActivitySource_SOURCE_TRAININGPEAKS:
 		return "Trainingpeaks"
-	case pb.ActivitySource_SOURCE_GOOGLESHEETS:
+	case pbactivity.ActivitySource_SOURCE_GOOGLESHEETS:
 		return "Googlesheets"
-	case pb.ActivitySource_SOURCE_GITHUB:
+	case pbactivity.ActivitySource_SOURCE_GITHUB:
 		return "Github"
-	case pb.ActivitySource_SOURCE_TEST:
+	case pbactivity.ActivitySource_SOURCE_TEST:
 		return "Test"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseActivitySource(input string) pb.ActivitySource {
+func ParseActivitySource(input string) pbactivity.ActivitySource {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.ActivitySource_value[input]; ok {
-		return pb.ActivitySource(v)
+	if v, ok := pbactivity.ActivitySource_value[input]; ok {
+		return pbactivity.ActivitySource(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.ActivitySource{
-		"source_unknown":         pb.ActivitySource_SOURCE_UNKNOWN,
-		"unknown":                pb.ActivitySource_SOURCE_UNKNOWN,
-		"source_hevy":            pb.ActivitySource_SOURCE_HEVY,
-		"hevy":                   pb.ActivitySource_SOURCE_HEVY,
-		"source_fitbit":          pb.ActivitySource_SOURCE_FITBIT,
-		"fitbit":                 pb.ActivitySource_SOURCE_FITBIT,
-		"source_parkrun_results": pb.ActivitySource_SOURCE_PARKRUN_RESULTS,
-		"parkrun_results":        pb.ActivitySource_SOURCE_PARKRUN_RESULTS,
-		"parkrun results":        pb.ActivitySource_SOURCE_PARKRUN_RESULTS,
-		"source_file_upload":     pb.ActivitySource_SOURCE_FILE_UPLOAD,
-		"file_upload":            pb.ActivitySource_SOURCE_FILE_UPLOAD,
-		"file upload":            pb.ActivitySource_SOURCE_FILE_UPLOAD,
-		"source_strava":          pb.ActivitySource_SOURCE_STRAVA,
-		"strava":                 pb.ActivitySource_SOURCE_STRAVA,
-		"source_garmin":          pb.ActivitySource_SOURCE_GARMIN,
-		"garmin":                 pb.ActivitySource_SOURCE_GARMIN,
-		"source_apple_health":    pb.ActivitySource_SOURCE_APPLE_HEALTH,
-		"apple_health":           pb.ActivitySource_SOURCE_APPLE_HEALTH,
-		"apple health":           pb.ActivitySource_SOURCE_APPLE_HEALTH,
-		"source_health_connect":  pb.ActivitySource_SOURCE_HEALTH_CONNECT,
-		"health_connect":         pb.ActivitySource_SOURCE_HEALTH_CONNECT,
-		"health connect":         pb.ActivitySource_SOURCE_HEALTH_CONNECT,
-		"source_oura":            pb.ActivitySource_SOURCE_OURA,
-		"oura":                   pb.ActivitySource_SOURCE_OURA,
-		"source_polar":           pb.ActivitySource_SOURCE_POLAR,
-		"polar":                  pb.ActivitySource_SOURCE_POLAR,
-		"source_wahoo":           pb.ActivitySource_SOURCE_WAHOO,
-		"wahoo":                  pb.ActivitySource_SOURCE_WAHOO,
-		"source_intervals":       pb.ActivitySource_SOURCE_INTERVALS,
-		"intervals":              pb.ActivitySource_SOURCE_INTERVALS,
-		"source_trainingpeaks":   pb.ActivitySource_SOURCE_TRAININGPEAKS,
-		"trainingpeaks":          pb.ActivitySource_SOURCE_TRAININGPEAKS,
-		"source_googlesheets":    pb.ActivitySource_SOURCE_GOOGLESHEETS,
-		"googlesheets":           pb.ActivitySource_SOURCE_GOOGLESHEETS,
-		"source_github":          pb.ActivitySource_SOURCE_GITHUB,
-		"github":                 pb.ActivitySource_SOURCE_GITHUB,
-		"source_test":            pb.ActivitySource_SOURCE_TEST,
-		"test":                   pb.ActivitySource_SOURCE_TEST,
+	lookup := map[string]pbactivity.ActivitySource{
+		"source_unspecified":     pbactivity.ActivitySource_SOURCE_UNSPECIFIED,
+		"unspecified":            pbactivity.ActivitySource_SOURCE_UNSPECIFIED,
+		"source_hevy":            pbactivity.ActivitySource_SOURCE_HEVY,
+		"hevy":                   pbactivity.ActivitySource_SOURCE_HEVY,
+		"source_fitbit":          pbactivity.ActivitySource_SOURCE_FITBIT,
+		"fitbit":                 pbactivity.ActivitySource_SOURCE_FITBIT,
+		"source_parkrun_results": pbactivity.ActivitySource_SOURCE_PARKRUN_RESULTS,
+		"parkrun_results":        pbactivity.ActivitySource_SOURCE_PARKRUN_RESULTS,
+		"parkrun results":        pbactivity.ActivitySource_SOURCE_PARKRUN_RESULTS,
+		"source_file_upload":     pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
+		"file_upload":            pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
+		"file upload":            pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
+		"source_strava":          pbactivity.ActivitySource_SOURCE_STRAVA,
+		"strava":                 pbactivity.ActivitySource_SOURCE_STRAVA,
+		"source_garmin":          pbactivity.ActivitySource_SOURCE_GARMIN,
+		"garmin":                 pbactivity.ActivitySource_SOURCE_GARMIN,
+		"source_apple_health":    pbactivity.ActivitySource_SOURCE_APPLE_HEALTH,
+		"apple_health":           pbactivity.ActivitySource_SOURCE_APPLE_HEALTH,
+		"apple health":           pbactivity.ActivitySource_SOURCE_APPLE_HEALTH,
+		"source_health_connect":  pbactivity.ActivitySource_SOURCE_HEALTH_CONNECT,
+		"health_connect":         pbactivity.ActivitySource_SOURCE_HEALTH_CONNECT,
+		"health connect":         pbactivity.ActivitySource_SOURCE_HEALTH_CONNECT,
+		"source_oura":            pbactivity.ActivitySource_SOURCE_OURA,
+		"oura":                   pbactivity.ActivitySource_SOURCE_OURA,
+		"source_polar":           pbactivity.ActivitySource_SOURCE_POLAR,
+		"polar":                  pbactivity.ActivitySource_SOURCE_POLAR,
+		"source_wahoo":           pbactivity.ActivitySource_SOURCE_WAHOO,
+		"wahoo":                  pbactivity.ActivitySource_SOURCE_WAHOO,
+		"source_intervals":       pbactivity.ActivitySource_SOURCE_INTERVALS,
+		"intervals":              pbactivity.ActivitySource_SOURCE_INTERVALS,
+		"source_trainingpeaks":   pbactivity.ActivitySource_SOURCE_TRAININGPEAKS,
+		"trainingpeaks":          pbactivity.ActivitySource_SOURCE_TRAININGPEAKS,
+		"source_googlesheets":    pbactivity.ActivitySource_SOURCE_GOOGLESHEETS,
+		"googlesheets":           pbactivity.ActivitySource_SOURCE_GOOGLESHEETS,
+		"source_github":          pbactivity.ActivitySource_SOURCE_GITHUB,
+		"github":                 pbactivity.ActivitySource_SOURCE_GITHUB,
+		"source_test":            pbactivity.ActivitySource_SOURCE_TEST,
+		"test":                   pbactivity.ActivitySource_SOURCE_TEST,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.ActivitySource_SOURCE_UNKNOWN
+	return pbactivity.ActivitySource_SOURCE_UNSPECIFIED
 }
 
-func FormatEnricherProviderType(value pb.EnricherProviderType) string {
+func FormatEnricherProviderType(value pbplugin.EnricherProviderType) string {
 	switch value {
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED:
 		return "Unknown"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE:
 		return "Fitbit Heart Rate"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY:
 		return "Workout Summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP:
 		return "Muscle Heatmap"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK:
 		return "Source Link"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS:
 		return "Virtual Gps"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER:
 		return "Type Mapper"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_PARKRUN:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PARKRUN:
 		return "Parkrun"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER:
 		return "Condition Matcher"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT:
 		return "Auto Increment"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT:
 		return "User Input"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER:
 		return "Activity Filter"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE:
 		return "Logic Gate"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY:
 		return "Heart Rate Summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION:
 		return "Ai Companion"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY:
 		return "Pace Summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY:
 		return "Cadence Summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY:
 		return "Power Summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY:
 		return "Speed Summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS:
 		return "Personal Records"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD:
 		return "Training Load"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS:
 		return "Spotify Tracks"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_WEATHER:
 		return "Weather"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY:
 		return "Elevation Summary"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING:
 		return "Location Naming"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE:
 		return "Muscle Heatmap Image"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL:
 		return "Route Thumbnail"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER:
 		return "Ai Banner"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE:
 		return "Fit File Heart Rate"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER:
 		return "Hybrid Race Tagger"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS:
 		return "Running Dynamics"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES:
 		return "Heart Rate Zones"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED:
 		return "Calories Burned"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER:
 		return "Goal Tracker"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER:
 		return "Streak Tracker"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES:
 		return "Distance Milestones"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR:
 		return "Recovery Advisor"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE:
 		return "Effort Score"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS:
 		return "Intervals"
-	case pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
+	case pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK:
 		return "Mock"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseEnricherProviderType(input string) pb.EnricherProviderType {
+func ParseEnricherProviderType(input string) pbplugin.EnricherProviderType {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.EnricherProviderType_value[input]; ok {
-		return pb.EnricherProviderType(v)
+	if v, ok := pbplugin.EnricherProviderType_value[input]; ok {
+		return pbplugin.EnricherProviderType(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.EnricherProviderType{
-		"enricher_provider_unspecified":          pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED,
-		"unspecified":                            pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED,
-		"unknown":                                pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED,
-		"enricher_provider_fitbit_heart_rate":    pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE,
-		"fitbit_heart_rate":                      pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE,
-		"fitbit heart rate":                      pb.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE,
-		"enricher_provider_workout_summary":      pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY,
-		"workout_summary":                        pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY,
-		"workout summary":                        pb.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY,
-		"enricher_provider_muscle_heatmap":       pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP,
-		"muscle_heatmap":                         pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP,
-		"muscle heatmap":                         pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP,
-		"enricher_provider_source_link":          pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK,
-		"source_link":                            pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK,
-		"source link":                            pb.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK,
-		"enricher_provider_virtual_gps":          pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS,
-		"virtual_gps":                            pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS,
-		"virtual gps":                            pb.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS,
-		"enricher_provider_type_mapper":          pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER,
-		"type_mapper":                            pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER,
-		"type mapper":                            pb.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER,
-		"enricher_provider_parkrun":              pb.EnricherProviderType_ENRICHER_PROVIDER_PARKRUN,
-		"parkrun":                                pb.EnricherProviderType_ENRICHER_PROVIDER_PARKRUN,
-		"enricher_provider_condition_matcher":    pb.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER,
-		"condition_matcher":                      pb.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER,
-		"condition matcher":                      pb.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER,
-		"enricher_provider_auto_increment":       pb.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT,
-		"auto_increment":                         pb.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT,
-		"auto increment":                         pb.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT,
-		"enricher_provider_user_input":           pb.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT,
-		"user_input":                             pb.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT,
-		"user input":                             pb.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT,
-		"enricher_provider_activity_filter":      pb.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER,
-		"activity_filter":                        pb.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER,
-		"activity filter":                        pb.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER,
-		"enricher_provider_logic_gate":           pb.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE,
-		"logic_gate":                             pb.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE,
-		"logic gate":                             pb.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE,
-		"enricher_provider_heart_rate_summary":   pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
-		"heart_rate_summary":                     pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
-		"heart rate summary":                     pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
-		"enricher_provider_ai_companion":         pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION,
-		"ai_companion":                           pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION,
-		"ai companion":                           pb.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION,
-		"enricher_provider_pace_summary":         pb.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY,
-		"pace_summary":                           pb.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY,
-		"pace summary":                           pb.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY,
-		"enricher_provider_cadence_summary":      pb.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY,
-		"cadence_summary":                        pb.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY,
-		"cadence summary":                        pb.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY,
-		"enricher_provider_power_summary":        pb.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY,
-		"power_summary":                          pb.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY,
-		"power summary":                          pb.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY,
-		"enricher_provider_speed_summary":        pb.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY,
-		"speed_summary":                          pb.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY,
-		"speed summary":                          pb.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY,
-		"enricher_provider_personal_records":     pb.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS,
-		"personal_records":                       pb.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS,
-		"personal records":                       pb.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS,
-		"enricher_provider_training_load":        pb.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD,
-		"training_load":                          pb.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD,
-		"training load":                          pb.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD,
-		"enricher_provider_spotify_tracks":       pb.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS,
-		"spotify_tracks":                         pb.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS,
-		"spotify tracks":                         pb.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS,
-		"enricher_provider_weather":              pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER,
-		"weather":                                pb.EnricherProviderType_ENRICHER_PROVIDER_WEATHER,
-		"enricher_provider_elevation_summary":    pb.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY,
-		"elevation_summary":                      pb.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY,
-		"elevation summary":                      pb.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY,
-		"enricher_provider_location_naming":      pb.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING,
-		"location_naming":                        pb.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING,
-		"location naming":                        pb.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING,
-		"enricher_provider_muscle_heatmap_image": pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
-		"muscle_heatmap_image":                   pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
-		"muscle heatmap image":                   pb.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
-		"enricher_provider_route_thumbnail":      pb.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
-		"route_thumbnail":                        pb.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
-		"route thumbnail":                        pb.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
-		"enricher_provider_ai_banner":            pb.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER,
-		"ai_banner":                              pb.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER,
-		"ai banner":                              pb.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER,
-		"enricher_provider_fit_file_heart_rate":  pb.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
-		"fit_file_heart_rate":                    pb.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
-		"fit file heart rate":                    pb.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
-		"enricher_provider_hybrid_race_tagger":   pb.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
-		"hybrid_race_tagger":                     pb.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
-		"hybrid race tagger":                     pb.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
-		"enricher_provider_running_dynamics":     pb.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS,
-		"running_dynamics":                       pb.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS,
-		"running dynamics":                       pb.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS,
-		"enricher_provider_heart_rate_zones":     pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES,
-		"heart_rate_zones":                       pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES,
-		"heart rate zones":                       pb.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES,
-		"enricher_provider_calories_burned":      pb.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED,
-		"calories_burned":                        pb.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED,
-		"calories burned":                        pb.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED,
-		"enricher_provider_goal_tracker":         pb.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER,
-		"goal_tracker":                           pb.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER,
-		"goal tracker":                           pb.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER,
-		"enricher_provider_streak_tracker":       pb.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER,
-		"streak_tracker":                         pb.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER,
-		"streak tracker":                         pb.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER,
-		"enricher_provider_distance_milestones":  pb.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES,
-		"distance_milestones":                    pb.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES,
-		"distance milestones":                    pb.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES,
-		"enricher_provider_recovery_advisor":     pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
-		"recovery_advisor":                       pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
-		"recovery advisor":                       pb.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
-		"enricher_provider_effort_score":         pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
-		"effort_score":                           pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
-		"effort score":                           pb.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
-		"enricher_provider_intervals":            pb.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS,
-		"intervals":                              pb.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS,
-		"enricher_provider_mock":                 pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
-		"mock":                                   pb.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+	lookup := map[string]pbplugin.EnricherProviderType{
+		"enricher_provider_unspecified":          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED,
+		"unspecified":                            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED,
+		"unknown":                                pbplugin.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED,
+		"enricher_provider_fitbit_heart_rate":    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE,
+		"fitbit_heart_rate":                      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE,
+		"fitbit heart rate":                      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FITBIT_HEART_RATE,
+		"enricher_provider_workout_summary":      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY,
+		"workout_summary":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY,
+		"workout summary":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_WORKOUT_SUMMARY,
+		"enricher_provider_muscle_heatmap":       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP,
+		"muscle_heatmap":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP,
+		"muscle heatmap":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP,
+		"enricher_provider_source_link":          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK,
+		"source_link":                            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK,
+		"source link":                            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SOURCE_LINK,
+		"enricher_provider_virtual_gps":          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS,
+		"virtual_gps":                            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS,
+		"virtual gps":                            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_VIRTUAL_GPS,
+		"enricher_provider_type_mapper":          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER,
+		"type_mapper":                            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER,
+		"type mapper":                            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TYPE_MAPPER,
+		"enricher_provider_parkrun":              pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PARKRUN,
+		"parkrun":                                pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PARKRUN,
+		"enricher_provider_condition_matcher":    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER,
+		"condition_matcher":                      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER,
+		"condition matcher":                      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CONDITION_MATCHER,
+		"enricher_provider_auto_increment":       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT,
+		"auto_increment":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT,
+		"auto increment":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AUTO_INCREMENT,
+		"enricher_provider_user_input":           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT,
+		"user_input":                             pbplugin.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT,
+		"user input":                             pbplugin.EnricherProviderType_ENRICHER_PROVIDER_USER_INPUT,
+		"enricher_provider_activity_filter":      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER,
+		"activity_filter":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER,
+		"activity filter":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ACTIVITY_FILTER,
+		"enricher_provider_logic_gate":           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE,
+		"logic_gate":                             pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE,
+		"logic gate":                             pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOGIC_GATE,
+		"enricher_provider_heart_rate_summary":   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
+		"heart_rate_summary":                     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
+		"heart rate summary":                     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_SUMMARY,
+		"enricher_provider_ai_companion":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION,
+		"ai_companion":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION,
+		"ai companion":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_COMPANION,
+		"enricher_provider_pace_summary":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY,
+		"pace_summary":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY,
+		"pace summary":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY,
+		"enricher_provider_cadence_summary":      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY,
+		"cadence_summary":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY,
+		"cadence summary":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CADENCE_SUMMARY,
+		"enricher_provider_power_summary":        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY,
+		"power_summary":                          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY,
+		"power summary":                          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_POWER_SUMMARY,
+		"enricher_provider_speed_summary":        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY,
+		"speed_summary":                          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY,
+		"speed summary":                          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPEED_SUMMARY,
+		"enricher_provider_personal_records":     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS,
+		"personal_records":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS,
+		"personal records":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PERSONAL_RECORDS,
+		"enricher_provider_training_load":        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD,
+		"training_load":                          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD,
+		"training load":                          pbplugin.EnricherProviderType_ENRICHER_PROVIDER_TRAINING_LOAD,
+		"enricher_provider_spotify_tracks":       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS,
+		"spotify_tracks":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS,
+		"spotify tracks":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_SPOTIFY_TRACKS,
+		"enricher_provider_weather":              pbplugin.EnricherProviderType_ENRICHER_PROVIDER_WEATHER,
+		"weather":                                pbplugin.EnricherProviderType_ENRICHER_PROVIDER_WEATHER,
+		"enricher_provider_elevation_summary":    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY,
+		"elevation_summary":                      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY,
+		"elevation summary":                      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ELEVATION_SUMMARY,
+		"enricher_provider_location_naming":      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING,
+		"location_naming":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING,
+		"location naming":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_LOCATION_NAMING,
+		"enricher_provider_muscle_heatmap_image": pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
+		"muscle_heatmap_image":                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
+		"muscle heatmap image":                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MUSCLE_HEATMAP_IMAGE,
+		"enricher_provider_route_thumbnail":      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
+		"route_thumbnail":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
+		"route thumbnail":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_ROUTE_THUMBNAIL,
+		"enricher_provider_ai_banner":            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER,
+		"ai_banner":                              pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER,
+		"ai banner":                              pbplugin.EnricherProviderType_ENRICHER_PROVIDER_AI_BANNER,
+		"enricher_provider_fit_file_heart_rate":  pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
+		"fit_file_heart_rate":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
+		"fit file heart rate":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_FIT_FILE_HEART_RATE,
+		"enricher_provider_hybrid_race_tagger":   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
+		"hybrid_race_tagger":                     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
+		"hybrid race tagger":                     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HYBRID_RACE_TAGGER,
+		"enricher_provider_running_dynamics":     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS,
+		"running_dynamics":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS,
+		"running dynamics":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RUNNING_DYNAMICS,
+		"enricher_provider_heart_rate_zones":     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES,
+		"heart_rate_zones":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES,
+		"heart rate zones":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_HEART_RATE_ZONES,
+		"enricher_provider_calories_burned":      pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED,
+		"calories_burned":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED,
+		"calories burned":                        pbplugin.EnricherProviderType_ENRICHER_PROVIDER_CALORIES_BURNED,
+		"enricher_provider_goal_tracker":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER,
+		"goal_tracker":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER,
+		"goal tracker":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_GOAL_TRACKER,
+		"enricher_provider_streak_tracker":       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER,
+		"streak_tracker":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER,
+		"streak tracker":                         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_STREAK_TRACKER,
+		"enricher_provider_distance_milestones":  pbplugin.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES,
+		"distance_milestones":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES,
+		"distance milestones":                    pbplugin.EnricherProviderType_ENRICHER_PROVIDER_DISTANCE_MILESTONES,
+		"enricher_provider_recovery_advisor":     pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+		"recovery_advisor":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+		"recovery advisor":                       pbplugin.EnricherProviderType_ENRICHER_PROVIDER_RECOVERY_ADVISOR,
+		"enricher_provider_effort_score":         pbplugin.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
+		"effort_score":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
+		"effort score":                           pbplugin.EnricherProviderType_ENRICHER_PROVIDER_EFFORT_SCORE,
+		"enricher_provider_intervals":            pbplugin.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS,
+		"intervals":                              pbplugin.EnricherProviderType_ENRICHER_PROVIDER_INTERVALS,
+		"enricher_provider_mock":                 pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+		"mock":                                   pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
+	return pbplugin.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED
 }
 
-func FormatUserTier(value pb.UserTier) string {
+func FormatUserTier(value pbuser.UserTier) string {
 	switch value {
-	case pb.UserTier_USER_TIER_UNSPECIFIED:
+	case pbuser.UserTier_USER_TIER_UNSPECIFIED:
 		return "Hobbyist"
-	case pb.UserTier_USER_TIER_HOBBYIST:
+	case pbuser.UserTier_USER_TIER_HOBBYIST:
 		return "Hobbyist"
-	case pb.UserTier_USER_TIER_ATHLETE:
+	case pbuser.UserTier_USER_TIER_ATHLETE:
 		return "Athlete"
 	default:
 		return "Hobbyist"
 	}
 }
 
-func ParseUserTier(input string) pb.UserTier {
+func ParseUserTier(input string) pbuser.UserTier {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.UserTier_value[input]; ok {
-		return pb.UserTier(v)
+	if v, ok := pbuser.UserTier_value[input]; ok {
+		return pbuser.UserTier(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.UserTier{
-		"user_tier_unspecified": pb.UserTier_USER_TIER_UNSPECIFIED,
-		"unspecified":           pb.UserTier_USER_TIER_UNSPECIFIED,
-		"hobbyist":              pb.UserTier_USER_TIER_UNSPECIFIED,
-		"user_tier_hobbyist":    pb.UserTier_USER_TIER_HOBBYIST,
-		"user_tier_athlete":     pb.UserTier_USER_TIER_ATHLETE,
-		"athlete":               pb.UserTier_USER_TIER_ATHLETE,
+	lookup := map[string]pbuser.UserTier{
+		"user_tier_unspecified": pbuser.UserTier_USER_TIER_UNSPECIFIED,
+		"unspecified":           pbuser.UserTier_USER_TIER_UNSPECIFIED,
+		"hobbyist":              pbuser.UserTier_USER_TIER_UNSPECIFIED,
+		"user_tier_hobbyist":    pbuser.UserTier_USER_TIER_HOBBYIST,
+		"user_tier_athlete":     pbuser.UserTier_USER_TIER_ATHLETE,
+		"athlete":               pbuser.UserTier_USER_TIER_ATHLETE,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.UserTier_USER_TIER_UNSPECIFIED
+	return pbuser.UserTier_USER_TIER_UNSPECIFIED
 }
 
-func FormatExecutionStatus(value pb.ExecutionStatus) string {
+func FormatExecutionStatus(value pbpipeline.ExecutionStatus) string {
 	switch value {
-	case pb.ExecutionStatus_STATUS_UNKNOWN:
-		return "Unknown"
-	case pb.ExecutionStatus_STATUS_STARTED:
+	case pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED:
+		return "Unspecified"
+	case pbpipeline.ExecutionStatus_STATUS_STARTED:
 		return "Started"
-	case pb.ExecutionStatus_STATUS_SUCCESS:
+	case pbpipeline.ExecutionStatus_STATUS_SUCCESS:
 		return "Success"
-	case pb.ExecutionStatus_STATUS_FAILED:
+	case pbpipeline.ExecutionStatus_STATUS_FAILED:
 		return "Failed"
-	case pb.ExecutionStatus_STATUS_PENDING:
+	case pbpipeline.ExecutionStatus_STATUS_PENDING:
 		return "Pending"
-	case pb.ExecutionStatus_STATUS_WAITING:
+	case pbpipeline.ExecutionStatus_STATUS_WAITING:
 		return "Waiting"
-	case pb.ExecutionStatus_STATUS_LAGGED_RETRY:
+	case pbpipeline.ExecutionStatus_STATUS_LAGGED_RETRY:
 		return "Lagged Retry"
-	case pb.ExecutionStatus_STATUS_SKIPPED:
+	case pbpipeline.ExecutionStatus_STATUS_SKIPPED:
 		return "Skipped"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseExecutionStatus(input string) pb.ExecutionStatus {
+func ParseExecutionStatus(input string) pbpipeline.ExecutionStatus {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.ExecutionStatus_value[input]; ok {
-		return pb.ExecutionStatus(v)
+	if v, ok := pbpipeline.ExecutionStatus_value[input]; ok {
+		return pbpipeline.ExecutionStatus(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.ExecutionStatus{
-		"status_unknown":      pb.ExecutionStatus_STATUS_UNKNOWN,
-		"unknown":             pb.ExecutionStatus_STATUS_UNKNOWN,
-		"status_started":      pb.ExecutionStatus_STATUS_STARTED,
-		"started":             pb.ExecutionStatus_STATUS_STARTED,
-		"status_success":      pb.ExecutionStatus_STATUS_SUCCESS,
-		"success":             pb.ExecutionStatus_STATUS_SUCCESS,
-		"status_failed":       pb.ExecutionStatus_STATUS_FAILED,
-		"failed":              pb.ExecutionStatus_STATUS_FAILED,
-		"status_pending":      pb.ExecutionStatus_STATUS_PENDING,
-		"pending":             pb.ExecutionStatus_STATUS_PENDING,
-		"status_waiting":      pb.ExecutionStatus_STATUS_WAITING,
-		"waiting":             pb.ExecutionStatus_STATUS_WAITING,
-		"status_lagged_retry": pb.ExecutionStatus_STATUS_LAGGED_RETRY,
-		"lagged_retry":        pb.ExecutionStatus_STATUS_LAGGED_RETRY,
-		"lagged retry":        pb.ExecutionStatus_STATUS_LAGGED_RETRY,
-		"status_skipped":      pb.ExecutionStatus_STATUS_SKIPPED,
-		"skipped":             pb.ExecutionStatus_STATUS_SKIPPED,
+	lookup := map[string]pbpipeline.ExecutionStatus{
+		"status_unspecified":  pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED,
+		"unspecified":         pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED,
+		"status_started":      pbpipeline.ExecutionStatus_STATUS_STARTED,
+		"started":             pbpipeline.ExecutionStatus_STATUS_STARTED,
+		"status_success":      pbpipeline.ExecutionStatus_STATUS_SUCCESS,
+		"success":             pbpipeline.ExecutionStatus_STATUS_SUCCESS,
+		"status_failed":       pbpipeline.ExecutionStatus_STATUS_FAILED,
+		"failed":              pbpipeline.ExecutionStatus_STATUS_FAILED,
+		"status_pending":      pbpipeline.ExecutionStatus_STATUS_PENDING,
+		"pending":             pbpipeline.ExecutionStatus_STATUS_PENDING,
+		"status_waiting":      pbpipeline.ExecutionStatus_STATUS_WAITING,
+		"waiting":             pbpipeline.ExecutionStatus_STATUS_WAITING,
+		"status_lagged_retry": pbpipeline.ExecutionStatus_STATUS_LAGGED_RETRY,
+		"lagged_retry":        pbpipeline.ExecutionStatus_STATUS_LAGGED_RETRY,
+		"lagged retry":        pbpipeline.ExecutionStatus_STATUS_LAGGED_RETRY,
+		"status_skipped":      pbpipeline.ExecutionStatus_STATUS_SKIPPED,
+		"skipped":             pbpipeline.ExecutionStatus_STATUS_SKIPPED,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.ExecutionStatus_STATUS_UNKNOWN
+	return pbpipeline.ExecutionStatus_STATUS_UNSPECIFIED
 }
 
-func FormatConfigFieldType(value pb.ConfigFieldType) string {
+func FormatConfigFieldType(value pbplugin.ConfigFieldType) string {
 	switch value {
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED:
 		return "Unspecified"
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING:
 		return "String"
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER:
 		return "Number"
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN:
 		return "Boolean"
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT:
 		return "Select"
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT:
 		return "Multi Select"
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP:
 		return "Key Value Map"
-	case pb.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT:
+	case pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT:
 		return "Dynamic Select"
 	default:
 		return "String"
 	}
 }
 
-func ParseConfigFieldType(input string) pb.ConfigFieldType {
+func ParseConfigFieldType(input string) pbplugin.ConfigFieldType {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.ConfigFieldType_value[input]; ok {
-		return pb.ConfigFieldType(v)
+	if v, ok := pbplugin.ConfigFieldType_value[input]; ok {
+		return pbplugin.ConfigFieldType(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.ConfigFieldType{
-		"config_field_type_unspecified":    pb.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
-		"unspecified":                      pb.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
-		"config_field_type_string":         pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-		"string":                           pb.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
-		"config_field_type_number":         pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
-		"number":                           pb.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
-		"config_field_type_boolean":        pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
-		"boolean":                          pb.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
-		"config_field_type_select":         pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-		"select":                           pb.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
-		"config_field_type_multi_select":   pb.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
-		"multi_select":                     pb.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
-		"multi select":                     pb.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
-		"config_field_type_key_value_map":  pb.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
-		"key_value_map":                    pb.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
-		"key value map":                    pb.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
-		"config_field_type_dynamic_select": pb.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
-		"dynamic_select":                   pb.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
-		"dynamic select":                   pb.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+	lookup := map[string]pbplugin.ConfigFieldType{
+		"config_field_type_unspecified":    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
+		"unspecified":                      pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED,
+		"config_field_type_string":         pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
+		"string":                           pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_STRING,
+		"config_field_type_number":         pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
+		"number":                           pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_NUMBER,
+		"config_field_type_boolean":        pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
+		"boolean":                          pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_BOOLEAN,
+		"config_field_type_select":         pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
+		"select":                           pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_SELECT,
+		"config_field_type_multi_select":   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
+		"multi_select":                     pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
+		"multi select":                     pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_MULTI_SELECT,
+		"config_field_type_key_value_map":  pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+		"key_value_map":                    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+		"key value map":                    pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_KEY_VALUE_MAP,
+		"config_field_type_dynamic_select": pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+		"dynamic_select":                   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
+		"dynamic select":                   pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_DYNAMIC_SELECT,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED
+	return pbplugin.ConfigFieldType_CONFIG_FIELD_TYPE_UNSPECIFIED
 }
 
-func FormatIntegrationAuthType(value pb.IntegrationAuthType) string {
+func FormatIntegrationAuthType(value pbplugin.IntegrationAuthType) string {
 	switch value {
-	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED:
+	case pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED:
 		return "Manual"
-	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH:
+	case pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH:
 		return "Oauth"
-	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY:
+	case pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY:
 		return "API Key"
-	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC:
+	case pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC:
 		return "App Sync"
-	case pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID:
+	case pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID:
 		return "Public ID"
 	default:
 		return "Manual"
 	}
 }
 
-func ParseIntegrationAuthType(input string) pb.IntegrationAuthType {
+func ParseIntegrationAuthType(input string) pbplugin.IntegrationAuthType {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.IntegrationAuthType_value[input]; ok {
-		return pb.IntegrationAuthType(v)
+	if v, ok := pbplugin.IntegrationAuthType_value[input]; ok {
+		return pbplugin.IntegrationAuthType(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.IntegrationAuthType{
-		"integration_auth_type_unspecified": pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED,
-		"unspecified":                       pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED,
-		"manual":                            pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED,
-		"integration_auth_type_oauth":       pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH,
-		"oauth":                             pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH,
-		"integration_auth_type_api_key":     pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY,
-		"api_key":                           pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY,
-		"api key":                           pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY,
-		"integration_auth_type_app_sync":    pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC,
-		"app_sync":                          pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC,
-		"app sync":                          pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC,
-		"integration_auth_type_public_id":   pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID,
-		"public_id":                         pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID,
-		"public id":                         pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+	lookup := map[string]pbplugin.IntegrationAuthType{
+		"integration_auth_type_unspecified": pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED,
+		"unspecified":                       pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED,
+		"manual":                            pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED,
+		"integration_auth_type_oauth":       pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH,
+		"oauth":                             pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_OAUTH,
+		"integration_auth_type_api_key":     pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY,
+		"api_key":                           pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY,
+		"api key":                           pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_API_KEY,
+		"integration_auth_type_app_sync":    pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC,
+		"app_sync":                          pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC,
+		"app sync":                          pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_APP_SYNC,
+		"integration_auth_type_public_id":   pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+		"public_id":                         pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID,
+		"public id":                         pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_PUBLIC_ID,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED
+	return pbplugin.IntegrationAuthType_INTEGRATION_AUTH_TYPE_UNSPECIFIED
 }
 
-func FormatPluginType(value pb.PluginType) string {
+func FormatPluginType(value pbplugin.PluginType) string {
 	switch value {
-	case pb.PluginType_PLUGIN_TYPE_UNSPECIFIED:
+	case pbplugin.PluginType_PLUGIN_TYPE_UNSPECIFIED:
 		return "Unspecified"
-	case pb.PluginType_PLUGIN_TYPE_SOURCE:
+	case pbplugin.PluginType_PLUGIN_TYPE_SOURCE:
 		return "Source"
-	case pb.PluginType_PLUGIN_TYPE_ENRICHER:
+	case pbplugin.PluginType_PLUGIN_TYPE_ENRICHER:
 		return "Enricher"
-	case pb.PluginType_PLUGIN_TYPE_DESTINATION:
+	case pbplugin.PluginType_PLUGIN_TYPE_DESTINATION:
 		return "Destination"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParsePluginType(input string) pb.PluginType {
+func ParsePluginType(input string) pbplugin.PluginType {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.PluginType_value[input]; ok {
-		return pb.PluginType(v)
+	if v, ok := pbplugin.PluginType_value[input]; ok {
+		return pbplugin.PluginType(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.PluginType{
-		"plugin_type_unspecified": pb.PluginType_PLUGIN_TYPE_UNSPECIFIED,
-		"unspecified":             pb.PluginType_PLUGIN_TYPE_UNSPECIFIED,
-		"plugin_type_source":      pb.PluginType_PLUGIN_TYPE_SOURCE,
-		"source":                  pb.PluginType_PLUGIN_TYPE_SOURCE,
-		"plugin_type_enricher":    pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		"enricher":                pb.PluginType_PLUGIN_TYPE_ENRICHER,
-		"plugin_type_destination": pb.PluginType_PLUGIN_TYPE_DESTINATION,
-		"destination":             pb.PluginType_PLUGIN_TYPE_DESTINATION,
+	lookup := map[string]pbplugin.PluginType{
+		"plugin_type_unspecified": pbplugin.PluginType_PLUGIN_TYPE_UNSPECIFIED,
+		"unspecified":             pbplugin.PluginType_PLUGIN_TYPE_UNSPECIFIED,
+		"plugin_type_source":      pbplugin.PluginType_PLUGIN_TYPE_SOURCE,
+		"source":                  pbplugin.PluginType_PLUGIN_TYPE_SOURCE,
+		"plugin_type_enricher":    pbplugin.PluginType_PLUGIN_TYPE_ENRICHER,
+		"enricher":                pbplugin.PluginType_PLUGIN_TYPE_ENRICHER,
+		"plugin_type_destination": pbplugin.PluginType_PLUGIN_TYPE_DESTINATION,
+		"destination":             pbplugin.PluginType_PLUGIN_TYPE_DESTINATION,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.PluginType_PLUGIN_TYPE_UNSPECIFIED
+	return pbplugin.PluginType_PLUGIN_TYPE_UNSPECIFIED
 }
 
-func FormatMuscleHeatmapPreset(value pb.MuscleHeatmapPreset) string {
+func FormatMuscleHeatmapPreset(value pbplugin.MuscleHeatmapPreset) string {
 	switch value {
-	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED:
+	case pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED:
 		return "Unspecified"
-	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD:
+	case pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD:
 		return "Standard"
-	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING:
+	case pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING:
 		return "Powerlifting"
-	case pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING:
+	case pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING:
 		return "Bodybuilding"
 	default:
 		return "Standard"
 	}
 }
 
-func ParseMuscleHeatmapPreset(input string) pb.MuscleHeatmapPreset {
+func ParseMuscleHeatmapPreset(input string) pbplugin.MuscleHeatmapPreset {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.MuscleHeatmapPreset_value[input]; ok {
-		return pb.MuscleHeatmapPreset(v)
+	if v, ok := pbplugin.MuscleHeatmapPreset_value[input]; ok {
+		return pbplugin.MuscleHeatmapPreset(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.MuscleHeatmapPreset{
-		"muscle_heatmap_preset_unspecified":  pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED,
-		"unspecified":                        pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED,
-		"muscle_heatmap_preset_standard":     pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD,
-		"standard":                           pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD,
-		"muscle_heatmap_preset_powerlifting": pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING,
-		"powerlifting":                       pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING,
-		"muscle_heatmap_preset_bodybuilding": pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING,
-		"bodybuilding":                       pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING,
+	lookup := map[string]pbplugin.MuscleHeatmapPreset{
+		"muscle_heatmap_preset_unspecified":  pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED,
+		"unspecified":                        pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED,
+		"muscle_heatmap_preset_standard":     pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD,
+		"standard":                           pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_STANDARD,
+		"muscle_heatmap_preset_powerlifting": pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING,
+		"powerlifting":                       pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_POWERLIFTING,
+		"muscle_heatmap_preset_bodybuilding": pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING,
+		"bodybuilding":                       pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_BODYBUILDING,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED
+	return pbplugin.MuscleHeatmapPreset_MUSCLE_HEATMAP_PRESET_UNSPECIFIED
 }
 
-func FormatMuscleHeatmapStyle(value pb.MuscleHeatmapStyle) string {
+func FormatMuscleHeatmapStyle(value pbplugin.MuscleHeatmapStyle) string {
 	switch value {
-	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED:
+	case pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED:
 		return "Unspecified"
-	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS:
+	case pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS:
 		return "Emoji Bars"
-	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE:
+	case pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE:
 		return "Percentage"
-	case pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY:
+	case pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY:
 		return "Text Only"
 	default:
 		return "Emoji Bars"
 	}
 }
 
-func ParseMuscleHeatmapStyle(input string) pb.MuscleHeatmapStyle {
+func ParseMuscleHeatmapStyle(input string) pbplugin.MuscleHeatmapStyle {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.MuscleHeatmapStyle_value[input]; ok {
-		return pb.MuscleHeatmapStyle(v)
+	if v, ok := pbplugin.MuscleHeatmapStyle_value[input]; ok {
+		return pbplugin.MuscleHeatmapStyle(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.MuscleHeatmapStyle{
-		"muscle_heatmap_style_unspecified": pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED,
-		"unspecified":                      pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED,
-		"muscle_heatmap_style_emoji_bars":  pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
-		"emoji_bars":                       pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
-		"emoji bars":                       pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
-		"muscle_heatmap_style_percentage":  pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE,
-		"percentage":                       pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE,
-		"muscle_heatmap_style_text_only":   pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
-		"text_only":                        pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
-		"text only":                        pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
+	lookup := map[string]pbplugin.MuscleHeatmapStyle{
+		"muscle_heatmap_style_unspecified": pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED,
+		"unspecified":                      pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED,
+		"muscle_heatmap_style_emoji_bars":  pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
+		"emoji_bars":                       pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
+		"emoji bars":                       pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_EMOJI_BARS,
+		"muscle_heatmap_style_percentage":  pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE,
+		"percentage":                       pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_PERCENTAGE,
+		"muscle_heatmap_style_text_only":   pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
+		"text_only":                        pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
+		"text only":                        pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_TEXT_ONLY,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED
+	return pbplugin.MuscleHeatmapStyle_MUSCLE_HEATMAP_STYLE_UNSPECIFIED
 }
 
-func FormatParkrunResultsState(value pb.ParkrunResultsState) string {
+func FormatParkrunResultsState(value pbpipeline.ParkrunResultsState) string {
 	switch value {
-	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED:
+	case pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED:
 		return "Unspecified"
-	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING:
+	case pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING:
 		return "Pending"
-	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_COMPLETE:
+	case pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_COMPLETE:
 		return "Complete"
-	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_EXPIRED:
+	case pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_EXPIRED:
 		return "Expired"
-	case pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_IMMEDIATE:
+	case pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_IMMEDIATE:
 		return "Immediate"
 	default:
 		return "Pending"
 	}
 }
 
-func ParseParkrunResultsState(input string) pb.ParkrunResultsState {
+func ParseParkrunResultsState(input string) pbpipeline.ParkrunResultsState {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.ParkrunResultsState_value[input]; ok {
-		return pb.ParkrunResultsState(v)
+	if v, ok := pbpipeline.ParkrunResultsState_value[input]; ok {
+		return pbpipeline.ParkrunResultsState(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.ParkrunResultsState{
-		"parkrun_results_state_unspecified": pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED,
-		"unspecified":                       pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED,
-		"parkrun_results_state_pending":     pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING,
-		"pending":                           pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING,
-		"parkrun_results_state_complete":    pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_COMPLETE,
-		"complete":                          pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_COMPLETE,
-		"parkrun_results_state_expired":     pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_EXPIRED,
-		"expired":                           pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_EXPIRED,
-		"parkrun_results_state_immediate":   pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_IMMEDIATE,
-		"immediate":                         pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_IMMEDIATE,
+	lookup := map[string]pbpipeline.ParkrunResultsState{
+		"parkrun_results_state_unspecified": pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED,
+		"unspecified":                       pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED,
+		"parkrun_results_state_pending":     pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING,
+		"pending":                           pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_PENDING,
+		"parkrun_results_state_complete":    pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_COMPLETE,
+		"complete":                          pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_COMPLETE,
+		"parkrun_results_state_expired":     pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_EXPIRED,
+		"expired":                           pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_EXPIRED,
+		"parkrun_results_state_immediate":   pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_IMMEDIATE,
+		"immediate":                         pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_IMMEDIATE,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED
+	return pbpipeline.ParkrunResultsState_PARKRUN_RESULTS_STATE_UNSPECIFIED
 }
 
-func FormatVirtualGPSRoute(value pb.VirtualGPSRoute) string {
+func FormatVirtualGPSRoute(value pbplugin.VirtualGPSRoute) string {
 	switch value {
-	case pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED:
+	case pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED:
 		return "Unspecified"
-	case pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON:
+	case pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON:
 		return "London"
-	case pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC:
+	case pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC:
 		return "Nyc"
 	default:
 		return "None"
 	}
 }
 
-func ParseVirtualGPSRoute(input string) pb.VirtualGPSRoute {
+func ParseVirtualGPSRoute(input string) pbplugin.VirtualGPSRoute {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.VirtualGPSRoute_value[input]; ok {
-		return pb.VirtualGPSRoute(v)
+	if v, ok := pbplugin.VirtualGPSRoute_value[input]; ok {
+		return pbplugin.VirtualGPSRoute(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.VirtualGPSRoute{
-		"virtual_gps_route_unspecified": pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED,
-		"unspecified":                   pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED,
-		"virtual_gps_route_london":      pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON,
-		"london":                        pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON,
-		"virtual_gps_route_nyc":         pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC,
-		"nyc":                           pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC,
+	lookup := map[string]pbplugin.VirtualGPSRoute{
+		"virtual_gps_route_unspecified": pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED,
+		"unspecified":                   pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED,
+		"virtual_gps_route_london":      pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON,
+		"london":                        pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_LONDON,
+		"virtual_gps_route_nyc":         pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC,
+		"nyc":                           pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_NYC,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED
+	return pbplugin.VirtualGPSRoute_VIRTUAL_GPS_ROUTE_UNSPECIFIED
 }
 
-func FormatWorkoutSummaryFormat(value pb.WorkoutSummaryFormat) string {
+func FormatWorkoutSummaryFormat(value pbplugin.WorkoutSummaryFormat) string {
 	switch value {
-	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED:
+	case pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED:
 		return "Unspecified"
-	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
+	case pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT:
 		return "Compact"
-	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED:
+	case pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED:
 		return "Detailed"
-	case pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE:
+	case pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE:
 		return "Verbose"
 	default:
 		return "Compact"
 	}
 }
 
-func ParseWorkoutSummaryFormat(input string) pb.WorkoutSummaryFormat {
+func ParseWorkoutSummaryFormat(input string) pbplugin.WorkoutSummaryFormat {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.WorkoutSummaryFormat_value[input]; ok {
-		return pb.WorkoutSummaryFormat(v)
+	if v, ok := pbplugin.WorkoutSummaryFormat_value[input]; ok {
+		return pbplugin.WorkoutSummaryFormat(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.WorkoutSummaryFormat{
-		"workout_summary_format_unspecified": pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED,
-		"unspecified":                        pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED,
-		"workout_summary_format_compact":     pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT,
-		"compact":                            pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT,
-		"workout_summary_format_detailed":    pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED,
-		"detailed":                           pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED,
-		"workout_summary_format_verbose":     pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE,
-		"verbose":                            pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE,
+	lookup := map[string]pbplugin.WorkoutSummaryFormat{
+		"workout_summary_format_unspecified": pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED,
+		"unspecified":                        pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED,
+		"workout_summary_format_compact":     pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT,
+		"compact":                            pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_COMPACT,
+		"workout_summary_format_detailed":    pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED,
+		"detailed":                           pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_DETAILED,
+		"workout_summary_format_verbose":     pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE,
+		"verbose":                            pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_VERBOSE,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED
+	return pbplugin.WorkoutSummaryFormat_WORKOUT_SUMMARY_FORMAT_UNSPECIFIED
 }
 
-func FormatPendingInputStatus(value pb.PendingInput_Status) string {
+func FormatPendingInputStatus(value pbpipeline.PendingInput_Status) string {
 	switch value {
-	case pb.PendingInput_STATUS_UNSPECIFIED:
+	case pbpipeline.PendingInput_STATUS_UNSPECIFIED:
 		return "Unspecified"
-	case pb.PendingInput_STATUS_WAITING:
+	case pbpipeline.PendingInput_STATUS_WAITING:
 		return "Waiting"
-	case pb.PendingInput_STATUS_COMPLETED:
+	case pbpipeline.PendingInput_STATUS_COMPLETED:
 		return "Completed"
 	default:
 		return "Waiting"
 	}
 }
 
-func ParsePendingInputStatus(input string) pb.PendingInput_Status {
+func ParsePendingInputStatus(input string) pbpipeline.PendingInput_Status {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.PendingInput_Status_value[input]; ok {
-		return pb.PendingInput_Status(v)
+	if v, ok := pbpipeline.PendingInput_Status_value[input]; ok {
+		return pbpipeline.PendingInput_Status(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.PendingInput_Status{
-		"status_unspecified": pb.PendingInput_STATUS_UNSPECIFIED,
-		"unspecified":        pb.PendingInput_STATUS_UNSPECIFIED,
-		"status_waiting":     pb.PendingInput_STATUS_WAITING,
-		"waiting":            pb.PendingInput_STATUS_WAITING,
-		"status_completed":   pb.PendingInput_STATUS_COMPLETED,
-		"completed":          pb.PendingInput_STATUS_COMPLETED,
+	lookup := map[string]pbpipeline.PendingInput_Status{
+		"status_unspecified": pbpipeline.PendingInput_STATUS_UNSPECIFIED,
+		"unspecified":        pbpipeline.PendingInput_STATUS_UNSPECIFIED,
+		"status_waiting":     pbpipeline.PendingInput_STATUS_WAITING,
+		"waiting":            pbpipeline.PendingInput_STATUS_WAITING,
+		"status_completed":   pbpipeline.PendingInput_STATUS_COMPLETED,
+		"completed":          pbpipeline.PendingInput_STATUS_COMPLETED,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.PendingInput_STATUS_UNSPECIFIED
+	return pbpipeline.PendingInput_STATUS_UNSPECIFIED
 }
 
-func FormatPipelineRunStatus(value pb.PipelineRunStatus) string {
+func FormatPipelineRunStatus(value pbpipeline.PipelineRunStatus) string {
 	switch value {
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED:
 		return "Unknown"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING:
 		return "In Progress"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED:
 		return "Synced"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL:
 		return "Partial"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED:
 		return "Failed"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING:
 		return "Pending"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED:
 		return "Skipped"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED:
 		return "Archived"
-	case pb.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED:
+	case pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED:
 		return "Tier Blocked"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParsePipelineRunStatus(input string) pb.PipelineRunStatus {
+func ParsePipelineRunStatus(input string) pbpipeline.PipelineRunStatus {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.PipelineRunStatus_value[input]; ok {
-		return pb.PipelineRunStatus(v)
+	if v, ok := pbpipeline.PipelineRunStatus_value[input]; ok {
+		return pbpipeline.PipelineRunStatus(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.PipelineRunStatus{
-		"pipeline_run_status_unspecified":  pb.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED,
-		"unspecified":                      pb.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED,
-		"unknown":                          pb.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED,
-		"pipeline_run_status_running":      pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
-		"running":                          pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
-		"in progress":                      pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
-		"pipeline_run_status_synced":       pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED,
-		"synced":                           pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED,
-		"pipeline_run_status_partial":      pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL,
-		"partial":                          pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL,
-		"pipeline_run_status_failed":       pb.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED,
-		"failed":                           pb.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED,
-		"pipeline_run_status_pending":      pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
-		"pending":                          pb.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
-		"pipeline_run_status_skipped":      pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED,
-		"skipped":                          pb.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED,
-		"pipeline_run_status_archived":     pb.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED,
-		"archived":                         pb.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED,
-		"pipeline_run_status_tier_blocked": pb.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
-		"tier_blocked":                     pb.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
-		"tier blocked":                     pb.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
+	lookup := map[string]pbpipeline.PipelineRunStatus{
+		"pipeline_run_status_unspecified":  pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED,
+		"unspecified":                      pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED,
+		"unknown":                          pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED,
+		"pipeline_run_status_running":      pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+		"running":                          pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+		"in progress":                      pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
+		"pipeline_run_status_synced":       pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED,
+		"synced":                           pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED,
+		"pipeline_run_status_partial":      pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL,
+		"partial":                          pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PARTIAL,
+		"pipeline_run_status_failed":       pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED,
+		"failed":                           pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_FAILED,
+		"pipeline_run_status_pending":      pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
+		"pending":                          pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_PENDING,
+		"pipeline_run_status_skipped":      pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED,
+		"skipped":                          pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SKIPPED,
+		"pipeline_run_status_archived":     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED,
+		"archived":                         pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_ARCHIVED,
+		"pipeline_run_status_tier_blocked": pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
+		"tier_blocked":                     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
+		"tier blocked":                     pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_TIER_BLOCKED,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED
+	return pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_UNSPECIFIED
 }
 
-func FormatDestinationStatus(value pb.DestinationStatus) string {
+func FormatDestinationStatus(value pbpipeline.DestinationStatus) string {
 	switch value {
-	case pb.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED:
+	case pbpipeline.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED:
 		return "Unknown"
-	case pb.DestinationStatus_DESTINATION_STATUS_PENDING:
+	case pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING:
 		return "Pending"
-	case pb.DestinationStatus_DESTINATION_STATUS_SUCCESS:
+	case pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS:
 		return "Success"
-	case pb.DestinationStatus_DESTINATION_STATUS_FAILED:
+	case pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED:
 		return "Failed"
-	case pb.DestinationStatus_DESTINATION_STATUS_SKIPPED:
+	case pbpipeline.DestinationStatus_DESTINATION_STATUS_SKIPPED:
 		return "Skipped"
 	default:
 		return "Unknown"
 	}
 }
 
-func ParseDestinationStatus(input string) pb.DestinationStatus {
+func ParseDestinationStatus(input string) pbpipeline.DestinationStatus {
 	// Try exact proto enum name first (fast path)
-	if v, ok := pb.DestinationStatus_value[input]; ok {
-		return pb.DestinationStatus(v)
+	if v, ok := pbpipeline.DestinationStatus_value[input]; ok {
+		return pbpipeline.DestinationStatus(v)
 	}
 
 	// Case-insensitive lookup via display names, short names, and aliases
-	lookup := map[string]pb.DestinationStatus{
-		"destination_status_unspecified": pb.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED,
-		"unspecified":                    pb.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED,
-		"unknown":                        pb.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED,
-		"destination_status_pending":     pb.DestinationStatus_DESTINATION_STATUS_PENDING,
-		"pending":                        pb.DestinationStatus_DESTINATION_STATUS_PENDING,
-		"destination_status_success":     pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"success":                        pb.DestinationStatus_DESTINATION_STATUS_SUCCESS,
-		"destination_status_failed":      pb.DestinationStatus_DESTINATION_STATUS_FAILED,
-		"failed":                         pb.DestinationStatus_DESTINATION_STATUS_FAILED,
-		"destination_status_skipped":     pb.DestinationStatus_DESTINATION_STATUS_SKIPPED,
-		"skipped":                        pb.DestinationStatus_DESTINATION_STATUS_SKIPPED,
+	lookup := map[string]pbpipeline.DestinationStatus{
+		"destination_status_unspecified": pbpipeline.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED,
+		"unspecified":                    pbpipeline.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED,
+		"unknown":                        pbpipeline.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED,
+		"destination_status_pending":     pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING,
+		"pending":                        pbpipeline.DestinationStatus_DESTINATION_STATUS_PENDING,
+		"destination_status_success":     pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		"success":                        pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
+		"destination_status_failed":      pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED,
+		"failed":                         pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED,
+		"destination_status_skipped":     pbpipeline.DestinationStatus_DESTINATION_STATUS_SKIPPED,
+		"skipped":                        pbpipeline.DestinationStatus_DESTINATION_STATUS_SKIPPED,
 	}
 
 	normalized := strings.ToLower(strings.TrimSpace(input))
 	if v, ok := lookup[normalized]; ok {
 		return v
 	}
-	return pb.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED
+	return pbpipeline.DestinationStatus_DESTINATION_STATUS_UNSPECIFIED
 }

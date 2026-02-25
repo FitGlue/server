@@ -12,15 +12,19 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { execSync } from 'child_process';
 
-const TS_PB_DIR = path.join(__dirname, '..', 'src', 'typescript', 'shared', 'src', 'types', 'pb');
 const GO_FORMATTERS_DIR = path.join(__dirname, '..', 'src', 'go', 'pkg', 'types', 'formatters');
 const WEB_DIR = path.join(__dirname, '..', '..', 'web');
 const WEB_PB_DIR = path.join(WEB_DIR, 'src', 'types', 'pb');
+// Source of truth for enum parsing — use web repo TS proto files
+const TS_PB_DIR = WEB_PB_DIR;
 
 // Enums to generate formatters for, with their source file and display name overrides
 interface EnumConfig {
+  goPkg: string;
+  goEnumName?: string;
   file: string;
   enumName: string;
+  funcNameOverride?: string;
   prefix: string;
   displayNameOverrides?: Record<string, string>;
   defaultValue?: string;
@@ -31,7 +35,8 @@ interface EnumConfig {
 
 const ENUM_CONFIGS: EnumConfig[] = [
   {
-    file: 'standardized_activity.ts',
+    file: 'models/activity/source.ts',
+    goPkg: 'pbactivity',
     enumName: 'ActivityType',
     prefix: 'ACTIVITY_TYPE_',
     displayNameOverrides: {
@@ -56,7 +61,8 @@ const ENUM_CONFIGS: EnumConfig[] = [
     },
   },
   {
-    file: 'standardized_activity.ts',
+    file: 'models/activity/standardized.ts',
+    goPkg: 'pbactivity',
     enumName: 'MuscleGroup',
     prefix: 'MUSCLE_GROUP_',
     displayNameOverrides: {
@@ -65,8 +71,11 @@ const ENUM_CONFIGS: EnumConfig[] = [
     defaultValue: 'Unknown',
   },
   {
-    file: 'events.ts',
-    enumName: 'Destination',
+    file: 'models/plugin/provider.ts',
+    goPkg: 'pbplugin',
+    enumName: 'DestinationType',
+    funcNameOverride: 'Destination',
+    goEnumName: 'DestinationType',
     prefix: 'DESTINATION_',
     displayNameOverrides: {
       'UNSPECIFIED': 'Unknown',
@@ -78,19 +87,22 @@ const ENUM_CONFIGS: EnumConfig[] = [
     defaultValue: 'Unknown',
   },
   {
-    file: 'events.ts',
+    file: 'models/events/pipeline.ts',
+    goPkg: 'pbevents',
     enumName: 'CloudEventType',
     prefix: 'CLOUD_EVENT_TYPE_',
     defaultValue: 'Unknown',
   },
   {
-    file: 'events.ts',
+    file: 'models/events/pipeline.ts',
+    goPkg: 'pbevents',
     enumName: 'CloudEventSource',
     prefix: 'CLOUD_EVENT_SOURCE_',
     defaultValue: 'Unknown',
   },
   {
-    file: 'activity.ts',
+    file: 'models/activity/source.ts',
+    goPkg: 'pbactivity',
     enumName: 'ActivitySource',
     prefix: 'SOURCE_',
     displayNameOverrides: {
@@ -103,7 +115,8 @@ const ENUM_CONFIGS: EnumConfig[] = [
     defaultValue: 'Unknown',
   },
   {
-    file: 'user.ts',
+    file: 'models/plugin/provider.ts',
+    goPkg: 'pbplugin',
     enumName: 'EnricherProviderType',
     prefix: 'ENRICHER_PROVIDER_',
     displayNameOverrides: {
@@ -113,7 +126,8 @@ const ENUM_CONFIGS: EnumConfig[] = [
     defaultValue: 'Unknown',
   },
   {
-    file: 'user.ts',
+    file: 'models/user/profile.ts',
+    goPkg: 'pbuser',
     enumName: 'UserTier',
     prefix: 'USER_TIER_',
     displayNameOverrides: {
@@ -124,19 +138,22 @@ const ENUM_CONFIGS: EnumConfig[] = [
     defaultValue: 'Hobbyist',
   },
   {
-    file: 'execution.ts',
+    file: 'models/pipeline/execution.ts',
+    goPkg: 'pbpipeline',
     enumName: 'ExecutionStatus',
     prefix: 'STATUS_',
     defaultValue: 'Unknown',
   },
   {
-    file: 'plugin.ts',
+    file: 'models/plugin/manifest.ts',
+    goPkg: 'pbplugin',
     enumName: 'ConfigFieldType',
     prefix: 'CONFIG_FIELD_TYPE_',
     defaultValue: 'String',
   },
   {
-    file: 'plugin.ts',
+    file: 'models/plugin/manifest.ts',
+    goPkg: 'pbplugin',
     enumName: 'IntegrationAuthType',
     prefix: 'INTEGRATION_AUTH_TYPE_',
     displayNameOverrides: {
@@ -148,49 +165,57 @@ const ENUM_CONFIGS: EnumConfig[] = [
     defaultValue: 'Manual',
   },
   {
-    file: 'plugin.ts',
+    file: 'models/plugin/manifest.ts',
+    goPkg: 'pbplugin',
     enumName: 'PluginType',
     prefix: 'PLUGIN_TYPE_',
     defaultValue: 'Unknown',
   },
   {
-    file: 'user.ts',
+    file: 'models/plugin/provider.ts',
+    goPkg: 'pbplugin',
     enumName: 'MuscleHeatmapPreset',
     prefix: 'MUSCLE_HEATMAP_PRESET_',
     defaultValue: 'Standard',
   },
   {
-    file: 'user.ts',
+    file: 'models/plugin/provider.ts',
+    goPkg: 'pbplugin',
     enumName: 'MuscleHeatmapStyle',
     prefix: 'MUSCLE_HEATMAP_STYLE_',
     defaultValue: 'Emoji Bars',
   },
   {
-    file: 'user.ts',
+    file: 'models/pipeline/pending_input.ts',
+    goPkg: 'pbpipeline',
     enumName: 'ParkrunResultsState',
     prefix: 'PARKRUN_RESULTS_STATE_',
     defaultValue: 'Pending',
   },
   {
-    file: 'user.ts',
+    file: 'models/plugin/provider.ts',
+    goPkg: 'pbplugin',
     enumName: 'VirtualGPSRoute',
     prefix: 'VIRTUAL_GPS_ROUTE_',
     defaultValue: 'None',
   },
   {
-    file: 'user.ts',
+    file: 'models/plugin/provider.ts',
+    goPkg: 'pbplugin',
     enumName: 'WorkoutSummaryFormat',
     prefix: 'WORKOUT_SUMMARY_FORMAT_',
     defaultValue: 'Compact',
   },
   {
-    file: 'pending_input.ts',
+    file: 'models/pipeline/pending_input.ts',
+    goPkg: 'pbpipeline',
     enumName: 'PendingInput_Status',
     prefix: 'STATUS_',
     defaultValue: 'Waiting',
   },
   {
-    file: 'user.ts',
+    file: 'models/pipeline/execution.ts',
+    goPkg: 'pbpipeline',
     enumName: 'PipelineRunStatus',
     prefix: 'PIPELINE_RUN_STATUS_',
     displayNameOverrides: {
@@ -206,7 +231,8 @@ const ENUM_CONFIGS: EnumConfig[] = [
     defaultValue: 'Unknown',
   },
   {
-    file: 'user.ts',
+    file: 'models/pipeline/execution.ts',
+    goPkg: 'pbpipeline',
     enumName: 'DestinationStatus',
     prefix: 'DESTINATION_STATUS_',
     displayNameOverrides: {
@@ -256,7 +282,7 @@ function toTitleCase(str: string): string {
 // Generate TypeScript formatter function
 function generateTsFormatter(config: EnumConfig, entries: Array<{ name: string; value: number }>): string {
   const { enumName, prefix, displayNameOverrides = {}, defaultValue = 'Unknown' } = config;
-  const funcName = `format${enumName}`;
+  const funcName = `format${config.funcNameOverride || enumName}`;
 
   const mappingEntries: string[] = [];
   const cases: string[] = [];
@@ -310,8 +336,9 @@ ${cases.join('\n')}
 
 // Generate Go formatter function
 function generateGoFormatter(config: EnumConfig, entries: Array<{ name: string; value: number }>): string {
-  const { enumName, prefix, displayNameOverrides = {}, defaultValue = 'Unknown' } = config;
-  const funcName = `Format${enumName.replace(/_/g, '')}`;  // Remove underscores for function name
+  const { enumName, prefix, displayNameOverrides = {}, defaultValue = 'Unknown', goEnumName } = config;
+  const typeName = goEnumName || enumName;
+  const funcName = `Format${(config.funcNameOverride || enumName).replace(/_/g, '')}`;  // Remove underscores for function name
 
   // Check if this is a nested enum (contains underscore, like PendingInput_Status)
   const isNestedEnum = enumName.includes('_');
@@ -322,18 +349,21 @@ function generateGoFormatter(config: EnumConfig, entries: Array<{ name: string; 
       const nameWithoutPrefix = entry.name.replace(prefix, '');
       const displayName = displayNameOverrides[nameWithoutPrefix] || toTitleCase(nameWithoutPrefix);
 
+      let entryName = entry.name;
+      if (entryName.endsWith('_UNKNOWN')) entryName = entryName.replace('_UNKNOWN', '_UNSPECIFIED');
+
       // For nested enums, the Go constant is like: PendingInput_STATUS_UNSPECIFIED
       // For top-level enums, it's like: ActivityType_ACTIVITY_TYPE_UNSPECIFIED
       const goConstant = isNestedEnum
-        ? `pb.${enumName.split('_')[0]}_${entry.name}`  // PendingInput_STATUS_UNSPECIFIED
-        : `pb.${enumName}_${entry.name}`;                // ActivityType_ACTIVITY_TYPE_UNSPECIFIED
+        ? `${config.goPkg}.${typeName.split('_')[0]}_${entryName}`  // PendingInput_STATUS_UNSPECIFIED
+        : `${config.goPkg}.${typeName}_${entryName}`;                // ActivityType_ACTIVITY_TYPE_UNSPECIFIED
 
       return `\tcase ${goConstant}:\n\t\treturn "${displayName}"`;
     })
     .join('\n');
 
   return `
-func ${funcName}(value pb.${enumName}) string {
+func ${funcName}(value ${config.goPkg}.${typeName}) string {
 \tswitch value {
 ${cases}
 \tdefault:
@@ -346,7 +376,7 @@ ${cases}
 // Generate TypeScript parser function (string -> enum)
 function generateTsParser(config: EnumConfig, entries: Array<{ name: string; value: number }>): string {
   const { enumName, prefix, displayNameOverrides = {}, parseAliases = {} } = config;
-  const funcName = `parse${enumName}`;
+  const funcName = `parse${config.funcNameOverride || enumName}`;
 
   // Find the default enum entry (UNSPECIFIED or first entry)
   const defaultEntry = entries.find(e => e.name.includes('UNSPECIFIED')) || entries[0];
@@ -401,16 +431,19 @@ export function ${funcName}(input: string | number | undefined | null): ${enumNa
 
 // Generate Go parser function (string -> enum)
 function generateGoParser(config: EnumConfig, entries: Array<{ name: string; value: number }>): string {
-  const { enumName, prefix, displayNameOverrides = {}, parseAliases = {} } = config;
-  const funcName = `Parse${enumName.replace(/_/g, '')}`;  // Remove underscores for function name
+  const { enumName, prefix, displayNameOverrides = {}, parseAliases = {}, goEnumName } = config;
+  const typeName = goEnumName || enumName;
+  const funcName = `Parse${(config.funcNameOverride || enumName).replace(/_/g, '')}`;  // Remove underscores for function name
 
   const isNestedEnum = enumName.includes('_');
 
   // Find default constant
   const defaultEntry = entries.find(e => e.name.includes('UNSPECIFIED')) || entries[0];
+  let defaultEntryName = defaultEntry.name;
+  if (defaultEntryName.endsWith('_UNKNOWN')) defaultEntryName = defaultEntryName.replace('_UNKNOWN', '_UNSPECIFIED');
   const defaultGoConstant = isNestedEnum
-    ? `pb.${enumName.split('_')[0]}_${defaultEntry.name}`
-    : `pb.${enumName}_${defaultEntry.name}`;
+    ? `${config.goPkg}.${typeName.split('_')[0]}_${defaultEntryName}`
+    : `${config.goPkg}.${typeName}_${defaultEntryName}`;
 
   // Collect all map entries, deduplicating keys (first entry wins)
   const seenKeys = new Set<string>();
@@ -429,9 +462,11 @@ function generateGoParser(config: EnumConfig, entries: Array<{ name: string; val
       const nameWithoutPrefix = entry.name.replace(prefix, '');
       const displayName = displayNameOverrides[nameWithoutPrefix] || toTitleCase(nameWithoutPrefix);
 
+      let entryName = entry.name;
+      if (entryName.endsWith('_UNKNOWN')) entryName = entryName.replace('_UNKNOWN', '_UNSPECIFIED');
       const goConstant = isNestedEnum
-        ? `pb.${enumName.split('_')[0]}_${entry.name}`
-        : `pb.${enumName}_${entry.name}`;
+        ? `${config.goPkg}.${typeName.split('_')[0]}_${entryName}`
+        : `${config.goPkg}.${typeName}_${entryName}`;
 
       // Add multiple keys: full name, short name, display name (all lowercased)
       addEntry(entry.name.toLowerCase(), goConstant);
@@ -444,8 +479,8 @@ function generateGoParser(config: EnumConfig, entries: Array<{ name: string; val
     const targetEntry = entries.find(e => e.name === `${prefix}${targetMember}`);
     if (!targetEntry) continue;
     const goConstant = isNestedEnum
-      ? `pb.${enumName.split('_')[0]}_${targetEntry.name}`
-      : `pb.${enumName}_${targetEntry.name}`;
+      ? `${config.goPkg}.${typeName.split('_')[0]}_${targetEntry.name}`
+      : `${config.goPkg}.${typeName}_${targetEntry.name}`;
     addEntry(alias.toLowerCase(), goConstant);
   }
 
@@ -453,14 +488,14 @@ function generateGoParser(config: EnumConfig, entries: Array<{ name: string; val
 
 
   return `
-func ${funcName}(input string) pb.${enumName} {
+func ${funcName}(input string) ${config.goPkg}.${typeName} {
 \t// Try exact proto enum name first (fast path)
-\tif v, ok := pb.${enumName}_value[input]; ok {
-\t\treturn pb.${enumName}(v)
+\tif v, ok := ${config.goPkg}.${typeName}_value[input]; ok {
+\t\treturn ${config.goPkg}.${typeName}(v)
 \t}
 
 \t// Case-insensitive lookup via display names, short names, and aliases
-\tlookup := map[string]pb.${enumName}{
+\tlookup := map[string]${config.goPkg}.${typeName}{
 ${mapEntries}
 \t}
 
@@ -480,23 +515,14 @@ function main(): void {
   let tsContent = `// Code generated by generate-enum-formatters.ts. DO NOT EDIT.
 /* eslint-disable */
 
-import { ActivityType, MuscleGroup } from './standardized_activity';
-import { Destination, CloudEventType, CloudEventSource } from './events';
-import { ActivitySource } from './activity';
-import {
-  EnricherProviderType,
-  UserTier,
-  MuscleHeatmapPreset,
-  MuscleHeatmapStyle,
-  ParkrunResultsState,
-  VirtualGPSRoute,
-  WorkoutSummaryFormat,
-  PipelineRunStatus,
-  DestinationStatus,
-} from './user';
-import { ExecutionStatus } from './execution';
-import { ConfigFieldType, IntegrationAuthType, PluginType } from './plugin';
-import { PendingInput_Status } from './pending_input';
+import { MuscleGroup } from './models/activity/standardized';
+import { ActivityType, ActivitySource } from './models/activity/source';
+import { CloudEventType, CloudEventSource } from './models/events/pipeline';
+import { DestinationType, EnricherProviderType, MuscleHeatmapPreset, MuscleHeatmapStyle, VirtualGPSRoute, WorkoutSummaryFormat } from './models/plugin/provider';
+import { UserTier } from './models/user/profile';
+import { ExecutionStatus, PipelineRunStatus, DestinationStatus } from './models/pipeline/execution';
+import { ConfigFieldType, IntegrationAuthType, PluginType } from './models/plugin/manifest';
+import { PendingInput_Status, ParkrunResultsState } from './models/pipeline/pending_input';
 `;
 
   let goContent = `// Code generated by generate-enum-formatters.ts. DO NOT EDIT.
@@ -505,7 +531,7 @@ package formatters
 import (
 \t"strings"
 
-\tpb "github.com/fitglue/server/src/go/pkg/types/pb"
+\tpbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"\n\tpbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"\n\tpbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"\n\tpbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"\n\tpbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 )
 `;
 
@@ -530,10 +556,7 @@ import (
     goContent += generateGoParser(config, entries);
   }
 
-  // Write TypeScript formatters (server)
-  const tsOutputPath = path.join(TS_PB_DIR, 'enum-formatters.ts');
-  fs.writeFileSync(tsOutputPath, tsContent.trim() + '\n');
-  console.log(`\n📁 TypeScript (server): ${tsOutputPath}`);
+  // Server-side TS output removed — server is Go-only now.
 
   // Write Go formatters
   if (!fs.existsSync(GO_FORMATTERS_DIR)) {

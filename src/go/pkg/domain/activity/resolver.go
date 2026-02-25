@@ -8,7 +8,8 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	shared "github.com/fitglue/server/src/go/pkg"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 )
 
 // GCS URI pattern: gs://bucket/path
@@ -33,7 +34,7 @@ func ParseGCSURI(uri string) (bucket, object string, ok bool) {
 //
 // Returns the StandardizedActivity (either inline or fetched from GCS).
 // If URI is set but fetch fails, returns an error.
-func ResolveActivityData(ctx context.Context, event *pb.EnrichedActivityEvent, store shared.BlobStore) (*pb.StandardizedActivity, error) {
+func ResolveActivityData(ctx context.Context, event *pbevents.EnrichedActivityEvent, store shared.BlobStore) (*pbactivity.StandardizedActivity, error) {
 	// If no URI, return inline data (may be nil)
 	if event.ActivityDataUri == "" {
 		return event.ActivityData, nil
@@ -46,13 +47,13 @@ func ResolveActivityData(ctx context.Context, event *pb.EnrichedActivityEvent, s
 	}
 
 	// Fetch from GCS
-	data, err := store.Read(ctx, bucket, object)
+	data, err := store.Get(ctx, bucket, object)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch enriched event from GCS: %w", err)
 	}
 
 	// The GCS blob contains the full EnrichedActivityEvent
-	var fullEvent pb.EnrichedActivityEvent
+	var fullEvent pbevents.EnrichedActivityEvent
 	if err := protojson.Unmarshal(data, &fullEvent); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal enriched event: %w", err)
 	}
@@ -62,7 +63,7 @@ func ResolveActivityData(ctx context.Context, event *pb.EnrichedActivityEvent, s
 
 // ResolveEnrichedEvent populates the ActivityData field by fetching from GCS if needed.
 // This modifies the event in place for convenience.
-func ResolveEnrichedEvent(ctx context.Context, event *pb.EnrichedActivityEvent, store shared.BlobStore) error {
+func ResolveEnrichedEvent(ctx context.Context, event *pbevents.EnrichedActivityEvent, store shared.BlobStore) error {
 	if event.ActivityDataUri == "" || event.ActivityData != nil {
 		// No URI or already has inline data
 		return nil
@@ -80,18 +81,18 @@ func ResolveEnrichedEvent(ctx context.Context, event *pb.EnrichedActivityEvent, 
 // FetchFullEnrichedEvent fetches the complete EnrichedActivityEvent from GCS.
 // This is useful when you need ALL fields from the original event, not just activity_data.
 // For example, the repost-handler uses this to get the full event for replay.
-func FetchFullEnrichedEvent(ctx context.Context, gcsUri string, store shared.BlobStore) (*pb.EnrichedActivityEvent, error) {
+func FetchFullEnrichedEvent(ctx context.Context, gcsUri string, store shared.BlobStore) (*pbevents.EnrichedActivityEvent, error) {
 	bucket, object, ok := ParseGCSURI(gcsUri)
 	if !ok {
 		return nil, fmt.Errorf("invalid GCS URI: %s", gcsUri)
 	}
 
-	data, err := store.Read(ctx, bucket, object)
+	data, err := store.Get(ctx, bucket, object)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch enriched event from GCS: %w", err)
 	}
 
-	var event pb.EnrichedActivityEvent
+	var event pbevents.EnrichedActivityEvent
 	if err := protojson.Unmarshal(data, &event); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal enriched event: %w", err)
 	}
@@ -106,7 +107,7 @@ const ActivityDataThreshold = 5 * 1024 * 1024 // 5MB
 
 // ShouldOffloadActivityData returns true if the activity data should be stored in GCS
 // rather than included inline in the Pub/Sub message.
-func ShouldOffloadActivityData(activityData *pb.StandardizedActivity) bool {
+func ShouldOffloadActivityData(activityData *pbactivity.StandardizedActivity) bool {
 	if activityData == nil {
 		return false
 	}
@@ -132,7 +133,7 @@ func ShouldOffloadActivityData(activityData *pb.StandardizedActivity) bool {
 // and destinations. The minor storage/latency cost is worth the simplified logic.
 //
 // Returns the (possibly modified) event and the size uploaded (0 if not uploaded).
-func PrepareForPublish(ctx context.Context, event *pb.EnrichedActivityEvent, store shared.BlobStore, bucketName string) (*pb.EnrichedActivityEvent, int, error) {
+func PrepareForPublish(ctx context.Context, event *pbevents.EnrichedActivityEvent, store shared.BlobStore, bucketName string) (*pbevents.EnrichedActivityEvent, int, error) {
 	if event.ActivityData == nil {
 		// No data to offload
 		return event, 0, nil
@@ -163,7 +164,7 @@ func PrepareForPublish(ctx context.Context, event *pb.EnrichedActivityEvent, sto
 	gcsUri := fmt.Sprintf("gs://%s/%s", bucketName, gcsPath)
 
 	// Create a slim copy with URI set and data cleared for Pub/Sub
-	result := &pb.EnrichedActivityEvent{
+	result := &pbevents.EnrichedActivityEvent{
 		ActivityId:          event.ActivityId,
 		UserId:              event.UserId,
 		PipelineId:          event.PipelineId,

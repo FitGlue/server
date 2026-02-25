@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package fitglue.models.user;
+
+import "google/protobuf/timestamp.proto";
+import "models/activity/source.proto";
+
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/user";
+
+// UserProfile represents the core user identity and preferences, 
+// cleanly separated from billing and integrations.
+message UserProfile {
+  string user_id = 1;
+  google.protobuf.Timestamp created_at = 2;
+  repeated string fcm_tokens = 3;
+
+  UserTier tier = 4;
+  bool is_admin = 5;
+  
+  // Monthly sync tracking
+  int32 sync_count_this_month = 6;
+  google.protobuf.Timestamp sync_count_reset_at = 7;
+  int32 prevented_sync_count = 8;
+  
+  // Waitlist gate - false until admin enables access
+  bool access_enabled = 9;
+  
+  // User's push notification preferences
+  NotificationPreferences notification_preferences = 10;
+  
+  google.protobuf.Timestamp trial_ends_at = 11;
+  string email = 12;
+  string display_name = 13;
+}
+
+message NotificationPreferences {
+  bool notify_pending_input = 1;
+  bool notify_pipeline_success = 2;
+  bool notify_pipeline_failure = 3;
+}
+
+enum UserTier {
+  USER_TIER_UNSPECIFIED = 0;
+  USER_TIER_HOBBYIST = 1;
+  USER_TIER_ATHLETE = 2;
+}
+
+message Counter {
+  string id = 1; // Key, e.g. "parkrun_bushy"
+  int64 count = 2;
+  google.protobuf.Timestamp last_updated = 3;
+}
+
+// Personal Record for tracking PRs across cardio and strength activities
+message PersonalRecord {
+  string record_type = 1;  // e.g. "fastest_5k", "bench_press_1rm"
+  double value = 2;        // The record value 
+  string unit = 3;         // "seconds", "kg", "meters", "reps"
+  string activity_id = 4;  // Activity where this PR was achieved
+  google.protobuf.Timestamp achieved_at = 5;
+  fitglue.models.activity.ActivityType activity_type = 6;
+  optional double previous_value = 7;  // Previous PR value
+  optional double improvement = 8;     // Percentage improvement
+}

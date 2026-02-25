@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package fitglue.models.activity;
+
+import "google/protobuf/descriptor.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/activity";
+
+extend google.protobuf.EnumValueOptions {
+  string corresponding_destination = 50020;
+  string strava_name = 50010;
+}
+
+enum ActivitySource {
+  SOURCE_UNSPECIFIED = 0;
+  SOURCE_HEVY = 1 [(corresponding_destination) = "DESTINATION_HEVY"];
+  SOURCE_FITBIT = 3 [(corresponding_destination) = "DESTINATION_FITBIT"];
+  SOURCE_PARKRUN_RESULTS = 4; 
+  SOURCE_FILE_UPLOAD = 5;     
+  SOURCE_STRAVA = 6 [(corresponding_destination) = "DESTINATION_STRAVA"];
+  SOURCE_GARMIN = 7;
+  SOURCE_APPLE_HEALTH = 8;
+  SOURCE_HEALTH_CONNECT = 9;
+  SOURCE_OURA = 10;
+  SOURCE_POLAR = 11;
+  SOURCE_WAHOO = 12;
+  SOURCE_INTERVALS = 13 [(corresponding_destination) = "DESTINATION_INTERVALS"];
+  SOURCE_TRAININGPEAKS = 14 [(corresponding_destination) = "DESTINATION_TRAININGPEAKS"];
+  SOURCE_GOOGLESHEETS = 15 [(corresponding_destination) = "DESTINATION_GOOGLESHEETS"];
+  SOURCE_GITHUB = 16 [(corresponding_destination) = "DESTINATION_GITHUB"];
+  SOURCE_TEST = 99;
+}
+
+enum ActivityType {
+  ACTIVITY_TYPE_UNSPECIFIED = 0;
+  ACTIVITY_TYPE_ALPINE_SKI = 1 [(strava_name) = "AlpineSki"];
+  ACTIVITY_TYPE_BACKCOUNTRY_SKI = 2 [(strava_name) = "BackcountrySki"];
+  ACTIVITY_TYPE_BADMINTON = 3 [(strava_name) = "Badminton"];
+  ACTIVITY_TYPE_CANOEING = 4 [(strava_name) = "Canoeing"];
+  ACTIVITY_TYPE_CROSSFIT = 5 [(strava_name) = "Crossfit"];
+  ACTIVITY_TYPE_EBIKE_RIDE = 6 [(strava_name) = "EBikeRide"];
+  ACTIVITY_TYPE_ELLIPTICAL = 7 [(strava_name) = "Elliptical"];
+  ACTIVITY_TYPE_EMOUNTAIN_BIKE_RIDE = 8 [(strava_name) = "EMountainBikeRide"];
+  ACTIVITY_TYPE_GOLF = 9 [(strava_name) = "Golf"];
+  ACTIVITY_TYPE_GRAVEL_RIDE = 10 [(strava_name) = "GravelRide"];
+  ACTIVITY_TYPE_HANDCYCLE = 11 [(strava_name) = "Handcycle"];
+  ACTIVITY_TYPE_HIGH_INTENSITY_INTERVAL_TRAINING = 12 [(strava_name) = "HighIntensityIntervalTraining"];
+  ACTIVITY_TYPE_HIKE = 13 [(strava_name) = "Hike"];
+  ACTIVITY_TYPE_ICE_SKATE = 14 [(strava_name) = "IceSkate"];
+  ACTIVITY_TYPE_INLINE_SKATE = 15 [(strava_name) = "InlineSkate"];
+  ACTIVITY_TYPE_KAYAKING = 16 [(strava_name) = "Kayaking"];
+  ACTIVITY_TYPE_KITESURF = 17 [(strava_name) = "Kitesurf"];
+  ACTIVITY_TYPE_MOUNTAIN_BIKE_RIDE = 18 [(strava_name) = "MountainBikeRide"];
+  ACTIVITY_TYPE_NORDIC_SKI = 19 [(strava_name) = "NordicSki"];
+  ACTIVITY_TYPE_PICKLEBALL = 20 [(strava_name) = "Pickleball"];
+  ACTIVITY_TYPE_PILATES = 21 [(strava_name) = "Pilates"];
+  ACTIVITY_TYPE_RACQUETBALL = 22 [(strava_name) = "Racquetball"];
+  ACTIVITY_TYPE_RIDE = 23 [(strava_name) = "Ride"];
+  ACTIVITY_TYPE_ROCK_CLIMBING = 24 [(strava_name) = "RockClimbing"];
+  ACTIVITY_TYPE_ROLLER_SKI = 25 [(strava_name) = "RollerSki"];
+  ACTIVITY_TYPE_ROWING = 26 [(strava_name) = "Rowing"];
+  ACTIVITY_TYPE_RUN = 27 [(strava_name) = "Run"];
+  ACTIVITY_TYPE_SAIL = 28 [(strava_name) = "Sail"];
+  ACTIVITY_TYPE_SKATEBOARD = 29 [(strava_name) = "Skateboard"];
+  ACTIVITY_TYPE_SNOWBOARD = 30 [(strava_name) = "Snowboard"];
+  ACTIVITY_TYPE_SNOWSHOE = 31 [(strava_name) = "Snowshoe"];
+  ACTIVITY_TYPE_SOCCER = 32 [(strava_name) = "Soccer"];
+  ACTIVITY_TYPE_SQUASH = 33 [(strava_name) = "Squash"];
+  ACTIVITY_TYPE_STAIR_STEPPER = 34 [(strava_name) = "StairStepper"];
+  ACTIVITY_TYPE_STAND_UP_PADDLING = 35 [(strava_name) = "StandUpPaddling"];
+  ACTIVITY_TYPE_SURFING = 36 [(strava_name) = "Surfing"];
+  ACTIVITY_TYPE_SWIM = 37 [(strava_name) = "Swim"];
+  ACTIVITY_TYPE_TABLE_TENNIS = 38 [(strava_name) = "TableTennis"];
+  ACTIVITY_TYPE_TENNIS = 39 [(strava_name) = "Tennis"];
+  ACTIVITY_TYPE_TRAIL_RUN = 40 [(strava_name) = "TrailRun"];
+  ACTIVITY_TYPE_VELOMOBILE = 41 [(strava_name) = "Velomobile"];
+  ACTIVITY_TYPE_VIRTUAL_RIDE = 42 [(strava_name) = "VirtualRide"];
+  ACTIVITY_TYPE_VIRTUAL_ROW = 43 [(strava_name) = "VirtualRow"];
+  ACTIVITY_TYPE_VIRTUAL_RUN = 44 [(strava_name) = "VirtualRun"];
+  ACTIVITY_TYPE_WALK = 45 [(strava_name) = "Walk"];
+  ACTIVITY_TYPE_WEIGHT_TRAINING = 46 [(strava_name) = "WeightTraining"];
+  ACTIVITY_TYPE_WHEELCHAIR = 47 [(strava_name) = "Wheelchair"];
+  ACTIVITY_TYPE_WINDSURF = 48 [(strava_name) = "Windsurf"];
+  ACTIVITY_TYPE_WORKOUT = 49 [(strava_name) = "Workout"];
+  ACTIVITY_TYPE_YOGA = 50 [(strava_name) = "Yoga"];
+}
+
+message ProcessedActivityRecord {
+  ActivitySource source = 1;
+  string external_id = 2; 
+  google.protobuf.Timestamp processed_at = 3;
+}

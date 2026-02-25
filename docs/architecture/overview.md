@@ -1,231 +1,146 @@
 # Architecture Overview
 
-FitGlue is a serverless fitness data aggregation and routing platform built on Google Cloud Platform. It ingests workout data from multiple sources, enriches it through configurable pipelines, and routes it to connected services.
+FitGlue is a fitness data aggregation and routing platform built on Google Cloud Platform. It ingests workout data from multiple sources, enriches it through configurable pipelines, and routes it to connected services.
 
-## System Components
+## System Topology
 
 ```
-                                    ┌─────────────────────────────────────┐
-                                    │         Google Cloud Platform       │
-                                    └─────────────────────────────────────┘
-                                                     │
-    ┌──────────────────────────────────────────────────────────────────────────────┐
-    │                                                                              │
-    │  ┌─────────────────┐                                                         │
-    │  │   DATA SOURCES  │                                                         │
-    │  │                 │                                                         │
-    │  │  • Hevy         │                                                         │
-    │  │  • Fitbit       │                                                         │
-    │  │  • Strava       │                                                         │
-    │  │  • Polar        │                                                         │
-    │  │  • Oura         │                                                         │
-    │  │  • Wahoo        │                                                         │
-    │  │  • Apple Health │                                                         │
-    │  │  • FIT Upload   │                                                         │
-    │  └────────┬────────┘                                                         │
-    │           │                                                                  │
-    │           ▼                                                                  │
-    │  ┌─────────────────┐      ┌──────────────┐      ┌──────────────────┐        │
-    │  │ INGESTION LAYER │─────▶│   Pub/Sub    │─────▶│ PIPELINE SPLITTER│        │
-    │  │   (Webhooks)    │      │(raw-activity)│      │       Go         │        │
-    │  │   TypeScript    │      └──────────────┘      └────────┬─────────┘        │
-    │  └─────────────────┘                                     │                  │
-    │                                                          │ (per-pipeline)   │
-    │                                                          ▼                  │
-    │                         ┌──────────────────┐      ┌──────────────────┐      │
-    │                         │     ENRICHER     │◀────▶│  External APIs   │      │
-    │                         │ (Single Pipeline)│      │ Fitbit,Spotify,  │      │
-    │                         │       Go         │      │ Weather,Parkrun  │      │
-    │                         └────────┬─────────┘      └──────────────────┘      │
-    │                                  │                                          │
-    │                                  ▼                                          │
-    │  ┌─────────────────┐      ┌──────────────┐      ┌─────────────────┐         │
-    │  │  Cloud Storage  │◀─────│    ROUTER    │─────▶│     Pub/Sub     │         │
-    │  │   (FIT Files)   │      │      Go      │      │ (Upload Jobs)   │         │
-    │  └─────────────────┘      └──────────────┘      └────────┬────────┘         │
-    │                                                          │                  │
-    │                                                          ▼                  │
-    │                                                 ┌──────────────────┐        │
-    │                                                 │   DESTINATIONS   │        │
-    │                                                 │  • Strava        │        │
-    │                                                 │  • TrainingPeaks │        │
-    │                                                 │  • Intervals.icu │        │
-    │                                                 │  • Hevy          │        │
-    │                                                 │  • Showcase      │        │
-    │                                                 └──────────────────┘        │
-    │                                                                             │
-    │  ┌─────────────────┐      ┌──────────────┐      ┌─────────────────┐         │
-    │  │    Firestore    │      │ Secret Mgr   │      │     Sentry      │         │
-    │  │   (User Data)   │      │  (Secrets)   │      │  (Observability)│         │
-    │  └─────────────────┘      └──────────────┘      └─────────────────┘         │
-    │                                                                             │
-    └─────────────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                       Google Cloud Platform                         │
+│                                                                     │
+│  ┌─────────────────────────────────────────────────────────────┐    │
+│  │              API GATEWAY LAYER (HTTP entry points)          │    │
+│  │                                                             │    │
+│  │   service.api.client   ←── Web App / Mobile (Firebase JWT) │    │
+│  │   service.api.admin    ←── Admin tooling                    │    │
+│  │   service.api.public   ←── Marketing site (no auth)         │    │
+│  │   service.api.webhook  ←── Third-party webhooks (HMAC)      │    │
+│  └────────────────────────┬────────────────────────────────────┘    │
+│                           │ gRPC                                    │
+│  ┌────────────────────────▼────────────────────────────────────┐    │
+│  │             DOMAIN SERVICES (own their Firestore data)      │    │
+│  │                                                             │    │
+│  │  service.user          service.billing   service.registry   │    │
+│  │  service.pipeline      service.activity                     │    │
+│  └────────────────────────┬────────────────────────────────────┘    │
+│                           │ Pub/Sub                                 │
+│  ┌────────────────────────▼────────────────────────────────────┐    │
+│  │              WORKER SERVICE (Pub/Sub consumer)               │    │
+│  │                                                             │    │
+│  │             service.destination  (all uploaders)            │    │
+│  └─────────────────────────────────────────────────────────────┘    │
+│                                                                     │
+│  ┌──────────────┐  ┌────────────────┐  ┌────────────────────────┐   │
+│  │   Firestore  │  │ Cloud Storage  │  │  Pub/Sub (4 topics)    │   │
+│  │  (User Data) │  │  (FIT / GCS)   │  │  Sentry / Secret Mgr  │   │
+│  └──────────────┘  └────────────────┘  └────────────────────────┘   │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+**10 Cloud Run services** replace the previous 48 Cloud Functions. All services are pure Go. See [Go Services](go-services.md) for the full directory map.
 
 ## Data Flow
 
 ### 1. Ingestion
 
-Data enters the system through source-specific handlers:
+Data enters via `service.api.webhook`, which hosts a generic `WebhookProcessor` backed by a per-provider `SourceProvider` interface (`internal/webhook/sources/`):
 
-1. **Webhooks** (Hevy, Strava, Polar, Wahoo): External services push data via authenticated webhooks
-2. **Polling** (Fitbit, Oura): Notification triggers fetch from APIs
-3. **Mobile Push** (Apple Health, Health Connect): Mobile apps push via authenticated API
-4. **Direct Upload** (FIT Parser): Users upload FIT files directly
+| Source | Auth | Mechanism |
+|--------|------|-----------|
+| Hevy | API Key / HMAC | Webhook push |
+| Strava | OAuth | Webhook push |
+| Fitbit | OAuth | Notification + poll |
+| Polar | OAuth | Webhook push |
+| Wahoo | OAuth | Webhook push |
+| Oura | OAuth | Notification + poll |
+| Apple Health | Mobile push (JWT) | Direct API call |
+| Health Connect | Mobile push (JWT) | Direct API call |
+| FIT Upload | Firebase JWT | Direct file upload |
 
-Each handler:
-- Validates authentication (HMAC signature, OAuth, or API key)
-- Checks for bounceback loops (prevents infinite webhook cycles)
-- Transforms source-specific format → `StandardizedActivity` protobuf
-- Publishes to `raw-activities` Pub/Sub topic
+Each source:
+1. Verifies signature/auth
+2. Resolves user via `service.user.GetIntegration()` RPC
+3. Fetches activity from source API
+4. Normalises to `StandardizedActivity` protobuf
+5. Publishes to `topic-raw-activity` Pub/Sub
 
-### 2. Pipeline Splitting (Per-Pipeline Isolation)
+### 2. Pipeline Splitting
 
-The **Pipeline Splitter** function fans out activities to matching pipelines:
-
-1. Receives `RawActivityEvent` from `raw-activities` topic
-2. Looks up user's pipelines from Firestore
-3. For each matching pipeline:
-   - Creates a targeted message with `pipelineId` set
-   - Generates unique `pipelineExecutionId`
-   - Publishes to `pipeline-activity` topic
-
-This ensures each pipeline processes independently with its own execution trace.
+`service.pipeline` subscribes to `topic-raw-activity`. For each event it:
+1. Looks up user pipelines from Firestore
+2. For each matching pipeline, generates a unique `pipelineExecutionId`
+3. Publishes a targeted message to `topic-pipeline-activity`
 
 ### 3. Enrichment
 
-The **Enricher** function processes exactly **one pipeline per invocation**:
+`service.pipeline` also handles enrichment — one pipeline per invocation:
+1. Receives from `topic-pipeline-activity`
+2. Runs enrichers sequentially (Go `Provider` interface, 40+ implementations)
+3. Generates FIT file → Cloud Storage
+4. Creates `PipelineRun` document for lifecycle tracking
+5. Publishes `EnrichedActivityEvent` to `topic-enriched-activity`
 
-1. Receives targeted `ActivityPayload` from `pipeline-activity` topic
-2. Validates `pipelineId` is set (rejects untargeted messages)
-3. Runs enrichers sequentially:
-   - Each enricher can add/modify metadata, data streams, or artifacts
-   - Enrichers can halt the pipeline (e.g., Logic Gate filter)
-   - Enrichers can pause for user input (Pending Inputs)
-4. Generates FIT file artifact → Cloud Storage
-5. Creates `PipelineRun` document for lifecycle tracking
-6. Publishes `EnrichedActivityEvent` to `enriched-activities` topic
-
-**Available Enrichers:**
+**Enricher categories:**
 - **Data**: Fitbit HR, FIT File HR, Spotify Tracks, Weather, Running Dynamics
-- **Stats**: Heart Rate Summary, Pace/Speed/Power/Cadence Summary, Elevation, Training Load, Personal Records
+- **Stats**: Heart Rate Summary, Pace/Speed/Power/Cadence, Elevation, Training Load, Personal Records
 - **Visual**: Muscle Heatmap, Muscle Heatmap Image, Route Thumbnail
 - **Detection**: Parkrun, Location Naming, Condition Matcher
 - **Transform**: Type Mapper, Auto Increment, Logic Gate, Activity Filter
 - **Input**: User Input, Hybrid Race Tagger
 - **AI**: AI Companion, AI Banner
 
-### 4. Routing
+### 4. Routing & Destination Upload
 
-The **Router** function distributes enriched activities:
+`service.pipeline` routes enriched events to `service.destination` via `topic-enriched-activity`. `service.destination` handles all uploaders (Strava, TrainingPeaks, Intervals.icu, Hevy, Showcase, Google Sheets, GitHub).
 
-1. Receives `EnrichedActivityEvent` from Pub/Sub
-2. Reads destination list from the event payload
-3. Publishes destination-specific upload jobs to topics:
-   - `topic-job-upload-strava`
-   - `topic-job-upload-trainingpeaks`
-   - `topic-job-upload-intervals`
-   - etc.
+### 5. Pending Inputs
 
-### 5. Egress
-
-Destination-specific uploaders handle delivery:
-
-- **Strava Uploader**: Uploads FIT file, updates title/description
-- **TrainingPeaks Uploader**: Creates/updates workouts
-- **Intervals.icu Uploader**: Uploads activities
-- **Hevy Uploader**: Syncs back to Hevy
-- **Showcase Uploader**: Creates public activity pages
-
-Each uploader:
-- Updates `PipelineRun` with destination status (pending → success/failed)
-- Supports retry via `useUpdateMethod` flag
-- Records external IDs for deduplication
-
-## Pending Inputs
-
-Enrichers can pause pipeline execution to request user input:
-
-1. Enricher throws `WaitForInputError` with required fields
-2. Orchestrator creates `PendingInput` document with `linkedActivityId`
-3. Original payload stored in GCS (`originalPayloadUri`)
-4. User resolves via `inputs-handler` API
-5. Handler republishes with `isResume=true` and `activityId` set
-6. Enricher calls `EnrichResume()` to continue
-
-Supports auto-population (e.g., Parkrun results polling).
+Enrichers can pause for user input via `WaitForInputError`:
+1. Original payload stored in GCS (`originalPayloadUri`)
+2. `PendingInput` document created in Firestore
+3. User resolves via `service.api.client` → `service.pipeline.SubmitInput()` RPC
+4. Pipeline resumes from GCS payload
 
 ## Data Model
-
-### User Sub-Collections
-
-All user data is stored in sub-collections for scalability:
 
 ```
 users/{userId}/
   ├── pipelines/{pipelineId}          # Pipeline configurations
   ├── pipeline_runs/{pipelineRunId}   # Execution lifecycle tracking
   ├── pending_inputs/{inputId}        # Paused pipeline inputs
-  ├── activities/{activityId}         # Synchronized activities
-  └── executions/{executionId}        # Function execution logs
-```
+  └── activities/{activityId}         # Synchronized activities
 
-### PipelineRun Entity
-
-Tracks complete pipeline execution lifecycle:
-
-```protobuf
-message PipelineRun {
-  string id = 1;                      // pipelineExecutionId
-  string pipeline_id = 2;
-  string activity_id = 3;
-  PipelineRunStatus status = 4;       // RUNNING → SUCCESS/FAILED
-  repeated BoosterExecution boosters = 5;
-  repeated DestinationOutcome destinations = 6;
-  string original_payload_uri = 7;    // GCS URI for retry
-}
+integrations/{provider}/ids/{externalId}  # Reverse-lookup maps
+showcased_activities/{id}                 # Public showcase records
 ```
 
 ## Plugin Architecture
 
-FitGlue uses a type-safe, self-registering plugin system:
-
 | Plugin Type | Language | Purpose | Location |
 |-------------|----------|---------|----------|
-| **Source** | TypeScript | Ingests data from external services | `src/typescript/{name}-handler/` |
-| **Enricher** | Go | Transforms/enhances activities in pipeline | `src/go/functions/enricher/providers/` |
-| **Destination** | Go | Uploads processed activities | `src/go/functions/{name}-uploader/` |
-| **Integration** | TypeScript | OAuth connections (sources + destinations) | `src/typescript/shared/src/plugin/registry.ts` |
+| **Source** | Go | Ingests data from external services | `services/api-webhook/internal/webhook/sources/` |
+| **Enricher** | Go | Transforms activities in pipeline | `internal/pipeline/` |
+| **Destination** | Go | Uploads processed activities | `services/destination/internal/` |
+| **Registry** | Go | Plugin manifests, categories, icons | `services/registry/` |
 
-All plugins register with the central **Plugin Registry**, which exposes configuration schemas via `GET /api/registry`.
-
-See [Plugin System](plugin-system.md) and [Registry Reference](../reference/registry.md) for details.
+All plugins self-register via `init()`. The registry serves configuration via `service.registry` → `GET /api/registry`.
 
 ## Observability
 
-### Sentry Integration
-
-All functions integrate with Sentry for error tracking:
-- Go: `SentryHandler` wraps slog to capture errors
-- TypeScript: `createCloudFunction` wrapper captures exceptions
-- Sensitive headers filtered (Authorization, Cookie)
-
-### Execution Logging
-
-All function executions are logged to Firestore for debugging:
-- Inputs/outputs captured as JSON
-- Lifecycle: PENDING → STARTED → SUCCESS/FAILURE
-- Can be disabled per-handler for high-volume endpoints
+- **Sentry**: `slog`-based `SentryHandler` wraps Go logging; all services integrate
+- **Health checks**: gRPC health protocol on all domain services
+- **Execution tracking**: `PipelineRun` documents in Firestore per pipeline execution
 
 ## Key Technologies
 
 | Component | Technology |
 |-----------|------------|
-| Compute | Cloud Functions Gen 2 (Cloud Run) |
-| Messaging | Cloud Pub/Sub |
+| Compute | Cloud Run (Go binaries) |
+| Messaging | Cloud Pub/Sub (4 topics) |
 | Database | Cloud Firestore |
 | Storage | Cloud Storage |
 | Secrets | Secret Manager |
+| Inter-service | gRPC (protobuf) |
 | Observability | Sentry |
 | Infrastructure | Terraform |
 
@@ -239,9 +154,9 @@ All function executions are logged to Firestore for debugging:
 
 ## Related Documentation
 
+- [Go Services](go-services.md) - Service directory structure and patterns
+- [API Layers](api-layers.md) - The four HTTP gateways
+- [Service Communication](service-communication.md) - gRPC inter-service RPC
 - [Plugin System](plugin-system.md) - How plugins work
-- [Services & Stores](services-and-stores.md) - Business logic architecture
-- [Shared Modules](shared-modules.md) - TypeScript shared package architecture
-- [Execution Logging](execution-logging.md) - Observability framework
+- [Services & Stores](services-and-stores.md) - Domain service patterns
 - [Security](security.md) - Authorization and access control
-- [Connectors](connectors.md) - Source integration patterns

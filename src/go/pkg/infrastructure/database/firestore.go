@@ -7,8 +7,16 @@ import (
 	"time"
 
 	"cloud.google.com/go/firestore"
+	"github.com/fitglue/server/src/go/pkg/domain/user"
+	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
+
 	storage "github.com/fitglue/server/src/go/pkg/storage/firestore"
-	pb "github.com/fitglue/server/src/go/pkg/types/pb"
+
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
+
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -26,7 +34,7 @@ func NewFirestoreAdapter(client *firestore.Client) *FirestoreAdapter {
 	}
 }
 
-func (a *FirestoreAdapter) SetExecution(ctx context.Context, record *pb.ExecutionRecord) error {
+func (a *FirestoreAdapter) SetExecution(ctx context.Context, record *pbpipeline.ExecutionRecord) error {
 	userId := record.GetUserId()
 	if userId == "" {
 		// ORPHANED: No userId - this is a code smell that should be investigated
@@ -46,7 +54,7 @@ func (a *FirestoreAdapter) UpdateExecution(ctx context.Context, userId string, i
 	return a.storage.UserExecutions(userId).Doc(id).Update(ctx, data)
 }
 
-func (a *FirestoreAdapter) GetUser(ctx context.Context, id string) (*pb.UserRecord, error) {
+func (a *FirestoreAdapter) GetUser(ctx context.Context, id string) (*user.Record, error) {
 	doc, err := a.storage.Users().Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
@@ -86,7 +94,7 @@ func (a *FirestoreAdapter) ResetSyncCount(ctx context.Context, userID string) er
 
 // --- Pending Inputs ---
 
-func (a *FirestoreAdapter) GetPendingInput(ctx context.Context, userId string, id string) (*pb.PendingInput, error) {
+func (a *FirestoreAdapter) GetPendingInput(ctx context.Context, userId string, id string) (*pbpipeline.PendingInput, error) {
 	doc, err := a.storage.UserPendingInputs(userId).Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
@@ -94,7 +102,7 @@ func (a *FirestoreAdapter) GetPendingInput(ctx context.Context, userId string, i
 	return doc, nil
 }
 
-func (a *FirestoreAdapter) CreatePendingInput(ctx context.Context, userId string, input *pb.PendingInput) error {
+func (a *FirestoreAdapter) CreatePendingInput(ctx context.Context, userId string, input *pbpipeline.PendingInput) error {
 	// Use Set to handle potential retries/race conditions
 	// Store in user sub-collection for direct Firestore client access
 	return a.storage.UserPendingInputs(userId).Doc(input.ActivityId).Set(ctx, input)
@@ -110,7 +118,7 @@ func (a *FirestoreAdapter) DeletePendingInput(ctx context.Context, userId string
 	return err
 }
 
-func (a *FirestoreAdapter) ListPendingInputs(ctx context.Context, userID string) ([]*pb.PendingInput, error) {
+func (a *FirestoreAdapter) ListPendingInputs(ctx context.Context, userID string) ([]*pbpipeline.PendingInput, error) {
 	// Query user sub-collection directly - no need for where clause on user_id
 	iter := a.Client.Collection("users").Doc(userID).Collection("pending_inputs").Documents(ctx)
 	docs, err := iter.GetAll()
@@ -118,7 +126,7 @@ func (a *FirestoreAdapter) ListPendingInputs(ctx context.Context, userID string)
 		return nil, err
 	}
 
-	var results []*pb.PendingInput
+	var results []*pbpipeline.PendingInput
 	for _, d := range docs {
 		// Manually convert using our converter
 		m := d.Data()
@@ -134,7 +142,7 @@ func (a *FirestoreAdapter) ListPendingInputs(ctx context.Context, userID string)
 
 // --- Counters ---
 
-func (a *FirestoreAdapter) GetCounter(ctx context.Context, userId string, id string) (*pb.Counter, error) {
+func (a *FirestoreAdapter) GetCounter(ctx context.Context, userId string, id string) (*pbuser.Counter, error) {
 	doc, err := a.storage.Counters(userId).Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
@@ -143,20 +151,20 @@ func (a *FirestoreAdapter) GetCounter(ctx context.Context, userId string, id str
 	return doc, nil
 }
 
-func (a *FirestoreAdapter) SetCounter(ctx context.Context, userId string, counter *pb.Counter) error {
+func (a *FirestoreAdapter) SetCounter(ctx context.Context, userId string, counter *pbuser.Counter) error {
 	// Set (overwrite/create)
 	return a.storage.Counters(userId).Doc(counter.Id).Set(ctx, counter)
 }
 
 // ListCounters returns all counters for a user
-func (a *FirestoreAdapter) ListCounters(ctx context.Context, userId string) ([]*pb.Counter, error) {
+func (a *FirestoreAdapter) ListCounters(ctx context.Context, userId string) ([]*pbuser.Counter, error) {
 	iter := a.Client.Collection("users").Doc(userId).Collection("counters").Documents(ctx)
 	docs, err := iter.GetAll()
 	if err != nil {
 		return nil, err
 	}
 
-	var counters []*pb.Counter
+	var counters []*pbuser.Counter
 	for _, d := range docs {
 		m := d.Data()
 		counter := storage.FirestoreToCounter(m)
@@ -177,7 +185,7 @@ func (a *FirestoreAdapter) DeleteCounter(ctx context.Context, userId string, id 
 // --- Personal Records ---
 
 // GetPersonalRecord retrieves a personal record by type
-func (a *FirestoreAdapter) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pb.PersonalRecord, error) {
+func (a *FirestoreAdapter) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pbuser.PersonalRecord, error) {
 	doc, err := a.storage.PersonalRecords(userId).Doc(recordType).Get(ctx)
 	if err != nil {
 		return nil, err
@@ -187,19 +195,19 @@ func (a *FirestoreAdapter) GetPersonalRecord(ctx context.Context, userId string,
 }
 
 // SetPersonalRecord creates or updates a personal record
-func (a *FirestoreAdapter) SetPersonalRecord(ctx context.Context, userId string, record *pb.PersonalRecord) error {
+func (a *FirestoreAdapter) SetPersonalRecord(ctx context.Context, userId string, record *pbuser.PersonalRecord) error {
 	return a.storage.PersonalRecords(userId).Doc(record.RecordType).Set(ctx, record)
 }
 
 // ListPersonalRecords returns all personal records for a user
-func (a *FirestoreAdapter) ListPersonalRecords(ctx context.Context, userId string) ([]*pb.PersonalRecord, error) {
+func (a *FirestoreAdapter) ListPersonalRecords(ctx context.Context, userId string) ([]*pbuser.PersonalRecord, error) {
 	iter := a.Client.Collection("users").Doc(userId).Collection("personal_records").Documents(ctx)
 	docs, err := iter.GetAll()
 	if err != nil {
 		return nil, err
 	}
 
-	var records []*pb.PersonalRecord
+	var records []*pbuser.PersonalRecord
 	for _, d := range docs {
 		m := d.Data()
 		record := storage.FirestoreToPersonalRecord(m)
@@ -217,7 +225,7 @@ func (a *FirestoreAdapter) DeletePersonalRecord(ctx context.Context, userId stri
 	return err
 }
 
-func (a *FirestoreAdapter) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pb.PendingInput_Status) ([]*pb.PendingInput, error) {
+func (a *FirestoreAdapter) ListPendingInputsByEnricher(ctx context.Context, enricherId string, status pbpipeline.PendingInput_Status) ([]*pbpipeline.PendingInput, error) {
 	// Query across all pending inputs using collection group query
 	iter := a.Client.CollectionGroup("pending_inputs").
 		Where("enricher_provider_id", "==", enricherId).
@@ -229,7 +237,7 @@ func (a *FirestoreAdapter) ListPendingInputsByEnricher(ctx context.Context, enri
 		return nil, err
 	}
 
-	var inputs []*pb.PendingInput
+	var inputs []*pbpipeline.PendingInput
 	for _, d := range docs {
 		m := d.Data()
 		input := storage.FirestoreToPendingInput(m)
@@ -260,12 +268,12 @@ func (a *FirestoreAdapter) ShowcaseActivityExists(ctx context.Context, showcaseI
 }
 
 // SetShowcasedActivity creates or updates a showcased activity
-func (a *FirestoreAdapter) SetShowcasedActivity(ctx context.Context, activity *pb.ShowcasedActivity) error {
+func (a *FirestoreAdapter) SetShowcasedActivity(ctx context.Context, activity *pbactivity.ShowcasedActivity) error {
 	return a.storage.ShowcasedActivities().Doc(activity.ShowcaseId).Set(ctx, activity)
 }
 
 // GetShowcasedActivity retrieves a showcased activity by ID
-func (a *FirestoreAdapter) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pb.ShowcasedActivity, error) {
+func (a *FirestoreAdapter) GetShowcasedActivity(ctx context.Context, showcaseId string) (*pbactivity.ShowcasedActivity, error) {
 	activity, err := a.storage.ShowcasedActivities().Doc(showcaseId).Get(ctx)
 	if err != nil {
 		return nil, err
@@ -280,12 +288,12 @@ func (a *FirestoreAdapter) GetShowcasedActivity(ctx context.Context, showcaseId 
 // --- Showcase Profiles (materialized user profile for homepage) ---
 
 // SetShowcaseProfile creates or updates a showcase profile
-func (a *FirestoreAdapter) SetShowcaseProfile(ctx context.Context, profile *pb.ShowcaseProfile) error {
+func (a *FirestoreAdapter) SetShowcaseProfile(ctx context.Context, profile *pbactivity.ShowcaseProfile) error {
 	return a.storage.ShowcaseProfiles().Doc(profile.Slug).Set(ctx, profile)
 }
 
 // GetShowcaseProfile retrieves a showcase profile by slug
-func (a *FirestoreAdapter) GetShowcaseProfile(ctx context.Context, slug string) (*pb.ShowcaseProfile, error) {
+func (a *FirestoreAdapter) GetShowcaseProfile(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error) {
 	profile, err := a.storage.ShowcaseProfiles().Doc(slug).Get(ctx)
 	if err != nil {
 		return nil, err
@@ -298,7 +306,7 @@ func (a *FirestoreAdapter) GetShowcaseProfile(ctx context.Context, slug string) 
 }
 
 // GetShowcaseProfileByUserId finds a showcase profile by the user_id field
-func (a *FirestoreAdapter) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pb.ShowcaseProfile, error) {
+func (a *FirestoreAdapter) GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pbactivity.ShowcaseProfile, error) {
 	col := a.storage.ShowcaseProfiles()
 	iter := col.Ref.Where("user_id", "==", userId).Limit(1).Documents(ctx)
 	defer iter.Stop()
@@ -331,14 +339,14 @@ func isNotFoundError(err error) bool {
 // --- Pipelines (Sub-collection) ---
 
 // GetUserPipelines retrieves all pipelines for a user from the sub-collection
-func (a *FirestoreAdapter) GetUserPipelines(ctx context.Context, userId string) ([]*pb.PipelineConfig, error) {
+func (a *FirestoreAdapter) GetUserPipelines(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
 	iter := a.Client.Collection("users").Doc(userId).Collection("pipelines").Documents(ctx)
 	docs, err := iter.GetAll()
 	if err != nil {
 		return nil, err
 	}
 
-	pipelines := make([]*pb.PipelineConfig, len(docs))
+	pipelines := make([]*pbpipeline.PipelineConfig, len(docs))
 	for i, doc := range docs {
 		pipelines[i] = storage.FirestoreToPipeline(doc.Data())
 		// Ensure ID is set from doc ID if missing
@@ -353,7 +361,7 @@ func (a *FirestoreAdapter) GetUserPipelines(ctx context.Context, userId string) 
 // --- Plugin Defaults (user-level default config for sources/destinations) ---
 
 // GetPluginDefault retrieves a plugin default by plugin ID
-func (a *FirestoreAdapter) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pb.PluginDefault, error) {
+func (a *FirestoreAdapter) GetPluginDefault(ctx context.Context, userId string, pluginId string) (*pbpipeline.PluginDefault, error) {
 	doc, err := a.storage.PluginDefaults(userId).Doc(pluginId).Get(ctx)
 	if err != nil {
 		if isNotFoundError(err) {
@@ -368,7 +376,7 @@ func (a *FirestoreAdapter) GetPluginDefault(ctx context.Context, userId string, 
 }
 
 // SetPluginDefault creates or updates a plugin default
-func (a *FirestoreAdapter) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pb.PluginDefault) error {
+func (a *FirestoreAdapter) SetPluginDefault(ctx context.Context, userId string, pluginDefault *pbpipeline.PluginDefault) error {
 	return a.storage.PluginDefaults(userId).Doc(pluginDefault.PluginId).Set(ctx, pluginDefault)
 }
 
@@ -376,13 +384,13 @@ func (a *FirestoreAdapter) SetPluginDefault(ctx context.Context, userId string, 
 
 // SetUploadedActivity records that an activity was uploaded to a destination.
 // Used for loop prevention: when a webhook comes back, we check if we just uploaded it.
-func (a *FirestoreAdapter) SetUploadedActivity(ctx context.Context, userId string, record *pb.UploadedActivityRecord) error {
+func (a *FirestoreAdapter) SetUploadedActivity(ctx context.Context, userId string, record *pbactivity.UploadedActivityRecord) error {
 	return a.storage.UploadedActivities(userId).Doc(record.Id).Set(ctx, record)
 }
 
 // GetUploadedActivity retrieves an uploaded activity record by destination and destination ID.
 // This matches how webhooks arrive: when Hevy sends a webhook, we look up by HEVY:{hevy_workout_id}
-func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId string, destination pb.Destination, destinationId string) (*pb.UploadedActivityRecord, error) {
+func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error) {
 	// Query for the record with matching destination and destination_id
 	iter := a.Client.Collection("users").Doc(userId).Collection("uploaded_activities").
 		Where("destination", "==", int32(destination)).
@@ -410,12 +418,12 @@ func (a *FirestoreAdapter) GetUploadedActivity(ctx context.Context, userId strin
 // --- Pipeline Runs (lifecycle tracking) ---
 
 // CreatePipelineRun creates a new pipeline run document
-func (a *FirestoreAdapter) CreatePipelineRun(ctx context.Context, userId string, run *pb.PipelineRun) error {
+func (a *FirestoreAdapter) CreatePipelineRun(ctx context.Context, userId string, run *pbpipeline.PipelineRun) error {
 	return a.storage.PipelineRuns(userId).Doc(run.Id).Set(ctx, run)
 }
 
 // GetPipelineRun retrieves a pipeline run by ID
-func (a *FirestoreAdapter) GetPipelineRun(ctx context.Context, userId string, id string) (*pb.PipelineRun, error) {
+func (a *FirestoreAdapter) GetPipelineRun(ctx context.Context, userId string, id string) (*pbpipeline.PipelineRun, error) {
 	run, err := a.storage.PipelineRuns(userId).Doc(id).Get(ctx)
 	if err != nil {
 		return nil, err
@@ -429,7 +437,7 @@ func (a *FirestoreAdapter) GetPipelineRun(ctx context.Context, userId string, id
 
 // GetPipelineRunByActivityId retrieves the most recent pipeline run for an activity
 // Returns nil (not an error) if no run found for the activity
-func (a *FirestoreAdapter) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pb.PipelineRun, error) {
+func (a *FirestoreAdapter) GetPipelineRunByActivityId(ctx context.Context, userId string, activityId string) (*pbpipeline.PipelineRun, error) {
 	iter := a.Client.Collection("users").Doc(userId).Collection("pipeline_runs").
 		Where("activity_id", "==", activityId).
 		OrderBy("created_at", firestore.Desc).
@@ -464,7 +472,7 @@ func (a *FirestoreAdapter) UpdatePipelineRun(ctx context.Context, userId string,
 
 // SetDestinationOutcome writes a destination outcome to the subcollection
 // Document ID is the destination enum value (e.g., "1" for STRAVA, "2" for SHOWCASE)
-func (a *FirestoreAdapter) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pb.DestinationOutcome) error {
+func (a *FirestoreAdapter) SetDestinationOutcome(ctx context.Context, userId string, pipelineRunId string, outcome *pbpipeline.DestinationOutcome) error {
 	docId := fmt.Sprintf("%d", outcome.Destination)
 	data := map[string]interface{}{
 		"destination": int32(outcome.Destination),
@@ -489,7 +497,7 @@ func (a *FirestoreAdapter) SetDestinationOutcome(ctx context.Context, userId str
 }
 
 // GetDestinationOutcomes retrieves all destination outcomes for a pipeline run
-func (a *FirestoreAdapter) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pb.DestinationOutcome, error) {
+func (a *FirestoreAdapter) GetDestinationOutcomes(ctx context.Context, userId string, pipelineRunId string) ([]*pbpipeline.DestinationOutcome, error) {
 	iter := a.Client.Collection("users").Doc(userId).
 		Collection("pipeline_runs").Doc(pipelineRunId).
 		Collection("destination_outcomes").
@@ -500,25 +508,25 @@ func (a *FirestoreAdapter) GetDestinationOutcomes(ctx context.Context, userId st
 		return nil, err
 	}
 
-	outcomes := make([]*pb.DestinationOutcome, 0, len(docs))
+	outcomes := make([]*pbpipeline.DestinationOutcome, 0, len(docs))
 	for _, doc := range docs {
 		m := doc.Data()
-		outcome := &pb.DestinationOutcome{}
+		outcome := &pbpipeline.DestinationOutcome{}
 
 		if v, ok := m["destination"]; ok {
 			switch val := v.(type) {
 			case int64:
-				outcome.Destination = pb.Destination(val)
+				outcome.Destination = pbplugin.DestinationType(val)
 			case float64:
-				outcome.Destination = pb.Destination(int32(val))
+				outcome.Destination = pbplugin.DestinationType(int32(val))
 			}
 		}
 		if v, ok := m["status"]; ok {
 			switch val := v.(type) {
 			case int64:
-				outcome.Status = pb.DestinationStatus(val)
+				outcome.Status = pbpipeline.DestinationStatus(val)
 			case float64:
-				outcome.Status = pb.DestinationStatus(int32(val))
+				outcome.Status = pbpipeline.DestinationStatus(int32(val))
 			}
 		}
 		if v, ok := m["external_id"].(string); ok {

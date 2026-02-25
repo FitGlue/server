@@ -1,229 +1,138 @@
 # Services & Stores Architecture
 
-FitGlue separates business logic from data access using a strict **Service vs Store** pattern.
+FitGlue separates business logic from data access using a strict **Service vs Store** pattern. All implementations are in Go, leveraging struct-based IoC injection.
 
 ## Philosophy
 
-We strictly separate **Domain Logic** (Services) from **Infrastructure/Persistence** (Stores). This allows us to:
-1. **Test Isolated Logic**: Services can be tested with mock Stores without spinning up a real database.
-2. **Swap Backends**: If we move from Firestore to SQL, only the Stores change; Services remain untouched.
-3. **Enforce Schema**: Stores act as the gatekeepers of database integrity.
+**Domain services own their data.** Each domain service (`service.user`, `service.pipeline`, etc.) has its own Firestore collections and a `Store` interface. The API gateway layer never touches Firestore directly — it only calls domain services via gRPC.
 
-## Available Stores
+## Store Pattern (Go)
 
-### TypeScript Stores (`shared/src/stores/`)
+Stores are interfaces backed by a Firestore implementation. They are injected into services at startup:
 
-| Store | Collection | Purpose |
-|-------|------------|---------|
-| `UserStore` | `users` | User profiles and integrations |
-| `PipelineStore` | `users/{userId}/pipelines` | Pipeline configurations |
-| `ActivityStore` | `users/{userId}/activities` | Synchronized activities |
-| `PendingInputStore` | `users/{userId}/pending_inputs` | Inputs awaiting user response |
-| `ExecutionStore` | `users/{userId}/executions` | Function execution logs |
-| `ShowcaseStore` | `showcased_activities` | Public activity shares |
+```go
+// internal/user/store.go
+type Store interface {
+    Get(ctx context.Context, userID string) (*pb.User, error)
+    Update(ctx context.Context, userID string, partial *pb.User) error
+    GetIntegration(ctx context.Context, userID, provider string) (*pb.OAuthTokens, error)
+    SetIntegration(ctx context.Context, userID, provider string, tokens *pb.OAuthTokens) error
+    ListCounters(ctx context.Context, userID string) ([]*pb.Counter, error)
+    UpdateCounter(ctx context.Context, userID string, counter *pb.Counter) error
+}
 
-### Go Stores (`pkg/store/`)
+// FirestoreStore implements Store
+type FirestoreStore struct {
+    db *firestore.Client
+}
+```
 
-| Store | Collection | Purpose |
-|-------|------------|---------|
-| `UserStore` | `users` | User profiles and tokens |
-| `PipelineStore` | `users/{userId}/pipelines` | Pipeline configurations |
-| `PipelineRunStore` | `users/{userId}/pipeline_runs` | Pipeline execution lifecycle |
-| `PendingInputStore` | `users/{userId}/pending_inputs` | Pending user inputs |
-| `ActivityStore` | `users/{userId}/activities` | Synchronized activities |
+Stores are **never** imported by API gateway services — they are internal to the domain service's `internal/` directory.
 
-## User Sub-Collections Pattern
+## Go Stores by Domain
 
-All user data is stored in sub-collections for scalability:
+| Domain | Store Interface | Firestore Collections |
+|--------|----------------|----------------------|
+| `service.user` | `user.Store` | `users/`, `users/*/integrations` |
+| `service.pipeline` | `pipeline.Store`, `pipeline.RunStore`, `pipeline.InputStore` | `users/*/pipelines`, `users/*/pipeline_runs`, `users/*/pending_inputs` |
+| `service.activity` | `activity.Store` | `users/*/activities`, `showcased_activities/` |
+| `service.billing` | `billing.Store` | `users/*/billing` |
+| `service.registry` | (static config only) | — |
+
+## User Sub-Collections
+
+All user data is stored in sub-collections:
 
 ```
 users/{userId}/
-├── pipelines/{pipelineId}        # Pipeline configurations
-├── pipeline_runs/{pipelineRunId} # Pipeline execution tracking
-├── pending_inputs/{inputId}      # Paused inputs awaiting resolution
-├── activities/{activityId}       # Synchronized activities
-└── executions/{executionId}      # Function execution logs
+  ├── pipelines/{pipelineId}          # Pipeline configurations
+  ├── pipeline_runs/{pipelineRunId}   # Execution lifecycle tracking
+  ├── pending_inputs/{inputId}        # Paused inputs awaiting resolution
+  └── activities/{activityId}         # Synchronized activities
+
+integrations/{provider}/ids/{externalId}   # Reverse-lookup: externalId → userId
 ```
 
-**Benefits:**
-- Efficient queries per user (no cross-user scans)
-- Firestore security rules per user
-- Scales to millions of users
+## Service Pattern (Go)
 
-## Store Responsibilities
+Domain services implement the gRPC server interface generated from `.proto` definitions:
+
+```go
+// internal/user/service.go
+type Service struct {
+    store  Store           // injected
+    logger infra.Logger    // injected
+    email  email.Sender    // injected
+    auth   *firebase.AuthClient
+}
+
+// NewService is the constructor — accepts all dependencies explicitly
+func NewService(store Store, logger infra.Logger, email email.Sender, auth *firebase.AuthClient) *Service {
+    return &Service{store: store, logger: logger, email: email, auth: auth}
+}
+
+// Implements pb.UserServiceServer — generated gRPC interface
+func (s *Service) GetProfile(ctx context.Context, req *pb.GetProfileRequest) (*pb.GetProfileResponse, error) {
+    user, err := s.store.Get(ctx, req.UserId)
+    if err != nil {
+        return nil, status.Errorf(codes.NotFound, "user not found: %v", err)
+    }
+    return &pb.GetProfileResponse{User: user}, nil
+}
+```
 
 ### Rules
-1. **Strict Typing**: Update methods must accept `Partial<RecordType>` or specific, typed arguments. **NEVER use `any`**.
-2. **No Business Logic**: A store should never check permissions or validate business rules.
-3. **Encapsulation**: Hide database specifics. A Service should call `store.addPipeline(...)`, not pass Firestore `FieldValue` objects.
 
-### Example: Good Store Method
+1. **No direct DB access in API gateways** — API gateways call domain services via gRPC only
+2. **Services use interfaces, not implementations** — `Store` interface, not `FirestoreStore` directly
+3. **No business logic in stores** — Stores only do typed CRUD
+4. **Errors use gRPC status codes** — `codes.NotFound`, `codes.InvalidArgument`, etc., so the API gateway can map them to HTTP status codes
 
-```typescript
-// ✅ Good: Typed, encapsulates complexity
-async setIntegration(userId: string, provider: 'strava', data: StravaIntegration): Promise<void> {
-  await this.collection().doc(userId).update({
-    [`integrations.${provider}`]: data
-  });
+## PipelineRun Tracking
+
+The `PipelineRun` document tracks full pipeline execution lifecycle:
+
+```protobuf
+message PipelineRun {
+  string id = 1;                       // pipelineExecutionId
+  string pipeline_id = 2;
+  string activity_id = 3;
+  PipelineRunStatus status = 4;        // RUNNING → SUCCESS/FAILED
+  repeated BoosterExecution boosters = 5;
+  repeated DestinationOutcome destinations = 6;
+  string original_payload_uri = 7;     // GCS URI for retry
 }
 ```
 
-### Example: Bad Store Method
-
-```typescript
-// ❌ Bad: Accepts 'any', potentially dangerous
-async update(userId: string, data: any): Promise<void> {
-  await this.collection().doc(userId).update(data);
-}
-```
-
-## PipelineRunStore
-
-Manages pipeline execution lifecycle tracking:
+`pipeline.RunStore` provides typed methods:
 
 ```go
-// pkg/store/pipeline_run_store.go
-type PipelineRunStore struct {
-    db *firestore.Client
-}
-
-func (s *PipelineRunStore) Create(ctx context.Context, userId string, run *pb.PipelineRun) error
-func (s *PipelineRunStore) Get(ctx context.Context, userId, runId string) (*pb.PipelineRun, error)
-func (s *PipelineRunStore) UpdateStatus(ctx context.Context, userId, runId string, status pb.PipelineRunStatus) error
-func (s *PipelineRunStore) AddBoosterExecution(ctx context.Context, userId, runId string, exec *pb.BoosterExecution) error
-func (s *PipelineRunStore) UpdateDestinationStatus(ctx context.Context, userId, runId string, dest pb.Destination, status pb.DestinationStatus) error
+func (s *RunStore) Create(ctx context.Context, userID string, run *pb.PipelineRun) error
+func (s *RunStore) UpdateStatus(ctx context.Context, userID, runID string, status pb.PipelineRunStatus) error
+func (s *RunStore) AddBoosterExecution(ctx context.Context, userID, runID string, exec *pb.BoosterExecution) error
+func (s *RunStore) UpdateDestinationStatus(ctx context.Context, userID, runID string, dest pb.Destination, status pb.DestinationStatus) error
 ```
 
-**Usage in Orchestrator:**
-```go
-// Create run at pipeline start
-run := &pb.PipelineRun{
-    Id:         pipelineExecutionId,
-    PipelineId: payload.PipelineId,
-    Status:     pb.PipelineRunStatus_PIPELINE_RUN_STATUS_RUNNING,
-}
-o.pipelineRunStore.Create(ctx, userId, run)
+## gRPC Error → HTTP Status Mapping
 
-// Update after each enricher
-o.pipelineRunStore.AddBoosterExecution(ctx, userId, runId, &pb.BoosterExecution{
-    ProviderName: "weather",
-    Status:       "SUCCESS",
-    DurationMs:   int32(elapsed.Milliseconds()),
-})
+API gateways convert gRPC errors to HTTP:
 
-// Update destination status
-o.pipelineRunStore.UpdateDestinationStatus(ctx, userId, runId, pb.Destination_DESTINATION_STRAVA, pb.DestinationStatus_DESTINATION_STATUS_UPLOADED)
-```
+| gRPC Code | HTTP Status |
+|-----------|-------------|
+| `codes.NotFound` | 404 |
+| `codes.InvalidArgument` | 400 |
+| `codes.PermissionDenied` | 403 |
+| `codes.Unauthenticated` | 401 |
+| `codes.Internal` | 500 |
 
-## PendingInputStore
+## Firestore Timestamp Handling
 
-Manages inputs awaiting user response:
-
-```go
-// pkg/store/pending_input_store.go
-func (s *PendingInputStore) Create(ctx context.Context, userId string, input *pb.PendingInput) error
-func (s *PendingInputStore) Get(ctx context.Context, userId, inputId string) (*pb.PendingInput, error)
-func (s *PendingInputStore) Resolve(ctx context.Context, userId, inputId string, resolvedBy string, response map[string]string) error
-func (s *PendingInputStore) ListPending(ctx context.Context, userId string) ([]*pb.PendingInput, error)
-```
-
-**Key Fields:**
-- `linkedActivityId`: Activity created during initial enrichment
-- `originalPayloadUri`: GCS URI for payload retrieval on resume
-- `pipelineId`: Pipeline that created this input
-
-## Services (Domain Layer)
-
-Services implement the business capabilities of the application.
-
-### Responsibilities
-- Orchestrating workflows (e.g., "Ingest Webhook")
-- Validating inputs and business rules
-- Calling external APIs
-- Calling Stores to persist state
-
-### Rules
-1. **No Direct DB Access**: A Service must **never** import `firebase-admin` or call `db.collection()`.
-2. **Use Store Methods**: Services should use the specific methods exposed by Stores.
-
-### Example: Good Service Method
-
-```typescript
-// ✅ Good: Delegates persistence to Store
-async connectStrava(userId: string, token: string): Promise<void> {
-  // Business Logic
-  if (!this.isValid(token)) throw new Error("Invalid");
-  
-  // Persistence
-  await this.userStore.setIntegration(userId, 'strava', { ... });
-}
-```
-
-### Example: Bad Service Method
-
-```typescript
-// ❌ Bad: Leaks DB details, constructs untyped object
-async connectStrava(userId: string, token: string): Promise<void> {
-  const updatePayload = { 'integrations.strava': { ... } };
-  await this.userStore.update(userId, updatePayload);
-}
-```
-
-## Firestore Converters
-
-Converters translate between TypeScript objects (camelCase) and Firestore documents (snake_case).
-
-### Critical Pattern: Omit Undefined Values
-
-**Problem:** Firestore rejects `undefined` values by default.
-
-**Solution:**
-```typescript
-// ✅ Good: Only writes defined fields
-toFirestore(model: ExecutionRecord): FirebaseFirestore.DocumentData {
-  const data: FirebaseFirestore.DocumentData = {};
-  if (model.executionId !== undefined) data.execution_id = model.executionId;
-  if (model.service !== undefined) data.service = model.service;
-  return data;
-}
-```
-
-### Store Create vs Update
-
-**`create()`**: Use `.set()` without `{merge: true}`
-- Accepts full record type
-- TypeScript enforces all required fields
-- Fails if document exists
-
-**`update()`**: Use `.update()` with `Partial<>`
-- Accepts `Partial<RecordType>`
-- Only modifies specified fields
-- Fails if document doesn't exist
-
-## AuthorizationService
-
-Centralized access control:
-
-```typescript
-// In any handler that accesses user resources
-const pipeline = await ctx.stores.pipeline.get(pipelineId);
-ctx.services.authorization.requireAccess(ctx.auth.userId, pipeline.userId);
-```
-
-### Key Methods
-
-| Method | Purpose |
-|--------|---------|
-| `requireAccess(userId, resourceOwnerId)` | Verifies user can access a resource |
-| `requireAdmin()` | Verifies user has admin privileges |
-
-## Summary Rule of Thumb
-
-* If it involves `FieldValue`, `collection()`, or `where()`, it belongs in a **Store**.
-* If it involves `if (user.enabled)`, `throw new Error()`, or `api.fetch()`, it belongs in a **Service**.
+> [!IMPORTANT]
+> Never use `time.Time` directly with Firestore in Go. Always use `timestamppb.Timestamp` from `google.golang.org/protobuf/types/known/timestamppb` for all timestamp fields in proto messages, and convert to/from Firestore `time.Time` only at the store boundary.
 
 ## Related Documentation
 
-- [Security](security.md) - Authorization and access control
-- [Architecture Overview](overview.md) - System components
-- [Execution Logging](execution-logging.md) - Execution tracking
+- [Architecture Overview](overview.md) - System topology
+- [Go Services](go-services.md) - Service directory structure
+- [Service Communication](service-communication.md) - gRPC contracts
+- [Security](security.md) - Authorization patterns
