@@ -11,9 +11,31 @@ GO_SRC_DIR=src/go
 TS_SRC_DIR=src/typescript
 
 # --- Phony Targets ---
-.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase lint-shared-modules tools build-tools-go build-tools-ts prepare prepare-go prepare-ts test-integration test-e2e test-coverage
+.PHONY: all clean build test lint build-go test-go lint-go clean-go build-ts test-ts lint-ts typecheck-ts clean-ts plugin-source plugin-enricher plugin-destination lint-codebase lint-shared-modules tools build-tools-go build-tools-ts prepare prepare-go prepare-ts test-integration test-e2e test-coverage preflight
 
 all: generate clean lint build test
+
+preflight:
+	@echo "\n========== PREFLIGHT: Mirroring CI Pipeline =========="
+	@echo "\n[1/6] Proto linting..."
+	buf lint src/proto
+	@echo "\n[2/6] Verifying generated code is in sync..."
+	$(MAKE) generate
+	@if ! git diff --quiet; then \
+		echo "❌ Generated files are out of sync. Run 'make generate' and commit the changes."; \
+		git diff --stat; \
+		exit 1; \
+	fi
+	@echo "✅ Generated code is in sync."
+	@echo "\n[3/6] Building..."
+	$(MAKE) build
+	@echo "\n[4/6] Linting..."
+	$(MAKE) lint
+	@echo "\n[5/6] Running tests..."
+	$(MAKE) test
+	@echo "\n[6/6] Checking coverage..."
+	$(MAKE) test-coverage
+	@echo "\n========== ✅ PREFLIGHT PASSED — safe to push =========="
 
 
 setup:
@@ -107,6 +129,8 @@ test-coverage:
 
 lint:
 	@echo "Linting Go..."
+	@echo "Checking proto lint..."
+	@buf lint src/proto
 	@echo "Checking formatting..."
 	@cd $(GO_SRC_DIR) && test -z "$$(gofmt -l pkg services cmd internal)" || (echo "Go files need formatting. Run 'gofmt -w pkg services cmd internal'" && exit 1)
 	@echo "Running go vet (excluding generated clients)..."

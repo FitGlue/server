@@ -8,7 +8,6 @@ package pipeline
 
 import (
 	activity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
-	_ "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	plugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -695,7 +694,7 @@ var File_models_pipeline_execution_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_execution_proto_rawDesc = "" +
 	"\n" +
-	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\x1a\x1cmodels/events/pipeline.proto\"\x88\a\n" +
+	"\x1fmodels/pipeline/execution.proto\x12\x17fitglue.models.pipeline\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x88\a\n" +
 	"\vPipelineRun\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1f\n" +
 	"\vpipeline_id\x18\x02 \x01(\tR\n" +

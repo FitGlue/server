@@ -3,7 +3,6 @@ syntax = "proto3";
 package fitglue.models.pipeline;
 
 import "models/plugin/provider.proto";
-import "models/events/pipeline.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline";
 

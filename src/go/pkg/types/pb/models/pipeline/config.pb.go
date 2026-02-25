@@ -7,7 +7,6 @@
 package pipeline
 
 import (
-	_ "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	plugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -343,7 +342,7 @@ var File_models_pipeline_config_proto protoreflect.FileDescriptor
 
 const file_models_pipeline_config_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/pipeline/config.proto\x12\x17fitglue.models.pipeline\x1a\x1cmodels/plugin/provider.proto\x1a\x1cmodels/events/pipeline.proto\"\x81\x05\n" +
+	"\x1cmodels/pipeline/config.proto\x12\x17fitglue.models.pipeline\x1a\x1cmodels/plugin/provider.proto\"\x81\x05\n" +
 	"\x0ePipelineConfig\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
 	"\x06source\x18\x02 \x01(\tR\x06source\x12E\n" +

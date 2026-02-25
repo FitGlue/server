@@ -5,7 +5,6 @@ package fitglue.models.pipeline;
 import "google/protobuf/timestamp.proto";
 import "models/activity/source.proto";
 import "models/plugin/provider.proto";
-import "models/events/pipeline.proto";
 
 option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline";
 
