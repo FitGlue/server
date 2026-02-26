@@ -30,10 +30,11 @@ resource "google_service_account" "cloud_run_sa" {
 }
 
 resource "google_cloud_run_v2_service" "backend" {
-  for_each = local.backend_services
-  name     = each.key
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  for_each            = local.backend_services
+  name                = each.key
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
 
   template {
     service_account = google_service_account.cloud_run_sa[each.key].email
@@ -505,10 +506,11 @@ resource "google_cloud_run_v2_service" "backend" {
 
 
 resource "google_cloud_run_v2_service" "frontend" {
-  for_each = local.frontend_services
-  name     = each.key
-  location = var.region
-  ingress  = "INGRESS_TRAFFIC_ALL"
+  for_each            = local.frontend_services
+  name                = each.key
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
 
   template {
     service_account = google_service_account.cloud_run_sa[each.key].email
