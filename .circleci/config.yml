@@ -105,6 +105,7 @@ jobs:
           name: Build and Push Docker Images
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
             gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
             
             SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
@@ -119,6 +120,7 @@ jobs:
           name: Deploy to << parameters.target >> (Terraform)
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
             # Deploy infrastructure (IAM, PubSub, Secrets, Cloud Run specs)
             terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
               -var-file="envs/<< parameters.target >>.tfvars"
@@ -126,6 +128,7 @@ jobs:
           name: Deploy Cloud Run Services
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
             SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
             for svc in $SERVICES; do
               IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:latest"
