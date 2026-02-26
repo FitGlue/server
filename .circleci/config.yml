@@ -111,10 +111,10 @@ jobs:
             SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
             for svc in $SERVICES; do
               IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:latest"
-              echo "Building $$IMAGE for $$svc..."
-              docker build -t $$IMAGE --build-arg SERVICE_NAME=$$svc .
-              echo "Pushing $$IMAGE..."
-              docker push $$IMAGE
+              echo "Building $IMAGE for $svc..."
+              docker build -t $IMAGE --build-arg SERVICE_NAME=$svc .
+              echo "Pushing $IMAGE..."
+              docker push $IMAGE
             done
       - run:
           name: Deploy to << parameters.target >> (Terraform)
@@ -132,9 +132,9 @@ jobs:
             SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
             for svc in $SERVICES; do
               IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:latest"
-              echo "Rolling out $$svc to Cloud Run..."
-              gcloud run deploy $$svc \
-                --image $$IMAGE \
+              echo "Rolling out $svc to Cloud Run..."
+              gcloud run deploy $svc \
+                --image $IMAGE \
                 --region us-central1 \
                 --project fitglue-server-<< parameters.target >> \
                 --quiet
