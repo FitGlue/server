@@ -1,0 +1,45 @@
+# Git
+.git/
+.githooks/
+.gitignore
+
+# CI/CD & IDE
+.circleci/
+.vscode/
+.agent/
+
+# Infrastructure
+terraform/
+
+# Documentation
+docs/
+*.md
+CONTRIBUTING.md
+CHANGELOG.md
+README.md
+
+# Node.js (only used for release tooling, not Docker builds)
+node_modules/
+package.json
+package-lock.json
+jest.config.js
+tsconfig.json
+.nvmrc
+
+# Firebase config (legacy)
+firebase.json
+.firebaserc
+
+# Environment files
+.env
+.env.example
+
+# Scripts & tooling
+scripts/
+bin/
+Makefile
+docker-compose.yaml
+downloads/
+
+# TypeScript source (Go-only Docker builds)
+src/ts/
