@@ -22,10 +22,20 @@ func main() {
 	}
 
 	logger := infra.NewLogger()
+	ctx := context.Background()
 
-	// TODO: Replace with real Firestore adapter initialization when implemented
-	var client *firestore.Client
-	store := billing.NewFirestoreStore(client)
+	// Firestore Setup
+	projectID := os.Getenv("PROJECT_ID")
+	if projectID == "" {
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+	}
+	fsClient, err := firestore.NewClient(ctx, projectID)
+	if err != nil {
+		logger.Error(ctx, "Failed to initialize Firestore client", "error", err)
+		os.Exit(1)
+	}
+	defer fsClient.Close()
+	store := billing.NewFirestoreStore(fsClient)
 
 	stripeSecret := os.Getenv("STRIPE_SECRET_KEY")
 	webhookSecret := os.Getenv("STRIPE_WEBHOOK_SECRET")

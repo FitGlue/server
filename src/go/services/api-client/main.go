@@ -31,8 +31,14 @@ func main() {
 	logger := infra.NewLogger()
 	ctx := context.Background()
 
-	// Firebase Auth Setup
-	app, err := firebase.NewApp(ctx, nil, option.WithCredentialsFile(os.Getenv("GOOGLE_APPLICATION_CREDENTIALS")))
+	// Firebase Auth Setup — use credentials file if set (local dev), otherwise ADC (Cloud Run)
+	var app *firebase.App
+	var err error
+	if creds := os.Getenv("GOOGLE_APPLICATION_CREDENTIALS"); creds != "" {
+		app, err = firebase.NewApp(ctx, nil, option.WithCredentialsFile(creds))
+	} else {
+		app, err = firebase.NewApp(ctx, nil)
+	}
 	if err != nil {
 		logger.Error(ctx, "failed to initialize firebase app", "err", err)
 		os.Exit(1)

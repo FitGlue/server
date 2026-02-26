@@ -44,11 +44,6 @@ func (s *stubBlobStore) Write(ctx context.Context, bucket, path string, data []b
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8082" // Default port for pipeline service
-	}
-
 	logger := infra.NewLogger()
 	ctx := context.Background()
 
@@ -79,7 +74,7 @@ func main() {
 		bucketName = "fitglue-server-dev-artifacts"
 	}
 
-	// 1. gRPC Service (CRUD)
+	// 1. gRPC Service (CRUD) — internal port for service-to-service calls
 	svc := pipeline.NewService(store, pubClient, blobStore, logger)
 
 	server := grpc.NewServer()
@@ -88,20 +83,25 @@ func main() {
 	healthcheck := health.NewServer()
 	grpc_health_v1.RegisterHealthServer(server, healthcheck)
 
-	lis, err := net.Listen("tcp", ":"+port)
+	grpcPort := os.Getenv("GRPC_PORT")
+	if grpcPort == "" {
+		grpcPort = "50053"
+	}
+
+	lis, err := net.Listen("tcp", ":"+grpcPort)
 	if err != nil {
 		log.Fatalf("failed to listen on gRPC port: %v", err)
 	}
 
 	// Start gRPC server in a goroutine
 	go func() {
-		logger.Info(ctx, "Starting service.pipeline gRPC", "port", port)
+		logger.Info(ctx, "Starting service.pipeline gRPC", "port", grpcPort)
 		if err := server.Serve(lis); err != nil {
 			log.Fatalf("failed to serve gRPC: %v", err)
 		}
 	}()
 
-	// 2. HTTP Server for Pub/Sub Pushes
+	// 2. HTTP Server for Pub/Sub Pushes (Cloud Run PORT)
 	// Instantiate domain components
 	splitterSvc := splitter.NewSplitter(store, pubClient, logger)
 	routerSvc := router.NewRouter(store, pubClient, blobStore, bucketName, logger)
@@ -124,9 +124,9 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
-	httpPort := os.Getenv("HTTP_PORT")
+	httpPort := os.Getenv("PORT")
 	if httpPort == "" {
-		httpPort = "8080" // Cloud Run expects 8080 by default
+		httpPort = "8080"
 	}
 
 	logger.Info(ctx, "Starting service.pipeline HTTP for Pub/Sub pushes", "port", httpPort)

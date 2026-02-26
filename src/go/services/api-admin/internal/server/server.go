@@ -54,16 +54,15 @@ func (s *APIServer) setupRoutes() {
 	s.router.Use(middleware.RealIP)
 	s.router.Use(middleware.Recoverer)
 
+	// Health check (no auth required)
+	s.router.Get("/api/admin/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprint(w, `{"status": "ok", "role": "admin"}`)
+	})
+
 	// API Admin block (Admin Auth / API routing)
 	s.router.Route("/api/admin", func(r chi.Router) {
-		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, `{"status": "ok", "role": "admin"}`)
-		})
-
-		// Register domain routes here
 		r.Use(AdminMiddleware(s.authClient))
-
 		s.registerAdminRoutes(r)
 	})
 }
