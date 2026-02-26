@@ -2,6 +2,7 @@ package server
 
 import (
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -70,6 +71,7 @@ func (s *APIServer) registerRegistryRoutes(r chi.Router) {
 
 func (s *APIServer) registerShowcaseRoutes(r chi.Router) {
 	r.Get("/showcase/{id}", s.handleGetPublicShowcase)
+	r.Get("/showcase/profile/{slug}", s.handleGetPublicShowcaseProfile)
 }
 
 func (s *APIServer) handleListPlugins(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +132,29 @@ func (s *APIServer) handleGetPublicShowcase(w http.ResponseWriter, r *http.Reque
 	}
 
 	res, err := s.activitySvc.GetPublicShowcase(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleGetPublicShowcaseProfile(w http.ResponseWriter, r *http.Request) {
+	pageStr := r.URL.Query().Get("page")
+	page := int32(1)
+	if pageStr != "" {
+		if p, err := strconv.Atoi(pageStr); err == nil && p > 0 {
+			page = int32(p)
+		}
+	}
+
+	req := &activitypb.GetPublicShowcaseProfileRequest{
+		Slug: chi.URLParam(r, "slug"),
+		Page: page,
+	}
+
+	res, err := s.activitySvc.GetPublicShowcaseProfile(r.Context(), req)
 	if err != nil {
 		WriteError(w, err)
 		return

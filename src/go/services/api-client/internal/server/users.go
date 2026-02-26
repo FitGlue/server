@@ -26,6 +26,7 @@ func getUserToken(r *http.Request) *auth.Token {
 func (s *APIServer) registerUserRoutes(r chi.Router) {
 	r.Get("/users/me", s.handleGetProfile)
 	r.Put("/users/me", s.handleUpdateProfile)
+	r.Delete("/users/me", s.handleDeleteSelf)
 
 	r.Get("/users/me/integrations", s.handleListIntegrations)
 	r.Get("/users/me/integrations/{provider}", s.handleGetIntegration)
@@ -38,8 +39,35 @@ func (s *APIServer) registerUserRoutes(r chi.Router) {
 	r.Get("/users/me/counters", s.handleListCounters)
 	r.Put("/users/me/counters/{name}", s.handleUpdateCounter)
 
+	r.Get("/users/me/booster-data", s.handleGetBoosterData)
+	r.Put("/users/me/booster-data/{boosterId}", s.handleSetBoosterData)
+	r.Delete("/users/me/booster-data/{boosterId}", s.handleDeleteBoosterData)
+
 	// Connection actions (trigger sync, resync, etc)
 	r.Post("/users/me/connections/{provider}/actions", s.handleConnectionActions)
+
+	// Email auth
+	r.Post("/users/me/auth-email/send-verification", s.handleSendVerificationEmail)
+	r.Post("/users/me/auth-email/send-email-change", s.handleSendEmailChangeVerification)
+
+	// Personal Records
+	r.Get("/users/me/personal-records", s.handleListPersonalRecords)
+	r.Put("/users/me/personal-records/{recordType}", s.handleSetPersonalRecord)
+	r.Delete("/users/me/personal-records/{recordType}", s.handleDeletePersonalRecord)
+
+	// Plugin Defaults
+	r.Get("/users/me/plugin-defaults", s.handleListPluginDefaults)
+	r.Put("/users/me/plugin-defaults/{pluginId}", s.handleSetPluginDefaults)
+	r.Delete("/users/me/plugin-defaults/{pluginId}", s.handleDeletePluginDefaults)
+
+	// Delete counter
+	r.Delete("/users/me/counters/{name}", s.handleDeleteCounter)
+
+	// FCM Token (push notifications)
+	r.Post("/users/me/fcm-token", s.handleSetFCMToken)
+
+	// Mobile sync (trigger data sync)
+	r.Post("/users/me/mobile/sync", s.handleMobileSync)
 }
 
 func (s *APIServer) handleGetProfile(w http.ResponseWriter, r *http.Request) {
@@ -273,6 +301,327 @@ func (s *APIServer) handleConnectionActions(w http.ResponseWriter, r *http.Reque
 	}
 
 	WriteError(w, statusError(http.StatusBadRequest, "unknown action"))
+}
+
+// =============================================================
+// Booster Data
+// =============================================================
+
+func (s *APIServer) handleGetBoosterData(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &userpb.GetBoosterDataRequest{
+		UserId: token.UID,
+	}
+
+	res, err := s.userService.GetBoosterData(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleSetBoosterData(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody userpb.SetBoosterDataRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+	reqBody.BoosterId = chi.URLParam(r, "boosterId")
+
+	_, err := s.userService.SetBoosterData(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *APIServer) handleDeleteBoosterData(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &userpb.DeleteBoosterDataRequest{
+		UserId:    token.UID,
+		BoosterId: chi.URLParam(r, "boosterId"),
+	}
+
+	_, err := s.userService.DeleteBoosterData(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// =============================================================
+// Delete Self
+// =============================================================
+
+func (s *APIServer) handleDeleteSelf(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &userpb.DeleteUserRequest{
+		UserId: token.UID,
+	}
+
+	_, err := s.userService.DeleteUser(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// =============================================================
+// Auth Email
+// =============================================================
+
+func (s *APIServer) handleSendVerificationEmail(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &userpb.SendVerificationEmailRequest{
+		UserId: token.UID,
+	}
+
+	_, err := s.userService.SendVerificationEmail(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *APIServer) handleSendEmailChangeVerification(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody struct {
+		NewEmail string `json:"newEmail"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	req := &userpb.SendEmailChangeVerificationRequest{
+		UserId:   token.UID,
+		NewEmail: reqBody.NewEmail,
+	}
+
+	_, err := s.userService.SendEmailChangeVerification(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *APIServer) handleSendPasswordResetEmail(w http.ResponseWriter, r *http.Request) {
+	var reqBody struct {
+		Email string `json:"email"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	req := &userpb.SendPasswordResetEmailRequest{
+		Email: reqBody.Email,
+	}
+
+	_, err := s.userService.SendPasswordResetEmail(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// =============================================================
+// Personal Records
+// =============================================================
+
+func (s *APIServer) handleListPersonalRecords(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	res, err := s.userService.ListPersonalRecords(r.Context(), &userpb.ListPersonalRecordsRequest{
+		UserId: token.UID,
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleSetPersonalRecord(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody userpb.SetPersonalRecordRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+	reqBody.RecordType = chi.URLParam(r, "recordType")
+
+	res, err := s.userService.SetPersonalRecord(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleDeletePersonalRecord(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	_, err := s.userService.DeletePersonalRecord(r.Context(), &userpb.DeletePersonalRecordRequest{
+		UserId:     token.UID,
+		RecordType: chi.URLParam(r, "recordType"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// =============================================================
+// Plugin Defaults
+// =============================================================
+
+func (s *APIServer) handleListPluginDefaults(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	res, err := s.userService.ListPluginDefaults(r.Context(), &userpb.ListPluginDefaultsRequest{
+		UserId: token.UID,
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleSetPluginDefaults(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody userpb.SetPluginDefaultsRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+	reqBody.PluginId = chi.URLParam(r, "pluginId")
+
+	_, err := s.userService.SetPluginDefaults(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *APIServer) handleDeletePluginDefaults(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	_, err := s.userService.DeletePluginDefaults(r.Context(), &userpb.DeletePluginDefaultsRequest{
+		UserId:   token.UID,
+		PluginId: chi.URLParam(r, "pluginId"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// =============================================================
+// Delete Counter
+// =============================================================
+
+func (s *APIServer) handleDeleteCounter(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	_, err := s.userService.DeleteCounter(r.Context(), &userpb.DeleteCounterRequest{
+		UserId:    token.UID,
+		CounterId: chi.URLParam(r, "name"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // statusError is a helper for manually generating an error satisfying gRPC status layout

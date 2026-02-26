@@ -18,14 +18,10 @@ jobs:
           name: Install Core Dependencies
           command: |
             sudo apt-get update
-            sudo apt-get install -y protobuf-compiler rsync
-      - run:
-          name: Install Protoc Gen Go
-          command: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+            sudo apt-get install -y rsync
       - restore_cache:
           keys:
             - go-mod-v2-{{ checksum "src/go/go.sum" }}
-            - npm-v2-{{ checksum "src/typescript/package-lock.json" }}
       - run:
           name: Setup Environment
           command: make setup
@@ -33,37 +29,8 @@ jobs:
           key: go-mod-v2-{{ checksum "src/go/go.sum" }}
           paths:
             - ~/go/pkg/mod
-      - save_cache:
-          key: npm-v2-{{ checksum "src/typescript/package-lock.json" }}
-          paths:
-            - ~/.npm
-            - src/typescript/node_modules
-      - run:
-          name: Install Buf
-          command: |
-             PREFIX="/usr/local"
-             VERSION="1.32.1"
-             sudo curl -sSL \
-                "https://github.com/bufbuild/buf/releases/download/v${VERSION}/buf-$$(uname -s)-$$(uname -m)" \
-                -o "$${PREFIX}/bin/buf"
-             sudo chmod +x "$${PREFIX}/bin/buf"
-      - run:
-          name: Protobuf Linting
-          command: buf lint src/proto
-      - run:
-          name: Verify Generated Code Drift
-          command: |
-            make generate
-            if ! git diff --quiet; then
-              echo "Error: Generated files are out of sync. Please run 'make generate' locally and commit the changes."
-              git diff
-              exit 1
-            fi
-      - run:
-          name: Protobuf Breaking Changes
-          command: |
-            git fetch origin main
-            buf breaking src/proto --against '.git#branch=origin/main,subdir=server/src/proto' || true
+      # Proto linting, code generation, and drift checks are enforced
+      # locally via `make preflight` (pre-push git hook).
       - run:
           name: Build
           command: make build
@@ -73,9 +40,6 @@ jobs:
       - run:
           name: Run Tests
           command: make test
-      - store_artifacts:
-          path: src/typescript/shared/src/types/pb
-          destination: protobuf-types
       - store_artifacts:
           path: docs/api/openapi.yaml
           destination: openapi-spec
@@ -130,9 +94,7 @@ jobs:
             # Set credentials for terraform
             echo "export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json" >> $BASH_ENV
             echo "export PATH=\$PATH:$(pwd)/google-cloud-sdk/bin" >> $BASH_ENV
-      - run:
-          name: Prepare src for deployment
-          command: make prepare
+      # No prepare step needed — Docker builds from source directly
       - run:
           name: Terraform Init
           command: |
@@ -174,18 +136,7 @@ jobs:
                 --quiet
             done
 
-  upload-sourcemaps:
-    executor: unified-executor
-    steps:
-      - attach_workspace:
-          at: .
-      - run:
-          name: Upload Source Maps to Sentry
-          command: |
-             # Install Sentry CLI
-             sudo npm install -g @sentry/cli
-             # Run upload script using Git SHA as release
-             ./scripts/upload_sourcemaps.sh "$CIRCLE_SHA1"
+  # upload-sourcemaps job removed — no longer applicable to Go-only server
 
   create-release:
     executor: unified-executor
@@ -286,12 +237,7 @@ workflows:
           filters:
             branches:
               only: main
-      - upload-sourcemaps:
-          requires:
-            - deploy-dev
-          filters:
-            branches:
-              only: main
+      # upload-sourcemaps removed — no longer applicable
       - deploy:
           name: deploy-test
           target: test

@@ -1,4 +1,4 @@
-# Add IAM binding to allow Cloud Functions (Default SA) to access these secrets
+# Add IAM binding to allow Cloud Run (Default Compute SA) to access these secrets
 data "google_project" "project" {
 }
 

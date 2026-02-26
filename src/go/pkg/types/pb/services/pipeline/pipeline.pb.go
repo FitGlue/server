@@ -529,9 +529,13 @@ func (x *ResolvePendingInputRequest) GetPendingInputId() string {
 }
 
 type RepostActivityRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	ActivityId    string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	UserId     string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ActivityId string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
+	// Repost mode: "missed-destination", "retry-destination", "full-pipeline"
+	Mode string `protobuf:"bytes,3,opt,name=mode,proto3" json:"mode,omitempty"`
+	// Target destination (required for missed-destination and retry-destination modes)
+	Destination   string `protobuf:"bytes,4,opt,name=destination,proto3" json:"destination,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -576,6 +580,20 @@ func (x *RepostActivityRequest) GetUserId() string {
 func (x *RepostActivityRequest) GetActivityId() string {
 	if x != nil {
 		return x.ActivityId
+	}
+	return ""
+}
+
+func (x *RepostActivityRequest) GetMode() string {
+	if x != nil {
+		return x.Mode
+	}
+	return ""
+}
+
+func (x *RepostActivityRequest) GetDestination() string {
+	if x != nil {
+		return x.Destination
 	}
 	return ""
 }
@@ -791,11 +809,13 @@ const file_services_pipeline_pipeline_proto_rawDesc = "" +
 	"\x06inputs\x18\x01 \x03(\v2%.fitglue.models.pipeline.PendingInputR\x06inputs\"_\n" +
 	"\x1aResolvePendingInputRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12(\n" +
-	"\x10pending_input_id\x18\x02 \x01(\tR\x0ependingInputId\"Q\n" +
+	"\x10pending_input_id\x18\x02 \x01(\tR\x0ependingInputId\"\x87\x01\n" +
 	"\x15RepostActivityRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
 	"\vactivity_id\x18\x02 \x01(\tR\n" +
-	"activityId\"G\n" +
+	"activityId\x12\x12\n" +
+	"\x04mode\x18\x03 \x01(\tR\x04mode\x12 \n" +
+	"\vdestination\x18\x04 \x01(\tR\vdestination\"G\n" +
 	"\x15GetPipelineRunRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x15\n" +
 	"\x06run_id\x18\x02 \x01(\tR\x05runId\"\x88\x01\n" +

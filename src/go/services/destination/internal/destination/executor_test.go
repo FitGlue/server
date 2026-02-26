@@ -94,6 +94,30 @@ func (m *mockUserServiceClient) ResolveUserByIntegration(ctx context.Context, in
 func (m *mockUserServiceClient) ListUsers(ctx context.Context, in *userpb.ListUsersRequest, opts ...grpc.CallOption) (*userpb.ListUsersResponse, error) {
 	return nil, nil
 }
+func (m *mockUserServiceClient) ListPersonalRecords(ctx context.Context, in *userpb.ListPersonalRecordsRequest, opts ...grpc.CallOption) (*userpb.ListPersonalRecordsResponse, error) {
+	return nil, nil
+}
+func (m *mockUserServiceClient) SetPersonalRecord(ctx context.Context, in *userpb.SetPersonalRecordRequest, opts ...grpc.CallOption) (*pbuser.PersonalRecord, error) {
+	return nil, nil
+}
+func (m *mockUserServiceClient) DeletePersonalRecord(ctx context.Context, in *userpb.DeletePersonalRecordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return nil, nil
+}
+func (m *mockUserServiceClient) ListPluginDefaults(ctx context.Context, in *userpb.ListPluginDefaultsRequest, opts ...grpc.CallOption) (*userpb.ListPluginDefaultsResponse, error) {
+	return nil, nil
+}
+func (m *mockUserServiceClient) SetPluginDefaults(ctx context.Context, in *userpb.SetPluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return nil, nil
+}
+func (m *mockUserServiceClient) DeletePluginDefaults(ctx context.Context, in *userpb.DeletePluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return nil, nil
+}
+func (m *mockUserServiceClient) DeleteCounter(ctx context.Context, in *userpb.DeleteCounterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return nil, nil
+}
+func (m *mockUserServiceClient) SetFCMToken(ctx context.Context, in *userpb.SetFCMTokenRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return nil, nil
+}
 
 type mockActivityServiceClient struct{}
 
@@ -137,6 +161,30 @@ func (m *mockActivityServiceClient) GenerateShowcaseImages(ctx context.Context, 
 	return nil, nil
 }
 func (m *mockActivityServiceClient) GetPublicShowcase(ctx context.Context, in *activitypb.GetPublicShowcaseRequest, opts ...grpc.CallOption) (*pbactivity.ShowcasedActivity, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) GetShowcaseSettings(ctx context.Context, in *activitypb.GetShowcaseSettingsRequest, opts ...grpc.CallOption) (*activitypb.GetShowcaseSettingsResponse, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) UpdateShowcaseSettings(ctx context.Context, in *activitypb.UpdateShowcaseSettingsRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseProfile, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) UpdateShowcaseSlug(ctx context.Context, in *activitypb.UpdateShowcaseSlugRequest, opts ...grpc.CallOption) (*activitypb.UpdateShowcaseSlugResponse, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) AddShowcaseEntry(ctx context.Context, in *activitypb.AddShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) RemoveShowcaseEntry(ctx context.Context, in *activitypb.RemoveShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *activitypb.GetShowcaseProfilePictureUploadUrlRequest, opts ...grpc.CallOption) (*activitypb.GetShowcaseProfilePictureUploadUrlResponse, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) GetPublicShowcaseProfile(ctx context.Context, in *activitypb.GetPublicShowcaseProfileRequest, opts ...grpc.CallOption) (*activitypb.GetPublicShowcaseProfileResponse, error) {
+	return nil, nil
+}
+func (m *mockActivityServiceClient) GetActivityStats(ctx context.Context, in *activitypb.GetActivityStatsRequest, opts ...grpc.CallOption) (*activitypb.GetActivityStatsResponse, error) {
 	return nil, nil
 }
 

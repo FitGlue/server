@@ -900,6 +900,791 @@ func (x *GetPublicShowcaseRequest) GetShowcaseId() string {
 	return ""
 }
 
+// Showcase Settings Management messages
+type GetShowcaseSettingsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetShowcaseSettingsRequest) Reset() {
+	*x = GetShowcaseSettingsRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetShowcaseSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetShowcaseSettingsRequest) ProtoMessage() {}
+
+func (x *GetShowcaseSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetShowcaseSettingsRequest.ProtoReflect.Descriptor instead.
+func (*GetShowcaseSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *GetShowcaseSettingsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetShowcaseSettingsResponse struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	Profile       *activity.ShowcaseProfile `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
+	Activities    []*ShowcaseActivityEntry  `protobuf:"bytes,2,rep,name=activities,proto3" json:"activities,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetShowcaseSettingsResponse) Reset() {
+	*x = GetShowcaseSettingsResponse{}
+	mi := &file_services_activity_activity_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetShowcaseSettingsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetShowcaseSettingsResponse) ProtoMessage() {}
+
+func (x *GetShowcaseSettingsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetShowcaseSettingsResponse.ProtoReflect.Descriptor instead.
+func (*GetShowcaseSettingsResponse) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetShowcaseSettingsResponse) GetProfile() *activity.ShowcaseProfile {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
+func (x *GetShowcaseSettingsResponse) GetActivities() []*ShowcaseActivityEntry {
+	if x != nil {
+		return x.Activities
+	}
+	return nil
+}
+
+type ShowcaseActivityEntry struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	ShowcaseId    string                 `protobuf:"bytes,1,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
+	Title         string                 `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	ActivityType  string                 `protobuf:"bytes,3,opt,name=activity_type,json=activityType,proto3" json:"activity_type,omitempty"`
+	Source        string                 `protobuf:"bytes,4,opt,name=source,proto3" json:"source,omitempty"`
+	StartTime     string                 `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	CreatedAt     string                 `protobuf:"bytes,6,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	InProfile     bool                   `protobuf:"varint,7,opt,name=in_profile,json=inProfile,proto3" json:"in_profile,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ShowcaseActivityEntry) Reset() {
+	*x = ShowcaseActivityEntry{}
+	mi := &file_services_activity_activity_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ShowcaseActivityEntry) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ShowcaseActivityEntry) ProtoMessage() {}
+
+func (x *ShowcaseActivityEntry) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ShowcaseActivityEntry.ProtoReflect.Descriptor instead.
+func (*ShowcaseActivityEntry) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *ShowcaseActivityEntry) GetShowcaseId() string {
+	if x != nil {
+		return x.ShowcaseId
+	}
+	return ""
+}
+
+func (x *ShowcaseActivityEntry) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ShowcaseActivityEntry) GetActivityType() string {
+	if x != nil {
+		return x.ActivityType
+	}
+	return ""
+}
+
+func (x *ShowcaseActivityEntry) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *ShowcaseActivityEntry) GetStartTime() string {
+	if x != nil {
+		return x.StartTime
+	}
+	return ""
+}
+
+func (x *ShowcaseActivityEntry) GetCreatedAt() string {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return ""
+}
+
+func (x *ShowcaseActivityEntry) GetInProfile() bool {
+	if x != nil {
+		return x.InProfile
+	}
+	return false
+}
+
+type UpdateShowcaseSettingsRequest struct {
+	state         protoimpl.MessageState    `protogen:"open.v1"`
+	UserId        string                    `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Settings      *activity.ShowcaseProfile `protobuf:"bytes,2,opt,name=settings,proto3" json:"settings,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateShowcaseSettingsRequest) Reset() {
+	*x = UpdateShowcaseSettingsRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateShowcaseSettingsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateShowcaseSettingsRequest) ProtoMessage() {}
+
+func (x *UpdateShowcaseSettingsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateShowcaseSettingsRequest.ProtoReflect.Descriptor instead.
+func (*UpdateShowcaseSettingsRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *UpdateShowcaseSettingsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdateShowcaseSettingsRequest) GetSettings() *activity.ShowcaseProfile {
+	if x != nil {
+		return x.Settings
+	}
+	return nil
+}
+
+type UpdateShowcaseSlugRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Slug          string                 `protobuf:"bytes,2,opt,name=slug,proto3" json:"slug,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateShowcaseSlugRequest) Reset() {
+	*x = UpdateShowcaseSlugRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateShowcaseSlugRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateShowcaseSlugRequest) ProtoMessage() {}
+
+func (x *UpdateShowcaseSlugRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateShowcaseSlugRequest.ProtoReflect.Descriptor instead.
+func (*UpdateShowcaseSlugRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *UpdateShowcaseSlugRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *UpdateShowcaseSlugRequest) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+type UpdateShowcaseSlugResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateShowcaseSlugResponse) Reset() {
+	*x = UpdateShowcaseSlugResponse{}
+	mi := &file_services_activity_activity_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateShowcaseSlugResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateShowcaseSlugResponse) ProtoMessage() {}
+
+func (x *UpdateShowcaseSlugResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateShowcaseSlugResponse.ProtoReflect.Descriptor instead.
+func (*UpdateShowcaseSlugResponse) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *UpdateShowcaseSlugResponse) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+type AddShowcaseEntryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ShowcaseId    string                 `protobuf:"bytes,2,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AddShowcaseEntryRequest) Reset() {
+	*x = AddShowcaseEntryRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AddShowcaseEntryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AddShowcaseEntryRequest) ProtoMessage() {}
+
+func (x *AddShowcaseEntryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AddShowcaseEntryRequest.ProtoReflect.Descriptor instead.
+func (*AddShowcaseEntryRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *AddShowcaseEntryRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AddShowcaseEntryRequest) GetShowcaseId() string {
+	if x != nil {
+		return x.ShowcaseId
+	}
+	return ""
+}
+
+type RemoveShowcaseEntryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ShowcaseId    string                 `protobuf:"bytes,2,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RemoveShowcaseEntryRequest) Reset() {
+	*x = RemoveShowcaseEntryRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RemoveShowcaseEntryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RemoveShowcaseEntryRequest) ProtoMessage() {}
+
+func (x *RemoveShowcaseEntryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RemoveShowcaseEntryRequest.ProtoReflect.Descriptor instead.
+func (*RemoveShowcaseEntryRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *RemoveShowcaseEntryRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *RemoveShowcaseEntryRequest) GetShowcaseId() string {
+	if x != nil {
+		return x.ShowcaseId
+	}
+	return ""
+}
+
+type GetShowcaseProfilePictureUploadUrlRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ContentType   string                 `protobuf:"bytes,2,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlRequest) Reset() {
+	*x = GetShowcaseProfilePictureUploadUrlRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetShowcaseProfilePictureUploadUrlRequest) ProtoMessage() {}
+
+func (x *GetShowcaseProfilePictureUploadUrlRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetShowcaseProfilePictureUploadUrlRequest.ProtoReflect.Descriptor instead.
+func (*GetShowcaseProfilePictureUploadUrlRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlRequest) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+type GetShowcaseProfilePictureUploadUrlResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UploadUrl     string                 `protobuf:"bytes,1,opt,name=upload_url,json=uploadUrl,proto3" json:"upload_url,omitempty"`
+	PublicUrl     string                 `protobuf:"bytes,2,opt,name=public_url,json=publicUrl,proto3" json:"public_url,omitempty"`
+	ContentType   string                 `protobuf:"bytes,3,opt,name=content_type,json=contentType,proto3" json:"content_type,omitempty"`
+	MaxSizeBytes  int64                  `protobuf:"varint,4,opt,name=max_size_bytes,json=maxSizeBytes,proto3" json:"max_size_bytes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlResponse) Reset() {
+	*x = GetShowcaseProfilePictureUploadUrlResponse{}
+	mi := &file_services_activity_activity_proto_msgTypes[26]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetShowcaseProfilePictureUploadUrlResponse) ProtoMessage() {}
+
+func (x *GetShowcaseProfilePictureUploadUrlResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[26]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetShowcaseProfilePictureUploadUrlResponse.ProtoReflect.Descriptor instead.
+func (*GetShowcaseProfilePictureUploadUrlResponse) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{26}
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlResponse) GetUploadUrl() string {
+	if x != nil {
+		return x.UploadUrl
+	}
+	return ""
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlResponse) GetPublicUrl() string {
+	if x != nil {
+		return x.PublicUrl
+	}
+	return ""
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlResponse) GetContentType() string {
+	if x != nil {
+		return x.ContentType
+	}
+	return ""
+}
+
+func (x *GetShowcaseProfilePictureUploadUrlResponse) GetMaxSizeBytes() int64 {
+	if x != nil {
+		return x.MaxSizeBytes
+	}
+	return 0
+}
+
+type GetPublicShowcaseProfileRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Slug          string                 `protobuf:"bytes,1,opt,name=slug,proto3" json:"slug,omitempty"`
+	Page          int32                  `protobuf:"varint,2,opt,name=page,proto3" json:"page,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPublicShowcaseProfileRequest) Reset() {
+	*x = GetPublicShowcaseProfileRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[27]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPublicShowcaseProfileRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPublicShowcaseProfileRequest) ProtoMessage() {}
+
+func (x *GetPublicShowcaseProfileRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[27]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPublicShowcaseProfileRequest.ProtoReflect.Descriptor instead.
+func (*GetPublicShowcaseProfileRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{27}
+}
+
+func (x *GetPublicShowcaseProfileRequest) GetSlug() string {
+	if x != nil {
+		return x.Slug
+	}
+	return ""
+}
+
+func (x *GetPublicShowcaseProfileRequest) GetPage() int32 {
+	if x != nil {
+		return x.Page
+	}
+	return 0
+}
+
+type GetPublicShowcaseProfileResponse struct {
+	state         protoimpl.MessageState        `protogen:"open.v1"`
+	Profile       *activity.ShowcaseProfile     `protobuf:"bytes,1,opt,name=profile,proto3" json:"profile,omitempty"`
+	Showcases     []*activity.ShowcasedActivity `protobuf:"bytes,2,rep,name=showcases,proto3" json:"showcases,omitempty"`
+	TotalPages    int32                         `protobuf:"varint,3,opt,name=total_pages,json=totalPages,proto3" json:"total_pages,omitempty"`
+	CurrentPage   int32                         `protobuf:"varint,4,opt,name=current_page,json=currentPage,proto3" json:"current_page,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPublicShowcaseProfileResponse) Reset() {
+	*x = GetPublicShowcaseProfileResponse{}
+	mi := &file_services_activity_activity_proto_msgTypes[28]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPublicShowcaseProfileResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPublicShowcaseProfileResponse) ProtoMessage() {}
+
+func (x *GetPublicShowcaseProfileResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[28]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPublicShowcaseProfileResponse.ProtoReflect.Descriptor instead.
+func (*GetPublicShowcaseProfileResponse) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{28}
+}
+
+func (x *GetPublicShowcaseProfileResponse) GetProfile() *activity.ShowcaseProfile {
+	if x != nil {
+		return x.Profile
+	}
+	return nil
+}
+
+func (x *GetPublicShowcaseProfileResponse) GetShowcases() []*activity.ShowcasedActivity {
+	if x != nil {
+		return x.Showcases
+	}
+	return nil
+}
+
+func (x *GetPublicShowcaseProfileResponse) GetTotalPages() int32 {
+	if x != nil {
+		return x.TotalPages
+	}
+	return 0
+}
+
+func (x *GetPublicShowcaseProfileResponse) GetCurrentPage() int32 {
+	if x != nil {
+		return x.CurrentPage
+	}
+	return 0
+}
+
+type GetActivityStatsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetActivityStatsRequest) Reset() {
+	*x = GetActivityStatsRequest{}
+	mi := &file_services_activity_activity_proto_msgTypes[29]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetActivityStatsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetActivityStatsRequest) ProtoMessage() {}
+
+func (x *GetActivityStatsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[29]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetActivityStatsRequest.ProtoReflect.Descriptor instead.
+func (*GetActivityStatsRequest) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{29}
+}
+
+func (x *GetActivityStatsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+type GetActivityStatsResponse struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	TotalActivities int32                  `protobuf:"varint,1,opt,name=total_activities,json=totalActivities,proto3" json:"total_activities,omitempty"`
+	TotalShowcases  int32                  `protobuf:"varint,2,opt,name=total_showcases,json=totalShowcases,proto3" json:"total_showcases,omitempty"`
+	LastActivityAt  string                 `protobuf:"bytes,3,opt,name=last_activity_at,json=lastActivityAt,proto3" json:"last_activity_at,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *GetActivityStatsResponse) Reset() {
+	*x = GetActivityStatsResponse{}
+	mi := &file_services_activity_activity_proto_msgTypes[30]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetActivityStatsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetActivityStatsResponse) ProtoMessage() {}
+
+func (x *GetActivityStatsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_activity_activity_proto_msgTypes[30]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetActivityStatsResponse.ProtoReflect.Descriptor instead.
+func (*GetActivityStatsResponse) Descriptor() ([]byte, []int) {
+	return file_services_activity_activity_proto_rawDescGZIP(), []int{30}
+}
+
+func (x *GetActivityStatsResponse) GetTotalActivities() int32 {
+	if x != nil {
+		return x.TotalActivities
+	}
+	return 0
+}
+
+func (x *GetActivityStatsResponse) GetTotalShowcases() int32 {
+	if x != nil {
+		return x.TotalShowcases
+	}
+	return 0
+}
+
+func (x *GetActivityStatsResponse) GetLastActivityAt() string {
+	if x != nil {
+		return x.LastActivityAt
+	}
+	return ""
+}
+
 var File_services_activity_activity_proto protoreflect.FileDescriptor
 
 const file_services_activity_activity_proto_rawDesc = "" +
@@ -965,7 +1750,67 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"showcaseId\";\n" +
 	"\x18GetPublicShowcaseRequest\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
-	"showcaseId2\x96\x12\n" +
+	"showcaseId\"5\n" +
+	"\x1aGetShowcaseSettingsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\xb3\x01\n" +
+	"\x1bGetShowcaseSettingsResponse\x12B\n" +
+	"\aprofile\x18\x01 \x01(\v2(.fitglue.models.activity.ShowcaseProfileR\aprofile\x12P\n" +
+	"\n" +
+	"activities\x18\x02 \x03(\v20.fitglue.services.activity.ShowcaseActivityEntryR\n" +
+	"activities\"\xe8\x01\n" +
+	"\x15ShowcaseActivityEntry\x12\x1f\n" +
+	"\vshowcase_id\x18\x01 \x01(\tR\n" +
+	"showcaseId\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12#\n" +
+	"\ractivity_type\x18\x03 \x01(\tR\factivityType\x12\x16\n" +
+	"\x06source\x18\x04 \x01(\tR\x06source\x12\x1d\n" +
+	"\n" +
+	"start_time\x18\x05 \x01(\tR\tstartTime\x12\x1d\n" +
+	"\n" +
+	"created_at\x18\x06 \x01(\tR\tcreatedAt\x12\x1d\n" +
+	"\n" +
+	"in_profile\x18\a \x01(\bR\tinProfile\"~\n" +
+	"\x1dUpdateShowcaseSettingsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12D\n" +
+	"\bsettings\x18\x02 \x01(\v2(.fitglue.models.activity.ShowcaseProfileR\bsettings\"H\n" +
+	"\x19UpdateShowcaseSlugRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x12\n" +
+	"\x04slug\x18\x02 \x01(\tR\x04slug\"0\n" +
+	"\x1aUpdateShowcaseSlugResponse\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\"S\n" +
+	"\x17AddShowcaseEntryRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vshowcase_id\x18\x02 \x01(\tR\n" +
+	"showcaseId\"V\n" +
+	"\x1aRemoveShowcaseEntryRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1f\n" +
+	"\vshowcase_id\x18\x02 \x01(\tR\n" +
+	"showcaseId\"g\n" +
+	")GetShowcaseProfilePictureUploadUrlRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12!\n" +
+	"\fcontent_type\x18\x02 \x01(\tR\vcontentType\"\xb3\x01\n" +
+	"*GetShowcaseProfilePictureUploadUrlResponse\x12\x1d\n" +
+	"\n" +
+	"upload_url\x18\x01 \x01(\tR\tuploadUrl\x12\x1d\n" +
+	"\n" +
+	"public_url\x18\x02 \x01(\tR\tpublicUrl\x12!\n" +
+	"\fcontent_type\x18\x03 \x01(\tR\vcontentType\x12$\n" +
+	"\x0emax_size_bytes\x18\x04 \x01(\x03R\fmaxSizeBytes\"I\n" +
+	"\x1fGetPublicShowcaseProfileRequest\x12\x12\n" +
+	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x12\n" +
+	"\x04page\x18\x02 \x01(\x05R\x04page\"\xf4\x01\n" +
+	" GetPublicShowcaseProfileResponse\x12B\n" +
+	"\aprofile\x18\x01 \x01(\v2(.fitglue.models.activity.ShowcaseProfileR\aprofile\x12H\n" +
+	"\tshowcases\x18\x02 \x03(\v2*.fitglue.models.activity.ShowcasedActivityR\tshowcases\x12\x1f\n" +
+	"\vtotal_pages\x18\x03 \x01(\x05R\n" +
+	"totalPages\x12!\n" +
+	"\fcurrent_page\x18\x04 \x01(\x05R\vcurrentPage\"2\n" +
+	"\x17GetActivityStatsRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"\x98\x01\n" +
+	"\x18GetActivityStatsResponse\x12)\n" +
+	"\x10total_activities\x18\x01 \x01(\x05R\x0ftotalActivities\x12'\n" +
+	"\x0ftotal_showcases\x18\x02 \x01(\x05R\x0etotalShowcases\x12(\n" +
+	"\x10last_activity_at\x18\x03 \x01(\tR\x0elastActivityAt2\xa9\x1e\n" +
 	"\x0fActivityService\x12\xa1\x01\n" +
 	"\vGetActivity\x12-.fitglue.services.activity.GetActivityRequest\x1a-.fitglue.models.activity.StandardizedActivity\"4\x82\xd3\xe4\x93\x02.\x12,/v2/users/{user_id}/activities/{activity_id}\x12\x9d\x01\n" +
 	"\x0eListActivities\x120.fitglue.services.activity.ListActivitiesRequest\x1a1.fitglue.services.activity.ListActivitiesResponse\"&\x82\xd3\xe4\x93\x02 \x12\x1e/v2/users/{user_id}/activities\x12\x90\x01\n" +
@@ -981,7 +1826,15 @@ const file_services_activity_activity_proto_rawDesc = "" +
 	"\x16GetShowcasePreferences\x128.fitglue.services.activity.GetShowcasePreferencesRequest\x1a(.fitglue.models.activity.ShowcaseProfile\";\x82\xd3\xe4\x93\x025\x123/v2/users/{user_id}/showcase-management/preferences\x12\xcc\x01\n" +
 	"\x19UpdateShowcasePreferences\x12;.fitglue.services.activity.UpdateShowcasePreferencesRequest\x1a(.fitglue.models.activity.ShowcaseProfile\"H\x82\xd3\xe4\x93\x02B:\vpreferences\x1a3/v2/users/{user_id}/showcase-management/preferences\x12\xab\x01\n" +
 	"\x16GenerateShowcaseImages\x128.fitglue.services.activity.GenerateShowcaseImagesRequest\x1a\x16.google.protobuf.Empty\"?\x82\xd3\xe4\x93\x029:\x01*\"4/v2/users/{user_id}/showcases/{showcase_id}/generate\x12\xa0\x01\n" +
-	"\x11GetPublicShowcase\x123.fitglue.services.activity.GetPublicShowcaseRequest\x1a*.fitglue.models.activity.ShowcasedActivity\"*\x82\xd3\xe4\x93\x02$\x12\"/v2/public/showcases/{showcase_id}BAZ?github.com/fitglue/server/src/go/pkg/types/pb/services/activityb\x06proto3"
+	"\x11GetPublicShowcase\x123.fitglue.services.activity.GetPublicShowcaseRequest\x1a*.fitglue.models.activity.ShowcasedActivity\"*\x82\xd3\xe4\x93\x02$\x12\"/v2/public/showcases/{showcase_id}\x12\xbf\x01\n" +
+	"\x18GetPublicShowcaseProfile\x12:.fitglue.services.activity.GetPublicShowcaseProfileRequest\x1a;.fitglue.services.activity.GetPublicShowcaseProfileResponse\"*\x82\xd3\xe4\x93\x02$\x12\"/v2/public/showcase/profile/{slug}\x12\xa9\x01\n" +
+	"\x10GetActivityStats\x122.fitglue.services.activity.GetActivityStatsRequest\x1a3.fitglue.services.activity.GetActivityStatsResponse\",\x82\xd3\xe4\x93\x02&\x12$/v2/users/{user_id}/activities/stats\x12\xbd\x01\n" +
+	"\x13GetShowcaseSettings\x125.fitglue.services.activity.GetShowcaseSettingsRequest\x1a6.fitglue.services.activity.GetShowcaseSettingsResponse\"7\x82\xd3\xe4\x93\x021\x12//v2/users/{user_id}/showcase-management/profile\x12\xbf\x01\n" +
+	"\x16UpdateShowcaseSettings\x128.fitglue.services.activity.UpdateShowcaseSettingsRequest\x1a(.fitglue.models.activity.ShowcaseProfile\"A\x82\xd3\xe4\x93\x02;:\bsettings\x1a//v2/users/{user_id}/showcase-management/profile\x12\xc2\x01\n" +
+	"\x12UpdateShowcaseSlug\x124.fitglue.services.activity.UpdateShowcaseSlugRequest\x1a5.fitglue.services.activity.UpdateShowcaseSlugResponse\"?\x82\xd3\xe4\x93\x029:\x01*\x1a4/v2/users/{user_id}/showcase-management/profile/slug\x12\xad\x01\n" +
+	"\x10AddShowcaseEntry\x122.fitglue.services.activity.AddShowcaseEntryRequest\x1a\x16.google.protobuf.Empty\"M\x82\xd3\xe4\x93\x02G\"E/v2/users/{user_id}/showcase-management/profile/entries/{showcase_id}\x12\xb3\x01\n" +
+	"\x13RemoveShowcaseEntry\x125.fitglue.services.activity.RemoveShowcaseEntryRequest\x1a\x16.google.protobuf.Empty\"M\x82\xd3\xe4\x93\x02G*E/v2/users/{user_id}/showcase-management/profile/entries/{showcase_id}\x12\xf5\x01\n" +
+	"\"GetShowcaseProfilePictureUploadUrl\x12D.fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest\x1aE.fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse\"B\x82\xd3\xe4\x93\x02<:\x01*\"7/v2/users/{user_id}/showcase-management/profile/pictureBAZ?github.com/fitglue/server/src/go/pkg/types/pb/services/activityb\x06proto3"
 
 var (
 	file_services_activity_activity_proto_rawDescOnce sync.Once
@@ -995,70 +1848,105 @@ func file_services_activity_activity_proto_rawDescGZIP() []byte {
 	return file_services_activity_activity_proto_rawDescData
 }
 
-var file_services_activity_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_services_activity_activity_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_services_activity_activity_proto_goTypes = []any{
-	(*GetActivityRequest)(nil),               // 0: fitglue.services.activity.GetActivityRequest
-	(*ListActivitiesRequest)(nil),            // 1: fitglue.services.activity.ListActivitiesRequest
-	(*ListActivitiesResponse)(nil),           // 2: fitglue.services.activity.ListActivitiesResponse
-	(*DeleteActivityRequest)(nil),            // 3: fitglue.services.activity.DeleteActivityRequest
-	(*GetShowcaseRequest)(nil),               // 4: fitglue.services.activity.GetShowcaseRequest
-	(*ListShowcasesRequest)(nil),             // 5: fitglue.services.activity.ListShowcasesRequest
-	(*ListShowcasesResponse)(nil),            // 6: fitglue.services.activity.ListShowcasesResponse
-	(*CreateShowcaseRequest)(nil),            // 7: fitglue.services.activity.CreateShowcaseRequest
-	(*UpdateShowcaseRequest)(nil),            // 8: fitglue.services.activity.UpdateShowcaseRequest
-	(*DeleteShowcaseRequest)(nil),            // 9: fitglue.services.activity.DeleteShowcaseRequest
-	(*ExportDataRequest)(nil),                // 10: fitglue.services.activity.ExportDataRequest
-	(*ExportDataResponse)(nil),               // 11: fitglue.services.activity.ExportDataResponse
-	(*ParseFitFileRequest)(nil),              // 12: fitglue.services.activity.ParseFitFileRequest
-	(*GetShowcasePreferencesRequest)(nil),    // 13: fitglue.services.activity.GetShowcasePreferencesRequest
-	(*UpdateShowcasePreferencesRequest)(nil), // 14: fitglue.services.activity.UpdateShowcasePreferencesRequest
-	(*GenerateShowcaseImagesRequest)(nil),    // 15: fitglue.services.activity.GenerateShowcaseImagesRequest
-	(*GetPublicShowcaseRequest)(nil),         // 16: fitglue.services.activity.GetPublicShowcaseRequest
-	(*activity.StandardizedActivity)(nil),    // 17: fitglue.models.activity.StandardizedActivity
-	(*activity.ShowcaseProfileEntry)(nil),    // 18: fitglue.models.activity.ShowcaseProfileEntry
-	(*activity.ShowcasedActivity)(nil),       // 19: fitglue.models.activity.ShowcasedActivity
-	(*activity.ShowcaseProfile)(nil),         // 20: fitglue.models.activity.ShowcaseProfile
-	(*emptypb.Empty)(nil),                    // 21: google.protobuf.Empty
+	(*GetActivityRequest)(nil),                         // 0: fitglue.services.activity.GetActivityRequest
+	(*ListActivitiesRequest)(nil),                      // 1: fitglue.services.activity.ListActivitiesRequest
+	(*ListActivitiesResponse)(nil),                     // 2: fitglue.services.activity.ListActivitiesResponse
+	(*DeleteActivityRequest)(nil),                      // 3: fitglue.services.activity.DeleteActivityRequest
+	(*GetShowcaseRequest)(nil),                         // 4: fitglue.services.activity.GetShowcaseRequest
+	(*ListShowcasesRequest)(nil),                       // 5: fitglue.services.activity.ListShowcasesRequest
+	(*ListShowcasesResponse)(nil),                      // 6: fitglue.services.activity.ListShowcasesResponse
+	(*CreateShowcaseRequest)(nil),                      // 7: fitglue.services.activity.CreateShowcaseRequest
+	(*UpdateShowcaseRequest)(nil),                      // 8: fitglue.services.activity.UpdateShowcaseRequest
+	(*DeleteShowcaseRequest)(nil),                      // 9: fitglue.services.activity.DeleteShowcaseRequest
+	(*ExportDataRequest)(nil),                          // 10: fitglue.services.activity.ExportDataRequest
+	(*ExportDataResponse)(nil),                         // 11: fitglue.services.activity.ExportDataResponse
+	(*ParseFitFileRequest)(nil),                        // 12: fitglue.services.activity.ParseFitFileRequest
+	(*GetShowcasePreferencesRequest)(nil),              // 13: fitglue.services.activity.GetShowcasePreferencesRequest
+	(*UpdateShowcasePreferencesRequest)(nil),           // 14: fitglue.services.activity.UpdateShowcasePreferencesRequest
+	(*GenerateShowcaseImagesRequest)(nil),              // 15: fitglue.services.activity.GenerateShowcaseImagesRequest
+	(*GetPublicShowcaseRequest)(nil),                   // 16: fitglue.services.activity.GetPublicShowcaseRequest
+	(*GetShowcaseSettingsRequest)(nil),                 // 17: fitglue.services.activity.GetShowcaseSettingsRequest
+	(*GetShowcaseSettingsResponse)(nil),                // 18: fitglue.services.activity.GetShowcaseSettingsResponse
+	(*ShowcaseActivityEntry)(nil),                      // 19: fitglue.services.activity.ShowcaseActivityEntry
+	(*UpdateShowcaseSettingsRequest)(nil),              // 20: fitglue.services.activity.UpdateShowcaseSettingsRequest
+	(*UpdateShowcaseSlugRequest)(nil),                  // 21: fitglue.services.activity.UpdateShowcaseSlugRequest
+	(*UpdateShowcaseSlugResponse)(nil),                 // 22: fitglue.services.activity.UpdateShowcaseSlugResponse
+	(*AddShowcaseEntryRequest)(nil),                    // 23: fitglue.services.activity.AddShowcaseEntryRequest
+	(*RemoveShowcaseEntryRequest)(nil),                 // 24: fitglue.services.activity.RemoveShowcaseEntryRequest
+	(*GetShowcaseProfilePictureUploadUrlRequest)(nil),  // 25: fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
+	(*GetShowcaseProfilePictureUploadUrlResponse)(nil), // 26: fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
+	(*GetPublicShowcaseProfileRequest)(nil),            // 27: fitglue.services.activity.GetPublicShowcaseProfileRequest
+	(*GetPublicShowcaseProfileResponse)(nil),           // 28: fitglue.services.activity.GetPublicShowcaseProfileResponse
+	(*GetActivityStatsRequest)(nil),                    // 29: fitglue.services.activity.GetActivityStatsRequest
+	(*GetActivityStatsResponse)(nil),                   // 30: fitglue.services.activity.GetActivityStatsResponse
+	(*activity.StandardizedActivity)(nil),              // 31: fitglue.models.activity.StandardizedActivity
+	(*activity.ShowcaseProfileEntry)(nil),              // 32: fitglue.models.activity.ShowcaseProfileEntry
+	(*activity.ShowcasedActivity)(nil),                 // 33: fitglue.models.activity.ShowcasedActivity
+	(*activity.ShowcaseProfile)(nil),                   // 34: fitglue.models.activity.ShowcaseProfile
+	(*emptypb.Empty)(nil),                              // 35: google.protobuf.Empty
 }
 var file_services_activity_activity_proto_depIdxs = []int32{
-	17, // 0: fitglue.services.activity.ListActivitiesResponse.activities:type_name -> fitglue.models.activity.StandardizedActivity
-	18, // 1: fitglue.services.activity.ListShowcasesResponse.showcases:type_name -> fitglue.models.activity.ShowcaseProfileEntry
-	19, // 2: fitglue.services.activity.CreateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
-	19, // 3: fitglue.services.activity.UpdateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
-	20, // 4: fitglue.services.activity.UpdateShowcasePreferencesRequest.preferences:type_name -> fitglue.models.activity.ShowcaseProfile
-	0,  // 5: fitglue.services.activity.ActivityService.GetActivity:input_type -> fitglue.services.activity.GetActivityRequest
-	1,  // 6: fitglue.services.activity.ActivityService.ListActivities:input_type -> fitglue.services.activity.ListActivitiesRequest
-	3,  // 7: fitglue.services.activity.ActivityService.DeleteActivity:input_type -> fitglue.services.activity.DeleteActivityRequest
-	4,  // 8: fitglue.services.activity.ActivityService.GetShowcase:input_type -> fitglue.services.activity.GetShowcaseRequest
-	5,  // 9: fitglue.services.activity.ActivityService.ListShowcases:input_type -> fitglue.services.activity.ListShowcasesRequest
-	7,  // 10: fitglue.services.activity.ActivityService.CreateShowcase:input_type -> fitglue.services.activity.CreateShowcaseRequest
-	8,  // 11: fitglue.services.activity.ActivityService.UpdateShowcase:input_type -> fitglue.services.activity.UpdateShowcaseRequest
-	9,  // 12: fitglue.services.activity.ActivityService.DeleteShowcase:input_type -> fitglue.services.activity.DeleteShowcaseRequest
-	10, // 13: fitglue.services.activity.ActivityService.ExportData:input_type -> fitglue.services.activity.ExportDataRequest
-	12, // 14: fitglue.services.activity.ActivityService.ParseFitFile:input_type -> fitglue.services.activity.ParseFitFileRequest
-	13, // 15: fitglue.services.activity.ActivityService.GetShowcasePreferences:input_type -> fitglue.services.activity.GetShowcasePreferencesRequest
-	14, // 16: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:input_type -> fitglue.services.activity.UpdateShowcasePreferencesRequest
-	15, // 17: fitglue.services.activity.ActivityService.GenerateShowcaseImages:input_type -> fitglue.services.activity.GenerateShowcaseImagesRequest
-	16, // 18: fitglue.services.activity.ActivityService.GetPublicShowcase:input_type -> fitglue.services.activity.GetPublicShowcaseRequest
-	17, // 19: fitglue.services.activity.ActivityService.GetActivity:output_type -> fitglue.models.activity.StandardizedActivity
-	2,  // 20: fitglue.services.activity.ActivityService.ListActivities:output_type -> fitglue.services.activity.ListActivitiesResponse
-	21, // 21: fitglue.services.activity.ActivityService.DeleteActivity:output_type -> google.protobuf.Empty
-	19, // 22: fitglue.services.activity.ActivityService.GetShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	6,  // 23: fitglue.services.activity.ActivityService.ListShowcases:output_type -> fitglue.services.activity.ListShowcasesResponse
-	19, // 24: fitglue.services.activity.ActivityService.CreateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	19, // 25: fitglue.services.activity.ActivityService.UpdateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	21, // 26: fitglue.services.activity.ActivityService.DeleteShowcase:output_type -> google.protobuf.Empty
-	11, // 27: fitglue.services.activity.ActivityService.ExportData:output_type -> fitglue.services.activity.ExportDataResponse
-	17, // 28: fitglue.services.activity.ActivityService.ParseFitFile:output_type -> fitglue.models.activity.StandardizedActivity
-	20, // 29: fitglue.services.activity.ActivityService.GetShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
-	20, // 30: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
-	21, // 31: fitglue.services.activity.ActivityService.GenerateShowcaseImages:output_type -> google.protobuf.Empty
-	19, // 32: fitglue.services.activity.ActivityService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
-	19, // [19:33] is the sub-list for method output_type
-	5,  // [5:19] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	31, // 0: fitglue.services.activity.ListActivitiesResponse.activities:type_name -> fitglue.models.activity.StandardizedActivity
+	32, // 1: fitglue.services.activity.ListShowcasesResponse.showcases:type_name -> fitglue.models.activity.ShowcaseProfileEntry
+	33, // 2: fitglue.services.activity.CreateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
+	33, // 3: fitglue.services.activity.UpdateShowcaseRequest.showcase:type_name -> fitglue.models.activity.ShowcasedActivity
+	34, // 4: fitglue.services.activity.UpdateShowcasePreferencesRequest.preferences:type_name -> fitglue.models.activity.ShowcaseProfile
+	34, // 5: fitglue.services.activity.GetShowcaseSettingsResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
+	19, // 6: fitglue.services.activity.GetShowcaseSettingsResponse.activities:type_name -> fitglue.services.activity.ShowcaseActivityEntry
+	34, // 7: fitglue.services.activity.UpdateShowcaseSettingsRequest.settings:type_name -> fitglue.models.activity.ShowcaseProfile
+	34, // 8: fitglue.services.activity.GetPublicShowcaseProfileResponse.profile:type_name -> fitglue.models.activity.ShowcaseProfile
+	33, // 9: fitglue.services.activity.GetPublicShowcaseProfileResponse.showcases:type_name -> fitglue.models.activity.ShowcasedActivity
+	0,  // 10: fitglue.services.activity.ActivityService.GetActivity:input_type -> fitglue.services.activity.GetActivityRequest
+	1,  // 11: fitglue.services.activity.ActivityService.ListActivities:input_type -> fitglue.services.activity.ListActivitiesRequest
+	3,  // 12: fitglue.services.activity.ActivityService.DeleteActivity:input_type -> fitglue.services.activity.DeleteActivityRequest
+	4,  // 13: fitglue.services.activity.ActivityService.GetShowcase:input_type -> fitglue.services.activity.GetShowcaseRequest
+	5,  // 14: fitglue.services.activity.ActivityService.ListShowcases:input_type -> fitglue.services.activity.ListShowcasesRequest
+	7,  // 15: fitglue.services.activity.ActivityService.CreateShowcase:input_type -> fitglue.services.activity.CreateShowcaseRequest
+	8,  // 16: fitglue.services.activity.ActivityService.UpdateShowcase:input_type -> fitglue.services.activity.UpdateShowcaseRequest
+	9,  // 17: fitglue.services.activity.ActivityService.DeleteShowcase:input_type -> fitglue.services.activity.DeleteShowcaseRequest
+	10, // 18: fitglue.services.activity.ActivityService.ExportData:input_type -> fitglue.services.activity.ExportDataRequest
+	12, // 19: fitglue.services.activity.ActivityService.ParseFitFile:input_type -> fitglue.services.activity.ParseFitFileRequest
+	13, // 20: fitglue.services.activity.ActivityService.GetShowcasePreferences:input_type -> fitglue.services.activity.GetShowcasePreferencesRequest
+	14, // 21: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:input_type -> fitglue.services.activity.UpdateShowcasePreferencesRequest
+	15, // 22: fitglue.services.activity.ActivityService.GenerateShowcaseImages:input_type -> fitglue.services.activity.GenerateShowcaseImagesRequest
+	16, // 23: fitglue.services.activity.ActivityService.GetPublicShowcase:input_type -> fitglue.services.activity.GetPublicShowcaseRequest
+	27, // 24: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:input_type -> fitglue.services.activity.GetPublicShowcaseProfileRequest
+	29, // 25: fitglue.services.activity.ActivityService.GetActivityStats:input_type -> fitglue.services.activity.GetActivityStatsRequest
+	17, // 26: fitglue.services.activity.ActivityService.GetShowcaseSettings:input_type -> fitglue.services.activity.GetShowcaseSettingsRequest
+	20, // 27: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:input_type -> fitglue.services.activity.UpdateShowcaseSettingsRequest
+	21, // 28: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:input_type -> fitglue.services.activity.UpdateShowcaseSlugRequest
+	23, // 29: fitglue.services.activity.ActivityService.AddShowcaseEntry:input_type -> fitglue.services.activity.AddShowcaseEntryRequest
+	24, // 30: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:input_type -> fitglue.services.activity.RemoveShowcaseEntryRequest
+	25, // 31: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:input_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlRequest
+	31, // 32: fitglue.services.activity.ActivityService.GetActivity:output_type -> fitglue.models.activity.StandardizedActivity
+	2,  // 33: fitglue.services.activity.ActivityService.ListActivities:output_type -> fitglue.services.activity.ListActivitiesResponse
+	35, // 34: fitglue.services.activity.ActivityService.DeleteActivity:output_type -> google.protobuf.Empty
+	33, // 35: fitglue.services.activity.ActivityService.GetShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	6,  // 36: fitglue.services.activity.ActivityService.ListShowcases:output_type -> fitglue.services.activity.ListShowcasesResponse
+	33, // 37: fitglue.services.activity.ActivityService.CreateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	33, // 38: fitglue.services.activity.ActivityService.UpdateShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	35, // 39: fitglue.services.activity.ActivityService.DeleteShowcase:output_type -> google.protobuf.Empty
+	11, // 40: fitglue.services.activity.ActivityService.ExportData:output_type -> fitglue.services.activity.ExportDataResponse
+	31, // 41: fitglue.services.activity.ActivityService.ParseFitFile:output_type -> fitglue.models.activity.StandardizedActivity
+	34, // 42: fitglue.services.activity.ActivityService.GetShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
+	34, // 43: fitglue.services.activity.ActivityService.UpdateShowcasePreferences:output_type -> fitglue.models.activity.ShowcaseProfile
+	35, // 44: fitglue.services.activity.ActivityService.GenerateShowcaseImages:output_type -> google.protobuf.Empty
+	33, // 45: fitglue.services.activity.ActivityService.GetPublicShowcase:output_type -> fitglue.models.activity.ShowcasedActivity
+	28, // 46: fitglue.services.activity.ActivityService.GetPublicShowcaseProfile:output_type -> fitglue.services.activity.GetPublicShowcaseProfileResponse
+	30, // 47: fitglue.services.activity.ActivityService.GetActivityStats:output_type -> fitglue.services.activity.GetActivityStatsResponse
+	18, // 48: fitglue.services.activity.ActivityService.GetShowcaseSettings:output_type -> fitglue.services.activity.GetShowcaseSettingsResponse
+	34, // 49: fitglue.services.activity.ActivityService.UpdateShowcaseSettings:output_type -> fitglue.models.activity.ShowcaseProfile
+	22, // 50: fitglue.services.activity.ActivityService.UpdateShowcaseSlug:output_type -> fitglue.services.activity.UpdateShowcaseSlugResponse
+	35, // 51: fitglue.services.activity.ActivityService.AddShowcaseEntry:output_type -> google.protobuf.Empty
+	35, // 52: fitglue.services.activity.ActivityService.RemoveShowcaseEntry:output_type -> google.protobuf.Empty
+	26, // 53: fitglue.services.activity.ActivityService.GetShowcaseProfilePictureUploadUrl:output_type -> fitglue.services.activity.GetShowcaseProfilePictureUploadUrlResponse
+	32, // [32:54] is the sub-list for method output_type
+	10, // [10:32] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_services_activity_activity_proto_init() }
@@ -1072,7 +1960,7 @@ func file_services_activity_activity_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_activity_activity_proto_rawDesc), len(file_services_activity_activity_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -14,6 +14,7 @@ func (s *APIServer) registerBillingRoutes(r chi.Router) {
 	r.Post("/billing/checkout", s.handleCreateCheckoutSession)
 	r.Post("/billing/cancel", s.handleCancelSubscription)
 	r.Get("/billing/tier", s.handleGetTierStatus)
+	r.Post("/billing/trial", s.handleStartTrial)
 }
 
 func (s *APIServer) handleGetSubscription(w http.ResponseWriter, r *http.Request) {
@@ -99,5 +100,26 @@ func (s *APIServer) handleGetTierStatus(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleStartTrial(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	req := &billingpb.StartTrialRequest{
+		UserId: token.UID,
+	}
+
+	res, err := s.billingService.StartTrial(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
 	WriteJSON(w, res)
 }

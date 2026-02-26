@@ -127,6 +127,10 @@ message ResolvePendingInputRequest {
 message RepostActivityRequest {
   string user_id = 1;
   string activity_id = 2;
+  // Repost mode: "missed-destination", "retry-destination", "full-pipeline"
+  string mode = 3;
+  // Target destination (required for missed-destination and retry-destination modes)
+  string destination = 4;
 }
 
 message GetPipelineRunRequest {

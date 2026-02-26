@@ -15,12 +15,6 @@ variable "log_level" {
   default     = "info"
 }
 
-variable "retry_policy" {
-  description = "Retry policy for Cloud Functions (RETRY_POLICY_RETRY or RETRY_POLICY_DO_NOT_RETRY)"
-  type        = string
-  default     = "RETRY_POLICY_RETRY"
-}
-
 variable "environment" {
   description = "The deployment environment (dev, test, prod)"
   type        = string

@@ -117,6 +117,30 @@ func (m *mockActivityServiceClient) GenerateShowcaseImages(ctx context.Context, 
 func (m *mockActivityServiceClient) GetPublicShowcase(ctx context.Context, in *activitypb.GetPublicShowcaseRequest, opts ...grpc.CallOption) (*pbactivity.ShowcasedActivity, error) {
 	return &pbactivity.ShowcasedActivity{}, nil
 }
+func (m *mockActivityServiceClient) GetShowcaseSettings(ctx context.Context, in *activitypb.GetShowcaseSettingsRequest, opts ...grpc.CallOption) (*activitypb.GetShowcaseSettingsResponse, error) {
+	return &activitypb.GetShowcaseSettingsResponse{}, nil
+}
+func (m *mockActivityServiceClient) UpdateShowcaseSettings(ctx context.Context, in *activitypb.UpdateShowcaseSettingsRequest, opts ...grpc.CallOption) (*pbactivity.ShowcaseProfile, error) {
+	return &pbactivity.ShowcaseProfile{}, nil
+}
+func (m *mockActivityServiceClient) UpdateShowcaseSlug(ctx context.Context, in *activitypb.UpdateShowcaseSlugRequest, opts ...grpc.CallOption) (*activitypb.UpdateShowcaseSlugResponse, error) {
+	return &activitypb.UpdateShowcaseSlugResponse{}, nil
+}
+func (m *mockActivityServiceClient) AddShowcaseEntry(ctx context.Context, in *activitypb.AddShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockActivityServiceClient) RemoveShowcaseEntry(ctx context.Context, in *activitypb.RemoveShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockActivityServiceClient) GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *activitypb.GetShowcaseProfilePictureUploadUrlRequest, opts ...grpc.CallOption) (*activitypb.GetShowcaseProfilePictureUploadUrlResponse, error) {
+	return &activitypb.GetShowcaseProfilePictureUploadUrlResponse{}, nil
+}
+func (m *mockActivityServiceClient) GetPublicShowcaseProfile(ctx context.Context, in *activitypb.GetPublicShowcaseProfileRequest, opts ...grpc.CallOption) (*activitypb.GetPublicShowcaseProfileResponse, error) {
+	return &activitypb.GetPublicShowcaseProfileResponse{}, nil
+}
+func (m *mockActivityServiceClient) GetActivityStats(ctx context.Context, in *activitypb.GetActivityStatsRequest, opts ...grpc.CallOption) (*activitypb.GetActivityStatsResponse, error) {
+	return &activitypb.GetActivityStatsResponse{}, nil
+}
 
 // =============================================================
 // Mock BillingServiceClient

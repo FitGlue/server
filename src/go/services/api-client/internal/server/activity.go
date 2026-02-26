@@ -14,6 +14,7 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Get("/users/me/activities", s.handleListActivities)
 	r.Get("/users/me/activities/{id}", s.handleGetActivity)
 	r.Delete("/users/me/activities/{id}", s.handleDeleteActivity)
+	r.Get("/users/me/activities/stats", s.handleGetActivityStats)
 
 	r.Get("/users/me/showcases", s.handleListShowcases)
 	r.Get("/users/me/showcases/{id}", s.handleGetShowcase)
@@ -26,6 +27,16 @@ func (s *APIServer) registerActivityRoutes(r chi.Router) {
 	r.Post("/users/me/showcases/{id}/generate", s.handleGenerateShowcaseImages)
 
 	r.Post("/users/me/export", s.handleExportData)
+
+	r.Post("/users/me/parse-fit", s.handleParseFitFile)
+
+	// Showcase Management
+	r.Get("/users/me/showcase-management/profile", s.handleGetShowcaseSettings)
+	r.Put("/users/me/showcase-management/profile", s.handleUpdateShowcaseSettings)
+	r.Put("/users/me/showcase-management/profile/slug", s.handleUpdateShowcaseSlug)
+	r.Post("/users/me/showcase-management/profile/entries/{showcaseId}", s.handleAddShowcaseEntry)
+	r.Delete("/users/me/showcase-management/profile/entries/{showcaseId}", s.handleRemoveShowcaseEntry)
+	r.Post("/users/me/showcase-management/profile/picture", s.handleGetShowcaseProfilePictureUploadUrl)
 }
 
 func (s *APIServer) handleListActivities(w http.ResponseWriter, r *http.Request) {
@@ -293,5 +304,157 @@ func (s *APIServer) handleGenerateShowcaseImages(w http.ResponseWriter, r *http.
 	}
 
 	w.WriteHeader(http.StatusAccepted)
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleParseFitFile(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody activitypb.ParseFitFileRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+
+	res, err := s.activitySvc.ParseFitFile(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+// =============================================================
+// Showcase Settings Management
+// =============================================================
+
+func (s *APIServer) handleGetShowcaseSettings(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	res, err := s.activitySvc.GetShowcaseSettings(r.Context(), &activitypb.GetShowcaseSettingsRequest{
+		UserId: token.UID,
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleUpdateShowcaseSettings(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody activitypb.UpdateShowcaseSettingsRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+
+	res, err := s.activitySvc.UpdateShowcaseSettings(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleUpdateShowcaseSlug(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody activitypb.UpdateShowcaseSlugRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+
+	res, err := s.activitySvc.UpdateShowcaseSlug(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}
+
+func (s *APIServer) handleAddShowcaseEntry(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	_, err := s.activitySvc.AddShowcaseEntry(r.Context(), &activitypb.AddShowcaseEntryRequest{
+		UserId:     token.UID,
+		ShowcaseId: chi.URLParam(r, "showcaseId"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *APIServer) handleRemoveShowcaseEntry(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	_, err := s.activitySvc.RemoveShowcaseEntry(r.Context(), &activitypb.RemoveShowcaseEntryRequest{
+		UserId:     token.UID,
+		ShowcaseId: chi.URLParam(r, "showcaseId"),
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *APIServer) handleGetShowcaseProfilePictureUploadUrl(w http.ResponseWriter, r *http.Request) {
+	token := getUserToken(r)
+	if token == nil {
+		WriteError(w, statusError(http.StatusUnauthorized, "missing user context"))
+		return
+	}
+
+	var reqBody activitypb.GetShowcaseProfilePictureUploadUrlRequest
+	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+	reqBody.UserId = token.UID
+
+	res, err := s.activitySvc.GetShowcaseProfilePictureUploadUrl(r.Context(), &reqBody)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
 	WriteJSON(w, res)
 }

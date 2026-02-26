@@ -135,6 +135,57 @@ service UserService {
       get: "/v2/user/resolve/{provider}/{provider_uid}"
     };
   }
+
+  // Personal Records
+  rpc ListPersonalRecords(ListPersonalRecordsRequest) returns (ListPersonalRecordsResponse) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/personal-records"
+    };
+  }
+  rpc SetPersonalRecord(SetPersonalRecordRequest) returns (fitglue.models.user.PersonalRecord) {
+    option (google.api.http) = {
+      put: "/v2/user/{user_id}/personal-records/{record_type}"
+      body: "*"
+    };
+  }
+  rpc DeletePersonalRecord(DeletePersonalRecordRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/user/{user_id}/personal-records/{record_type}"
+    };
+  }
+
+  // Plugin Defaults
+  rpc ListPluginDefaults(ListPluginDefaultsRequest) returns (ListPluginDefaultsResponse) {
+    option (google.api.http) = {
+      get: "/v2/user/{user_id}/plugin-defaults"
+    };
+  }
+  rpc SetPluginDefaults(SetPluginDefaultsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/v2/user/{user_id}/plugin-defaults/{plugin_id}"
+      body: "defaults"
+    };
+  }
+  rpc DeletePluginDefaults(DeletePluginDefaultsRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/user/{user_id}/plugin-defaults/{plugin_id}"
+    };
+  }
+
+  // Counter deletion
+  rpc DeleteCounter(DeleteCounterRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/user/{user_id}/counters/{counter_id}"
+    };
+  }
+
+  // FCM Token registration for push notifications
+  rpc SetFCMToken(SetFCMTokenRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/fcm-token"
+      body: "*"
+    };
+  }
 }
 
 message ResolveUserByIntegrationRequest {
@@ -263,4 +314,58 @@ message SetBoosterDataRequest {
 message DeleteBoosterDataRequest {
   string user_id = 1;
   string booster_id = 2;
+}
+
+// Personal Records
+message ListPersonalRecordsRequest {
+  string user_id = 1;
+}
+
+message ListPersonalRecordsResponse {
+  repeated fitglue.models.user.PersonalRecord records = 1;
+}
+
+message SetPersonalRecordRequest {
+  string user_id = 1;
+  string record_type = 2;
+  double value = 3;
+  string unit = 4;
+  string activity_id = 5;
+}
+
+message DeletePersonalRecordRequest {
+  string user_id = 1;
+  string record_type = 2;
+}
+
+// Plugin Defaults
+message ListPluginDefaultsRequest {
+  string user_id = 1;
+}
+
+message ListPluginDefaultsResponse {
+  map<string, google.protobuf.Struct> defaults = 1;
+}
+
+message SetPluginDefaultsRequest {
+  string user_id = 1;
+  string plugin_id = 2;
+  google.protobuf.Struct defaults = 3;
+}
+
+message DeletePluginDefaultsRequest {
+  string user_id = 1;
+  string plugin_id = 2;
+}
+
+// Counter deletion
+message DeleteCounterRequest {
+  string user_id = 1;
+  string counter_id = 2;
+}
+
+message SetFCMTokenRequest {
+  string user_id = 1;
+  string token = 2;
+  string platform = 3; // "web", "android", "ios"
 }

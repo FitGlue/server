@@ -5,12 +5,12 @@ ENV SERVICE_NAME=${SERVICE_NAME}
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
-RUN go mod download
+COPY src/go/go.mod src/go/go.sum ./src/go/
+RUN cd src/go && go mod download
 
 COPY src/go/ ./src/go/
 
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /server src/go/services/${SERVICE_NAME}/main.go
+RUN cd src/go && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /server ./services/${SERVICE_NAME}/main.go
 
 FROM gcr.io/distroless/static-debian12
 COPY --from=builder /server /server

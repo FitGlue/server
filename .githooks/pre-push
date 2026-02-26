@@ -1,0 +1,16 @@
+#!/bin/sh
+# Pre-push hook: runs make preflight to ensure CI will pass.
+# Install: cp .githooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+
+echo "🔍 Running pre-push preflight checks..."
+make preflight
+EXIT=$?
+
+if [ $EXIT -ne 0 ]; then
+  echo ""
+  echo "❌ Preflight failed — push aborted."
+  echo "Fix the issues above, commit, and try again."
+  exit 1
+fi
+
+echo "✅ Preflight passed — pushing."

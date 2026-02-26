@@ -42,6 +42,14 @@ const (
 	UserService_SendEmailChangeVerification_FullMethodName = "/fitglue.services.user.UserService/SendEmailChangeVerification"
 	UserService_GenerateRegistrationSummary_FullMethodName = "/fitglue.services.user.UserService/GenerateRegistrationSummary"
 	UserService_ResolveUserByIntegration_FullMethodName    = "/fitglue.services.user.UserService/ResolveUserByIntegration"
+	UserService_ListPersonalRecords_FullMethodName         = "/fitglue.services.user.UserService/ListPersonalRecords"
+	UserService_SetPersonalRecord_FullMethodName           = "/fitglue.services.user.UserService/SetPersonalRecord"
+	UserService_DeletePersonalRecord_FullMethodName        = "/fitglue.services.user.UserService/DeletePersonalRecord"
+	UserService_ListPluginDefaults_FullMethodName          = "/fitglue.services.user.UserService/ListPluginDefaults"
+	UserService_SetPluginDefaults_FullMethodName           = "/fitglue.services.user.UserService/SetPluginDefaults"
+	UserService_DeletePluginDefaults_FullMethodName        = "/fitglue.services.user.UserService/DeletePluginDefaults"
+	UserService_DeleteCounter_FullMethodName               = "/fitglue.services.user.UserService/DeleteCounter"
+	UserService_SetFCMToken_FullMethodName                 = "/fitglue.services.user.UserService/SetFCMToken"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -72,6 +80,18 @@ type UserServiceClient interface {
 	GenerateRegistrationSummary(ctx context.Context, in *GenerateRegistrationSummaryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Integration Webhook Resolution
 	ResolveUserByIntegration(ctx context.Context, in *ResolveUserByIntegrationRequest, opts ...grpc.CallOption) (*ResolveUserByIntegrationResponse, error)
+	// Personal Records
+	ListPersonalRecords(ctx context.Context, in *ListPersonalRecordsRequest, opts ...grpc.CallOption) (*ListPersonalRecordsResponse, error)
+	SetPersonalRecord(ctx context.Context, in *SetPersonalRecordRequest, opts ...grpc.CallOption) (*user.PersonalRecord, error)
+	DeletePersonalRecord(ctx context.Context, in *DeletePersonalRecordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Plugin Defaults
+	ListPluginDefaults(ctx context.Context, in *ListPluginDefaultsRequest, opts ...grpc.CallOption) (*ListPluginDefaultsResponse, error)
+	SetPluginDefaults(ctx context.Context, in *SetPluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	DeletePluginDefaults(ctx context.Context, in *DeletePluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// Counter deletion
+	DeleteCounter(ctx context.Context, in *DeleteCounterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	// FCM Token registration for push notifications
+	SetFCMToken(ctx context.Context, in *SetFCMTokenRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
 
 type userServiceClient struct {
@@ -292,6 +312,86 @@ func (c *userServiceClient) ResolveUserByIntegration(ctx context.Context, in *Re
 	return out, nil
 }
 
+func (c *userServiceClient) ListPersonalRecords(ctx context.Context, in *ListPersonalRecordsRequest, opts ...grpc.CallOption) (*ListPersonalRecordsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPersonalRecordsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListPersonalRecords_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SetPersonalRecord(ctx context.Context, in *SetPersonalRecordRequest, opts ...grpc.CallOption) (*user.PersonalRecord, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(user.PersonalRecord)
+	err := c.cc.Invoke(ctx, UserService_SetPersonalRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeletePersonalRecord(ctx context.Context, in *DeletePersonalRecordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_DeletePersonalRecord_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ListPluginDefaults(ctx context.Context, in *ListPluginDefaultsRequest, opts ...grpc.CallOption) (*ListPluginDefaultsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListPluginDefaultsResponse)
+	err := c.cc.Invoke(ctx, UserService_ListPluginDefaults_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SetPluginDefaults(ctx context.Context, in *SetPluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_SetPluginDefaults_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeletePluginDefaults(ctx context.Context, in *DeletePluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_DeletePluginDefaults_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DeleteCounter(ctx context.Context, in *DeleteCounterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_DeleteCounter_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) SetFCMToken(ctx context.Context, in *SetFCMTokenRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_SetFCMToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -320,6 +420,18 @@ type UserServiceServer interface {
 	GenerateRegistrationSummary(context.Context, *GenerateRegistrationSummaryRequest) (*emptypb.Empty, error)
 	// Integration Webhook Resolution
 	ResolveUserByIntegration(context.Context, *ResolveUserByIntegrationRequest) (*ResolveUserByIntegrationResponse, error)
+	// Personal Records
+	ListPersonalRecords(context.Context, *ListPersonalRecordsRequest) (*ListPersonalRecordsResponse, error)
+	SetPersonalRecord(context.Context, *SetPersonalRecordRequest) (*user.PersonalRecord, error)
+	DeletePersonalRecord(context.Context, *DeletePersonalRecordRequest) (*emptypb.Empty, error)
+	// Plugin Defaults
+	ListPluginDefaults(context.Context, *ListPluginDefaultsRequest) (*ListPluginDefaultsResponse, error)
+	SetPluginDefaults(context.Context, *SetPluginDefaultsRequest) (*emptypb.Empty, error)
+	DeletePluginDefaults(context.Context, *DeletePluginDefaultsRequest) (*emptypb.Empty, error)
+	// Counter deletion
+	DeleteCounter(context.Context, *DeleteCounterRequest) (*emptypb.Empty, error)
+	// FCM Token registration for push notifications
+	SetFCMToken(context.Context, *SetFCMTokenRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -392,6 +504,30 @@ func (UnimplementedUserServiceServer) GenerateRegistrationSummary(context.Contex
 }
 func (UnimplementedUserServiceServer) ResolveUserByIntegration(context.Context, *ResolveUserByIntegrationRequest) (*ResolveUserByIntegrationResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ResolveUserByIntegration not implemented")
+}
+func (UnimplementedUserServiceServer) ListPersonalRecords(context.Context, *ListPersonalRecordsRequest) (*ListPersonalRecordsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPersonalRecords not implemented")
+}
+func (UnimplementedUserServiceServer) SetPersonalRecord(context.Context, *SetPersonalRecordRequest) (*user.PersonalRecord, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetPersonalRecord not implemented")
+}
+func (UnimplementedUserServiceServer) DeletePersonalRecord(context.Context, *DeletePersonalRecordRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeletePersonalRecord not implemented")
+}
+func (UnimplementedUserServiceServer) ListPluginDefaults(context.Context, *ListPluginDefaultsRequest) (*ListPluginDefaultsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListPluginDefaults not implemented")
+}
+func (UnimplementedUserServiceServer) SetPluginDefaults(context.Context, *SetPluginDefaultsRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetPluginDefaults not implemented")
+}
+func (UnimplementedUserServiceServer) DeletePluginDefaults(context.Context, *DeletePluginDefaultsRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeletePluginDefaults not implemented")
+}
+func (UnimplementedUserServiceServer) DeleteCounter(context.Context, *DeleteCounterRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteCounter not implemented")
+}
+func (UnimplementedUserServiceServer) SetFCMToken(context.Context, *SetFCMTokenRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetFCMToken not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -792,6 +928,150 @@ func _UserService_ResolveUserByIntegration_Handler(srv interface{}, ctx context.
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ListPersonalRecords_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPersonalRecordsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListPersonalRecords(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListPersonalRecords_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListPersonalRecords(ctx, req.(*ListPersonalRecordsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SetPersonalRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetPersonalRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SetPersonalRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SetPersonalRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SetPersonalRecord(ctx, req.(*SetPersonalRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeletePersonalRecord_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePersonalRecordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeletePersonalRecord(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeletePersonalRecord_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeletePersonalRecord(ctx, req.(*DeletePersonalRecordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ListPluginDefaults_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListPluginDefaultsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ListPluginDefaults(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ListPluginDefaults_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ListPluginDefaults(ctx, req.(*ListPluginDefaultsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SetPluginDefaults_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetPluginDefaultsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SetPluginDefaults(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SetPluginDefaults_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SetPluginDefaults(ctx, req.(*SetPluginDefaultsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeletePluginDefaults_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeletePluginDefaultsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeletePluginDefaults(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeletePluginDefaults_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeletePluginDefaults(ctx, req.(*DeletePluginDefaultsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DeleteCounter_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteCounterRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DeleteCounter(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DeleteCounter_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DeleteCounter(ctx, req.(*DeleteCounterRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_SetFCMToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetFCMTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).SetFCMToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_SetFCMToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).SetFCMToken(ctx, req.(*SetFCMTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -882,6 +1162,38 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ResolveUserByIntegration",
 			Handler:    _UserService_ResolveUserByIntegration_Handler,
+		},
+		{
+			MethodName: "ListPersonalRecords",
+			Handler:    _UserService_ListPersonalRecords_Handler,
+		},
+		{
+			MethodName: "SetPersonalRecord",
+			Handler:    _UserService_SetPersonalRecord_Handler,
+		},
+		{
+			MethodName: "DeletePersonalRecord",
+			Handler:    _UserService_DeletePersonalRecord_Handler,
+		},
+		{
+			MethodName: "ListPluginDefaults",
+			Handler:    _UserService_ListPluginDefaults_Handler,
+		},
+		{
+			MethodName: "SetPluginDefaults",
+			Handler:    _UserService_SetPluginDefaults_Handler,
+		},
+		{
+			MethodName: "DeletePluginDefaults",
+			Handler:    _UserService_DeletePluginDefaults_Handler,
+		},
+		{
+			MethodName: "DeleteCounter",
+			Handler:    _UserService_DeleteCounter_Handler,
+		},
+		{
+			MethodName: "SetFCMToken",
+			Handler:    _UserService_SetFCMToken_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

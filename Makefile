@@ -129,8 +129,6 @@ test-coverage:
 
 lint:
 	@echo "Linting Go..."
-	@echo "Checking proto lint..."
-	@buf lint src/proto
 	@echo "Checking formatting..."
 	@cd $(GO_SRC_DIR) && test -z "$$(gofmt -l pkg services cmd internal)" || (echo "Go files need formatting. Run 'gofmt -w pkg services cmd internal'" && exit 1)
 	@echo "Running go vet (excluding generated clients)..."
@@ -138,7 +136,7 @@ lint:
 	@echo "Checking for Protobuf JSON misuse..."
 	@./scripts/lint-proto-json.sh
 
-SERVICES := activity api-admin api-client api-webhook billing destination pipeline pipeline-worker registry user
+SERVICES := activity api-admin api-client api-public api-webhook billing destination pipeline registry user
 
 docker:
 	@for service in $(SERVICES); do \

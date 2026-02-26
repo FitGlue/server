@@ -88,6 +88,15 @@ func (s *APIServer) setupRoutes() {
 		// Unauthenticated callback
 		r.Get("/oauth/{provider}/callback", s.handleOAuthCallback)
 
+		// Password reset doesn't require authentication
+		r.Post("/auth-email/send-password-reset", s.handleSendPasswordResetEmail)
+
+		// Config endpoints (unauthenticated)
+		r.Get("/config/recaptcha", s.handleGetRecaptchaConfig)
+
+		// Integration request (unauthenticated - contact form)
+		r.Post("/integrations/request", s.handleIntegrationRequest)
+
 		// Register domain routes here
 		r.Group(func(r chi.Router) {
 			r.Use(AuthMiddleware(s.authClient))
@@ -98,6 +107,7 @@ func (s *APIServer) setupRoutes() {
 			s.registerActivityRoutes(r)
 			s.registerRegistryRoutes(r)
 			s.registerOAuthRoutes(r)
+			s.registerRepostRoutes(r)
 		})
 	})
 }

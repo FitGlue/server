@@ -21,20 +21,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ActivityService_GetActivity_FullMethodName               = "/fitglue.services.activity.ActivityService/GetActivity"
-	ActivityService_ListActivities_FullMethodName            = "/fitglue.services.activity.ActivityService/ListActivities"
-	ActivityService_DeleteActivity_FullMethodName            = "/fitglue.services.activity.ActivityService/DeleteActivity"
-	ActivityService_GetShowcase_FullMethodName               = "/fitglue.services.activity.ActivityService/GetShowcase"
-	ActivityService_ListShowcases_FullMethodName             = "/fitglue.services.activity.ActivityService/ListShowcases"
-	ActivityService_CreateShowcase_FullMethodName            = "/fitglue.services.activity.ActivityService/CreateShowcase"
-	ActivityService_UpdateShowcase_FullMethodName            = "/fitglue.services.activity.ActivityService/UpdateShowcase"
-	ActivityService_DeleteShowcase_FullMethodName            = "/fitglue.services.activity.ActivityService/DeleteShowcase"
-	ActivityService_ExportData_FullMethodName                = "/fitglue.services.activity.ActivityService/ExportData"
-	ActivityService_ParseFitFile_FullMethodName              = "/fitglue.services.activity.ActivityService/ParseFitFile"
-	ActivityService_GetShowcasePreferences_FullMethodName    = "/fitglue.services.activity.ActivityService/GetShowcasePreferences"
-	ActivityService_UpdateShowcasePreferences_FullMethodName = "/fitglue.services.activity.ActivityService/UpdateShowcasePreferences"
-	ActivityService_GenerateShowcaseImages_FullMethodName    = "/fitglue.services.activity.ActivityService/GenerateShowcaseImages"
-	ActivityService_GetPublicShowcase_FullMethodName         = "/fitglue.services.activity.ActivityService/GetPublicShowcase"
+	ActivityService_GetActivity_FullMethodName                        = "/fitglue.services.activity.ActivityService/GetActivity"
+	ActivityService_ListActivities_FullMethodName                     = "/fitglue.services.activity.ActivityService/ListActivities"
+	ActivityService_DeleteActivity_FullMethodName                     = "/fitglue.services.activity.ActivityService/DeleteActivity"
+	ActivityService_GetShowcase_FullMethodName                        = "/fitglue.services.activity.ActivityService/GetShowcase"
+	ActivityService_ListShowcases_FullMethodName                      = "/fitglue.services.activity.ActivityService/ListShowcases"
+	ActivityService_CreateShowcase_FullMethodName                     = "/fitglue.services.activity.ActivityService/CreateShowcase"
+	ActivityService_UpdateShowcase_FullMethodName                     = "/fitglue.services.activity.ActivityService/UpdateShowcase"
+	ActivityService_DeleteShowcase_FullMethodName                     = "/fitglue.services.activity.ActivityService/DeleteShowcase"
+	ActivityService_ExportData_FullMethodName                         = "/fitglue.services.activity.ActivityService/ExportData"
+	ActivityService_ParseFitFile_FullMethodName                       = "/fitglue.services.activity.ActivityService/ParseFitFile"
+	ActivityService_GetShowcasePreferences_FullMethodName             = "/fitglue.services.activity.ActivityService/GetShowcasePreferences"
+	ActivityService_UpdateShowcasePreferences_FullMethodName          = "/fitglue.services.activity.ActivityService/UpdateShowcasePreferences"
+	ActivityService_GenerateShowcaseImages_FullMethodName             = "/fitglue.services.activity.ActivityService/GenerateShowcaseImages"
+	ActivityService_GetPublicShowcase_FullMethodName                  = "/fitglue.services.activity.ActivityService/GetPublicShowcase"
+	ActivityService_GetPublicShowcaseProfile_FullMethodName           = "/fitglue.services.activity.ActivityService/GetPublicShowcaseProfile"
+	ActivityService_GetActivityStats_FullMethodName                   = "/fitglue.services.activity.ActivityService/GetActivityStats"
+	ActivityService_GetShowcaseSettings_FullMethodName                = "/fitglue.services.activity.ActivityService/GetShowcaseSettings"
+	ActivityService_UpdateShowcaseSettings_FullMethodName             = "/fitglue.services.activity.ActivityService/UpdateShowcaseSettings"
+	ActivityService_UpdateShowcaseSlug_FullMethodName                 = "/fitglue.services.activity.ActivityService/UpdateShowcaseSlug"
+	ActivityService_AddShowcaseEntry_FullMethodName                   = "/fitglue.services.activity.ActivityService/AddShowcaseEntry"
+	ActivityService_RemoveShowcaseEntry_FullMethodName                = "/fitglue.services.activity.ActivityService/RemoveShowcaseEntry"
+	ActivityService_GetShowcaseProfilePictureUploadUrl_FullMethodName = "/fitglue.services.activity.ActivityService/GetShowcaseProfilePictureUploadUrl"
 )
 
 // ActivityServiceClient is the client API for ActivityService service.
@@ -55,6 +63,15 @@ type ActivityServiceClient interface {
 	UpdateShowcasePreferences(ctx context.Context, in *UpdateShowcasePreferencesRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
 	GenerateShowcaseImages(ctx context.Context, in *GenerateShowcaseImagesRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetPublicShowcase(ctx context.Context, in *GetPublicShowcaseRequest, opts ...grpc.CallOption) (*activity.ShowcasedActivity, error)
+	GetPublicShowcaseProfile(ctx context.Context, in *GetPublicShowcaseProfileRequest, opts ...grpc.CallOption) (*GetPublicShowcaseProfileResponse, error)
+	GetActivityStats(ctx context.Context, in *GetActivityStatsRequest, opts ...grpc.CallOption) (*GetActivityStatsResponse, error)
+	// Showcase Settings Management (profile, entries, picture, slug)
+	GetShowcaseSettings(ctx context.Context, in *GetShowcaseSettingsRequest, opts ...grpc.CallOption) (*GetShowcaseSettingsResponse, error)
+	UpdateShowcaseSettings(ctx context.Context, in *UpdateShowcaseSettingsRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error)
+	UpdateShowcaseSlug(ctx context.Context, in *UpdateShowcaseSlugRequest, opts ...grpc.CallOption) (*UpdateShowcaseSlugResponse, error)
+	AddShowcaseEntry(ctx context.Context, in *AddShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	RemoveShowcaseEntry(ctx context.Context, in *RemoveShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
+	GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *GetShowcaseProfilePictureUploadUrlRequest, opts ...grpc.CallOption) (*GetShowcaseProfilePictureUploadUrlResponse, error)
 }
 
 type activityServiceClient struct {
@@ -205,6 +222,86 @@ func (c *activityServiceClient) GetPublicShowcase(ctx context.Context, in *GetPu
 	return out, nil
 }
 
+func (c *activityServiceClient) GetPublicShowcaseProfile(ctx context.Context, in *GetPublicShowcaseProfileRequest, opts ...grpc.CallOption) (*GetPublicShowcaseProfileResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPublicShowcaseProfileResponse)
+	err := c.cc.Invoke(ctx, ActivityService_GetPublicShowcaseProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) GetActivityStats(ctx context.Context, in *GetActivityStatsRequest, opts ...grpc.CallOption) (*GetActivityStatsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetActivityStatsResponse)
+	err := c.cc.Invoke(ctx, ActivityService_GetActivityStats_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) GetShowcaseSettings(ctx context.Context, in *GetShowcaseSettingsRequest, opts ...grpc.CallOption) (*GetShowcaseSettingsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetShowcaseSettingsResponse)
+	err := c.cc.Invoke(ctx, ActivityService_GetShowcaseSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) UpdateShowcaseSettings(ctx context.Context, in *UpdateShowcaseSettingsRequest, opts ...grpc.CallOption) (*activity.ShowcaseProfile, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(activity.ShowcaseProfile)
+	err := c.cc.Invoke(ctx, ActivityService_UpdateShowcaseSettings_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) UpdateShowcaseSlug(ctx context.Context, in *UpdateShowcaseSlugRequest, opts ...grpc.CallOption) (*UpdateShowcaseSlugResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateShowcaseSlugResponse)
+	err := c.cc.Invoke(ctx, ActivityService_UpdateShowcaseSlug_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) AddShowcaseEntry(ctx context.Context, in *AddShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ActivityService_AddShowcaseEntry_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) RemoveShowcaseEntry(ctx context.Context, in *RemoveShowcaseEntryRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, ActivityService_RemoveShowcaseEntry_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *activityServiceClient) GetShowcaseProfilePictureUploadUrl(ctx context.Context, in *GetShowcaseProfilePictureUploadUrlRequest, opts ...grpc.CallOption) (*GetShowcaseProfilePictureUploadUrlResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetShowcaseProfilePictureUploadUrlResponse)
+	err := c.cc.Invoke(ctx, ActivityService_GetShowcaseProfilePictureUploadUrl_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ActivityServiceServer is the server API for ActivityService service.
 // All implementations must embed UnimplementedActivityServiceServer
 // for forward compatibility.
@@ -223,6 +320,15 @@ type ActivityServiceServer interface {
 	UpdateShowcasePreferences(context.Context, *UpdateShowcasePreferencesRequest) (*activity.ShowcaseProfile, error)
 	GenerateShowcaseImages(context.Context, *GenerateShowcaseImagesRequest) (*emptypb.Empty, error)
 	GetPublicShowcase(context.Context, *GetPublicShowcaseRequest) (*activity.ShowcasedActivity, error)
+	GetPublicShowcaseProfile(context.Context, *GetPublicShowcaseProfileRequest) (*GetPublicShowcaseProfileResponse, error)
+	GetActivityStats(context.Context, *GetActivityStatsRequest) (*GetActivityStatsResponse, error)
+	// Showcase Settings Management (profile, entries, picture, slug)
+	GetShowcaseSettings(context.Context, *GetShowcaseSettingsRequest) (*GetShowcaseSettingsResponse, error)
+	UpdateShowcaseSettings(context.Context, *UpdateShowcaseSettingsRequest) (*activity.ShowcaseProfile, error)
+	UpdateShowcaseSlug(context.Context, *UpdateShowcaseSlugRequest) (*UpdateShowcaseSlugResponse, error)
+	AddShowcaseEntry(context.Context, *AddShowcaseEntryRequest) (*emptypb.Empty, error)
+	RemoveShowcaseEntry(context.Context, *RemoveShowcaseEntryRequest) (*emptypb.Empty, error)
+	GetShowcaseProfilePictureUploadUrl(context.Context, *GetShowcaseProfilePictureUploadUrlRequest) (*GetShowcaseProfilePictureUploadUrlResponse, error)
 	mustEmbedUnimplementedActivityServiceServer()
 }
 
@@ -274,6 +380,30 @@ func (UnimplementedActivityServiceServer) GenerateShowcaseImages(context.Context
 }
 func (UnimplementedActivityServiceServer) GetPublicShowcase(context.Context, *GetPublicShowcaseRequest) (*activity.ShowcasedActivity, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetPublicShowcase not implemented")
+}
+func (UnimplementedActivityServiceServer) GetPublicShowcaseProfile(context.Context, *GetPublicShowcaseProfileRequest) (*GetPublicShowcaseProfileResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPublicShowcaseProfile not implemented")
+}
+func (UnimplementedActivityServiceServer) GetActivityStats(context.Context, *GetActivityStatsRequest) (*GetActivityStatsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetActivityStats not implemented")
+}
+func (UnimplementedActivityServiceServer) GetShowcaseSettings(context.Context, *GetShowcaseSettingsRequest) (*GetShowcaseSettingsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetShowcaseSettings not implemented")
+}
+func (UnimplementedActivityServiceServer) UpdateShowcaseSettings(context.Context, *UpdateShowcaseSettingsRequest) (*activity.ShowcaseProfile, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateShowcaseSettings not implemented")
+}
+func (UnimplementedActivityServiceServer) UpdateShowcaseSlug(context.Context, *UpdateShowcaseSlugRequest) (*UpdateShowcaseSlugResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateShowcaseSlug not implemented")
+}
+func (UnimplementedActivityServiceServer) AddShowcaseEntry(context.Context, *AddShowcaseEntryRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method AddShowcaseEntry not implemented")
+}
+func (UnimplementedActivityServiceServer) RemoveShowcaseEntry(context.Context, *RemoveShowcaseEntryRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RemoveShowcaseEntry not implemented")
+}
+func (UnimplementedActivityServiceServer) GetShowcaseProfilePictureUploadUrl(context.Context, *GetShowcaseProfilePictureUploadUrlRequest) (*GetShowcaseProfilePictureUploadUrlResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetShowcaseProfilePictureUploadUrl not implemented")
 }
 func (UnimplementedActivityServiceServer) mustEmbedUnimplementedActivityServiceServer() {}
 func (UnimplementedActivityServiceServer) testEmbeddedByValue()                         {}
@@ -548,6 +678,150 @@ func _ActivityService_GetPublicShowcase_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ActivityService_GetPublicShowcaseProfile_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPublicShowcaseProfileRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetPublicShowcaseProfile(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetPublicShowcaseProfile_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetPublicShowcaseProfile(ctx, req.(*GetPublicShowcaseProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_GetActivityStats_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActivityStatsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetActivityStats(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetActivityStats_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetActivityStats(ctx, req.(*GetActivityStatsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_GetShowcaseSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetShowcaseSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetShowcaseSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetShowcaseSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetShowcaseSettings(ctx, req.(*GetShowcaseSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_UpdateShowcaseSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateShowcaseSettingsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).UpdateShowcaseSettings(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_UpdateShowcaseSettings_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).UpdateShowcaseSettings(ctx, req.(*UpdateShowcaseSettingsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_UpdateShowcaseSlug_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateShowcaseSlugRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).UpdateShowcaseSlug(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_UpdateShowcaseSlug_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).UpdateShowcaseSlug(ctx, req.(*UpdateShowcaseSlugRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_AddShowcaseEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddShowcaseEntryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).AddShowcaseEntry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_AddShowcaseEntry_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).AddShowcaseEntry(ctx, req.(*AddShowcaseEntryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_RemoveShowcaseEntry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveShowcaseEntryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).RemoveShowcaseEntry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_RemoveShowcaseEntry_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).RemoveShowcaseEntry(ctx, req.(*RemoveShowcaseEntryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ActivityService_GetShowcaseProfilePictureUploadUrl_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetShowcaseProfilePictureUploadUrlRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ActivityServiceServer).GetShowcaseProfilePictureUploadUrl(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ActivityService_GetShowcaseProfilePictureUploadUrl_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ActivityServiceServer).GetShowcaseProfilePictureUploadUrl(ctx, req.(*GetShowcaseProfilePictureUploadUrlRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ActivityService_ServiceDesc is the grpc.ServiceDesc for ActivityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -610,6 +884,38 @@ var ActivityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPublicShowcase",
 			Handler:    _ActivityService_GetPublicShowcase_Handler,
+		},
+		{
+			MethodName: "GetPublicShowcaseProfile",
+			Handler:    _ActivityService_GetPublicShowcaseProfile_Handler,
+		},
+		{
+			MethodName: "GetActivityStats",
+			Handler:    _ActivityService_GetActivityStats_Handler,
+		},
+		{
+			MethodName: "GetShowcaseSettings",
+			Handler:    _ActivityService_GetShowcaseSettings_Handler,
+		},
+		{
+			MethodName: "UpdateShowcaseSettings",
+			Handler:    _ActivityService_UpdateShowcaseSettings_Handler,
+		},
+		{
+			MethodName: "UpdateShowcaseSlug",
+			Handler:    _ActivityService_UpdateShowcaseSlug_Handler,
+		},
+		{
+			MethodName: "AddShowcaseEntry",
+			Handler:    _ActivityService_AddShowcaseEntry_Handler,
+		},
+		{
+			MethodName: "RemoveShowcaseEntry",
+			Handler:    _ActivityService_RemoveShowcaseEntry_Handler,
+		},
+		{
+			MethodName: "GetShowcaseProfilePictureUploadUrl",
+			Handler:    _ActivityService_GetShowcaseProfilePictureUploadUrl_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

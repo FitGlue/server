@@ -88,6 +88,51 @@ service ActivityService {
       get: "/v2/public/showcases/{showcase_id}"
     };
   }
+  rpc GetPublicShowcaseProfile(GetPublicShowcaseProfileRequest) returns (GetPublicShowcaseProfileResponse) {
+    option (google.api.http) = {
+      get: "/v2/public/showcase/profile/{slug}"
+    };
+  }
+  rpc GetActivityStats(GetActivityStatsRequest) returns (GetActivityStatsResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/activities/stats"
+    };
+  }
+
+  // Showcase Settings Management (profile, entries, picture, slug)
+  rpc GetShowcaseSettings(GetShowcaseSettingsRequest) returns (GetShowcaseSettingsResponse) {
+    option (google.api.http) = {
+      get: "/v2/users/{user_id}/showcase-management/profile"
+    };
+  }
+  rpc UpdateShowcaseSettings(UpdateShowcaseSettingsRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      put: "/v2/users/{user_id}/showcase-management/profile"
+      body: "settings"
+    };
+  }
+  rpc UpdateShowcaseSlug(UpdateShowcaseSlugRequest) returns (UpdateShowcaseSlugResponse) {
+    option (google.api.http) = {
+      put: "/v2/users/{user_id}/showcase-management/profile/slug"
+      body: "*"
+    };
+  }
+  rpc AddShowcaseEntry(AddShowcaseEntryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/showcase-management/profile/entries/{showcase_id}"
+    };
+  }
+  rpc RemoveShowcaseEntry(RemoveShowcaseEntryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/v2/users/{user_id}/showcase-management/profile/entries/{showcase_id}"
+    };
+  }
+  rpc GetShowcaseProfilePictureUploadUrl(GetShowcaseProfilePictureUploadUrlRequest) returns (GetShowcaseProfilePictureUploadUrlResponse) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/showcase-management/profile/picture"
+      body: "*"
+    };
+  }
 }
 
 message GetActivityRequest {
@@ -172,4 +217,82 @@ message GenerateShowcaseImagesRequest {
 
 message GetPublicShowcaseRequest {
   string showcase_id = 1;
+}
+
+// Showcase Settings Management messages
+message GetShowcaseSettingsRequest {
+  string user_id = 1;
+}
+
+message GetShowcaseSettingsResponse {
+  fitglue.models.activity.ShowcaseProfile profile = 1;
+  repeated ShowcaseActivityEntry activities = 2;
+}
+
+message ShowcaseActivityEntry {
+  string showcase_id = 1;
+  string title = 2;
+  string activity_type = 3;
+  string source = 4;
+  string start_time = 5;
+  string created_at = 6;
+  bool in_profile = 7;
+}
+
+message UpdateShowcaseSettingsRequest {
+  string user_id = 1;
+  fitglue.models.activity.ShowcaseProfile settings = 2;
+}
+
+message UpdateShowcaseSlugRequest {
+  string user_id = 1;
+  string slug = 2;
+}
+
+message UpdateShowcaseSlugResponse {
+  string slug = 1;
+}
+
+message AddShowcaseEntryRequest {
+  string user_id = 1;
+  string showcase_id = 2;
+}
+
+message RemoveShowcaseEntryRequest {
+  string user_id = 1;
+  string showcase_id = 2;
+}
+
+message GetShowcaseProfilePictureUploadUrlRequest {
+  string user_id = 1;
+  string content_type = 2;
+}
+
+message GetShowcaseProfilePictureUploadUrlResponse {
+  string upload_url = 1;
+  string public_url = 2;
+  string content_type = 3;
+  int64 max_size_bytes = 4;
+}
+
+message GetPublicShowcaseProfileRequest {
+  string slug = 1;
+  int32 page = 2;
+}
+
+message GetPublicShowcaseProfileResponse {
+  fitglue.models.activity.ShowcaseProfile profile = 1;
+  repeated fitglue.models.activity.ShowcasedActivity showcases = 2;
+  int32 total_pages = 3;
+  int32 current_page = 4;
+}
+
+message GetActivityStatsRequest {
+  string user_id = 1;
+}
+
+message GetActivityStatsResponse {
+  int32 total_activities = 1;
+  int32 total_showcases = 2;
+  string last_activity_at = 3;
 }

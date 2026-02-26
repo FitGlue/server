@@ -133,6 +133,30 @@ func (m *mockUserServiceClient) ResolveUserByIntegration(ctx context.Context, in
 func (m *mockUserServiceClient) SendWelcomeEmail(ctx context.Context, in *userpb.SendWelcomeEmailRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }
+func (m *mockUserServiceClient) ListPersonalRecords(ctx context.Context, in *userpb.ListPersonalRecordsRequest, opts ...grpc.CallOption) (*userpb.ListPersonalRecordsResponse, error) {
+	return &userpb.ListPersonalRecordsResponse{}, nil
+}
+func (m *mockUserServiceClient) SetPersonalRecord(ctx context.Context, in *userpb.SetPersonalRecordRequest, opts ...grpc.CallOption) (*pbuser.PersonalRecord, error) {
+	return &pbuser.PersonalRecord{}, nil
+}
+func (m *mockUserServiceClient) DeletePersonalRecord(ctx context.Context, in *userpb.DeletePersonalRecordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockUserServiceClient) ListPluginDefaults(ctx context.Context, in *userpb.ListPluginDefaultsRequest, opts ...grpc.CallOption) (*userpb.ListPluginDefaultsResponse, error) {
+	return &userpb.ListPluginDefaultsResponse{}, nil
+}
+func (m *mockUserServiceClient) SetPluginDefaults(ctx context.Context, in *userpb.SetPluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockUserServiceClient) DeletePluginDefaults(ctx context.Context, in *userpb.DeletePluginDefaultsRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockUserServiceClient) DeleteCounter(ctx context.Context, in *userpb.DeleteCounterRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *mockUserServiceClient) SetFCMToken(ctx context.Context, in *userpb.SetFCMTokenRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
 
 // =============================================================
 // Mock Publisher
