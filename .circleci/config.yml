@@ -102,11 +102,12 @@ jobs:
              export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
              terraform -chdir=terraform init -backend-config=envs/<< parameters.target >>.backend.tfvars
       - run:
-          name: Deploy Infrastructure (Terraform)
+          name: Create Artifact Registry (targeted apply)
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
             export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
             terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
+              -target=google_artifact_registry_repository.services \
               -var-file="envs/<< parameters.target >>.tfvars"
       - run:
           name: Build and Push Docker Images
@@ -123,6 +124,18 @@ jobs:
               echo "Pushing $IMAGE..."
               docker push $IMAGE
             done
+      - run:
+          name: Remove legacy bucket from state (if present)
+          command: |
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            terraform -chdir=terraform state rm 'google_storage_bucket.source_bucket' 2>/dev/null || true
+      - run:
+          name: Deploy Infrastructure (Terraform)
+          command: |
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
+            terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
+              -var-file="envs/<< parameters.target >>.tfvars"
       - run:
           name: Deploy Cloud Run Services
           command: |
