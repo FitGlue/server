@@ -494,6 +494,7 @@ resource "google_cloud_run_v2_service" "backend" {
       min_instance_count = 1
       max_instance_count = 10
     }
+  }
 }
 
 
@@ -843,6 +844,7 @@ resource "google_cloud_run_v2_service" "frontend" {
       min_instance_count = 1
       max_instance_count = 10
     }
+  }
 }
 
 data "google_iam_policy" "noauth" {
