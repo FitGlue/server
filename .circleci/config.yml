@@ -125,15 +125,6 @@ jobs:
               docker push $IMAGE
             done
       - run:
-          name: Remove legacy resources from state
-          command: |
-            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
-            # Remove old Cloud Functions, their zips, and related resources that no longer exist in config
-            for resource in $(terraform -chdir=terraform state list 2>/dev/null | grep -E 'cloudfunctions2_function|google_storage_bucket_object\..+_zip|google_storage_bucket\.source_bucket|google_cloud_run_service\.' || true); do
-              echo "Removing $resource from state..."
-              terraform -chdir=terraform state rm "$resource" 2>/dev/null || true
-            done
-      - run:
           name: Deploy Infrastructure (Terraform)
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
