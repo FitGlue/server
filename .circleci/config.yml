@@ -102,6 +102,13 @@ jobs:
              export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
              terraform -chdir=terraform init -backend-config=envs/<< parameters.target >>.backend.tfvars
       - run:
+          name: Deploy Infrastructure (Terraform)
+          command: |
+            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
+            export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
+            terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
+              -var-file="envs/<< parameters.target >>.tfvars"
+      - run:
           name: Build and Push Docker Images
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
@@ -116,14 +123,6 @@ jobs:
               echo "Pushing $IMAGE..."
               docker push $IMAGE
             done
-      - run:
-          name: Deploy to << parameters.target >> (Terraform)
-          command: |
-            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
-            export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
-            # Deploy infrastructure (IAM, PubSub, Secrets, Cloud Run specs)
-            terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
-              -var-file="envs/<< parameters.target >>.tfvars"
       - run:
           name: Deploy Cloud Run Services
           command: |
