@@ -20,12 +20,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	RegistryService_ListPlugins_FullMethodName      = "/fitglue.services.registry.RegistryService/ListPlugins"
-	RegistryService_GetPlugin_FullMethodName        = "/fitglue.services.registry.RegistryService/GetPlugin"
-	RegistryService_ListCategories_FullMethodName   = "/fitglue.services.registry.RegistryService/ListCategories"
-	RegistryService_GetPluginIcon_FullMethodName    = "/fitglue.services.registry.RegistryService/GetPluginIcon"
-	RegistryService_ListSources_FullMethodName      = "/fitglue.services.registry.RegistryService/ListSources"
-	RegistryService_ListDestinations_FullMethodName = "/fitglue.services.registry.RegistryService/ListDestinations"
+	RegistryService_ListPlugins_FullMethodName       = "/fitglue.services.registry.RegistryService/ListPlugins"
+	RegistryService_GetPlugin_FullMethodName         = "/fitglue.services.registry.RegistryService/GetPlugin"
+	RegistryService_ListCategories_FullMethodName    = "/fitglue.services.registry.RegistryService/ListCategories"
+	RegistryService_GetPluginIcon_FullMethodName     = "/fitglue.services.registry.RegistryService/GetPluginIcon"
+	RegistryService_ListSources_FullMethodName       = "/fitglue.services.registry.RegistryService/ListSources"
+	RegistryService_GetPluginRegistry_FullMethodName = "/fitglue.services.registry.RegistryService/GetPluginRegistry"
+	RegistryService_ListDestinations_FullMethodName  = "/fitglue.services.registry.RegistryService/ListDestinations"
 )
 
 // RegistryServiceClient is the client API for RegistryService service.
@@ -37,6 +38,7 @@ type RegistryServiceClient interface {
 	ListCategories(ctx context.Context, in *ListCategoriesRequest, opts ...grpc.CallOption) (*ListCategoriesResponse, error)
 	GetPluginIcon(ctx context.Context, in *GetPluginIconRequest, opts ...grpc.CallOption) (*GetPluginIconResponse, error)
 	ListSources(ctx context.Context, in *ListSourcesRequest, opts ...grpc.CallOption) (*ListSourcesResponse, error)
+	GetPluginRegistry(ctx context.Context, in *GetPluginRegistryRequest, opts ...grpc.CallOption) (*plugin.PluginRegistryResponse, error)
 	ListDestinations(ctx context.Context, in *ListDestinationsRequest, opts ...grpc.CallOption) (*ListDestinationsResponse, error)
 }
 
@@ -98,6 +100,16 @@ func (c *registryServiceClient) ListSources(ctx context.Context, in *ListSources
 	return out, nil
 }
 
+func (c *registryServiceClient) GetPluginRegistry(ctx context.Context, in *GetPluginRegistryRequest, opts ...grpc.CallOption) (*plugin.PluginRegistryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(plugin.PluginRegistryResponse)
+	err := c.cc.Invoke(ctx, RegistryService_GetPluginRegistry_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *registryServiceClient) ListDestinations(ctx context.Context, in *ListDestinationsRequest, opts ...grpc.CallOption) (*ListDestinationsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListDestinationsResponse)
@@ -117,6 +129,7 @@ type RegistryServiceServer interface {
 	ListCategories(context.Context, *ListCategoriesRequest) (*ListCategoriesResponse, error)
 	GetPluginIcon(context.Context, *GetPluginIconRequest) (*GetPluginIconResponse, error)
 	ListSources(context.Context, *ListSourcesRequest) (*ListSourcesResponse, error)
+	GetPluginRegistry(context.Context, *GetPluginRegistryRequest) (*plugin.PluginRegistryResponse, error)
 	ListDestinations(context.Context, *ListDestinationsRequest) (*ListDestinationsResponse, error)
 	mustEmbedUnimplementedRegistryServiceServer()
 }
@@ -142,6 +155,9 @@ func (UnimplementedRegistryServiceServer) GetPluginIcon(context.Context, *GetPlu
 }
 func (UnimplementedRegistryServiceServer) ListSources(context.Context, *ListSourcesRequest) (*ListSourcesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListSources not implemented")
+}
+func (UnimplementedRegistryServiceServer) GetPluginRegistry(context.Context, *GetPluginRegistryRequest) (*plugin.PluginRegistryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetPluginRegistry not implemented")
 }
 func (UnimplementedRegistryServiceServer) ListDestinations(context.Context, *ListDestinationsRequest) (*ListDestinationsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListDestinations not implemented")
@@ -257,6 +273,24 @@ func _RegistryService_ListSources_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RegistryService_GetPluginRegistry_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPluginRegistryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RegistryServiceServer).GetPluginRegistry(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RegistryService_GetPluginRegistry_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RegistryServiceServer).GetPluginRegistry(ctx, req.(*GetPluginRegistryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RegistryService_ListDestinations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListDestinationsRequest)
 	if err := dec(in); err != nil {
@@ -301,6 +335,10 @@ var RegistryService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListSources",
 			Handler:    _RegistryService_ListSources_Handler,
+		},
+		{
+			MethodName: "GetPluginRegistry",
+			Handler:    _RegistryService_GetPluginRegistry_Handler,
 		},
 		{
 			MethodName: "ListDestinations",

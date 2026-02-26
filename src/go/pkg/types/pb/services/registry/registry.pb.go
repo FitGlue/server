@@ -23,6 +23,50 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+type GetPluginRegistryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	MarketingMode bool                   `protobuf:"varint,1,opt,name=marketing_mode,json=marketingMode,proto3" json:"marketing_mode,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetPluginRegistryRequest) Reset() {
+	*x = GetPluginRegistryRequest{}
+	mi := &file_services_registry_registry_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetPluginRegistryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetPluginRegistryRequest) ProtoMessage() {}
+
+func (x *GetPluginRegistryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_registry_registry_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetPluginRegistryRequest.ProtoReflect.Descriptor instead.
+func (*GetPluginRegistryRequest) Descriptor() ([]byte, []int) {
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GetPluginRegistryRequest) GetMarketingMode() bool {
+	if x != nil {
+		return x.MarketingMode
+	}
+	return false
+}
+
 type ListPluginsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Category      string                 `protobuf:"bytes,1,opt,name=category,proto3" json:"category,omitempty"`
@@ -32,7 +76,7 @@ type ListPluginsRequest struct {
 
 func (x *ListPluginsRequest) Reset() {
 	*x = ListPluginsRequest{}
-	mi := &file_services_registry_registry_proto_msgTypes[0]
+	mi := &file_services_registry_registry_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -44,7 +88,7 @@ func (x *ListPluginsRequest) String() string {
 func (*ListPluginsRequest) ProtoMessage() {}
 
 func (x *ListPluginsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[0]
+	mi := &file_services_registry_registry_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -57,7 +101,7 @@ func (x *ListPluginsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPluginsRequest.ProtoReflect.Descriptor instead.
 func (*ListPluginsRequest) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{0}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *ListPluginsRequest) GetCategory() string {
@@ -76,7 +120,7 @@ type ListPluginsResponse struct {
 
 func (x *ListPluginsResponse) Reset() {
 	*x = ListPluginsResponse{}
-	mi := &file_services_registry_registry_proto_msgTypes[1]
+	mi := &file_services_registry_registry_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -88,7 +132,7 @@ func (x *ListPluginsResponse) String() string {
 func (*ListPluginsResponse) ProtoMessage() {}
 
 func (x *ListPluginsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[1]
+	mi := &file_services_registry_registry_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -101,7 +145,7 @@ func (x *ListPluginsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPluginsResponse.ProtoReflect.Descriptor instead.
 func (*ListPluginsResponse) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{1}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListPluginsResponse) GetPlugins() []*plugin.PluginManifest {
@@ -120,7 +164,7 @@ type GetPluginRequest struct {
 
 func (x *GetPluginRequest) Reset() {
 	*x = GetPluginRequest{}
-	mi := &file_services_registry_registry_proto_msgTypes[2]
+	mi := &file_services_registry_registry_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -132,7 +176,7 @@ func (x *GetPluginRequest) String() string {
 func (*GetPluginRequest) ProtoMessage() {}
 
 func (x *GetPluginRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[2]
+	mi := &file_services_registry_registry_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -145,7 +189,7 @@ func (x *GetPluginRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPluginRequest.ProtoReflect.Descriptor instead.
 func (*GetPluginRequest) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{2}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetPluginRequest) GetPluginId() string {
@@ -163,7 +207,7 @@ type ListCategoriesRequest struct {
 
 func (x *ListCategoriesRequest) Reset() {
 	*x = ListCategoriesRequest{}
-	mi := &file_services_registry_registry_proto_msgTypes[3]
+	mi := &file_services_registry_registry_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -175,7 +219,7 @@ func (x *ListCategoriesRequest) String() string {
 func (*ListCategoriesRequest) ProtoMessage() {}
 
 func (x *ListCategoriesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[3]
+	mi := &file_services_registry_registry_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -188,7 +232,7 @@ func (x *ListCategoriesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCategoriesRequest.ProtoReflect.Descriptor instead.
 func (*ListCategoriesRequest) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{3}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{4}
 }
 
 type ListCategoriesResponse struct {
@@ -200,7 +244,7 @@ type ListCategoriesResponse struct {
 
 func (x *ListCategoriesResponse) Reset() {
 	*x = ListCategoriesResponse{}
-	mi := &file_services_registry_registry_proto_msgTypes[4]
+	mi := &file_services_registry_registry_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -212,7 +256,7 @@ func (x *ListCategoriesResponse) String() string {
 func (*ListCategoriesResponse) ProtoMessage() {}
 
 func (x *ListCategoriesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[4]
+	mi := &file_services_registry_registry_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -225,7 +269,7 @@ func (x *ListCategoriesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListCategoriesResponse.ProtoReflect.Descriptor instead.
 func (*ListCategoriesResponse) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{4}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListCategoriesResponse) GetCategories() []string {
@@ -244,7 +288,7 @@ type GetPluginIconRequest struct {
 
 func (x *GetPluginIconRequest) Reset() {
 	*x = GetPluginIconRequest{}
-	mi := &file_services_registry_registry_proto_msgTypes[5]
+	mi := &file_services_registry_registry_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -256,7 +300,7 @@ func (x *GetPluginIconRequest) String() string {
 func (*GetPluginIconRequest) ProtoMessage() {}
 
 func (x *GetPluginIconRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[5]
+	mi := &file_services_registry_registry_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -269,7 +313,7 @@ func (x *GetPluginIconRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPluginIconRequest.ProtoReflect.Descriptor instead.
 func (*GetPluginIconRequest) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{5}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetPluginIconRequest) GetPluginId() string {
@@ -289,7 +333,7 @@ type GetPluginIconResponse struct {
 
 func (x *GetPluginIconResponse) Reset() {
 	*x = GetPluginIconResponse{}
-	mi := &file_services_registry_registry_proto_msgTypes[6]
+	mi := &file_services_registry_registry_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -301,7 +345,7 @@ func (x *GetPluginIconResponse) String() string {
 func (*GetPluginIconResponse) ProtoMessage() {}
 
 func (x *GetPluginIconResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[6]
+	mi := &file_services_registry_registry_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -314,7 +358,7 @@ func (x *GetPluginIconResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPluginIconResponse.ProtoReflect.Descriptor instead.
 func (*GetPluginIconResponse) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{6}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetPluginIconResponse) GetIconData() []byte {
@@ -339,7 +383,7 @@ type ListSourcesRequest struct {
 
 func (x *ListSourcesRequest) Reset() {
 	*x = ListSourcesRequest{}
-	mi := &file_services_registry_registry_proto_msgTypes[7]
+	mi := &file_services_registry_registry_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -351,7 +395,7 @@ func (x *ListSourcesRequest) String() string {
 func (*ListSourcesRequest) ProtoMessage() {}
 
 func (x *ListSourcesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[7]
+	mi := &file_services_registry_registry_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -364,7 +408,7 @@ func (x *ListSourcesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSourcesRequest.ProtoReflect.Descriptor instead.
 func (*ListSourcesRequest) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{7}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{8}
 }
 
 type ListSourcesResponse struct {
@@ -376,7 +420,7 @@ type ListSourcesResponse struct {
 
 func (x *ListSourcesResponse) Reset() {
 	*x = ListSourcesResponse{}
-	mi := &file_services_registry_registry_proto_msgTypes[8]
+	mi := &file_services_registry_registry_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -388,7 +432,7 @@ func (x *ListSourcesResponse) String() string {
 func (*ListSourcesResponse) ProtoMessage() {}
 
 func (x *ListSourcesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[8]
+	mi := &file_services_registry_registry_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -401,7 +445,7 @@ func (x *ListSourcesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListSourcesResponse.ProtoReflect.Descriptor instead.
 func (*ListSourcesResponse) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{8}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListSourcesResponse) GetSources() []*plugin.PluginManifest {
@@ -419,7 +463,7 @@ type ListDestinationsRequest struct {
 
 func (x *ListDestinationsRequest) Reset() {
 	*x = ListDestinationsRequest{}
-	mi := &file_services_registry_registry_proto_msgTypes[9]
+	mi := &file_services_registry_registry_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -431,7 +475,7 @@ func (x *ListDestinationsRequest) String() string {
 func (*ListDestinationsRequest) ProtoMessage() {}
 
 func (x *ListDestinationsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[9]
+	mi := &file_services_registry_registry_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -444,7 +488,7 @@ func (x *ListDestinationsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDestinationsRequest.ProtoReflect.Descriptor instead.
 func (*ListDestinationsRequest) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{9}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{10}
 }
 
 type ListDestinationsResponse struct {
@@ -456,7 +500,7 @@ type ListDestinationsResponse struct {
 
 func (x *ListDestinationsResponse) Reset() {
 	*x = ListDestinationsResponse{}
-	mi := &file_services_registry_registry_proto_msgTypes[10]
+	mi := &file_services_registry_registry_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -468,7 +512,7 @@ func (x *ListDestinationsResponse) String() string {
 func (*ListDestinationsResponse) ProtoMessage() {}
 
 func (x *ListDestinationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_registry_registry_proto_msgTypes[10]
+	mi := &file_services_registry_registry_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -481,7 +525,7 @@ func (x *ListDestinationsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListDestinationsResponse.ProtoReflect.Descriptor instead.
 func (*ListDestinationsResponse) Descriptor() ([]byte, []int) {
-	return file_services_registry_registry_proto_rawDescGZIP(), []int{10}
+	return file_services_registry_registry_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ListDestinationsResponse) GetDestinations() []*plugin.PluginManifest {
@@ -495,7 +539,9 @@ var File_services_registry_registry_proto protoreflect.FileDescriptor
 
 const file_services_registry_registry_proto_rawDesc = "" +
 	"\n" +
-	" services/registry/registry.proto\x12\x19fitglue.services.registry\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/plugin/manifest.proto\"0\n" +
+	" services/registry/registry.proto\x12\x19fitglue.services.registry\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/plugin/manifest.proto\"A\n" +
+	"\x18GetPluginRegistryRequest\x12%\n" +
+	"\x0emarketing_mode\x18\x01 \x01(\bR\rmarketingMode\"0\n" +
 	"\x12ListPluginsRequest\x12\x1a\n" +
 	"\bcategory\x18\x01 \x01(\tR\bcategory\"V\n" +
 	"\x13ListPluginsResponse\x12?\n" +
@@ -517,13 +563,14 @@ const file_services_registry_registry_proto_rawDesc = "" +
 	"\asources\x18\x01 \x03(\v2%.fitglue.models.plugin.PluginManifestR\asources\"\x19\n" +
 	"\x17ListDestinationsRequest\"e\n" +
 	"\x18ListDestinationsResponse\x12I\n" +
-	"\fdestinations\x18\x01 \x03(\v2%.fitglue.models.plugin.PluginManifestR\fdestinations2\x95\a\n" +
+	"\fdestinations\x18\x01 \x03(\v2%.fitglue.models.plugin.PluginManifestR\fdestinations2\xa5\b\n" +
 	"\x0fRegistryService\x12\x8a\x01\n" +
 	"\vListPlugins\x12-.fitglue.services.registry.ListPluginsRequest\x1a..fitglue.services.registry.ListPluginsResponse\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/v2/registry/plugins\x12\x89\x01\n" +
 	"\tGetPlugin\x12+.fitglue.services.registry.GetPluginRequest\x1a%.fitglue.models.plugin.PluginManifest\"(\x82\xd3\xe4\x93\x02\"\x12 /v2/registry/plugins/{plugin_id}\x12\x96\x01\n" +
 	"\x0eListCategories\x120.fitglue.services.registry.ListCategoriesRequest\x1a1.fitglue.services.registry.ListCategoriesResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v2/registry/categories\x12\xa1\x01\n" +
 	"\rGetPluginIcon\x12/.fitglue.services.registry.GetPluginIconRequest\x1a0.fitglue.services.registry.GetPluginIconResponse\"-\x82\xd3\xe4\x93\x02'\x12%/v2/registry/plugins/{plugin_id}/icon\x12\x8a\x01\n" +
-	"\vListSources\x12-.fitglue.services.registry.ListSourcesRequest\x1a..fitglue.services.registry.ListSourcesResponse\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/v2/registry/sources\x12\x9e\x01\n" +
+	"\vListSources\x12-.fitglue.services.registry.ListSourcesRequest\x1a..fitglue.services.registry.ListSourcesResponse\"\x1c\x82\xd3\xe4\x93\x02\x16\x12\x14/v2/registry/sources\x12\x8d\x01\n" +
+	"\x11GetPluginRegistry\x123.fitglue.services.registry.GetPluginRegistryRequest\x1a-.fitglue.models.plugin.PluginRegistryResponse\"\x14\x82\xd3\xe4\x93\x02\x0e\x12\f/v2/registry\x12\x9e\x01\n" +
 	"\x10ListDestinations\x122.fitglue.services.registry.ListDestinationsRequest\x1a3.fitglue.services.registry.ListDestinationsResponse\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/v2/registry/destinationsBAZ?github.com/fitglue/server/src/go/pkg/types/pb/services/registryb\x06proto3"
 
 var (
@@ -538,39 +585,43 @@ func file_services_registry_registry_proto_rawDescGZIP() []byte {
 	return file_services_registry_registry_proto_rawDescData
 }
 
-var file_services_registry_registry_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_services_registry_registry_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_services_registry_registry_proto_goTypes = []any{
-	(*ListPluginsRequest)(nil),       // 0: fitglue.services.registry.ListPluginsRequest
-	(*ListPluginsResponse)(nil),      // 1: fitglue.services.registry.ListPluginsResponse
-	(*GetPluginRequest)(nil),         // 2: fitglue.services.registry.GetPluginRequest
-	(*ListCategoriesRequest)(nil),    // 3: fitglue.services.registry.ListCategoriesRequest
-	(*ListCategoriesResponse)(nil),   // 4: fitglue.services.registry.ListCategoriesResponse
-	(*GetPluginIconRequest)(nil),     // 5: fitglue.services.registry.GetPluginIconRequest
-	(*GetPluginIconResponse)(nil),    // 6: fitglue.services.registry.GetPluginIconResponse
-	(*ListSourcesRequest)(nil),       // 7: fitglue.services.registry.ListSourcesRequest
-	(*ListSourcesResponse)(nil),      // 8: fitglue.services.registry.ListSourcesResponse
-	(*ListDestinationsRequest)(nil),  // 9: fitglue.services.registry.ListDestinationsRequest
-	(*ListDestinationsResponse)(nil), // 10: fitglue.services.registry.ListDestinationsResponse
-	(*plugin.PluginManifest)(nil),    // 11: fitglue.models.plugin.PluginManifest
+	(*GetPluginRegistryRequest)(nil),      // 0: fitglue.services.registry.GetPluginRegistryRequest
+	(*ListPluginsRequest)(nil),            // 1: fitglue.services.registry.ListPluginsRequest
+	(*ListPluginsResponse)(nil),           // 2: fitglue.services.registry.ListPluginsResponse
+	(*GetPluginRequest)(nil),              // 3: fitglue.services.registry.GetPluginRequest
+	(*ListCategoriesRequest)(nil),         // 4: fitglue.services.registry.ListCategoriesRequest
+	(*ListCategoriesResponse)(nil),        // 5: fitglue.services.registry.ListCategoriesResponse
+	(*GetPluginIconRequest)(nil),          // 6: fitglue.services.registry.GetPluginIconRequest
+	(*GetPluginIconResponse)(nil),         // 7: fitglue.services.registry.GetPluginIconResponse
+	(*ListSourcesRequest)(nil),            // 8: fitglue.services.registry.ListSourcesRequest
+	(*ListSourcesResponse)(nil),           // 9: fitglue.services.registry.ListSourcesResponse
+	(*ListDestinationsRequest)(nil),       // 10: fitglue.services.registry.ListDestinationsRequest
+	(*ListDestinationsResponse)(nil),      // 11: fitglue.services.registry.ListDestinationsResponse
+	(*plugin.PluginManifest)(nil),         // 12: fitglue.models.plugin.PluginManifest
+	(*plugin.PluginRegistryResponse)(nil), // 13: fitglue.models.plugin.PluginRegistryResponse
 }
 var file_services_registry_registry_proto_depIdxs = []int32{
-	11, // 0: fitglue.services.registry.ListPluginsResponse.plugins:type_name -> fitglue.models.plugin.PluginManifest
-	11, // 1: fitglue.services.registry.ListSourcesResponse.sources:type_name -> fitglue.models.plugin.PluginManifest
-	11, // 2: fitglue.services.registry.ListDestinationsResponse.destinations:type_name -> fitglue.models.plugin.PluginManifest
-	0,  // 3: fitglue.services.registry.RegistryService.ListPlugins:input_type -> fitglue.services.registry.ListPluginsRequest
-	2,  // 4: fitglue.services.registry.RegistryService.GetPlugin:input_type -> fitglue.services.registry.GetPluginRequest
-	3,  // 5: fitglue.services.registry.RegistryService.ListCategories:input_type -> fitglue.services.registry.ListCategoriesRequest
-	5,  // 6: fitglue.services.registry.RegistryService.GetPluginIcon:input_type -> fitglue.services.registry.GetPluginIconRequest
-	7,  // 7: fitglue.services.registry.RegistryService.ListSources:input_type -> fitglue.services.registry.ListSourcesRequest
-	9,  // 8: fitglue.services.registry.RegistryService.ListDestinations:input_type -> fitglue.services.registry.ListDestinationsRequest
-	1,  // 9: fitglue.services.registry.RegistryService.ListPlugins:output_type -> fitglue.services.registry.ListPluginsResponse
-	11, // 10: fitglue.services.registry.RegistryService.GetPlugin:output_type -> fitglue.models.plugin.PluginManifest
-	4,  // 11: fitglue.services.registry.RegistryService.ListCategories:output_type -> fitglue.services.registry.ListCategoriesResponse
-	6,  // 12: fitglue.services.registry.RegistryService.GetPluginIcon:output_type -> fitglue.services.registry.GetPluginIconResponse
-	8,  // 13: fitglue.services.registry.RegistryService.ListSources:output_type -> fitglue.services.registry.ListSourcesResponse
-	10, // 14: fitglue.services.registry.RegistryService.ListDestinations:output_type -> fitglue.services.registry.ListDestinationsResponse
-	9,  // [9:15] is the sub-list for method output_type
-	3,  // [3:9] is the sub-list for method input_type
+	12, // 0: fitglue.services.registry.ListPluginsResponse.plugins:type_name -> fitglue.models.plugin.PluginManifest
+	12, // 1: fitglue.services.registry.ListSourcesResponse.sources:type_name -> fitglue.models.plugin.PluginManifest
+	12, // 2: fitglue.services.registry.ListDestinationsResponse.destinations:type_name -> fitglue.models.plugin.PluginManifest
+	1,  // 3: fitglue.services.registry.RegistryService.ListPlugins:input_type -> fitglue.services.registry.ListPluginsRequest
+	3,  // 4: fitglue.services.registry.RegistryService.GetPlugin:input_type -> fitglue.services.registry.GetPluginRequest
+	4,  // 5: fitglue.services.registry.RegistryService.ListCategories:input_type -> fitglue.services.registry.ListCategoriesRequest
+	6,  // 6: fitglue.services.registry.RegistryService.GetPluginIcon:input_type -> fitglue.services.registry.GetPluginIconRequest
+	8,  // 7: fitglue.services.registry.RegistryService.ListSources:input_type -> fitglue.services.registry.ListSourcesRequest
+	0,  // 8: fitglue.services.registry.RegistryService.GetPluginRegistry:input_type -> fitglue.services.registry.GetPluginRegistryRequest
+	10, // 9: fitglue.services.registry.RegistryService.ListDestinations:input_type -> fitglue.services.registry.ListDestinationsRequest
+	2,  // 10: fitglue.services.registry.RegistryService.ListPlugins:output_type -> fitglue.services.registry.ListPluginsResponse
+	12, // 11: fitglue.services.registry.RegistryService.GetPlugin:output_type -> fitglue.models.plugin.PluginManifest
+	5,  // 12: fitglue.services.registry.RegistryService.ListCategories:output_type -> fitglue.services.registry.ListCategoriesResponse
+	7,  // 13: fitglue.services.registry.RegistryService.GetPluginIcon:output_type -> fitglue.services.registry.GetPluginIconResponse
+	9,  // 14: fitglue.services.registry.RegistryService.ListSources:output_type -> fitglue.services.registry.ListSourcesResponse
+	13, // 15: fitglue.services.registry.RegistryService.GetPluginRegistry:output_type -> fitglue.models.plugin.PluginRegistryResponse
+	11, // 16: fitglue.services.registry.RegistryService.ListDestinations:output_type -> fitglue.services.registry.ListDestinationsResponse
+	10, // [10:17] is the sub-list for method output_type
+	3,  // [3:10] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -587,7 +638,7 @@ func file_services_registry_registry_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_registry_registry_proto_rawDesc), len(file_services_registry_registry_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

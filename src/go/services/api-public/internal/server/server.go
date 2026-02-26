@@ -60,6 +60,7 @@ func (s *APIServer) setupRoutes() {
 }
 
 func (s *APIServer) registerRegistryRoutes(r chi.Router) {
+	r.Get("/registry", s.handleGetPluginRegistry)
 	r.Get("/registry/plugins", s.handleListPlugins)
 	r.Get("/registry/plugins/{id}", s.handleGetPlugin)
 	r.Get("/registry/categories", s.handleListCategories)
@@ -67,6 +68,18 @@ func (s *APIServer) registerRegistryRoutes(r chi.Router) {
 
 	// Wait, is endpoints mapping to API Public list Destinations requested?
 	// Let's implement handles.
+}
+
+func (s *APIServer) handleGetPluginRegistry(w http.ResponseWriter, r *http.Request) {
+	req := &registrypb.GetPluginRegistryRequest{}
+
+	res, err := s.registrySvc.GetPluginRegistry(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
 }
 
 func (s *APIServer) registerShowcaseRoutes(r chi.Router) {

@@ -87,3 +87,41 @@ heart_rate      300     100.0%     121.00           159.00           140.56
 power           300     100.0%     200.00           250.00           225.00
 ...
 ```
+
+## FIT Combiner Tool (`fit-combine`)
+
+The `fit-combine` CLI tool (`src/go/cmd/fit-combine`) merges two FIT files into a single output FIT file. Records are sorted by timestamp, laps and sessions are re-indexed, and the result contains a single FileId and Activity message.
+
+### Build
+```bash
+make build-tools-go
+# Binary location: ./bin/fit-combine
+```
+
+### Usage
+```bash
+./bin/fit-combine -input1 <file1.fit> -input2 <file2.fit> [-output <combined.fit>]
+```
+
+**Flags:**
+- `-input1`: (Required) Path to the first FIT file.
+- `-input2`: (Required) Path to the second FIT file.
+- `-output`: (Optional, default `combined.fit`) Path to write the merged FIT file.
+
+### Merge Strategy
+- **FileId & DeviceInfo**: Taken from the first file only.
+- **Records**: Combined from both files, sorted by timestamp.
+- **Laps & Sessions**: Combined, sorted by start time, and message indices re-numbered.
+- **Sets**: Combined, sorted by timestamp, re-indexed.
+- **Activity**: Single Activity message with the combined session count.
+
+### Example
+```bash
+./bin/fit-combine \
+  -input1 src/go/cmd/fit-inspect/examples/parkrun.fit \
+  -input2 src/go/cmd/fit-inspect/examples/sprints.fit \
+  -output /tmp/combined.fit
+
+# Verify the result
+./bin/fit-inspect -input /tmp/combined.fit
+```

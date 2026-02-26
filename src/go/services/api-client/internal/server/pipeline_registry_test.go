@@ -134,6 +134,9 @@ func (m *mockRegistryServiceClient) ListSources(ctx context.Context, in *registr
 func (m *mockRegistryServiceClient) ListDestinations(ctx context.Context, in *registrypb.ListDestinationsRequest, opts ...grpc.CallOption) (*registrypb.ListDestinationsResponse, error) {
 	return &registrypb.ListDestinationsResponse{}, nil
 }
+func (m *mockRegistryServiceClient) GetPluginRegistry(ctx context.Context, in *registrypb.GetPluginRegistryRequest, opts ...grpc.CallOption) (*pbplugin.PluginRegistryResponse, error) {
+	return &pbplugin.PluginRegistryResponse{}, nil
+}
 
 // =============================================================
 // Pipeline Handler Tests

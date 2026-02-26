@@ -22,6 +22,8 @@ type Store interface {
 	ListCategories(ctx context.Context) ([]string, error)
 	ListSources(ctx context.Context) ([]*pbplugin.PluginManifest, error)
 	ListDestinations(ctx context.Context) ([]*pbplugin.PluginManifest, error)
+	ListIntegrations(ctx context.Context) ([]*pbplugin.IntegrationManifest, error)
+	GetFullRegistry(ctx context.Context) (*pbplugin.PluginRegistryResponse, error)
 	GetPluginIcon(ctx context.Context, id string) ([]byte, string, error)
 }
 
@@ -111,6 +113,14 @@ func (s *staticStore) ListSources(ctx context.Context) ([]*pbplugin.PluginManife
 
 func (s *staticStore) ListDestinations(ctx context.Context) ([]*pbplugin.PluginManifest, error) {
 	return s.data.Destinations, nil
+}
+
+func (s *staticStore) ListIntegrations(ctx context.Context) ([]*pbplugin.IntegrationManifest, error) {
+	return s.data.Integrations, nil
+}
+
+func (s *staticStore) GetFullRegistry(ctx context.Context) (*pbplugin.PluginRegistryResponse, error) {
+	return s.data, nil
 }
 
 func (s *staticStore) GetPluginIcon(ctx context.Context, id string) ([]byte, string, error) {

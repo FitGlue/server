@@ -85,3 +85,15 @@ func (s *APIServer) handleListSources(w http.ResponseWriter, r *http.Request) {
 
 	WriteJSON(w, res)
 }
+
+func (s *APIServer) handleGetPluginRegistry(w http.ResponseWriter, r *http.Request) {
+	req := &registrypb.GetPluginRegistryRequest{}
+
+	res, err := s.registrySvc.GetPluginRegistry(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
+}

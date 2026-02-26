@@ -94,6 +94,12 @@ func (s *APIServer) setupRoutes() {
 		// Integration request (unauthenticated - contact form)
 		r.Post("/integrations/request", s.handleIntegrationRequest)
 
+		// Plugin registry (unauthenticated - used by Skier build and marketing pages)
+		r.Get("/registry", s.handleGetPluginRegistry)
+
+		// Registry browse routes (unauthenticated - used by web app plugin browser)
+		s.registerRegistryRoutes(r)
+
 		// Register domain routes here
 		r.Group(func(r chi.Router) {
 			r.Use(AuthMiddleware(s.authClient))
@@ -102,7 +108,6 @@ func (s *APIServer) setupRoutes() {
 			s.registerBillingRoutes(r)
 			s.registerPipelineRoutes(r)
 			s.registerActivityRoutes(r)
-			s.registerRegistryRoutes(r)
 			s.registerOAuthRoutes(r)
 			s.registerRepostRoutes(r)
 		})

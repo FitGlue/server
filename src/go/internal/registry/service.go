@@ -83,3 +83,12 @@ func (s *RegistryService) ListDestinations(ctx context.Context, req *pbsvc.ListD
 	}
 	return &pbsvc.ListDestinationsResponse{Destinations: destinations}, nil
 }
+
+func (s *RegistryService) GetPluginRegistry(ctx context.Context, req *pbsvc.GetPluginRegistryRequest) (*pbplugin.PluginRegistryResponse, error) {
+	registry, err := s.store.GetFullRegistry(ctx)
+	if err != nil {
+		s.logger.Error(ctx, "Failed to get plugin registry", "error", err)
+		return nil, status.Errorf(codes.Internal, "failed to get plugin registry: %v", err)
+	}
+	return registry, nil
+}
