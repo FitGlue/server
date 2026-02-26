@@ -13,8 +13,6 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -48,7 +46,7 @@ func main() {
 	if userServiceURL == "" {
 		userServiceURL = "localhost:50051" // Default for local dev
 	}
-	userConn, err := grpc.NewClient(userServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userConn, err := infra.GRPCDial(userServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to User Service", "url", userServiceURL, "error", err)
 		os.Exit(1)
@@ -60,7 +58,7 @@ func main() {
 	if pipelineServiceURL == "" {
 		pipelineServiceURL = "localhost:50053"
 	}
-	pipelineConn, err := grpc.NewClient(pipelineServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	pipelineConn, err := infra.GRPCDial(pipelineServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to Pipeline Service", "url", pipelineServiceURL, "error", err)
 		os.Exit(1)

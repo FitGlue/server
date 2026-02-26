@@ -10,9 +10,6 @@ import (
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	registrypb "github.com/fitglue/server/src/go/pkg/types/pb/services/registry"
 	"github.com/fitglue/server/src/go/services/api-public/internal/server"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -25,7 +22,7 @@ func main() {
 	if activityServiceURL == "" {
 		activityServiceURL = "localhost:50054"
 	}
-	activityConn, err := grpc.NewClient(activityServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	activityConn, err := infra.GRPCDial(activityServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to Activity Service", "url", activityServiceURL, "error", err)
 		os.Exit(1)
@@ -37,7 +34,7 @@ func main() {
 	if registryServiceURL == "" {
 		registryServiceURL = "localhost:50055"
 	}
-	registryConn, err := grpc.NewClient(registryServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	registryConn, err := infra.GRPCDial(registryServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to Registry Service", "url", registryServiceURL, "error", err)
 		os.Exit(1)

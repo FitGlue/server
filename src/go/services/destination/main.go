@@ -21,8 +21,6 @@ import (
 	"github.com/fitglue/server/src/go/services/destination/internal/destination/uploaders/showcase"
 	"github.com/fitglue/server/src/go/services/destination/internal/destination/uploaders/strava"
 	"github.com/fitglue/server/src/go/services/destination/internal/destination/uploaders/trainingpeaks"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -41,7 +39,7 @@ func main() {
 	if userServiceURL == "" {
 		userServiceURL = "localhost:50051"
 	}
-	userConn, err := grpc.NewClient(userServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userConn, err := infra.GRPCDial(userServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to User Service", "url", userServiceURL, "error", err)
 		os.Exit(1)
@@ -53,7 +51,7 @@ func main() {
 	if activityServiceURL == "" {
 		activityServiceURL = "localhost:50054"
 	}
-	activityConn, err := grpc.NewClient(activityServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	activityConn, err := infra.GRPCDial(activityServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to Activity Service", "url", activityServiceURL, "error", err)
 		os.Exit(1)

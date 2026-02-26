@@ -28,8 +28,6 @@ import (
 	"github.com/fitglue/server/src/go/services/api-webhook/internal/webhook/sources/wahoo"
 
 	"google.golang.org/api/option"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -61,7 +59,7 @@ func main() {
 	if userServiceURL == "" {
 		userServiceURL = "localhost:50051"
 	}
-	userConn, err := grpc.NewClient(userServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	userConn, err := infra.GRPCDial(userServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to User Service", "url", userServiceURL, "error", err)
 		os.Exit(1)
@@ -73,7 +71,7 @@ func main() {
 	if pipelineServiceURL == "" {
 		pipelineServiceURL = "localhost:50053"
 	}
-	pipelineConn, err := grpc.NewClient(pipelineServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	pipelineConn, err := infra.GRPCDial(pipelineServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to Pipeline Service", "url", pipelineServiceURL, "error", err)
 		os.Exit(1)
@@ -85,7 +83,7 @@ func main() {
 	if activityServiceURL == "" {
 		activityServiceURL = "localhost:50054"
 	}
-	activityConn, err := grpc.NewClient(activityServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	activityConn, err := infra.GRPCDial(activityServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to Activity Service", "url", activityServiceURL, "error", err)
 		os.Exit(1)
@@ -97,7 +95,7 @@ func main() {
 	if billingServiceURL == "" {
 		billingServiceURL = "localhost:50052"
 	}
-	billingConn, err := grpc.NewClient(billingServiceURL, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	billingConn, err := infra.GRPCDial(billingServiceURL)
 	if err != nil {
 		logger.Error(ctx, "Failed to connect to Billing Service", "url", billingServiceURL, "error", err)
 		os.Exit(1)

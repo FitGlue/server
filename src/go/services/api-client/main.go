@@ -13,14 +13,13 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"google.golang.org/api/option"
+	"google.golang.org/grpc"
 
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	billingpb "github.com/fitglue/server/src/go/pkg/types/pb/services/billing"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	registrypb "github.com/fitglue/server/src/go/pkg/types/pb/services/registry"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -45,18 +44,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Initialize gRPC clients
-	opts := []grpc.DialOption{
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	}
-
-	// Helper to dial a service or panic if connection starts failing severely format (lazy dialing)
+	// Helper to dial a service
 	connect := func(targetEnv string, defaultTarget string) *grpc.ClientConn {
 		target := os.Getenv(targetEnv)
 		if target == "" {
 			target = defaultTarget
 		}
-		conn, err := grpc.NewClient(target, opts...)
+		conn, err := infra.GRPCDial(target)
 		if err != nil {
 			logger.Error(ctx, "failed to configure grpc client", "target", target, "error", err)
 			os.Exit(1)
