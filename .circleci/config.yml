@@ -116,12 +116,12 @@ jobs:
             export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
             gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
             
+            TAG="${CIRCLE_SHA1:0:12}"
             SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
             for svc in $SERVICES; do
-              IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:latest"
-              echo "Building $IMAGE for $svc..."
+              IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:$TAG"
+              echo "Building $svc ($TAG)..."
               docker build -t $IMAGE --build-arg SERVICE_NAME=$svc .
-              echo "Pushing $IMAGE..."
               docker push $IMAGE
             done
       - run:
@@ -129,23 +129,10 @@ jobs:
           command: |
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
             export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
+            TAG="${CIRCLE_SHA1:0:12}"
             terraform -chdir=terraform apply -auto-approve -lock-timeout=20m \
-              -var-file="envs/<< parameters.target >>.tfvars"
-      - run:
-          name: Deploy Cloud Run Services
-          command: |
-            export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
-            export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
-            SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
-            for svc in $SERVICES; do
-              IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:latest"
-              echo "Rolling out $svc to Cloud Run..."
-              gcloud run deploy $svc \
-                --image $IMAGE \
-                --region us-central1 \
-                --project fitglue-server-<< parameters.target >> \
-                --quiet
-            done
+              -var-file="envs/<< parameters.target >>.tfvars" \
+              -var "image_tag=$TAG"
 
   # upload-sourcemaps job removed — no longer applicable to Go-only server
 

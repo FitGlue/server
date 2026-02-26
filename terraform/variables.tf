@@ -49,3 +49,8 @@ variable "sentry_dsn" {
   default     = "fitglue-server-dev"
 }
 
+variable "image_tag" {
+  description = "Docker image tag for Cloud Run services (git SHA in CI, 'latest' for local)"
+  type        = string
+  default     = "latest"
+}

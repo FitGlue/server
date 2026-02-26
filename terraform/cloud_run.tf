@@ -39,7 +39,7 @@ resource "google_cloud_run_v2_service" "backend" {
   template {
     service_account = google_service_account.cloud_run_sa[each.key].email
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:${var.image_tag}"
       resources {
         limits = {
           cpu    = "1000m"
@@ -494,13 +494,6 @@ resource "google_cloud_run_v2_service" "backend" {
       min_instance_count = 1
       max_instance_count = 10
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      template[0].containers[0].image,
-    ]
-  }
 }
 
 
@@ -515,7 +508,7 @@ resource "google_cloud_run_v2_service" "frontend" {
   template {
     service_account = google_service_account.cloud_run_sa[each.key].email
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:latest"
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:${var.image_tag}"
       resources {
         limits = {
           cpu    = "1000m"
@@ -850,13 +843,6 @@ resource "google_cloud_run_v2_service" "frontend" {
       min_instance_count = 1
       max_instance_count = 10
     }
-  }
-
-  lifecycle {
-    ignore_changes = [
-      template[0].containers[0].image,
-    ]
-  }
 }
 
 data "google_iam_policy" "noauth" {
