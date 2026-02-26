@@ -91,9 +91,6 @@ func (s *APIServer) setupRoutes() {
 		// Password reset doesn't require authentication
 		r.Post("/auth-email/send-password-reset", s.handleSendPasswordResetEmail)
 
-		// Config endpoints (unauthenticated)
-		r.Get("/config/recaptcha", s.handleGetRecaptchaConfig)
-
 		// Integration request (unauthenticated - contact form)
 		r.Post("/integrations/request", s.handleIntegrationRequest)
 

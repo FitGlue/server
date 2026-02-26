@@ -1,7 +1,7 @@
 locals {
   firestore_services = ["user", "billing", "pipeline", "activity", "registry"]
   pubsub_publishers  = ["api-webhook", "pipeline"]
-  secret_accessors   = ["user", "billing", "pipeline", "activity", "destination", "registry", "api-webhook"]
+  secret_accessors   = ["api-client", "user", "billing", "pipeline", "activity", "destination", "registry", "api-webhook"]
 }
 
 resource "google_project_iam_member" "cr_firestore_user" {

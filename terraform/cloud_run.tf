@@ -45,20 +45,447 @@ resource "google_cloud_run_v2_service" "backend" {
           memory = "256Mi"
         }
       }
+
+      # ── Shared env vars (all backend services) ──
       env {
         name  = "PROJECT_ID"
+        value = var.project_id
+      }
+      env {
+        name  = "GOOGLE_CLOUD_PROJECT"
         value = var.project_id
       }
       env {
         name  = "ENVIRONMENT"
         value = var.environment
       }
-      # Pipeline needs destination url
+      env {
+        name  = "LOG_LEVEL"
+        value = var.log_level
+      }
+      env {
+        name  = "SENTRY_DSN"
+        value = var.sentry_dsn
+      }
+
+      # ── Pipeline-specific env vars ──
       dynamic "env" {
         for_each = each.key == "pipeline" ? [1] : []
         content {
           name  = "DESTINATION_SERVICE_URL"
           value = "https://destination-${data.google_project.project.number}.${var.region}.run.app"
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name  = "GCS_ARTIFACT_BUCKET"
+          value = "${var.project_id}-artifacts"
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name  = "ARTIFACT_BUCKET"
+          value = "${var.project_id}-artifacts"
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name  = "SHOWCASE_ASSETS_BUCKET"
+          value = google_storage_bucket.showcase_assets_bucket.name
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name  = "ASSETS_BASE_URL"
+          value = "https://assets.${var.domain_name}"
+        }
+      }
+
+      # ── User service env vars ──
+      dynamic "env" {
+        for_each = each.key == "user" ? [1] : []
+        content {
+          name  = "FITGLUE_WEB_URL"
+          value = var.base_url
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "user" ? [1] : []
+        content {
+          name  = "SYSTEM_EMAIL"
+          value = "system@fitglue.tech"
+        }
+      }
+
+      # ── Activity service env vars ──
+      dynamic "env" {
+        for_each = each.key == "activity" ? [1] : []
+        content {
+          name  = "SHOWCASE_ASSETS_BUCKET"
+          value = google_storage_bucket.showcase_assets_bucket.name
+        }
+      }
+
+      # ── Destination service env vars ──
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name  = "GCS_ARTIFACT_BUCKET"
+          value = "${var.project_id}-artifacts"
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name  = "USER_SERVICE_URL"
+          value = google_cloud_run_v2_service.backend["user"].uri
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name  = "ACTIVITY_SERVICE_URL"
+          value = google_cloud_run_v2_service.backend["activity"].uri
+        }
+      }
+
+      # ═══════════════════════════════════════════════════════════════
+      # Secrets (from Secret Manager)
+      # ═══════════════════════════════════════════════════════════════
+
+      # ── Pipeline secrets (enricher needs Gemini, Spotify, Fitbit) ──
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name = "GEMINI_API_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.gemini_api_key.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name = "SPOTIFY_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.spotify_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name = "SPOTIFY_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.spotify_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name = "FITBIT_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "pipeline" ? [1] : []
+        content {
+          name = "FITBIT_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      # ── Billing secrets (Stripe) ──
+      dynamic "env" {
+        for_each = each.key == "billing" ? [1] : []
+        content {
+          name = "STRIPE_SECRET_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.stripe_secret_key.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "billing" ? [1] : []
+        content {
+          name = "STRIPE_WEBHOOK_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.stripe_webhook_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "billing" ? [1] : []
+        content {
+          name = "STRIPE_PRICE_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.stripe_price_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      # ── User secrets (Email) ──
+      dynamic "env" {
+        for_each = each.key == "user" ? [1] : []
+        content {
+          name = "EMAIL_APP_PASSWORD"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.email_app_password.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      # ── Destination secrets (all OAuth client pairs for token refresh) ──
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "STRAVA_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.strava_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "STRAVA_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.strava_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "FITBIT_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "FITBIT_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "TRAININGPEAKS_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.trainingpeaks_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "TRAININGPEAKS_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.trainingpeaks_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "GOOGLE_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.google_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "GOOGLE_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.google_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "GITHUB_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.github_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "GITHUB_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.github_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "SPOTIFY_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.spotify_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "SPOTIFY_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.spotify_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "WAHOO_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.wahoo_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "WAHOO_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.wahoo_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "POLAR_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.polar_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "POLAR_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.polar_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "OURA_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.oura_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "destination" ? [1] : []
+        content {
+          name = "OURA_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.oura_client_secret.secret_id
+              version = "latest"
+            }
+          }
         }
       }
     }
@@ -93,13 +520,27 @@ resource "google_cloud_run_v2_service" "frontend" {
           memory = "256Mi"
         }
       }
+
+      # ── Shared env vars (all frontend services) ──
       env {
         name  = "PROJECT_ID"
         value = var.project_id
       }
       env {
+        name  = "GOOGLE_CLOUD_PROJECT"
+        value = var.project_id
+      }
+      env {
         name  = "ENVIRONMENT"
         value = var.environment
+      }
+      env {
+        name  = "LOG_LEVEL"
+        value = var.log_level
+      }
+      env {
+        name  = "SENTRY_DSN"
+        value = var.sentry_dsn
       }
       env {
         name  = "USER_SERVICE_URL"
@@ -120,6 +561,287 @@ resource "google_cloud_run_v2_service" "frontend" {
       env {
         name  = "REGISTRY_SERVICE_URL"
         value = google_cloud_run_v2_service.backend["registry"].uri
+      }
+
+      # ── api-client: OAuth base URL ──
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name  = "BASE_URL"
+          value = var.base_url
+        }
+      }
+
+      # ═══════════════════════════════════════════════════════════════
+      # Secrets — api-client (all OAuth client pairs for connect flow)
+      # ═══════════════════════════════════════════════════════════════
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "OAUTH_STATE_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.oauth_state_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "STRAVA_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.strava_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "STRAVA_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.strava_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "FITBIT_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "FITBIT_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "OURA_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.oura_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "OURA_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.oura_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "POLAR_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.polar_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "POLAR_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.polar_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "WAHOO_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.wahoo_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "WAHOO_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.wahoo_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "SPOTIFY_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.spotify_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "SPOTIFY_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.spotify_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "GITHUB_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.github_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "GITHUB_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.github_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "GOOGLE_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.google_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "GOOGLE_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.google_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "TRAININGPEAKS_CLIENT_ID"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.trainingpeaks_client_id.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name = "TRAININGPEAKS_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.trainingpeaks_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+
+      # ═══════════════════════════════════════════════════════════════
+      # Secrets — api-webhook (webhook verification tokens + client pairs used in fetch)
+      # ═══════════════════════════════════════════════════════════════
+      dynamic "env" {
+        for_each = each.key == "api-webhook" ? [1] : []
+        content {
+          name = "STRAVA_WEBHOOK_VERIFY_TOKEN"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.strava_verify_token.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-webhook" ? [1] : []
+        content {
+          name = "FITBIT_SUBSCRIBER_VERIFICATION_TOKEN"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_verification_code.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-webhook" ? [1] : []
+        content {
+          name = "GITHUB_WEBHOOK_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.github_webhook_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
       }
     }
     scaling {
