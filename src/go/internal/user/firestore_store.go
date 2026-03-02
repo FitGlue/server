@@ -25,13 +25,40 @@ func NewFirestoreStore(client *firestore.Client) *FirestoreStore {
 	return &FirestoreStore{client: client}
 }
 
+// legacyTierMap maps short tier strings written by the old TypeScript system
+// to their proto enum names expected by protojson.
+var legacyTierMap = map[string]string{
+	"hobbyist": "USER_TIER_HOBBYIST",
+	"athlete":  "USER_TIER_ATHLETE",
+}
+
+// normalizeUserData converts legacy field values (written by TypeScript) into
+// formats compatible with protojson unmarshaling. Currently handles the tier
+// enum which was stored as short strings like "hobbyist" instead of the proto
+// enum name "USER_TIER_HOBBYIST".
+func normalizeUserData(data map[string]interface{}) map[string]interface{} {
+	if tierVal, ok := data["tier"]; ok {
+		if tierStr, ok := tierVal.(string); ok {
+			if mapped, ok := legacyTierMap[tierStr]; ok {
+				data["tier"] = mapped
+			}
+		}
+	}
+	return data
+}
+
 func (s *FirestoreStore) GetProfile(ctx context.Context, userID string) (*pbuser.UserProfile, error) {
 	doc, err := s.client.Collection("users").Doc(userID).Get(ctx)
 	if err != nil {
 		return nil, err
 	}
+	b, err := json.Marshal(normalizeUserData(doc.Data()))
+	if err != nil {
+		return nil, err
+	}
 	var profile pbuser.UserProfile
-	if err := doc.DataTo(&profile); err != nil {
+	err = protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(b, &profile)
+	if err != nil {
 		return nil, err
 	}
 	return &profile, nil
@@ -155,8 +182,13 @@ func (s *FirestoreStore) FindUsersByDateRange(ctx context.Context, start, end ti
 			return nil, err
 		}
 
+		b, err := json.Marshal(normalizeUserData(doc.Data()))
+		if err != nil {
+			return nil, err
+		}
 		var profile pbuser.UserProfile
-		if err := doc.DataTo(&profile); err != nil {
+		err = protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(b, &profile)
+		if err != nil {
 			return nil, err
 		}
 		users = append(users, &profile)
@@ -262,8 +294,13 @@ func (s *FirestoreStore) FindUserByIntegration(ctx context.Context, provider str
 		return nil, err
 	}
 
+	b, err := json.Marshal(normalizeUserData(doc.Data()))
+	if err != nil {
+		return nil, err
+	}
 	var profile pbuser.UserProfile
-	if err := doc.DataTo(&profile); err != nil {
+	err = protojson.UnmarshalOptions{DiscardUnknown: true}.Unmarshal(b, &profile)
+	if err != nil {
 		return nil, err
 	}
 

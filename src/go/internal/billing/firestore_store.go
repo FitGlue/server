@@ -86,11 +86,15 @@ func (s *FirestoreStore) GetUserIDByStripeCustomer(ctx context.Context, customer
 	return doc.Ref.ID, nil
 }
 
+// legacyTierMap maps short tier strings from old TypeScript code to proto enum values.
+var legacyTierMap = map[string]pbuser.UserTier{
+	"hobbyist": pbuser.UserTier_USER_TIER_HOBBYIST,
+	"athlete":  pbuser.UserTier_USER_TIER_ATHLETE,
+}
+
 func (s *FirestoreStore) UpdateUserTier(ctx context.Context, userID string, tier pbuser.UserTier, trialEndsAt *time.Time) error {
 	updates := []firestore.Update{
-		{Path: "tier", Value: int(tier)}, // Enums are ints in firestore typically, or string. The old system used int or string? Let's use int representing the enum, or the string name.
-		// Wait, old system used `UserTier.USER_TIER_ATHLETE`. It was represented as an integer in ts-proto by default, unless configured otherwise.
-		// Let's check user_profile.proto or old TS code. The TS code imported `UserTier` enum. By default ts-proto uses ints.
+		{Path: "tier", Value: tier.String()}, // Write as proto enum name for protojson compat
 	}
 
 	if trialEndsAt == nil {
@@ -111,8 +115,17 @@ func (s *FirestoreStore) GetTierStatus(ctx context.Context, userID string) (pbus
 
 	var tier pbuser.UserTier = pbuser.UserTier_USER_TIER_HOBBYIST
 	if t, err := doc.DataAt("tier"); err == nil {
-		if tierInt, ok := t.(int64); ok {
-			tier = pbuser.UserTier(tierInt)
+		switch v := t.(type) {
+		case int64:
+			tier = pbuser.UserTier(v)
+		case string:
+			// Handle legacy short strings (e.g., "hobbyist", "athlete")
+			if mapped, ok := legacyTierMap[v]; ok {
+				tier = mapped
+			} else if enumVal, ok := pbuser.UserTier_value[v]; ok {
+				// Handle proto enum name strings (e.g., "USER_TIER_HOBBYIST")
+				tier = pbuser.UserTier(enumVal)
+			}
 		}
 	}
 
