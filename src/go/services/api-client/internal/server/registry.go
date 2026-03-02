@@ -10,7 +10,8 @@ import (
 func (s *APIServer) registerRegistryRoutes(r chi.Router) {
 	// Note: Registry routes are typically public or require different auth
 	// But according to the task list, they are mounted under /api/registry and proxy to RegistryService.
-	r.Get("/registry/plugins", s.handleListPlugins)
+	r.Get("/registry", s.handleGetPluginRegistry)
+	r.Get("/registry/plugins", s.handleGetPluginRegistry) // Frontend expects the full split format here
 	r.Get("/registry/plugins/{id}", s.handleGetPlugin)
 	r.Get("/registry/plugins/{id}/icon", s.handleGetPluginIcon)
 	r.Get("/registry/categories", s.handleListCategories)

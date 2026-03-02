@@ -1,6 +1,9 @@
 package activity
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 // BlobStore defines the contract for object storage operations (e.g. GCS).
 type BlobStore interface {
@@ -10,4 +13,6 @@ type BlobStore interface {
 	Write(ctx context.Context, bucket, path string, data []byte) error
 	// Delete removes a blob
 	Delete(ctx context.Context, bucket, path string) error
+	// SignedURL generates a signed URL for direct upload/download
+	SignedURL(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error)
 }

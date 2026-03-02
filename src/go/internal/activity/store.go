@@ -19,8 +19,17 @@ type ActivityStore interface {
 	UpdateShowcase(ctx context.Context, userID string, showcase *pbactivity.ShowcasedActivity) (*pbactivity.ShowcasedActivity, error)
 	DeleteShowcase(ctx context.Context, userID, showcaseID string) error
 
-	// New Showcase Management RPCs
+	// Showcase Management RPCs
 	GetShowcasePreferences(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error)
 	UpdateShowcasePreferences(ctx context.Context, userID string, prefs *pbactivity.ShowcaseProfile) (*pbactivity.ShowcaseProfile, error)
 	GetPublicShowcase(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error)
+
+	// Showcase Settings & Profile
+	UpdateShowcaseSlug(ctx context.Context, userID, slug string) error
+	GetShowcaseProfileBySlug(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error)
+	ListShowcasedActivitiesByUser(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
+
+	// Activity Stats
+	CountPipelineRunsByStatus(ctx context.Context, userID, status string) (int32, error)
+	CountShowcasedActivities(ctx context.Context, userID string) (int32, error)
 }

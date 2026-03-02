@@ -33,10 +33,11 @@ var legacyTierMap = map[string]string{
 }
 
 // normalizeUserData converts legacy field values (written by TypeScript) into
-// formats compatible with protojson unmarshaling. Currently handles the tier
-// enum which was stored as short strings like "hobbyist" instead of the proto
-// enum name "USER_TIER_HOBBYIST".
+// formats compatible with protojson unmarshaling. Handles:
+// - tier enum stored as short strings ("hobbyist" → "USER_TIER_HOBBYIST")
+// - duplicate camelCase/snake_case keys (isAdmin + is_admin → protojson duplicate error)
 func normalizeUserData(data map[string]interface{}) map[string]interface{} {
+	// Normalize tier enum
 	if tierVal, ok := data["tier"]; ok {
 		if tierStr, ok := tierVal.(string); ok {
 			if mapped, ok := legacyTierMap[tierStr]; ok {
@@ -44,6 +45,22 @@ func normalizeUserData(data map[string]interface{}) map[string]interface{} {
 			}
 		}
 	}
+
+	// Remove camelCase duplicates of snake_case fields. The old TS code wrote
+	// some fields in both formats. protojson maps both to the same proto field
+	// and errors on duplicates.
+	camelToSnake := map[string]string{
+		"isAdmin":     "is_admin",
+		"trialEndsAt": "trial_ends_at",
+	}
+	for camel, snake := range camelToSnake {
+		if _, hasCamel := data[camel]; hasCamel {
+			if _, hasSnake := data[snake]; hasSnake {
+				delete(data, camel) // keep snake_case, drop camelCase
+			}
+		}
+	}
+
 	return data
 }
 

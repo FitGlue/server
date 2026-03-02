@@ -2,6 +2,7 @@ package activity
 
 import (
 	"context"
+	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
@@ -22,6 +23,12 @@ type MockActivityStore struct {
 	GetShowcasePreferencesFunc    func(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error)
 	UpdateShowcasePreferencesFunc func(ctx context.Context, userID string, prefs *pbactivity.ShowcaseProfile) (*pbactivity.ShowcaseProfile, error)
 	GetPublicShowcaseFunc         func(ctx context.Context, showcaseID string) (*pbactivity.ShowcasedActivity, error)
+
+	UpdateShowcaseSlugFunc            func(ctx context.Context, userID, slug string) error
+	GetShowcaseProfileBySlugFunc      func(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error)
+	ListShowcasedActivitiesByUserFunc func(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
+	CountPipelineRunsByStatusFunc     func(ctx context.Context, userID, status string) (int32, error)
+	CountShowcasedActivitiesFunc      func(ctx context.Context, userID string) (int32, error)
 }
 
 func (m *MockActivityStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pbpipeline.PipelineRun, error) {
@@ -101,11 +108,47 @@ func (m *MockActivityStore) GetPublicShowcase(ctx context.Context, showcaseID st
 	return nil, nil
 }
 
+func (m *MockActivityStore) UpdateShowcaseSlug(ctx context.Context, userID, slug string) error {
+	if m.UpdateShowcaseSlugFunc != nil {
+		return m.UpdateShowcaseSlugFunc(ctx, userID, slug)
+	}
+	return nil
+}
+
+func (m *MockActivityStore) GetShowcaseProfileBySlug(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error) {
+	if m.GetShowcaseProfileBySlugFunc != nil {
+		return m.GetShowcaseProfileBySlugFunc(ctx, slug)
+	}
+	return nil, nil
+}
+
+func (m *MockActivityStore) ListShowcasedActivitiesByUser(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error) {
+	if m.ListShowcasedActivitiesByUserFunc != nil {
+		return m.ListShowcasedActivitiesByUserFunc(ctx, userID, limit, offset)
+	}
+	return nil, 0, nil
+}
+
+func (m *MockActivityStore) CountPipelineRunsByStatus(ctx context.Context, userID, pipelineStatus string) (int32, error) {
+	if m.CountPipelineRunsByStatusFunc != nil {
+		return m.CountPipelineRunsByStatusFunc(ctx, userID, pipelineStatus)
+	}
+	return 0, nil
+}
+
+func (m *MockActivityStore) CountShowcasedActivities(ctx context.Context, userID string) (int32, error) {
+	if m.CountShowcasedActivitiesFunc != nil {
+		return m.CountShowcasedActivitiesFunc(ctx, userID)
+	}
+	return 0, nil
+}
+
 // MockBlobStore implements BlobStore for testing
 type MockBlobStore struct {
-	GetFunc    func(ctx context.Context, bucket, object string) ([]byte, error)
-	DeleteFunc func(ctx context.Context, bucket, object string) error
-	WriteFunc  func(ctx context.Context, bucket, object string, data []byte) error
+	GetFunc       func(ctx context.Context, bucket, object string) ([]byte, error)
+	DeleteFunc    func(ctx context.Context, bucket, object string) error
+	WriteFunc     func(ctx context.Context, bucket, object string, data []byte) error
+	SignedURLFunc func(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error)
 }
 
 func (m *MockBlobStore) Get(ctx context.Context, bucket, object string) ([]byte, error) {
@@ -127,6 +170,13 @@ func (m *MockBlobStore) Write(ctx context.Context, bucket, object string, data [
 		return m.WriteFunc(ctx, bucket, object, data)
 	}
 	return nil
+}
+
+func (m *MockBlobStore) SignedURL(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error) {
+	if m.SignedURLFunc != nil {
+		return m.SignedURLFunc(ctx, bucket, path, contentType, expiry)
+	}
+	return "https://storage.googleapis.com/test-signed-url", nil
 }
 
 // MockPublisher implements Publisher for testing

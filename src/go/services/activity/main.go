@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"time"
 
 	"cloud.google.com/go/firestore"
 	cloudevents "github.com/cloudevents/sdk-go/v2"
@@ -28,6 +29,10 @@ func (s *stubBlobStore) Write(ctx context.Context, bucket, path string, data []b
 
 func (s *stubBlobStore) Delete(ctx context.Context, bucket, path string) error {
 	return nil
+}
+
+func (s *stubBlobStore) SignedURL(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error) {
+	return "", nil
 }
 
 type stubPublisher struct{}
