@@ -236,16 +236,10 @@ workflows:
             branches:
               only: main
       # upload-sourcemaps removed — no longer applicable
-      - deploy:
-          name: deploy-test
-          target: test
-          project_number: "797085295878"
-          requires:
-            - deploy-dev
       - approve-prod:
           type: approval
           requires:
-            - deploy-test
+            - deploy-dev
       - deploy:
           name: deploy-prod
           target: prod
