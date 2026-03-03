@@ -42,7 +42,7 @@ resource "google_cloud_run_v2_service" "backend" {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:${var.image_tag}"
       resources {
         limits = {
-          cpu    = "250m"
+          cpu    = "1000m"
           memory = "256Mi"
         }
       }
@@ -519,7 +519,7 @@ resource "google_cloud_run_v2_service" "frontend" {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:${var.image_tag}"
       resources {
         limits = {
-          cpu    = "250m"
+          cpu    = "1000m"
           memory = "256Mi"
         }
       }
