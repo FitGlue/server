@@ -2,15 +2,12 @@
 package server
 
 import (
-	"encoding/json"
-	"io"
 	"net/http"
 	"strconv"
 
 	pipelinem "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	"github.com/go-chi/chi/v5"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (s *APIServer) registerPipelineRoutes(r chi.Router) {
@@ -75,15 +72,8 @@ func (s *APIServer) handleCreatePipeline(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	body, err := io.ReadAll(r.Body)
-	if err != nil {
-		WriteError(w, statusError(http.StatusBadRequest, "failed to read request body"))
-		return
-	}
-
 	var pipeline pipelinem.PipelineConfig
-	unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
-	if err := unmarshaler.Unmarshal(body, &pipeline); err != nil {
+	if err := decodeProto(r, &pipeline); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -110,11 +100,13 @@ func (s *APIServer) handleUpdatePipeline(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var reqBody pipelinepb.UpdatePipelineRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody.Pipeline); err != nil {
+	var pipeline pipelinem.PipelineConfig
+	if err := decodeProto(r, &pipeline); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+	var reqBody pipelinepb.UpdatePipelineRequest
+	reqBody.Pipeline = &pipeline
 	reqBody.UserId = token.UID
 	reqBody.PipelineId = chi.URLParam(r, "id")
 
@@ -210,7 +202,7 @@ func (s *APIServer) handleSubmitInput(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var reqBody pipelinepb.SubmitInputRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}

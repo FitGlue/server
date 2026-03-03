@@ -46,7 +46,7 @@ func (s *APIServer) handleCreateCheckoutSession(w http.ResponseWriter, r *http.R
 	}
 
 	var req billingpb.CreateCheckoutSessionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeProto(r, &req); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -69,7 +69,7 @@ func (s *APIServer) handleCancelSubscription(w http.ResponseWriter, r *http.Requ
 	}
 
 	var req billingpb.CancelSubscriptionRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeProto(r, &req); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}

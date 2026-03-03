@@ -1,11 +1,10 @@
-// nolint:proto-json
 package server
 
 import (
-	"encoding/json"
 	"net/http"
 	"strconv"
 
+	pbactivitym "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	"github.com/go-chi/chi/v5"
 )
@@ -160,11 +159,13 @@ func (s *APIServer) handleCreateShowcase(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var reqBody activitypb.CreateShowcaseRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody.Showcase); err != nil {
+	var showcase pbactivitym.ShowcasedActivity
+	if err := decodeProto(r, &showcase); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+	var reqBody activitypb.CreateShowcaseRequest
+	reqBody.Showcase = &showcase
 	reqBody.UserId = token.UID
 
 	res, err := s.activitySvc.CreateShowcase(r.Context(), &reqBody)
@@ -184,11 +185,13 @@ func (s *APIServer) handleUpdateShowcase(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	var reqBody activitypb.UpdateShowcaseRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody.Showcase); err != nil {
+	var showcase pbactivitym.ShowcasedActivity
+	if err := decodeProto(r, &showcase); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+	var reqBody activitypb.UpdateShowcaseRequest
+	reqBody.Showcase = &showcase
 	reqBody.UserId = token.UID
 	reqBody.ShowcaseId = chi.URLParam(r, "id")
 
@@ -269,11 +272,13 @@ func (s *APIServer) handleUpdateShowcasePreferences(w http.ResponseWriter, r *ht
 		return
 	}
 
-	var reqBody activitypb.UpdateShowcasePreferencesRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody.Preferences); err != nil {
+	var prefs pbactivitym.ShowcaseProfile
+	if err := decodeProto(r, &prefs); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+	var reqBody activitypb.UpdateShowcasePreferencesRequest
+	reqBody.Preferences = &prefs
 	reqBody.UserId = token.UID
 
 	res, err := s.activitySvc.UpdateShowcasePreferences(r.Context(), &reqBody)
@@ -315,7 +320,7 @@ func (s *APIServer) handleParseFitFile(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var reqBody activitypb.ParseFitFileRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -360,7 +365,7 @@ func (s *APIServer) handleUpdateShowcaseSettings(w http.ResponseWriter, r *http.
 	}
 
 	var reqBody activitypb.UpdateShowcaseSettingsRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -383,7 +388,7 @@ func (s *APIServer) handleUpdateShowcaseSlug(w http.ResponseWriter, r *http.Requ
 	}
 
 	var reqBody activitypb.UpdateShowcaseSlugRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -444,7 +449,7 @@ func (s *APIServer) handleGetShowcaseProfilePictureUploadUrl(w http.ResponseWrit
 	}
 
 	var reqBody activitypb.GetShowcaseProfilePictureUploadUrlRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}

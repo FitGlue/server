@@ -99,21 +99,23 @@ func (s *APIServer) handleUpdateProfile(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var reqBody userpb.UpdateProfileRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody.Profile); err != nil {
+	var profileReq pbuser.UserProfile
+	if err := decodeProto(r, &profileReq); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
 
+	var reqBody userpb.UpdateProfileRequest
+	reqBody.Profile = &profileReq
 	reqBody.UserId = token.UID
 
-	profile, err := s.userService.UpdateProfile(r.Context(), &reqBody)
+	result, err := s.userService.UpdateProfile(r.Context(), &reqBody)
 	if err != nil {
 		WriteError(w, err)
 		return
 	}
 
-	WriteJSON(w, profile)
+	WriteJSON(w, result)
 }
 
 func (s *APIServer) handleListIntegrations(w http.ResponseWriter, r *http.Request) {
@@ -293,7 +295,7 @@ func (s *APIServer) handleUpdateCounter(w http.ResponseWriter, r *http.Request) 
 	name := chi.URLParam(r, "name")
 
 	var req userpb.UpdateCounterRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if err := decodeProto(r, &req); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -405,7 +407,7 @@ func (s *APIServer) handleSetBoosterData(w http.ResponseWriter, r *http.Request)
 	}
 
 	var reqBody userpb.SetBoosterDataRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -571,7 +573,7 @@ func (s *APIServer) handleSetPersonalRecord(w http.ResponseWriter, r *http.Reque
 	}
 
 	var reqBody userpb.SetPersonalRecordRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
@@ -636,7 +638,7 @@ func (s *APIServer) handleSetPluginDefaults(w http.ResponseWriter, r *http.Reque
 	}
 
 	var reqBody userpb.SetPluginDefaultsRequest
-	if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
+	if err := decodeProto(r, &reqBody); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}

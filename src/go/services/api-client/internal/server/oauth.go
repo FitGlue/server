@@ -57,7 +57,12 @@ func (s *APIServer) handleOAuthConnect(w http.ResponseWriter, r *http.Request) {
 	q.Set("response_type", "code")
 	q.Set("state", stateArg)
 	if len(config.Scopes) > 0 {
-		q.Set("scope", strings.Join(config.Scopes, " "))
+		// Strava requires comma-separated scopes; all other providers use space (OAuth 2.0 standard)
+		sep := " "
+		if provider == "strava" {
+			sep = ","
+		}
+		q.Set("scope", strings.Join(config.Scopes, sep))
 	}
 	authURL.RawQuery = q.Encode()
 
