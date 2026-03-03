@@ -24,6 +24,6 @@ func (s *GCSBlobStore) Delete(ctx context.Context, bucket, path string) error {
 	return s.adapter.Delete(ctx, bucket, path)
 }
 
-func (s *GCSBlobStore) SignedURL(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error) {
-	return s.adapter.SignedURL(ctx, bucket, path, contentType, expiry)
+func (s *GCSBlobStore) SignedURL(ctx context.Context, bucket, path, contentType string, contentLength int64, expiry time.Duration) (string, error) {
+	return s.adapter.SignedURL(ctx, bucket, path, contentType, contentLength, expiry)
 }

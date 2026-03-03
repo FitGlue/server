@@ -30,4 +30,14 @@ type Store interface {
 	GetBoosterData(ctx context.Context, userID, boosterID string) (map[string]*structpb.Struct, error)
 	SetBoosterData(ctx context.Context, userID, boosterID string, data *structpb.Struct) error
 	DeleteBoosterData(ctx context.Context, userID, boosterID string) error
+
+	DeleteCounter(ctx context.Context, userID, counterID string) error
+
+	ListPersonalRecords(ctx context.Context, userID string) ([]*pbuser.PersonalRecord, error)
+	SetPersonalRecord(ctx context.Context, userID, recordType string, record *pbuser.PersonalRecord) error
+	DeletePersonalRecord(ctx context.Context, userID, recordType string) error
+
+	ListPluginDefaults(ctx context.Context, userID string) (map[string]*structpb.Struct, error)
+	SetPluginDefaults(ctx context.Context, userID, pluginID string, defaults *structpb.Struct) error
+	DeletePluginDefaults(ctx context.Context, userID, pluginID string) error
 }

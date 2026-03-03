@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -216,12 +217,56 @@ func (s *APIServer) handleGetNotificationPrefs(w http.ResponseWriter, r *http.Re
 
 func (s *APIServer) handleUpdateNotificationPrefs(w http.ResponseWriter, r *http.Request) {
 	token := getUserToken(r)
-	var req userpb.UpdateNotificationPrefsRequest
-	if err := json.NewDecoder(r.Body).Decode(&req.Prefs); err != nil {
+
+	// Read current prefs
+	current, err := s.userService.GetNotificationPrefs(r.Context(), &userpb.GetNotificationPrefsRequest{UserId: token.UID})
+	if err != nil {
+		// If not found, start from defaults (all true)
+		st, _ := status.FromError(err)
+		if st.Code() != codes.NotFound {
+			WriteError(w, err)
+			return
+		}
+		current = &pbuser.NotificationPreferences{
+			NotifyPendingInput:    true,
+			NotifyPipelineSuccess: true,
+			NotifyPipelineFailure: true,
+		}
+	}
+
+	// Decode partial body into a map to identify which fields were explicitly sent
+	var partial map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&partial); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+
+	// Merge: only overwrite fields present in the partial update
+	merged := current
+	if v, ok := partial["notifyPendingInput"]; ok {
+		if b, ok := v.(bool); ok {
+			merged.NotifyPendingInput = b
+		}
+	}
+	if v, ok := partial["notifyPipelineSuccess"]; ok {
+		if b, ok := v.(bool); ok {
+			merged.NotifyPipelineSuccess = b
+		}
+	}
+	if v, ok := partial["notifyPipelineFailure"]; ok {
+		if b, ok := v.(bool); ok {
+			merged.NotifyPipelineFailure = b
+		}
+	}
+
+	var req userpb.UpdateNotificationPrefsRequest
 	req.UserId = token.UID
+	req.Prefs = &pbuser.NotificationPreferences{
+		NotifyPendingInput:    merged.NotifyPendingInput,
+		NotifyPipelineSuccess: merged.NotifyPipelineSuccess,
+		NotifyPipelineFailure: merged.NotifyPipelineFailure,
+	}
+
 	res, err := s.userService.UpdateNotificationPrefs(r.Context(), &req)
 	if err != nil {
 		WriteError(w, err)

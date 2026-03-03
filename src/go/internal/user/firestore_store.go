@@ -503,6 +503,104 @@ func (s *FirestoreStore) DeleteBoosterData(ctx context.Context, userID, boosterI
 	return err
 }
 
+func (s *FirestoreStore) DeleteCounter(ctx context.Context, userID, counterID string) error {
+	_, err := s.client.Collection("users").Doc(userID).Collection("counters").Doc(counterID).Delete(ctx)
+	return err
+}
+
+func (s *FirestoreStore) ListPersonalRecords(ctx context.Context, userID string) ([]*pbuser.PersonalRecord, error) {
+	var records []*pbuser.PersonalRecord
+	iter := s.client.Collection("users").Doc(userID).Collection("personal_records").Documents(ctx)
+	defer iter.Stop()
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		b, err := json.Marshal(doc.Data())
+		if err != nil {
+			return nil, err
+		}
+		var record pbuser.PersonalRecord
+		unmarshaler := protojson.UnmarshalOptions{DiscardUnknown: true}
+		if err := unmarshaler.Unmarshal(b, &record); err != nil {
+			return nil, err
+		}
+		records = append(records, &record)
+	}
+	return records, nil
+}
+
+func (s *FirestoreStore) SetPersonalRecord(ctx context.Context, userID, recordType string, record *pbuser.PersonalRecord) error {
+	if record == nil {
+		return errors.New("record cannot be nil")
+	}
+
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(record)
+	if err != nil {
+		return err
+	}
+	var data map[string]interface{}
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+
+	_, err = s.client.Collection("users").Doc(userID).Collection("personal_records").Doc(recordType).Set(ctx, data, firestore.MergeAll)
+	return err
+}
+
+func (s *FirestoreStore) DeletePersonalRecord(ctx context.Context, userID, recordType string) error {
+	_, err := s.client.Collection("users").Doc(userID).Collection("personal_records").Doc(recordType).Delete(ctx)
+	return err
+}
+
+func (s *FirestoreStore) ListPluginDefaults(ctx context.Context, userID string) (map[string]*structpb.Struct, error) {
+	res := make(map[string]*structpb.Struct)
+	iter := s.client.Collection("users").Doc(userID).Collection("plugin_defaults").Documents(ctx)
+	defer iter.Stop()
+
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		b, err := json.Marshal(doc.Data())
+		if err != nil {
+			return nil, err
+		}
+		var st structpb.Struct
+		if err := protojson.Unmarshal(b, &st); err != nil {
+			return nil, err
+		}
+		res[doc.Ref.ID] = &st
+	}
+	return res, nil
+}
+
+func (s *FirestoreStore) SetPluginDefaults(ctx context.Context, userID, pluginID string, defaults *structpb.Struct) error {
+	if defaults == nil {
+		return errors.New("defaults cannot be nil")
+	}
+	m := defaults.AsMap()
+	m["last_updated"] = time.Now()
+	_, err := s.client.Collection("users").Doc(userID).Collection("plugin_defaults").Doc(pluginID).Set(ctx, m, firestore.MergeAll)
+	return err
+}
+
+func (s *FirestoreStore) DeletePluginDefaults(ctx context.Context, userID, pluginID string) error {
+	_, err := s.client.Collection("users").Doc(userID).Collection("plugin_defaults").Doc(pluginID).Delete(ctx)
+	return err
+}
+
 func (s *FirestoreStore) CreateUser(ctx context.Context, userID string) (*pbuser.UserProfile, error) {
 	now := time.Now()
 	// Stored tier is Hobbyist; getEffectiveTier() grants Athlete during trial via trialEndsAt

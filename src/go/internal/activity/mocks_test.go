@@ -172,7 +172,7 @@ func (m *MockBlobStore) Write(ctx context.Context, bucket, object string, data [
 	return nil
 }
 
-func (m *MockBlobStore) SignedURL(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error) {
+func (m *MockBlobStore) SignedURL(ctx context.Context, bucket, path, contentType string, contentLength int64, expiry time.Duration) (string, error) {
 	if m.SignedURLFunc != nil {
 		return m.SignedURLFunc(ctx, bucket, path, contentType, expiry)
 	}

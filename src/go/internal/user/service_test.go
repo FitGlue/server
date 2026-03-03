@@ -108,6 +108,40 @@ func (m *mockStore) UpdateNotificationPrefs(ctx context.Context, userID string, 
 	return m.err
 }
 
+func (m *mockStore) DeleteCounter(ctx context.Context, userID, counterID string) error {
+	return m.err
+}
+
+func (m *mockStore) ListPersonalRecords(ctx context.Context, userID string) ([]*pbuser.PersonalRecord, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return []*pbuser.PersonalRecord{}, nil
+}
+
+func (m *mockStore) SetPersonalRecord(ctx context.Context, userID, recordType string, record *pbuser.PersonalRecord) error {
+	return m.err
+}
+
+func (m *mockStore) DeletePersonalRecord(ctx context.Context, userID, recordType string) error {
+	return m.err
+}
+
+func (m *mockStore) ListPluginDefaults(ctx context.Context, userID string) (map[string]*structpb.Struct, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	return make(map[string]*structpb.Struct), nil
+}
+
+func (m *mockStore) SetPluginDefaults(ctx context.Context, userID, pluginID string, defaults *structpb.Struct) error {
+	return m.err
+}
+
+func (m *mockStore) DeletePluginDefaults(ctx context.Context, userID, pluginID string) error {
+	return m.err
+}
+
 type mockLogger struct{}
 
 func (m mockLogger) Debug(ctx context.Context, msg string, args ...any) {}

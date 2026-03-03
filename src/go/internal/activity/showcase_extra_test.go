@@ -40,14 +40,15 @@ func TestGetShowcasePreferences(t *testing.T) {
 		assert.Equal(t, codes.Internal, status.Code(err))
 	})
 
-	t.Run("NilReturnedNotFound", func(t *testing.T) {
+	t.Run("NilReturnedDefaults", func(t *testing.T) {
 		store := &MockActivityStore{}
 		store.GetShowcasePreferencesFunc = func(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error) {
 			return nil, nil
 		}
 		svc := newTestService(store, &MockBlobStore{})
-		_, err := svc.GetShowcasePreferences(ctx, &pbsvc.GetShowcasePreferencesRequest{UserId: "u1"})
-		assert.Equal(t, codes.NotFound, status.Code(err))
+		result, err := svc.GetShowcasePreferences(ctx, &pbsvc.GetShowcasePreferencesRequest{UserId: "u1"})
+		assert.NoError(t, err)
+		assert.Equal(t, "u1", result.UserId)
 	})
 
 	t.Run("Success", func(t *testing.T) {

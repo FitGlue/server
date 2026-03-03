@@ -14,5 +14,5 @@ type BlobStore interface {
 	// Delete removes a blob
 	Delete(ctx context.Context, bucket, path string) error
 	// SignedURL generates a signed URL for direct upload/download
-	SignedURL(ctx context.Context, bucket, path, contentType string, expiry time.Duration) (string, error)
+	SignedURL(ctx context.Context, bucket, path, contentType string, contentLength int64, expiry time.Duration) (string, error)
 }

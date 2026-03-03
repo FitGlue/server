@@ -140,7 +140,7 @@ func (s *Service) GetShowcasePreferences(ctx context.Context, req *pbsvc.GetShow
 	}
 
 	if prefs == nil {
-		return nil, status.Error(codes.NotFound, "showcase preferences not found")
+		return &pbactivity.ShowcaseProfile{UserId: req.UserId}, nil
 	}
 
 	return prefs, nil

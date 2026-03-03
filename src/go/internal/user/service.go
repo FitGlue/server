@@ -284,6 +284,111 @@ func (s *Service) DeleteBoosterData(ctx context.Context, req *pbsvc.DeleteBooste
 	return &emptypb.Empty{}, nil
 }
 
+func (s *Service) DeleteCounter(ctx context.Context, req *pbsvc.DeleteCounterRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.CounterId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and counter_id are required")
+	}
+
+	err := s.store.DeleteCounter(ctx, req.UserId, req.CounterId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to delete counter", "err", err, "user_id", req.UserId, "counter_id", req.CounterId)
+		return nil, status.Error(codes.Internal, "failed to delete counter")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Service) ListPersonalRecords(ctx context.Context, req *pbsvc.ListPersonalRecordsRequest) (*pbsvc.ListPersonalRecordsResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	records, err := s.store.ListPersonalRecords(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list personal records", "err", err, "user_id", req.UserId)
+		return nil, status.Error(codes.Internal, "failed to list personal records")
+	}
+
+	return &pbsvc.ListPersonalRecordsResponse{Records: records}, nil
+}
+
+func (s *Service) SetPersonalRecord(ctx context.Context, req *pbsvc.SetPersonalRecordRequest) (*pbuser.PersonalRecord, error) {
+	if req.UserId == "" || req.RecordType == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and record_type are required")
+	}
+
+	record := &pbuser.PersonalRecord{
+		RecordType: req.RecordType,
+		Value:      req.Value,
+		Unit:       req.Unit,
+		ActivityId: req.ActivityId,
+	}
+
+	err := s.store.SetPersonalRecord(ctx, req.UserId, req.RecordType, record)
+	if err != nil {
+		s.logger.Error(ctx, "failed to set personal record", "err", err, "user_id", req.UserId, "record_type", req.RecordType)
+		return nil, status.Error(codes.Internal, "failed to set personal record")
+	}
+
+	return record, nil
+}
+
+func (s *Service) DeletePersonalRecord(ctx context.Context, req *pbsvc.DeletePersonalRecordRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.RecordType == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and record_type are required")
+	}
+
+	err := s.store.DeletePersonalRecord(ctx, req.UserId, req.RecordType)
+	if err != nil {
+		s.logger.Error(ctx, "failed to delete personal record", "err", err, "user_id", req.UserId, "record_type", req.RecordType)
+		return nil, status.Error(codes.Internal, "failed to delete personal record")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Service) ListPluginDefaults(ctx context.Context, req *pbsvc.ListPluginDefaultsRequest) (*pbsvc.ListPluginDefaultsResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	defaults, err := s.store.ListPluginDefaults(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list plugin defaults", "err", err, "user_id", req.UserId)
+		return nil, status.Error(codes.Internal, "failed to list plugin defaults")
+	}
+
+	return &pbsvc.ListPluginDefaultsResponse{Defaults: defaults}, nil
+}
+
+func (s *Service) SetPluginDefaults(ctx context.Context, req *pbsvc.SetPluginDefaultsRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.PluginId == "" || req.Defaults == nil {
+		return nil, status.Error(codes.InvalidArgument, "user_id, plugin_id, and defaults are required")
+	}
+
+	err := s.store.SetPluginDefaults(ctx, req.UserId, req.PluginId, req.Defaults)
+	if err != nil {
+		s.logger.Error(ctx, "failed to set plugin defaults", "err", err, "user_id", req.UserId, "plugin_id", req.PluginId)
+		return nil, status.Error(codes.Internal, "failed to set plugin defaults")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (s *Service) DeletePluginDefaults(ctx context.Context, req *pbsvc.DeletePluginDefaultsRequest) (*emptypb.Empty, error) {
+	if req.UserId == "" || req.PluginId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id and plugin_id are required")
+	}
+
+	err := s.store.DeletePluginDefaults(ctx, req.UserId, req.PluginId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to delete plugin defaults", "err", err, "user_id", req.UserId, "plugin_id", req.PluginId)
+		return nil, status.Error(codes.Internal, "failed to delete plugin defaults")
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
 func (s *Service) SendVerificationEmail(ctx context.Context, req *pbsvc.SendVerificationEmailRequest) (*emptypb.Empty, error) {
 	if req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
