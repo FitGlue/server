@@ -60,6 +60,9 @@ func (m *mockSplitterStore) ListPipelineRuns(_ context.Context, _, _ string, _ i
 func (m *mockSplitterStore) UpdatePipelineRun(_ context.Context, _, _ string, _ map[string]interface{}) error {
 	return nil
 }
+func (m *mockSplitterStore) FindPipelineRunByActivityId(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
+	return nil, nil
+}
 
 var _ pipeline.PipelineStore = (*mockSplitterStore)(nil)
 

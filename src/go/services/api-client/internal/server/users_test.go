@@ -11,6 +11,7 @@ import (
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/go-chi/chi/v5"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -404,14 +405,18 @@ func TestHandleGetIntegration_ServiceError(t *testing.T) {
 // handleSetIntegration
 // =============================================================
 
-func TestHandleSetIntegration_NotImplemented(t *testing.T) {
+func TestHandleSetIntegration_Success(t *testing.T) {
 	s := buildTestServer(&mockUserServiceClient{}, &mockPublisher{})
-	r := httptest.NewRequest(http.MethodPut, "/api/v2/users/me/integrations/strava", nil)
+	body := strings.NewReader(`{"access_token":"abc123","refresh_token":"xyz"}`)
+	r := httptest.NewRequest(http.MethodPut, "/api/v2/users/me/integrations/strava", body)
 	r = withToken(r, "user1")
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("provider", "strava")
+	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
 	w := httptest.NewRecorder()
 	s.handleSetIntegration(w, r)
-	if w.Code != http.StatusNotImplemented {
-		t.Errorf("expected 501, got %d", w.Code)
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected 204, got %d: %s", w.Code, w.Body.String())
 	}
 }
 

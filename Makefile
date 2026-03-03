@@ -83,11 +83,24 @@ generate:
 				$$dir/swagger.json; \
 		fi \
 	done
-	# Generate Frontend API Types
+	# Generate per-gateway OpenAPI specs from gateway protos
+	@echo "Generating per-gateway OpenAPI specs..."
+	@mkdir -p docs/api/gateway
+	@for proto in client admin public webhook; do \
+		echo "  Generating $$proto gateway spec..."; \
+		cd src/proto && buf generate --template buf.gen.openapi.yaml --path gateway/$$proto.proto && cd ../..; \
+		mv docs/api/openapi.yaml docs/api/gateway/$$proto.openapi.yaml; \
+	done
+	@echo "Per-gateway OpenAPI specs updated at docs/api/gateway/"
+	# Generate Frontend API Types from per-gateway OpenAPI specs
 	@echo "Generating Frontend API Types via openapi-typescript..."
 	@if [ -d "../web" ]; then \
-		cd ../web && npx -y openapi-typescript ../server/docs/api/openapi.yaml -o src/types/api.ts; \
-		echo "Frontend API types updated at ../web/src/types/api.ts"; \
+		for spec in client admin public; do \
+			echo "  Generating schema-$$spec.ts..."; \
+			cd ../web && npx -y openapi-typescript ../server/docs/api/gateway/$$spec.openapi.yaml -o src/shared/api/schema-$$spec.ts; \
+			cd ../server; \
+		done; \
+		echo "Frontend API types updated at ../web/src/shared/api/schema-{client,admin,public}.ts"; \
 	else \
 		echo "Skipping web frontend api type generation (../web not found)"; \
 	fi

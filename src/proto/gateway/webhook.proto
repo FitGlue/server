@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package fitglue.gateway;
+
+import "google/protobuf/empty.proto";
+import "google/api/annotations.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/gateway";
+
+// WebhookGatewayService describes the webhook REST API surface
+// served by api-webhook at /api/webhooks/*.
+//
+// No user authentication — instead uses provider-specific verification
+// (Strava hub challenge, Fitbit subscriber verification, Stripe signatures).
+service WebhookGatewayService {
+
+  // ===================== Strava =====================
+  rpc StravaVerification(StravaVerificationRequest) returns (StravaVerificationResponse) {
+    option (google.api.http) = {
+      get: "/strava"
+    };
+  }
+  rpc StravaEvent(WebhookEventRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/strava"
+      body: "*"
+    };
+  }
+
+  // ===================== Fitbit =====================
+  rpc FitbitVerification(FitbitVerificationRequest) returns (FitbitVerificationResponse) {
+    option (google.api.http) = {
+      get: "/fitbit"
+    };
+  }
+  rpc FitbitEvent(WebhookEventRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/fitbit"
+      body: "*"
+    };
+  }
+
+  // ===================== Billing (Stripe) =====================
+  rpc BillingEvent(BillingWebhookRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/billing"
+      body: "*"
+    };
+  }
+}
+
+// =====================================================================
+// Request/Response messages
+// =====================================================================
+
+// Strava webhook verification (hub challenge)
+message StravaVerificationRequest {
+  string hub_mode = 1;
+  string hub_challenge = 2;
+  string hub_verify_token = 3;
+}
+message StravaVerificationResponse {
+  string hub_challenge = 1;
+}
+
+// Fitbit subscriber verification
+message FitbitVerificationRequest {
+  string verify = 1;
+}
+message FitbitVerificationResponse {
+  // Returns 204 on success — empty body
+}
+
+// Generic webhook event payload (Strava/Fitbit POST events)
+message WebhookEventRequest {
+  bytes payload = 1;
+}
+
+// Stripe billing webhook
+message BillingWebhookRequest {
+  bytes payload = 1;
+  // Stripe-Signature header is read by the handler, not part of the body
+}

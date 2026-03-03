@@ -124,14 +124,17 @@ func main() {
 	processor.Register(strava.NewProvider(stravaToken))
 
 	fitbitToken := os.Getenv("FITBIT_SUBSCRIBER_VERIFICATION_TOKEN")
-	processor.Register(fitbit.NewProvider(fitbitToken))
+	fitbitClientSecret := os.Getenv("FITBIT_OAUTH_CLIENT_SECRET")
+	processor.Register(fitbit.NewProvider(fitbitToken, fitbitClientSecret))
 	processor.Register(hevy.NewProvider())
 	processor.Register(oura.NewProvider())
 	processor.Register(github.NewProvider())
 	processor.Register(wahoo.NewProvider())
 	processor.Register(polar.NewProvider())
 	processor.Register(mobile.NewProvider())
-	processor.Register(mock.NewProvider())
+	if os.Getenv("ENABLE_MOCK_PROVIDER") == "true" {
+		processor.Register(mock.NewProvider())
+	}
 	processor.Register(parkrun.NewProvider())
 
 	// Initialize the HTTP Gateway Server

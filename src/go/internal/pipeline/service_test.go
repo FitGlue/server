@@ -84,6 +84,15 @@ func (m *MockPipelineStore) GetPipelineRun(ctx context.Context, userID, runID st
 	return m.Runs[m.key(userID, runID)], nil
 }
 
+func (m *MockPipelineStore) FindPipelineRunByActivityId(ctx context.Context, userID, activityID string) (*pipeline.PipelineRun, error) {
+	for _, run := range m.Runs {
+		if run.ActivityId == activityID {
+			return run, nil
+		}
+	}
+	return nil, nil
+}
+
 func (m *MockPipelineStore) ListPipelineRuns(ctx context.Context, userID, pipelineID string, limit int32, pageToken string) ([]*pipeline.PipelineRun, string, error) {
 	var results []*pipeline.PipelineRun
 	for _, r := range m.Runs {

@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package fitglue.gateway;
+
+import "google/api/annotations.proto";
+
+// Shared model types
+import "models/user/profile.proto";
+import "models/pipeline/config.proto";
+import "models/pipeline/execution.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/gateway";
+
+// AdminGatewayService describes the admin REST API surface
+// served by api-admin at /api/admin/*.
+//
+// Requires admin authentication via AdminMiddleware.
+service AdminGatewayService {
+
+  // ===================== Platform Stats =====================
+  rpc GetStats(GetAdminStatsRequest) returns (GetAdminStatsResponse) {
+    option (google.api.http) = {
+      get: "/stats"
+    };
+  }
+
+  // ===================== User Management =====================
+  rpc ListUsers(ListUsersAdminRequest) returns (ListUsersAdminResponse) {
+    option (google.api.http) = {
+      get: "/users"
+    };
+  }
+  rpc GetUser(UserIdAdminRequest) returns (fitglue.models.user.UserProfile) {
+    option (google.api.http) = {
+      get: "/users/{id}"
+    };
+  }
+  rpc UpdateUser(UpdateUserAdminRequest) returns (fitglue.models.user.UserProfile) {
+    option (google.api.http) = {
+      put: "/users/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteUser(UserIdAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      delete: "/users/{id}"
+    };
+  }
+  rpc DeleteUserData(DeleteUserDataAdminRequest) returns (AdminEmptyResponse) {
+    option (google.api.http) = {
+      delete: "/users/{id}/{data_type}"
+    };
+  }
+
+  // ===================== Pipeline Management =====================
+  rpc ListAllPipelines(ListAllPipelinesAdminRequest) returns (ListAllPipelinesAdminResponse) {
+    option (google.api.http) = {
+      get: "/pipelines"
+    };
+  }
+  rpc ListPipelineRuns(ListPipelineRunsAdminRequest) returns (ListPipelineRunsAdminResponse) {
+    option (google.api.http) = {
+      get: "/pipeline-runs"
+    };
+  }
+}
+
+// =====================================================================
+// Request/Response messages
+// =====================================================================
+
+message AdminEmptyResponse {}
+
+// Platform Stats
+message GetAdminStatsRequest {}
+message RecentPipelineRunCounts {
+  int32 success = 1;
+  int32 failed = 2;
+  int32 started = 3;
+}
+message GetAdminStatsResponse {
+  int32 total_users = 1;
+  int32 athlete_users = 2;
+  int32 admin_users = 3;
+  int32 total_syncs_this_month = 4;
+  RecentPipelineRunCounts recent_executions = 5;
+}
+
+// User Management
+message ListUsersAdminRequest {
+  int32 limit = 1;
+  string page_token = 2;
+}
+message ListUsersAdminResponse {
+  repeated fitglue.models.user.UserProfile users = 1;
+  string next_page_token = 2;
+}
+message UserIdAdminRequest {
+  string id = 1;
+}
+message UpdateUserAdminRequest {
+  string id = 1;
+  bool access_enabled = 2;
+}
+message DeleteUserDataAdminRequest {
+  string id = 1;
+  string data_type = 2;
+}
+
+// Pipeline Management
+message ListAllPipelinesAdminRequest {
+  string user_id = 1; // required query param
+}
+message ListAllPipelinesAdminResponse {
+  repeated fitglue.models.pipeline.PipelineConfig pipelines = 1;
+}
+message ListPipelineRunsAdminRequest {
+  string status = 1;
+  string source = 2;
+  string user_id = 3;
+  int32 limit = 4;
+  string page_token = 5;
+}
+message ListPipelineRunsAdminResponse {
+  repeated fitglue.models.pipeline.PipelineRun runs = 1;
+  string next_page_token = 2;
+}

@@ -44,6 +44,13 @@ service BillingService {
       body: "*"
     };
   }
+
+  rpc CreateBillingPortalSession(CreateBillingPortalSessionRequest) returns (CreateBillingPortalSessionResponse) {
+    option (google.api.http) = {
+      post: "/v2/users/{user_id}/billing/portal"
+      body: "*"
+    };
+  }
 }
 
 message GetSubscriptionRequest {
@@ -80,4 +87,13 @@ message StartTrialRequest {
 
 message CancelSubscriptionRequest {
   string user_id = 1;
+}
+
+message CreateBillingPortalSessionRequest {
+  string user_id = 1;
+  string return_url = 2;
+}
+
+message CreateBillingPortalSessionResponse {
+  string url = 1;
 }

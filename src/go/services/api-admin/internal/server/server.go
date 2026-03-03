@@ -6,22 +6,26 @@ import (
 	"net/http"
 	"strconv"
 
+	"cloud.google.com/go/firestore"
 	"firebase.google.com/go/v4/auth"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/fitglue/server/src/go/internal/infra"
+	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
 
 // APIServer implements the HTTP router interfacing with FitGlue domain gRPC services
 type APIServer struct {
-	router      *chi.Mux
-	logger      infra.Logger
-	authClient  *auth.Client
-	userService userpb.UserServiceClient
-	pipelineSvc pipelinepb.PipelineServiceClient
+	router          *chi.Mux
+	logger          infra.Logger
+	authClient      *auth.Client
+	userService     userpb.UserServiceClient
+	pipelineSvc     pipelinepb.PipelineServiceClient
+	activitySvc     activitypb.ActivityServiceClient
+	firestoreClient *firestore.Client
 }
 
 // NewAPIServer constructs the application routing and API middleware stack
@@ -30,13 +34,17 @@ func NewAPIServer(
 	authClient *auth.Client,
 	userSvc userpb.UserServiceClient,
 	pipelineSvc pipelinepb.PipelineServiceClient,
+	activitySvc activitypb.ActivityServiceClient,
+	fsClient *firestore.Client,
 ) *APIServer {
 	s := &APIServer{
-		router:      chi.NewRouter(),
-		logger:      logger,
-		authClient:  authClient,
-		userService: userSvc,
-		pipelineSvc: pipelineSvc,
+		router:          chi.NewRouter(),
+		logger:          logger,
+		authClient:      authClient,
+		userService:     userSvc,
+		pipelineSvc:     pipelineSvc,
+		activitySvc:     activitySvc,
+		firestoreClient: fsClient,
 	}
 
 	s.setupRoutes()
@@ -68,12 +76,16 @@ func (s *APIServer) setupRoutes() {
 }
 
 func (s *APIServer) registerAdminRoutes(r chi.Router) {
+	r.Get("/stats", s.handleGetStats)
+
 	r.Get("/users", s.handleListUsers)
 	r.Get("/users/{id}", s.handleGetUser)
 	r.Put("/users/{id}", s.handleUpdateUser)
 	r.Delete("/users/{id}", s.handleDeleteUser)
+	r.Delete("/users/{id}/{dataType}", s.handleDeleteUserData)
 
 	r.Get("/pipelines", s.handleListAllPipelines)
+	r.Get("/pipeline-runs", s.handleAdminPipelineRuns)
 }
 
 func (s *APIServer) handleListUsers(w http.ResponseWriter, r *http.Request) {
@@ -172,5 +184,19 @@ func (s *APIServer) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *APIServer) handleListAllPipelines(w http.ResponseWriter, r *http.Request) {
-	WriteError(w, statusError(http.StatusNotImplemented, "Not Implemented"))
+	userID := r.URL.Query().Get("user_id")
+	if userID == "" {
+		WriteError(w, statusError(http.StatusBadRequest, "user_id query parameter is required"))
+		return
+	}
+
+	res, err := s.pipelineSvc.ListPipelines(r.Context(), &pipelinepb.ListPipelinesRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	WriteJSON(w, res)
 }

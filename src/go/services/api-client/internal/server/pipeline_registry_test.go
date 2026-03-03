@@ -96,6 +96,9 @@ func (m *mockPipelineServiceClient) ListPipelineRuns(ctx context.Context, in *pi
 	}
 	return &pipelinepb.ListPipelineRunsResponse{}, nil
 }
+func (m *mockPipelineServiceClient) AdminListPipelineRuns(ctx context.Context, in *pipelinepb.AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*pipelinepb.AdminListPipelineRunsResponse, error) {
+	return &pipelinepb.AdminListPipelineRunsResponse{}, nil
+}
 
 // =============================================================
 // Mock RegistryServiceClient

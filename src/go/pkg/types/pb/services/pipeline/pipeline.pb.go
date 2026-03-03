@@ -24,6 +24,135 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Admin pipeline runs
+type AdminListPipelineRunsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Status        string                 `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Source        string                 `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // optional filter
+	Limit         int32                  `protobuf:"varint,4,opt,name=limit,proto3" json:"limit,omitempty"`
+	PageToken     string                 `protobuf:"bytes,5,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminListPipelineRunsRequest) Reset() {
+	*x = AdminListPipelineRunsRequest{}
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminListPipelineRunsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminListPipelineRunsRequest) ProtoMessage() {}
+
+func (x *AdminListPipelineRunsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminListPipelineRunsRequest.ProtoReflect.Descriptor instead.
+func (*AdminListPipelineRunsRequest) Descriptor() ([]byte, []int) {
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *AdminListPipelineRunsRequest) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *AdminListPipelineRunsRequest) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *AdminListPipelineRunsRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *AdminListPipelineRunsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *AdminListPipelineRunsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
+type AdminListPipelineRunsResponse struct {
+	state         protoimpl.MessageState  `protogen:"open.v1"`
+	Runs          []*pipeline.PipelineRun `protobuf:"bytes,1,rep,name=runs,proto3" json:"runs,omitempty"`
+	NextPageToken string                  `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *AdminListPipelineRunsResponse) Reset() {
+	*x = AdminListPipelineRunsResponse{}
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *AdminListPipelineRunsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*AdminListPipelineRunsResponse) ProtoMessage() {}
+
+func (x *AdminListPipelineRunsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use AdminListPipelineRunsResponse.ProtoReflect.Descriptor instead.
+func (*AdminListPipelineRunsResponse) Descriptor() ([]byte, []int) {
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *AdminListPipelineRunsResponse) GetRuns() []*pipeline.PipelineRun {
+	if x != nil {
+		return x.Runs
+	}
+	return nil
+}
+
+func (x *AdminListPipelineRunsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
+}
+
 type ListPipelinesRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
@@ -33,7 +162,7 @@ type ListPipelinesRequest struct {
 
 func (x *ListPipelinesRequest) Reset() {
 	*x = ListPipelinesRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[0]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -45,7 +174,7 @@ func (x *ListPipelinesRequest) String() string {
 func (*ListPipelinesRequest) ProtoMessage() {}
 
 func (x *ListPipelinesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[0]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -58,7 +187,7 @@ func (x *ListPipelinesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelinesRequest.ProtoReflect.Descriptor instead.
 func (*ListPipelinesRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{0}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ListPipelinesRequest) GetUserId() string {
@@ -77,7 +206,7 @@ type ListPipelinesResponse struct {
 
 func (x *ListPipelinesResponse) Reset() {
 	*x = ListPipelinesResponse{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[1]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -89,7 +218,7 @@ func (x *ListPipelinesResponse) String() string {
 func (*ListPipelinesResponse) ProtoMessage() {}
 
 func (x *ListPipelinesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[1]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -102,7 +231,7 @@ func (x *ListPipelinesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelinesResponse.ProtoReflect.Descriptor instead.
 func (*ListPipelinesResponse) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{1}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *ListPipelinesResponse) GetPipelines() []*pipeline.PipelineConfig {
@@ -122,7 +251,7 @@ type GetPipelineRequest struct {
 
 func (x *GetPipelineRequest) Reset() {
 	*x = GetPipelineRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[2]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -134,7 +263,7 @@ func (x *GetPipelineRequest) String() string {
 func (*GetPipelineRequest) ProtoMessage() {}
 
 func (x *GetPipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[2]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -147,7 +276,7 @@ func (x *GetPipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPipelineRequest.ProtoReflect.Descriptor instead.
 func (*GetPipelineRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{2}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetPipelineRequest) GetUserId() string {
@@ -174,7 +303,7 @@ type CreatePipelineRequest struct {
 
 func (x *CreatePipelineRequest) Reset() {
 	*x = CreatePipelineRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[3]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -186,7 +315,7 @@ func (x *CreatePipelineRequest) String() string {
 func (*CreatePipelineRequest) ProtoMessage() {}
 
 func (x *CreatePipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[3]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -199,7 +328,7 @@ func (x *CreatePipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreatePipelineRequest.ProtoReflect.Descriptor instead.
 func (*CreatePipelineRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{3}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *CreatePipelineRequest) GetUserId() string {
@@ -227,7 +356,7 @@ type UpdatePipelineRequest struct {
 
 func (x *UpdatePipelineRequest) Reset() {
 	*x = UpdatePipelineRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[4]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -239,7 +368,7 @@ func (x *UpdatePipelineRequest) String() string {
 func (*UpdatePipelineRequest) ProtoMessage() {}
 
 func (x *UpdatePipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[4]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -252,7 +381,7 @@ func (x *UpdatePipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePipelineRequest.ProtoReflect.Descriptor instead.
 func (*UpdatePipelineRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{4}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *UpdatePipelineRequest) GetUserId() string {
@@ -286,7 +415,7 @@ type DeletePipelineRequest struct {
 
 func (x *DeletePipelineRequest) Reset() {
 	*x = DeletePipelineRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[5]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -298,7 +427,7 @@ func (x *DeletePipelineRequest) String() string {
 func (*DeletePipelineRequest) ProtoMessage() {}
 
 func (x *DeletePipelineRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[5]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -311,7 +440,7 @@ func (x *DeletePipelineRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeletePipelineRequest.ProtoReflect.Descriptor instead.
 func (*DeletePipelineRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{5}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *DeletePipelineRequest) GetUserId() string {
@@ -339,7 +468,7 @@ type SubmitInputRequest struct {
 
 func (x *SubmitInputRequest) Reset() {
 	*x = SubmitInputRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[6]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -351,7 +480,7 @@ func (x *SubmitInputRequest) String() string {
 func (*SubmitInputRequest) ProtoMessage() {}
 
 func (x *SubmitInputRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[6]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -364,7 +493,7 @@ func (x *SubmitInputRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SubmitInputRequest.ProtoReflect.Descriptor instead.
 func (*SubmitInputRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{6}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *SubmitInputRequest) GetUserId() string {
@@ -397,7 +526,7 @@ type ListPendingInputsRequest struct {
 
 func (x *ListPendingInputsRequest) Reset() {
 	*x = ListPendingInputsRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[7]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -409,7 +538,7 @@ func (x *ListPendingInputsRequest) String() string {
 func (*ListPendingInputsRequest) ProtoMessage() {}
 
 func (x *ListPendingInputsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[7]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -422,7 +551,7 @@ func (x *ListPendingInputsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPendingInputsRequest.ProtoReflect.Descriptor instead.
 func (*ListPendingInputsRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{7}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListPendingInputsRequest) GetUserId() string {
@@ -441,7 +570,7 @@ type ListPendingInputsResponse struct {
 
 func (x *ListPendingInputsResponse) Reset() {
 	*x = ListPendingInputsResponse{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[8]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -453,7 +582,7 @@ func (x *ListPendingInputsResponse) String() string {
 func (*ListPendingInputsResponse) ProtoMessage() {}
 
 func (x *ListPendingInputsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[8]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -466,7 +595,7 @@ func (x *ListPendingInputsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPendingInputsResponse.ProtoReflect.Descriptor instead.
 func (*ListPendingInputsResponse) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{8}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListPendingInputsResponse) GetInputs() []*pipeline.PendingInput {
@@ -486,7 +615,7 @@ type ResolvePendingInputRequest struct {
 
 func (x *ResolvePendingInputRequest) Reset() {
 	*x = ResolvePendingInputRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[9]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -498,7 +627,7 @@ func (x *ResolvePendingInputRequest) String() string {
 func (*ResolvePendingInputRequest) ProtoMessage() {}
 
 func (x *ResolvePendingInputRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[9]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -511,7 +640,7 @@ func (x *ResolvePendingInputRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResolvePendingInputRequest.ProtoReflect.Descriptor instead.
 func (*ResolvePendingInputRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{9}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *ResolvePendingInputRequest) GetUserId() string {
@@ -542,7 +671,7 @@ type RepostActivityRequest struct {
 
 func (x *RepostActivityRequest) Reset() {
 	*x = RepostActivityRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[10]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -554,7 +683,7 @@ func (x *RepostActivityRequest) String() string {
 func (*RepostActivityRequest) ProtoMessage() {}
 
 func (x *RepostActivityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[10]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -567,7 +696,7 @@ func (x *RepostActivityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RepostActivityRequest.ProtoReflect.Descriptor instead.
 func (*RepostActivityRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{10}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *RepostActivityRequest) GetUserId() string {
@@ -608,7 +737,7 @@ type GetPipelineRunRequest struct {
 
 func (x *GetPipelineRunRequest) Reset() {
 	*x = GetPipelineRunRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[11]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -620,7 +749,7 @@ func (x *GetPipelineRunRequest) String() string {
 func (*GetPipelineRunRequest) ProtoMessage() {}
 
 func (x *GetPipelineRunRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[11]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -633,7 +762,7 @@ func (x *GetPipelineRunRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPipelineRunRequest.ProtoReflect.Descriptor instead.
 func (*GetPipelineRunRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{11}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *GetPipelineRunRequest) GetUserId() string {
@@ -662,7 +791,7 @@ type ListPipelineRunsRequest struct {
 
 func (x *ListPipelineRunsRequest) Reset() {
 	*x = ListPipelineRunsRequest{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[12]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -674,7 +803,7 @@ func (x *ListPipelineRunsRequest) String() string {
 func (*ListPipelineRunsRequest) ProtoMessage() {}
 
 func (x *ListPipelineRunsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[12]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -687,7 +816,7 @@ func (x *ListPipelineRunsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelineRunsRequest.ProtoReflect.Descriptor instead.
 func (*ListPipelineRunsRequest) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{12}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *ListPipelineRunsRequest) GetUserId() string {
@@ -728,7 +857,7 @@ type ListPipelineRunsResponse struct {
 
 func (x *ListPipelineRunsResponse) Reset() {
 	*x = ListPipelineRunsResponse{}
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[13]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -740,7 +869,7 @@ func (x *ListPipelineRunsResponse) String() string {
 func (*ListPipelineRunsResponse) ProtoMessage() {}
 
 func (x *ListPipelineRunsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_services_pipeline_pipeline_proto_msgTypes[13]
+	mi := &file_services_pipeline_pipeline_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -753,7 +882,7 @@ func (x *ListPipelineRunsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListPipelineRunsResponse.ProtoReflect.Descriptor instead.
 func (*ListPipelineRunsResponse) Descriptor() ([]byte, []int) {
-	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{13}
+	return file_services_pipeline_pipeline_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *ListPipelineRunsResponse) GetRuns() []*pipeline.PipelineRun {
@@ -774,7 +903,17 @@ var File_services_pipeline_pipeline_proto protoreflect.FileDescriptor
 
 const file_services_pipeline_pipeline_proto_rawDesc = "" +
 	"\n" +
-	" services/pipeline/pipeline.proto\x12\x19fitglue.services.pipeline\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/pipeline/config.proto\x1a\x1fmodels/pipeline/execution.proto\x1a#models/pipeline/pending_input.proto\"/\n" +
+	" services/pipeline/pipeline.proto\x12\x19fitglue.services.pipeline\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x1cmodels/pipeline/config.proto\x1a\x1fmodels/pipeline/execution.proto\x1a#models/pipeline/pending_input.proto\"\x9c\x01\n" +
+	"\x1cAdminListPipelineRunsRequest\x12\x16\n" +
+	"\x06status\x18\x01 \x01(\tR\x06status\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12\x17\n" +
+	"\auser_id\x18\x03 \x01(\tR\x06userId\x12\x14\n" +
+	"\x05limit\x18\x04 \x01(\x05R\x05limit\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x05 \x01(\tR\tpageToken\"\x81\x01\n" +
+	"\x1dAdminListPipelineRunsResponse\x128\n" +
+	"\x04runs\x18\x01 \x03(\v2$.fitglue.models.pipeline.PipelineRunR\x04runs\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"/\n" +
 	"\x14ListPipelinesRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"^\n" +
 	"\x15ListPipelinesResponse\x12E\n" +
@@ -828,7 +967,7 @@ const file_services_pipeline_pipeline_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"|\n" +
 	"\x18ListPipelineRunsResponse\x128\n" +
 	"\x04runs\x18\x01 \x03(\v2$.fitglue.models.pipeline.PipelineRunR\x04runs\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\x8b\x0e\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken2\xb9\x0f\n" +
 	"\x0fPipelineService\x12\x99\x01\n" +
 	"\rListPipelines\x12/.fitglue.services.pipeline.ListPipelinesRequest\x1a0.fitglue.services.pipeline.ListPipelinesResponse\"%\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v2/users/{user_id}/pipelines\x12\x9a\x01\n" +
 	"\vGetPipeline\x12-.fitglue.services.pipeline.GetPipelineRequest\x1a'.fitglue.models.pipeline.PipelineConfig\"3\x82\xd3\xe4\x93\x02-\x12+/v2/users/{user_id}/pipelines/{pipeline_id}\x12\x9c\x01\n" +
@@ -840,7 +979,8 @@ const file_services_pipeline_pipeline_proto_rawDesc = "" +
 	"\x13ResolvePendingInput\x125.fitglue.services.pipeline.ResolvePendingInputRequest\x1a\x16.google.protobuf.Empty\"H\x82\xd3\xe4\x93\x02B:\x01*\"=/v2/users/{user_id}/pending-inputs/{pending_input_id}/resolve\x12\x9a\x01\n" +
 	"\x0eRepostActivity\x120.fitglue.services.pipeline.RepostActivityRequest\x1a\x16.google.protobuf.Empty\">\x82\xd3\xe4\x93\x028:\x01*\"3/v2/users/{user_id}/activities/{activity_id}/repost\x12\x9c\x01\n" +
 	"\x0eGetPipelineRun\x120.fitglue.services.pipeline.GetPipelineRunRequest\x1a$.fitglue.models.pipeline.PipelineRun\"2\x82\xd3\xe4\x93\x02,\x12*/v2/users/{user_id}/pipeline-runs/{run_id}\x12\xa6\x01\n" +
-	"\x10ListPipelineRuns\x122.fitglue.services.pipeline.ListPipelineRunsRequest\x1a3.fitglue.services.pipeline.ListPipelineRunsResponse\")\x82\xd3\xe4\x93\x02#\x12!/v2/users/{user_id}/pipeline-runsBAZ?github.com/fitglue/server/src/go/pkg/types/pb/services/pipelineb\x06proto3"
+	"\x10ListPipelineRuns\x122.fitglue.services.pipeline.ListPipelineRunsRequest\x1a3.fitglue.services.pipeline.ListPipelineRunsResponse\")\x82\xd3\xe4\x93\x02#\x12!/v2/users/{user_id}/pipeline-runs\x12\xab\x01\n" +
+	"\x15AdminListPipelineRuns\x127.fitglue.services.pipeline.AdminListPipelineRunsRequest\x1a8.fitglue.services.pipeline.AdminListPipelineRunsResponse\"\x1f\x82\xd3\xe4\x93\x02\x19\x12\x17/v2/admin/pipeline-runsBAZ?github.com/fitglue/server/src/go/pkg/types/pb/services/pipelineb\x06proto3"
 
 var (
 	file_services_pipeline_pipeline_proto_rawDescOnce sync.Once
@@ -854,62 +994,67 @@ func file_services_pipeline_pipeline_proto_rawDescGZIP() []byte {
 	return file_services_pipeline_pipeline_proto_rawDescData
 }
 
-var file_services_pipeline_pipeline_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_services_pipeline_pipeline_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
 var file_services_pipeline_pipeline_proto_goTypes = []any{
-	(*ListPipelinesRequest)(nil),       // 0: fitglue.services.pipeline.ListPipelinesRequest
-	(*ListPipelinesResponse)(nil),      // 1: fitglue.services.pipeline.ListPipelinesResponse
-	(*GetPipelineRequest)(nil),         // 2: fitglue.services.pipeline.GetPipelineRequest
-	(*CreatePipelineRequest)(nil),      // 3: fitglue.services.pipeline.CreatePipelineRequest
-	(*UpdatePipelineRequest)(nil),      // 4: fitglue.services.pipeline.UpdatePipelineRequest
-	(*DeletePipelineRequest)(nil),      // 5: fitglue.services.pipeline.DeletePipelineRequest
-	(*SubmitInputRequest)(nil),         // 6: fitglue.services.pipeline.SubmitInputRequest
-	(*ListPendingInputsRequest)(nil),   // 7: fitglue.services.pipeline.ListPendingInputsRequest
-	(*ListPendingInputsResponse)(nil),  // 8: fitglue.services.pipeline.ListPendingInputsResponse
-	(*ResolvePendingInputRequest)(nil), // 9: fitglue.services.pipeline.ResolvePendingInputRequest
-	(*RepostActivityRequest)(nil),      // 10: fitglue.services.pipeline.RepostActivityRequest
-	(*GetPipelineRunRequest)(nil),      // 11: fitglue.services.pipeline.GetPipelineRunRequest
-	(*ListPipelineRunsRequest)(nil),    // 12: fitglue.services.pipeline.ListPipelineRunsRequest
-	(*ListPipelineRunsResponse)(nil),   // 13: fitglue.services.pipeline.ListPipelineRunsResponse
-	nil,                                // 14: fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
-	(*pipeline.PipelineConfig)(nil),    // 15: fitglue.models.pipeline.PipelineConfig
-	(*pipeline.PendingInput)(nil),      // 16: fitglue.models.pipeline.PendingInput
-	(*pipeline.PipelineRun)(nil),       // 17: fitglue.models.pipeline.PipelineRun
-	(*emptypb.Empty)(nil),              // 18: google.protobuf.Empty
+	(*AdminListPipelineRunsRequest)(nil),  // 0: fitglue.services.pipeline.AdminListPipelineRunsRequest
+	(*AdminListPipelineRunsResponse)(nil), // 1: fitglue.services.pipeline.AdminListPipelineRunsResponse
+	(*ListPipelinesRequest)(nil),          // 2: fitglue.services.pipeline.ListPipelinesRequest
+	(*ListPipelinesResponse)(nil),         // 3: fitglue.services.pipeline.ListPipelinesResponse
+	(*GetPipelineRequest)(nil),            // 4: fitglue.services.pipeline.GetPipelineRequest
+	(*CreatePipelineRequest)(nil),         // 5: fitglue.services.pipeline.CreatePipelineRequest
+	(*UpdatePipelineRequest)(nil),         // 6: fitglue.services.pipeline.UpdatePipelineRequest
+	(*DeletePipelineRequest)(nil),         // 7: fitglue.services.pipeline.DeletePipelineRequest
+	(*SubmitInputRequest)(nil),            // 8: fitglue.services.pipeline.SubmitInputRequest
+	(*ListPendingInputsRequest)(nil),      // 9: fitglue.services.pipeline.ListPendingInputsRequest
+	(*ListPendingInputsResponse)(nil),     // 10: fitglue.services.pipeline.ListPendingInputsResponse
+	(*ResolvePendingInputRequest)(nil),    // 11: fitglue.services.pipeline.ResolvePendingInputRequest
+	(*RepostActivityRequest)(nil),         // 12: fitglue.services.pipeline.RepostActivityRequest
+	(*GetPipelineRunRequest)(nil),         // 13: fitglue.services.pipeline.GetPipelineRunRequest
+	(*ListPipelineRunsRequest)(nil),       // 14: fitglue.services.pipeline.ListPipelineRunsRequest
+	(*ListPipelineRunsResponse)(nil),      // 15: fitglue.services.pipeline.ListPipelineRunsResponse
+	nil,                                   // 16: fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
+	(*pipeline.PipelineRun)(nil),          // 17: fitglue.models.pipeline.PipelineRun
+	(*pipeline.PipelineConfig)(nil),       // 18: fitglue.models.pipeline.PipelineConfig
+	(*pipeline.PendingInput)(nil),         // 19: fitglue.models.pipeline.PendingInput
+	(*emptypb.Empty)(nil),                 // 20: google.protobuf.Empty
 }
 var file_services_pipeline_pipeline_proto_depIdxs = []int32{
-	15, // 0: fitglue.services.pipeline.ListPipelinesResponse.pipelines:type_name -> fitglue.models.pipeline.PipelineConfig
-	15, // 1: fitglue.services.pipeline.CreatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
-	15, // 2: fitglue.services.pipeline.UpdatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
-	14, // 3: fitglue.services.pipeline.SubmitInputRequest.input_data:type_name -> fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
-	16, // 4: fitglue.services.pipeline.ListPendingInputsResponse.inputs:type_name -> fitglue.models.pipeline.PendingInput
-	17, // 5: fitglue.services.pipeline.ListPipelineRunsResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
-	0,  // 6: fitglue.services.pipeline.PipelineService.ListPipelines:input_type -> fitglue.services.pipeline.ListPipelinesRequest
-	2,  // 7: fitglue.services.pipeline.PipelineService.GetPipeline:input_type -> fitglue.services.pipeline.GetPipelineRequest
-	3,  // 8: fitglue.services.pipeline.PipelineService.CreatePipeline:input_type -> fitglue.services.pipeline.CreatePipelineRequest
-	4,  // 9: fitglue.services.pipeline.PipelineService.UpdatePipeline:input_type -> fitglue.services.pipeline.UpdatePipelineRequest
-	5,  // 10: fitglue.services.pipeline.PipelineService.DeletePipeline:input_type -> fitglue.services.pipeline.DeletePipelineRequest
-	6,  // 11: fitglue.services.pipeline.PipelineService.SubmitInput:input_type -> fitglue.services.pipeline.SubmitInputRequest
-	7,  // 12: fitglue.services.pipeline.PipelineService.ListPendingInputs:input_type -> fitglue.services.pipeline.ListPendingInputsRequest
-	9,  // 13: fitglue.services.pipeline.PipelineService.ResolvePendingInput:input_type -> fitglue.services.pipeline.ResolvePendingInputRequest
-	10, // 14: fitglue.services.pipeline.PipelineService.RepostActivity:input_type -> fitglue.services.pipeline.RepostActivityRequest
-	11, // 15: fitglue.services.pipeline.PipelineService.GetPipelineRun:input_type -> fitglue.services.pipeline.GetPipelineRunRequest
-	12, // 16: fitglue.services.pipeline.PipelineService.ListPipelineRuns:input_type -> fitglue.services.pipeline.ListPipelineRunsRequest
-	1,  // 17: fitglue.services.pipeline.PipelineService.ListPipelines:output_type -> fitglue.services.pipeline.ListPipelinesResponse
-	15, // 18: fitglue.services.pipeline.PipelineService.GetPipeline:output_type -> fitglue.models.pipeline.PipelineConfig
-	15, // 19: fitglue.services.pipeline.PipelineService.CreatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
-	15, // 20: fitglue.services.pipeline.PipelineService.UpdatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
-	18, // 21: fitglue.services.pipeline.PipelineService.DeletePipeline:output_type -> google.protobuf.Empty
-	18, // 22: fitglue.services.pipeline.PipelineService.SubmitInput:output_type -> google.protobuf.Empty
-	8,  // 23: fitglue.services.pipeline.PipelineService.ListPendingInputs:output_type -> fitglue.services.pipeline.ListPendingInputsResponse
-	18, // 24: fitglue.services.pipeline.PipelineService.ResolvePendingInput:output_type -> google.protobuf.Empty
-	18, // 25: fitglue.services.pipeline.PipelineService.RepostActivity:output_type -> google.protobuf.Empty
-	17, // 26: fitglue.services.pipeline.PipelineService.GetPipelineRun:output_type -> fitglue.models.pipeline.PipelineRun
-	13, // 27: fitglue.services.pipeline.PipelineService.ListPipelineRuns:output_type -> fitglue.services.pipeline.ListPipelineRunsResponse
-	17, // [17:28] is the sub-list for method output_type
-	6,  // [6:17] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	17, // 0: fitglue.services.pipeline.AdminListPipelineRunsResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
+	18, // 1: fitglue.services.pipeline.ListPipelinesResponse.pipelines:type_name -> fitglue.models.pipeline.PipelineConfig
+	18, // 2: fitglue.services.pipeline.CreatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
+	18, // 3: fitglue.services.pipeline.UpdatePipelineRequest.pipeline:type_name -> fitglue.models.pipeline.PipelineConfig
+	16, // 4: fitglue.services.pipeline.SubmitInputRequest.input_data:type_name -> fitglue.services.pipeline.SubmitInputRequest.InputDataEntry
+	19, // 5: fitglue.services.pipeline.ListPendingInputsResponse.inputs:type_name -> fitglue.models.pipeline.PendingInput
+	17, // 6: fitglue.services.pipeline.ListPipelineRunsResponse.runs:type_name -> fitglue.models.pipeline.PipelineRun
+	2,  // 7: fitglue.services.pipeline.PipelineService.ListPipelines:input_type -> fitglue.services.pipeline.ListPipelinesRequest
+	4,  // 8: fitglue.services.pipeline.PipelineService.GetPipeline:input_type -> fitglue.services.pipeline.GetPipelineRequest
+	5,  // 9: fitglue.services.pipeline.PipelineService.CreatePipeline:input_type -> fitglue.services.pipeline.CreatePipelineRequest
+	6,  // 10: fitglue.services.pipeline.PipelineService.UpdatePipeline:input_type -> fitglue.services.pipeline.UpdatePipelineRequest
+	7,  // 11: fitglue.services.pipeline.PipelineService.DeletePipeline:input_type -> fitglue.services.pipeline.DeletePipelineRequest
+	8,  // 12: fitglue.services.pipeline.PipelineService.SubmitInput:input_type -> fitglue.services.pipeline.SubmitInputRequest
+	9,  // 13: fitglue.services.pipeline.PipelineService.ListPendingInputs:input_type -> fitglue.services.pipeline.ListPendingInputsRequest
+	11, // 14: fitglue.services.pipeline.PipelineService.ResolvePendingInput:input_type -> fitglue.services.pipeline.ResolvePendingInputRequest
+	12, // 15: fitglue.services.pipeline.PipelineService.RepostActivity:input_type -> fitglue.services.pipeline.RepostActivityRequest
+	13, // 16: fitglue.services.pipeline.PipelineService.GetPipelineRun:input_type -> fitglue.services.pipeline.GetPipelineRunRequest
+	14, // 17: fitglue.services.pipeline.PipelineService.ListPipelineRuns:input_type -> fitglue.services.pipeline.ListPipelineRunsRequest
+	0,  // 18: fitglue.services.pipeline.PipelineService.AdminListPipelineRuns:input_type -> fitglue.services.pipeline.AdminListPipelineRunsRequest
+	3,  // 19: fitglue.services.pipeline.PipelineService.ListPipelines:output_type -> fitglue.services.pipeline.ListPipelinesResponse
+	18, // 20: fitglue.services.pipeline.PipelineService.GetPipeline:output_type -> fitglue.models.pipeline.PipelineConfig
+	18, // 21: fitglue.services.pipeline.PipelineService.CreatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
+	18, // 22: fitglue.services.pipeline.PipelineService.UpdatePipeline:output_type -> fitglue.models.pipeline.PipelineConfig
+	20, // 23: fitglue.services.pipeline.PipelineService.DeletePipeline:output_type -> google.protobuf.Empty
+	20, // 24: fitglue.services.pipeline.PipelineService.SubmitInput:output_type -> google.protobuf.Empty
+	10, // 25: fitglue.services.pipeline.PipelineService.ListPendingInputs:output_type -> fitglue.services.pipeline.ListPendingInputsResponse
+	20, // 26: fitglue.services.pipeline.PipelineService.ResolvePendingInput:output_type -> google.protobuf.Empty
+	20, // 27: fitglue.services.pipeline.PipelineService.RepostActivity:output_type -> google.protobuf.Empty
+	17, // 28: fitglue.services.pipeline.PipelineService.GetPipelineRun:output_type -> fitglue.models.pipeline.PipelineRun
+	15, // 29: fitglue.services.pipeline.PipelineService.ListPipelineRuns:output_type -> fitglue.services.pipeline.ListPipelineRunsResponse
+	1,  // 30: fitglue.services.pipeline.PipelineService.AdminListPipelineRuns:output_type -> fitglue.services.pipeline.AdminListPipelineRunsResponse
+	19, // [19:31] is the sub-list for method output_type
+	7,  // [7:19] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_services_pipeline_pipeline_proto_init() }
@@ -923,7 +1068,7 @@ func file_services_pipeline_pipeline_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_pipeline_pipeline_proto_rawDesc), len(file_services_pipeline_pipeline_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   17,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

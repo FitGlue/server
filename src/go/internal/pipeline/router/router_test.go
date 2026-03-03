@@ -56,6 +56,9 @@ func (m *mockRouterStore) ListPipelineRuns(_ context.Context, _, _ string, _ int
 func (m *mockRouterStore) UpdatePipelineRun(_ context.Context, _, _ string, _ map[string]interface{}) error {
 	return m.updateErr
 }
+func (m *mockRouterStore) FindPipelineRunByActivityId(_ context.Context, _, _ string) (*pbpipeline.PipelineRun, error) {
+	return nil, nil
+}
 
 var _ pipeline.PipelineStore = (*mockRouterStore)(nil)
 

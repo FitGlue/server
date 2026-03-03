@@ -9,6 +9,7 @@ import (
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/go-chi/chi/v5"
@@ -151,11 +152,35 @@ func (s *APIServer) handleGetIntegration(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *APIServer) handleSetIntegration(w http.ResponseWriter, r *http.Request) {
-	// token := getUserToken(r)
-	// provider := chi.URLParam(r, "provider")
+	token := getUserToken(r)
+	provider := chi.URLParam(r, "provider")
 
-	// Request parsing for integration struct...
-	WriteError(w, statusError(http.StatusNotImplemented, "not implemented natively yet"))
+	// Parse the request body into a generic struct for the integration data
+	var bodyMap map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&bodyMap); err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
+		return
+	}
+
+	integrationData, err := structpb.NewStruct(bodyMap)
+	if err != nil {
+		WriteError(w, statusError(http.StatusBadRequest, "failed to parse integration data"))
+		return
+	}
+
+	req := &userpb.SetIntegrationRequest{
+		UserId:          token.UID,
+		Provider:        provider,
+		IntegrationData: integrationData,
+	}
+
+	_, err = s.userService.SetIntegration(r.Context(), req)
+	if err != nil {
+		WriteError(w, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *APIServer) handleDeleteIntegration(w http.ResponseWriter, r *http.Request) {
@@ -220,7 +245,7 @@ func (s *APIServer) handleListCounters(w http.ResponseWriter, r *http.Request) {
 
 func (s *APIServer) handleUpdateCounter(w http.ResponseWriter, r *http.Request) {
 	token := getUserToken(r)
-	// name := chi.URLParam(r, "name")
+	name := chi.URLParam(r, "name")
 
 	var req userpb.UpdateCounterRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -228,7 +253,7 @@ func (s *APIServer) handleUpdateCounter(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	req.UserId = token.UID
-	// TODO: verify if name is part of the request body or path
+	req.CounterId = name
 
 	res, err := s.userService.UpdateCounter(r.Context(), &req)
 	if err != nil {

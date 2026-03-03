@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 	"io"
-
 	"strings"
+	"time"
 
 	"cloud.google.com/go/storage"
 )
@@ -47,4 +47,28 @@ func (a *StorageAdapter) Get(ctx context.Context, bucketName, objectName string)
 func (a *StorageAdapter) Delete(ctx context.Context, bucketName, objectName string) error {
 	bucketName, objectName = parseURI(bucketName, objectName)
 	return a.Client.Bucket(bucketName).Object(objectName).Delete(ctx)
+}
+
+// SignedURL generates a V4 signed URL for uploading or downloading an object.
+// On Cloud Run with a service account, credentials are auto-detected.
+func (a *StorageAdapter) SignedURL(ctx context.Context, bucketName, objectName, contentType string, expiry time.Duration) (string, error) {
+	bucketName, objectName = parseURI(bucketName, objectName)
+
+	method := "GET"
+	var headers []string
+	if contentType != "" {
+		method = "PUT"
+		headers = []string{"Content-Type:" + contentType}
+	}
+
+	url, err := a.Client.Bucket(bucketName).SignedURL(objectName, &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  method,
+		Expires: time.Now().Add(expiry),
+		Headers: headers,
+	})
+	if err != nil {
+		return "", err
+	}
+	return url, nil
 }

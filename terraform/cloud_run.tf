@@ -42,8 +42,8 @@ resource "google_cloud_run_v2_service" "backend" {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:${var.image_tag}"
       resources {
         limits = {
-          cpu    = "1000m"
-          memory = "512Mi"
+          cpu    = "250m"
+          memory = "256Mi"
         }
       }
 
@@ -111,6 +111,13 @@ resource "google_cloud_run_v2_service" "backend" {
         for_each = each.key == "user" ? [1] : []
         content {
           name  = "FITGLUE_WEB_URL"
+          value = var.base_url
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "user" ? [1] : []
+        content {
+          name  = "BASE_URL"
           value = var.base_url
         }
       }
@@ -491,8 +498,8 @@ resource "google_cloud_run_v2_service" "backend" {
       }
     }
     scaling {
-      min_instance_count = 1
-      max_instance_count = 10
+      min_instance_count = 0
+      max_instance_count = 3
     }
   }
 }
@@ -512,8 +519,8 @@ resource "google_cloud_run_v2_service" "frontend" {
       image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.services.name}/${each.key}:${var.image_tag}"
       resources {
         limits = {
-          cpu    = "1000m"
-          memory = "512Mi"
+          cpu    = "250m"
+          memory = "256Mi"
         }
       }
 
@@ -839,10 +846,22 @@ resource "google_cloud_run_v2_service" "frontend" {
           }
         }
       }
+      dynamic "env" {
+        for_each = each.key == "api-webhook" ? [1] : []
+        content {
+          name = "FITBIT_OAUTH_CLIENT_SECRET"
+          value_source {
+            secret_key_ref {
+              secret  = google_secret_manager_secret.fitbit_client_secret.secret_id
+              version = "latest"
+            }
+          }
+        }
+      }
     }
     scaling {
-      min_instance_count = 1
-      max_instance_count = 10
+      min_instance_count = 0
+      max_instance_count = 3
     }
   }
 }

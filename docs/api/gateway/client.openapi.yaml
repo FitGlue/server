@@ -3,20 +3,26 @@
 
 openapi: 3.0.3
 info:
-    title: ""
+    title: ClientGatewayService API
+    description: |-
+        ClientGatewayService describes the authenticated REST API surface that the
+         web frontend talks to via api-client at /api/v2/*.
+
+         Auth is handled by gateway middleware — the user_id is injected from the
+         Firebase token, NEVER sent by the client. Request messages here reflect
+         what the frontend actually sends (no user_id fields).
     version: 0.0.1
 paths:
-    /v2/admin/registration-summary:
+    /auth-email/send-password-reset:
         post:
             tags:
-                - UserService
-            description: Administrative RPCs
-            operationId: UserService_GenerateRegistrationSummary
+                - ClientGatewayService
+            operationId: ClientGatewayService_SendPasswordReset
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/GenerateRegistrationSummaryRequest'
+                            $ref: '#/components/schemas/SendPasswordResetGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -28,93 +34,189 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/billing/webhook:
+    /billing/cancel:
         post:
             tags:
-                - BillingService
-            operationId: BillingService_HandleWebhookEvent
+                - ClientGatewayService
+            operationId: ClientGatewayService_CancelSubscription
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SubscriptionState'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /billing/checkout:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_CreateCheckoutSession
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/HandleWebhookEventRequest'
+                            $ref: '#/components/schemas/CreateCheckoutGatewayRequest'
                 required: true
             responses:
                 "200":
                     description: OK
-                    content: {}
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/CreateCheckoutGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/registry/categories:
-        get:
+    /billing/portal:
+        post:
             tags:
-                - RegistryService
-            operationId: RegistryService_ListCategories
+                - ClientGatewayService
+            operationId: ClientGatewayService_CreateBillingPortal
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateBillingPortalGatewayRequest'
+                required: true
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListCategoriesResponse'
+                                $ref: '#/components/schemas/CreateBillingPortalGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/registry/destinations:
+    /billing/subscription:
         get:
             tags:
-                - RegistryService
-            operationId: RegistryService_ListDestinations
+                - ClientGatewayService
+            description: ===================== Billing =====================
+            operationId: ClientGatewayService_GetSubscription
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListDestinationsResponse'
+                                $ref: '#/components/schemas/SubscriptionState'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/registry/plugins:
+    /billing/tier:
         get:
             tags:
-                - RegistryService
-            operationId: RegistryService_ListPlugins
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetTierStatus
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetTierStatusGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /billing/trial:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_StartTrial
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/SubscriptionState'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /registry:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Registry (Unauthenticated, but on api-client) =====================
+            operationId: ClientGatewayService_GetPluginRegistry
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PluginRegistryResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /registry/categories:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_ListCategories
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListCategoriesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /registry/plugins:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetPluginRegistryPlugins
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PluginRegistryResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /registry/plugins/{id}:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetPlugin
             parameters:
-                - name: category
-                  in: query
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListPluginsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/registry/plugins/{pluginId}:
-        get:
-            tags:
-                - RegistryService
-            operationId: RegistryService_GetPlugin
-            parameters:
-                - name: pluginId
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -132,13 +234,13 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/registry/plugins/{pluginId}/icon:
+    /registry/plugins/{id}/icon:
         get:
             tags:
-                - RegistryService
-            operationId: RegistryService_GetPluginIcon
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetPluginIcon
             parameters:
-                - name: pluginId
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -149,41 +251,132 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GetPluginIconResponse'
+                                $ref: '#/components/schemas/GetPluginIconGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/registry/sources:
+    /registry/sources:
         get:
             tags:
-                - RegistryService
-            operationId: RegistryService_ListSources
+                - ClientGatewayService
+            operationId: ClientGatewayService_ListSources
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListSourcesResponse'
+                                $ref: '#/components/schemas/ListSourcesGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user:
+    /repost/full-pipeline:
         post:
             tags:
-                - UserService
-            operationId: UserService_CreateUser
+                - ClientGatewayService
+            operationId: ClientGatewayService_RepostFullPipeline
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/CreateUserRequest'
+                            $ref: '#/components/schemas/RepostVariantGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RepostGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /repost/missed-destination:
+        post:
+            tags:
+                - ClientGatewayService
+            description: ===================== Repost Variants =====================
+            operationId: ClientGatewayService_RepostMissedDestination
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RepostVariantGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RepostGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /repost/retry-destination:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_RepostRetryDestination
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/RepostVariantGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/RepostGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== User Profile =====================
+            operationId: ClientGatewayService_GetProfile
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateProfile
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateProfileGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -198,16 +391,142 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/email/reset-password:
+        delete:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeleteSelf
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Activities =====================
+            operationId: ClientGatewayService_ListActivities
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListActivitiesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities/stats:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetActivityStats
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetActivityStatsGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/StandardizedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeleteActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/activities/{id}/repost:
         post:
             tags:
-                - UserService
-            operationId: UserService_SendPasswordResetEmail
+                - ClientGatewayService
+            operationId: ClientGatewayService_RepostActivity
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/auth-email/send-email-change:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_SendEmailChangeVerification
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/SendPasswordResetEmailRequest'
+                            $ref: '#/components/schemas/SendEmailChangeGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -219,17 +538,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}:
-        delete:
+    /users/me/auth-email/send-verification:
+        post:
             tags:
-                - UserService
-            operationId: UserService_DeleteUser
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ClientGatewayService
+            description: ===================== Auth Email =====================
+            operationId: ClientGatewayService_SendVerificationEmail
             responses:
                 "200":
                     description: OK
@@ -240,45 +554,31 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/booster-data:
+    /users/me/booster-data:
         get:
             tags:
-                - UserService
-            operationId: UserService_GetBoosterData
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: boosterId
-                  in: query
-                  schema:
-                    type: string
+                - ClientGatewayService
+            description: ===================== Booster Data =====================
+            operationId: ClientGatewayService_GetBoosterData
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GetBoosterDataResponse'
+                                $ref: '#/components/schemas/GetBoosterDataGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/booster-data/{boosterId}:
+    /users/me/booster-data/{boosterId}:
         put:
             tags:
-                - UserService
-            operationId: UserService_SetBoosterData
+                - ClientGatewayService
+            operationId: ClientGatewayService_SetBoosterData
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
                 - name: boosterId
                   in: path
                   required: true
@@ -302,14 +602,9 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - UserService
-            operationId: UserService_DeleteBoosterData
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeleteBoosterData
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
                 - name: boosterId
                   in: path
                   required: true
@@ -325,42 +620,14 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/counters:
-        get:
+    /users/me/connections/{provider}/actions:
+        post:
             tags:
-                - UserService
-            operationId: UserService_ListCounters
+                - ClientGatewayService
+            description: ===================== Connection Actions =====================
+            operationId: ClientGatewayService_ConnectionAction
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListCountersResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/counters/{counterId}:
-        patch:
-            tags:
-                - UserService
-            operationId: UserService_UpdateCounter
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: counterId
+                - name: provider
                   in: path
                   required: true
                   schema:
@@ -369,7 +636,53 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UpdateCounterRequest'
+                            $ref: '#/components/schemas/ConnectionActionGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/counters:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Counters =====================
+            operationId: ClientGatewayService_ListCounters
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListCountersGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/counters/{name}:
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateCounter
+            parameters:
+                - name: name
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateCounterGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -384,22 +697,56 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/email/change:
-        post:
+        delete:
             tags:
-                - UserService
-            operationId: UserService_SendEmailChangeVerification
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeleteCounter
             parameters:
-                - name: userId
+                - name: name
                   in: path
                   required: true
                   schema:
                     type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/export:
+        post:
+            tags:
+                - ClientGatewayService
+            description: ===================== Data Export =====================
+            operationId: ClientGatewayService_ExportData
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ExportDataGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/fcm-token:
+        post:
+            tags:
+                - ClientGatewayService
+            description: ===================== FCM Token =====================
+            operationId: ClientGatewayService_SetFCMToken
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/SendEmailChangeVerificationRequest'
+                            $ref: '#/components/schemas/SetFCMTokenGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -411,45 +758,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/email/verify:
-        post:
-            tags:
-                - UserService
-            description: Email Auth RPCs
-            operationId: UserService_SendVerificationEmail
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SendVerificationEmailRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/integrations:
+    /users/me/integrations:
         get:
             tags:
-                - UserService
-            operationId: UserService_ListIntegrations
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ClientGatewayService
+            description: ===================== Integrations =====================
+            operationId: ClientGatewayService_ListIntegrations
             responses:
                 "200":
                     description: OK
@@ -463,17 +777,12 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/integrations/{provider}:
+    /users/me/integrations/{provider}:
         get:
             tags:
-                - UserService
-            operationId: UserService_GetIntegration
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetIntegration
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
                 - name: provider
                   in: path
                   required: true
@@ -485,7 +794,7 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/GetIntegrationResponse'
+                                $ref: '#/components/schemas/GetIntegrationGatewayResponse'
                 default:
                     description: Default error response
                     content:
@@ -494,14 +803,9 @@ paths:
                                 $ref: '#/components/schemas/Status'
         put:
             tags:
-                - UserService
-            operationId: UserService_SetIntegration
+                - ClientGatewayService
+            operationId: ClientGatewayService_SetIntegration
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
                 - name: provider
                   in: path
                   required: true
@@ -511,7 +815,7 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/SetIntegrationRequest'
+                            type: object
                 required: true
             responses:
                 "200":
@@ -525,14 +829,9 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - UserService
-            operationId: UserService_DeleteIntegration
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeleteIntegration
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
                 - name: provider
                   in: path
                   required: true
@@ -548,17 +847,52 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/notifications:
-        get:
+    /users/me/integrations/{provider}/connect:
+        post:
             tags:
-                - UserService
-            operationId: UserService_GetNotificationPrefs
+                - ClientGatewayService
+            operationId: ClientGatewayService_OAuthConnect
             parameters:
-                - name: userId
+                - name: provider
                   in: path
                   required: true
                   schema:
                     type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OAuthConnectResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/mobile/sync:
+        post:
+            tags:
+                - ClientGatewayService
+            description: ===================== Mobile Sync =====================
+            operationId: ClientGatewayService_MobileSync
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/notification-prefs:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Notification Preferences =====================
+            operationId: ClientGatewayService_GetNotificationPrefs
             responses:
                 "200":
                     description: OK
@@ -572,16 +906,10 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        patch:
+        put:
             tags:
-                - UserService
-            operationId: UserService_UpdateNotificationPrefs
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateNotificationPrefs
             requestBody:
                 content:
                     application/json:
@@ -601,36 +929,38 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/user/{userId}/profile:
-        get:
+    /users/me/parse-fit:
+        post:
             tags:
-                - UserService
-            operationId: UserService_GetProfile
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ClientGatewayService
+            description: ===================== FIT File Parse =====================
+            operationId: ClientGatewayService_ParseFitFile
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ParseFitFileGatewayRequest'
+                required: true
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserProfile'
+                                $ref: '#/components/schemas/StandardizedActivity'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        patch:
+    /users/me/pending-inputs/{inputId}/submit:
+        post:
             tags:
-                - UserService
-            operationId: UserService_UpdateProfile
+                - ClientGatewayService
+            operationId: ClientGatewayService_SubmitInput
             parameters:
-                - name: userId
+                - name: inputId
                   in: path
                   required: true
                   schema:
@@ -639,7 +969,53 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/UserProfile'
+                            $ref: '#/components/schemas/SubmitInputGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/personal-records:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Personal Records =====================
+            operationId: ClientGatewayService_ListPersonalRecords
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPersonalRecordsGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/personal-records/{recordType}:
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_SetPersonalRecord
+            parameters:
+                - name: recordType
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/SetPersonalRecordGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -647,20 +1023,155 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/UserProfile'
+                                $ref: '#/components/schemas/PersonalRecord'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/activities:
+        delete:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeletePersonalRecord
+            parameters:
+                - name: recordType
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/pipelines:
         get:
             tags:
-                - ActivityService
-            operationId: ActivityService_ListActivities
+                - ClientGatewayService
+            description: ===================== Pipelines =====================
+            operationId: ClientGatewayService_ListPipelines
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPipelinesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_CreatePipeline
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreatePipelineGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/pipelines/{id}:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetPipeline
             parameters:
-                - name: userId
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdatePipeline
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdatePipelineGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/PipelineConfig'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeletePipeline
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/pipelines/{id}/runs:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_ListPipelineRuns
+            parameters:
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -680,416 +1191,20 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListActivitiesResponse'
+                                $ref: '#/components/schemas/ListPipelineRunsGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/activities/{activityId}:
+    /users/me/pipelines/{id}/runs/{runId}:
         get:
             tags:
-                - ActivityService
-            operationId: ActivityService_GetActivity
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetPipelineRun
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: activityId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/StandardizedActivity'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - ActivityService
-            operationId: ActivityService_DeleteActivity
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: activityId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/activities/{activityId}/repost:
-        post:
-            tags:
-                - PipelineService
-            operationId: PipelineService_RepostActivity
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: activityId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/RepostActivityRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/billing/cancel:
-        post:
-            tags:
-                - BillingService
-            operationId: BillingService_CancelSubscription
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CancelSubscriptionRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SubscriptionState'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/billing/checkout:
-        post:
-            tags:
-                - BillingService
-            operationId: BillingService_CreateCheckoutSession
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/CreateCheckoutSessionRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/CreateCheckoutSessionResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/billing/subscription:
-        get:
-            tags:
-                - BillingService
-            operationId: BillingService_GetSubscription
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SubscriptionState'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/billing/tier-status:
-        get:
-            tags:
-                - BillingService
-            operationId: BillingService_GetTierStatus
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/GetTierStatusResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/billing/trial:
-        post:
-            tags:
-                - BillingService
-            operationId: BillingService_StartTrial
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/StartTrialRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/SubscriptionState'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/export-data:
-        post:
-            tags:
-                - ActivityService
-            operationId: ActivityService_ExportData
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ExportDataRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ExportDataResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/parse-fit:
-        post:
-            tags:
-                - ActivityService
-            operationId: ActivityService_ParseFitFile
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ParseFitFileRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/StandardizedActivity'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/pending-inputs:
-        get:
-            tags:
-                - PipelineService
-            operationId: PipelineService_ListPendingInputs
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListPendingInputsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/pending-inputs/{pendingInputId}/resolve:
-        post:
-            tags:
-                - PipelineService
-            operationId: PipelineService_ResolvePendingInput
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: pendingInputId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ResolvePendingInputRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/pending-inputs/{pendingInputId}/submit:
-        post:
-            tags:
-                - PipelineService
-            operationId: PipelineService_SubmitInput
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: pendingInputId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/SubmitInputRequest'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content: {}
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/pipeline-runs:
-        get:
-            tags:
-                - PipelineService
-            operationId: PipelineService_ListPipelineRuns
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ListPipelineRunsResponse'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/pipeline-runs/{runId}:
-        get:
-            tags:
-                - PipelineService
-            operationId: PipelineService_GetPipelineRun
-            parameters:
-                - name: userId
+                - name: id
                   in: path
                   required: true
                   schema:
@@ -1112,36 +1227,32 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/pipelines:
+    /users/me/plugin-defaults:
         get:
             tags:
-                - PipelineService
-            operationId: PipelineService_ListPipelines
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ClientGatewayService
+            description: ===================== Plugin Defaults =====================
+            operationId: ClientGatewayService_ListPluginDefaults
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListPipelinesResponse'
+                                $ref: '#/components/schemas/ListPluginDefaultsGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        post:
+    /users/me/plugin-defaults/{pluginId}:
+        put:
             tags:
-                - PipelineService
-            operationId: PipelineService_CreatePipeline
+                - ClientGatewayService
+            operationId: ClientGatewayService_SetPluginDefaults
             parameters:
-                - name: userId
+                - name: pluginId
                   in: path
                   required: true
                   schema:
@@ -1150,44 +1261,12 @@ paths:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/PipelineConfig'
+                            type: object
                 required: true
             responses:
                 "200":
                     description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PipelineConfig'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/pipelines/{pipelineId}:
-        get:
-            tags:
-                - PipelineService
-            operationId: PipelineService_GetPipeline
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: pipelineId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/PipelineConfig'
+                    content: {}
                 default:
                     description: Default error response
                     content:
@@ -1196,15 +1275,10 @@ paths:
                                 $ref: '#/components/schemas/Status'
         delete:
             tags:
-                - PipelineService
-            operationId: PipelineService_DeletePipeline
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeletePluginDefaults
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: pipelineId
+                - name: pluginId
                   in: path
                   required: true
                   schema:
@@ -1219,26 +1293,34 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        patch:
+    /users/me/showcase-management/preferences:
+        get:
             tags:
-                - PipelineService
-            operationId: PipelineService_UpdatePipeline
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: pipelineId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ClientGatewayService
+            description: ===================== Showcase Management =====================
+            operationId: ClientGatewayService_GetShowcasePreferences
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcaseProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateShowcasePreferences
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/PipelineConfig'
+                            $ref: '#/components/schemas/UpdateShowcasePreferencesGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -1246,105 +1328,60 @@ paths:
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/PipelineConfig'
+                                $ref: '#/components/schemas/ShowcaseProfile'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/showcases:
+    /users/me/showcase-management/profile:
         get:
             tags:
-                - ActivityService
-            operationId: ActivityService_ListShowcases
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetShowcaseSettings
             responses:
                 "200":
                     description: OK
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/ListShowcasesResponse'
+                                $ref: '#/components/schemas/GetShowcaseSettingsGatewayResponse'
                 default:
                     description: Default error response
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateShowcaseSettings
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateShowcaseSettingsGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcaseProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/profile/entries/{showcaseId}:
         post:
             tags:
-                - ActivityService
-            operationId: ActivityService_CreateShowcase
+                - ClientGatewayService
+            operationId: ClientGatewayService_AddShowcaseEntry
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ShowcasedActivity'
-                required: true
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ShowcasedActivity'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-    /v2/users/{userId}/showcases/{showcaseId}:
-        get:
-            tags:
-                - ActivityService
-            operationId: ActivityService_GetShowcase
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-                - name: showcaseId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
-            responses:
-                "200":
-                    description: OK
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ShowcasedActivity'
-                default:
-                    description: Default error response
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Status'
-        delete:
-            tags:
-                - ActivityService
-            operationId: ActivityService_DeleteShowcase
-            parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
                 - name: showcaseId
                   in: path
                   required: true
@@ -1360,26 +1397,102 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Status'
-        patch:
+        delete:
             tags:
-                - ActivityService
-            operationId: ActivityService_UpdateShowcase
+                - ClientGatewayService
+            operationId: ClientGatewayService_RemoveShowcaseEntry
             parameters:
-                - name: userId
-                  in: path
-                  required: true
-                  schema:
-                    type: string
                 - name: showcaseId
                   in: path
                   required: true
                   schema:
                     type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/profile/picture:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetShowcaseProfilePictureUploadUrl
             requestBody:
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/ShowcasedActivity'
+                            $ref: '#/components/schemas/GetPictureUploadUrlGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetPictureUploadUrlGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcase-management/profile/slug:
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateShowcaseSlug
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateShowcaseSlugGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UpdateShowcaseSlugGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcases:
+        get:
+            tags:
+                - ClientGatewayService
+            description: ===================== Showcases =====================
+            operationId: ClientGatewayService_ListShowcases
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListShowcasesGatewayResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_CreateShowcase
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/CreateShowcaseGatewayRequest'
                 required: true
             responses:
                 "200":
@@ -1388,6 +1501,100 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/ShowcasedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcases/{id}:
+        get:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GetShowcase
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcasedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_UpdateShowcase
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateShowcaseGatewayRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ShowcasedActivity'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_DeleteShowcase
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/me/showcases/{id}/generate:
+        post:
+            tags:
+                - ClientGatewayService
+            operationId: ClientGatewayService_GenerateShowcaseImages
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content: {}
                 default:
                     description: Default error response
                     content:
@@ -1421,11 +1628,6 @@ components:
                     additionalProperties:
                         type: string
                 error:
-                    type: string
-        CancelSubscriptionRequest:
-            type: object
-            properties:
-                userId:
                     type: string
         ConfigFieldDependency:
             type: object
@@ -1496,6 +1698,13 @@ components:
                 maxValue:
                     type: number
                     format: double
+        ConnectionActionGatewayRequest:
+            type: object
+            properties:
+                provider:
+                    type: string
+                action:
+                    type: string
         Counter:
             type: object
             properties:
@@ -1506,25 +1715,39 @@ components:
                 lastUpdated:
                     type: string
                     format: date-time
-        CreateCheckoutSessionRequest:
+        CreateBillingPortalGatewayRequest:
             type: object
             properties:
-                userId:
+                returnUrl:
                     type: string
+        CreateBillingPortalGatewayResponse:
+            type: object
+            properties:
+                url:
+                    type: string
+        CreateCheckoutGatewayRequest:
+            type: object
+            properties:
                 successUrl:
                     type: string
                 cancelUrl:
                     type: string
-        CreateCheckoutSessionResponse:
+            description: Billing
+        CreateCheckoutGatewayResponse:
             type: object
             properties:
                 sessionUrl:
                     type: string
-        CreateUserRequest:
+        CreatePipelineGatewayRequest:
             type: object
             properties:
-                userId:
-                    type: string
+                pipeline:
+                    $ref: '#/components/schemas/PipelineConfig'
+        CreateShowcaseGatewayRequest:
+            type: object
+            properties:
+                showcase:
+                    $ref: '#/components/schemas/ShowcasedActivity'
         DestinationConfig:
             type: object
             properties:
@@ -1562,16 +1785,12 @@ components:
                     type: object
                     additionalProperties:
                         type: string
-        ExportDataRequest:
-            type: object
-            properties:
-                userId:
-                    type: string
-        ExportDataResponse:
+        ExportDataGatewayResponse:
             type: object
             properties:
                 downloadUrl:
                     type: string
+            description: Data Export
         FitbitIntegration:
             type: object
             properties:
@@ -1592,30 +1811,48 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
-        GenerateRegistrationSummaryRequest:
+        GetActivityStatsGatewayResponse:
             type: object
             properties:
-                dateOverride:
+                totalActivities:
+                    type: integer
+                    format: int32
+                totalShowcases:
+                    type: integer
+                    format: int32
+                lastActivityAt:
                     type: string
-                    description: Optional date override (e.g. "2026-02-23"), uses previous 24 hours if empty
-        GetBoosterDataResponse:
+        GetBoosterDataGatewayResponse:
             type: object
             properties:
                 data:
                     type: object
                     additionalProperties:
                         type: object
-                    description: Map of booster_id to its JSON payload
-        GetIntegrationResponse:
+            description: Booster Data
+        GetIntegrationGatewayResponse:
             type: object
             properties:
                 integrations:
-                    allOf:
-                        - $ref: '#/components/schemas/UserIntegrations'
-                    description: |-
-                        Uses a generic bytes payload or structured oneOf depending on how we decide to send it
-                         For now, returning the whole UserIntegrations tree is easiest
-        GetPluginIconResponse:
+                    $ref: '#/components/schemas/UserIntegrations'
+            description: Integrations
+        GetPictureUploadUrlGatewayRequest:
+            type: object
+            properties:
+                contentType:
+                    type: string
+        GetPictureUploadUrlGatewayResponse:
+            type: object
+            properties:
+                uploadUrl:
+                    type: string
+                publicUrl:
+                    type: string
+                contentType:
+                    type: string
+                maxSizeBytes:
+                    type: string
+        GetPluginIconGatewayResponse:
             type: object
             properties:
                 iconData:
@@ -1623,7 +1860,17 @@ components:
                     format: bytes
                 contentType:
                     type: string
-        GetTierStatusResponse:
+            description: Registry
+        GetShowcaseSettingsGatewayResponse:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/ShowcaseProfile'
+                activities:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseActivityEntryGateway'
+        GetTierStatusGatewayResponse:
             type: object
             properties:
                 effectiveTier:
@@ -1683,14 +1930,6 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
-        HandleWebhookEventRequest:
-            type: object
-            properties:
-                payload:
-                    type: string
-                    format: bytes
-                signature:
-                    type: string
         HealthConnectIntegration:
             type: object
             properties:
@@ -1717,6 +1956,59 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
+        IntegrationAction:
+            type: object
+            properties:
+                id:
+                    type: string
+                label:
+                    type: string
+                description:
+                    type: string
+                icon:
+                    type: string
+        IntegrationManifest:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                description:
+                    type: string
+                icon:
+                    type: string
+                authType:
+                    type: integer
+                    format: enum
+                enabled:
+                    type: boolean
+                docsUrl:
+                    type: string
+                setupTitle:
+                    type: string
+                setupInstructions:
+                    type: string
+                apiKeyLabel:
+                    type: string
+                apiKeyHelpUrl:
+                    type: string
+                marketingDescription:
+                    type: string
+                features:
+                    type: array
+                    items:
+                        type: string
+                iconType:
+                    type: string
+                iconPath:
+                    type: string
+                isTemporarilyUnavailable:
+                    type: boolean
+                actions:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/IntegrationAction'
         IntervalsIntegration:
             type: object
             properties:
@@ -1752,7 +2044,7 @@ components:
                     type: string
                 intensity:
                     type: string
-        ListActivitiesResponse:
+        ListActivitiesGatewayResponse:
             type: object
             properties:
                 activities:
@@ -1761,63 +2053,63 @@ components:
                         $ref: '#/components/schemas/StandardizedActivity'
                 nextPageToken:
                     type: string
-        ListCategoriesResponse:
+        ListCategoriesGatewayResponse:
             type: object
             properties:
                 categories:
                     type: array
                     items:
                         type: string
-        ListCountersResponse:
+        ListCountersGatewayResponse:
             type: object
             properties:
                 counters:
                     type: array
                     items:
                         $ref: '#/components/schemas/Counter'
-        ListDestinationsResponse:
+            description: Counters
+        ListPersonalRecordsGatewayResponse:
             type: object
             properties:
-                destinations:
+                records:
                     type: array
                     items:
-                        $ref: '#/components/schemas/PluginManifest'
-        ListPendingInputsResponse:
-            type: object
-            properties:
-                inputs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/PendingInput'
-        ListPipelineRunsResponse:
+                        $ref: '#/components/schemas/PersonalRecord'
+            description: Personal Records
+        ListPipelineRunsGatewayResponse:
             type: object
             properties:
                 runs:
                     type: array
                     items:
                         $ref: '#/components/schemas/PipelineRun'
-        ListPipelinesResponse:
+                nextPageToken:
+                    type: string
+        ListPipelinesGatewayResponse:
             type: object
             properties:
                 pipelines:
                     type: array
                     items:
                         $ref: '#/components/schemas/PipelineConfig'
-        ListPluginsResponse:
+            description: Pipelines
+        ListPluginDefaultsGatewayResponse:
             type: object
             properties:
-                plugins:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/PluginManifest'
-        ListShowcasesResponse:
+                defaults:
+                    type: object
+                    additionalProperties:
+                        type: object
+            description: Plugin Defaults
+        ListShowcasesGatewayResponse:
             type: object
             properties:
                 showcases:
                     type: array
                     items:
                         $ref: '#/components/schemas/ShowcaseProfileEntry'
-        ListSourcesResponse:
+            description: Showcases
+        ListSourcesGatewayResponse:
             type: object
             properties:
                 sources:
@@ -1844,6 +2136,11 @@ components:
                     type: boolean
                 notifyPipelineFailure:
                     type: boolean
+        OAuthConnectResponse:
+            type: object
+            properties:
+                url:
+                    type: string
         OuraIntegration:
             type: object
             properties:
@@ -1881,11 +2178,9 @@ components:
                 lastUsedAt:
                     type: string
                     format: date-time
-        ParseFitFileRequest:
+        ParseFitFileGatewayRequest:
             type: object
             properties:
-                userId:
-                    type: string
                 fitFileContent:
                     type: string
                     format: bytes
@@ -1895,52 +2190,32 @@ components:
                     type: string
                 pipelineId:
                     type: string
-        PendingInput:
+            description: FIT File Parse
+        PersonalRecord:
             type: object
             properties:
+                recordType:
+                    type: string
+                value:
+                    type: number
+                    format: double
+                unit:
+                    type: string
                 activityId:
                     type: string
-                userId:
+                achievedAt:
                     type: string
-                status:
+                    format: date-time
+                activityType:
                     type: integer
                     format: enum
-                requiredFields:
-                    type: array
-                    items:
-                        type: string
-                inputData:
-                    type: object
-                    additionalProperties:
-                        type: string
-                originalPayloadUri:
-                    type: string
-                createdAt:
-                    type: string
-                    format: date-time
-                updatedAt:
-                    type: string
-                    format: date-time
-                completedAt:
-                    type: string
-                    format: date-time
-                continuedWithoutResolution:
-                    type: boolean
-                linkedActivityId:
-                    type: string
-                pipelineId:
-                    type: string
-                enricherProviderId:
-                    type: string
-                autoPopulated:
-                    type: boolean
-                autoDeadline:
-                    type: string
-                    format: date-time
-                providerMetadata:
-                    type: object
-                    additionalProperties:
-                        type: string
+                previousValue:
+                    type: number
+                    format: double
+                improvement:
+                    type: number
+                    format: double
+            description: Personal Record for tracking PRs across cardio and strength activities
         PipelineConfig:
             type: object
             properties:
@@ -2083,6 +2358,25 @@ components:
                     type: boolean
                 allowMultipleInstances:
                     type: boolean
+        PluginRegistryResponse:
+            type: object
+            properties:
+                sources:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PluginManifest'
+                enrichers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PluginManifest'
+                destinations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PluginManifest'
+                integrations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/IntegrationManifest'
         PolarIntegration:
             type: object
             properties:
@@ -2142,36 +2436,31 @@ components:
                 stepLength:
                     type: number
                     format: double
-        RepostActivityRequest:
+        RepostGatewayResponse:
             type: object
             properties:
-                userId:
+                success:
+                    type: boolean
+                message:
                     type: string
+        RepostVariantGatewayRequest:
+            type: object
+            properties:
                 activityId:
                     type: string
-        ResolvePendingInputRequest:
+                destination:
+                    type: string
+            description: Repost Variants
+        SendEmailChangeGatewayRequest:
             type: object
             properties:
-                userId:
-                    type: string
-                pendingInputId:
-                    type: string
-        SendEmailChangeVerificationRequest:
-            type: object
-            properties:
-                userId:
-                    type: string
                 newEmail:
                     type: string
-        SendPasswordResetEmailRequest:
+            description: Auth Email
+        SendPasswordResetGatewayRequest:
             type: object
             properties:
                 email:
-                    type: string
-        SendVerificationEmailRequest:
-            type: object
-            properties:
-                userId:
                     type: string
         Session:
             type: object
@@ -2202,13 +2491,93 @@ components:
                 maxHeartRate:
                     type: integer
                     format: int32
-        SetIntegrationRequest:
+        SetFCMTokenGatewayRequest:
             type: object
             properties:
+                token:
+                    type: string
+                platform:
+                    type: string
+            description: FCM Token
+        SetPersonalRecordGatewayRequest:
+            type: object
+            properties:
+                recordType:
+                    type: string
+                value:
+                    type: number
+                    format: double
+                unit:
+                    type: string
+                activityId:
+                    type: string
+        ShowcaseActivityEntryGateway:
+            type: object
+            properties:
+                showcaseId:
+                    type: string
+                title:
+                    type: string
+                activityType:
+                    type: string
+                source:
+                    type: string
+                startTime:
+                    type: string
+                createdAt:
+                    type: string
+                inProfile:
+                    type: boolean
+        ShowcaseProfile:
+            type: object
+            properties:
+                slug:
+                    type: string
                 userId:
                     type: string
-                provider:
+                displayName:
                     type: string
+                entries:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ShowcaseProfileEntry'
+                totalActivities:
+                    type: integer
+                    format: int32
+                totalDistanceMeters:
+                    type: number
+                    format: double
+                totalDurationSeconds:
+                    type: number
+                    format: double
+                latestActivityAt:
+                    type: string
+                    format: date-time
+                totalSets:
+                    type: integer
+                    format: int32
+                totalReps:
+                    type: integer
+                    format: int32
+                totalWeightKg:
+                    type: number
+                    format: double
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+                subtitle:
+                    type: string
+                bio:
+                    type: string
+                profilePictureUrl:
+                    type: string
+                visible:
+                    type: boolean
+                theme:
+                    $ref: '#/components/schemas/ShowcaseTheme'
         ShowcaseProfileEntry:
             type: object
             properties:
@@ -2242,6 +2611,17 @@ components:
                 totalWeightKg:
                     type: number
                     format: double
+        ShowcaseTheme:
+            type: object
+            properties:
+                themeId:
+                    type: string
+                customAccentColor:
+                    type: string
+                animationId:
+                    type: string
+                cardStyle:
+                    type: string
         ShowcasedActivity:
             type: object
             properties:
@@ -2349,11 +2729,6 @@ components:
                         $ref: '#/components/schemas/TimeMarker'
                 workout:
                     $ref: '#/components/schemas/WorkoutDefinition'
-        StartTrialRequest:
-            type: object
-            properties:
-                userId:
-                    type: string
         Status:
             type: object
             properties:
@@ -2424,12 +2799,10 @@ components:
                     format: double
                 setType:
                     type: string
-        SubmitInputRequest:
+        SubmitInputGatewayRequest:
             type: object
             properties:
-                userId:
-                    type: string
-                pendingInputId:
+                inputId:
                     type: string
                 inputData:
                     type: object
@@ -2509,14 +2882,53 @@ components:
                     type: string
                 afterHtml:
                     type: string
-        UpdateCounterRequest:
+        UpdateCounterGatewayRequest:
             type: object
             properties:
-                userId:
-                    type: string
-                counterId:
+                name:
                     type: string
                 count:
+                    type: string
+        UpdatePipelineGatewayRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                pipeline:
+                    $ref: '#/components/schemas/PipelineConfig'
+        UpdateProfileGatewayRequest:
+            type: object
+            properties:
+                profile:
+                    $ref: '#/components/schemas/UserProfile'
+            description: User
+        UpdateShowcaseGatewayRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                showcase:
+                    $ref: '#/components/schemas/ShowcasedActivity'
+        UpdateShowcasePreferencesGatewayRequest:
+            type: object
+            properties:
+                preferences:
+                    $ref: '#/components/schemas/ShowcaseProfile'
+            description: Showcase Management
+        UpdateShowcaseSettingsGatewayRequest:
+            type: object
+            properties:
+                settings:
+                    $ref: '#/components/schemas/ShowcaseProfile'
+        UpdateShowcaseSlugGatewayRequest:
+            type: object
+            properties:
+                slug:
+                    type: string
+        UpdateShowcaseSlugGatewayResponse:
+            type: object
+            properties:
+                slug:
                     type: string
         UserIntegrations:
             type: object
@@ -2589,6 +3001,10 @@ components:
                 trialEndsAt:
                     type: string
                     format: date-time
+                email:
+                    type: string
+                displayName:
+                    type: string
             description: "UserProfile represents the core user identity and preferences, \n cleanly separated from billing and integrations."
         WahooIntegration:
             type: object
@@ -2638,8 +3054,4 @@ components:
                     type: integer
                     format: uint32
 tags:
-    - name: ActivityService
-    - name: BillingService
-    - name: PipelineService
-    - name: RegistryService
-    - name: UserService
+    - name: ClientGatewayService

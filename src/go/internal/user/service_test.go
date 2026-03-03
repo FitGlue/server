@@ -171,7 +171,7 @@ func setupTest() (*Service, *mockStore, *mockEmailSender, *mockAuthClient) {
 	sender := &mockEmailSender{}
 	logger := mockLogger{}
 	authClient := &mockAuthClient{}
-	return NewService(store, logger, sender, authClient), store, sender, authClient
+	return NewService(store, logger, sender, authClient, "https://fitglue.tech"), store, sender, authClient
 }
 
 func TestGetProfile(t *testing.T) {
@@ -359,11 +359,48 @@ func TestEmailRPCs(t *testing.T) {
 		assert.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
 
-	t.Run("SendEmailChangeVerification_Unimplemented", func(t *testing.T) {
+	t.Run("SendEmailChangeVerification_AuthError", func(t *testing.T) {
+		auth.err = errors.New("auth error")
 		req := &pbsvc.SendEmailChangeVerificationRequest{UserId: "user123", NewEmail: "new@example.com"}
 		_, err := svc.SendEmailChangeVerification(context.Background(), req)
 		assert.Error(t, err)
-		assert.Equal(t, codes.Unimplemented, status.Code(err))
+		assert.Equal(t, codes.Internal, status.Code(err))
+		auth.err = nil
+	})
+
+	t.Run("SendEmailChangeVerification_NoEmail", func(t *testing.T) {
+		auth.userRecord = &firebaseAuth.UserRecord{}
+		req := &pbsvc.SendEmailChangeVerificationRequest{UserId: "user123", NewEmail: "new@example.com"}
+		_, err := svc.SendEmailChangeVerification(context.Background(), req)
+		assert.Error(t, err)
+		assert.Equal(t, codes.FailedPrecondition, status.Code(err))
+		auth.userRecord = nil
+	})
+
+	t.Run("SendEmailChangeVerification_LinkError", func(t *testing.T) {
+		auth.linkErr = errors.New("link error")
+		req := &pbsvc.SendEmailChangeVerificationRequest{UserId: "user123", NewEmail: "new@example.com"}
+		_, err := svc.SendEmailChangeVerification(context.Background(), req)
+		assert.Error(t, err)
+		assert.Equal(t, codes.Internal, status.Code(err))
+		auth.linkErr = nil
+	})
+
+	t.Run("SendEmailChangeVerification_SenderError", func(t *testing.T) {
+		sender.err = errors.New("sender error")
+		req := &pbsvc.SendEmailChangeVerificationRequest{UserId: "user123", NewEmail: "new@example.com"}
+		_, err := svc.SendEmailChangeVerification(context.Background(), req)
+		assert.Error(t, err)
+		assert.Equal(t, codes.Internal, status.Code(err))
+		sender.err = nil
+	})
+
+	t.Run("SendEmailChangeVerification_Success", func(t *testing.T) {
+		req := &pbsvc.SendEmailChangeVerificationRequest{UserId: "user123", NewEmail: "new@example.com"}
+		_, err := svc.SendEmailChangeVerification(context.Background(), req)
+		assert.NoError(t, err)
+		assert.Equal(t, "new@example.com", sender.lastTo)
+		assert.Equal(t, "Confirm your new FitGlue email", sender.lastSubject)
 	})
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/stripe/stripe-go/v76"
+	portalsession "github.com/stripe/stripe-go/v76/billingportal/session"
 	"github.com/stripe/stripe-go/v76/checkout/session"
 	"github.com/stripe/stripe-go/v76/customer"
 	"github.com/stripe/stripe-go/v76/subscription"
@@ -15,6 +16,7 @@ type StripeClient interface {
 	GetSubscription(ctx context.Context, subscriptionID string) (*stripe.Subscription, error)
 	GetCustomer(ctx context.Context, customerID string) (*stripe.Customer, error)
 	CancelSubscription(ctx context.Context, subscriptionID string) (*stripe.Subscription, error)
+	CreateBillingPortalSession(ctx context.Context, customerID string, returnURL string) (*stripe.BillingPortalSession, error)
 }
 
 type LiveStripeClient struct {
@@ -68,4 +70,12 @@ func (s *LiveStripeClient) GetCustomer(ctx context.Context, customerID string) (
 func (s *LiveStripeClient) CancelSubscription(ctx context.Context, subscriptionID string) (*stripe.Subscription, error) {
 	params := &stripe.SubscriptionCancelParams{}
 	return subscription.Cancel(subscriptionID, params)
+}
+
+func (s *LiveStripeClient) CreateBillingPortalSession(ctx context.Context, customerID string, returnURL string) (*stripe.BillingPortalSession, error) {
+	params := &stripe.BillingPortalSessionParams{
+		Customer:  stripe.String(customerID),
+		ReturnURL: stripe.String(returnURL),
+	}
+	return portalsession.New(params)
 }

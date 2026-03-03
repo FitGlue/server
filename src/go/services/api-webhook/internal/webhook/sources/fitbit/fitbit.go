@@ -3,6 +3,9 @@ package fitbit
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,11 +18,12 @@ import (
 )
 
 type Provider struct {
-	verifyCode string
+	verifyCode   string
+	clientSecret string
 }
 
-func NewProvider(verifyCode string) *Provider {
-	return &Provider{verifyCode: verifyCode}
+func NewProvider(verifyCode, clientSecret string) *Provider {
+	return &Provider{verifyCode: verifyCode, clientSecret: clientSecret}
 }
 
 func (p *Provider) ID() string {
@@ -53,7 +57,21 @@ func (p *Provider) ParseEvent(r *http.Request) ([]*webhook.WebhookEvent, error) 
 		return nil, fmt.Errorf("failed to read body: %w", err)
 	}
 
-	// TODO: verify X-Fitbit-Signature HMAC here
+	// Verify X-Fitbit-Signature HMAC-SHA1
+	if p.clientSecret != "" {
+		sig := r.Header.Get("X-Fitbit-Signature")
+		if sig == "" {
+			return nil, fmt.Errorf("missing X-Fitbit-Signature header")
+		}
+
+		mac := hmac.New(sha1.New, []byte(p.clientSecret+"&"))
+		mac.Write(body)
+		expected := base64.StdEncoding.EncodeToString(mac.Sum(nil))
+
+		if !hmac.Equal([]byte(sig), []byte(expected)) {
+			return nil, fmt.Errorf("invalid X-Fitbit-Signature")
+		}
+	}
 
 	var payload fitbitWebhookPayload
 	if err := json.Unmarshal(body, &payload); err != nil {

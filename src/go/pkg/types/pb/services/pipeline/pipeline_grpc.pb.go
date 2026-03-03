@@ -21,17 +21,18 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	PipelineService_ListPipelines_FullMethodName       = "/fitglue.services.pipeline.PipelineService/ListPipelines"
-	PipelineService_GetPipeline_FullMethodName         = "/fitglue.services.pipeline.PipelineService/GetPipeline"
-	PipelineService_CreatePipeline_FullMethodName      = "/fitglue.services.pipeline.PipelineService/CreatePipeline"
-	PipelineService_UpdatePipeline_FullMethodName      = "/fitglue.services.pipeline.PipelineService/UpdatePipeline"
-	PipelineService_DeletePipeline_FullMethodName      = "/fitglue.services.pipeline.PipelineService/DeletePipeline"
-	PipelineService_SubmitInput_FullMethodName         = "/fitglue.services.pipeline.PipelineService/SubmitInput"
-	PipelineService_ListPendingInputs_FullMethodName   = "/fitglue.services.pipeline.PipelineService/ListPendingInputs"
-	PipelineService_ResolvePendingInput_FullMethodName = "/fitglue.services.pipeline.PipelineService/ResolvePendingInput"
-	PipelineService_RepostActivity_FullMethodName      = "/fitglue.services.pipeline.PipelineService/RepostActivity"
-	PipelineService_GetPipelineRun_FullMethodName      = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
-	PipelineService_ListPipelineRuns_FullMethodName    = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
+	PipelineService_ListPipelines_FullMethodName         = "/fitglue.services.pipeline.PipelineService/ListPipelines"
+	PipelineService_GetPipeline_FullMethodName           = "/fitglue.services.pipeline.PipelineService/GetPipeline"
+	PipelineService_CreatePipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/CreatePipeline"
+	PipelineService_UpdatePipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/UpdatePipeline"
+	PipelineService_DeletePipeline_FullMethodName        = "/fitglue.services.pipeline.PipelineService/DeletePipeline"
+	PipelineService_SubmitInput_FullMethodName           = "/fitglue.services.pipeline.PipelineService/SubmitInput"
+	PipelineService_ListPendingInputs_FullMethodName     = "/fitglue.services.pipeline.PipelineService/ListPendingInputs"
+	PipelineService_ResolvePendingInput_FullMethodName   = "/fitglue.services.pipeline.PipelineService/ResolvePendingInput"
+	PipelineService_RepostActivity_FullMethodName        = "/fitglue.services.pipeline.PipelineService/RepostActivity"
+	PipelineService_GetPipelineRun_FullMethodName        = "/fitglue.services.pipeline.PipelineService/GetPipelineRun"
+	PipelineService_ListPipelineRuns_FullMethodName      = "/fitglue.services.pipeline.PipelineService/ListPipelineRuns"
+	PipelineService_AdminListPipelineRuns_FullMethodName = "/fitglue.services.pipeline.PipelineService/AdminListPipelineRuns"
 )
 
 // PipelineServiceClient is the client API for PipelineService service.
@@ -49,6 +50,7 @@ type PipelineServiceClient interface {
 	RepostActivity(ctx context.Context, in *RepostActivityRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetPipelineRun(ctx context.Context, in *GetPipelineRunRequest, opts ...grpc.CallOption) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(ctx context.Context, in *ListPipelineRunsRequest, opts ...grpc.CallOption) (*ListPipelineRunsResponse, error)
+	AdminListPipelineRuns(ctx context.Context, in *AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*AdminListPipelineRunsResponse, error)
 }
 
 type pipelineServiceClient struct {
@@ -169,6 +171,16 @@ func (c *pipelineServiceClient) ListPipelineRuns(ctx context.Context, in *ListPi
 	return out, nil
 }
 
+func (c *pipelineServiceClient) AdminListPipelineRuns(ctx context.Context, in *AdminListPipelineRunsRequest, opts ...grpc.CallOption) (*AdminListPipelineRunsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AdminListPipelineRunsResponse)
+	err := c.cc.Invoke(ctx, PipelineService_AdminListPipelineRuns_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // PipelineServiceServer is the server API for PipelineService service.
 // All implementations must embed UnimplementedPipelineServiceServer
 // for forward compatibility.
@@ -184,6 +196,7 @@ type PipelineServiceServer interface {
 	RepostActivity(context.Context, *RepostActivityRequest) (*emptypb.Empty, error)
 	GetPipelineRun(context.Context, *GetPipelineRunRequest) (*pipeline.PipelineRun, error)
 	ListPipelineRuns(context.Context, *ListPipelineRunsRequest) (*ListPipelineRunsResponse, error)
+	AdminListPipelineRuns(context.Context, *AdminListPipelineRunsRequest) (*AdminListPipelineRunsResponse, error)
 	mustEmbedUnimplementedPipelineServiceServer()
 }
 
@@ -226,6 +239,9 @@ func (UnimplementedPipelineServiceServer) GetPipelineRun(context.Context, *GetPi
 }
 func (UnimplementedPipelineServiceServer) ListPipelineRuns(context.Context, *ListPipelineRunsRequest) (*ListPipelineRunsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListPipelineRuns not implemented")
+}
+func (UnimplementedPipelineServiceServer) AdminListPipelineRuns(context.Context, *AdminListPipelineRunsRequest) (*AdminListPipelineRunsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method AdminListPipelineRuns not implemented")
 }
 func (UnimplementedPipelineServiceServer) mustEmbedUnimplementedPipelineServiceServer() {}
 func (UnimplementedPipelineServiceServer) testEmbeddedByValue()                         {}
@@ -446,6 +462,24 @@ func _PipelineService_ListPipelineRuns_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PipelineService_AdminListPipelineRuns_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AdminListPipelineRunsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(PipelineServiceServer).AdminListPipelineRuns(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: PipelineService_AdminListPipelineRuns_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(PipelineServiceServer).AdminListPipelineRuns(ctx, req.(*AdminListPipelineRunsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // PipelineService_ServiceDesc is the grpc.ServiceDesc for PipelineService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -496,6 +530,10 @@ var PipelineService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPipelineRuns",
 			Handler:    _PipelineService_ListPipelineRuns_Handler,
+		},
+		{
+			MethodName: "AdminListPipelineRuns",
+			Handler:    _PipelineService_AdminListPipelineRuns_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

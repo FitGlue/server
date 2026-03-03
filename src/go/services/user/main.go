@@ -112,7 +112,12 @@ func main() {
 	store := user.NewFirestoreStore(fsClient)
 	authWrapper := &firebaseAuthWrapper{client: authClient}
 
-	svc := user.NewService(store, logger, sender, authWrapper)
+	baseURL := os.Getenv("BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://fitglue.tech"
+	}
+
+	svc := user.NewService(store, logger, sender, authWrapper, baseURL)
 
 	server := grpc.NewServer()
 	pbsvc.RegisterUserServiceServer(server, svc)

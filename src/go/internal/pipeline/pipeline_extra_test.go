@@ -3,6 +3,7 @@ package pipeline
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -16,16 +17,17 @@ import (
 // ErrorStore wraps MockPipelineStore to inject errors on specific methods.
 type ErrorStore struct {
 	*MockPipelineStore
-	listPipelinesErr    error
-	getPipelineErr      error
-	createPipelineErr   error
-	updatePipelineErr   error
-	deletePipelineErr   error
-	listPendingErr      error
-	getPendingErr       error
-	updatePendingErr    error
-	getPipelineRunErr   error
-	listPipelineRunsErr error
+	listPipelinesErr     error
+	getPipelineErr       error
+	createPipelineErr    error
+	updatePipelineErr    error
+	deletePipelineErr    error
+	listPendingErr       error
+	getPendingErr        error
+	updatePendingErr     error
+	getPipelineRunErr    error
+	listPipelineRunsErr  error
+	findRunByActivityErr error
 }
 
 func (e *ErrorStore) ListPipelines(ctx context.Context, userID string) ([]*pipeline.PipelineConfig, error) {
@@ -90,6 +92,12 @@ func (e *ErrorStore) ListPipelineRuns(ctx context.Context, userID, pipelineID st
 }
 func (e *ErrorStore) UpdatePipelineRun(ctx context.Context, userID, runID string, data map[string]interface{}) error {
 	return e.MockPipelineStore.UpdatePipelineRun(ctx, userID, runID, data)
+}
+func (e *ErrorStore) FindPipelineRunByActivityId(ctx context.Context, userID, activityID string) (*pipeline.PipelineRun, error) {
+	if e.findRunByActivityErr != nil {
+		return nil, e.findRunByActivityErr
+	}
+	return e.MockPipelineStore.FindPipelineRunByActivityId(ctx, userID, activityID)
 }
 
 // --- Validation error tests ---
@@ -347,11 +355,108 @@ func TestPipeline_HappyPaths(t *testing.T) {
 		}
 	})
 
-	t.Run("RepostActivity_unimplemented", func(t *testing.T) {
+	t.Run("RepostActivity_invalidMode", func(t *testing.T) {
 		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
-		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1"})
-		if status.Code(err) != codes.Unimplemented {
-			t.Errorf("expected Unimplemented, got %v", err)
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "bad"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument for bad mode, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_missingDestination", func(t *testing.T) {
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "missed-destination"})
+		if status.Code(err) != codes.InvalidArgument {
+			t.Errorf("expected InvalidArgument for missing destination, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_runNotFound", func(t *testing.T) {
+		svc := NewService(NewMockStore(), &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "missing", Mode: "full-pipeline"})
+		if status.Code(err) != codes.NotFound {
+			t.Errorf("expected NotFound, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_noPayloadUri", func(t *testing.T) {
+		store := NewMockStore()
+		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1", ActivityId: "a1"} // no OriginalPayloadUri
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
+		if status.Code(err) != codes.FailedPrecondition {
+			t.Errorf("expected FailedPrecondition, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_gcsFetchError", func(t *testing.T) {
+		store := NewMockStore()
+		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1", ActivityId: "a1", OriginalPayloadUri: "gs://bucket/missing.json"}
+		svc := NewService(store, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal for GCS fetch failure, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_storeError", func(t *testing.T) {
+		es := &ErrorStore{MockPipelineStore: NewMockStore(), findRunByActivityErr: errors.New("db down")}
+		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
+		if status.Code(err) != codes.Internal {
+			t.Errorf("expected Internal for store error, got %v", err)
+		}
+	})
+
+	t.Run("RepostActivity_fullPipeline_success", func(t *testing.T) {
+		store := NewMockStore()
+		payloadBytes := []byte(`{"source":"strava","title":"Morning Run"}`)
+		uri := "gs://bucket/original/a1.json"
+		store.Runs["u1_r1"] = &pipeline.PipelineRun{Id: "r1", ActivityId: "a1", OriginalPayloadUri: uri}
+		pub := &MockPublisher{}
+		blob := &MockBlobStore{Blobs: map[string][]byte{uri: payloadBytes}}
+		svc := NewService(store, pub, blob, mockLogger{})
+
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{UserId: "u1", ActivityId: "a1", Mode: "full-pipeline"})
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+		if len(pub.PublishedEvents) != 1 {
+			t.Fatalf("expected 1 event published, got %d", len(pub.PublishedEvents))
+		}
+
+		var p map[string]interface{}
+		json.Unmarshal(pub.PublishedEvents[0].Data(), &p)
+		if p["isRepost"] != true {
+			t.Errorf("expected isRepost=true")
+		}
+		if p["repostMode"] != "full-pipeline" {
+			t.Errorf("expected repostMode=full-pipeline, got %v", p["repostMode"])
+		}
+		if p["activityId"] != "a1" {
+			t.Errorf("expected activityId=a1")
+		}
+	})
+
+	t.Run("RepostActivity_missedDestination_success", func(t *testing.T) {
+		store := NewMockStore()
+		uri := "gs://bucket/original/a2.json"
+		store.Runs["u1_r2"] = &pipeline.PipelineRun{Id: "r2", ActivityId: "a2", OriginalPayloadUri: uri}
+		pub := &MockPublisher{}
+		blob := &MockBlobStore{Blobs: map[string][]byte{uri: []byte(`{"source":"hevy"}`)}}
+		svc := NewService(store, pub, blob, mockLogger{})
+
+		_, err := svc.RepostActivity(ctx, &pbsvc.RepostActivityRequest{
+			UserId: "u1", ActivityId: "a2", Mode: "missed-destination", Destination: "DESTINATION_HEVY",
+		})
+		if err != nil {
+			t.Fatalf("expected success, got %v", err)
+		}
+
+		var p map[string]interface{}
+		json.Unmarshal(pub.PublishedEvents[0].Data(), &p)
+		if p["repostDestination"] != "DESTINATION_HEVY" {
+			t.Errorf("expected repostDestination=DESTINATION_HEVY, got %v", p["repostDestination"])
 		}
 	})
 }

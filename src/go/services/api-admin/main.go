@@ -6,7 +6,9 @@ import (
 	"net/http"
 	"os"
 
+	"cloud.google.com/go/firestore"
 	"github.com/fitglue/server/src/go/internal/infra"
+	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	pipelinepb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 	"github.com/fitglue/server/src/go/services/api-admin/internal/server"
@@ -66,12 +68,38 @@ func main() {
 	defer pipelineConn.Close()
 	pipelineClient := pipelinepb.NewPipelineServiceClient(pipelineConn)
 
-	// 3. Initialize the HTTP Gateway Server
+	activityServiceURL := os.Getenv("ACTIVITY_SERVICE_URL")
+	if activityServiceURL == "" {
+		activityServiceURL = "localhost:50054"
+	}
+	activityConn, err := infra.GRPCDial(activityServiceURL)
+	if err != nil {
+		logger.Error(ctx, "Failed to connect to Activity Service", "url", activityServiceURL, "error", err)
+		os.Exit(1)
+	}
+	defer activityConn.Close()
+	activityClient := activitypb.NewActivityServiceClient(activityConn)
+
+	// 3. Initialize Firestore for admin stats queries
+	projectID := os.Getenv("PROJECT_ID")
+	if projectID == "" {
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+	}
+	fsClient, err := firestore.NewClient(ctx, projectID)
+	if err != nil {
+		logger.Error(ctx, "Failed to initialize Firestore client", "error", err)
+		os.Exit(1)
+	}
+	defer fsClient.Close()
+
+	// 4. Initialize the HTTP Gateway Server
 	apiServer := server.NewAPIServer(
 		logger,
 		authClient,
 		userClient,
 		pipelineClient,
+		activityClient,
+		fsClient,
 	)
 
 	port := os.Getenv("PORT")

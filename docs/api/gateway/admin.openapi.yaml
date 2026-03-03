@@ -1,0 +1,501 @@
+# Generated with protoc-gen-openapi
+# https://github.com/google/gnostic/tree/master/cmd/protoc-gen-openapi
+
+openapi: 3.0.3
+info:
+    title: AdminGatewayService API
+    description: |-
+        AdminGatewayService describes the admin REST API surface
+         served by api-admin at /api/admin/*.
+
+         Requires admin authentication via AdminMiddleware.
+    version: 0.0.1
+paths:
+    /pipeline-runs:
+        get:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_ListPipelineRuns
+            parameters:
+                - name: status
+                  in: query
+                  schema:
+                    type: string
+                - name: source
+                  in: query
+                  schema:
+                    type: string
+                - name: userId
+                  in: query
+                  schema:
+                    type: string
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListPipelineRunsAdminResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /pipelines:
+        get:
+            tags:
+                - AdminGatewayService
+            description: ===================== Pipeline Management =====================
+            operationId: AdminGatewayService_ListAllPipelines
+            parameters:
+                - name: userId
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListAllPipelinesAdminResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /stats:
+        get:
+            tags:
+                - AdminGatewayService
+            description: ===================== Platform Stats =====================
+            operationId: AdminGatewayService_GetStats
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/GetAdminStatsResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users:
+        get:
+            tags:
+                - AdminGatewayService
+            description: ===================== User Management =====================
+            operationId: AdminGatewayService_ListUsers
+            parameters:
+                - name: limit
+                  in: query
+                  schema:
+                    type: integer
+                    format: int32
+                - name: pageToken
+                  in: query
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ListUsersAdminResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}:
+        get:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_GetUser
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        put:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_UpdateUser
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/UpdateUserAdminRequest'
+                required: true
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/UserProfile'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+        delete:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_DeleteUser
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+    /users/{id}/{dataType}:
+        delete:
+            tags:
+                - AdminGatewayService
+            operationId: AdminGatewayService_DeleteUserData
+            parameters:
+                - name: id
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+                - name: dataType
+                  in: path
+                  required: true
+                  schema:
+                    type: string
+            responses:
+                "200":
+                    description: OK
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AdminEmptyResponse'
+                default:
+                    description: Default error response
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Status'
+components:
+    schemas:
+        AdminEmptyResponse:
+            type: object
+            properties: {}
+        BoosterExecution:
+            type: object
+            properties:
+                providerName:
+                    type: string
+                status:
+                    type: string
+                durationMs:
+                    type: string
+                metadata:
+                    type: object
+                    additionalProperties:
+                        type: string
+                error:
+                    type: string
+        DestinationConfig:
+            type: object
+            properties:
+                config:
+                    type: object
+                    additionalProperties:
+                        type: string
+                excludedEnrichers:
+                    type: array
+                    items:
+                        type: string
+        DestinationOutcome:
+            type: object
+            properties:
+                destination:
+                    type: integer
+                    format: enum
+                status:
+                    type: integer
+                    format: enum
+                externalId:
+                    type: string
+                error:
+                    type: string
+                completedAt:
+                    type: string
+                    format: date-time
+        EnricherConfig:
+            type: object
+            properties:
+                providerType:
+                    type: integer
+                    format: enum
+                typedConfig:
+                    type: object
+                    additionalProperties:
+                        type: string
+        GetAdminStatsResponse:
+            type: object
+            properties:
+                totalUsers:
+                    type: integer
+                    format: int32
+                athleteUsers:
+                    type: integer
+                    format: int32
+                adminUsers:
+                    type: integer
+                    format: int32
+                totalSyncsThisMonth:
+                    type: integer
+                    format: int32
+                recentExecutions:
+                    $ref: '#/components/schemas/RecentPipelineRunCounts'
+        GoogleProtobufAny:
+            type: object
+            properties:
+                '@type':
+                    type: string
+                    description: The type of the serialized message.
+            additionalProperties: true
+            description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        ListAllPipelinesAdminResponse:
+            type: object
+            properties:
+                pipelines:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PipelineConfig'
+        ListPipelineRunsAdminResponse:
+            type: object
+            properties:
+                runs:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/PipelineRun'
+                nextPageToken:
+                    type: string
+        ListUsersAdminResponse:
+            type: object
+            properties:
+                users:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/UserProfile'
+                nextPageToken:
+                    type: string
+        NotificationPreferences:
+            type: object
+            properties:
+                notifyPendingInput:
+                    type: boolean
+                notifyPipelineSuccess:
+                    type: boolean
+                notifyPipelineFailure:
+                    type: boolean
+        PipelineConfig:
+            type: object
+            properties:
+                id:
+                    type: string
+                source:
+                    type: string
+                enrichers:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/EnricherConfig'
+                destinations:
+                    type: array
+                    items:
+                        type: integer
+                        format: enum
+                name:
+                    type: string
+                disabled:
+                    type: boolean
+                sourceConfig:
+                    type: object
+                    additionalProperties:
+                        type: string
+                destinationConfigs:
+                    type: object
+                    additionalProperties:
+                        $ref: '#/components/schemas/DestinationConfig'
+        PipelineRun:
+            type: object
+            properties:
+                id:
+                    type: string
+                pipelineId:
+                    type: string
+                activityId:
+                    type: string
+                source:
+                    type: string
+                sourceActivityId:
+                    type: string
+                title:
+                    type: string
+                description:
+                    type: string
+                type:
+                    type: integer
+                    format: enum
+                startTime:
+                    type: string
+                    format: date-time
+                status:
+                    type: integer
+                    format: enum
+                createdAt:
+                    type: string
+                    format: date-time
+                updatedAt:
+                    type: string
+                    format: date-time
+                boosters:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/BoosterExecution'
+                destinations:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/DestinationOutcome'
+                statusMessage:
+                    type: string
+                pendingInputId:
+                    type: string
+                originalPayloadUri:
+                    type: string
+                enrichedEventUri:
+                    type: string
+        RecentPipelineRunCounts:
+            type: object
+            properties:
+                success:
+                    type: integer
+                    format: int32
+                failed:
+                    type: integer
+                    format: int32
+                started:
+                    type: integer
+                    format: int32
+        Status:
+            type: object
+            properties:
+                code:
+                    type: integer
+                    description: The status code, which should be an enum value of [google.rpc.Code][google.rpc.Code].
+                    format: int32
+                message:
+                    type: string
+                    description: A developer-facing error message, which should be in English. Any user-facing error message should be localized and sent in the [google.rpc.Status.details][google.rpc.Status.details] field, or localized by the client.
+                details:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/GoogleProtobufAny'
+                    description: A list of messages that carry the error details.  There is a common set of message types for APIs to use.
+            description: 'The `Status` type defines a logical error model that is suitable for different programming environments, including REST APIs and RPC APIs. It is used by [gRPC](https://github.com/grpc). Each `Status` message contains three pieces of data: error code, error message, and error details. You can find out more about this error model and how to work with it in the [API Design Guide](https://cloud.google.com/apis/design/errors).'
+        UpdateUserAdminRequest:
+            type: object
+            properties:
+                id:
+                    type: string
+                accessEnabled:
+                    type: boolean
+        UserProfile:
+            type: object
+            properties:
+                userId:
+                    type: string
+                createdAt:
+                    type: string
+                    format: date-time
+                fcmTokens:
+                    type: array
+                    items:
+                        type: string
+                tier:
+                    type: integer
+                    format: enum
+                isAdmin:
+                    type: boolean
+                syncCountThisMonth:
+                    type: integer
+                    description: Monthly sync tracking
+                    format: int32
+                syncCountResetAt:
+                    type: string
+                    format: date-time
+                preventedSyncCount:
+                    type: integer
+                    format: int32
+                accessEnabled:
+                    type: boolean
+                    description: Waitlist gate - false until admin enables access
+                notificationPreferences:
+                    allOf:
+                        - $ref: '#/components/schemas/NotificationPreferences'
+                    description: User's push notification preferences
+                trialEndsAt:
+                    type: string
+                    format: date-time
+                email:
+                    type: string
+                displayName:
+                    type: string
+            description: "UserProfile represents the core user identity and preferences, \n cleanly separated from billing and integrations."
+tags:
+    - name: AdminGatewayService

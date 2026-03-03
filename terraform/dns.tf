@@ -40,23 +40,6 @@ resource "google_dns_record_set" "dev_delegation" {
   ]
 }
 
-# Delegation for Test subdomain (only in Prod)
-# TODO: Update these nameservers after deploying Test environment
-resource "google_dns_record_set" "test_delegation" {
-  count        = var.environment == "prod" ? 1 : 0
-  managed_zone = google_dns_managed_zone.main.name
-  project      = var.project_id
-  name         = "test.fitglue.tech."
-  type         = "NS"
-  ttl          = 300
-
-  rrdatas = [
-    "ns-cloud-a1.googledomains.com.",
-    "ns-cloud-a2.googledomains.com.",
-    "ns-cloud-a3.googledomains.com.",
-    "ns-cloud-a4.googledomains.com.",
-  ]
-}
 
 # Firebase Hosting Custom Domain
 # Note: Firebase will provide DNS instructions after creation

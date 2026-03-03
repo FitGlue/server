@@ -27,22 +27,6 @@ import (
 	"google.golang.org/grpc/health/grpc_health_v1"
 )
 
-type stubPublisher struct{}
-
-func (p *stubPublisher) PublishCloudEvent(ctx context.Context, topic string, ce cloudevents.Event) (string, error) {
-	return "stub-id", nil
-}
-
-type stubBlobStore struct{}
-
-func (s *stubBlobStore) Get(ctx context.Context, uri string) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (s *stubBlobStore) Write(ctx context.Context, bucket, path string, data []byte) error {
-	return nil
-}
-
 func main() {
 	logger := infra.NewLogger()
 	ctx := context.Background()

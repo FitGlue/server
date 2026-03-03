@@ -9,6 +9,7 @@ import (
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/fitglue/server/src/go/internal/infra"
+	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	"google.golang.org/grpc/codes"
@@ -236,7 +237,72 @@ func (s *Service) RepostActivity(ctx context.Context, req *pbsvc.RepostActivityR
 		return nil, status.Error(codes.InvalidArgument, "user_id and activity_id are required")
 	}
 
-	return nil, status.Error(codes.Unimplemented, "repost logic requires complex parsing and is partially implemented in router")
+	// Validate mode
+	switch req.Mode {
+	case "full-pipeline":
+		// No additional fields required
+	case "missed-destination", "retry-destination":
+		if req.Destination == "" {
+			return nil, status.Error(codes.InvalidArgument, "destination is required for mode: "+req.Mode)
+		}
+	default:
+		return nil, status.Error(codes.InvalidArgument, "mode must be one of: full-pipeline, missed-destination, retry-destination")
+	}
+
+	// Look up the most recent pipeline run for this activity (Rule E35)
+	run, err := s.store.FindPipelineRunByActivityId(ctx, req.UserId, req.ActivityId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to find pipeline run by activity", "error", err, "activityId", req.ActivityId)
+		return nil, status.Error(codes.Internal, "failed to look up pipeline run")
+	}
+	if run == nil {
+		return nil, status.Error(codes.NotFound, "no pipeline run found for activity")
+	}
+
+	// Rule E22 (Reset-on-Repost): always use clean, unmutated original payload
+	if run.OriginalPayloadUri == "" {
+		return nil, status.Error(codes.FailedPrecondition, "pipeline run has no original payload URI; activity is not repostable")
+	}
+
+	payloadBytes, err := s.blobStore.Get(ctx, run.OriginalPayloadUri)
+	if err != nil {
+		s.logger.Error(ctx, "failed to fetch original payload from GCS", "error", err, "uri", run.OriginalPayloadUri)
+		return nil, status.Error(codes.Internal, "failed to fetch original payload")
+	}
+
+	var payload map[string]interface{}
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		s.logger.Error(ctx, "failed to parse original payload", "error", err)
+		return nil, status.Error(codes.Internal, "failed to parse original payload")
+	}
+
+	// Inject repost metadata
+	payload["isRepost"] = true
+	payload["repostMode"] = req.Mode
+	payload["activityId"] = req.ActivityId
+	if req.Destination != "" {
+		payload["repostDestination"] = req.Destination
+	}
+
+	updatedPayloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to serialize repost payload")
+	}
+
+	// Publish to topic-raw-activity so the activity re-enters the full pipeline
+	ce := cloudevents.NewEvent()
+	ce.SetID(fmt.Sprintf("%d", time.Now().UnixNano()))
+	ce.SetSource("com.fitglue.repost_handler")
+	ce.SetType("com.fitglue.cloud_event.repost")
+	ce.SetData(cloudevents.ApplicationJSON, updatedPayloadBytes)
+
+	if _, err := s.publisher.PublishCloudEvent(ctx, shared.TopicRawActivity, ce); err != nil {
+		s.logger.Error(ctx, "failed to publish repost event", "error", err)
+		return nil, status.Error(codes.Internal, "failed to publish repost event")
+	}
+
+	s.logger.Info(ctx, "Repost published", "activityId", req.ActivityId, "mode", req.Mode, "topic", shared.TopicRawActivity)
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Service) GetPipelineRun(ctx context.Context, req *pbsvc.GetPipelineRunRequest) (*pipeline.PipelineRun, error) {

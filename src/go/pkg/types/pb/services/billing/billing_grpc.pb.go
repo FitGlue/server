@@ -21,12 +21,13 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BillingService_GetSubscription_FullMethodName       = "/fitglue.services.billing.BillingService/GetSubscription"
-	BillingService_CreateCheckoutSession_FullMethodName = "/fitglue.services.billing.BillingService/CreateCheckoutSession"
-	BillingService_HandleWebhookEvent_FullMethodName    = "/fitglue.services.billing.BillingService/HandleWebhookEvent"
-	BillingService_GetTierStatus_FullMethodName         = "/fitglue.services.billing.BillingService/GetTierStatus"
-	BillingService_StartTrial_FullMethodName            = "/fitglue.services.billing.BillingService/StartTrial"
-	BillingService_CancelSubscription_FullMethodName    = "/fitglue.services.billing.BillingService/CancelSubscription"
+	BillingService_GetSubscription_FullMethodName            = "/fitglue.services.billing.BillingService/GetSubscription"
+	BillingService_CreateCheckoutSession_FullMethodName      = "/fitglue.services.billing.BillingService/CreateCheckoutSession"
+	BillingService_HandleWebhookEvent_FullMethodName         = "/fitglue.services.billing.BillingService/HandleWebhookEvent"
+	BillingService_GetTierStatus_FullMethodName              = "/fitglue.services.billing.BillingService/GetTierStatus"
+	BillingService_StartTrial_FullMethodName                 = "/fitglue.services.billing.BillingService/StartTrial"
+	BillingService_CancelSubscription_FullMethodName         = "/fitglue.services.billing.BillingService/CancelSubscription"
+	BillingService_CreateBillingPortalSession_FullMethodName = "/fitglue.services.billing.BillingService/CreateBillingPortalSession"
 )
 
 // BillingServiceClient is the client API for BillingService service.
@@ -39,6 +40,7 @@ type BillingServiceClient interface {
 	GetTierStatus(ctx context.Context, in *GetTierStatusRequest, opts ...grpc.CallOption) (*GetTierStatusResponse, error)
 	StartTrial(ctx context.Context, in *StartTrialRequest, opts ...grpc.CallOption) (*user.SubscriptionState, error)
 	CancelSubscription(ctx context.Context, in *CancelSubscriptionRequest, opts ...grpc.CallOption) (*user.SubscriptionState, error)
+	CreateBillingPortalSession(ctx context.Context, in *CreateBillingPortalSessionRequest, opts ...grpc.CallOption) (*CreateBillingPortalSessionResponse, error)
 }
 
 type billingServiceClient struct {
@@ -109,6 +111,16 @@ func (c *billingServiceClient) CancelSubscription(ctx context.Context, in *Cance
 	return out, nil
 }
 
+func (c *billingServiceClient) CreateBillingPortalSession(ctx context.Context, in *CreateBillingPortalSessionRequest, opts ...grpc.CallOption) (*CreateBillingPortalSessionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateBillingPortalSessionResponse)
+	err := c.cc.Invoke(ctx, BillingService_CreateBillingPortalSession_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BillingServiceServer is the server API for BillingService service.
 // All implementations must embed UnimplementedBillingServiceServer
 // for forward compatibility.
@@ -119,6 +131,7 @@ type BillingServiceServer interface {
 	GetTierStatus(context.Context, *GetTierStatusRequest) (*GetTierStatusResponse, error)
 	StartTrial(context.Context, *StartTrialRequest) (*user.SubscriptionState, error)
 	CancelSubscription(context.Context, *CancelSubscriptionRequest) (*user.SubscriptionState, error)
+	CreateBillingPortalSession(context.Context, *CreateBillingPortalSessionRequest) (*CreateBillingPortalSessionResponse, error)
 	mustEmbedUnimplementedBillingServiceServer()
 }
 
@@ -146,6 +159,9 @@ func (UnimplementedBillingServiceServer) StartTrial(context.Context, *StartTrial
 }
 func (UnimplementedBillingServiceServer) CancelSubscription(context.Context, *CancelSubscriptionRequest) (*user.SubscriptionState, error) {
 	return nil, status.Error(codes.Unimplemented, "method CancelSubscription not implemented")
+}
+func (UnimplementedBillingServiceServer) CreateBillingPortalSession(context.Context, *CreateBillingPortalSessionRequest) (*CreateBillingPortalSessionResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateBillingPortalSession not implemented")
 }
 func (UnimplementedBillingServiceServer) mustEmbedUnimplementedBillingServiceServer() {}
 func (UnimplementedBillingServiceServer) testEmbeddedByValue()                        {}
@@ -276,6 +292,24 @@ func _BillingService_CancelSubscription_Handler(srv interface{}, ctx context.Con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BillingService_CreateBillingPortalSession_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateBillingPortalSessionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BillingServiceServer).CreateBillingPortalSession(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BillingService_CreateBillingPortalSession_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BillingServiceServer).CreateBillingPortalSession(ctx, req.(*CreateBillingPortalSessionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BillingService_ServiceDesc is the grpc.ServiceDesc for BillingService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -306,6 +340,10 @@ var BillingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CancelSubscription",
 			Handler:    _BillingService_CancelSubscription_Handler,
+		},
+		{
+			MethodName: "CreateBillingPortalSession",
+			Handler:    _BillingService_CreateBillingPortalSession_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

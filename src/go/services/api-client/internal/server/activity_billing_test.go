@@ -183,6 +183,9 @@ func (m *mockBillingServiceClient) CancelSubscription(ctx context.Context, in *b
 	}
 	return &pbuser.SubscriptionState{}, nil
 }
+func (m *mockBillingServiceClient) CreateBillingPortalSession(ctx context.Context, in *billingpb.CreateBillingPortalSessionRequest, opts ...grpc.CallOption) (*billingpb.CreateBillingPortalSessionResponse, error) {
+	return &billingpb.CreateBillingPortalSessionResponse{Url: "https://billing.stripe.com/p/session/test"}, nil
+}
 
 // =============================================================
 // Activity Handler Tests

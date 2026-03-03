@@ -36,14 +36,16 @@ type Service struct {
 	logger     infra.Logger
 	sender     emailsender.Sender
 	authClient AuthClient
+	baseURL    string
 }
 
-func NewService(store Store, logger infra.Logger, sender emailsender.Sender, authClient AuthClient) *Service {
+func NewService(store Store, logger infra.Logger, sender emailsender.Sender, authClient AuthClient, baseURL string) *Service {
 	return &Service{
 		store:      store,
 		logger:     logger,
 		sender:     sender,
 		authClient: authClient,
+		baseURL:    baseURL,
 	}
 }
 
@@ -302,7 +304,7 @@ func (s *Service) SendVerificationEmail(ctx context.Context, req *pbsvc.SendVeri
 	}
 
 	settings := &firebaseAuth.ActionCodeSettings{
-		URL:             "https://fitglue.tech/auth/verify-email", // TODO: make BaseURL configurable
+		URL:             s.baseURL + "/auth/verify-email",
 		HandleCodeInApp: true,
 	}
 
@@ -312,7 +314,7 @@ func (s *Service) SendVerificationEmail(ctx context.Context, req *pbsvc.SendVeri
 		return nil, status.Error(codes.Internal, "failed to generate link")
 	}
 
-	html := email.VerifyEmailTemplate(link, "https://fitglue.tech")
+	html := email.VerifyEmailTemplate(link, s.baseURL)
 
 	err = s.sender.SendEmail(ctx, userRecord.Email, "Verify your FitGlue email", html)
 	if err != nil {
@@ -330,7 +332,7 @@ func (s *Service) SendPasswordResetEmail(ctx context.Context, req *pbsvc.SendPas
 	}
 
 	settings := &firebaseAuth.ActionCodeSettings{
-		URL:             "https://fitglue.tech/auth/reset-password",
+		URL:             s.baseURL + "/auth/reset-password",
 		HandleCodeInApp: true,
 	}
 
@@ -341,7 +343,7 @@ func (s *Service) SendPasswordResetEmail(ctx context.Context, req *pbsvc.SendPas
 		return &emptypb.Empty{}, nil
 	}
 
-	html := email.PasswordResetTemplate(link, "https://fitglue.tech")
+	html := email.PasswordResetTemplate(link, s.baseURL)
 
 	err = s.sender.SendEmail(ctx, req.Email, "Reset your FitGlue password", html)
 	if err != nil {
@@ -358,10 +360,37 @@ func (s *Service) SendEmailChangeVerification(ctx context.Context, req *pbsvc.Se
 		return nil, status.Error(codes.InvalidArgument, "user_id and new_email are required")
 	}
 
-	// The Go SDK does not have VerifyAndChangeEmailLink
-	// For now, we return unimplemented until we either use the REST API directly or update the SDK
-	s.logger.Error(ctx, "SendEmailChangeVerification is not yet fully implemented in Go SDK")
-	return nil, status.Error(codes.Unimplemented, "SendEmailChangeVerification not supported by Go SDK yet")
+	userRecord, err := s.authClient.GetUser(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get user from auth", "err", err, "user_id", req.UserId)
+		return nil, status.Error(codes.Internal, "failed to get user")
+	}
+
+	if userRecord.UserInfo == nil || userRecord.UserInfo.Email == "" {
+		return nil, status.Error(codes.FailedPrecondition, "user has no current email address")
+	}
+
+	settings := &firebaseAuth.ActionCodeSettings{
+		URL:             "https://fitglue.tech/auth/verify-email-change",
+		HandleCodeInApp: true,
+	}
+
+	link, err := s.authClient.EmailVerificationLinkWithSettings(ctx, req.NewEmail, settings)
+	if err != nil {
+		s.logger.Error(ctx, "failed to generate email change verification link", "err", err, "newEmail", req.NewEmail)
+		return nil, status.Error(codes.Internal, "failed to generate verification link")
+	}
+
+	html := email.ChangeEmailTemplate(link, req.NewEmail, "https://fitglue.tech")
+
+	err = s.sender.SendEmail(ctx, req.NewEmail, "Confirm your new FitGlue email", html)
+	if err != nil {
+		s.logger.Error(ctx, "failed to send email change verification", "err", err, "newEmail", req.NewEmail)
+		return nil, status.Error(codes.Internal, "failed to send verification email")
+	}
+
+	s.logger.Info(ctx, "Email change verification sent", "user_id", req.UserId, "newEmail", req.NewEmail)
+	return &emptypb.Empty{}, nil
 }
 
 func (s *Service) SendWelcomeEmail(ctx context.Context, req *pbsvc.SendWelcomeEmailRequest) (*emptypb.Empty, error) {
@@ -379,7 +408,7 @@ func (s *Service) SendWelcomeEmail(ctx context.Context, req *pbsvc.SendWelcomeEm
 		return nil, status.Error(codes.FailedPrecondition, "user has no email address")
 	}
 
-	html := email.WelcomeTemplate("https://fitglue.tech")
+	html := email.WelcomeTemplate(s.baseURL)
 
 	err = s.sender.SendEmail(ctx, userRecord.Email, "Welcome to FitGlue! 🎉", html)
 	if err != nil {

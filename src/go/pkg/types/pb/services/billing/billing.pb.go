@@ -408,6 +408,102 @@ func (x *CancelSubscriptionRequest) GetUserId() string {
 	return ""
 }
 
+type CreateBillingPortalSessionRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	UserId        string                 `protobuf:"bytes,1,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	ReturnUrl     string                 `protobuf:"bytes,2,opt,name=return_url,json=returnUrl,proto3" json:"return_url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateBillingPortalSessionRequest) Reset() {
+	*x = CreateBillingPortalSessionRequest{}
+	mi := &file_services_billing_billing_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateBillingPortalSessionRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateBillingPortalSessionRequest) ProtoMessage() {}
+
+func (x *CreateBillingPortalSessionRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_services_billing_billing_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateBillingPortalSessionRequest.ProtoReflect.Descriptor instead.
+func (*CreateBillingPortalSessionRequest) Descriptor() ([]byte, []int) {
+	return file_services_billing_billing_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *CreateBillingPortalSessionRequest) GetUserId() string {
+	if x != nil {
+		return x.UserId
+	}
+	return ""
+}
+
+func (x *CreateBillingPortalSessionRequest) GetReturnUrl() string {
+	if x != nil {
+		return x.ReturnUrl
+	}
+	return ""
+}
+
+type CreateBillingPortalSessionResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Url           string                 `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CreateBillingPortalSessionResponse) Reset() {
+	*x = CreateBillingPortalSessionResponse{}
+	mi := &file_services_billing_billing_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreateBillingPortalSessionResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreateBillingPortalSessionResponse) ProtoMessage() {}
+
+func (x *CreateBillingPortalSessionResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_services_billing_billing_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreateBillingPortalSessionResponse.ProtoReflect.Descriptor instead.
+func (*CreateBillingPortalSessionResponse) Descriptor() ([]byte, []int) {
+	return file_services_billing_billing_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *CreateBillingPortalSessionResponse) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
 var File_services_billing_billing_proto protoreflect.FileDescriptor
 
 const file_services_billing_billing_proto_rawDesc = "" +
@@ -435,7 +531,13 @@ const file_services_billing_billing_proto_rawDesc = "" +
 	"\x11StartTrialRequest\x12\x17\n" +
 	"\auser_id\x18\x01 \x01(\tR\x06userId\"4\n" +
 	"\x19CancelSubscriptionRequest\x12\x17\n" +
-	"\auser_id\x18\x01 \x01(\tR\x06userId2\xc9\a\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\"[\n" +
+	"!CreateBillingPortalSessionRequest\x12\x17\n" +
+	"\auser_id\x18\x01 \x01(\tR\x06userId\x12\x1d\n" +
+	"\n" +
+	"return_url\x18\x02 \x01(\tR\treturnUrl\"6\n" +
+	"\"CreateBillingPortalSessionResponse\x12\x10\n" +
+	"\x03url\x18\x01 \x01(\tR\x03url2\x92\t\n" +
 	"\x0eBillingService\x12\x9d\x01\n" +
 	"\x0fGetSubscription\x120.fitglue.services.billing.GetSubscriptionRequest\x1a&.fitglue.models.user.SubscriptionState\"0\x82\xd3\xe4\x93\x02*\x12(/v2/users/{user_id}/billing/subscription\x12\xb9\x01\n" +
 	"\x15CreateCheckoutSession\x126.fitglue.services.billing.CreateCheckoutSessionRequest\x1a7.fitglue.services.billing.CreateCheckoutSessionResponse\"/\x82\xd3\xe4\x93\x02):\x01*\"$/v2/users/{user_id}/billing/checkout\x12\x81\x01\n" +
@@ -443,7 +545,8 @@ const file_services_billing_billing_proto_rawDesc = "" +
 	"\rGetTierStatus\x12..fitglue.services.billing.GetTierStatusRequest\x1a/.fitglue.services.billing.GetTierStatusResponse\"/\x82\xd3\xe4\x93\x02)\x12'/v2/users/{user_id}/billing/tier-status\x12\x8f\x01\n" +
 	"\n" +
 	"StartTrial\x12+.fitglue.services.billing.StartTrialRequest\x1a&.fitglue.models.user.SubscriptionState\",\x82\xd3\xe4\x93\x02&:\x01*\"!/v2/users/{user_id}/billing/trial\x12\xa0\x01\n" +
-	"\x12CancelSubscription\x123.fitglue.services.billing.CancelSubscriptionRequest\x1a&.fitglue.models.user.SubscriptionState\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/v2/users/{user_id}/billing/cancelB@Z>github.com/fitglue/server/src/go/pkg/types/pb/services/billingb\x06proto3"
+	"\x12CancelSubscription\x123.fitglue.services.billing.CancelSubscriptionRequest\x1a&.fitglue.models.user.SubscriptionState\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/v2/users/{user_id}/billing/cancel\x12\xc6\x01\n" +
+	"\x1aCreateBillingPortalSession\x12;.fitglue.services.billing.CreateBillingPortalSessionRequest\x1a<.fitglue.services.billing.CreateBillingPortalSessionResponse\"-\x82\xd3\xe4\x93\x02':\x01*\"\"/v2/users/{user_id}/billing/portalB@Z>github.com/fitglue/server/src/go/pkg/types/pb/services/billingb\x06proto3"
 
 var (
 	file_services_billing_billing_proto_rawDescOnce sync.Once
@@ -457,36 +560,40 @@ func file_services_billing_billing_proto_rawDescGZIP() []byte {
 	return file_services_billing_billing_proto_rawDescData
 }
 
-var file_services_billing_billing_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_services_billing_billing_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_services_billing_billing_proto_goTypes = []any{
-	(*GetSubscriptionRequest)(nil),        // 0: fitglue.services.billing.GetSubscriptionRequest
-	(*CreateCheckoutSessionRequest)(nil),  // 1: fitglue.services.billing.CreateCheckoutSessionRequest
-	(*CreateCheckoutSessionResponse)(nil), // 2: fitglue.services.billing.CreateCheckoutSessionResponse
-	(*HandleWebhookEventRequest)(nil),     // 3: fitglue.services.billing.HandleWebhookEventRequest
-	(*GetTierStatusRequest)(nil),          // 4: fitglue.services.billing.GetTierStatusRequest
-	(*GetTierStatusResponse)(nil),         // 5: fitglue.services.billing.GetTierStatusResponse
-	(*StartTrialRequest)(nil),             // 6: fitglue.services.billing.StartTrialRequest
-	(*CancelSubscriptionRequest)(nil),     // 7: fitglue.services.billing.CancelSubscriptionRequest
-	(user.UserTier)(0),                    // 8: fitglue.models.user.UserTier
-	(*user.SubscriptionState)(nil),        // 9: fitglue.models.user.SubscriptionState
-	(*emptypb.Empty)(nil),                 // 10: google.protobuf.Empty
+	(*GetSubscriptionRequest)(nil),             // 0: fitglue.services.billing.GetSubscriptionRequest
+	(*CreateCheckoutSessionRequest)(nil),       // 1: fitglue.services.billing.CreateCheckoutSessionRequest
+	(*CreateCheckoutSessionResponse)(nil),      // 2: fitglue.services.billing.CreateCheckoutSessionResponse
+	(*HandleWebhookEventRequest)(nil),          // 3: fitglue.services.billing.HandleWebhookEventRequest
+	(*GetTierStatusRequest)(nil),               // 4: fitglue.services.billing.GetTierStatusRequest
+	(*GetTierStatusResponse)(nil),              // 5: fitglue.services.billing.GetTierStatusResponse
+	(*StartTrialRequest)(nil),                  // 6: fitglue.services.billing.StartTrialRequest
+	(*CancelSubscriptionRequest)(nil),          // 7: fitglue.services.billing.CancelSubscriptionRequest
+	(*CreateBillingPortalSessionRequest)(nil),  // 8: fitglue.services.billing.CreateBillingPortalSessionRequest
+	(*CreateBillingPortalSessionResponse)(nil), // 9: fitglue.services.billing.CreateBillingPortalSessionResponse
+	(user.UserTier)(0),                         // 10: fitglue.models.user.UserTier
+	(*user.SubscriptionState)(nil),             // 11: fitglue.models.user.SubscriptionState
+	(*emptypb.Empty)(nil),                      // 12: google.protobuf.Empty
 }
 var file_services_billing_billing_proto_depIdxs = []int32{
-	8,  // 0: fitglue.services.billing.GetTierStatusResponse.effective_tier:type_name -> fitglue.models.user.UserTier
+	10, // 0: fitglue.services.billing.GetTierStatusResponse.effective_tier:type_name -> fitglue.models.user.UserTier
 	0,  // 1: fitglue.services.billing.BillingService.GetSubscription:input_type -> fitglue.services.billing.GetSubscriptionRequest
 	1,  // 2: fitglue.services.billing.BillingService.CreateCheckoutSession:input_type -> fitglue.services.billing.CreateCheckoutSessionRequest
 	3,  // 3: fitglue.services.billing.BillingService.HandleWebhookEvent:input_type -> fitglue.services.billing.HandleWebhookEventRequest
 	4,  // 4: fitglue.services.billing.BillingService.GetTierStatus:input_type -> fitglue.services.billing.GetTierStatusRequest
 	6,  // 5: fitglue.services.billing.BillingService.StartTrial:input_type -> fitglue.services.billing.StartTrialRequest
 	7,  // 6: fitglue.services.billing.BillingService.CancelSubscription:input_type -> fitglue.services.billing.CancelSubscriptionRequest
-	9,  // 7: fitglue.services.billing.BillingService.GetSubscription:output_type -> fitglue.models.user.SubscriptionState
-	2,  // 8: fitglue.services.billing.BillingService.CreateCheckoutSession:output_type -> fitglue.services.billing.CreateCheckoutSessionResponse
-	10, // 9: fitglue.services.billing.BillingService.HandleWebhookEvent:output_type -> google.protobuf.Empty
-	5,  // 10: fitglue.services.billing.BillingService.GetTierStatus:output_type -> fitglue.services.billing.GetTierStatusResponse
-	9,  // 11: fitglue.services.billing.BillingService.StartTrial:output_type -> fitglue.models.user.SubscriptionState
-	9,  // 12: fitglue.services.billing.BillingService.CancelSubscription:output_type -> fitglue.models.user.SubscriptionState
-	7,  // [7:13] is the sub-list for method output_type
-	1,  // [1:7] is the sub-list for method input_type
+	8,  // 7: fitglue.services.billing.BillingService.CreateBillingPortalSession:input_type -> fitglue.services.billing.CreateBillingPortalSessionRequest
+	11, // 8: fitglue.services.billing.BillingService.GetSubscription:output_type -> fitglue.models.user.SubscriptionState
+	2,  // 9: fitglue.services.billing.BillingService.CreateCheckoutSession:output_type -> fitglue.services.billing.CreateCheckoutSessionResponse
+	12, // 10: fitglue.services.billing.BillingService.HandleWebhookEvent:output_type -> google.protobuf.Empty
+	5,  // 11: fitglue.services.billing.BillingService.GetTierStatus:output_type -> fitglue.services.billing.GetTierStatusResponse
+	11, // 12: fitglue.services.billing.BillingService.StartTrial:output_type -> fitglue.models.user.SubscriptionState
+	11, // 13: fitglue.services.billing.BillingService.CancelSubscription:output_type -> fitglue.models.user.SubscriptionState
+	9,  // 14: fitglue.services.billing.BillingService.CreateBillingPortalSession:output_type -> fitglue.services.billing.CreateBillingPortalSessionResponse
+	8,  // [8:15] is the sub-list for method output_type
+	1,  // [1:8] is the sub-list for method input_type
 	1,  // [1:1] is the sub-list for extension type_name
 	1,  // [1:1] is the sub-list for extension extendee
 	0,  // [0:1] is the sub-list for field type_name
@@ -503,7 +610,7 @@ func file_services_billing_billing_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_services_billing_billing_proto_rawDesc), len(file_services_billing_billing_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -24,5 +24,3 @@ func NewService(store ActivityStore, blobStore BlobStore, publisher Publisher, b
 		logger:     logger,
 	}
 }
-
-// TODO: Implement the RPC methods defined in pbsvc.ActivityServiceServer

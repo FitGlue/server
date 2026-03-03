@@ -24,10 +24,64 @@ func NewFirestoreStore(client *firestore.Client) *FirestoreStore {
 }
 
 func (s *FirestoreStore) GetActivity(ctx context.Context, userID, activityID string) (*pbactivity.StandardizedActivity, error) {
-	return nil, status.Error(codes.Unimplemented, "unimplemented")
+	doc, err := s.client.Collection("users").Doc(userID).Collection("activities").Doc(activityID).Get(ctx)
+	if err != nil {
+		if status.Code(err) == codes.NotFound {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var act pbactivity.StandardizedActivity
+	if err := decodeProtoMap(doc.Data(), &act); err != nil {
+		return nil, err
+	}
+	return &act, nil
 }
 func (s *FirestoreStore) ListActivities(ctx context.Context, userID string, limit int32, pageToken string) ([]*pbactivity.StandardizedActivity, string, error) {
-	return nil, "", status.Error(codes.Unimplemented, "unimplemented")
+	if limit <= 0 {
+		limit = 50
+	}
+
+	query := s.client.Collection("users").Doc(userID).Collection("activities").
+		OrderBy("created_at", firestore.Desc).
+		Limit(int(limit) + 1)
+
+	if pageToken != "" {
+		cursorDoc, err := s.client.Collection("users").Doc(userID).Collection("activities").Doc(pageToken).Get(ctx)
+		if err == nil {
+			query = query.StartAfter(cursorDoc)
+		}
+	}
+
+	iter := query.Documents(ctx)
+	defer iter.Stop()
+
+	var activities []*pbactivity.StandardizedActivity
+	var lastDocID string
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, "", err
+		}
+
+		var act pbactivity.StandardizedActivity
+		if err := decodeProtoMap(doc.Data(), &act); err != nil {
+			return nil, "", err
+		}
+		activities = append(activities, &act)
+		lastDocID = doc.Ref.ID
+	}
+
+	var nextPageToken string
+	if int32(len(activities)) > limit {
+		activities = activities[:limit]
+		nextPageToken = lastDocID
+	}
+
+	return activities, nextPageToken, nil
 }
 func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID string, limit int32, pageToken string) ([]*pbpipeline.PipelineRun, string, error) {
 	if limit <= 0 {
@@ -61,7 +115,8 @@ func (s *FirestoreStore) ListPipelineRuns(ctx context.Context, userID string, li
 	return runs, "", nil
 }
 func (s *FirestoreStore) DeleteActivity(ctx context.Context, userID, activityID string) error {
-	return status.Error(codes.Unimplemented, "unimplemented")
+	_, err := s.client.Collection("users").Doc(userID).Collection("activities").Doc(activityID).Delete(ctx)
+	return err
 }
 func (s *FirestoreStore) GetShowcase(ctx context.Context, userID, showcaseID string) (*pbactivity.ShowcasedActivity, error) {
 	doc, err := s.client.Collection("showcased_activities").Doc(showcaseID).Get(ctx)

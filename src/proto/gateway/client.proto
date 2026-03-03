@@ -1,0 +1,695 @@
+syntax = "proto3";
+
+package fitglue.gateway;
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/struct.proto";
+import "google/api/annotations.proto";
+
+// Shared model types
+import "models/user/profile.proto";
+import "models/user/integration.proto";
+import "models/user/billing.proto";
+import "models/plugin/manifest.proto";
+import "models/pipeline/config.proto";
+import "models/pipeline/execution.proto";
+
+import "models/activity/standardized.proto";
+import "models/activity/uploaded.proto";
+
+option go_package = "github.com/fitglue/server/src/go/pkg/types/pb/gateway";
+
+// ClientGatewayService describes the authenticated REST API surface that the
+// web frontend talks to via api-client at /api/v2/*.
+//
+// Auth is handled by gateway middleware — the user_id is injected from the
+// Firebase token, NEVER sent by the client. Request messages here reflect
+// what the frontend actually sends (no user_id fields).
+service ClientGatewayService {
+
+  // ===================== User Profile =====================
+  rpc GetProfile(EmptyRequest) returns (fitglue.models.user.UserProfile) {
+    option (google.api.http) = {
+      get: "/users/me"
+    };
+  }
+  rpc UpdateProfile(UpdateProfileGatewayRequest) returns (fitglue.models.user.UserProfile) {
+    option (google.api.http) = {
+      put: "/users/me"
+      body: "*"
+    };
+  }
+  rpc DeleteSelf(EmptyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me"
+    };
+  }
+
+  // ===================== Integrations =====================
+  rpc ListIntegrations(EmptyRequest) returns (fitglue.models.user.UserIntegrations) {
+    option (google.api.http) = {
+      get: "/users/me/integrations"
+    };
+  }
+  rpc GetIntegration(ProviderRequest) returns (GetIntegrationGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/integrations/{provider}"
+    };
+  }
+  rpc SetIntegration(SetIntegrationGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/users/me/integrations/{provider}"
+      body: "integration_data"
+    };
+  }
+  rpc DeleteIntegration(ProviderRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/integrations/{provider}"
+    };
+  }
+  rpc OAuthConnect(ProviderRequest) returns (OAuthConnectResponse) {
+    option (google.api.http) = {
+      post: "/users/me/integrations/{provider}/connect"
+    };
+  }
+
+  // ===================== Connection Actions =====================
+  rpc ConnectionAction(ConnectionActionGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/connections/{provider}/actions"
+      body: "*"
+    };
+  }
+
+  // ===================== Notification Preferences =====================
+  rpc GetNotificationPrefs(EmptyRequest) returns (fitglue.models.user.NotificationPreferences) {
+    option (google.api.http) = {
+      get: "/users/me/notification-prefs"
+    };
+  }
+  rpc UpdateNotificationPrefs(fitglue.models.user.NotificationPreferences) returns (fitglue.models.user.NotificationPreferences) {
+    option (google.api.http) = {
+      put: "/users/me/notification-prefs"
+      body: "*"
+    };
+  }
+
+  // ===================== Counters =====================
+  rpc ListCounters(EmptyRequest) returns (ListCountersGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/counters"
+    };
+  }
+  rpc UpdateCounter(UpdateCounterGatewayRequest) returns (fitglue.models.user.Counter) {
+    option (google.api.http) = {
+      put: "/users/me/counters/{name}"
+      body: "*"
+    };
+  }
+  rpc DeleteCounter(CounterNameRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/counters/{name}"
+    };
+  }
+
+  // ===================== Booster Data =====================
+  rpc GetBoosterData(EmptyRequest) returns (GetBoosterDataGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/booster-data"
+    };
+  }
+  rpc SetBoosterData(SetBoosterDataGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/users/me/booster-data/{booster_id}"
+      body: "data"
+    };
+  }
+  rpc DeleteBoosterData(BoosterIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/booster-data/{booster_id}"
+    };
+  }
+
+  // ===================== Personal Records =====================
+  rpc ListPersonalRecords(EmptyRequest) returns (ListPersonalRecordsGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/personal-records"
+    };
+  }
+  rpc SetPersonalRecord(SetPersonalRecordGatewayRequest) returns (fitglue.models.user.PersonalRecord) {
+    option (google.api.http) = {
+      put: "/users/me/personal-records/{record_type}"
+      body: "*"
+    };
+  }
+  rpc DeletePersonalRecord(RecordTypeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/personal-records/{record_type}"
+    };
+  }
+
+  // ===================== Plugin Defaults =====================
+  rpc ListPluginDefaults(EmptyRequest) returns (ListPluginDefaultsGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/plugin-defaults"
+    };
+  }
+  rpc SetPluginDefaults(SetPluginDefaultsGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      put: "/users/me/plugin-defaults/{plugin_id}"
+      body: "defaults"
+    };
+  }
+  rpc DeletePluginDefaults(PluginIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/plugin-defaults/{plugin_id}"
+    };
+  }
+
+  // ===================== Auth Email =====================
+  rpc SendVerificationEmail(EmptyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/auth-email/send-verification"
+    };
+  }
+  rpc SendEmailChangeVerification(SendEmailChangeGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/auth-email/send-email-change"
+      body: "*"
+    };
+  }
+  rpc SendPasswordReset(SendPasswordResetGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/auth-email/send-password-reset"
+      body: "*"
+    };
+  }
+
+  // ===================== FCM Token =====================
+  rpc SetFCMToken(SetFCMTokenGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/fcm-token"
+      body: "*"
+    };
+  }
+
+  // ===================== Mobile Sync =====================
+  rpc MobileSync(EmptyRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/mobile/sync"
+    };
+  }
+
+  // ===================== Pipelines =====================
+  rpc ListPipelines(EmptyRequest) returns (ListPipelinesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/pipelines"
+    };
+  }
+  rpc GetPipeline(PipelineIdRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      get: "/users/me/pipelines/{id}"
+    };
+  }
+  rpc CreatePipeline(CreatePipelineGatewayRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      post: "/users/me/pipelines"
+      body: "*"
+    };
+  }
+  rpc UpdatePipeline(UpdatePipelineGatewayRequest) returns (fitglue.models.pipeline.PipelineConfig) {
+    option (google.api.http) = {
+      put: "/users/me/pipelines/{id}"
+      body: "*"
+    };
+  }
+  rpc DeletePipeline(PipelineIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/pipelines/{id}"
+    };
+  }
+  rpc ListPipelineRuns(ListPipelineRunsGatewayRequest) returns (ListPipelineRunsGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/pipelines/{id}/runs"
+    };
+  }
+  rpc GetPipelineRun(GetPipelineRunGatewayRequest) returns (fitglue.models.pipeline.PipelineRun) {
+    option (google.api.http) = {
+      get: "/users/me/pipelines/{id}/runs/{run_id}"
+    };
+  }
+  rpc SubmitInput(SubmitInputGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/pending-inputs/{input_id}/submit"
+      body: "*"
+    };
+  }
+  rpc RepostActivity(RepostActivityGatewayRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/activities/{id}/repost"
+    };
+  }
+
+  // ===================== Activities =====================
+  rpc ListActivities(ListActivitiesGatewayRequest) returns (ListActivitiesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/activities"
+    };
+  }
+  rpc GetActivity(ActivityIdRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      get: "/users/me/activities/{id}"
+    };
+  }
+  rpc DeleteActivity(ActivityIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/activities/{id}"
+    };
+  }
+  rpc GetActivityStats(EmptyRequest) returns (GetActivityStatsGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/activities/stats"
+    };
+  }
+
+  // ===================== Showcases =====================
+  rpc ListShowcases(EmptyRequest) returns (ListShowcasesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/showcases"
+    };
+  }
+  rpc GetShowcase(ShowcaseIdRequest) returns (fitglue.models.activity.ShowcasedActivity) {
+    option (google.api.http) = {
+      get: "/users/me/showcases/{id}"
+    };
+  }
+  rpc CreateShowcase(CreateShowcaseGatewayRequest) returns (fitglue.models.activity.ShowcasedActivity) {
+    option (google.api.http) = {
+      post: "/users/me/showcases"
+      body: "*"
+    };
+  }
+  rpc UpdateShowcase(UpdateShowcaseGatewayRequest) returns (fitglue.models.activity.ShowcasedActivity) {
+    option (google.api.http) = {
+      put: "/users/me/showcases/{id}"
+      body: "*"
+    };
+  }
+  rpc DeleteShowcase(ShowcaseIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/showcases/{id}"
+    };
+  }
+  rpc GenerateShowcaseImages(ShowcaseIdRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/showcases/{id}/generate"
+    };
+  }
+
+  // ===================== Showcase Management =====================
+  rpc GetShowcasePreferences(EmptyRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      get: "/users/me/showcase-management/preferences"
+    };
+  }
+  rpc UpdateShowcasePreferences(UpdateShowcasePreferencesGatewayRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      put: "/users/me/showcase-management/preferences"
+      body: "*"
+    };
+  }
+  rpc GetShowcaseSettings(EmptyRequest) returns (GetShowcaseSettingsGatewayResponse) {
+    option (google.api.http) = {
+      get: "/users/me/showcase-management/profile"
+    };
+  }
+  rpc UpdateShowcaseSettings(UpdateShowcaseSettingsGatewayRequest) returns (fitglue.models.activity.ShowcaseProfile) {
+    option (google.api.http) = {
+      put: "/users/me/showcase-management/profile"
+      body: "*"
+    };
+  }
+  rpc UpdateShowcaseSlug(UpdateShowcaseSlugGatewayRequest) returns (UpdateShowcaseSlugGatewayResponse) {
+    option (google.api.http) = {
+      put: "/users/me/showcase-management/profile/slug"
+      body: "*"
+    };
+  }
+  rpc AddShowcaseEntry(ShowcaseEntryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/users/me/showcase-management/profile/entries/{showcase_id}"
+    };
+  }
+  rpc RemoveShowcaseEntry(ShowcaseEntryRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/users/me/showcase-management/profile/entries/{showcase_id}"
+    };
+  }
+  rpc GetShowcaseProfilePictureUploadUrl(GetPictureUploadUrlGatewayRequest) returns (GetPictureUploadUrlGatewayResponse) {
+    option (google.api.http) = {
+      post: "/users/me/showcase-management/profile/picture"
+      body: "*"
+    };
+  }
+
+  // ===================== Data Export =====================
+  rpc ExportData(EmptyRequest) returns (ExportDataGatewayResponse) {
+    option (google.api.http) = {
+      post: "/users/me/export"
+    };
+  }
+
+  // ===================== FIT File Parse =====================
+  rpc ParseFitFile(ParseFitFileGatewayRequest) returns (fitglue.models.activity.StandardizedActivity) {
+    option (google.api.http) = {
+      post: "/users/me/parse-fit"
+      body: "*"
+    };
+  }
+
+  // ===================== Repost Variants =====================
+  rpc RepostMissedDestination(RepostVariantGatewayRequest) returns (RepostGatewayResponse) {
+    option (google.api.http) = {
+      post: "/repost/missed-destination"
+      body: "*"
+    };
+  }
+  rpc RepostRetryDestination(RepostVariantGatewayRequest) returns (RepostGatewayResponse) {
+    option (google.api.http) = {
+      post: "/repost/retry-destination"
+      body: "*"
+    };
+  }
+  rpc RepostFullPipeline(RepostVariantGatewayRequest) returns (RepostGatewayResponse) {
+    option (google.api.http) = {
+      post: "/repost/full-pipeline"
+      body: "*"
+    };
+  }
+
+  // ===================== Billing =====================
+  rpc GetSubscription(EmptyRequest) returns (fitglue.models.user.SubscriptionState) {
+    option (google.api.http) = {
+      get: "/billing/subscription"
+    };
+  }
+  rpc CreateCheckoutSession(CreateCheckoutGatewayRequest) returns (CreateCheckoutGatewayResponse) {
+    option (google.api.http) = {
+      post: "/billing/checkout"
+      body: "*"
+    };
+  }
+  rpc CancelSubscription(EmptyRequest) returns (fitglue.models.user.SubscriptionState) {
+    option (google.api.http) = {
+      post: "/billing/cancel"
+    };
+  }
+  rpc GetTierStatus(EmptyRequest) returns (GetTierStatusGatewayResponse) {
+    option (google.api.http) = {
+      get: "/billing/tier"
+    };
+  }
+  rpc StartTrial(EmptyRequest) returns (fitglue.models.user.SubscriptionState) {
+    option (google.api.http) = {
+      post: "/billing/trial"
+    };
+  }
+  rpc CreateBillingPortal(CreateBillingPortalGatewayRequest) returns (CreateBillingPortalGatewayResponse) {
+    option (google.api.http) = {
+      post: "/billing/portal"
+      body: "*"
+    };
+  }
+
+  // ===================== Registry (Unauthenticated, but on api-client) =====================
+  rpc GetPluginRegistry(EmptyRequest) returns (fitglue.models.plugin.PluginRegistryResponse) {
+    option (google.api.http) = {
+      get: "/registry"
+    };
+  }
+  rpc GetPluginRegistryPlugins(EmptyRequest) returns (fitglue.models.plugin.PluginRegistryResponse) {
+    option (google.api.http) = {
+      get: "/registry/plugins"
+    };
+  }
+  rpc GetPlugin(PluginIdPathRequest) returns (fitglue.models.plugin.PluginManifest) {
+    option (google.api.http) = {
+      get: "/registry/plugins/{id}"
+    };
+  }
+  rpc GetPluginIcon(PluginIdPathRequest) returns (GetPluginIconGatewayResponse) {
+    option (google.api.http) = {
+      get: "/registry/plugins/{id}/icon"
+    };
+  }
+  rpc ListCategories(EmptyRequest) returns (ListCategoriesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/registry/categories"
+    };
+  }
+  rpc ListSources(EmptyRequest) returns (ListSourcesGatewayResponse) {
+    option (google.api.http) = {
+      get: "/registry/sources"
+    };
+  }
+}
+
+// =====================================================================
+// Gateway-specific request messages
+// These reflect what the FRONTEND actually sends — no user_id fields.
+// =====================================================================
+
+// Shared simple request shapes
+message EmptyRequest {}
+message ProviderRequest { string provider = 1; }
+message PipelineIdRequest { string id = 1; }
+message ActivityIdRequest { string id = 1; }
+message ShowcaseIdRequest { string id = 1; }
+message PluginIdRequest { string plugin_id = 1; }
+message PluginIdPathRequest { string id = 1; }
+message BoosterIdRequest { string booster_id = 1; }
+message RecordTypeRequest { string record_type = 1; }
+message CounterNameRequest { string name = 1; }
+message ShowcaseEntryRequest { string showcase_id = 1; }
+
+// User
+message UpdateProfileGatewayRequest {
+  fitglue.models.user.UserProfile profile = 1;
+}
+
+// Integrations
+message GetIntegrationGatewayResponse {
+  fitglue.models.user.UserIntegrations integrations = 1;
+}
+message SetIntegrationGatewayRequest {
+  string provider = 1;
+  google.protobuf.Struct integration_data = 2;
+}
+message OAuthConnectResponse {
+  string url = 1;
+}
+message ConnectionActionGatewayRequest {
+  string provider = 1;
+  string action = 2;
+}
+
+// Counters
+message ListCountersGatewayResponse {
+  repeated fitglue.models.user.Counter counters = 1;
+}
+message UpdateCounterGatewayRequest {
+  string name = 1;
+  int64 count = 2;
+}
+
+// Booster Data
+message GetBoosterDataGatewayResponse {
+  map<string, google.protobuf.Struct> data = 1;
+}
+message SetBoosterDataGatewayRequest {
+  string booster_id = 1;
+  google.protobuf.Struct data = 2;
+}
+
+// Personal Records
+message ListPersonalRecordsGatewayResponse {
+  repeated fitglue.models.user.PersonalRecord records = 1;
+}
+message SetPersonalRecordGatewayRequest {
+  string record_type = 1;
+  double value = 2;
+  string unit = 3;
+  string activity_id = 4;
+}
+
+// Plugin Defaults
+message ListPluginDefaultsGatewayResponse {
+  map<string, google.protobuf.Struct> defaults = 1;
+}
+message SetPluginDefaultsGatewayRequest {
+  string plugin_id = 1;
+  google.protobuf.Struct defaults = 2;
+}
+
+// Auth Email
+message SendEmailChangeGatewayRequest {
+  string new_email = 1;
+}
+message SendPasswordResetGatewayRequest {
+  string email = 1;
+}
+
+// FCM Token
+message SetFCMTokenGatewayRequest {
+  string token = 1;
+  string platform = 2; // "web", "android", "ios"
+}
+
+// Pipelines
+message ListPipelinesGatewayResponse {
+  repeated fitglue.models.pipeline.PipelineConfig pipelines = 1;
+}
+message CreatePipelineGatewayRequest {
+  fitglue.models.pipeline.PipelineConfig pipeline = 1;
+}
+message UpdatePipelineGatewayRequest {
+  string id = 1;
+  fitglue.models.pipeline.PipelineConfig pipeline = 2;
+}
+message ListPipelineRunsGatewayRequest {
+  string id = 1; // pipeline_id from path
+  int32 limit = 2;
+  string page_token = 3;
+}
+message ListPipelineRunsGatewayResponse {
+  repeated fitglue.models.pipeline.PipelineRun runs = 1;
+  string next_page_token = 2;
+}
+message GetPipelineRunGatewayRequest {
+  string id = 1; // pipeline_id from path
+  string run_id = 2;
+}
+message SubmitInputGatewayRequest {
+  string input_id = 1;
+  map<string, string> input_data = 2;
+}
+message RepostActivityGatewayRequest {
+  string id = 1; // activity_id from path
+}
+
+// Activities
+message ListActivitiesGatewayRequest {
+  int32 limit = 1;
+  string page_token = 2;
+}
+message ListActivitiesGatewayResponse {
+  repeated fitglue.models.activity.StandardizedActivity activities = 1;
+  string next_page_token = 2;
+}
+message GetActivityStatsGatewayResponse {
+  int32 total_activities = 1;
+  int32 total_showcases = 2;
+  string last_activity_at = 3;
+}
+
+// Showcases
+message ListShowcasesGatewayResponse {
+  repeated fitglue.models.activity.ShowcaseProfileEntry showcases = 1;
+}
+message CreateShowcaseGatewayRequest {
+  fitglue.models.activity.ShowcasedActivity showcase = 1;
+}
+message UpdateShowcaseGatewayRequest {
+  string id = 1;
+  fitglue.models.activity.ShowcasedActivity showcase = 2;
+}
+
+// Showcase Management
+message UpdateShowcasePreferencesGatewayRequest {
+  fitglue.models.activity.ShowcaseProfile preferences = 1;
+}
+message GetShowcaseSettingsGatewayResponse {
+  fitglue.models.activity.ShowcaseProfile profile = 1;
+  repeated ShowcaseActivityEntryGateway activities = 2;
+}
+message ShowcaseActivityEntryGateway {
+  string showcase_id = 1;
+  string title = 2;
+  string activity_type = 3;
+  string source = 4;
+  string start_time = 5;
+  string created_at = 6;
+  bool in_profile = 7;
+}
+message UpdateShowcaseSettingsGatewayRequest {
+  fitglue.models.activity.ShowcaseProfile settings = 1;
+}
+message UpdateShowcaseSlugGatewayRequest {
+  string slug = 1;
+}
+message UpdateShowcaseSlugGatewayResponse {
+  string slug = 1;
+}
+message GetPictureUploadUrlGatewayRequest {
+  string content_type = 1;
+}
+message GetPictureUploadUrlGatewayResponse {
+  string upload_url = 1;
+  string public_url = 2;
+  string content_type = 3;
+  int64 max_size_bytes = 4;
+}
+
+// Data Export
+message ExportDataGatewayResponse {
+  string download_url = 1;
+}
+
+// FIT File Parse
+message ParseFitFileGatewayRequest {
+  bytes fit_file_content = 1;
+  string title = 2;
+  string description = 3;
+  string pipeline_id = 4;
+}
+
+// Repost Variants
+message RepostVariantGatewayRequest {
+  string activity_id = 1;
+  string destination = 2;
+}
+message RepostGatewayResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+// Billing
+message CreateCheckoutGatewayRequest {
+  string success_url = 1;
+  string cancel_url = 2;
+}
+message CreateCheckoutGatewayResponse {
+  string session_url = 1;
+}
+message GetTierStatusGatewayResponse {
+  fitglue.models.user.UserTier effective_tier = 1;
+  bool is_trial = 2;
+}
+message CreateBillingPortalGatewayRequest {
+  string return_url = 1;
+}
+message CreateBillingPortalGatewayResponse {
+  string url = 1;
+}
+
+// Registry
+message GetPluginIconGatewayResponse {
+  bytes icon_data = 1;
+  string content_type = 2;
+}
+message ListCategoriesGatewayResponse {
+  repeated string categories = 1;
+}
+message ListSourcesGatewayResponse {
+  repeated fitglue.models.plugin.PluginManifest sources = 1;
+}

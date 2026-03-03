@@ -182,6 +182,36 @@ func (s *Service) CancelSubscription(ctx context.Context, req *pbsvc.CancelSubsc
 	return sub, nil
 }
 
+func (s *Service) CreateBillingPortalSession(ctx context.Context, req *pbsvc.CreateBillingPortalSessionRequest) (*pbsvc.CreateBillingPortalSessionResponse, error) {
+	if req.UserId == "" {
+		return nil, status.Error(codes.InvalidArgument, "user_id is required")
+	}
+
+	sub, err := s.store.GetSubscription(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get subscription", "error", err)
+		return nil, status.Error(codes.Internal, "failed to read subscription")
+	}
+	if sub == nil || sub.StripeCustomerId == "" {
+		return nil, status.Error(codes.FailedPrecondition, "no billing customer found — user has never subscribed")
+	}
+
+	returnURL := req.ReturnUrl
+	if returnURL == "" {
+		returnURL = "https://app.fitglue.tech/settings"
+	}
+
+	session, err := s.stripeClient.CreateBillingPortalSession(ctx, sub.StripeCustomerId, returnURL)
+	if err != nil {
+		s.logger.Error(ctx, "failed to create billing portal session", "error", err)
+		return nil, status.Error(codes.Internal, "failed to create billing portal session")
+	}
+
+	return &pbsvc.CreateBillingPortalSessionResponse{
+		Url: session.URL,
+	}, nil
+}
+
 func (s *Service) HandleWebhookEvent(ctx context.Context, req *pbsvc.HandleWebhookEventRequest) (*emptypb.Empty, error) {
 	// Webhook signature verification should be done by the webhook gateway before it reaches this RPC.
 	// But in Stripe's case, signature verification requires the raw body.

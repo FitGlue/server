@@ -169,6 +169,12 @@ func (m *MockStripe) CancelSubscription(ctx context.Context, subscriptionID stri
 	return sub, nil
 }
 
+func (m *MockStripe) CreateBillingPortalSession(ctx context.Context, customerID string, returnURL string) (*stripe.BillingPortalSession, error) {
+	return &stripe.BillingPortalSession{
+		URL: "https://billing.stripe.com/p/session/test_portal",
+	}, nil
+}
+
 func TestGetSubscription(t *testing.T) {
 	store := NewMockStore()
 	stripe := NewMockStripe()

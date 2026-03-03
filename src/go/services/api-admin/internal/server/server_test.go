@@ -123,6 +123,30 @@ func (m *adminMockUserClient) ResolveUserByIntegration(_ context.Context, _ *use
 func (m *adminMockUserClient) SendWelcomeEmail(_ context.Context, _ *userpb.SendWelcomeEmailRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
 	return &emptypb.Empty{}, nil
 }
+func (m *adminMockUserClient) DeleteCounter(_ context.Context, _ *userpb.DeleteCounterRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *adminMockUserClient) ListPersonalRecords(_ context.Context, _ *userpb.ListPersonalRecordsRequest, _ ...grpc.CallOption) (*userpb.ListPersonalRecordsResponse, error) {
+	return &userpb.ListPersonalRecordsResponse{}, nil
+}
+func (m *adminMockUserClient) SetPersonalRecord(_ context.Context, _ *userpb.SetPersonalRecordRequest, _ ...grpc.CallOption) (*pbuser.PersonalRecord, error) {
+	return &pbuser.PersonalRecord{}, nil
+}
+func (m *adminMockUserClient) DeletePersonalRecord(_ context.Context, _ *userpb.DeletePersonalRecordRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *adminMockUserClient) ListPluginDefaults(_ context.Context, _ *userpb.ListPluginDefaultsRequest, _ ...grpc.CallOption) (*userpb.ListPluginDefaultsResponse, error) {
+	return &userpb.ListPluginDefaultsResponse{}, nil
+}
+func (m *adminMockUserClient) SetPluginDefaults(_ context.Context, _ *userpb.SetPluginDefaultsRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *adminMockUserClient) DeletePluginDefaults(_ context.Context, _ *userpb.DeletePluginDefaultsRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
+func (m *adminMockUserClient) SetFCMToken(_ context.Context, _ *userpb.SetFCMTokenRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+	return &emptypb.Empty{}, nil
+}
 
 // ---- Mock: PipelineServiceClient (nop) ----
 
@@ -160,6 +184,9 @@ func (m *adminNopPipelineClient) GetPipelineRun(_ context.Context, _ *pipelinepb
 }
 func (m *adminNopPipelineClient) ListPipelineRuns(_ context.Context, _ *pipelinepb.ListPipelineRunsRequest, _ ...grpc.CallOption) (*pipelinepb.ListPipelineRunsResponse, error) {
 	return &pipelinepb.ListPipelineRunsResponse{}, nil
+}
+func (m *adminNopPipelineClient) AdminListPipelineRuns(_ context.Context, _ *pipelinepb.AdminListPipelineRunsRequest, _ ...grpc.CallOption) (*pipelinepb.AdminListPipelineRunsResponse, error) {
+	return &pipelinepb.AdminListPipelineRunsResponse{}, nil
 }
 
 // ---- Helpers ----
@@ -339,10 +366,18 @@ func TestAdminHandleUpdateUser_Success(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 }
 
-func TestAdminHandleListAllPipelines_NotImplemented(t *testing.T) {
+func TestAdminHandleListAllPipelines_MissingUserID(t *testing.T) {
 	svc := newAdminTestServer(&adminMockUserClient{})
 	req := httptest.NewRequest(http.MethodGet, "/api/admin/pipelines", nil)
 	w := httptest.NewRecorder()
 	svc.handleListAllPipelines(w, req)
-	assert.Equal(t, http.StatusNotImplemented, w.Code)
+	assert.Equal(t, http.StatusBadRequest, w.Code)
+}
+
+func TestAdminHandleListAllPipelines_Success(t *testing.T) {
+	svc := newAdminTestServer(&adminMockUserClient{})
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/pipelines?user_id=u1", nil)
+	w := httptest.NewRecorder()
+	svc.handleListAllPipelines(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
 }
