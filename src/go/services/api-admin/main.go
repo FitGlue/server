@@ -19,6 +19,7 @@ import (
 
 func main() {
 	logger := infra.NewLogger()
+	infra.InitSentry()
 	ctx := context.Background()
 
 	logger.Info(ctx, "Starting FitGlue Admin API Gateway", "version", "v1")

@@ -32,6 +32,7 @@ import (
 
 func main() {
 	logger := infra.NewLogger()
+	infra.InitSentry()
 	ctx := context.Background()
 	logger.Info(ctx, "Starting FitGlue Webhook API Gateway", "version", "v1")
 

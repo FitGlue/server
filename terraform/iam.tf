@@ -1,7 +1,8 @@
 locals {
-  firestore_services = ["user", "billing", "pipeline", "activity", "registry"]
-  pubsub_publishers  = ["api-webhook", "pipeline"]
+  firestore_services = ["user", "billing", "pipeline", "activity", "registry", "api-admin"]
+  pubsub_publishers  = ["api-webhook", "pipeline", "activity", "api-client"]
   secret_accessors   = ["api-client", "user", "billing", "pipeline", "activity", "destination", "registry", "api-webhook"]
+  storage_services   = ["activity", "pipeline"]
 }
 
 resource "google_project_iam_member" "cr_firestore_user" {
@@ -26,9 +27,10 @@ resource "google_project_iam_member" "cr_secret_accessor" {
 }
 
 resource "google_project_iam_member" "cr_storage_admin" {
-  project = var.project_id
-  role    = "roles/storage.objectAdmin"
-  member  = "serviceAccount:${google_service_account.cloud_run_sa["activity"].email}"
+  for_each = toset(local.storage_services)
+  project  = var.project_id
+  role     = "roles/storage.objectAdmin"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa[each.key].email}"
 }
 
 resource "google_project_iam_member" "cr_fcm_admin" {

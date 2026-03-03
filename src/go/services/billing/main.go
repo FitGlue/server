@@ -22,6 +22,7 @@ func main() {
 	}
 
 	logger := infra.NewLogger()
+	infra.InitSentry()
 	ctx := context.Background()
 
 	// Firestore Setup

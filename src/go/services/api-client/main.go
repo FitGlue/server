@@ -29,6 +29,7 @@ func main() {
 	}
 
 	logger := infra.NewLogger()
+	infra.InitSentry()
 	ctx := context.Background()
 
 	// Firebase Auth Setup — use credentials file if set (local dev), otherwise ADC (Cloud Run)

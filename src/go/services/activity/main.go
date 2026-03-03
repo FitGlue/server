@@ -27,6 +27,7 @@ func main() {
 
 	ctx := context.Background()
 	logger := infra.NewLogger()
+	infra.InitSentry()
 
 	projectID := os.Getenv("PROJECT_ID")
 	if projectID == "" {

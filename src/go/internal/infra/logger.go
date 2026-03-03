@@ -4,6 +4,8 @@ import (
 	"context"
 	"log/slog"
 	"os"
+
+	sentryPkg "github.com/fitglue/server/src/go/pkg/infrastructure/sentry"
 )
 
 // Logger provides a structured logging interface, wrapping slog.
@@ -16,11 +18,15 @@ type Logger interface {
 }
 
 // NewLogger creates a new default structured logger.
+// The handler chain is: JSONHandler → SentryHandler
+// Error-level logs are automatically captured by Sentry (if initialized).
 func NewLogger() Logger {
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	})
+	sentryHandler := sentryPkg.NewSentryHandler(jsonHandler)
 	return &slogger{
-		logger: slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-			Level: slog.LevelInfo,
-		})),
+		logger: slog.New(sentryHandler),
 	}
 }
 

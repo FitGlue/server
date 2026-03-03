@@ -21,6 +21,7 @@ func main() {
 	}
 
 	logger := infra.NewLogger()
+	infra.InitSentry()
 
 	// Initialize RegistryStore with static data
 	store, err := registry.NewStaticStore()

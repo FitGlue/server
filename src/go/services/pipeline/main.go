@@ -31,6 +31,7 @@ import (
 
 func main() {
 	logger := infra.NewLogger()
+	infra.InitSentry()
 	ctx := context.Background()
 
 	// Initialize dependencies

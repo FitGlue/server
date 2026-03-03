@@ -25,6 +25,7 @@ import (
 
 func main() {
 	logger := infra.NewLogger()
+	infra.InitSentry()
 	ctx := context.Background()
 	logger.Info(ctx, "Starting FitGlue Destination Service", "version", "v1")
 
