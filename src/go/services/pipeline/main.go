@@ -6,9 +6,9 @@ import (
 	"encoding/json"
 	"io"
 	"log"
-	"net"
 	"net/http"
 	"os"
+	"strings"
 
 	"cloud.google.com/go/firestore"
 	"cloud.google.com/go/pubsub"
@@ -22,6 +22,8 @@ import (
 	"github.com/fitglue/server/src/go/internal/pipeline/splitter"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pb "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
+	"golang.org/x/net/http2"
+	"golang.org/x/net/http2/h2c"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	"google.golang.org/grpc/health/grpc_health_v1"
@@ -58,64 +60,49 @@ func main() {
 		bucketName = "fitglue-server-dev-artifacts"
 	}
 
-	// 1. gRPC Service (CRUD) — internal port for service-to-service calls
+	// 1. gRPC Service (CRUD) — serves on the same port as HTTP (required for Cloud Run single-port)
 	svc := pipeline.NewService(store, pubClient, blobStore, logger)
 
-	server := grpc.NewServer()
-	pb.RegisterPipelineServiceServer(server, svc)
+	grpcServer := grpc.NewServer()
+	pb.RegisterPipelineServiceServer(grpcServer, svc)
 
 	healthcheck := health.NewServer()
-	grpc_health_v1.RegisterHealthServer(server, healthcheck)
+	grpc_health_v1.RegisterHealthServer(grpcServer, healthcheck)
 
-	grpcPort := os.Getenv("GRPC_PORT")
-	if grpcPort == "" {
-		grpcPort = "50053"
-	}
-
-	lis, err := net.Listen("tcp", ":"+grpcPort)
-	if err != nil {
-		log.Fatalf("failed to listen on gRPC port: %v", err)
-	}
-
-	// Start gRPC server in a goroutine
-	go func() {
-		logger.Info(ctx, "Starting service.pipeline gRPC", "port", grpcPort)
-		if err := server.Serve(lis); err != nil {
-			log.Fatalf("failed to serve gRPC: %v", err)
-		}
-	}()
-
-	// 2. HTTP Server for Pub/Sub Pushes (Cloud Run PORT)
-	// Instantiate domain components
+	// 2. HTTP Server for Pub/Sub Pushes
 	splitterSvc := splitter.NewSplitter(store, pubClient, logger)
 	routerSvc := router.NewRouter(store, pubClient, blobStore, bucketName, logger)
 
 	mux := http.NewServeMux()
-
-	// 2a. Splitter (consumes topic-raw-activity)
 	mux.HandleFunc("/pubsub/raw", handlePubSubPush(logger, splitterSvc.SplitByPipeline))
-
-	// 2b. Enricher (consumes topic-pipeline-activity)
-	// enricher.EnrichActivityHTTP already exists to handle the lag retries and HTTP boilerplate
 	mux.HandleFunc("/pubsub/run", enricher.EnrichActivityHTTP)
-
-	// 2c. Router (consumes topic-enriched-activity)
 	mux.HandleFunc("/pubsub/enriched", handlePubSubPush(logger, routerSvc.RouteActivity))
-
-	// Basic healthcheck for HTTP
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("ok"))
 	})
 
-	httpPort := os.Getenv("PORT")
-	if httpPort == "" {
-		httpPort = "8080"
+	// 3. Unified handler: route gRPC vs HTTP based on content-type
+	// Cloud Run only exposes a single port, so both must share it.
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
+			grpcServer.ServeHTTP(w, r)
+		} else {
+			mux.ServeHTTP(w, r)
+		}
+	})
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
 	}
 
-	logger.Info(ctx, "Starting service.pipeline HTTP for Pub/Sub pushes", "port", httpPort)
-	if err := http.ListenAndServe(":"+httpPort, mux); err != nil {
-		log.Fatalf("failed to serve HTTP: %v", err)
+	// Use h2c so gRPC works without TLS (Cloud Run terminates TLS at the load balancer)
+	h2s := &http2.Server{}
+
+	logger.Info(ctx, "Starting service.pipeline (gRPC + HTTP)", "port", port)
+	if err := http.ListenAndServe(":"+port, h2c.NewHandler(handler, h2s)); err != nil {
+		log.Fatalf("failed to serve: %v", err)
 	}
 }
 

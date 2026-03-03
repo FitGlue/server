@@ -18,6 +18,12 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
+// webURL returns the WEB_URL env var with any trailing slash removed.
+func webURL() string { return strings.TrimRight(os.Getenv("WEB_URL"), "/") }
+
+// apiURL returns the API_URL env var with any trailing slash removed.
+func apiURL() string { return strings.TrimRight(os.Getenv("API_URL"), "/") }
+
 func (s *APIServer) registerOAuthRoutes(r chi.Router) {
 	// OAuth endpoints require user authentication because we need to know WHICH user is connecting the integration
 	r.Post("/users/me/integrations/{provider}/connect", s.handleOAuthConnect)
@@ -48,7 +54,7 @@ func (s *APIServer) handleOAuthConnect(w http.ResponseWriter, r *http.Request) {
 
 	stateArg := base64.URLEncoding.EncodeToString(stateJSON) + "." + signature
 
-	redirectURI := os.Getenv("API_URL") + "/api/v2/oauth/" + provider + "/callback"
+	redirectURI := apiURL() + "/api/v2/oauth/" + provider + "/callback"
 
 	authURL, _ := url.Parse(config.AuthURL)
 	q := authURL.Query()
@@ -73,7 +79,7 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 	provider := chi.URLParam(r, "provider")
 	config := GetOAuthConfig(provider)
 	if config == nil {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=unsupported_provider", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=unsupported_provider", http.StatusFound)
 		return
 	}
 
@@ -82,24 +88,24 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 	errDesc := r.URL.Query().Get("error_description")
 
 	if errDesc != "" {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error="+url.QueryEscape(errDesc), http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error="+url.QueryEscape(errDesc), http.StatusFound)
 		return
 	}
 
 	if code == "" || stateArg == "" {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=missing_code_or_state", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=missing_code_or_state", http.StatusFound)
 		return
 	}
 
 	// Verify state
 	parts := strings.Split(stateArg, ".")
 	if len(parts) != 2 {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=invalid_state", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=invalid_state", http.StatusFound)
 		return
 	}
 	stateJSON, err := base64.URLEncoding.DecodeString(parts[0])
 	if err != nil {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=invalid_state_encoding", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=invalid_state_encoding", http.StatusFound)
 		return
 	}
 
@@ -107,24 +113,24 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 	h.Write(stateJSON)
 	expectedSig := hex.EncodeToString(h.Sum(nil))
 	if !hmac.Equal([]byte(parts[1]), []byte(expectedSig)) {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=invalid_state_signature", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=invalid_state_signature", http.StatusFound)
 		return
 	}
 
 	var stateData map[string]string
 	if err := json.Unmarshal(stateJSON, &stateData); err != nil {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=invalid_state_payload", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=invalid_state_payload", http.StatusFound)
 		return
 	}
 
 	userID := stateData["uid"]
 	if userID == "" {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=missing_uid", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=missing_uid", http.StatusFound)
 		return
 	}
 
 	// Exchange code for tokens
-	redirectURI := os.Getenv("API_URL") + "/api/v2/oauth/" + provider + "/callback"
+	redirectURI := apiURL() + "/api/v2/oauth/" + provider + "/callback"
 	data := url.Values{}
 	data.Set("client_id", config.ClientID)
 	data.Set("client_secret", config.ClientSecret)
@@ -142,19 +148,19 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=token_exchange_failed", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=token_exchange_failed", http.StatusFound)
 		return
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=token_exchange_error", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=token_exchange_error", http.StatusFound)
 		return
 	}
 
 	var tokenResp map[string]interface{}
 	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=invalid_token_response", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=invalid_token_response", http.StatusFound)
 		return
 	}
 
@@ -168,9 +174,9 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		s.logger.Error(r.Context(), "failed to save integration", "error", err)
-		http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections?error=failed_to_save_integration", http.StatusFound)
+		http.Redirect(w, r, webURL()+"/connections?error=failed_to_save_integration", http.StatusFound)
 		return
 	}
 
-	http.Redirect(w, r, os.Getenv("WEB_URL")+"/connections/"+provider+"/success", http.StatusFound)
+	http.Redirect(w, r, webURL()+"/connections/"+provider+"/success", http.StatusFound)
 }
