@@ -2,3 +2,4 @@ version: v1
 plugins:
   - plugin: buf.build/community/google-gnostic-openapi
     out: ../../docs/api
+    opt: enum_type=string
