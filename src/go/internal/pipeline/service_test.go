@@ -292,3 +292,127 @@ func TestSubmitInput(t *testing.T) {
 		t.Errorf("expected activityId=activity1")
 	}
 }
+
+func TestCreatePipeline_InvalidSource(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+
+	req := &pbsvc.CreatePipelineRequest{
+		UserId: "user1",
+		Pipeline: &pipeline.PipelineConfig{
+			Name:         "Bad Source",
+			Source:       "banana",
+			Destinations: []plugin.DestinationType{1},
+		},
+	}
+
+	_, err := svc.CreatePipeline(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error for invalid source")
+	}
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("expected InvalidArgument, got %v", status.Code(err))
+	}
+}
+
+func TestCreatePipeline_EmptySource(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+
+	req := &pbsvc.CreatePipelineRequest{
+		UserId: "user1",
+		Pipeline: &pipeline.PipelineConfig{
+			Name:         "No Source",
+			Source:       "",
+			Destinations: []plugin.DestinationType{1},
+		},
+	}
+
+	_, err := svc.CreatePipeline(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error for empty source")
+	}
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("expected InvalidArgument, got %v", status.Code(err))
+	}
+}
+
+func TestCreatePipeline_NormalizesShortSource(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+
+	req := &pbsvc.CreatePipelineRequest{
+		UserId: "user1",
+		Pipeline: &pipeline.PipelineConfig{
+			Name:         "Short Source",
+			Source:       "file_upload", // Short format from UI
+			Destinations: []plugin.DestinationType{1},
+		},
+	}
+
+	res, err := svc.CreatePipeline(context.Background(), req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Source != "SOURCE_FILE_UPLOAD" {
+		t.Errorf("expected normalized source 'SOURCE_FILE_UPLOAD', got %q", res.Source)
+	}
+}
+
+func TestUpdatePipeline_InvalidSource(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+
+	// Seed an existing pipeline
+	store.Pipelines["user1_pipe1"] = &pipeline.PipelineConfig{
+		Id:           "pipe1",
+		Name:         "Existing",
+		Source:       "SOURCE_STRAVA",
+		Destinations: []plugin.DestinationType{1},
+	}
+
+	req := &pbsvc.UpdatePipelineRequest{
+		UserId:     "user1",
+		PipelineId: "pipe1",
+		Pipeline: &pipeline.PipelineConfig{
+			Source: "garbage_source",
+		},
+	}
+
+	_, err := svc.UpdatePipeline(context.Background(), req)
+	if err == nil {
+		t.Fatal("expected error for invalid source on update")
+	}
+	if status.Code(err) != codes.InvalidArgument {
+		t.Errorf("expected InvalidArgument, got %v", status.Code(err))
+	}
+}
+
+func TestUpdatePipeline_NormalizesSource(t *testing.T) {
+	store := NewMockStore()
+	svc := NewService(store, &MockPublisher{}, &MockBlobStore{}, mockLogger{})
+
+	// Seed an existing pipeline
+	store.Pipelines["user1_pipe1"] = &pipeline.PipelineConfig{
+		Id:           "pipe1",
+		Name:         "Existing",
+		Source:       "SOURCE_STRAVA",
+		Destinations: []plugin.DestinationType{1},
+	}
+
+	req := &pbsvc.UpdatePipelineRequest{
+		UserId:     "user1",
+		PipelineId: "pipe1",
+		Pipeline: &pipeline.PipelineConfig{
+			Source: "hevy", // Short format
+		},
+	}
+
+	res, err := svc.UpdatePipeline(context.Background(), req)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if res.Source != "SOURCE_HEVY" {
+		t.Errorf("expected normalized source 'SOURCE_HEVY', got %q", res.Source)
+	}
+}
