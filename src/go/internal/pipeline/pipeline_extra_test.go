@@ -230,12 +230,18 @@ func TestPipeline_StoreErrors(t *testing.T) {
 	})
 
 	t.Run("UpdatePipeline_storeError", func(t *testing.T) {
-		es := &ErrorStore{MockPipelineStore: NewMockStore(), updatePipelineErr: errors.New("db down")}
+		ms := NewMockStore()
+		ms.Pipelines["u1_p1"] = &pipeline.PipelineConfig{
+			Id:           "p1",
+			Source:       "SOURCE_STRAVA",
+			Destinations: []plugin.DestinationType{1},
+		}
+		es := &ErrorStore{MockPipelineStore: ms, updatePipelineErr: errors.New("db down")}
 		svc := NewService(es, &MockPublisher{}, &MockBlobStore{Blobs: map[string][]byte{}}, mockLogger{})
 		_, err := svc.UpdatePipeline(ctx, &pbsvc.UpdatePipelineRequest{
-			UserId: "u1",
+			UserId:     "u1",
+			PipelineId: "p1",
 			Pipeline: &pipeline.PipelineConfig{
-				Id:           "p1",
 				Source:       "SOURCE_STRAVA",
 				Destinations: []plugin.DestinationType{1},
 			},

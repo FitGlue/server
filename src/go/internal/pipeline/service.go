@@ -95,19 +95,49 @@ func (s *Service) CreatePipeline(ctx context.Context, req *pbsvc.CreatePipelineR
 }
 
 func (s *Service) UpdatePipeline(ctx context.Context, req *pbsvc.UpdatePipelineRequest) (*pipeline.PipelineConfig, error) {
-	if req.UserId == "" || req.Pipeline == nil || req.Pipeline.Id == "" {
-		return nil, status.Error(codes.InvalidArgument, "valid user_id and pipeline with ID are required")
+	pipelineID := req.PipelineId
+	if pipelineID == "" {
+		pipelineID = req.Pipeline.GetId()
+	}
+	if req.UserId == "" || pipelineID == "" {
+		return nil, status.Error(codes.InvalidArgument, "valid user_id and pipeline_id are required")
 	}
 
-	if req.Pipeline.Source == "" {
-		return nil, status.Error(codes.InvalidArgument, "Missing required field: source")
+	// Fetch existing pipeline to support partial updates (e.g. toggle disabled)
+	existing, err := s.store.GetPipeline(ctx, req.UserId, pipelineID)
+	if err != nil {
+		s.logger.Error(ctx, "failed to fetch existing pipeline for update", "error", err)
+		return nil, status.Error(codes.Internal, "failed to fetch existing pipeline")
+	}
+	if existing == nil {
+		return nil, status.Error(codes.NotFound, "pipeline not found")
 	}
 
-	if len(req.Pipeline.Destinations) == 0 {
-		return nil, status.Error(codes.InvalidArgument, "Missing required field: destinations (must be non-empty array)")
+	// Merge: apply non-default fields from request onto existing
+	if req.Pipeline != nil {
+		if req.Pipeline.Source != "" {
+			existing.Source = req.Pipeline.Source
+		}
+		if len(req.Pipeline.Destinations) > 0 {
+			existing.Destinations = req.Pipeline.Destinations
+		}
+		if len(req.Pipeline.Enrichers) > 0 {
+			existing.Enrichers = req.Pipeline.Enrichers
+		}
+		if req.Pipeline.Name != "" {
+			existing.Name = req.Pipeline.Name
+		}
+		if req.Pipeline.SourceConfig != nil {
+			existing.SourceConfig = req.Pipeline.SourceConfig
+		}
+		if req.Pipeline.DestinationConfigs != nil {
+			existing.DestinationConfigs = req.Pipeline.DestinationConfigs
+		}
+		// Disabled is a bool — always apply from request
+		existing.Disabled = req.Pipeline.Disabled
 	}
 
-	updated, err := s.store.UpdatePipeline(ctx, req.UserId, req.Pipeline)
+	updated, err := s.store.UpdatePipeline(ctx, req.UserId, existing)
 	if err != nil {
 		s.logger.Error(ctx, "failed to update pipeline", "error", err)
 		return nil, status.Error(codes.Internal, "failed to update pipeline")
