@@ -308,3 +308,29 @@ func TestSplitByPipeline_MultiplePipelines(t *testing.T) {
 		t.Errorf("expected 2 published events (matching source only), got %d", len(pub.published))
 	}
 }
+
+func TestSplitByPipeline_ShortFormatSourceMatching(t *testing.T) {
+	// Regression: Firestore stores "file_upload" but source.String() returns "SOURCE_FILE_UPLOAD"
+	store := &mockSplitterStore{
+		pipelines: []*pbpipeline.PipelineConfig{
+			{Id: "pipe1", Name: "File Upload Pipe", Source: "file_upload"},
+		},
+	}
+	pub := &mockSplitterPublisher{}
+	s := splitter.NewSplitter(store, pub, &mockLogger{})
+
+	execID := "exec-456"
+	payload := &pbevents.ActivityPayload{
+		UserId:              "user1",
+		Source:              pbactivity.ActivitySource_SOURCE_FILE_UPLOAD,
+		PipelineExecutionId: &execID,
+	}
+
+	err := s.SplitByPipeline(context.Background(), makeEvent(payload))
+	if err != nil {
+		t.Errorf("expected no error, got %v", err)
+	}
+	if len(pub.published) != 1 {
+		t.Errorf("expected 1 published event for short-format source, got %d", len(pub.published))
+	}
+}

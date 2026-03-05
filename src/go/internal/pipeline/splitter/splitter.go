@@ -12,6 +12,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/pipeline"
 	shared "github.com/fitglue/server/src/go/pkg"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
+	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
@@ -109,7 +110,6 @@ func (s *Splitter) resolvePipelinesForSource(ctx context.Context, userId string,
 		return nil, fmt.Errorf("list pipelines: %w", err)
 	}
 
-	sourceName := source.String()
 	var matching []*pbpipeline.PipelineConfig
 
 	for _, p := range userPipelines {
@@ -119,8 +119,10 @@ func (s *Splitter) resolvePipelinesForSource(ctx context.Context, userId string,
 			continue
 		}
 
-		// Match by source
-		if p.Source == sourceName {
+		// Match by source - normalize the stored source string to an enum for comparison,
+		// since Firestore stores "file_upload" but the proto enum name is "SOURCE_FILE_UPLOAD"
+		parsedSource := formatters.ParseActivitySource(p.Source)
+		if parsedSource == source && parsedSource != pbactivity.ActivitySource_SOURCE_UNSPECIFIED {
 			matching = append(matching, p)
 		}
 	}

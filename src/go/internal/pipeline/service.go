@@ -10,6 +10,8 @@ import (
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/types/formatters"
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	"github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/pipeline"
 	"google.golang.org/grpc/codes"
@@ -68,14 +70,30 @@ func (s *Service) GetPipeline(ctx context.Context, req *pbsvc.GetPipelineRequest
 	return cfg, nil
 }
 
+// validateAndNormalizeSource validates that a source string maps to a known ActivitySource
+// enum value and returns the canonical enum name (e.g. "SOURCE_FILE_UPLOAD").
+// This prevents silent business logic failures from storing unrecognized source formats.
+func validateAndNormalizeSource(source string) (string, error) {
+	if source == "" {
+		return "", fmt.Errorf("source is required")
+	}
+	parsed := formatters.ParseActivitySource(source)
+	if parsed == pbactivity.ActivitySource_SOURCE_UNSPECIFIED {
+		return "", fmt.Errorf("unknown source: %q", source)
+	}
+	return parsed.String(), nil
+}
+
 func (s *Service) CreatePipeline(ctx context.Context, req *pbsvc.CreatePipelineRequest) (*pipeline.PipelineConfig, error) {
 	if req.UserId == "" || req.Pipeline == nil {
 		return nil, status.Error(codes.InvalidArgument, "user_id and pipeline config are required")
 	}
 
-	if req.Pipeline.Source == "" {
-		return nil, status.Error(codes.InvalidArgument, "Missing required field: source")
+	normalizedSource, err := validateAndNormalizeSource(req.Pipeline.Source)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid source: %s", err))
 	}
+	req.Pipeline.Source = normalizedSource
 
 	if len(req.Pipeline.Destinations) == 0 {
 		return nil, status.Error(codes.InvalidArgument, "Missing required field: destinations (must be non-empty array)")
@@ -116,7 +134,11 @@ func (s *Service) UpdatePipeline(ctx context.Context, req *pbsvc.UpdatePipelineR
 	// Merge: apply non-default fields from request onto existing
 	if req.Pipeline != nil {
 		if req.Pipeline.Source != "" {
-			existing.Source = req.Pipeline.Source
+			normalizedSource, err := validateAndNormalizeSource(req.Pipeline.Source)
+			if err != nil {
+				return nil, status.Error(codes.InvalidArgument, fmt.Sprintf("invalid source: %s", err))
+			}
+			existing.Source = normalizedSource
 		}
 		if len(req.Pipeline.Destinations) > 0 {
 			existing.Destinations = req.Pipeline.Destinations
