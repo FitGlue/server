@@ -1418,7 +1418,7 @@ resource "google_monitoring_alert_policy" "cloud_run_auth_failure" {
   conditions {
     display_name = "Auth failure detected"
     condition_threshold {
-      filter          = "metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
+      filter          = "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
       duration        = "0s"
       comparison      = "COMPARISON_GT"
       threshold_value = 0
@@ -1472,7 +1472,7 @@ resource "google_monitoring_dashboard" "infrastructure_health" {
             scorecard = {
               timeSeriesQuery = {
                 timeSeriesFilter = {
-                  filter = "metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
+                  filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
                   aggregation = {
                     alignmentPeriod    = "86400s"
                     perSeriesAligner   = "ALIGN_SUM"
@@ -1497,7 +1497,7 @@ resource "google_monitoring_dashboard" "infrastructure_health" {
               dataSets = [{
                 timeSeriesQuery = {
                   timeSeriesFilter = {
-                    filter = "metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
+                    filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
                     aggregation = {
                       alignmentPeriod    = "300s"
                       perSeriesAligner   = "ALIGN_SUM"
