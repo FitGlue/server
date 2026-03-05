@@ -1377,3 +1377,224 @@ resource "google_monitoring_alert_policy" "high_latency" {
     mime_type = "text/markdown"
   }
 }
+
+# =============================================================================
+# INFRASTRUCTURE ERROR MONITORING
+# =============================================================================
+# Catches Cloud Run infrastructure-level errors (auth failures, etc.) that
+# never reach application code and are therefore invisible to Sentry.
+
+# --- Log-based Metric: Cloud Run Auth Failures ---
+resource "google_logging_metric" "cloud_run_auth_failure" {
+  name        = "cloud_run_auth_failure"
+  description = "Cloud Run infrastructure authentication failures (request rejected before reaching application)"
+  filter      = <<-EOT
+    resource.type="cloud_run_revision"
+    logName=~"run.googleapis.com%2Frequests"
+    textPayload=~"not authenticated"
+  EOT
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+    labels {
+      key         = "service_name"
+      value_type  = "STRING"
+      description = "Cloud Run service that rejected the request"
+    }
+  }
+
+  label_extractors = {
+    "service_name" = "EXTRACT(resource.labels.service_name)"
+  }
+}
+
+# --- Alert Policy: Cloud Run Auth Failure ---
+# These should never happen - even one indicates a misconfiguration.
+resource "google_monitoring_alert_policy" "cloud_run_auth_failure" {
+  display_name = "Cloud Run Infrastructure Auth Failure"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Auth failure detected"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
+      duration        = "0s"
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+
+      aggregations {
+        alignment_period     = "60s"
+        per_series_aligner   = "ALIGN_SUM"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["metric.labels.service_name"]
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email.id]
+
+  alert_strategy {
+    auto_close = "86400s"
+  }
+
+  documentation {
+    content   = "A Cloud Run service rejected an incoming request due to missing authentication. This is an infrastructure-level error (e.g. missing IAM invoker role for Pub/Sub push subscriptions). Check the Cloud Run request logs and verify IAM bindings in Terraform."
+    mime_type = "text/markdown"
+  }
+}
+
+# =============================================================================
+# INFRASTRUCTURE HEALTH DASHBOARD
+# =============================================================================
+resource "google_monitoring_dashboard" "infrastructure_health" {
+  dashboard_json = jsonencode({
+    displayName = "FitGlue Infrastructure Health"
+    labels = {
+      environment = var.environment
+    }
+    mosaicLayout = {
+      columns = 12
+      tiles = [
+        # ----- Row 1: Header -----
+        {
+          width  = 12
+          height = 1
+          widget = { title = "", text = { content = "## Infrastructure Health\nMonitors Cloud Run platform-level errors that bypass application code (and Sentry). Covers authentication failures, rejected requests, and service-level error rates.", format = "MARKDOWN" } }
+        },
+        # ----- Row 2: Auth Failure Scorecard + Chart -----
+        {
+          yPos   = 1
+          width  = 3
+          height = 4
+          widget = {
+            title = "Auth Failures (24h)"
+            scorecard = {
+              timeSeriesQuery = {
+                timeSeriesFilter = {
+                  filter = "metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
+                  aggregation = {
+                    alignmentPeriod    = "86400s"
+                    perSeriesAligner   = "ALIGN_SUM"
+                    crossSeriesReducer = "REDUCE_SUM"
+                  }
+                }
+              }
+              thresholds = [
+                { value = 1, color = "RED", direction = "ABOVE" }
+              ]
+            }
+          }
+        },
+        {
+          xPos   = 3
+          yPos   = 1
+          width  = 9
+          height = 4
+          widget = {
+            title = "Auth Failures by Service"
+            xyChart = {
+              dataSets = [{
+                timeSeriesQuery = {
+                  timeSeriesFilter = {
+                    filter = "metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
+                    aggregation = {
+                      alignmentPeriod    = "300s"
+                      perSeriesAligner   = "ALIGN_SUM"
+                      crossSeriesReducer = "REDUCE_SUM"
+                      groupByFields      = ["metric.labels.service_name"]
+                    }
+                  }
+                }
+                plotType       = "STACKED_BAR"
+                legendTemplate = "$${metric.labels.service_name}"
+              }]
+              yAxis = { label = "Failures" }
+            }
+          }
+        },
+        # ----- Row 3: Cloud Run Non-2xx by Service -----
+        {
+          yPos   = 5
+          width  = 12
+          height = 5
+          widget = {
+            title = "Cloud Run Non-2xx Responses by Service (All)"
+            xyChart = {
+              dataSets = [{
+                timeSeriesQuery = {
+                  timeSeriesFilter = {
+                    filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/request_count\" AND metric.labels.response_code_class!=\"2xx\""
+                    aggregation = {
+                      alignmentPeriod    = "300s"
+                      perSeriesAligner   = "ALIGN_SUM"
+                      crossSeriesReducer = "REDUCE_SUM"
+                      groupByFields      = ["resource.labels.service_name", "metric.labels.response_code_class"]
+                    }
+                  }
+                }
+                plotType       = "STACKED_BAR"
+                legendTemplate = "$${resource.labels.service_name} ($${metric.labels.response_code_class})"
+              }]
+              yAxis = { label = "Errors" }
+            }
+          }
+        },
+        # ----- Row 4: Instance Count + Container Startup Latency -----
+        {
+          yPos   = 10
+          width  = 6
+          height = 4
+          widget = {
+            title = "Active Instances by Service"
+            xyChart = {
+              dataSets = [{
+                timeSeriesQuery = {
+                  timeSeriesFilter = {
+                    filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/container/instance_count\""
+                    aggregation = {
+                      alignmentPeriod    = "300s"
+                      perSeriesAligner   = "ALIGN_MAX"
+                      crossSeriesReducer = "REDUCE_SUM"
+                      groupByFields      = ["resource.labels.service_name"]
+                    }
+                  }
+                }
+                plotType       = "STACKED_AREA"
+                legendTemplate = "$${resource.labels.service_name}"
+              }]
+              yAxis = { label = "Instances" }
+            }
+          }
+        },
+        {
+          xPos   = 6
+          yPos   = 10
+          width  = 6
+          height = 4
+          widget = {
+            title = "Container Startup Latency (p95)"
+            xyChart = {
+              dataSets = [{
+                timeSeriesQuery = {
+                  timeSeriesFilter = {
+                    filter = "resource.type=\"cloud_run_revision\" AND metric.type=\"run.googleapis.com/container/startup_latencies\""
+                    aggregation = {
+                      alignmentPeriod    = "300s"
+                      perSeriesAligner   = "ALIGN_PERCENTILE_95"
+                      crossSeriesReducer = "REDUCE_MAX"
+                      groupByFields      = ["resource.labels.service_name"]
+                    }
+                  }
+                }
+                plotType       = "LINE"
+                legendTemplate = "$${resource.labels.service_name}"
+              }]
+              yAxis = { label = "Startup Latency (ms)" }
+            }
+          }
+        }
+      ]
+    }
+  })
+}
