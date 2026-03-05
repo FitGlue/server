@@ -913,3 +913,17 @@ resource "google_cloud_run_v2_service_iam_member" "pipeline_to_destination" {
   role     = "roles/run.invoker"
   member   = "serviceAccount:${google_service_account.cloud_run_sa["pipeline"].email}"
 }
+
+# Pub/Sub push subscriptions use OIDC tokens with each service's own SA,
+# so the SA needs run.invoker on itself to authenticate the push.
+locals {
+  pubsub_push_targets = ["pipeline", "destination"]
+}
+
+resource "google_cloud_run_v2_service_iam_member" "pubsub_self_invoke" {
+  for_each = toset(local.pubsub_push_targets)
+  name     = google_cloud_run_v2_service.backend[each.key].name
+  location = google_cloud_run_v2_service.backend[each.key].location
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.cloud_run_sa[each.key].email}"
+}
