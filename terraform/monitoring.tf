@@ -1418,7 +1418,7 @@ resource "google_monitoring_alert_policy" "cloud_run_auth_failure" {
   conditions {
     display_name = "Auth failure detected"
     condition_threshold {
-      filter          = "resource.type=\"global\" AND metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
+      filter          = "metric.type=\"logging.googleapis.com/user/cloud_run_auth_failure\""
       duration        = "0s"
       comparison      = "COMPARISON_GT"
       threshold_value = 0
