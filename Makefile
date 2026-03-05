@@ -17,9 +17,16 @@ all: generate clean lint build test
 
 preflight:
 	@echo "\n========== PREFLIGHT: Mirroring CI Pipeline =========="
-	@echo "\n[1/6] Proto linting..."
+	@echo "\n[1/7] Proto linting..."
 	buf lint src/proto
-	@echo "\n[2/6] Verifying generated code is in sync..."
+	@echo "\n[2/7] Checking for service-level go.mod files..."
+	@if find $(GO_SRC_DIR)/services -name "go.mod" 2>/dev/null | grep -q .; then \
+		echo "❌ Found service-level go.mod files — all services must use the root module:"; \
+		find $(GO_SRC_DIR)/services -name "go.mod"; \
+		exit 1; \
+	fi
+	@echo "✅ All services use the root module."
+	@echo "\n[3/7] Verifying generated code is in sync..."
 	$(MAKE) generate
 	@if ! git diff --quiet; then \
 		echo "❌ Generated files are out of sync. Run 'make generate' and commit the changes."; \
@@ -27,13 +34,13 @@ preflight:
 		exit 1; \
 	fi
 	@echo "✅ Generated code is in sync."
-	@echo "\n[3/6] Building..."
+	@echo "\n[4/7] Building..."
 	$(MAKE) build
-	@echo "\n[4/6] Linting..."
+	@echo "\n[5/7] Linting..."
 	$(MAKE) lint
-	@echo "\n[5/6] Running tests..."
+	@echo "\n[6/7] Running tests..."
 	$(MAKE) test
-	@echo "\n[6/6] Checking coverage..."
+	@echo "\n[7/7] Checking coverage..."
 	$(MAKE) test-coverage
 	@echo "\n========== ✅ PREFLIGHT PASSED — safe to push =========="
 

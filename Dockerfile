@@ -11,14 +11,9 @@ COPY src/go/go.mod src/go/go.sum ./src/go/
 # Copy all source (includes service-level go.mod if present)
 COPY src/go/ ./src/go/
 
-# Download deps and build — if the service has its own go.mod, build from there
-RUN if [ -f "src/go/services/${SERVICE_NAME}/go.mod" ]; then \
-    cd src/go/services/${SERVICE_NAME} && go mod download && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /server .; \
-    else \
-    cd src/go && go mod download && \
-    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /server ./services/${SERVICE_NAME}; \
-    fi
+# Download deps and build from root module
+RUN cd src/go && go mod download && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /server ./services/${SERVICE_NAME}
 
 FROM gcr.io/distroless/static-debian12
 COPY --from=builder /server /server
