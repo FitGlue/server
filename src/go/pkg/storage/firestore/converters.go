@@ -1,6 +1,7 @@
 package firestore
 
 import (
+	"strings"
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/domain/user"
@@ -558,6 +559,10 @@ func FirestoreToPipeline(m map[string]interface{}) *pbpipeline.PipelineConfig {
 						ptype = pbplugin.EnricherProviderType(n)
 					case float64:
 						ptype = pbplugin.EnricherProviderType(int32(n))
+					case string:
+						if val, ok := pbplugin.EnricherProviderType_value[n]; ok {
+							ptype = pbplugin.EnricherProviderType(val)
+						}
 					}
 				}
 
@@ -581,12 +586,15 @@ func FirestoreToPipeline(m map[string]interface{}) *pbpipeline.PipelineConfig {
 			case float64:
 				dests = append(dests, pbplugin.DestinationType(int32(val)))
 			case string:
-				// Legacy string support
-				switch val {
-				case "strava", "DESTINATION_STRAVA":
-					dests = append(dests, pbplugin.DestinationType_DESTINATION_STRAVA)
-				case "mock", "DESTINATION_MOCK":
-					dests = append(dests, pbplugin.DestinationType_DESTINATION_MOCK)
+				// String support: try proto enum name first, then short aliases
+				upper := strings.ToUpper(val)
+				if enumVal, ok := pbplugin.DestinationType_value[upper]; ok {
+					dests = append(dests, pbplugin.DestinationType(enumVal))
+				} else {
+					prefixed := "DESTINATION_" + upper
+					if enumVal, ok := pbplugin.DestinationType_value[prefixed]; ok {
+						dests = append(dests, pbplugin.DestinationType(enumVal))
+					}
 				}
 			}
 		}
