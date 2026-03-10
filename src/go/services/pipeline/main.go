@@ -48,7 +48,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to init pubsub: %v", err)
 	}
-	pubClient := &infrapubsub.PubSubAdapter{Client: rawPubClient}
+	pubClient := &infrapubsub.PubSubAdapter{Client: rawPubClient, Logger: logger}
 
 	gcsClient, err := storage.NewClient(ctx)
 	if err != nil {

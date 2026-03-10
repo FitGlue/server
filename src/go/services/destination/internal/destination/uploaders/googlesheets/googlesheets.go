@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	httputil "github.com/fitglue/server/src/go/pkg/infrastructure/http"
@@ -65,7 +66,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "google")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "google")
+	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "google", infra.NewLogger())
 	logger := slog.Default()
 
 	if err := u.ensureHeaderRow(ctx, httpClient, spreadsheetID, sheetName, logger); err != nil {

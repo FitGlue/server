@@ -11,6 +11,7 @@ import (
 	"cloud.google.com/go/pubsub"
 	"cloud.google.com/go/storage"
 
+	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/database"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
@@ -68,72 +69,12 @@ func GetSlogHandlerOptions(level slog.Level) *slog.HandlerOptions {
 	}
 }
 
-// ComponentHandler wraps a slog.Handler to prepend [component] to the message
-type ComponentHandler struct {
-	slog.Handler
-	component string
-}
-
-// WithGroup implements slog.Handler
-func (h *ComponentHandler) WithGroup(name string) slog.Handler {
-	return &ComponentHandler{
-		Handler:   h.Handler.WithGroup(name),
-		component: h.component,
-	}
-}
-
-// WithAttrs implements slog.Handler
-func (h *ComponentHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	newComp := h.component
-	for _, a := range attrs {
-		if a.Key == "component" {
-			newComp = a.Value.String()
-		}
-	}
-	return &ComponentHandler{
-		Handler:   h.Handler.WithAttrs(attrs),
-		component: newComp,
-	}
-}
-
-// Handle implements slog.Handler
-func (h *ComponentHandler) Handle(ctx context.Context, r slog.Record) error {
-	comp := h.component
-
-	// Check if component is overridden in the record attributes
-	r.Attrs(func(a slog.Attr) bool {
-		if a.Key == "component" {
-			comp = a.Value.String()
-			return false // stop
-		}
-		return true
-	})
-
-	if comp != "" {
-		newMsg := fmt.Sprintf("[%s] %s", comp, r.Message)
-		// Create a new record with modified message
-		// We use r.Time, r.Level, and r.PC to preserve original metadata
-		newRecord := slog.NewRecord(r.Time, r.Level, newMsg, r.PC)
-
-		// Copy attributes from the original record
-		// We do NOT remove the 'component' attribute here because it might be needed in the structured payload
-		// (User explicitly said they see it in payload and presumably want to keep it there)
-		r.Attrs(func(a slog.Attr) bool {
-			newRecord.AddAttrs(a)
-			return true
-		})
-		r = newRecord
-	}
-
-	return h.Handler.Handle(ctx, r)
-}
-
 // InitLogger configures structured logging with Cloud Logging compatible keys
 // Logger chain: JSONHandler -> ComponentHandler -> SentryHandler
 func InitLogger() {
 	opts := GetSlogHandlerOptions(slog.LevelInfo)
 	jsonHandler := slog.NewJSONHandler(os.Stdout, opts)
-	compHandler := &ComponentHandler{Handler: jsonHandler}
+	compHandler := &infra.ComponentHandler{Handler: jsonHandler}
 	sentryHandler := sentryPkg.NewSentryHandler(compHandler)
 	logger := slog.New(sentryHandler)
 	slog.SetDefault(logger)
@@ -157,7 +98,7 @@ func NewLogger(serviceName string, isDev bool) *slog.Logger {
 
 	opts := GetSlogHandlerOptions(level)
 	jsonHandler := slog.NewJSONHandler(os.Stdout, opts)
-	compHandler := &ComponentHandler{Handler: jsonHandler}
+	compHandler := &infra.ComponentHandler{Handler: jsonHandler}
 	sentryHandler := sentryPkg.NewSentryHandler(compHandler)
 	return slog.New(sentryHandler).With("service", serviceName)
 }
@@ -166,48 +107,49 @@ func NewLogger(serviceName string, isDev bool) *slog.Logger {
 func NewService(ctx context.Context) (*Service, error) {
 	InitLogger()
 	cfg := LoadConfig()
+	logger := infra.NewLoggerWithComponent("bootstrap")
 
-	slog.Info("Initializing service", "project_id", cfg.ProjectID)
+	logger.Info(ctx, "Initializing service", "project_id", cfg.ProjectID)
 
 	// Firestore
 	fsClient, err := firestore.NewClient(ctx, cfg.ProjectID)
 	if err != nil {
-		slog.Error("Firestore init failed", "error", err)
+		logger.Error(ctx, "Firestore init failed", "error", err)
 		return nil, fmt.Errorf("firestore init: %w", err)
 	}
 
 	// Pub/Sub - always use real publisher
 	psClient, err := pubsub.NewClient(ctx, cfg.ProjectID)
 	if err != nil {
-		slog.Error("PubSub init failed", "error", err)
+		logger.Error(ctx, "PubSub init failed", "error", err)
 		return nil, fmt.Errorf("pubsub init: %w", err)
 	}
-	pubAdapter := &infrapubsub.PubSubAdapter{Client: psClient}
-	slog.Info("Pub/Sub initialized")
+	pubAdapter := &infrapubsub.PubSubAdapter{Client: psClient, Logger: logger}
+	logger.Info(ctx, "Pub/Sub initialized")
 
 	// Storage
 	gcsClient, err := storage.NewClient(ctx)
 	if err != nil {
-		slog.Error("Storage init failed", "error", err)
+		logger.Error(ctx, "Storage init failed", "error", err)
 		return nil, fmt.Errorf("storage init: %w", err)
 	}
 
 	// Firebase (for FCM and potentially other admin features)
 	fbApp, err := firebase.NewApp(ctx, &firebase.Config{ProjectID: cfg.ProjectID})
 	if err != nil {
-		slog.Error("Firebase App init failed", "error", err)
+		logger.Error(ctx, "Firebase App init failed", "error", err)
 		return nil, fmt.Errorf("firebase app init: %w", err)
 	}
 
-	fcmAdapter, err := notifications.NewFCMAdapter(ctx, fbApp, fsClient)
+	fcmAdapter, err := notifications.NewFCMAdapter(ctx, fbApp, fsClient, logger)
 	if err != nil {
-		slog.Warn("FCM initialization failed (notifications will be disabled)", "error", err)
+		logger.Warn(ctx, "FCM initialization failed (notifications will be disabled)", "error", err)
 	}
 
 	// Firebase Auth (for user display name lookup)
 	authClient, err := fbApp.Auth(ctx)
 	if err != nil {
-		slog.Warn("Firebase Auth initialization failed", "error", err)
+		logger.Warn(ctx, "Firebase Auth initialization failed", "error", err)
 	}
 
 	// Initialize Sentry
@@ -239,7 +181,7 @@ func NewService(ctx context.Context) (*Service, error) {
 		ProfilesSampleRate: tracesSampleRate,
 	}, slog.Default()); err != nil {
 		// Log but don't fail - Sentry is optional
-		slog.Warn("Sentry initialization failed", "error", err)
+		logger.Warn(ctx, "Sentry initialization failed", "error", err)
 	}
 
 	return &Service{

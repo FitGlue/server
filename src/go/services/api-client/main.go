@@ -96,7 +96,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer pubsubClient.Close()
-	publisher := &infraps.PubSubAdapter{Client: pubsubClient}
+	publisher := &infraps.PubSubAdapter{Client: pubsubClient, Logger: logger}
 
 	// Build API Gateway router
 	apiServer := server.NewAPIServer(

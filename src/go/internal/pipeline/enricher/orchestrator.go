@@ -381,7 +381,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 		// Execute
 		// TODO: Get logger from FrameworkContext when orchestrator is refactored
-		providerLogger := slog.Default().With("provider", provider.Name())
+		providerLogger := logger.With("provider", provider.Name())
 
 		var res *providers.EnrichmentResult
 		var err error
@@ -694,7 +694,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			enricherConfig["enriched_description"] = phase1Description // Phase 2 context injection
 
 			// Execute
-			providerLogger := slog.Default().With("provider", provider.Name(), "phase", "deferred")
+			providerLogger := logger.With("provider", provider.Name(), "phase", "deferred")
 			res, err := provider.Enrich(ctx, providerLogger, currentActivity, userRec, enricherConfig, doNotRetry)
 			duration := time.Since(startTime).Milliseconds()
 			pe.DurationMs = duration
@@ -784,7 +784,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	brandingApplied := false
 	// Run branding provider last (for non-paying users only)
 	if brandingProvider, ok := o.providersByName["branding"]; ok && tier.ShouldShowBranding(userRec) {
-		brandingLogger := slog.Default().With("provider", "branding")
+		brandingLogger := logger.With("provider", "branding")
 		brandingRes, err := brandingProvider.Enrich(ctx, brandingLogger, currentActivity, userRec, map[string]string{}, doNotRetry)
 		if err != nil {
 			logger.Warn("Branding provider failed", "error", err)

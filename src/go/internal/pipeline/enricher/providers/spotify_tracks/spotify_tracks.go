@@ -5,13 +5,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/fitglue/server/src/go/pkg/domain/user"
 	"io"
 	"log/slog"
 	"net/http"
 	"sort"
 	"time"
 
+	"github.com/fitglue/server/src/go/pkg/domain/user"
+
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/internal/pipeline/enricher/providers"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/infrastructure/oauth"
@@ -82,7 +84,7 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, logger *slog.Logge
 	// 3. Initialize OAuth HTTP Client if not provided (for testing)
 	if httpClient == nil {
 		tokenSource := oauth.NewFirestoreTokenSource(p.Service, user.UserId, "spotify")
-		httpClient = oauth.NewClientWithUsageTracking(tokenSource, p.Service, user.UserId, "spotify")
+		httpClient = oauth.NewClientWithUsageTracking(tokenSource, p.Service, user.UserId, "spotify", infra.WrapSlogLogger(logger))
 	}
 
 	// 4. Request Recently Played Tracks

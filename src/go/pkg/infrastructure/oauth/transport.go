@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 )
 
@@ -21,6 +22,9 @@ type Transport struct {
 	// Base is the base RoundTripper used to make the actual HTTP requests.
 	// If nil, http.DefaultTransport is used.
 	Base http.RoundTripper
+
+	// Logger for diagnostic output.
+	Logger infra.Logger
 }
 
 func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -52,7 +56,9 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 		// Drain body to allow connection reuse
 		resp.Body.Close()
 
-		slog.Warn("Got 401 Unauthorized, attempting force refresh", "url", req.URL.String())
+		if t.Logger != nil {
+			t.Logger.Warn(ctx, "Got 401 Unauthorized, attempting force refresh", "url", req.URL.String())
+		}
 
 		// Force Refresh
 		token, err = t.Source.ForceRefresh(ctx)
@@ -91,6 +97,7 @@ type UsageTrackingTransport struct {
 	Service  *bootstrap.Service
 	UserID   string
 	Provider string
+	Logger   infra.Logger
 }
 
 func (t *UsageTrackingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
@@ -115,7 +122,9 @@ func (t *UsageTrackingTransport) RoundTrip(req *http.Request) (*http.Response, e
 				},
 			})
 			if updateErr != nil {
-				slog.Warn("Failed to track usage", "provider", t.Provider, "user_id", t.UserID, "error", updateErr)
+				if t.Logger != nil {
+					t.Logger.Warn(ctx, "Failed to track usage", "provider", t.Provider, "user_id", t.UserID, "error", updateErr)
+				}
 			}
 		}()
 	}
@@ -191,15 +200,17 @@ func NewClientWithErrorLogging(logger *slog.Logger, provider string, timeout tim
 
 // NewClientWithUsageTracking creates an HTTP client that automatically handles OAuth,
 // tracks usage stats in Firestore, and logs HTTP error responses with their bodies.
-func NewClientWithUsageTracking(source TokenSource, service *bootstrap.Service, userID, provider string) *http.Client {
+func NewClientWithUsageTracking(source TokenSource, service *bootstrap.Service, userID, provider string, logger infra.Logger) *http.Client {
+	oauthLogger := logger.With("component", "oauth")
 	// Stack: Client → ErrorLogging → UsageTracking → OAuth → Network
-	oauthTransport := &Transport{Source: source}
+	oauthTransport := &Transport{Source: source, Logger: oauthLogger}
 
 	usageTransport := &UsageTrackingTransport{
 		Base:     oauthTransport,
 		Service:  service,
 		UserID:   userID,
 		Provider: provider,
+		Logger:   oauthLogger,
 	}
 
 	errorLoggingTransport := &ErrorLoggingTransport{

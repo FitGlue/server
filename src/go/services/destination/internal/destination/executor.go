@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log/slog"
 	"net/http"
 
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -117,16 +116,24 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		return nil
 	}
 
+	// Extract pipelineRunId early so failure-state writes can use it
+	var pipelineRunId string
+	if payload.PipelineExecutionId != nil {
+		pipelineRunId = *payload.PipelineExecutionId
+	}
+
 	// Fetch User Record
 	profileResp, err := e.userClient.GetProfile(ctx, &userpb.GetProfileRequest{UserId: payload.UserId})
 	if err != nil {
 		e.logger.Error(ctx, "Failed to fetch user profile", "error", err)
+		e.writeFailureForAllDestinations(ctx, &payload, pipelineRunId, fmt.Sprintf("Failed to fetch user profile: %v", err))
 		return fmt.Errorf("getting user profile: %w", err)
 	}
 
 	integrationsResp, err := e.userClient.ListIntegrations(ctx, &userpb.ListIntegrationsRequest{UserId: payload.UserId})
 	if err != nil {
 		e.logger.Error(ctx, "Failed to fetch user integrations", "error", err)
+		e.writeFailureForAllDestinations(ctx, &payload, pipelineRunId, fmt.Sprintf("Failed to fetch user integrations: %v", err))
 		return fmt.Errorf("getting user integrations: %w", err)
 	}
 
@@ -167,12 +174,7 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 
 	// Fetch the parent PipelineRun
 	var pr *pbpipeline.PipelineRun
-	var pipelineRunId string
-	if payload.PipelineExecutionId != nil {
-		pipelineRunId = *payload.PipelineExecutionId
-		// We could fetch the PR here from e.db if needed by uploaders (e.g. for Update logic)
-		// For now, we mainly need the ID for UpdateStatus
-	}
+	// pipelineRunId already extracted above for early failure writes
 
 	for _, destEnum := range payload.Destinations {
 		if destEnum == pbplugin.DestinationType_DESTINATION_UNSPECIFIED {
@@ -183,7 +185,7 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		if !ok {
 			e.logger.Warn(ctx, "No uploader registered for destination", "destination", destEnum.String())
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, slog.Default())
+				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", "Uploader not registered", payload.Name, payload.ActivityId, e.logger)
 			}
 			continue
 		}
@@ -203,18 +205,33 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		if uploadErr != nil {
 			e.logger.Error(ctx, "Destination uploader failed", "destination", destEnum.String(), "error", uploadErr)
 			if pipelineRunId != "" {
-				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, slog.Default())
+				destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, externalId, uploadErr.Error(), payload.Name, payload.ActivityId, e.logger)
 			}
 			continue
 		}
 
 		// Success
 		if pipelineRunId != "" {
-			destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, slog.Default())
+			destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS, externalId, "", payload.Name, payload.ActivityId, e.logger)
 		}
 
 		e.logger.Info(ctx, "Destination uploader completed successfully", "destination", destEnum.String())
 	}
 
 	return nil
+}
+
+// writeFailureForAllDestinations writes DESTINATION_STATUS_FAILED for every destination
+// in the payload. Used when a systemic error (e.g. user service 403) prevents any
+// uploader from running, so the user sees "failed" instead of "pending" forever.
+func (e *UploadExecutor) writeFailureForAllDestinations(ctx context.Context, payload *pbevents.EnrichedActivityEvent, pipelineRunId string, errMsg string) {
+	if pipelineRunId == "" {
+		return
+	}
+	for _, destEnum := range payload.Destinations {
+		if destEnum == pbplugin.DestinationType_DESTINATION_UNSPECIFIED {
+			continue
+		}
+		destination.UpdateStatus(ctx, e.db, e.notifications, payload.UserId, pipelineRunId, destEnum, pbpipeline.DestinationStatus_DESTINATION_STATUS_FAILED, "", errMsg, payload.Name, payload.ActivityId, e.logger)
+	}
 }

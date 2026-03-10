@@ -116,7 +116,7 @@ func main() {
 	}
 	defer pubsubClient.Close()
 
-	publisher := &infraps.PubSubAdapter{Client: pubsubClient}
+	publisher := &infraps.PubSubAdapter{Client: pubsubClient, Logger: logger}
 
 	// Instantiate Webhook Processor & Providers
 	processor := webhook.NewProcessor(userClient, publisher)

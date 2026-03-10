@@ -56,7 +56,7 @@ func main() {
 		log.Fatalf("failed to init pubsub: %v", err)
 	}
 	defer pubsubClient.Close()
-	pub := &infrapubsub.PubSubAdapter{Client: pubsubClient}
+	pub := &infrapubsub.PubSubAdapter{Client: pubsubClient, Logger: logger}
 
 	bucketName := os.Getenv("ARTIFACT_BUCKET")
 	if bucketName == "" {

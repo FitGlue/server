@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/api/strava"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
@@ -47,7 +48,7 @@ func (u *Uploader) Name() string {
 func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record) (string, error) {
 	// Initialize OAuth HTTP Client
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "strava")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "strava")
+	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "strava", infra.NewLogger())
 
 	// Get fit_file_uri from metadata, which is injected by executor
 	fitFileUri := ""
@@ -185,7 +186,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "strava")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "strava")
+	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "strava", infra.NewLogger())
 
 	getURL := fmt.Sprintf("https://www.strava.com/api/v3/activities/%s", stravaIDStr)
 	getReq, err := http.NewRequestWithContext(ctx, "GET", getURL, nil)

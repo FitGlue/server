@@ -18,16 +18,24 @@ type Logger interface {
 }
 
 // NewLogger creates a new default structured logger.
-// The handler chain is: JSONHandler → SentryHandler
+// The handler chain is: JSONHandler → ComponentHandler → SentryHandler
 // Error-level logs are automatically captured by Sentry (if initialized).
 func NewLogger() Logger {
 	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelInfo,
 	})
-	sentryHandler := sentryPkg.NewSentryHandler(jsonHandler)
+	compHandler := &ComponentHandler{Handler: jsonHandler}
+	sentryHandler := sentryPkg.NewSentryHandler(compHandler)
 	return &slogger{
 		logger: slog.New(sentryHandler),
 	}
+}
+
+// NewLoggerWithComponent creates a structured logger with a named component.
+// The component name is prepended as [component] in log messages via ComponentHandler.
+func NewLoggerWithComponent(component string) Logger {
+	l := NewLogger()
+	return l.With("component", component)
 }
 
 type slogger struct {
@@ -54,4 +62,11 @@ func (l *slogger) With(args ...any) Logger {
 	return &slogger{
 		logger: l.logger.With(args...),
 	}
+}
+
+// WrapSlogLogger wraps an existing *slog.Logger as an infra.Logger.
+// Use this to bridge code that receives *slog.Logger (e.g., enricher providers)
+// into functions that require infra.Logger (e.g., NewClientWithUsageTracking).
+func WrapSlogLogger(l *slog.Logger) Logger {
+	return &slogger{logger: l}
 }

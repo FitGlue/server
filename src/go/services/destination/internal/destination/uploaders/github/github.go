@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
@@ -84,7 +85,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "github")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "github")
+	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "github", infra.NewLogger())
 	logger := slog.Default()
 
 	ghClient, err := ghclient.NewClientWithResponses("https://api.github.com",
@@ -168,7 +169,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "github")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "github")
+	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "github", infra.NewLogger())
 	logger := slog.Default()
 
 	ghClient, err := ghclient.NewClientWithResponses("https://api.github.com",

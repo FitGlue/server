@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/pkg/bootstrap"
 	"github.com/fitglue/server/src/go/pkg/description"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
@@ -49,7 +50,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 
 	athleteID := userRec.Integrations.Trainingpeaks.AthleteId
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "trainingpeaks")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "trainingpeaks")
+	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "trainingpeaks", infra.NewLogger())
 	logger := slog.Default()
 
 	workout := buildTrainingPeaksWorkout(payload)
@@ -137,7 +138,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "trainingpeaks")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "trainingpeaks")
+	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "trainingpeaks", infra.NewLogger())
 
 	if err := u.updateTrainingPeaksWorkout(ctx, httpClient, athleteID, workoutIDStr, updatePayload, logger); err != nil {
 		return fmt.Errorf("failed to update TrainingPeaks workout: %w", err)

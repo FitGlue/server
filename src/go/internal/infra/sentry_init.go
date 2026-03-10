@@ -1,6 +1,7 @@
 package infra
 
 import (
+	"context"
 	"log/slog"
 	"os"
 
@@ -32,6 +33,8 @@ func InitSentry() {
 		tracesSampleRate = 1.0
 	}
 
+	logger := NewLoggerWithComponent("sentry")
+
 	if err := sentryPkg.Init(sentryPkg.Config{
 		DSN:                dsn,
 		Environment:        environment,
@@ -40,6 +43,6 @@ func InitSentry() {
 		TracesSampleRate:   tracesSampleRate,
 		ProfilesSampleRate: tracesSampleRate,
 	}, slog.Default()); err != nil {
-		slog.Warn("Sentry initialization failed", "error", err)
+		logger.Warn(context.Background(), "Sentry initialization failed", "error", err)
 	}
 }

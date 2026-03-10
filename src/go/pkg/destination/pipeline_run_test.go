@@ -9,9 +9,10 @@ import (
 
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 
+	"github.com/fitglue/server/src/go/internal/infra"
+
 	"context"
 	"fmt"
-	"log/slog"
 	"strings"
 	"testing"
 )
@@ -144,7 +145,7 @@ func TestUpdateStatus_SendsNotificationOnSynced(t *testing.T) {
 			}, nil
 		},
 	}
-	logger := slog.Default()
+	logger := infra.NewLogger()
 
 	// When Hevy also succeeds → all complete → SYNCED → notification should fire
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
@@ -183,7 +184,7 @@ func TestUpdateStatus_SendsNotificationOnPartial(t *testing.T) {
 			}, nil
 		},
 	}
-	logger := slog.Default()
+	logger := infra.NewLogger()
 
 	// When Hevy fails → PARTIAL → notification should fire with failure info
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
@@ -220,7 +221,7 @@ func TestUpdateStatus_NoNotificationWhileRunning(t *testing.T) {
 			}, nil
 		},
 	}
-	logger := slog.Default()
+	logger := infra.NewLogger()
 
 	// Only Hevy completes — Strava still pending → RUNNING → no notification
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
@@ -248,7 +249,7 @@ func TestUpdateStatus_NoNotificationWhenPrefsDisabled(t *testing.T) {
 			}, nil
 		},
 	}
-	logger := slog.Default()
+	logger := infra.NewLogger()
 
 	UpdateStatus(context.Background(), db, notifications, "user1", "run1",
 		pbplugin.DestinationType_DESTINATION_STRAVA, pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS,
@@ -270,7 +271,7 @@ func TestUpdateStatus_NilNotificationService(t *testing.T) {
 			}, nil
 		},
 	}
-	logger := slog.Default()
+	logger := infra.NewLogger()
 
 	// Should not panic with nil notifications
 	UpdateStatus(context.Background(), db, nil, "user1", "run1",
@@ -281,7 +282,7 @@ func TestUpdateStatus_NilNotificationService(t *testing.T) {
 func TestUpdateStatus_NoPipelineRunId(t *testing.T) {
 	notifications := &MockNotifications{}
 	db := &MockDatabase{}
-	logger := slog.Default()
+	logger := infra.NewLogger()
 
 	// Empty pipelineRunId → early return (legacy flow)
 	UpdateStatus(context.Background(), db, notifications, "user1", "",
