@@ -778,6 +778,10 @@ func FirestoreToPersonalRecord(m map[string]interface{}) *pbuser.PersonalRecord 
 			r.ActivityType = pbactivity.ActivityType(int32(val))
 		case float64:
 			r.ActivityType = pbactivity.ActivityType(int32(val))
+		case string:
+			if enumVal, ok := pbactivity.ActivityType_value[val]; ok {
+				r.ActivityType = pbactivity.ActivityType(enumVal)
+			}
 		}
 	}
 
@@ -850,7 +854,6 @@ func FirestoreToPendingInput(m map[string]interface{}) *pbpipeline.PendingInput 
 	p := &pbpipeline.PendingInput{
 		ActivityId: getString(m, "activity_id"),
 		UserId:     getString(m, "user_id"),
-		Status:     pbpipeline.PendingInput_Status(m["status"].(int64)),
 		RequiredFields: func() []string {
 			if v, ok := m["required_fields"].([]string); ok {
 				return v
@@ -897,6 +900,10 @@ func FirestoreToPendingInput(m map[string]interface{}) *pbpipeline.PendingInput 
 			p.Status = pbpipeline.PendingInput_Status(n)
 		case int:
 			p.Status = pbpipeline.PendingInput_Status(int32(n))
+		case string:
+			if enumVal, ok := pbpipeline.PendingInput_Status_value[n]; ok {
+				p.Status = pbpipeline.PendingInput_Status(enumVal)
+			}
 		}
 	}
 
@@ -979,6 +986,10 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 			s.ActivityType = pbactivity.ActivityType(int32(val))
 		case float64:
 			s.ActivityType = pbactivity.ActivityType(int32(val))
+		case string:
+			if enumVal, ok := pbactivity.ActivityType_value[val]; ok {
+				s.ActivityType = pbactivity.ActivityType(enumVal)
+			}
 		}
 	}
 
@@ -991,6 +1002,10 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 			s.Source = pbactivity.ActivitySource(int32(val))
 		case float64:
 			s.Source = pbactivity.ActivitySource(int32(val))
+		case string:
+			if enumVal, ok := pbactivity.ActivitySource_value[val]; ok {
+				s.Source = pbactivity.ActivitySource(enumVal)
+			}
 		}
 	}
 
@@ -1092,6 +1107,10 @@ func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pbactivity.Showc
 			e.ActivityType = pbactivity.ActivityType(val)
 		case float64:
 			e.ActivityType = pbactivity.ActivityType(int32(val))
+		case string:
+			if enumVal, ok := pbactivity.ActivityType_value[val]; ok {
+				e.ActivityType = pbactivity.ActivityType(enumVal)
+			}
 		}
 	}
 
@@ -1102,6 +1121,10 @@ func FirestoreToShowcaseProfileEntry(m map[string]interface{}) *pbactivity.Showc
 			e.Source = pbactivity.ActivitySource(val)
 		case float64:
 			e.Source = pbactivity.ActivitySource(int32(val))
+		case string:
+			if enumVal, ok := pbactivity.ActivitySource_value[val]; ok {
+				e.Source = pbactivity.ActivitySource(enumVal)
+			}
 		}
 	}
 
@@ -1351,6 +1374,10 @@ func FirestoreToUploadedActivity(m map[string]interface{}) *pbactivity.UploadedA
 			r.Source = pbactivity.ActivitySource(int32(val))
 		case float64:
 			r.Source = pbactivity.ActivitySource(int32(val))
+		case string:
+			if enumVal, ok := pbactivity.ActivitySource_value[val]; ok {
+				r.Source = pbactivity.ActivitySource(enumVal)
+			}
 		}
 	}
 
@@ -1363,6 +1390,16 @@ func FirestoreToUploadedActivity(m map[string]interface{}) *pbactivity.UploadedA
 			r.Destination = pbplugin.DestinationType(int32(val))
 		case float64:
 			r.Destination = pbplugin.DestinationType(int32(val))
+		case string:
+			upper := strings.ToUpper(val)
+			if enumVal, ok := pbplugin.DestinationType_value[upper]; ok {
+				r.Destination = pbplugin.DestinationType(enumVal)
+			} else {
+				prefixed := "DESTINATION_" + upper
+				if enumVal, ok := pbplugin.DestinationType_value[prefixed]; ok {
+					r.Destination = pbplugin.DestinationType(enumVal)
+				}
+			}
 		}
 	}
 
@@ -1478,6 +1515,10 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pbpipeline.PipelineRun {
 			p.Type = pbactivity.ActivityType(int32(val))
 		case float64:
 			p.Type = pbactivity.ActivityType(int32(val))
+		case string:
+			if enumVal, ok := pbactivity.ActivityType_value[val]; ok {
+				p.Type = pbactivity.ActivityType(enumVal)
+			}
 		}
 	}
 
@@ -1490,6 +1531,10 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pbpipeline.PipelineRun {
 			p.Status = pbpipeline.PipelineRunStatus(int32(val))
 		case float64:
 			p.Status = pbpipeline.PipelineRunStatus(int32(val))
+		case string:
+			if enumVal, ok := pbpipeline.PipelineRunStatus_value[val]; ok {
+				p.Status = pbpipeline.PipelineRunStatus(enumVal)
+			}
 		}
 	}
 
@@ -1544,6 +1589,16 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pbpipeline.PipelineRun {
 						dest.Destination = pbplugin.DestinationType(int32(val))
 					case float64:
 						dest.Destination = pbplugin.DestinationType(int32(val))
+					case string:
+						upper := strings.ToUpper(val)
+						if enumVal, ok := pbplugin.DestinationType_value[upper]; ok {
+							dest.Destination = pbplugin.DestinationType(enumVal)
+						} else {
+							prefixed := "DESTINATION_" + upper
+							if enumVal, ok := pbplugin.DestinationType_value[prefixed]; ok {
+								dest.Destination = pbplugin.DestinationType(enumVal)
+							}
+						}
 					}
 				}
 				if v, ok := dMap["status"]; ok {
@@ -1554,6 +1609,10 @@ func FirestoreToPipelineRun(m map[string]interface{}) *pbpipeline.PipelineRun {
 						dest.Status = pbpipeline.DestinationStatus(int32(val))
 					case float64:
 						dest.Status = pbpipeline.DestinationStatus(int32(val))
+					case string:
+						if enumVal, ok := pbpipeline.DestinationStatus_value[val]; ok {
+							dest.Status = pbpipeline.DestinationStatus(enumVal)
+						}
 					}
 				}
 				p.Destinations[i] = dest

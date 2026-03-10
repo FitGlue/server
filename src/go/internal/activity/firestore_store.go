@@ -365,7 +365,7 @@ func (s *FirestoreStore) CountShowcasedActivities(ctx context.Context, userID st
 
 // Helpers
 func encodeProtoMap(msg protoreflect.ProtoMessage) (map[string]interface{}, error) {
-	b, err := protojson.MarshalOptions{EmitUnpopulated: false}.Marshal(msg)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: false, UseProtoNames: true}.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}

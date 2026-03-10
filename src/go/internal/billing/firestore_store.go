@@ -46,7 +46,7 @@ func (s *FirestoreStore) GetSubscription(ctx context.Context, userID string) (*p
 }
 
 func (s *FirestoreStore) UpsertSubscription(ctx context.Context, sub *pbuser.SubscriptionState) error {
-	b, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(sub)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseProtoNames: true}.Marshal(sub)
 	if err != nil {
 		return err
 	}

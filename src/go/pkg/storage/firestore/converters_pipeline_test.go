@@ -3,6 +3,7 @@ package firestore
 import (
 	"testing"
 
+	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 )
@@ -239,5 +240,139 @@ func TestFirestoreToPipeline_RoundTrip(t *testing.T) {
 		if d != original.Destinations[i] {
 			t.Errorf("Destination[%d] mismatch: %v vs %v", i, d, original.Destinations[i])
 		}
+	}
+}
+
+// --- PipelineRun string enum tests ---
+
+func TestFirestoreToPipelineRun_StringEnums(t *testing.T) {
+	m := map[string]interface{}{
+		"id":          "run-1",
+		"pipeline_id": "pipe-1",
+		"activity_id": "act-1",
+		"source":      "SOURCE_HEVY",
+		"title":       "Morning Run",
+		"type":        "ACTIVITY_TYPE_RUN",
+		"status":      "PIPELINE_RUN_STATUS_SYNCED",
+		"destinations": []interface{}{
+			map[string]interface{}{
+				"destination": "DESTINATION_STRAVA",
+				"status":      "DESTINATION_STATUS_SUCCESS",
+				"external_id": "ext-1",
+			},
+		},
+	}
+
+	run := FirestoreToPipelineRun(m)
+
+	if run.Type != pbactivity.ActivityType_ACTIVITY_TYPE_RUN {
+		t.Errorf("Expected ACTIVITY_TYPE_RUN, got %v", run.Type)
+	}
+	if run.Status != pbpipeline.PipelineRunStatus_PIPELINE_RUN_STATUS_SYNCED {
+		t.Errorf("Expected PIPELINE_RUN_STATUS_SYNCED, got %v", run.Status)
+	}
+	if len(run.Destinations) != 1 {
+		t.Fatalf("Expected 1 destination, got %d", len(run.Destinations))
+	}
+	if run.Destinations[0].Destination != pbplugin.DestinationType_DESTINATION_STRAVA {
+		t.Errorf("Expected DESTINATION_STRAVA, got %v", run.Destinations[0].Destination)
+	}
+	if run.Destinations[0].Status != pbpipeline.DestinationStatus_DESTINATION_STATUS_SUCCESS {
+		t.Errorf("Expected DESTINATION_STATUS_SUCCESS, got %v", run.Destinations[0].Status)
+	}
+}
+
+// --- ShowcasedActivity string enum tests ---
+
+func TestFirestoreToShowcasedActivity_StringEnums(t *testing.T) {
+	m := map[string]interface{}{
+		"showcase_id":   "sc-1",
+		"activity_id":   "act-1",
+		"user_id":       "user-1",
+		"title":         "Test Showcase",
+		"activity_type": "ACTIVITY_TYPE_RIDE",
+		"source":        "SOURCE_STRAVA",
+	}
+
+	s := FirestoreToShowcasedActivity(m)
+
+	if s.ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_RIDE {
+		t.Errorf("Expected ACTIVITY_TYPE_RIDE, got %v", s.ActivityType)
+	}
+	if s.Source != pbactivity.ActivitySource_SOURCE_STRAVA {
+		t.Errorf("Expected SOURCE_STRAVA, got %v", s.Source)
+	}
+}
+
+// --- PendingInput string enum tests ---
+
+func TestFirestoreToPendingInput_StringStatus(t *testing.T) {
+	m := map[string]interface{}{
+		"activity_id": "act-1",
+		"status":      "STATUS_WAITING",
+	}
+
+	p := FirestoreToPendingInput(m)
+
+	if p.Status != pbpipeline.PendingInput_STATUS_WAITING {
+		t.Errorf("Expected STATUS_WAITING, got %v", p.Status)
+	}
+}
+
+// --- PersonalRecord string enum tests ---
+
+func TestFirestoreToPersonalRecord_StringActivityType(t *testing.T) {
+	m := map[string]interface{}{
+		"record_type":   "fastest_5k",
+		"value":         float64(1200),
+		"unit":          "seconds",
+		"activity_type": "ACTIVITY_TYPE_RUN",
+	}
+
+	r := FirestoreToPersonalRecord(m)
+
+	if r.ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_RUN {
+		t.Errorf("Expected ACTIVITY_TYPE_RUN, got %v", r.ActivityType)
+	}
+}
+
+// --- UploadedActivity string enum tests ---
+
+func TestFirestoreToUploadedActivity_StringEnums(t *testing.T) {
+	m := map[string]interface{}{
+		"id":          "up-1",
+		"user_id":     "user-1",
+		"source":      "SOURCE_HEVY",
+		"destination": "DESTINATION_SHOWCASE",
+		"external_id": "ext-1",
+	}
+
+	r := FirestoreToUploadedActivity(m)
+
+	if r.Source != pbactivity.ActivitySource_SOURCE_HEVY {
+		t.Errorf("Expected SOURCE_HEVY, got %v", r.Source)
+	}
+	if r.Destination != pbplugin.DestinationType_DESTINATION_SHOWCASE {
+		t.Errorf("Expected DESTINATION_SHOWCASE, got %v", r.Destination)
+	}
+}
+
+// --- ShowcaseProfileEntry string enum tests ---
+
+func TestFirestoreToShowcaseProfileEntry_StringEnums(t *testing.T) {
+	m := map[string]interface{}{
+		"showcase_id":   "sc-1",
+		"title":         "Test Entry",
+		"activity_type": "ACTIVITY_TYPE_WEIGHT_TRAINING",
+		"source":        "SOURCE_HEVY",
+	}
+
+	e := FirestoreToShowcaseProfileEntry(m)
+
+	if e.ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING {
+		t.Errorf("Expected ACTIVITY_TYPE_WEIGHT_TRAINING, got %v", e.ActivityType)
+	}
+	if e.Source != pbactivity.ActivitySource_SOURCE_HEVY {
+		t.Errorf("Expected SOURCE_HEVY, got %v", e.Source)
 	}
 }

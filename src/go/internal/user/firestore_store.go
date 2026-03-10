@@ -418,7 +418,7 @@ func (s *FirestoreStore) UpdateNotificationPrefs(ctx context.Context, userID str
 	}
 
 	// Because prefs is a protobuf message, we can convert it to JSON or map
-	b, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(prefs)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseProtoNames: true}.Marshal(prefs)
 	if err != nil {
 		return err
 	}
@@ -541,7 +541,7 @@ func (s *FirestoreStore) SetPersonalRecord(ctx context.Context, userID, recordTy
 		return errors.New("record cannot be nil")
 	}
 
-	b, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(record)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseProtoNames: true}.Marshal(record)
 	if err != nil {
 		return err
 	}
@@ -626,7 +626,7 @@ func (s *FirestoreStore) CreateUser(ctx context.Context, userID string) (*pbuser
 
 	docRef := s.client.Collection("users").Doc(userID)
 
-	b, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(profile)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseProtoNames: true}.Marshal(profile)
 	if err != nil {
 		return nil, err
 	}
