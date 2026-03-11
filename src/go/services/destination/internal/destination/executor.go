@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
@@ -157,6 +158,14 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 	metadata["strava_sport_type"] = activity.GetStravaActivityType(payload.ActivityType)
 	metadata["activity_type"] = payload.ActivityType.String()
 
+	// Inject applied enrichments and tags (comma-separated for metadata map)
+	if len(payload.AppliedEnrichments) > 0 {
+		metadata["applied_enrichments"] = strings.Join(payload.AppliedEnrichments, ",")
+	}
+	if len(payload.Tags) > 0 {
+		metadata["tags"] = strings.Join(payload.Tags, ",")
+	}
+
 	// Construct generic ActivityPayload for Destination Uploaders
 	activityPayload := &pbevents.ActivityPayload{
 		Source:               payload.Source,
@@ -165,6 +174,7 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		StandardizedActivity: payload.ActivityData, // Map ActivityData -> StandardizedActivity
 		OriginalPayloadJson:  "",
 		Metadata:             metadata, // Injected Metadata
+		PipelineExecutionId:  payload.PipelineExecutionId,
 	}
 
 	isUpdate := false

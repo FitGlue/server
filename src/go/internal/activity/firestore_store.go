@@ -244,10 +244,10 @@ func (s *FirestoreStore) UpdateShowcaseSlug(ctx context.Context, userID, slug st
 		}
 	}
 
-	// Update the showcase profile's slug
-	_, err = s.client.Collection("users").Doc(userID).Collection("settings").Doc("showcase_profile").Update(ctx, []firestore.Update{
-		{Path: "slug", Value: slug},
-	})
+	// Set the showcase profile's slug (create-or-update safe via MergeAll)
+	_, err = s.client.Collection("users").Doc(userID).Collection("settings").Doc("showcase_profile").Set(ctx, map[string]interface{}{
+		"slug": slug,
+	}, firestore.MergeAll)
 	if err != nil {
 		return err
 	}
