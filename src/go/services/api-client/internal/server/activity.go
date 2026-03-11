@@ -364,11 +364,13 @@ func (s *APIServer) handleUpdateShowcaseSettings(w http.ResponseWriter, r *http.
 		return
 	}
 
-	var reqBody activitypb.UpdateShowcaseSettingsRequest
-	if err := decodeProto(r, &reqBody); err != nil {
+	var settings pbactivitym.ShowcaseProfile
+	if err := decodeProto(r, &settings); err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "invalid request body"))
 		return
 	}
+	var reqBody activitypb.UpdateShowcaseSettingsRequest
+	reqBody.Settings = &settings
 	reqBody.UserId = token.UID
 
 	res, err := s.activitySvc.UpdateShowcaseSettings(r.Context(), &reqBody)
