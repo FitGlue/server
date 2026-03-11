@@ -29,6 +29,10 @@ type MockActivityStore struct {
 	ListShowcasedActivitiesByUserFunc func(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
 	CountPipelineRunsByStatusFunc     func(ctx context.Context, userID, status string) (int32, error)
 	CountShowcasedActivitiesFunc      func(ctx context.Context, userID string) (int32, error)
+
+	ListShowcaseProfileEntriesFunc func(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
+	SetShowcaseProfileEntryFunc    func(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
+	DeleteShowcaseProfileEntryFunc func(ctx context.Context, userID, showcaseID string) error
 }
 
 func (m *MockActivityStore) GetPipelineRun(ctx context.Context, userID, runID string) (*pbpipeline.PipelineRun, error) {
@@ -141,6 +145,27 @@ func (m *MockActivityStore) CountShowcasedActivities(ctx context.Context, userID
 		return m.CountShowcasedActivitiesFunc(ctx, userID)
 	}
 	return 0, nil
+}
+
+func (m *MockActivityStore) ListShowcaseProfileEntries(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error) {
+	if m.ListShowcaseProfileEntriesFunc != nil {
+		return m.ListShowcaseProfileEntriesFunc(ctx, userID)
+	}
+	return nil, nil
+}
+
+func (m *MockActivityStore) SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error {
+	if m.SetShowcaseProfileEntryFunc != nil {
+		return m.SetShowcaseProfileEntryFunc(ctx, userID, entry)
+	}
+	return nil
+}
+
+func (m *MockActivityStore) DeleteShowcaseProfileEntry(ctx context.Context, userID, showcaseID string) error {
+	if m.DeleteShowcaseProfileEntryFunc != nil {
+		return m.DeleteShowcaseProfileEntryFunc(ctx, userID, showcaseID)
+	}
+	return nil
 }
 
 // MockBlobStore implements BlobStore for testing

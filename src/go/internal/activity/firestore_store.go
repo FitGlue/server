@@ -197,7 +197,7 @@ func (s *FirestoreStore) UpdateShowcasePreferences(ctx context.Context, userID s
 	if err != nil {
 		return nil, err
 	}
-	_, err = s.client.Collection("users").Doc(userID).Collection("settings").Doc("showcase_profile").Set(ctx, data)
+	_, err = s.client.Collection("users").Doc(userID).Collection("settings").Doc("showcase_profile").Set(ctx, data, firestore.MergeAll)
 	return prefs, err
 }
 
@@ -361,6 +361,49 @@ func (s *FirestoreStore) CountShowcasedActivities(ctx context.Context, userID st
 		return int32(intVal), nil
 	}
 	return 0, nil
+}
+
+// entryCollectionRef returns the sub-collection ref for showcase profile entries.
+func (s *FirestoreStore) entryCollectionRef(userID string) *firestore.CollectionRef {
+	return s.client.Collection("users").Doc(userID).Collection("showcase_profile_entries")
+}
+
+func (s *FirestoreStore) ListShowcaseProfileEntries(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error) {
+	iter := s.entryCollectionRef(userID).
+		OrderBy("start_time", firestore.Desc).
+		Documents(ctx)
+	defer iter.Stop()
+
+	var entries []*pbactivity.ShowcaseProfileEntry
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		var entry pbactivity.ShowcaseProfileEntry
+		if err := decodeProtoMap(doc.Data(), &entry); err != nil {
+			return nil, err
+		}
+		entries = append(entries, &entry)
+	}
+	return entries, nil
+}
+
+func (s *FirestoreStore) SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error {
+	data, err := encodeProtoMap(entry)
+	if err != nil {
+		return err
+	}
+	_, err = s.entryCollectionRef(userID).Doc(entry.ShowcaseId).Set(ctx, data, firestore.MergeAll)
+	return err
+}
+
+func (s *FirestoreStore) DeleteShowcaseProfileEntry(ctx context.Context, userID, showcaseID string) error {
+	_, err := s.entryCollectionRef(userID).Doc(showcaseID).Delete(ctx)
+	return err
 }
 
 // Helpers

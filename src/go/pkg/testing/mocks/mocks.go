@@ -179,6 +179,11 @@ func (m *MockDatabase) DeleteShowcaseProfile(ctx context.Context, slug string) e
 	return nil
 }
 
+func (m *MockDatabase) SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error {
+	// No-op for tests by default
+	return nil
+}
+
 // --- Personal Records ---
 
 func (m *MockDatabase) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pbuser.PersonalRecord, error) {

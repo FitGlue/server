@@ -116,6 +116,15 @@ func (c *Client) ShowcaseProfiles() *Collection[pbactivity.ShowcaseProfile] {
 	}
 }
 
+// ShowcaseProfileEntries is a user sub-collection: users/{uid}/showcase_profile_entries/{showcaseId}
+func (c *Client) ShowcaseProfileEntries(userID string) *Collection[pbactivity.ShowcaseProfileEntry] {
+	return &Collection[pbactivity.ShowcaseProfileEntry]{
+		Ref:           c.fs.Collection("users").Doc(userID).Collection("showcase_profile_entries"),
+		ToFirestore:   ShowcaseProfileEntryToFirestore,
+		FromFirestore: FirestoreToShowcaseProfileEntry,
+	}
+}
+
 // UploadedActivities are sub-collections of Users: users/{uid}/uploaded_activities/{id}
 // Used for loop prevention to track activities we've posted to destinations
 func (c *Client) UploadedActivities(userId string) *Collection[pbactivity.UploadedActivityRecord] {

@@ -3,6 +3,7 @@ package activity
 import (
 	"context"
 	"fmt"
+	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
@@ -127,41 +128,57 @@ func (s *Service) DeleteShowcase(ctx context.Context, req *pbsvc.DeleteShowcaseR
 	return &emptypb.Empty{}, nil
 }
 
+// ensureShowcaseProfile retrieves the user's showcase profile, creating and
+// persisting a default one if none exists. This guarantees the Firestore
+// document is present so subsequent MergeAll updates are always safe.
+func (s *Service) ensureShowcaseProfile(ctx context.Context, userID string) (*pbactivity.ShowcaseProfile, error) {
+	profile, err := s.store.GetShowcasePreferences(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if profile == nil {
+		profile = &pbactivity.ShowcaseProfile{
+			UserId:   userID,
+			Subtitle: fmt.Sprintf("Joined %d", time.Now().Year()),
+			Bio:      "Check out my FitGlue activities",
+			Visible:  false,
+		}
+		if _, err := s.store.UpdateShowcasePreferences(ctx, userID, profile); err != nil {
+			s.logger.Error(ctx, "failed to create default showcase profile", "error", err)
+			// Non-fatal: return the in-memory default even if persist fails
+		}
+	}
+
+	return profile, nil
+}
+
 // GetShowcasePreferences retrieves a user's showcase profile settings and historical aggregates
 func (s *Service) GetShowcasePreferences(ctx context.Context, req *pbsvc.GetShowcasePreferencesRequest) (*pbactivity.ShowcaseProfile, error) {
 	if req.UserId == "" {
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	prefs, err := s.store.GetShowcasePreferences(ctx, req.UserId)
+	profile, err := s.ensureShowcaseProfile(ctx, req.UserId)
 	if err != nil {
 		s.logger.Error(ctx, "failed to get showcase preferences", "error", err)
 		return nil, status.Error(codes.Internal, "failed to get showcase preferences")
 	}
 
-	if prefs == nil {
-		return &pbactivity.ShowcaseProfile{UserId: req.UserId}, nil
-	}
-
-	return prefs, nil
+	return profile, nil
 }
 
-// UpdateShowcasePreferences updates a user's showcase profile settings
+// UpdateShowcasePreferences updates a user's showcase profile settings.
+// Delegates to UpdateShowcaseSettings to avoid code duplication.
 func (s *Service) UpdateShowcasePreferences(ctx context.Context, req *pbsvc.UpdateShowcasePreferencesRequest) (*pbactivity.ShowcaseProfile, error) {
 	if req.UserId == "" || req.Preferences == nil {
 		return nil, status.Error(codes.InvalidArgument, "user_id and preferences are required")
 	}
 
-	// Make sure the User ID matches
-	req.Preferences.UserId = req.UserId
-
-	updated, err := s.store.UpdateShowcasePreferences(ctx, req.UserId, req.Preferences)
-	if err != nil {
-		s.logger.Error(ctx, "failed to update showcase preferences", "error", err)
-		return nil, status.Error(codes.Internal, "failed to update showcase preferences")
-	}
-
-	return updated, nil
+	return s.UpdateShowcaseSettings(ctx, &pbsvc.UpdateShowcaseSettingsRequest{
+		UserId:   req.UserId,
+		Settings: req.Preferences,
+	})
 }
 
 // GenerateShowcaseImages sends a generation request (e.g., via Pub/Sub or synchronous generation)

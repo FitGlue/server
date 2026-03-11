@@ -106,6 +106,9 @@ func (m *MockDB) GetShowcaseProfileByUserId(ctx context.Context, userId string) 
 func (m *MockDB) DeleteShowcaseProfile(ctx context.Context, slug string) error {
 	return nil
 }
+func (m *MockDB) SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error {
+	return nil
+}
 func (m *MockDB) GetPersonalRecord(ctx context.Context, userId string, recordType string) (*pbuser.PersonalRecord, error) {
 	return nil, nil
 }

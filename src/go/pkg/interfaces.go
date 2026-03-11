@@ -65,6 +65,9 @@ type Database interface {
 	GetShowcaseProfileByUserId(ctx context.Context, userId string) (*pbactivity.ShowcaseProfile, error)
 	DeleteShowcaseProfile(ctx context.Context, slug string) error
 
+	// Showcase Profile Entries (user sub-collection)
+	SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
+
 	// Uploaded Activities (for loop prevention - tracks what we've posted to destinations)
 	SetUploadedActivity(ctx context.Context, userId string, record *pbactivity.UploadedActivityRecord) error
 	GetUploadedActivity(ctx context.Context, userId string, destination pbplugin.DestinationType, destinationId string) (*pbactivity.UploadedActivityRecord, error)

@@ -25,16 +25,10 @@ func (s *Service) GetShowcaseSettings(ctx context.Context, req *pbsvc.GetShowcas
 		return nil, status.Error(codes.InvalidArgument, "user_id is required")
 	}
 
-	profile, err := s.store.GetShowcasePreferences(ctx, req.UserId)
+	profile, err := s.ensureShowcaseProfile(ctx, req.UserId)
 	if err != nil {
 		s.logger.Error(ctx, "failed to get showcase profile", "error", err)
 		return nil, status.Error(codes.Internal, "failed to get showcase settings")
-	}
-
-	if profile == nil {
-		profile = &pbactivity.ShowcaseProfile{
-			UserId: req.UserId,
-		}
 	}
 
 	// Fetch showcased activities to build the entries list
@@ -44,9 +38,16 @@ func (s *Service) GetShowcaseSettings(ctx context.Context, req *pbsvc.GetShowcas
 		return nil, status.Error(codes.Internal, "failed to list showcases")
 	}
 
+	// Read profile entries from sub-collection
+	profileEntries, err := s.store.ListShowcaseProfileEntries(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to list showcase profile entries", "error", err)
+		return nil, status.Error(codes.Internal, "failed to list profile entries")
+	}
+
 	// Build ShowcaseActivityEntry list with in_profile flags
 	profileEntryIDs := make(map[string]bool)
-	for _, entry := range profile.Entries {
+	for _, entry := range profileEntries {
 		profileEntryIDs[entry.ShowcaseId] = true
 	}
 
@@ -128,27 +129,7 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		return nil, status.Error(codes.NotFound, "showcase not found")
 	}
 
-	// Get current profile
-	profile, err := s.store.GetShowcasePreferences(ctx, req.UserId)
-	if err != nil {
-		s.logger.Error(ctx, "failed to get showcase profile", "error", err)
-		return nil, status.Error(codes.Internal, "failed to read profile")
-	}
-
-	if profile == nil {
-		profile = &pbactivity.ShowcaseProfile{
-			UserId: req.UserId,
-		}
-	}
-
-	// Check if already in entries
-	for _, entry := range profile.Entries {
-		if entry.ShowcaseId == req.ShowcaseId {
-			return &emptypb.Empty{}, nil // Already added, idempotent
-		}
-	}
-
-	// Build the new entry from the showcase metadata
+	// Build the entry from showcase metadata
 	newEntry := &pbactivity.ShowcaseProfileEntry{
 		ShowcaseId:   req.ShowcaseId,
 		Title:        showcase.Title,
@@ -157,11 +138,32 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		StartTime:    showcase.StartTime,
 	}
 
-	profile.Entries = append(profile.Entries, newEntry)
+	// Write entry to sub-collection (idempotent via MergeAll)
+	if err := s.store.SetShowcaseProfileEntry(ctx, req.UserId, newEntry); err != nil {
+		s.logger.Error(ctx, "failed to set showcase profile entry", "error", err)
+		return nil, status.Error(codes.Internal, "failed to add entry")
+	}
+
+	// Delta update: increment profile stats
+	profile, err := s.ensureShowcaseProfile(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get showcase profile for stats update", "error", err)
+		return &emptypb.Empty{}, nil // Entry saved, stats update is best-effort
+	}
+
+	profile.TotalActivities++
+	profile.TotalDistanceMeters += newEntry.DistanceMeters
+	profile.TotalDurationSeconds += newEntry.DurationSeconds
+	profile.TotalSets += newEntry.TotalSets
+	profile.TotalReps += newEntry.TotalReps
+	profile.TotalWeightKg += newEntry.TotalWeightKg
+
+	if newEntry.StartTime != nil && (profile.LatestActivityAt == nil || newEntry.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
+		profile.LatestActivityAt = newEntry.StartTime
+	}
 
 	if _, err := s.store.UpdateShowcasePreferences(ctx, req.UserId, profile); err != nil {
-		s.logger.Error(ctx, "failed to add showcase entry", "error", err)
-		return nil, status.Error(codes.Internal, "failed to add entry")
+		s.logger.Error(ctx, "failed to update profile stats after add", "error", err)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -173,30 +175,64 @@ func (s *Service) RemoveShowcaseEntry(ctx context.Context, req *pbsvc.RemoveShow
 		return nil, status.Error(codes.InvalidArgument, "user_id and showcase_id are required")
 	}
 
-	// Get current profile
-	profile, err := s.store.GetShowcasePreferences(ctx, req.UserId)
+	// Read the entry before deleting so we can apply delta subtraction
+	entries, err := s.store.ListShowcaseProfileEntries(ctx, req.UserId)
 	if err != nil {
-		s.logger.Error(ctx, "failed to get showcase profile", "error", err)
-		return nil, status.Error(codes.Internal, "failed to read profile")
+		s.logger.Error(ctx, "failed to list entries for removal", "error", err)
+		return nil, status.Error(codes.Internal, "failed to read entries")
 	}
 
-	if profile == nil {
-		return &emptypb.Empty{}, nil // No profile, nothing to remove
-	}
-
-	// Filter out the entry
-	var filtered []*pbactivity.ShowcaseProfileEntry
-	for _, entry := range profile.Entries {
-		if entry.ShowcaseId != req.ShowcaseId {
-			filtered = append(filtered, entry)
+	var removedEntry *pbactivity.ShowcaseProfileEntry
+	for _, e := range entries {
+		if e.ShowcaseId == req.ShowcaseId {
+			removedEntry = e
+			break
 		}
 	}
 
-	profile.Entries = filtered
+	if removedEntry == nil {
+		return &emptypb.Empty{}, nil // Not in profile, nothing to remove
+	}
+
+	// Delete from sub-collection
+	if err := s.store.DeleteShowcaseProfileEntry(ctx, req.UserId, req.ShowcaseId); err != nil {
+		s.logger.Error(ctx, "failed to delete showcase profile entry", "error", err)
+		return nil, status.Error(codes.Internal, "failed to remove entry")
+	}
+
+	// Delta update: decrement profile stats
+	profile, err := s.ensureShowcaseProfile(ctx, req.UserId)
+	if err != nil {
+		s.logger.Error(ctx, "failed to get showcase profile for stats update", "error", err)
+		return &emptypb.Empty{}, nil // Entry removed, stats update is best-effort
+	}
+
+	profile.TotalActivities--
+	if profile.TotalActivities < 0 {
+		profile.TotalActivities = 0
+	}
+	profile.TotalDistanceMeters -= removedEntry.DistanceMeters
+	profile.TotalDurationSeconds -= removedEntry.DurationSeconds
+	profile.TotalSets -= removedEntry.TotalSets
+	profile.TotalReps -= removedEntry.TotalReps
+	profile.TotalWeightKg -= removedEntry.TotalWeightKg
+
+	// If we removed the latest activity, find the new latest from remaining entries
+	if removedEntry.StartTime != nil && profile.LatestActivityAt != nil &&
+		removedEntry.StartTime.AsTime().Equal(profile.LatestActivityAt.AsTime()) {
+		profile.LatestActivityAt = nil
+		for _, e := range entries {
+			if e.ShowcaseId == req.ShowcaseId {
+				continue // skip the removed one
+			}
+			if e.StartTime != nil && (profile.LatestActivityAt == nil || e.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
+				profile.LatestActivityAt = e.StartTime
+			}
+		}
+	}
 
 	if _, err := s.store.UpdateShowcasePreferences(ctx, req.UserId, profile); err != nil {
-		s.logger.Error(ctx, "failed to remove showcase entry", "error", err)
-		return nil, status.Error(codes.Internal, "failed to remove entry")
+		s.logger.Error(ctx, "failed to update profile stats after remove", "error", err)
 	}
 
 	return &emptypb.Empty{}, nil

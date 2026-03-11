@@ -327,6 +327,11 @@ func (a *FirestoreAdapter) DeleteShowcaseProfile(ctx context.Context, slug strin
 	return err
 }
 
+// SetShowcaseProfileEntry writes an entry to the user's showcase_profile_entries sub-collection
+func (a *FirestoreAdapter) SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error {
+	return a.storage.ShowcaseProfileEntries(userID).Doc(entry.ShowcaseId).Set(ctx, entry)
+}
+
 // isNotFoundError checks if error is a Firestore not found error
 func isNotFoundError(err error) bool {
 	if err == nil {

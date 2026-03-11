@@ -29,6 +29,11 @@ type ActivityStore interface {
 	GetShowcaseProfileBySlug(ctx context.Context, slug string) (*pbactivity.ShowcaseProfile, error)
 	ListShowcasedActivitiesByUser(ctx context.Context, userID string, limit int32, offset int32) ([]*pbactivity.ShowcasedActivity, int32, error)
 
+	// Showcase Profile Entries (sub-collection: users/{userId}/settings/showcase_profile_entries/{showcaseId})
+	ListShowcaseProfileEntries(ctx context.Context, userID string) ([]*pbactivity.ShowcaseProfileEntry, error)
+	SetShowcaseProfileEntry(ctx context.Context, userID string, entry *pbactivity.ShowcaseProfileEntry) error
+	DeleteShowcaseProfileEntry(ctx context.Context, userID, showcaseID string) error
+
 	// Activity Stats
 	CountPipelineRunsByStatus(ctx context.Context, userID, status string) (int32, error)
 	CountShowcasedActivities(ctx context.Context, userID string) (int32, error)

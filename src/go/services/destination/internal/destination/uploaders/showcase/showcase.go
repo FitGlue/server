@@ -360,50 +360,35 @@ func (u *Uploader) updateShowcaseProfile(ctx context.Context, payload *pbevents.
 		entry.RouteThumbnailUrl = thumb
 	}
 
+	// Write entry to the sub-collection
+	if err := u.svc.DB.SetShowcaseProfileEntry(ctx, payload.UserId, entry); err != nil {
+		return fmt.Errorf("failed to save profile entry: %w", err)
+	}
+
+	// Build/update the profile with delta stats (entry is idempotent via MergeAll,
+	// so for re-runs we accept a small drift in stats — acceptable trade-off)
 	var profile *pbactivity.ShowcaseProfile
 	if existingProfile != nil {
 		profile = existingProfile
-		found := false
-		for i, e := range profile.Entries {
-			if e.ShowcaseId == showcasedActivity.ShowcaseId {
-				profile.Entries[i] = entry
-				found = true
-				break
-			}
-		}
-		if !found {
-			profile.Entries = append(profile.Entries, entry)
-		}
 		profile.DisplayName = showcasedActivity.OwnerDisplayName
 	} else {
 		profile = &pbactivity.ShowcaseProfile{
 			Slug:        profileSlug,
 			UserId:      payload.UserId,
 			DisplayName: showcasedActivity.OwnerDisplayName,
-			Entries:     []*pbactivity.ShowcaseProfileEntry{entry},
 			CreatedAt:   timestamppb.New(actionTime),
 		}
 	}
 
-	profile.TotalActivities = int32(len(profile.Entries))
-	profile.TotalDistanceMeters = 0
-	profile.TotalDurationSeconds = 0
-	profile.TotalSets = 0
-	profile.TotalReps = 0
-	profile.TotalWeightKg = 0
-	var latestTime time.Time
-	for _, e := range profile.Entries {
-		profile.TotalDistanceMeters += e.DistanceMeters
-		profile.TotalDurationSeconds += e.DurationSeconds
-		profile.TotalSets += e.TotalSets
-		profile.TotalReps += e.TotalReps
-		profile.TotalWeightKg += e.TotalWeightKg
-		if e.StartTime != nil && e.StartTime.AsTime().After(latestTime) {
-			latestTime = e.StartTime.AsTime()
-		}
-	}
-	if !latestTime.IsZero() {
-		profile.LatestActivityAt = timestamppb.New(latestTime)
+	profile.TotalActivities++
+	profile.TotalDistanceMeters += activityDistance
+	profile.TotalDurationSeconds += activityDuration
+	profile.TotalSets += activitySets
+	profile.TotalReps += activityReps
+	profile.TotalWeightKg += activityWeightKg
+
+	if entry.StartTime != nil && (profile.LatestActivityAt == nil || entry.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
+		profile.LatestActivityAt = entry.StartTime
 	}
 	profile.UpdatedAt = timestamppb.New(actionTime)
 
