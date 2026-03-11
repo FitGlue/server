@@ -17,13 +17,30 @@ type Logger interface {
 	With(args ...any) Logger
 }
 
+// GCPHandlerOptions returns slog.HandlerOptions configured for Google Cloud Logging.
+// It remaps standard slog keys to GCP-expected keys:
+//   - "level" → "severity"
+//   - "msg" → "message"
+func GCPHandlerOptions(level slog.Level) *slog.HandlerOptions {
+	return &slog.HandlerOptions{
+		Level: level,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.LevelKey {
+				return slog.Attr{Key: "severity", Value: a.Value}
+			}
+			if a.Key == slog.MessageKey {
+				return slog.Attr{Key: "message", Value: a.Value}
+			}
+			return a
+		},
+	}
+}
+
 // NewLogger creates a new default structured logger.
 // The handler chain is: JSONHandler → ComponentHandler → SentryHandler
 // Error-level logs are automatically captured by Sentry (if initialized).
 func NewLogger() Logger {
-	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
-		Level: slog.LevelInfo,
-	})
+	jsonHandler := slog.NewJSONHandler(os.Stdout, GCPHandlerOptions(slog.LevelInfo))
 	compHandler := &ComponentHandler{Handler: jsonHandler}
 	sentryHandler := sentryPkg.NewSentryHandler(compHandler)
 	return &slogger{

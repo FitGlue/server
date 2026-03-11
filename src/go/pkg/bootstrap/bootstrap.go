@@ -52,21 +52,10 @@ func LoadConfig() *Config {
 	}
 }
 
-// GetSlogHandlerOptions returns standard handler options for GCP
+// GetSlogHandlerOptions returns standard handler options for GCP.
+// Delegates to infra.GCPHandlerOptions for the ReplaceAttr mapping.
 func GetSlogHandlerOptions(level slog.Level) *slog.HandlerOptions {
-	return &slog.HandlerOptions{
-		Level: level,
-		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
-			// Map standard keys to Cloud Logging keys
-			if a.Key == slog.MessageKey {
-				return slog.Attr{Key: "message", Value: a.Value}
-			}
-			if a.Key == slog.LevelKey {
-				return slog.Attr{Key: "severity", Value: a.Value}
-			}
-			return a
-		},
-	}
+	return infra.GCPHandlerOptions(level)
 }
 
 // InitLogger configures structured logging with Cloud Logging compatible keys
