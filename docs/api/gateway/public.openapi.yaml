@@ -579,6 +579,8 @@ components:
                     type: boolean
                 theme:
                     $ref: '#/components/schemas/ShowcaseTheme'
+                defaultDestination:
+                    type: boolean
         ShowcaseProfileEntry:
             type: object
             properties:

@@ -148,11 +148,19 @@ func (s *FirestoreStore) ListShowcases(ctx context.Context, userID string) ([]*p
 		if err != nil {
 			return nil, err
 		}
-		var entry pbactivity.ShowcaseProfileEntry
-		if err := decodeProtoMap(doc.Data(), &entry); err != nil {
+		// Documents are stored as ShowcasedActivity — decode that, then project
+		// the fields the caller needs into ShowcaseProfileEntry.
+		var act pbactivity.ShowcasedActivity
+		if err := decodeProtoMap(doc.Data(), &act); err != nil {
 			return nil, err
 		}
-		showcases = append(showcases, &entry)
+		showcases = append(showcases, &pbactivity.ShowcaseProfileEntry{
+			ShowcaseId:   act.ShowcaseId,
+			Title:        act.Title,
+			ActivityType: act.ActivityType,
+			Source:       act.Source,
+			StartTime:    act.StartTime,
+		})
 	}
 	return showcases, nil
 }

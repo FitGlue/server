@@ -516,6 +516,7 @@ type ShowcaseProfile struct {
 	ProfilePictureUrl    string                  `protobuf:"bytes,16,opt,name=profile_picture_url,json=profilePictureUrl,proto3" json:"profile_picture_url,omitempty"`
 	Visible              bool                    `protobuf:"varint,17,opt,name=visible,proto3" json:"visible,omitempty"`
 	Theme                *ShowcaseTheme          `protobuf:"bytes,18,opt,name=theme,proto3" json:"theme,omitempty"`
+	DefaultDestination   bool                    `protobuf:"varint,19,opt,name=default_destination,json=defaultDestination,proto3" json:"default_destination,omitempty"` // Auto-add Showcase destination when creating new pipelines
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -676,6 +677,13 @@ func (x *ShowcaseProfile) GetTheme() *ShowcaseTheme {
 	return nil
 }
 
+func (x *ShowcaseProfile) GetDefaultDestination() bool {
+	if x != nil {
+		return x.DefaultDestination
+	}
+	return false
+}
+
 var File_models_activity_uploaded_proto protoreflect.FileDescriptor
 
 const file_models_activity_uploaded_proto_rawDesc = "" +
@@ -745,7 +753,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x13custom_accent_color\x18\x02 \x01(\tR\x11customAccentColor\x12!\n" +
 	"\fanimation_id\x18\x03 \x01(\tR\vanimationId\x12\x1d\n" +
 	"\n" +
-	"card_style\x18\x04 \x01(\tR\tcardStyle\"\x9b\x06\n" +
+	"card_style\x18\x04 \x01(\tR\tcardStyle\"\xcc\x06\n" +
 	"\x0fShowcaseProfile\x12\x12\n" +
 	"\x04slug\x18\x01 \x01(\tR\x04slug\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12!\n" +
@@ -769,7 +777,8 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\x03bio\x18\x0f \x01(\tR\x03bio\x12.\n" +
 	"\x13profile_picture_url\x18\x10 \x01(\tR\x11profilePictureUrl\x12\x18\n" +
 	"\avisible\x18\x11 \x01(\bR\avisible\x12<\n" +
-	"\x05theme\x18\x12 \x01(\v2&.fitglue.models.activity.ShowcaseThemeR\x05themeB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
+	"\x05theme\x18\x12 \x01(\v2&.fitglue.models.activity.ShowcaseThemeR\x05theme\x12/\n" +
+	"\x13default_destination\x18\x13 \x01(\bR\x12defaultDestinationB?Z=github.com/fitglue/server/src/go/pkg/types/pb/models/activityb\x06proto3"
 
 var (
 	file_models_activity_uploaded_proto_rawDescOnce sync.Once

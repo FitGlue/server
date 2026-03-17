@@ -63,7 +63,12 @@ func main() {
 		bucketName = "fitglue-server-dev-artifacts"
 	}
 
-	svc := activity.NewService(store, blobStore, pub, bucketName, logger)
+	showcaseAssetsBucket := os.Getenv("SHOWCASE_ASSETS_BUCKET")
+	if showcaseAssetsBucket == "" {
+		showcaseAssetsBucket = "fitglue-server-dev-showcase-assets"
+	}
+
+	svc := activity.NewService(store, blobStore, pub, bucketName, showcaseAssetsBucket, logger)
 
 	server := grpc.NewServer()
 	pb.RegisterActivityServiceServer(server, svc)

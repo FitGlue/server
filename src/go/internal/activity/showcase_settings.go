@@ -261,9 +261,9 @@ func (s *Service) GetShowcaseProfilePictureUploadUrl(ctx context.Context, req *p
 	}
 
 	path := fmt.Sprintf("showcase_pictures/%s/profile.%s", req.UserId, ext)
-	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", s.bucketName, path)
+	publicURL := fmt.Sprintf("https://storage.googleapis.com/%s/%s", s.showcaseAssetsBucket, path)
 
-	uploadURL, err := s.blobStore.SignedURL(ctx, s.bucketName, path, contentType, 5*1024*1024, 15*time.Minute)
+	uploadURL, err := s.blobStore.SignedURL(ctx, s.showcaseAssetsBucket, path, contentType, 5*1024*1024, 15*time.Minute)
 	if err != nil {
 		s.logger.Error(ctx, "failed to generate signed upload URL", "error", err)
 		return nil, status.Error(codes.Internal, "failed to generate upload URL")

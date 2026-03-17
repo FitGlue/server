@@ -96,4 +96,6 @@ message ShowcaseProfile {
   bool visible = 17;                
 
   ShowcaseTheme theme = 18;         
+
+  bool default_destination = 19;    // Auto-add Showcase destination when creating new pipelines
 }
