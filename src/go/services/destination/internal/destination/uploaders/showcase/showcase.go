@@ -156,7 +156,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		Description:         payload.Metadata["description"],
 		ActivityType:        activityType,
 		Source:              payload.Source,
-		StartTime:           payload.Timestamp,
+		StartTime:           timestamppb.New(startTime),
 		ActivityData:        nil,
 		FitFileUri:          payload.Metadata["fit_file_uri"],
 		AppliedEnrichments:  appliedEnrichments,
@@ -240,6 +240,13 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	createdAt := time.Now()
 	expiresAt := calculateExpiration(userRec, createdAt)
 
+	var startTime time.Time
+	if payload.Timestamp != nil {
+		startTime = payload.Timestamp.AsTime()
+	} else {
+		startTime = time.Now()
+	}
+
 	activityName := payload.Metadata["activity_name"]
 	if activityName == "" {
 		activityName = "Activity"
@@ -271,7 +278,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		Description:         payload.Metadata["description"],
 		ActivityType:        activityType,
 		Source:              payload.Source,
-		StartTime:           payload.Timestamp,
+		StartTime:           timestamppb.New(startTime),
 		ActivityData:        nil,
 		FitFileUri:          payload.Metadata["fit_file_uri"],
 		AppliedEnrichments:  appliedEnrichments,

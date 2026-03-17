@@ -937,25 +937,27 @@ func ShowcasedActivityToFirestore(s *pbactivity.ShowcasedActivity) map[string]in
 		"tags":                s.Tags,
 		"fit_file_uri":        s.FitFileUri,
 		"owner_display_name":  s.OwnerDisplayName,
+		"activity_data_uri":   s.ActivityDataUri,
 	}
 
 	if s.StartTime != nil {
 		m["start_time"] = s.StartTime.AsTime()
+	} else {
+		// Ensure field exists for indexing even if null/zero
+		m["start_time"] = nil
 	}
 	if s.CreatedAt != nil {
 		m["created_at"] = s.CreatedAt.AsTime()
 	}
 	if s.ExpiresAt != nil {
 		m["expires_at"] = s.ExpiresAt.AsTime()
+	} else {
+		m["expires_at"] = nil
 	}
 	if s.PipelineExecutionId != nil {
 		m["pipeline_execution_id"] = *s.PipelineExecutionId
-	}
-
-	// Activity data is stored in GCS, not inline (avoids Firestore 1MB field limit)
-	// Only store the URI reference
-	if s.ActivityDataUri != "" {
-		m["activity_data_uri"] = s.ActivityDataUri
+	} else {
+		m["pipeline_execution_id"] = ""
 	}
 
 	return m
@@ -1063,31 +1065,21 @@ func FirestoreToShowcasedActivity(m map[string]interface{}) *pbactivity.Showcase
 
 func ShowcaseProfileEntryToFirestore(e *pbactivity.ShowcaseProfileEntry) map[string]interface{} {
 	m := map[string]interface{}{
-		"showcase_id":   e.ShowcaseId,
-		"title":         e.Title,
-		"activity_type": int32(e.ActivityType),
-		"source":        int32(e.Source),
+		"showcase_id":         e.ShowcaseId,
+		"title":               e.Title,
+		"activity_type":       int32(e.ActivityType),
+		"source":              int32(e.Source),
+		"route_thumbnail_url": e.RouteThumbnailUrl,
+		"distance_meters":     e.DistanceMeters,
+		"duration_seconds":    e.DurationSeconds,
+		"total_sets":          e.TotalSets,
+		"total_reps":          e.TotalReps,
+		"total_weight_kg":     e.TotalWeightKg,
 	}
 	if e.StartTime != nil {
 		m["start_time"] = e.StartTime.AsTime()
-	}
-	if e.RouteThumbnailUrl != "" {
-		m["route_thumbnail_url"] = e.RouteThumbnailUrl
-	}
-	if e.DistanceMeters != 0 {
-		m["distance_meters"] = e.DistanceMeters
-	}
-	if e.DurationSeconds != 0 {
-		m["duration_seconds"] = e.DurationSeconds
-	}
-	if e.TotalSets != 0 {
-		m["total_sets"] = e.TotalSets
-	}
-	if e.TotalReps != 0 {
-		m["total_reps"] = e.TotalReps
-	}
-	if e.TotalWeightKg != 0 {
-		m["total_weight_kg"] = e.TotalWeightKg
+	} else {
+		m["start_time"] = nil
 	}
 	return m
 }
@@ -1206,13 +1198,32 @@ func ShowcaseProfileToFirestore(p *pbactivity.ShowcaseProfile) map[string]interf
 
 	if p.LatestActivityAt != nil {
 		m["latest_activity_at"] = p.LatestActivityAt.AsTime()
+	} else {
+		m["latest_activity_at"] = nil
 	}
 	if p.CreatedAt != nil {
 		m["created_at"] = p.CreatedAt.AsTime()
+	} else {
+		m["created_at"] = nil
 	}
 	if p.UpdatedAt != nil {
 		m["updated_at"] = p.UpdatedAt.AsTime()
+	} else {
+		m["updated_at"] = nil
 	}
+
+	if p.Theme != nil {
+		m["theme"] = map[string]interface{}{
+			"theme_id":            p.Theme.ThemeId,
+			"custom_accent_color": p.Theme.CustomAccentColor,
+			"animation_id":        p.Theme.AnimationId,
+			"card_style":          p.Theme.CardStyle,
+		}
+	} else {
+		m["theme"] = nil
+	}
+
+	m["default_destination"] = p.DefaultDestination
 
 	return m
 }
@@ -1276,6 +1287,23 @@ func FirestoreToShowcaseProfile(m map[string]interface{}) *pbactivity.ShowcasePr
 			if eMap, ok := eRaw.(map[string]interface{}); ok {
 				p.Entries[i] = FirestoreToShowcaseProfileEntry(eMap)
 			}
+		}
+	}
+
+	// Theme
+	if tRaw, ok := m["theme"].(map[string]interface{}); ok {
+		p.Theme = &pbactivity.ShowcaseTheme{
+			ThemeId:           getString(tRaw, "theme_id"),
+			CustomAccentColor: getString(tRaw, "custom_accent_color"),
+			AnimationId:       getString(tRaw, "animation_id"),
+			CardStyle:         getString(tRaw, "card_style"),
+		}
+	}
+
+	// DefaultDestination
+	if v, ok := m["default_destination"]; ok {
+		if b, ok := v.(bool); ok {
+			p.DefaultDestination = b
 		}
 	}
 

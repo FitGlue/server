@@ -416,7 +416,7 @@ func (s *FirestoreStore) DeleteShowcaseProfileEntry(ctx context.Context, userID,
 
 // Helpers
 func encodeProtoMap(msg protoreflect.ProtoMessage) (map[string]interface{}, error) {
-	b, err := protojson.MarshalOptions{EmitUnpopulated: false, UseProtoNames: true}.Marshal(msg)
+	b, err := protojson.MarshalOptions{EmitUnpopulated: true, UseProtoNames: true}.Marshal(msg)
 	if err != nil {
 		return nil, err
 	}
