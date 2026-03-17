@@ -55,8 +55,82 @@ func findFastestFromRecords(activity *pbactivity.StandardizedActivity, targetDis
 }
 
 // buildDistanceTimePoints collects all records across sessions/laps and builds
-// cumulative distance from speed × Δtime.
+// cumulative distance/time points. Prefers native GPS cumulative distance from
+// Record.Distance when available (highest fidelity, matches Strava).
+// Falls back to speed × Δtime when native distance is not present.
 func buildDistanceTimePoints(activity *pbactivity.StandardizedActivity) []distanceTimePoint {
+	// Try native distance first (highest fidelity — matches Strava's approach)
+	if points := buildFromNativeDistance(activity); len(points) >= 2 {
+		return points
+	}
+	// Fall back to speed-derived distance
+	return buildFromSpeedDerived(activity)
+}
+
+// buildFromNativeDistance uses Record.Distance (cumulative meters from start)
+// when the device/file provides it. This matches how Strava calculates best efforts.
+func buildFromNativeDistance(activity *pbactivity.StandardizedActivity) []distanceTimePoint {
+	var points []distanceTimePoint
+	var hasDistanceData bool
+
+	// Check if any records have native distance data
+	for _, session := range activity.Sessions {
+		for _, lap := range session.Laps {
+			for _, record := range lap.Records {
+				if record.Distance > 0 {
+					hasDistanceData = true
+					break
+				}
+			}
+			if hasDistanceData {
+				break
+			}
+		}
+		if hasDistanceData {
+			break
+		}
+	}
+
+	if !hasDistanceData {
+		return nil
+	}
+
+	var baseTimestamp int64
+	var firstTimestampSet bool
+
+	for _, session := range activity.Sessions {
+		for _, lap := range session.Laps {
+			for _, record := range lap.Records {
+				ts := record.Timestamp.GetSeconds()
+				if !firstTimestampSet {
+					baseTimestamp = ts
+					firstTimestampSet = true
+					// Add initial zero point
+					points = append(points, distanceTimePoint{0, 0})
+				}
+
+				elapsed := float64(ts - baseTimestamp)
+				if elapsed < 0 {
+					continue
+				}
+
+				// Use native cumulative distance directly
+				if record.Distance > 0 {
+					points = append(points, distanceTimePoint{
+						CumulativeDistanceM: record.Distance,
+						ElapsedTimeSec:      elapsed,
+					})
+				}
+			}
+		}
+	}
+
+	return points
+}
+
+// buildFromSpeedDerived reconstructs cumulative distance from speed × Δtime.
+// This is the fallback when native distance data is not available.
+func buildFromSpeedDerived(activity *pbactivity.StandardizedActivity) []distanceTimePoint {
 	var points []distanceTimePoint
 
 	var cumulativeDistance float64

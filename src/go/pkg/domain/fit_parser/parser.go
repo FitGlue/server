@@ -619,6 +619,13 @@ func parseRecord(msg *proto.Message) *pbactivity.Record {
 		record.StepLength = &sl
 	}
 
+	// Distance (cumulative from activity start)
+	// FIT stores as uint32 with scale 100 (units: meters)
+	// DistanceScaled() returns float64 in meters
+	if recordMsg.Distance != 0xFFFFFFFF {
+		record.Distance = recordMsg.DistanceScaled()
+	}
+
 	return record
 }
 

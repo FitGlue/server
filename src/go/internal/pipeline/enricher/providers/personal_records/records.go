@@ -46,6 +46,22 @@ const (
 
 	// Elevation records
 	RecordHighestElevationGain CardioRecordType = "highest_elevation_gain"
+
+	// Cycling distance records (independent from running)
+	RecordFastestRide5K   CardioRecordType = "fastest_ride_5k"
+	RecordFastestRide10K  CardioRecordType = "fastest_ride_10k"
+	RecordFastestRide20K  CardioRecordType = "fastest_ride_20k"
+	RecordFastestRide30K  CardioRecordType = "fastest_ride_30k"
+	RecordFastestRide40K  CardioRecordType = "fastest_ride_40k"
+	RecordFastestRide50K  CardioRecordType = "fastest_ride_50k"
+	RecordFastestRide100K CardioRecordType = "fastest_ride_100k"
+
+	// Cycling imperial distance records
+	RecordFastestRide5Mile  CardioRecordType = "fastest_ride_5_mile"
+	RecordFastestRide10Mile CardioRecordType = "fastest_ride_10_mile"
+	RecordFastestRide20Mile CardioRecordType = "fastest_ride_20_mile"
+	RecordFastestRide25Mile CardioRecordType = "fastest_ride_25_mile"
+	RecordFastestRide30Mile CardioRecordType = "fastest_ride_30_mile"
 )
 
 // StrengthRecordSuffix defines the suffixes for strength records
@@ -90,6 +106,9 @@ const (
 	Distance20Mile = 32186.88
 	Distance25Mile = 40233.6
 	Distance30Mile = 48280.32
+
+	// Cycling distance
+	Distance100K = 100000.0
 )
 
 // DistanceThreshold pairs a record type with its target distance for iteration
@@ -126,6 +145,25 @@ func AllDistanceThresholds() []DistanceThreshold {
 		{RecordFastest30Mile, Distance30Mile, "Fastest 30 Mile"},                      // 48,280m
 		{RecordFastest50K, Distance50K, "Fastest 50K"},                                // 50,000m
 		{RecordFastestUltraMarathon, DistanceUltraMarathon, "Fastest Ultra Marathon"}, // 100,000m
+	}
+}
+
+// CyclingDistanceThresholds returns distance thresholds for cycling activities.
+// These use separate record types from running to avoid collisions.
+func CyclingDistanceThresholds() []DistanceThreshold {
+	return []DistanceThreshold{
+		{RecordFastestRide5K, Distance5K, "Fastest Ride 5K"},              // 5,000m
+		{RecordFastestRide5Mile, Distance5Mile, "Fastest Ride 5 Mile"},    // 8,047m
+		{RecordFastestRide10K, Distance10K, "Fastest Ride 10K"},           // 10,000m
+		{RecordFastestRide10Mile, Distance10Mile, "Fastest Ride 10 Mile"}, // 16,093m
+		{RecordFastestRide20K, Distance20K, "Fastest Ride 20K"},           // 20,000m
+		{RecordFastestRide30K, Distance30K, "Fastest Ride 30K"},           // 30,000m
+		{RecordFastestRide20Mile, Distance20Mile, "Fastest Ride 20 Mile"}, // 32,187m
+		{RecordFastestRide40K, Distance40K, "Fastest Ride 40K"},           // 40,000m
+		{RecordFastestRide25Mile, Distance25Mile, "Fastest Ride 25 Mile"}, // 40,234m
+		{RecordFastestRide50K, Distance50K, "Fastest Ride 50K"},           // 50,000m
+		{RecordFastestRide30Mile, Distance30Mile, "Fastest Ride 30 Mile"}, // 48,280m
+		{RecordFastestRide100K, Distance100K, "Fastest Ride 100K"},        // 100,000m
 	}
 }
 

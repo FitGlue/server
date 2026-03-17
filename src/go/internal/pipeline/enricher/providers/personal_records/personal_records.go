@@ -244,6 +244,23 @@ func (p *PersonalRecordsProvider) checkCardioRecords(ctx context.Context, logger
 		} else if pr != nil {
 			results = append(results, *pr)
 		}
+
+		// Check cycling distance best efforts (independent from running records)
+		for _, threshold := range CyclingDistanceThresholds() {
+			if totalDistanceM < threshold.DistanceM {
+				continue
+			}
+
+			fastestTime := findFastestSegment(activity, threshold.DistanceM)
+			if fastestTime > 0 {
+				pr, err := p.checkAndUpdateRecord(ctx, userID, string(threshold.RecordType), fastestTime, "seconds", activity, true)
+				if err != nil {
+					logger.Warn("Failed to check cycling distance record", "error", err, "record_type", threshold.RecordType)
+				} else if pr != nil {
+					results = append(results, *pr)
+				}
+			}
+		}
 	}
 
 	return results, nil
@@ -361,15 +378,6 @@ func detectHybridRaceType(activity *pbactivity.StandardizedActivity) string {
 		if strings.Contains(lowerTag, "athx") {
 			return "athx"
 		}
-	}
-
-	// Check activity name
-	lowerName := strings.ToLower(activity.Name)
-	if strings.Contains(lowerName, "hyrox") {
-		return "hyrox"
-	}
-	if strings.Contains(lowerName, "athx") {
-		return "athx"
 	}
 
 	return ""
@@ -530,7 +538,7 @@ func (p *PersonalRecordsProvider) formatPRMessage(recordType string, newValue fl
 		emoji = "💪"
 	} else if strings.Contains(recordType, "_volume") {
 		emoji = "💪"
-	} else if strings.HasPrefix(recordType, "fastest_") {
+	} else if strings.HasPrefix(recordType, "fastest_") || strings.HasPrefix(recordType, "fastest_ride_") {
 		emoji = "🎉"
 	}
 
@@ -595,8 +603,15 @@ func (p *PersonalRecordsProvider) formatPRMessage(recordType string, newValue fl
 
 // formatRecordTypeForDisplay converts record type to human-readable format
 func formatRecordTypeForDisplay(recordType string) string {
-	// Check distance thresholds first (covers all 23 fastest_* types)
+	// Check distance thresholds first (covers all running fastest_* types)
 	for _, threshold := range AllDistanceThresholds() {
+		if recordType == string(threshold.RecordType) {
+			return threshold.Display
+		}
+	}
+
+	// Check cycling distance thresholds (fastest_ride_* types)
+	for _, threshold := range CyclingDistanceThresholds() {
 		if recordType == string(threshold.RecordType) {
 			return threshold.Display
 		}

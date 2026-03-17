@@ -515,6 +515,7 @@ type Record struct {
 	VerticalOscillation *int32                 `protobuf:"varint,10,opt,name=vertical_oscillation,json=verticalOscillation,proto3,oneof" json:"vertical_oscillation,omitempty"`
 	VerticalRatio       *int32                 `protobuf:"varint,11,opt,name=vertical_ratio,json=verticalRatio,proto3,oneof" json:"vertical_ratio,omitempty"`
 	StepLength          *float64               `protobuf:"fixed64,12,opt,name=step_length,json=stepLength,proto3,oneof" json:"step_length,omitempty"`
+	Distance            float64                `protobuf:"fixed64,13,opt,name=distance,proto3" json:"distance,omitempty"` // Cumulative distance in meters from activity start
 	unknownFields       protoimpl.UnknownFields
 	sizeCache           protoimpl.SizeCache
 }
@@ -629,6 +630,13 @@ func (x *Record) GetVerticalRatio() int32 {
 func (x *Record) GetStepLength() float64 {
 	if x != nil && x.StepLength != nil {
 		return *x.StepLength
+	}
+	return 0
+}
+
+func (x *Record) GetDistance() float64 {
+	if x != nil {
+		return x.Distance
 	}
 	return 0
 }
@@ -942,7 +950,7 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\x0etotal_distance\x18\x03 \x01(\x01R\rtotalDistance\x129\n" +
 	"\arecords\x18\x04 \x03(\v2\x1f.fitglue.models.activity.RecordR\arecords\x12#\n" +
 	"\rexercise_name\x18\x05 \x01(\tR\fexerciseName\x12\x1c\n" +
-	"\tintensity\x18\x06 \x01(\tR\tintensity\"\x9e\x04\n" +
+	"\tintensity\x18\x06 \x01(\tR\tintensity\"\xba\x04\n" +
 	"\x06Record\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x1d\n" +
 	"\n" +
@@ -958,7 +966,8 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	" \x01(\x05H\x01R\x13verticalOscillation\x88\x01\x01\x12*\n" +
 	"\x0evertical_ratio\x18\v \x01(\x05H\x02R\rverticalRatio\x88\x01\x01\x12$\n" +
 	"\vstep_length\x18\f \x01(\x01H\x03R\n" +
-	"stepLength\x88\x01\x01B\x16\n" +
+	"stepLength\x88\x01\x01\x12\x1a\n" +
+	"\bdistance\x18\r \x01(\x01R\bdistanceB\x16\n" +
 	"\x14_ground_contact_timeB\x17\n" +
 	"\x15_vertical_oscillationB\x11\n" +
 	"\x0f_vertical_ratioB\x0e\n" +

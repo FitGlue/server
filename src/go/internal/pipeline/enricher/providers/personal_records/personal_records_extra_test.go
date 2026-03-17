@@ -100,8 +100,8 @@ func TestDetectHybridRaceType(t *testing.T) {
 	}{
 		{"hyrox tag", []string{"HYROX", "Race"}, "Run", "hyrox"},
 		{"athx tag", []string{"ATHX"}, "Run", "athx"},
-		{"hyrox in name", nil, "My Hyrox Race", "hyrox"},
-		{"athx in name", nil, "ATHX 2026", "athx"},
+		{"hyrox in name (no tag)", nil, "My Hyrox Race", ""},
+		{"athx in name (no tag)", nil, "ATHX 2026", ""},
 		{"no match", []string{"parkrun"}, "Morning Run", ""},
 	}
 	for _, c := range cases {

@@ -500,6 +500,9 @@ components:
                 stepLength:
                     type: number
                     format: double
+                distance:
+                    type: number
+                    format: double
         Session:
             type: object
             properties:
