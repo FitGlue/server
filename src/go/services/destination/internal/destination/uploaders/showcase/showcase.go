@@ -197,6 +197,13 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		}
 	}
 
+	// Fallback to Showcase Profile if name still empty
+	if showcasedActivity.OwnerDisplayName == "" {
+		if profile, err := u.svc.DB.GetShowcaseProfileByUserId(ctx, payload.UserId); err == nil && profile != nil {
+			showcasedActivity.OwnerDisplayName = profile.DisplayName
+		}
+	}
+
 	if err := u.svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
 		return "", fmt.Errorf("failed to persist showcased activity: %w", err)
 	}
@@ -294,6 +301,13 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 				}
 				showcasedActivity.OwnerDisplayName = emailPrefix
 			}
+		}
+	}
+
+	// Fallback to Showcase Profile if name still empty
+	if showcasedActivity.OwnerDisplayName == "" {
+		if profile, err := u.svc.DB.GetShowcaseProfileByUserId(ctx, payload.UserId); err == nil && profile != nil {
+			showcasedActivity.OwnerDisplayName = profile.DisplayName
 		}
 	}
 

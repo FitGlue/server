@@ -209,6 +209,13 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 		return nil, status.Error(codes.NotFound, "showcase not found")
 	}
 
+	// Hydrate owner name if missing
+	if showcase.OwnerDisplayName == "" {
+		if profile, err := s.store.GetShowcasePreferences(ctx, showcase.UserId); err == nil && profile != nil {
+			showcase.OwnerDisplayName = profile.DisplayName
+		}
+	}
+
 	// Fetch data from GCS if unloaded
 	if showcase.ActivityData == nil && showcase.ActivityDataUri != "" {
 		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)

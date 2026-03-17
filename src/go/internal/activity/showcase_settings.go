@@ -125,8 +125,8 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		s.logger.Error(ctx, "failed to verify showcase ownership", "error", err)
 		return nil, status.Error(codes.Internal, "failed to verify showcase")
 	}
-	if showcase == nil {
-		return nil, status.Error(codes.NotFound, "showcase not found")
+	if showcase == nil || showcase.UserId != req.UserId {
+		return nil, status.Error(codes.NotFound, "showcase activity not found or does not belong to user")
 	}
 
 	// Build the entry from showcase metadata
@@ -136,6 +136,24 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		ActivityType: showcase.ActivityType,
 		Source:       showcase.Source,
 		StartTime:    showcase.StartTime,
+		// RouteThumbnailUrl: showcase.RouteThumbnailUrl, // Not on ShowcasedActivity
+	}
+
+	// Populate metrics from ActivityData if available
+	if showcase.ActivityData != nil && len(showcase.ActivityData.Sessions) > 0 {
+		newEntry.DistanceMeters = showcase.ActivityData.Sessions[0].TotalDistance
+		newEntry.DurationSeconds = showcase.ActivityData.Sessions[0].TotalElapsedTime
+		newEntry.TotalSets = int32(len(showcase.ActivityData.Sessions[0].StrengthSets))
+
+		// Sum reps and weight if it's a strength activity
+		var totalReps int32
+		var totalWeight float64
+		for _, set := range showcase.ActivityData.Sessions[0].StrengthSets {
+			totalReps += set.Reps
+			totalWeight += set.WeightKg
+		}
+		newEntry.TotalReps = totalReps
+		newEntry.TotalWeightKg = totalWeight
 	}
 
 	// Write entry to sub-collection (idempotent via MergeAll)
@@ -297,32 +315,68 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 		return nil, status.Error(codes.NotFound, "showcase profile not found")
 	}
 
-	// Paginated showcased activities
-	page := req.Page
-	if page < 1 {
-		page = 1
-	}
-	pageSize := int32(12)
-	offset := (page - 1) * pageSize
-
-	activities, _, err := s.store.ListShowcasedActivitiesByUser(ctx, profile.UserId, pageSize, offset)
+	// Paginated showcased activities from the user's sub-collection
+	// TODO: ListShowcaseProfileEntries currently returns all.
+	// In a real high-volume scenario we'd add Limit/Offset to the store method.
+	profileEntries, err := s.store.ListShowcaseProfileEntries(ctx, profile.UserId)
 	if err != nil {
-		s.logger.Error(ctx, "failed to list showcased activities for profile", "error", err)
-		return nil, status.Error(codes.Internal, "failed to list activities")
+		s.logger.Error(ctx, "failed to list showcase profile entries", "error", err)
+		return nil, status.Error(codes.Internal, "failed to list profile entries")
 	}
 
-	// Calculate total pages
-	totalShowcases, _ := s.store.CountShowcasedActivities(ctx, profile.UserId)
-	totalPages := (totalShowcases + pageSize - 1) / pageSize
+	// Mock pagination from the full list for now
+	pageSize := 12
+	start := (int(req.Page) - 1) * pageSize
+	if start < 0 {
+		start = 0
+	}
+
+	var pageEntries []*pbactivity.ShowcaseProfileEntry
+	if start < len(profileEntries) {
+		end := start + pageSize
+		if end > len(profileEntries) {
+			end = len(profileEntries)
+		}
+		pageEntries = profileEntries[start:end]
+	}
+
+	totalShowcases := int32(len(profileEntries))
+	totalPages := (totalShowcases + int32(pageSize) - 1) / int32(pageSize)
 	if totalPages < 1 {
 		totalPages = 1
 	}
 
+	// Convert ProfileEntries back to ShowcasedActivity for the response
+	// to match the existing Public API contract if needed.
+	var showcasedActivities []*pbactivity.ShowcasedActivity
+	for _, entry := range pageEntries {
+		sa := &pbactivity.ShowcasedActivity{
+			ShowcaseId:   entry.ShowcaseId,
+			Title:        entry.Title,
+			ActivityType: entry.ActivityType,
+			Source:       entry.Source,
+			StartTime:    entry.StartTime,
+			// RouteThumbnailUrl: entry.RouteThumbnailUrl, // Not on ShowcasedActivity proto
+			UserId: profile.UserId,
+		}
+		if entry.DistanceMeters > 0 || entry.DurationSeconds > 0 {
+			sa.ActivityData = &pbactivity.StandardizedActivity{
+				Sessions: []*pbactivity.Session{
+					{
+						TotalDistance:    entry.DistanceMeters,
+						TotalElapsedTime: entry.DurationSeconds,
+					},
+				},
+			}
+		}
+		showcasedActivities = append(showcasedActivities, sa)
+	}
+
 	return &pbsvc.GetPublicShowcaseProfileResponse{
 		Profile:     profile,
-		Showcases:   activities,
+		Showcases:   showcasedActivities,
 		TotalPages:  totalPages,
-		CurrentPage: page,
+		CurrentPage: req.Page,
 	}, nil
 }
 
