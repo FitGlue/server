@@ -391,7 +391,9 @@ func (u *Uploader) updateShowcaseProfile(ctx context.Context, payload *pbevents.
 	var profile *pbactivity.ShowcaseProfile
 	if existingProfile != nil {
 		profile = existingProfile
-		profile.DisplayName = showcasedActivity.OwnerDisplayName
+		if showcasedActivity.OwnerDisplayName != "" {
+			profile.DisplayName = showcasedActivity.OwnerDisplayName
+		}
 	} else {
 		profile = &pbactivity.ShowcaseProfile{
 			Slug:        profileSlug,

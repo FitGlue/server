@@ -24,7 +24,7 @@ func WriteJSON(w http.ResponseWriter, v interface{}) error {
 	// If it's a protocol buffer message, format it properly
 	if msg, ok := v.(proto.Message); ok {
 		m := protojson.MarshalOptions{
-			UseProtoNames:   false, // We want the JSON camelCase names defined in proto tags
+			UseProtoNames:   false, // We want JSON camelCase names for API consistency
 			EmitUnpopulated: true,
 		}
 

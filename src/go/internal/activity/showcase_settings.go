@@ -372,6 +372,15 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 		showcasedActivities = append(showcasedActivities, sa)
 	}
 
+	// Double-check display name fallback if still empty
+	if profile.DisplayName == "" {
+		if profile.Slug != "" {
+			profile.DisplayName = strings.Title(profile.Slug)
+		} else {
+			profile.DisplayName = "FitGlue Athlete"
+		}
+	}
+
 	return &pbsvc.GetPublicShowcaseProfileResponse{
 		Profile:     profile,
 		Showcases:   showcasedActivities,
