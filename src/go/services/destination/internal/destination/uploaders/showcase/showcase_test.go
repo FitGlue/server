@@ -11,7 +11,7 @@ import (
 )
 
 func TestShowcaseUploader_Name(t *testing.T) {
-	u := New(&bootstrap.Service{})
+	u := New(&bootstrap.Service{}, nil)
 	assert.Equal(t, "showcase", u.Name())
 }
 

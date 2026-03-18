@@ -8,9 +8,11 @@ import (
 	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -129,14 +131,27 @@ func (s *Service) AddShowcaseEntry(ctx context.Context, req *pbsvc.AddShowcaseEn
 		return nil, status.Error(codes.NotFound, "showcase activity not found or does not belong to user")
 	}
 
+	// Hydrate ActivityData from GCS if not inline.
+	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish).
+	if showcase.ActivityData == nil && showcase.ActivityDataUri != "" {
+		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
+		if err == nil && len(data) > 0 {
+			var fullEvent pbevents.EnrichedActivityEvent
+			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
+			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
+				showcase.ActivityData = fullEvent.ActivityData
+			}
+		}
+	}
+
 	// Build the entry from showcase metadata
 	newEntry := &pbactivity.ShowcaseProfileEntry{
-		ShowcaseId:   req.ShowcaseId,
-		Title:        showcase.Title,
-		ActivityType: showcase.ActivityType,
-		Source:       showcase.Source,
-		StartTime:    showcase.StartTime,
-		// RouteThumbnailUrl: showcase.RouteThumbnailUrl, // Not on ShowcasedActivity
+		ShowcaseId:        req.ShowcaseId,
+		Title:             showcase.Title,
+		ActivityType:      showcase.ActivityType,
+		Source:            showcase.Source,
+		StartTime:         showcase.StartTime,
+		RouteThumbnailUrl: showcase.EnrichmentMetadata["asset_route_thumbnail"],
 	}
 
 	// Populate metrics from ActivityData if available

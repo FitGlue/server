@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbsvc "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,13 +29,15 @@ func (s *Service) GetShowcase(ctx context.Context, req *pbsvc.GetShowcaseRequest
 	}
 
 	// Fetch data from GCS if unloaded
+	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish),
+	// so we unmarshal it as such and extract just the ActivityData field.
 	if showcase.ActivityData == nil && showcase.ActivityDataUri != "" {
 		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
 		if err == nil && len(data) > 0 {
-			var actData pbactivity.StandardizedActivity
+			var fullEvent pbevents.EnrichedActivityEvent
 			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
-			if err := unmarshalOpts.Unmarshal(data, &actData); err == nil {
-				showcase.ActivityData = &actData
+			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
+				showcase.ActivityData = fullEvent.ActivityData
 			}
 		}
 	}
@@ -223,15 +226,26 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 	}
 
 	// Fetch data from GCS if unloaded
+	// The GCS blob is a full EnrichedActivityEvent (stored by PrepareForPublish),
+	// so we unmarshal it as such and extract just the ActivityData field.
 	if showcase.ActivityData == nil && showcase.ActivityDataUri != "" {
 		data, err := s.blobStore.Get(ctx, "", showcase.ActivityDataUri)
 		if err == nil && len(data) > 0 {
-			var actData pbactivity.StandardizedActivity
+			var fullEvent pbevents.EnrichedActivityEvent
 			unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
-			if err := unmarshalOpts.Unmarshal(data, &actData); err == nil {
-				showcase.ActivityData = &actData
+			if err := unmarshalOpts.Unmarshal(data, &fullEvent); err == nil {
+				showcase.ActivityData = fullEvent.ActivityData
+			} else {
+				s.logger.Warn(ctx, "Failed to unmarshal enriched event from GCS", "error", err, "uri", showcase.ActivityDataUri)
 			}
+		} else if err != nil {
+			s.logger.Warn(ctx, "Failed to fetch activity data from GCS", "error", err, "uri", showcase.ActivityDataUri)
 		}
+	}
+
+	// Final fallback for display name
+	if showcase.OwnerDisplayName == "" {
+		showcase.OwnerDisplayName = "FitGlue Athlete"
 	}
 
 	return showcase, nil

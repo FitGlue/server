@@ -17,6 +17,7 @@ import (
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
+	activitypb "github.com/fitglue/server/src/go/pkg/types/pb/services/activity"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -26,13 +27,15 @@ const (
 
 // Uploader implements destination.Destination for Showcase
 type Uploader struct {
-	svc *bootstrap.Service
+	svc            *bootstrap.Service
+	activityClient activitypb.ActivityServiceClient
 }
 
 // New returns a new Showcase Uploader initialized with dependencies.
-func New(svc *bootstrap.Service) *Uploader {
+func New(svc *bootstrap.Service, activityClient activitypb.ActivityServiceClient) *Uploader {
 	return &Uploader{
-		svc: svc,
+		svc:            svc,
+		activityClient: activityClient,
 	}
 }
 
@@ -106,6 +109,40 @@ func calculateExpiration(userRec *user.Record, createdAt time.Time) *time.Time {
 	return &expiry
 }
 
+// resolveOwnerDisplayName determines the display name for the showcase activity owner.
+// Fallback chain: User Profile name → Firebase Auth display name → email prefix → showcase profile → "FitGlue Athlete".
+func (u *Uploader) resolveOwnerDisplayName(ctx context.Context, userID string, userRec *user.Record, logger *slog.Logger) string {
+	// 1. User's FitGlue profile display name (explicitly set by the user)
+	if userRec != nil && userRec.UserProfile != nil && userRec.UserProfile.DisplayName != "" {
+		return userRec.UserProfile.DisplayName
+	}
+
+	// 2. Firebase Auth display name / email prefix
+	if u.svc.Auth != nil {
+		authUser, err := u.svc.Auth.GetUser(ctx, userID)
+		if err != nil {
+			logger.Warn("Failed to fetch user from Firebase Auth for display name", "error", err, "userId", userID)
+		} else if authUser != nil {
+			if authUser.DisplayName != "" {
+				return authUser.DisplayName
+			}
+			if authUser.Email != "" {
+				if atIdx := strings.Index(authUser.Email, "@"); atIdx > 0 {
+					return authUser.Email[:atIdx]
+				}
+				return authUser.Email
+			}
+		}
+	}
+
+	// 3. Showcase Profile display name
+	if profile, err := u.svc.DB.GetShowcaseProfileByUserId(ctx, userID); err == nil && profile != nil && profile.DisplayName != "" {
+		return profile.DisplayName
+	}
+
+	return "FitGlue Athlete"
+}
+
 // Create uploads a new activity to Showcase
 func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record) (string, error) {
 	logger := slog.Default()
@@ -165,6 +202,7 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		PipelineExecutionId: payload.PipelineExecutionId,
 		CreatedAt:           timestamppb.New(createdAt),
 		ExpiresAt:           nil,
+		OwnerDisplayName:    u.resolveOwnerDisplayName(ctx, payload.UserId, userRec, logger),
 	}
 
 	if uri, ok := payload.Metadata["activity_data_uri"]; ok && uri != "" {
@@ -180,36 +218,18 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		showcasedActivity.ExpiresAt = timestamppb.New(*expiresAt)
 	}
 
-	if u.svc.Auth != nil {
-		authUser, err := u.svc.Auth.GetUser(ctx, payload.UserId)
-		if err != nil {
-			logger.Warn("Failed to fetch user from Firebase Auth for display name", "error", err, "userId", payload.UserId)
-		} else if authUser != nil {
-			if authUser.DisplayName != "" {
-				showcasedActivity.OwnerDisplayName = authUser.DisplayName
-			} else if authUser.Email != "" {
-				emailPrefix := authUser.Email
-				if atIdx := strings.Index(authUser.Email, "@"); atIdx > 0 {
-					emailPrefix = authUser.Email[:atIdx]
-				}
-				showcasedActivity.OwnerDisplayName = emailPrefix
-			}
-		}
-	}
-
-	// Fallback to Showcase Profile if name still empty
-	if showcasedActivity.OwnerDisplayName == "" {
-		if profile, err := u.svc.DB.GetShowcaseProfileByUserId(ctx, payload.UserId); err == nil && profile != nil {
-			showcasedActivity.OwnerDisplayName = profile.DisplayName
-		}
-	}
-
 	if err := u.svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
 		return "", fmt.Errorf("failed to persist showcased activity: %w", err)
 	}
 
-	if err := u.updateShowcaseProfile(ctx, payload, userRec, showcasedActivity, createdAt, logger); err != nil {
-		logger.Warn("Failed to update showcase profile", "error", err)
+	// Delegate profile entry + stats management to the activity service.
+	// AddShowcaseEntry handles: GCS hydration, profile entry creation, and stats aggregation.
+	if _, err := u.activityClient.AddShowcaseEntry(ctx, &activitypb.AddShowcaseEntryRequest{
+		UserId:     payload.UserId,
+		ShowcaseId: showcaseID,
+	}); err != nil {
+		logger.Warn("Failed to add showcase profile entry via activity service", "error", err,
+			"showcase_id", showcaseID, "user_id", payload.UserId)
 	}
 
 	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
@@ -284,6 +304,7 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		Tags:                tags,
 		PipelineExecutionId: payload.PipelineExecutionId,
 		CreatedAt:           timestamppb.New(createdAt),
+		OwnerDisplayName:    u.resolveOwnerDisplayName(ctx, payload.UserId, userRec, logger),
 	}
 
 	if uri, ok := payload.Metadata["activity_data_uri"]; ok && uri != "" {
@@ -294,126 +315,21 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		showcasedActivity.ExpiresAt = timestamppb.New(*expiresAt)
 	}
 
-	if u.svc.Auth != nil {
-		authUser, err := u.svc.Auth.GetUser(ctx, payload.UserId)
-		if err == nil && authUser != nil {
-			if authUser.DisplayName != "" {
-				showcasedActivity.OwnerDisplayName = authUser.DisplayName
-			} else if authUser.Email != "" {
-				emailPrefix := authUser.Email
-				if atIdx := strings.Index(authUser.Email, "@"); atIdx > 0 {
-					emailPrefix = authUser.Email[:atIdx]
-				}
-				showcasedActivity.OwnerDisplayName = emailPrefix
-			}
-		}
-	}
-
-	// Fallback to Showcase Profile if name still empty
-	if showcasedActivity.OwnerDisplayName == "" {
-		if profile, err := u.svc.DB.GetShowcaseProfileByUserId(ctx, payload.UserId); err == nil && profile != nil {
-			showcasedActivity.OwnerDisplayName = profile.DisplayName
-		}
-	}
-
 	if err := u.svc.DB.SetShowcasedActivity(ctx, showcasedActivity); err != nil {
 		return fmt.Errorf("failed to persist updated showcased activity: %w", err)
 	}
 
-	if err := u.updateShowcaseProfile(ctx, payload, userRec, showcasedActivity, createdAt, logger); err != nil {
-		logger.Warn("Failed to update showcase profile", "error", err)
+	// Delegate profile entry + stats management to the activity service.
+	// AddShowcaseEntry handles: GCS hydration, profile entry creation, and stats aggregation.
+	if _, err := u.activityClient.AddShowcaseEntry(ctx, &activitypb.AddShowcaseEntryRequest{
+		UserId:     payload.UserId,
+		ShowcaseId: showcaseID,
+	}); err != nil {
+		logger.Warn("Failed to update showcase profile entry via activity service", "error", err,
+			"showcase_id", showcaseID, "user_id", payload.UserId)
 	}
 
 	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
-
-	return nil
-}
-
-func (u *Uploader) updateShowcaseProfile(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record, showcasedActivity *pbactivity.ShowcasedActivity, actionTime time.Time, logger *slog.Logger) error {
-	existingProfile, _ := u.svc.DB.GetShowcaseProfileByUserId(ctx, payload.UserId)
-	profileSlug := ""
-	if existingProfile != nil && existingProfile.Slug != "" {
-		profileSlug = existingProfile.Slug
-	} else {
-		profileSlug = slugify(showcasedActivity.OwnerDisplayName)
-	}
-
-	if profileSlug == "" {
-		return nil
-	}
-
-	var activityDistance float64
-	var activityDuration float64
-	var activitySets int32
-	var activityReps int32
-	var activityWeightKg float64
-
-	if payload.StandardizedActivity != nil {
-		for _, session := range payload.StandardizedActivity.Sessions {
-			activityDistance += session.TotalDistance
-			activityDuration += float64(session.TotalElapsedTime)
-			for _, set := range session.StrengthSets {
-				activitySets++
-				activityReps += set.Reps
-				activityWeightKg += set.WeightKg * float64(set.Reps)
-			}
-		}
-	}
-
-	entry := &pbactivity.ShowcaseProfileEntry{
-		ShowcaseId:      showcasedActivity.ShowcaseId,
-		Title:           showcasedActivity.Title,
-		ActivityType:    showcasedActivity.ActivityType,
-		Source:          showcasedActivity.Source,
-		StartTime:       showcasedActivity.StartTime,
-		DistanceMeters:  activityDistance,
-		DurationSeconds: activityDuration,
-		TotalSets:       activitySets,
-		TotalReps:       activityReps,
-		TotalWeightKg:   activityWeightKg,
-	}
-
-	if thumb, ok := payload.Metadata["route_thumbnail_url"]; ok {
-		entry.RouteThumbnailUrl = thumb
-	}
-
-	// Write entry to the sub-collection
-	if err := u.svc.DB.SetShowcaseProfileEntry(ctx, payload.UserId, entry); err != nil {
-		return fmt.Errorf("failed to save profile entry: %w", err)
-	}
-
-	// Build/update the profile with delta stats (entry is idempotent via MergeAll,
-	// so for re-runs we accept a small drift in stats — acceptable trade-off)
-	var profile *pbactivity.ShowcaseProfile
-	if existingProfile != nil {
-		profile = existingProfile
-		if showcasedActivity.OwnerDisplayName != "" {
-			profile.DisplayName = showcasedActivity.OwnerDisplayName
-		}
-	} else {
-		profile = &pbactivity.ShowcaseProfile{
-			Slug:        profileSlug,
-			UserId:      payload.UserId,
-			DisplayName: showcasedActivity.OwnerDisplayName,
-			CreatedAt:   timestamppb.New(actionTime),
-		}
-	}
-
-	profile.TotalActivities++
-	profile.TotalDistanceMeters += activityDistance
-	profile.TotalDurationSeconds += activityDuration
-	profile.TotalSets += activitySets
-	profile.TotalReps += activityReps
-	profile.TotalWeightKg += activityWeightKg
-
-	if entry.StartTime != nil && (profile.LatestActivityAt == nil || entry.StartTime.AsTime().After(profile.LatestActivityAt.AsTime())) {
-		profile.LatestActivityAt = entry.StartTime
-	}
-	profile.UpdatedAt = timestamppb.New(actionTime)
-
-	if err := u.svc.DB.SetShowcaseProfile(ctx, profile); err != nil {
-		return fmt.Errorf("failed to save profile: %w", err)
-	}
 
 	return nil
 }
