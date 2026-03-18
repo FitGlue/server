@@ -346,31 +346,10 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 		totalPages = 1
 	}
 
-	// Convert ProfileEntries back to ShowcasedActivity for the response
-	// to match the existing Public API contract if needed.
-	var showcasedActivities []*pbactivity.ShowcasedActivity
-	for _, entry := range pageEntries {
-		sa := &pbactivity.ShowcasedActivity{
-			ShowcaseId:   entry.ShowcaseId,
-			Title:        entry.Title,
-			ActivityType: entry.ActivityType,
-			Source:       entry.Source,
-			StartTime:    entry.StartTime,
-			// RouteThumbnailUrl: entry.RouteThumbnailUrl, // Not on ShowcasedActivity proto
-			UserId: profile.UserId,
-		}
-		if entry.DistanceMeters > 0 || entry.DurationSeconds > 0 {
-			sa.ActivityData = &pbactivity.StandardizedActivity{
-				Sessions: []*pbactivity.Session{
-					{
-						TotalDistance:    entry.DistanceMeters,
-						TotalElapsedTime: entry.DurationSeconds,
-					},
-				},
-			}
-		}
-		showcasedActivities = append(showcasedActivities, sa)
-	}
+	// Populate profile.Entries directly with the page entries
+	// This preserves all fields (totalSets, totalReps, totalWeightKg, etc.)
+	// without lossy conversion to ShowcasedActivity.
+	profile.Entries = pageEntries
 
 	// Double-check display name fallback if still empty
 	if profile.DisplayName == "" {
@@ -383,7 +362,6 @@ func (s *Service) GetPublicShowcaseProfile(ctx context.Context, req *pbsvc.GetPu
 
 	return &pbsvc.GetPublicShowcaseProfileResponse{
 		Profile:     profile,
-		Showcases:   showcasedActivities,
 		TotalPages:  totalPages,
 		CurrentPage: req.Page,
 	}, nil

@@ -208,10 +208,8 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 		return "", fmt.Errorf("failed to persist showcased activity: %w", err)
 	}
 
-	if tier.GetEffectiveTier(userRec) == tier.TierAthlete {
-		if err := u.updateShowcaseProfile(ctx, payload, userRec, showcasedActivity, createdAt, logger); err != nil {
-			logger.Warn("Failed to update showcase profile", "error", err)
-		}
+	if err := u.updateShowcaseProfile(ctx, payload, userRec, showcasedActivity, createdAt, logger); err != nil {
+		logger.Warn("Failed to update showcase profile", "error", err)
 	}
 
 	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)
@@ -322,10 +320,8 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 		return fmt.Errorf("failed to persist updated showcased activity: %w", err)
 	}
 
-	if tier.GetEffectiveTier(userRec) == tier.TierAthlete {
-		if err := u.updateShowcaseProfile(ctx, payload, userRec, showcasedActivity, createdAt, logger); err != nil {
-			logger.Warn("Failed to update showcase profile", "error", err)
-		}
+	if err := u.updateShowcaseProfile(ctx, payload, userRec, showcasedActivity, createdAt, logger); err != nil {
+		logger.Warn("Failed to update showcase profile", "error", err)
 	}
 
 	_ = u.svc.DB.IncrementSyncCount(ctx, payload.UserId)

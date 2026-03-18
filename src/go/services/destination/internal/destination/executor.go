@@ -158,6 +158,11 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 	metadata["strava_sport_type"] = activity.GetStravaActivityType(payload.ActivityType)
 	metadata["activity_type"] = payload.ActivityType.String()
 
+	// Inject activity_data_uri so destination uploaders can persist GCS references
+	if payload.ActivityDataUri != "" {
+		metadata["activity_data_uri"] = payload.ActivityDataUri
+	}
+
 	// Inject applied enrichments and tags (comma-separated for metadata map)
 	if len(payload.AppliedEnrichments) > 0 {
 		metadata["applied_enrichments"] = strings.Join(payload.AppliedEnrichments, ",")

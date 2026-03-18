@@ -818,6 +818,10 @@ components:
                     type: string
                 activityDataUri:
                     type: string
+                ownerProfilePictureUrl:
+                    type: string
+                ownerProfileSlug:
+                    type: string
             description: ShowcasedActivity represents a publicly shareable activity snapshot.
         StandardizedActivity:
             type: object

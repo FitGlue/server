@@ -209,10 +209,16 @@ func (s *Service) GetPublicShowcase(ctx context.Context, req *pbsvc.GetPublicSho
 		return nil, status.Error(codes.NotFound, "showcase not found")
 	}
 
-	// Hydrate owner name if missing
-	if showcase.OwnerDisplayName == "" {
-		if profile, err := s.store.GetShowcasePreferences(ctx, showcase.UserId); err == nil && profile != nil {
+	// Hydrate owner metadata from showcase profile
+	if profile, err := s.store.GetShowcasePreferences(ctx, showcase.UserId); err == nil && profile != nil {
+		if showcase.OwnerDisplayName == "" {
 			showcase.OwnerDisplayName = profile.DisplayName
+		}
+		if profile.ProfilePictureUrl != "" {
+			showcase.OwnerProfilePictureUrl = profile.ProfilePictureUrl
+		}
+		if profile.Slug != "" {
+			showcase.OwnerProfileSlug = profile.Slug
 		}
 	}
 

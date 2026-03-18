@@ -48,6 +48,8 @@ message ShowcasedActivity {
 
   string owner_display_name = 17;  
   string activity_data_uri = 18;
+  string owner_profile_picture_url = 19;
+  string owner_profile_slug = 20;
 }
 
 message ShowcaseProfileEntry {

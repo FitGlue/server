@@ -125,27 +125,29 @@ func (x *UploadedActivityRecord) GetUploadedAt() *timestamppb.Timestamp {
 
 // ShowcasedActivity represents a publicly shareable activity snapshot.
 type ShowcasedActivity struct {
-	state               protoimpl.MessageState `protogen:"open.v1"`
-	ShowcaseId          string                 `protobuf:"bytes,1,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
-	ActivityId          string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
-	UserId              string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	Title               string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	Description         string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
-	ActivityType        ActivityType           `protobuf:"varint,6,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
-	Source              ActivitySource         `protobuf:"varint,7,opt,name=source,proto3,enum=fitglue.models.activity.ActivitySource" json:"source,omitempty"`
-	StartTime           *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	ActivityData        *StandardizedActivity  `protobuf:"bytes,9,opt,name=activity_data,json=activityData,proto3" json:"activity_data,omitempty"`
-	FitFileUri          string                 `protobuf:"bytes,10,opt,name=fit_file_uri,json=fitFileUri,proto3" json:"fit_file_uri,omitempty"`
-	AppliedEnrichments  []string               `protobuf:"bytes,11,rep,name=applied_enrichments,json=appliedEnrichments,proto3" json:"applied_enrichments,omitempty"`
-	EnrichmentMetadata  map[string]string      `protobuf:"bytes,12,rep,name=enrichment_metadata,json=enrichmentMetadata,proto3" json:"enrichment_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Tags                []string               `protobuf:"bytes,13,rep,name=tags,proto3" json:"tags,omitempty"`
-	PipelineExecutionId *string                `protobuf:"bytes,14,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
-	CreatedAt           *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
-	ExpiresAt           *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
-	OwnerDisplayName    string                 `protobuf:"bytes,17,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"`
-	ActivityDataUri     string                 `protobuf:"bytes,18,opt,name=activity_data_uri,json=activityDataUri,proto3" json:"activity_data_uri,omitempty"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state                  protoimpl.MessageState `protogen:"open.v1"`
+	ShowcaseId             string                 `protobuf:"bytes,1,opt,name=showcase_id,json=showcaseId,proto3" json:"showcase_id,omitempty"`
+	ActivityId             string                 `protobuf:"bytes,2,opt,name=activity_id,json=activityId,proto3" json:"activity_id,omitempty"`
+	UserId                 string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	Title                  string                 `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
+	Description            string                 `protobuf:"bytes,5,opt,name=description,proto3" json:"description,omitempty"`
+	ActivityType           ActivityType           `protobuf:"varint,6,opt,name=activity_type,json=activityType,proto3,enum=fitglue.models.activity.ActivityType" json:"activity_type,omitempty"`
+	Source                 ActivitySource         `protobuf:"varint,7,opt,name=source,proto3,enum=fitglue.models.activity.ActivitySource" json:"source,omitempty"`
+	StartTime              *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	ActivityData           *StandardizedActivity  `protobuf:"bytes,9,opt,name=activity_data,json=activityData,proto3" json:"activity_data,omitempty"`
+	FitFileUri             string                 `protobuf:"bytes,10,opt,name=fit_file_uri,json=fitFileUri,proto3" json:"fit_file_uri,omitempty"`
+	AppliedEnrichments     []string               `protobuf:"bytes,11,rep,name=applied_enrichments,json=appliedEnrichments,proto3" json:"applied_enrichments,omitempty"`
+	EnrichmentMetadata     map[string]string      `protobuf:"bytes,12,rep,name=enrichment_metadata,json=enrichmentMetadata,proto3" json:"enrichment_metadata,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Tags                   []string               `protobuf:"bytes,13,rep,name=tags,proto3" json:"tags,omitempty"`
+	PipelineExecutionId    *string                `protobuf:"bytes,14,opt,name=pipeline_execution_id,json=pipelineExecutionId,proto3,oneof" json:"pipeline_execution_id,omitempty"`
+	CreatedAt              *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	ExpiresAt              *timestamppb.Timestamp `protobuf:"bytes,16,opt,name=expires_at,json=expiresAt,proto3" json:"expires_at,omitempty"`
+	OwnerDisplayName       string                 `protobuf:"bytes,17,opt,name=owner_display_name,json=ownerDisplayName,proto3" json:"owner_display_name,omitempty"`
+	ActivityDataUri        string                 `protobuf:"bytes,18,opt,name=activity_data_uri,json=activityDataUri,proto3" json:"activity_data_uri,omitempty"`
+	OwnerProfilePictureUrl string                 `protobuf:"bytes,19,opt,name=owner_profile_picture_url,json=ownerProfilePictureUrl,proto3" json:"owner_profile_picture_url,omitempty"`
+	OwnerProfileSlug       string                 `protobuf:"bytes,20,opt,name=owner_profile_slug,json=ownerProfileSlug,proto3" json:"owner_profile_slug,omitempty"`
+	unknownFields          protoimpl.UnknownFields
+	sizeCache              protoimpl.SizeCache
 }
 
 func (x *ShowcasedActivity) Reset() {
@@ -300,6 +302,20 @@ func (x *ShowcasedActivity) GetOwnerDisplayName() string {
 func (x *ShowcasedActivity) GetActivityDataUri() string {
 	if x != nil {
 		return x.ActivityDataUri
+	}
+	return ""
+}
+
+func (x *ShowcasedActivity) GetOwnerProfilePictureUrl() string {
+	if x != nil {
+		return x.OwnerProfilePictureUrl
+	}
+	return ""
+}
+
+func (x *ShowcasedActivity) GetOwnerProfileSlug() string {
+	if x != nil {
+		return x.OwnerProfileSlug
 	}
 	return ""
 }
@@ -700,7 +716,7 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\vdestination\x18\x06 \x01(\x0e2&.fitglue.models.plugin.DestinationTypeR\vdestination\x12%\n" +
 	"\x0edestination_id\x18\a \x01(\tR\rdestinationId\x12;\n" +
 	"\vuploaded_at\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"uploadedAt\"\x88\b\n" +
+	"uploadedAt\"\xf1\b\n" +
 	"\x11ShowcasedActivity\x12\x1f\n" +
 	"\vshowcase_id\x18\x01 \x01(\tR\n" +
 	"showcaseId\x12\x1f\n" +
@@ -726,7 +742,9 @@ const file_models_activity_uploaded_proto_rawDesc = "" +
 	"\n" +
 	"expires_at\x18\x10 \x01(\v2\x1a.google.protobuf.TimestampR\texpiresAt\x12,\n" +
 	"\x12owner_display_name\x18\x11 \x01(\tR\x10ownerDisplayName\x12*\n" +
-	"\x11activity_data_uri\x18\x12 \x01(\tR\x0factivityDataUri\x1aE\n" +
+	"\x11activity_data_uri\x18\x12 \x01(\tR\x0factivityDataUri\x129\n" +
+	"\x19owner_profile_picture_url\x18\x13 \x01(\tR\x16ownerProfilePictureUrl\x12,\n" +
+	"\x12owner_profile_slug\x18\x14 \x01(\tR\x10ownerProfileSlug\x1aE\n" +
 	"\x17EnrichmentMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
