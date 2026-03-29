@@ -73,6 +73,7 @@ func (s *APIServer) setupRoutes() {
 
 		s.registerStravaRoutes(r)
 		s.registerFitbitRoutes(r)
+		s.registerHevyRoutes(r)
 		s.registerBillingRoutes(r)
 	})
 }
@@ -102,6 +103,14 @@ func (s *APIServer) handleFitbitVerification(w http.ResponseWriter, r *http.Requ
 
 func (s *APIServer) handleFitbitEvent(w http.ResponseWriter, r *http.Request) {
 	s.processor.HandleEvent(w, r, "fitbit")
+}
+
+func (s *APIServer) registerHevyRoutes(r chi.Router) {
+	r.Post("/hevy", s.handleHevyEvent)
+}
+
+func (s *APIServer) handleHevyEvent(w http.ResponseWriter, r *http.Request) {
+	s.processor.HandleEvent(w, r, "hevy")
 }
 
 func (s *APIServer) registerBillingRoutes(r chi.Router) {

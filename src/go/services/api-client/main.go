@@ -98,11 +98,21 @@ func main() {
 	defer pubsubClient.Close()
 	publisher := &infraps.PubSubAdapter{Client: pubsubClient, Logger: logger}
 
+	// Setup Firestore Client for API key storage
+	firestoreClient, err := app.Firestore(ctx)
+	if err != nil {
+		logger.Error(ctx, "Failed to initialize Firestore client", "error", err)
+		os.Exit(1)
+	}
+	defer firestoreClient.Close()
+	apiKeyStore := server.NewFirestoreApiKeyStore(firestoreClient)
+
 	// Build API Gateway router
 	apiServer := server.NewAPIServer(
 		logger,
 		authClient,
 		publisher,
+		apiKeyStore,
 		userClient,
 		billingClient,
 		pipelineClient,

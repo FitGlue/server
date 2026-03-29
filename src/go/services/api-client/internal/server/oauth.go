@@ -164,6 +164,11 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Enrich with standard connection metadata
+	tokenResp["enabled"] = true
+	tokenResp["consent_given"] = true
+	tokenResp["connected_at"] = time.Now().UTC().Format(time.RFC3339)
+
 	// Create protobuf Struct containing the tokens
 	pbStruct, _ := structpb.NewStruct(tokenResp)
 	_, err = s.userService.SetIntegration(r.Context(), &userpb.SetIntegrationRequest{

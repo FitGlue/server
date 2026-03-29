@@ -2,8 +2,12 @@
 package server
 
 import (
+	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"net/http"
+	"time"
 
 	infraps "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
@@ -165,6 +169,11 @@ func (s *APIServer) handleSetIntegration(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// Enrich integration data with standard metadata
+	bodyMap["enabled"] = true
+	bodyMap["consent_given"] = true
+	bodyMap["connected_at"] = time.Now().UTC().Format(time.RFC3339)
+
 	integrationData, err := structpb.NewStruct(bodyMap)
 	if err != nil {
 		WriteError(w, statusError(http.StatusBadRequest, "failed to parse integration data"))
@@ -183,7 +192,56 @@ func (s *APIServer) handleSetIntegration(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// For API_KEY providers, generate an ingress API key for webhooks
+	if isApiKeyProvider(provider) && s.apiKeyStore != nil {
+		rawKey, keyHash, err := generateIngressKey()
+		if err != nil {
+			s.logger.Error(r.Context(), "failed to generate ingress key", "error", err, "provider", provider)
+			WriteError(w, statusError(http.StatusInternalServerError, "failed to generate ingress key"))
+			return
+		}
+
+		label := provider + "-webhook"
+		scopes := []string{"webhook:" + provider}
+		now := time.Now()
+
+		if err := s.apiKeyStore.CreateIngressKey(r.Context(), keyHash, token.UID, label, scopes, now); err != nil {
+			s.logger.Error(r.Context(), "failed to store ingress key", "error", err, "provider", provider)
+			WriteError(w, statusError(http.StatusInternalServerError, "failed to store ingress key"))
+			return
+		}
+
+		WriteJSON(w, map[string]string{
+			"ingressApiKey":   rawKey,
+			"ingressKeyLabel": label,
+		})
+		return
+	}
+
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// isApiKeyProvider returns true for providers that use API key auth and require
+// an ingress key to receive webhooks.
+func isApiKeyProvider(provider string) bool {
+	switch provider {
+	case "hevy":
+		return true
+	default:
+		return false
+	}
+}
+
+// generateIngressKey creates a cryptographically random API key and its SHA-256 hash.
+// The raw key is returned to the user once; the hash is stored for verification.
+func generateIngressKey() (rawKey string, keyHash string, err error) {
+	b := make([]byte, 32)
+	if _, err := rand.Read(b); err != nil {
+		return "", "", err
+	}
+	raw := hex.EncodeToString(b)
+	h := sha256.Sum256([]byte(raw))
+	return raw, hex.EncodeToString(h[:]), nil
 }
 
 func (s *APIServer) handleDeleteIntegration(w http.ResponseWriter, r *http.Request) {

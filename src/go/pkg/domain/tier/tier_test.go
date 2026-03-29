@@ -139,7 +139,9 @@ func TestCanSync(t *testing.T) {
 
 func TestShouldResetSyncCount(t *testing.T) {
 	now := time.Now()
-	lastMonth := now.AddDate(0, -1, 0)
+	// Use the 1st of the previous month to avoid Go's AddDate normalization
+	// (e.g. March 31 minus 1 month = Feb 31 → normalizes to March 3, same month)
+	lastMonth := time.Date(now.Year(), now.Month()-1, 1, 0, 0, 0, 0, now.Location())
 
 	tests := []struct {
 		name     string

@@ -71,6 +71,7 @@ func TestRouteCoverage(t *testing.T) {
 		infra.NewLogger(),
 		nil, // authClient
 		&mockPublisher{},
+		nil, // apiKeyStore
 		&mockUserServiceClient{},
 		&mockBillingServiceClient{},
 		&mockPipelineServiceClient{},

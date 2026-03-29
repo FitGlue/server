@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"firebase.google.com/go/v4/auth"
 	"github.com/cloudevents/sdk-go/v2/event"
@@ -20,6 +21,18 @@ import (
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
+
+// mockApiKeyStore implements ApiKeyStore for testing
+type mockApiKeyStore struct {
+	createFunc func(ctx context.Context, keyHash, userID, label string, scopes []string, createdAt time.Time) error
+}
+
+func (m *mockApiKeyStore) CreateIngressKey(ctx context.Context, keyHash, userID, label string, scopes []string, createdAt time.Time) error {
+	if m.createFunc != nil {
+		return m.createFunc(ctx, keyHash, userID, label, scopes, createdAt)
+	}
+	return nil
+}
 
 // =============================================================
 // Mock UserServiceClient
@@ -406,7 +419,14 @@ func TestHandleGetIntegration_ServiceError(t *testing.T) {
 // =============================================================
 
 func TestHandleSetIntegration_Success(t *testing.T) {
-	s := buildTestServer(&mockUserServiceClient{}, &mockPublisher{})
+	var captured *userpb.SetIntegrationRequest
+	svc := &mockUserServiceClient{
+		setIntegration: func(_ context.Context, in *userpb.SetIntegrationRequest, _ ...grpc.CallOption) (*emptypb.Empty, error) {
+			captured = in
+			return &emptypb.Empty{}, nil
+		},
+	}
+	s := buildTestServer(svc, &mockPublisher{})
 	body := strings.NewReader(`{"access_token":"abc123","refresh_token":"xyz"}`)
 	r := httptest.NewRequest(http.MethodPut, "/api/v2/users/me/integrations/strava", body)
 	r = withToken(r, "user1")
@@ -417,6 +437,69 @@ func TestHandleSetIntegration_Success(t *testing.T) {
 	s.handleSetIntegration(w, r)
 	if w.Code != http.StatusNoContent {
 		t.Errorf("expected 204, got %d: %s", w.Code, w.Body.String())
+	}
+	// Verify enrichment fields were added
+	if captured == nil {
+		t.Fatal("SetIntegration was not called")
+	}
+	data := captured.IntegrationData.AsMap()
+	if data["enabled"] != true {
+		t.Error("expected enabled=true in integration data")
+	}
+	if data["consent_given"] != true {
+		t.Error("expected consent_given=true in integration data")
+	}
+	if _, ok := data["connected_at"]; !ok {
+		t.Error("expected connected_at in integration data")
+	}
+}
+
+func TestHandleSetIntegration_ApiKeyProvider(t *testing.T) {
+	var createdKeyHash, createdUserID, createdLabel string
+	svc := &mockUserServiceClient{}
+	mockStore := &mockApiKeyStore{
+		createFunc: func(_ context.Context, keyHash, userID, label string, _ []string, _ time.Time) error {
+			createdKeyHash = keyHash
+			createdUserID = userID
+			createdLabel = label
+			return nil
+		},
+	}
+	s := buildTestServer(svc, &mockPublisher{})
+	s.apiKeyStore = mockStore
+
+	body := strings.NewReader(`{"apiKey":"test-key-123"}`)
+	r := httptest.NewRequest(http.MethodPut, "/api/v2/users/me/integrations/hevy", body)
+	r = withToken(r, "user1")
+	rctx := chi.NewRouteContext()
+	rctx.URLParams.Add("provider", "hevy")
+	r = r.WithContext(context.WithValue(r.Context(), chi.RouteCtxKey, rctx))
+	w := httptest.NewRecorder()
+	s.handleSetIntegration(w, r)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+	// Verify response contains ingress key
+	var resp map[string]string
+	if err := json.NewDecoder(w.Body).Decode(&resp); err != nil {
+		t.Fatalf("failed to decode response: %v", err)
+	}
+	if resp["ingressApiKey"] == "" {
+		t.Error("expected non-empty ingressApiKey in response")
+	}
+	if resp["ingressKeyLabel"] != "hevy-webhook" {
+		t.Errorf("expected ingressKeyLabel=hevy-webhook, got %s", resp["ingressKeyLabel"])
+	}
+	// Verify store was called
+	if createdKeyHash == "" {
+		t.Error("expected CreateIngressKey to be called with non-empty hash")
+	}
+	if createdUserID != "user1" {
+		t.Errorf("expected userID=user1, got %s", createdUserID)
+	}
+	if createdLabel != "hevy-webhook" {
+		t.Errorf("expected label=hevy-webhook, got %s", createdLabel)
 	}
 }
 
