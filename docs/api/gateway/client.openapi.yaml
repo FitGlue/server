@@ -3319,6 +3319,9 @@ components:
                     type: string
                 markerType:
                     type: string
+                durationSeconds:
+                    type: integer
+                    format: int32
         TrainingPeaksIntegration:
             type: object
             properties:

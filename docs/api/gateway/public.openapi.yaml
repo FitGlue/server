@@ -1033,6 +1033,9 @@ components:
                     type: string
                 markerType:
                     type: string
+                durationSeconds:
+                    type: integer
+                    format: int32
         Transformation:
             type: object
             properties:

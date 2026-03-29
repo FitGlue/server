@@ -2,7 +2,9 @@ package hybrid_race_tagger
 
 import (
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
+	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
 
+	"context"
 	"testing"
 	"time"
 
@@ -438,5 +440,52 @@ func TestApplyMerges_HyroxScenario(t *testing.T) {
 	// Position 4: Run 3 (unchanged)
 	if result[4].TotalDistance != 1000 {
 		t.Errorf("Run 3 distance wrong: expected 1000, got %v", result[4].TotalDistance)
+	}
+}
+
+func TestEnrichResume_MutatesActivityTypeAndDistances(t *testing.T) {
+	provider := &HybridRaceTaggerProvider{}
+	ctx := context.TODO()
+
+	activity := &pbactivity.StandardizedActivity{
+		Type: pbactivity.ActivityType_ACTIVITY_TYPE_RUN,
+		Sessions: []*pbactivity.Session{
+			{
+				Laps: []*pbactivity.Lap{
+					makeLap(980, 300, 0),             // Run 1 (recorded as 980m)
+					makeLap(500, 180, 5*time.Minute), // SkiErg
+				},
+			},
+		},
+	}
+
+	pendingInput := &pbpipeline.PendingInput{
+		InputData: map[string]string{
+			"race_selection": `{"preset_id":"hyrox_men_open","merged_laps":[]}`,
+		},
+	}
+
+	// Not testing real user record, so we can pass nil or empty
+	result, err := provider.EnrichResume(ctx, activity, nil, pendingInput)
+	if err != nil {
+		t.Fatalf("EnrichResume failed: %v", err)
+	}
+
+	// Verify ActivityType mutation
+	if result.ActivityType != pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT {
+		t.Errorf("Expected ActivityType to be WORKOUT, got %v", result.ActivityType)
+	}
+
+	// Verify Distance mutation
+	laps := activity.Sessions[0].Laps
+	if len(laps) != 2 {
+		t.Fatalf("Expected 2 laps, got %d", len(laps))
+	}
+
+	if laps[0].TotalDistance != 1000 {
+		t.Errorf("Expected Run 1 to be exactly 1000m, got %v", laps[0].TotalDistance)
+	}
+	if laps[1].TotalDistance != 1000 {
+		t.Errorf("Expected SkiErg to be exactly 1000m, got %v", laps[1].TotalDistance)
 	}
 }

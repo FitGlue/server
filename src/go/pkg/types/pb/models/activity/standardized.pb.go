@@ -258,12 +258,13 @@ func (x *StandardizedActivity) GetWorkout() *WorkoutDefinition {
 }
 
 type TimeMarker struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Timestamp     *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
-	Label         string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
-	MarkerType    string                 `protobuf:"bytes,3,opt,name=marker_type,json=markerType,proto3" json:"marker_type,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Timestamp       *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
+	Label           string                 `protobuf:"bytes,2,opt,name=label,proto3" json:"label,omitempty"`
+	MarkerType      string                 `protobuf:"bytes,3,opt,name=marker_type,json=markerType,proto3" json:"marker_type,omitempty"`
+	DurationSeconds int32                  `protobuf:"varint,4,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *TimeMarker) Reset() {
@@ -315,6 +316,13 @@ func (x *TimeMarker) GetMarkerType() string {
 		return x.MarkerType
 	}
 	return ""
+}
+
+func (x *TimeMarker) GetDurationSeconds() int32 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
 }
 
 type Session struct {
@@ -923,13 +931,14 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\ftime_markers\x18\v \x03(\v2#.fitglue.models.activity.TimeMarkerR\vtimeMarkers\x12I\n" +
 	"\aworkout\x18\f \x01(\v2*.fitglue.models.activity.WorkoutDefinitionH\x00R\aworkout\x88\x01\x01B\n" +
 	"\n" +
-	"\b_workout\"}\n" +
+	"\b_workout\"\xa8\x01\n" +
 	"\n" +
 	"TimeMarker\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x14\n" +
 	"\x05label\x18\x02 \x01(\tR\x05label\x12\x1f\n" +
 	"\vmarker_type\x18\x03 \x01(\tR\n" +
-	"markerType\"\xd1\x03\n" +
+	"markerType\x12)\n" +
+	"\x10duration_seconds\x18\x04 \x01(\x05R\x0fdurationSeconds\"\xd1\x03\n" +
 	"\aSession\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +

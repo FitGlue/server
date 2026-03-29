@@ -205,8 +205,9 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	// Return description in EnrichmentResult so orchestrator can merge it properly
 	// (don't modify activity.Description directly - orchestrator overwrites it)
 	return &providers.EnrichmentResult{
-		Description: description,
-		Tags:        []string{raceTypeTag},
+		ActivityType: pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT,
+		Description:  description,
+		Tags:         []string{raceTypeTag},
 		Metadata: map[string]string{
 			"status":        "success",
 			"preset":        preset.Name,
@@ -233,9 +234,10 @@ func generateTimeMarkers(results []StationResult) []*pbactivity.TimeMarker {
 		}
 
 		markers = append(markers, &pbactivity.TimeMarker{
-			Timestamp:  result.StartTime,
-			Label:      result.Name,
-			MarkerType: markerType,
+			Timestamp:       result.StartTime,
+			Label:           result.Name,
+			MarkerType:      markerType,
+			DurationSeconds: int32(result.Duration),
 		})
 	}
 
@@ -440,11 +442,13 @@ func mapLapsToPreset(laps []*pbactivity.Lap, preset RacePreset) ([]*pbactivity.L
 		case StationTypeRun:
 			// Keep as lap (running segment)
 			lap.ExerciseName = station.Name
+			lap.TotalDistance = station.DistanceMeters
 			newLaps = append(newLaps, lap)
 
 		case StationTypeCardio:
 			// Keep as lap but with exercise name (SkiErg, Rowing)
 			lap.ExerciseName = station.Name
+			lap.TotalDistance = station.DistanceMeters
 			newLaps = append(newLaps, lap)
 
 		case StationTypeStrength:

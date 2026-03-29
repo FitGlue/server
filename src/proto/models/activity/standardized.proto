@@ -30,6 +30,7 @@ message TimeMarker {
   google.protobuf.Timestamp timestamp = 1;
   string label = 2;       
   string marker_type = 3; 
+  int32 duration_seconds = 4;
 }
 
 message Session {
