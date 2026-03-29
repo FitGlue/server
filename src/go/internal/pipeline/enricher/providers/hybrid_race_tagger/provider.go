@@ -195,13 +195,11 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	session.Laps = newLaps
 	session.StrengthSets = append(session.StrengthSets, strengthSets...)
 
-	// Recalculate session total distance
+	// Recalculate session total distance. Since we now preserve all laps (including strength stations),
+	// we just sum the laps themselves.
 	var totalDistance float64
 	for _, lap := range newLaps {
 		totalDistance += lap.TotalDistance
-	}
-	for _, set := range strengthSets {
-		totalDistance += set.DistanceMeters
 	}
 	session.TotalDistance = totalDistance
 
@@ -462,7 +460,21 @@ func mapLapsToPreset(laps []*pbactivity.Lap, preset RacePreset) ([]*pbactivity.L
 			newLaps = append(newLaps, lap)
 
 		case StationTypeStrength:
-			// Convert to StrengthSet
+			// Keep the actual lap in the session so we don't permanently discard all the
+			// internal second-by-second records (heart rate, power, cadence, etc.) for this duration.
+			lap.ExerciseName = station.Name
+
+			// Rep-based stations (Wall Balls) have no actual trackable distance, whereas moving
+			// strength sets (Sleds, Farmers, Lunges) do have the preset distance.
+			if station.Reps > 0 {
+				lap.TotalDistance = 0
+			} else {
+				lap.TotalDistance = station.DistanceMeters
+			}
+			newLaps = append(newLaps, lap)
+
+			// Additionally generate the StrengthSet so that volume/reps/weight metadata is properly attached
+			// for the frontend UI and the FIT file StrengthSet export.
 			set := &pbactivity.StrengthSet{
 				ExerciseName:    station.Name,
 				StartTime:       lap.StartTime,
@@ -472,10 +484,9 @@ func mapLapsToPreset(laps []*pbactivity.Lap, preset RacePreset) ([]*pbactivity.L
 				SetType:         "normal",
 			}
 
-			// Use preset reps if specified, otherwise calculate from distance
+			// Use preset reps if specified
 			if station.Reps > 0 {
 				set.Reps = station.Reps
-				set.DistanceMeters = 0 // Reps-based, don't use distance
 			}
 
 			strengthSets = append(strengthSets, set)

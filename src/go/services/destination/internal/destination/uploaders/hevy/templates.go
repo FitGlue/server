@@ -20,8 +20,9 @@ import (
 
 // ExerciseTypeConfig holds the exercise type and muscle group for custom templates
 type ExerciseTypeConfig struct {
-	ExerciseType string // Hevy CustomExerciseType: weight_reps, distance_duration, weight_duration, etc.
-	MuscleGroup  string // Hevy MuscleGroup: full_body, quadriceps, etc.
+	ExerciseType      string // Hevy CustomExerciseType: weight_reps, distance_duration, weight_duration, etc.
+	MuscleGroup       string // Hevy MuscleGroup: full_body, quadriceps, etc.
+	EquipmentCategory string // Hevy EquipmentCategory: "none", "barbell", "dumbbell", "kettlebell", "machine", "plate", "resistance_band", "suspension", "other"
 }
 
 // strictExerciseAliases maps normalized exercise names to acceptable alternatives
@@ -44,10 +45,29 @@ var strictExerciseAliases = map[string][]string{
 	"row":                {"rowing", "rowing machine", "row machine"},
 }
 
-// getExerciseTypeConfig returns the appropriate exercise_type and muscle_group for an exercise name
+// getExerciseTypeConfig returns the appropriate exercise_type, muscle_group, and equipment_category for an exercise name
 // This is used when creating custom templates to ensure the right measurement types are supported
 func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 	normalized := strings.ToLower(exerciseName)
+
+	equip := "other"
+	if strings.Contains(normalized, "barbell") {
+		equip = "barbell"
+	} else if strings.Contains(normalized, "dumbbell") || strings.Contains(normalized, "dumbell") {
+		equip = "dumbbell"
+	} else if strings.Contains(normalized, "kettlebell") {
+		equip = "kettlebell"
+	} else if strings.Contains(normalized, "machine") {
+		equip = "machine"
+	} else if strings.Contains(normalized, "plate") {
+		equip = "plate"
+	} else if strings.Contains(normalized, "band") {
+		equip = "resistance_band"
+	} else if strings.Contains(normalized, "suspension") || strings.Contains(normalized, "trx") {
+		equip = "suspension"
+	} else if strings.Contains(normalized, "bodyweight") || strings.Contains(normalized, "running") || strings.Contains(normalized, "walking") || strings.Contains(normalized, "swimming") || strings.Contains(normalized, "burpee") {
+		equip = "none"
+	}
 
 	// Distance + Duration exercises (Hyrox cardio stations, carries, sleds, etc.)
 	// These exercises track distance covered and time taken
@@ -63,7 +83,12 @@ func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 
 	for _, pattern := range distanceDurationPatterns {
 		if strings.Contains(normalized, pattern) {
-			return ExerciseTypeConfig{ExerciseType: "distance_duration", MuscleGroup: "full_body"}
+			if strings.Contains(pattern, "running") || strings.Contains(pattern, "walking") || strings.Contains(pattern, "swimming") || strings.Contains(pattern, "burpee") {
+				equip = "none"
+			} else if strings.Contains(pattern, "rowing") || strings.Contains(pattern, "row") || strings.Contains(pattern, "skierg") || strings.Contains(pattern, "ski erg") || strings.Contains(pattern, "cycling") {
+				equip = "machine"
+			}
+			return ExerciseTypeConfig{ExerciseType: "distance_duration", MuscleGroup: "full_body", EquipmentCategory: equip}
 		}
 	}
 
@@ -72,12 +97,12 @@ func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 	weightDurationPatterns := []string{"wall ball"}
 	for _, pattern := range weightDurationPatterns {
 		if strings.Contains(normalized, pattern) {
-			return ExerciseTypeConfig{ExerciseType: "weight_duration", MuscleGroup: "full_body"}
+			return ExerciseTypeConfig{ExerciseType: "weight_duration", MuscleGroup: "full_body", EquipmentCategory: equip}
 		}
 	}
 
 	// Default to weight_reps for unknown strength exercises
-	return ExerciseTypeConfig{ExerciseType: "weight_reps", MuscleGroup: "other"}
+	return ExerciseTypeConfig{ExerciseType: "weight_reps", MuscleGroup: "other", EquipmentCategory: equip}
 }
 
 // TemplateResolver fetches, caches, and resolves exercise template IDs from Hevy
@@ -247,16 +272,18 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 
 	payload := map[string]interface{}{
 		"exercise": map[string]interface{}{
-			"title":         exerciseName,
-			"exercise_type": config.ExerciseType,
-			"muscle_group":  config.MuscleGroup,
+			"title":              exerciseName,
+			"exercise_type":      config.ExerciseType,
+			"muscle_group":       config.MuscleGroup,
+			"equipment_category": config.EquipmentCategory,
 		},
 	}
 
 	r.logger.Debug("Creating custom template",
 		"exerciseName", exerciseName,
 		"exerciseType", config.ExerciseType,
-		"muscleGroup", config.MuscleGroup)
+		"muscleGroup", config.MuscleGroup,
+		"equipmentCategory", config.EquipmentCategory)
 
 	body, err := json.Marshal(payload)
 	if err != nil {
