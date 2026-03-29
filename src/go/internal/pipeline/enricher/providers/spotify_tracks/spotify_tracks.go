@@ -57,6 +57,8 @@ func (p *SpotifyTracks) EnrichWithClient(ctx context.Context, logger *slog.Logge
 	if user.Integrations == nil || user.Integrations.Spotify == nil || !user.Integrations.Spotify.Enabled {
 		logger.Info("Spotify integration not enabled, skipping")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "Spotify integration not enabled",
 			Metadata: map[string]string{
 				"spotify_status": "skipped",
 				"status_detail":  "Spotify integration not enabled",

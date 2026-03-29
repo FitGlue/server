@@ -44,6 +44,8 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 	if len(activity.Sessions) == 0 {
 		logger.Debug("virtual_gps: skipping - no sessions")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No sessions",
 			Metadata: map[string]string{"status": "skipped", "reason": "no_sessions"},
 		}, nil
 	}
@@ -60,6 +62,8 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 	if distance <= 0 || duration <= 0 {
 		logger.Debug("virtual_gps: skipping - no distance or duration")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No distance or duration",
 			Metadata: map[string]string{"status": "skipped", "reason": "no_distance_or_duration"},
 		}, nil
 	}
@@ -88,6 +92,8 @@ func (p *VirtualGPSProvider) Enrich(ctx context.Context, logger *slog.Logger, ac
 	if hasGPS && !force {
 		logger.Debug("virtual_gps: skipping - GPS already exists and force=false")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "GPS already exists",
 			Metadata: map[string]string{"status": "skipped", "reason": "gps_already_exists", "force": "false"},
 		}, nil
 	}

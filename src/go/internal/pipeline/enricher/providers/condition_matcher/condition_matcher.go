@@ -53,6 +53,8 @@ func (p *ConditionMatcherProvider) Enrich(ctx context.Context, logger *slog.Logg
 			"reason", reason,
 		)
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: reason,
 			Metadata: map[string]string{
 				"condition_matcher_applied": "false",
 				"condition_fail_reason":     reason,

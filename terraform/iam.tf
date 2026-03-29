@@ -1,5 +1,5 @@
 locals {
-  firestore_services = ["user", "billing", "pipeline", "activity", "registry", "api-admin", "destination"]
+  firestore_services = ["user", "billing", "pipeline", "activity", "registry", "api-admin", "destination", "api-client"]
   pubsub_publishers  = ["api-webhook", "pipeline", "activity", "api-client"]
   secret_accessors   = ["api-client", "user", "billing", "pipeline", "activity", "destination", "registry", "api-webhook"]
   storage_services   = ["activity", "pipeline"]

@@ -63,6 +63,8 @@ func (p *PowerSummary) Enrich(ctx context.Context, logger *slog.Logger, activity
 	if len(powers) == 0 {
 		logger.Info("No power data found for power summary enricher")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No power data found",
 			Metadata: map[string]string{
 				"power_summary_status": "skipped",
 				"status_detail":        "No power data found",

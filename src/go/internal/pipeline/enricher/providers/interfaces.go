@@ -48,6 +48,11 @@ type EnrichmentResult struct {
 	// Not a failure - the activity is intentionally skipped (e.g., filtered out).
 	HaltPipeline bool
 	HaltReason   string // Human-readable reason for logging/display
+
+	// Skipped signals that the provider ran but decided not to apply any enrichment.
+	// Unlike HaltPipeline, the pipeline continues normally with the next enricher.
+	Skipped    bool
+	SkipReason string // Human-readable reason for logging/display
 }
 
 // Provider defines the interface for an enrichment service.

@@ -59,6 +59,8 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 	if !forceOverwrite && hasExistingHeartRateData(activity) {
 		logger.Info("Skipping Fitbit HR enrichment: activity already has heartrate data and force=false")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "Activity already has heartrate data",
 			Metadata: map[string]string{
 				"hr_source":     "skipped",
 				"status_detail": "Activity already has heartrate data",

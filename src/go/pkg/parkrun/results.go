@@ -59,7 +59,10 @@ type PlaywrightFetchResponse struct {
 
 // FetchResultsForAthlete fetches and parses results from Parkrun website.
 // Uses the Playwright fetcher service to bypass AWS WAF bot protection.
-func FetchResultsForAthlete(ctx context.Context, logger *slog.Logger, athleteID, countryURL, eventSlug string) (*Result, error) {
+// expectedDate is the date the parkrun activity took place; only results matching
+// this date will be returned. This prevents returning stale (previous week) results
+// when this week's results haven't been published yet.
+func FetchResultsForAthlete(ctx context.Context, logger *slog.Logger, athleteID, countryURL, eventSlug string, expectedDate time.Time) (*Result, error) {
 	// Extract numeric athlete ID from barcode (A12345 -> 12345)
 	athleteID = strings.TrimPrefix(athleteID, "A")
 
@@ -76,8 +79,8 @@ func FetchResultsForAthlete(ctx context.Context, logger *slog.Logger, athleteID,
 		return nil, fmt.Errorf("fetch via playwright: %w", err)
 	}
 
-	// Parse the HTML to find matching event by slug
-	return ParseAthleteResultsBySlug(logger, html, eventSlug)
+	// Parse the HTML to find matching event by slug and date
+	return ParseAthleteResultsBySlug(logger, html, eventSlug, expectedDate)
 }
 
 // FetchViaPlaywright calls the Playwright fetcher Cloud Run service to get HTML.
@@ -177,15 +180,22 @@ func fetchDirectHTTP(ctx context.Context, client *http.Client, url string) (stri
 // ParseAthleteResultsBySlug parses the athlete's results page HTML to find result by event slug
 // and calculate PBs/stats from historical data.
 // The /all/ page has a table with columns: Event, Run Date, Run Number, Pos, Time, Age Grade, PB?
-func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug string) (*Result, error) {
+// expectedDate is the date the parkrun activity took place; only results matching this date
+// (DD/MM/YYYY format) are considered a valid match. This prevents returning stale results
+// from a previous week when the current week's results haven't been published yet.
+func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug string, expectedDate time.Time) (*Result, error) {
 	// Find rows in the "All Results" table (look for tbody rows to skip header)
 	// Using (?s) for dot-all mode to match across newlines
 	rowPattern := regexp.MustCompile(`(?s)<tr[^>]*>(.*?)</tr>`)
 	rows := rowPattern.FindAllStringSubmatch(html, -1)
 
+	// Format expected date as DD/MM/YYYY to match Parkrun's table format
+	expectedDateStr := expectedDate.Format("02/01/2006")
+
 	logger.Debug("parseAthleteResultsBySlug starting",
 		"html_len", len(html),
 		"event_slug", eventSlug,
+		"expected_date", expectedDateStr,
 		"total_rows", len(rows))
 
 	// Track our target result and all historical data for PB calculations
@@ -279,20 +289,23 @@ func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug strin
 			thisYearAgeGrades = append(thisYearAgeGrades, ageGrade)
 		}
 
-		// Check if this is our target row (most recent match for the event slug)
+		// Check if this is our target row (must match both event slug AND expected date)
 		rowLower := strings.ToLower(row)
 		containsTarget := strings.Contains(rowLower, targetEventSlugLower)
+		dateMatches := strings.TrimSpace(dateCell) == expectedDateStr
 
 		if i < 25 || containsTarget { // Log first 25 rows or any matching rows
 			logger.Debug("Row parsing",
 				"row", i,
 				"event", eventCell,
 				"row_slug", rowEventSlug,
+				"row_date", dateCell,
 				"contains_target", containsTarget,
+				"date_matches", dateMatches,
 				"target_result_nil", targetResult == nil)
 		}
 
-		if targetResult == nil && containsTarget {
+		if targetResult == nil && containsTarget && dateMatches {
 			logger.Debug("Match found",
 				"row", i,
 				"event", eventCell,
@@ -311,6 +324,12 @@ func ParseAthleteResultsBySlug(logger *slog.Logger, html string, eventSlug strin
 				FirstAtLocation: locationVisits[rowEventSlug] == 1,
 			}
 			targetRowDate = dateCell
+		} else if containsTarget && !dateMatches {
+			logger.Debug("Slug match but date mismatch - skipping stale result",
+				"row", i,
+				"event", eventCell,
+				"row_date", dateCell,
+				"expected_date", expectedDateStr)
 		}
 	}
 

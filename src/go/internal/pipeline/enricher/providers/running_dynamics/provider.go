@@ -70,6 +70,8 @@ func (p *RunningDynamics) Enrich(ctx context.Context, logger *slog.Logger, activ
 	if len(gcts) == 0 && len(vos) == 0 && len(sls) == 0 {
 		logger.Debug("running_dynamics: skipping - no running dynamics data found")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No running dynamics data found",
 			Metadata: map[string]string{
 				"running_dynamics_status": "skipped",
 			},
@@ -107,7 +109,7 @@ func (p *RunningDynamics) Enrich(ctx context.Context, logger *slog.Logger, activ
 	}
 
 	if len(summaryParts) == 0 {
-		return &providers.EnrichmentResult{}, nil
+		return &providers.EnrichmentResult{Skipped: true, SkipReason: "No summary parts generated"}, nil
 	}
 
 	// Build summary line

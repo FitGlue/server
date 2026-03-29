@@ -57,6 +57,12 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 		if res.Metadata["condition_matcher_applied"] != "false" {
 			t.Errorf("Expected condition_matcher_applied=false")
 		}
+		if !res.Skipped {
+			t.Errorf("Expected Skipped=true")
+		}
+		if !strings.Contains(res.SkipReason, "Activity Type mismatch") {
+			t.Errorf("Expected SkipReason to contain 'Activity Type mismatch', got %s", res.SkipReason)
+		}
 		if !strings.Contains(res.Metadata["condition_fail_reason"], "Activity Type mismatch") {
 			t.Errorf("Expected fail reason to contain 'Activity Type mismatch'")
 		}
@@ -87,6 +93,9 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 		}
 		if res.Metadata["condition_matcher_applied"] != "false" {
 			t.Errorf("Expected condition_matcher_applied=false")
+		}
+		if !res.Skipped {
+			t.Errorf("Expected Skipped=true")
 		}
 	})
 
@@ -145,6 +154,9 @@ func TestConditionMatcher_Enrich(t *testing.T) {
 		}
 		if res.Metadata["condition_matcher_applied"] != "false" {
 			t.Errorf("Expected condition_matcher_applied=false")
+		}
+		if !res.Skipped {
+			t.Errorf("Expected Skipped=true")
 		}
 		if !strings.Contains(res.Metadata["condition_fail_reason"], "Location mismatch") {
 			t.Errorf("Expected fail reason to contain 'Location mismatch'")

@@ -93,6 +93,8 @@ func (p *ElevationSummary) Enrich(ctx context.Context, logger *slog.Logger, acti
 	if recordCount == 0 {
 		logger.Info("No elevation data found for elevation summary enricher")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No altitude data found",
 			Metadata: map[string]string{
 				"elevation_summary_status": "skipped",
 				"status_detail":            "No altitude data found",

@@ -117,6 +117,8 @@ func (p *CaloriesBurned) Enrich(ctx context.Context, logger *slog.Logger, activi
 	if durationHours <= 0 {
 		logger.Debug("calories_burned: skipping - no duration data")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No duration data",
 			Metadata: map[string]string{
 				"calories_status": "skipped",
 				"status_detail":   "No duration data",

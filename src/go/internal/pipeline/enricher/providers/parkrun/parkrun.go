@@ -316,6 +316,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 				integration.AthleteId,
 				integration.CountryUrl,
 				matchedLocation.EventSlug,
+				estimatedLocalTime,
 			)
 
 			if fetchErr != nil {
@@ -375,6 +376,7 @@ func (p *ParkrunProvider) Enrich(ctx context.Context, logger *slog.Logger, activ
 						"parkrun_event_slug":   matchedLocation.EventSlug,
 						"parkrun_event_name":   matchedLocation.Name,
 						"parkrun_country":      matchedLocation.CountryURL,
+						"expected_date":        estimatedLocalTime.Format("02/01/2006"),
 						"source_activity_id":   activity.ExternalId,
 						"source_activity_type": activity.Source.String(),
 						"display.field_labels": `{"description":"Results Summary","position":"Finish Position","time":"Finish Time","age_grade":"Age Grade %"}`,

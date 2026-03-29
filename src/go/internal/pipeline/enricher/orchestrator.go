@@ -531,6 +531,21 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			}, nil
 		}
 
+		// Check if provider skipped (ran but didn't apply)
+		if res.Skipped {
+			logger.Info(fmt.Sprintf("Provider skipped: %v", provider.Name()), "name", provider.Name(), "reason", res.SkipReason, "duration_ms", duration)
+			pe.Status = "SKIPPED"
+			pe.Metadata = res.Metadata
+			if res.SkipReason != "" {
+				if pe.Metadata == nil {
+					pe.Metadata = map[string]string{}
+				}
+				pe.Metadata["skip_reason"] = res.SkipReason
+			}
+			providerExecutions = append(providerExecutions, pe)
+			continue
+		}
+
 		pe.Status = "SUCCESS"
 		pe.Metadata = res.Metadata
 		results[i] = res
@@ -738,6 +753,21 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				logger.Warn(fmt.Sprintf("Deferred provider returned nil result: %v", provider.Name()))
 				pe.Status = "SKIPPED"
 				pe.Error = "nil result"
+				providerExecutions = append(providerExecutions, pe)
+				continue
+			}
+
+			// Check if deferred provider skipped
+			if res.Skipped {
+				logger.Info(fmt.Sprintf("Deferred provider skipped: %v", provider.Name()), "name", provider.Name(), "reason", res.SkipReason, "duration_ms", duration)
+				pe.Status = "SKIPPED"
+				pe.Metadata = res.Metadata
+				if res.SkipReason != "" {
+					if pe.Metadata == nil {
+						pe.Metadata = map[string]string{}
+					}
+					pe.Metadata["skip_reason"] = res.SkipReason
+				}
 				providerExecutions = append(providerExecutions, pe)
 				continue
 			}

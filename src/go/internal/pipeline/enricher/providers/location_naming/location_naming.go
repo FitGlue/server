@@ -82,6 +82,8 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 	if !hasGPS {
 		logger.Info("No GPS data found for location naming enricher, skipping")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No GPS data found",
 			Metadata: map[string]string{
 				"location_naming_status": "skipped",
 				"status_detail":          "No GPS data found",
@@ -154,6 +156,8 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 		if err := json.NewDecoder(resp.Body).Decode(&nominatimResp); err != nil {
 			logger.Error("Failed to decode nominatim response", "error", err)
 			return &providers.EnrichmentResult{
+				Skipped:    true,
+				SkipReason: "Failed to parse location response",
 				Metadata: map[string]string{
 					"location_naming_status": "skipped",
 					"status_detail":          "Failed to parse location response",
@@ -192,6 +196,8 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 	// If no specific location found and fallback is disabled, skip
 	if locationName == "" && !fallbackEnabled {
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No specific location found and fallback disabled",
 			Metadata: map[string]string{
 				"location_naming_status": "skipped",
 				"status_detail":          "No specific location found and fallback disabled",
@@ -206,6 +212,8 @@ func (p *LocationNaming) Enrich(ctx context.Context, logger *slog.Logger, activi
 	}
 	if displayLocation == "" {
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "Could not determine location name",
 			Metadata: map[string]string{
 				"location_naming_status": "skipped",
 				"status_detail":          "Could not determine location name",

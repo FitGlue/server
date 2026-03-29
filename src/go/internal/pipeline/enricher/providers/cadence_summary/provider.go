@@ -70,6 +70,8 @@ func (p *CadenceSummary) Enrich(ctx context.Context, logger *slog.Logger, activi
 	if len(cadences) == 0 {
 		logger.Info("No cadence data found for cadence summary enricher")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "No cadence data found",
 			Metadata: map[string]string{
 				"cadence_summary_status": "skipped",
 				"status_detail":          "No cadence data found",

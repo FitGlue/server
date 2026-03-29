@@ -55,7 +55,7 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, logger *slog.Logger
 	// Tier check - Athlete only
 	if tier.GetEffectiveTier(user) != tier.TierAthlete {
 		logger.Info("Skipping route thumbnail - Athlete tier required")
-		return &providers.EnrichmentResult{}, nil
+		return &providers.EnrichmentResult{Skipped: true, SkipReason: "Athlete tier required"}, nil
 	}
 
 	// Extract GPS points from all records
@@ -76,7 +76,7 @@ func (p *RouteThumbnailProvider) Enrich(ctx context.Context, logger *slog.Logger
 	// Require at least 10 GPS points for a reasonable route
 	if len(points) < 10 {
 		logger.Info("Skipping route thumbnail - insufficient GPS data", "points", len(points))
-		return &providers.EnrichmentResult{}, nil
+		return &providers.EnrichmentResult{Skipped: true, SkipReason: "Insufficient GPS data"}, nil
 	}
 
 	// Simplify the route if too many points (Douglas-Peucker)

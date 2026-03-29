@@ -57,6 +57,8 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, a
 			"tier", tier.GetEffectiveTier(user),
 		)
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "Athlete tier required",
 			Metadata: map[string]string{
 				"status":        "skipped",
 				"reason":        "tier_restricted",
@@ -86,6 +88,8 @@ func (p *AICompanionProvider) Enrich(ctx context.Context, logger *slog.Logger, a
 	if apiKey == "" {
 		logger.Warn("GEMINI_API_KEY not set, skipping AI companion")
 		return &providers.EnrichmentResult{
+			Skipped:    true,
+			SkipReason: "GEMINI_API_KEY not configured",
 			Metadata: map[string]string{
 				"status":        "skipped",
 				"reason":        "api_key_not_configured",

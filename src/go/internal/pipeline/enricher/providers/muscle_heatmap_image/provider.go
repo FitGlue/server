@@ -62,7 +62,7 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, logger *slog.Lo
 	// Tier check - Athlete only
 	if tier.GetEffectiveTier(user) != tier.TierAthlete {
 		logger.Info("Skipping muscle heatmap image - Athlete tier required")
-		return &providers.EnrichmentResult{}, nil
+		return &providers.EnrichmentResult{Skipped: true, SkipReason: "Athlete tier required"}, nil
 	}
 
 	// Aggregate strength sets
@@ -72,7 +72,7 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, logger *slog.Lo
 	}
 
 	if len(allSets) == 0 {
-		return &providers.EnrichmentResult{}, nil
+		return &providers.EnrichmentResult{Skipped: true, SkipReason: "No strength sets found"}, nil
 	}
 
 	// Apply coefficient preset (same options as text-based heatmap)
@@ -93,7 +93,7 @@ func (p *MuscleHeatmapImageProvider) Enrich(ctx context.Context, logger *slog.Lo
 	// Calculate muscle activation scores
 	scores := p.calculateMuscleScores(allSets, coeffs)
 	if len(scores) == 0 {
-		return &providers.EnrichmentResult{}, nil
+		return &providers.EnrichmentResult{Skipped: true, SkipReason: "No muscle scores calculated"}, nil
 	}
 
 	// Generate SVG
