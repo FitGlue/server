@@ -56,9 +56,9 @@ func TestFormatDurationHRT(t *testing.T) {
 	}
 }
 
-// --- generateTimeMarkers ---
+// --- generateHybridSummary ---
 
-func TestGenerateTimeMarkers(t *testing.T) {
+func TestGenerateHybridSummary(t *testing.T) {
 	ts := timestamppb.New(time.Date(2026, 1, 1, 9, 0, 0, 0, time.UTC))
 
 	results := []StationResult{
@@ -67,19 +67,19 @@ func TestGenerateTimeMarkers(t *testing.T) {
 		{Name: "No Time", StartTime: nil}, // should be skipped
 	}
 
-	markers := generateTimeMarkers(results)
+	summary := generateHybridSummary(results)
 
-	if len(markers) != 2 {
-		t.Fatalf("expected 2 markers (nil start time skipped), got %d", len(markers))
+	if len(summary.Segments) != 2 {
+		t.Fatalf("expected 2 segments (nil start time skipped), got %d", len(summary.Segments))
 	}
-	if markers[0].MarkerType != "run_start" {
-		t.Errorf("expected 'run_start' for run lap, got %q", markers[0].MarkerType)
+	if summary.Segments[0].IsRun != true {
+		t.Errorf("expected IsRun true for run lap, got %v", summary.Segments[0].IsRun)
 	}
-	if markers[1].MarkerType != "station_start" {
-		t.Errorf("expected 'station_start' for non-run lap, got %q", markers[1].MarkerType)
+	if summary.Segments[1].IsRun != false {
+		t.Errorf("expected IsRun false for non-run lap, got %v", summary.Segments[1].IsRun)
 	}
-	if markers[0].Label != "Run 1" {
-		t.Errorf("expected label 'Run 1', got %q", markers[0].Label)
+	if summary.Segments[0].Label != "Run 1" {
+		t.Errorf("expected label 'Run 1', got %q", summary.Segments[0].Label)
 	}
 }
 
@@ -218,8 +218,11 @@ func TestMapLapsToPreset_StrengthStation(t *testing.T) {
 		},
 	}
 	newLaps, strengthSets, _ := mapLapsToPreset(laps, preset)
-	if len(newLaps) != 0 {
-		t.Errorf("expected 0 laps (strength becomes StrengthSet), got %d", len(newLaps))
+	if len(newLaps) != 1 {
+		t.Errorf("expected 1 preserved telemetry lap, got %d", len(newLaps))
+	}
+	if !newLaps[0].IsTelemetryContainerOnly {
+		t.Errorf("expected preserved lap to explicitly act as telemetry container")
 	}
 	if len(strengthSets) != 1 {
 		t.Errorf("expected 1 strength set, got %d", len(strengthSets))

@@ -37,6 +37,9 @@ type EnrichmentResult struct {
 	// TimeMarkers from enricher (e.g., exercise transitions from FIT file uploads)
 	TimeMarkers []*pbactivity.TimeMarker
 
+	// Dedicated UI structure for complex hybrid races
+	HybridRaceSummary *pbactivity.HybridRaceSummary
+
 	// Artifacts (Providers can still generate specific artifacts if independent)
 	// But main FIT generation should normally happen in Orchestrator fan-in.
 	FitFileContent []byte
@@ -53,6 +56,12 @@ type EnrichmentResult struct {
 	// Unlike HaltPipeline, the pipeline continues normally with the next enricher.
 	Skipped    bool
 	SkipReason string // Human-readable reason for logging/display
+
+	// ExcludeEnrichers is a list of downstream provider types that should be
+	// explicitly skipped during this pipeline run. This allows an upstream
+	// provider (e.g. hybrid_race_tagger) to securely shape the execution
+	// environment without downstream plugins needing defensive logic.
+	ExcludeEnrichers []pbplugin.EnricherProviderType
 }
 
 // Provider defines the interface for an enrichment service.

@@ -185,8 +185,8 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	// Map laps to stations using the preset
 	newLaps, strengthSets, stationResults := mapLapsToPreset(effectiveLaps, preset)
 
-	// Generate time markers for graph visualization
-	timeMarkers := generateTimeMarkers(stationResults)
+	// Generate hybrid race summary for graph visualization
+	hybridSummary := generateHybridSummary(stationResults)
 
 	// Generate description
 	description := generateDescription(preset, stationResults)
@@ -203,9 +203,6 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	}
 	session.TotalDistance = totalDistance
 
-	// Add time markers to activity
-	activity.TimeMarkers = timeMarkers
-
 	// Determine the tag to add based on race type
 	// This allows personal_records enricher to detect Hyrox/ATHX events for PR tracking
 	raceTypeTag := strings.ToUpper(preset.RaceType) // "HYROX", "ATHX"
@@ -216,40 +213,47 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 		ActivityType: pbactivity.ActivityType_ACTIVITY_TYPE_WORKOUT,
 		Description:  description,
 		Tags:         []string{raceTypeTag},
+		ExcludeEnrichers: []pbplugin.EnricherProviderType{
+			pbplugin.EnricherProviderType_ENRICHER_PROVIDER_PACE_SUMMARY, // Disable pace summary duplication
+		},
+		HybridRaceSummary: hybridSummary,
 		Metadata: map[string]string{
-			"status":        "success",
-			"preset":        preset.Name,
-			"race_type":     preset.RaceType,
-			"laps_count":    fmt.Sprintf("%d", len(newLaps)),
-			"strength_sets": fmt.Sprintf("%d", len(strengthSets)),
-			"time_markers":  fmt.Sprintf("%d", len(timeMarkers)),
+			"status":           "success",
+			"preset":           preset.Name,
+			"race_type":        preset.RaceType,
+			"laps_count":       fmt.Sprintf("%d", len(newLaps)),
+			"strength_sets":    fmt.Sprintf("%d", len(strengthSets)),
+			"summary_segments": fmt.Sprintf("%d", len(hybridSummary.Segments)),
 		},
 	}, nil
 }
 
-// generateTimeMarkers creates TimeMarker entries for each station transition
-func generateTimeMarkers(results []StationResult) []*pbactivity.TimeMarker {
-	markers := make([]*pbactivity.TimeMarker, 0, len(results))
+// generateHybridSummary creates HybridRaceSegment entries for each station transition
+func generateHybridSummary(results []StationResult) *pbactivity.HybridRaceSummary {
+	segments := make([]*pbactivity.HybridRaceSegment, 0, len(results))
 
 	for _, result := range results {
 		if result.StartTime == nil {
 			continue
 		}
 
-		markerType := "station_start"
-		if result.IsRun {
-			markerType = "run_start"
+		icon := result.Icon
+		if icon == "" {
+			icon = getStationIcon(result.Name)
 		}
 
-		markers = append(markers, &pbactivity.TimeMarker{
-			Timestamp:       result.StartTime,
+		segments = append(segments, &pbactivity.HybridRaceSegment{
+			StartTime:       result.StartTime,
 			Label:           result.Name,
-			MarkerType:      markerType,
+			Icon:            icon,
+			IsRun:           result.IsRun,
 			DurationSeconds: int32(result.Duration),
 		})
 	}
 
-	return markers
+	return &pbactivity.HybridRaceSummary{
+		Segments: segments,
+	}
 }
 
 // generateDescription creates a formatted breakdown of the race
@@ -463,6 +467,7 @@ func mapLapsToPreset(laps []*pbactivity.Lap, preset RacePreset) ([]*pbactivity.L
 			// Keep the actual lap in the session so we don't permanently discard all the
 			// internal second-by-second records (heart rate, power, cadence, etc.) for this duration.
 			lap.ExerciseName = station.Name
+			lap.IsTelemetryContainerOnly = true
 
 			// Rep-based stations (Wall Balls) have no actual trackable distance, whereas moving
 			// strength sets (Sleds, Farmers, Lunges) do have the preset distance.

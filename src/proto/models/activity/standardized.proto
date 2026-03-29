@@ -24,6 +24,19 @@ message StandardizedActivity {
 
   repeated TimeMarker time_markers = 11;
   optional WorkoutDefinition workout = 12;
+  optional HybridRaceSummary hybrid_race_summary = 13;
+}
+
+message HybridRaceSummary {
+  repeated HybridRaceSegment segments = 1;
+}
+
+message HybridRaceSegment {
+  google.protobuf.Timestamp start_time = 1;
+  int32 duration_seconds = 2;
+  string label = 3;
+  string icon = 4;
+  bool is_run = 5;
 }
 
 message TimeMarker {
@@ -52,6 +65,7 @@ message Lap {
   repeated Record records = 4;
   string exercise_name = 5;      
   string intensity = 6;          
+  bool is_telemetry_container_only = 7;
 }
 
 message Record {

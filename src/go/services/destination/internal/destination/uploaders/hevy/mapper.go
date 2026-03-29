@@ -92,6 +92,11 @@ func mapToHevyWorkout(ctx context.Context, payload *pbevents.ActivityPayload, re
 
 		if hasLapExerciseNames {
 			for _, lap := range session.Laps {
+				if lap.IsTelemetryContainerOnly {
+					logger.Debug("Skipping telemetry-only lap for Hevy upload", "exercise_name", lap.ExerciseName)
+					continue
+				}
+
 				lapExercise, err := mapLapToExercise(ctx, lap, activityType, resolver)
 				if err != nil {
 					logger.Warn("Failed to map lap to exercise", "error", err, "exercise_name", lap.ExerciseName)

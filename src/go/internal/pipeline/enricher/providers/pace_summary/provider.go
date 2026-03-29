@@ -65,16 +65,6 @@ func (p *PaceSummary) Enrich(ctx context.Context, logger *slog.Logger, activity 
 	var speeds []float64
 
 	for _, session := range activity.Sessions {
-		if len(session.StrengthSets) > 0 {
-			logger.Info("Pace summary skipping due to presence of strength sets (likely a hybrid race)")
-			return &providers.EnrichmentResult{
-				Metadata: map[string]string{
-					"pace_summary_status": "skipped",
-					"status_detail":       "Activity contains strength sets",
-				},
-			}, nil
-		}
-
 		for _, lap := range session.Laps {
 			for _, record := range lap.Records {
 				if record.Speed > 0 {

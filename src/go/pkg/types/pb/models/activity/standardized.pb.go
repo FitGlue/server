@@ -126,21 +126,22 @@ func (MuscleGroup) EnumDescriptor() ([]byte, []int) {
 }
 
 type StandardizedActivity struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Source        ActivitySource         `protobuf:"varint,1,opt,name=source,proto3,enum=fitglue.models.activity.ActivitySource" json:"source,omitempty"`
-	ExternalId    string                 `protobuf:"bytes,2,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
-	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
-	StartTime     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	Name          string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
-	Type          ActivityType           `protobuf:"varint,6,opt,name=type,proto3,enum=fitglue.models.activity.ActivityType" json:"type,omitempty"`
-	Sessions      []*Session             `protobuf:"bytes,7,rep,name=sessions,proto3" json:"sessions,omitempty"`
-	Description   string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
-	Tags          []string               `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`
-	Notes         string                 `protobuf:"bytes,10,opt,name=notes,proto3" json:"notes,omitempty"`
-	TimeMarkers   []*TimeMarker          `protobuf:"bytes,11,rep,name=time_markers,json=timeMarkers,proto3" json:"time_markers,omitempty"`
-	Workout       *WorkoutDefinition     `protobuf:"bytes,12,opt,name=workout,proto3,oneof" json:"workout,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"open.v1"`
+	Source            ActivitySource         `protobuf:"varint,1,opt,name=source,proto3,enum=fitglue.models.activity.ActivitySource" json:"source,omitempty"`
+	ExternalId        string                 `protobuf:"bytes,2,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	UserId            string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"`
+	StartTime         *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	Name              string                 `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
+	Type              ActivityType           `protobuf:"varint,6,opt,name=type,proto3,enum=fitglue.models.activity.ActivityType" json:"type,omitempty"`
+	Sessions          []*Session             `protobuf:"bytes,7,rep,name=sessions,proto3" json:"sessions,omitempty"`
+	Description       string                 `protobuf:"bytes,8,opt,name=description,proto3" json:"description,omitempty"`
+	Tags              []string               `protobuf:"bytes,9,rep,name=tags,proto3" json:"tags,omitempty"`
+	Notes             string                 `protobuf:"bytes,10,opt,name=notes,proto3" json:"notes,omitempty"`
+	TimeMarkers       []*TimeMarker          `protobuf:"bytes,11,rep,name=time_markers,json=timeMarkers,proto3" json:"time_markers,omitempty"`
+	Workout           *WorkoutDefinition     `protobuf:"bytes,12,opt,name=workout,proto3,oneof" json:"workout,omitempty"`
+	HybridRaceSummary *HybridRaceSummary     `protobuf:"bytes,13,opt,name=hybrid_race_summary,json=hybridRaceSummary,proto3,oneof" json:"hybrid_race_summary,omitempty"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *StandardizedActivity) Reset() {
@@ -257,6 +258,133 @@ func (x *StandardizedActivity) GetWorkout() *WorkoutDefinition {
 	return nil
 }
 
+func (x *StandardizedActivity) GetHybridRaceSummary() *HybridRaceSummary {
+	if x != nil {
+		return x.HybridRaceSummary
+	}
+	return nil
+}
+
+type HybridRaceSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Segments      []*HybridRaceSegment   `protobuf:"bytes,1,rep,name=segments,proto3" json:"segments,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *HybridRaceSummary) Reset() {
+	*x = HybridRaceSummary{}
+	mi := &file_models_activity_standardized_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HybridRaceSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HybridRaceSummary) ProtoMessage() {}
+
+func (x *HybridRaceSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_standardized_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HybridRaceSummary.ProtoReflect.Descriptor instead.
+func (*HybridRaceSummary) Descriptor() ([]byte, []int) {
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *HybridRaceSummary) GetSegments() []*HybridRaceSegment {
+	if x != nil {
+		return x.Segments
+	}
+	return nil
+}
+
+type HybridRaceSegment struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	StartTime       *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	DurationSeconds int32                  `protobuf:"varint,2,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	Label           string                 `protobuf:"bytes,3,opt,name=label,proto3" json:"label,omitempty"`
+	Icon            string                 `protobuf:"bytes,4,opt,name=icon,proto3" json:"icon,omitempty"`
+	IsRun           bool                   `protobuf:"varint,5,opt,name=is_run,json=isRun,proto3" json:"is_run,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *HybridRaceSegment) Reset() {
+	*x = HybridRaceSegment{}
+	mi := &file_models_activity_standardized_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *HybridRaceSegment) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*HybridRaceSegment) ProtoMessage() {}
+
+func (x *HybridRaceSegment) ProtoReflect() protoreflect.Message {
+	mi := &file_models_activity_standardized_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use HybridRaceSegment.ProtoReflect.Descriptor instead.
+func (*HybridRaceSegment) Descriptor() ([]byte, []int) {
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *HybridRaceSegment) GetStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+func (x *HybridRaceSegment) GetDurationSeconds() int32 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
+}
+
+func (x *HybridRaceSegment) GetLabel() string {
+	if x != nil {
+		return x.Label
+	}
+	return ""
+}
+
+func (x *HybridRaceSegment) GetIcon() string {
+	if x != nil {
+		return x.Icon
+	}
+	return ""
+}
+
+func (x *HybridRaceSegment) GetIsRun() bool {
+	if x != nil {
+		return x.IsRun
+	}
+	return false
+}
+
 type TimeMarker struct {
 	state           protoimpl.MessageState `protogen:"open.v1"`
 	Timestamp       *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -269,7 +397,7 @@ type TimeMarker struct {
 
 func (x *TimeMarker) Reset() {
 	*x = TimeMarker{}
-	mi := &file_models_activity_standardized_proto_msgTypes[1]
+	mi := &file_models_activity_standardized_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -281,7 +409,7 @@ func (x *TimeMarker) String() string {
 func (*TimeMarker) ProtoMessage() {}
 
 func (x *TimeMarker) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_standardized_proto_msgTypes[1]
+	mi := &file_models_activity_standardized_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -294,7 +422,7 @@ func (x *TimeMarker) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TimeMarker.ProtoReflect.Descriptor instead.
 func (*TimeMarker) Descriptor() ([]byte, []int) {
-	return file_models_activity_standardized_proto_rawDescGZIP(), []int{1}
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *TimeMarker) GetTimestamp() *timestamppb.Timestamp {
@@ -341,7 +469,7 @@ type Session struct {
 
 func (x *Session) Reset() {
 	*x = Session{}
-	mi := &file_models_activity_standardized_proto_msgTypes[2]
+	mi := &file_models_activity_standardized_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -353,7 +481,7 @@ func (x *Session) String() string {
 func (*Session) ProtoMessage() {}
 
 func (x *Session) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_standardized_proto_msgTypes[2]
+	mi := &file_models_activity_standardized_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -366,7 +494,7 @@ func (x *Session) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Session.ProtoReflect.Descriptor instead.
 func (*Session) Descriptor() ([]byte, []int) {
-	return file_models_activity_standardized_proto_rawDescGZIP(), []int{2}
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Session) GetStartTime() *timestamppb.Timestamp {
@@ -426,20 +554,21 @@ func (x *Session) GetMaxHeartRate() int32 {
 }
 
 type Lap struct {
-	state            protoimpl.MessageState `protogen:"open.v1"`
-	StartTime        *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
-	TotalElapsedTime float64                `protobuf:"fixed64,2,opt,name=total_elapsed_time,json=totalElapsedTime,proto3" json:"total_elapsed_time,omitempty"`
-	TotalDistance    float64                `protobuf:"fixed64,3,opt,name=total_distance,json=totalDistance,proto3" json:"total_distance,omitempty"`
-	Records          []*Record              `protobuf:"bytes,4,rep,name=records,proto3" json:"records,omitempty"`
-	ExerciseName     string                 `protobuf:"bytes,5,opt,name=exercise_name,json=exerciseName,proto3" json:"exercise_name,omitempty"`
-	Intensity        string                 `protobuf:"bytes,6,opt,name=intensity,proto3" json:"intensity,omitempty"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
+	state                    protoimpl.MessageState `protogen:"open.v1"`
+	StartTime                *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	TotalElapsedTime         float64                `protobuf:"fixed64,2,opt,name=total_elapsed_time,json=totalElapsedTime,proto3" json:"total_elapsed_time,omitempty"`
+	TotalDistance            float64                `protobuf:"fixed64,3,opt,name=total_distance,json=totalDistance,proto3" json:"total_distance,omitempty"`
+	Records                  []*Record              `protobuf:"bytes,4,rep,name=records,proto3" json:"records,omitempty"`
+	ExerciseName             string                 `protobuf:"bytes,5,opt,name=exercise_name,json=exerciseName,proto3" json:"exercise_name,omitempty"`
+	Intensity                string                 `protobuf:"bytes,6,opt,name=intensity,proto3" json:"intensity,omitempty"`
+	IsTelemetryContainerOnly bool                   `protobuf:"varint,7,opt,name=is_telemetry_container_only,json=isTelemetryContainerOnly,proto3" json:"is_telemetry_container_only,omitempty"`
+	unknownFields            protoimpl.UnknownFields
+	sizeCache                protoimpl.SizeCache
 }
 
 func (x *Lap) Reset() {
 	*x = Lap{}
-	mi := &file_models_activity_standardized_proto_msgTypes[3]
+	mi := &file_models_activity_standardized_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -451,7 +580,7 @@ func (x *Lap) String() string {
 func (*Lap) ProtoMessage() {}
 
 func (x *Lap) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_standardized_proto_msgTypes[3]
+	mi := &file_models_activity_standardized_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -464,7 +593,7 @@ func (x *Lap) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Lap.ProtoReflect.Descriptor instead.
 func (*Lap) Descriptor() ([]byte, []int) {
-	return file_models_activity_standardized_proto_rawDescGZIP(), []int{3}
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Lap) GetStartTime() *timestamppb.Timestamp {
@@ -509,6 +638,13 @@ func (x *Lap) GetIntensity() string {
 	return ""
 }
 
+func (x *Lap) GetIsTelemetryContainerOnly() bool {
+	if x != nil {
+		return x.IsTelemetryContainerOnly
+	}
+	return false
+}
+
 type Record struct {
 	state               protoimpl.MessageState `protogen:"open.v1"`
 	Timestamp           *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=timestamp,proto3" json:"timestamp,omitempty"`
@@ -530,7 +666,7 @@ type Record struct {
 
 func (x *Record) Reset() {
 	*x = Record{}
-	mi := &file_models_activity_standardized_proto_msgTypes[4]
+	mi := &file_models_activity_standardized_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -542,7 +678,7 @@ func (x *Record) String() string {
 func (*Record) ProtoMessage() {}
 
 func (x *Record) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_standardized_proto_msgTypes[4]
+	mi := &file_models_activity_standardized_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -555,7 +691,7 @@ func (x *Record) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Record.ProtoReflect.Descriptor instead.
 func (*Record) Descriptor() ([]byte, []int) {
-	return file_models_activity_standardized_proto_rawDescGZIP(), []int{4}
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *Record) GetTimestamp() *timestamppb.Timestamp {
@@ -668,7 +804,7 @@ type StrengthSet struct {
 
 func (x *StrengthSet) Reset() {
 	*x = StrengthSet{}
-	mi := &file_models_activity_standardized_proto_msgTypes[5]
+	mi := &file_models_activity_standardized_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -680,7 +816,7 @@ func (x *StrengthSet) String() string {
 func (*StrengthSet) ProtoMessage() {}
 
 func (x *StrengthSet) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_standardized_proto_msgTypes[5]
+	mi := &file_models_activity_standardized_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -693,7 +829,7 @@ func (x *StrengthSet) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use StrengthSet.ProtoReflect.Descriptor instead.
 func (*StrengthSet) Descriptor() ([]byte, []int) {
-	return file_models_activity_standardized_proto_rawDescGZIP(), []int{5}
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *StrengthSet) GetExerciseName() string {
@@ -783,7 +919,7 @@ type WorkoutDefinition struct {
 
 func (x *WorkoutDefinition) Reset() {
 	*x = WorkoutDefinition{}
-	mi := &file_models_activity_standardized_proto_msgTypes[6]
+	mi := &file_models_activity_standardized_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -795,7 +931,7 @@ func (x *WorkoutDefinition) String() string {
 func (*WorkoutDefinition) ProtoMessage() {}
 
 func (x *WorkoutDefinition) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_standardized_proto_msgTypes[6]
+	mi := &file_models_activity_standardized_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -808,7 +944,7 @@ func (x *WorkoutDefinition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkoutDefinition.ProtoReflect.Descriptor instead.
 func (*WorkoutDefinition) Descriptor() ([]byte, []int) {
-	return file_models_activity_standardized_proto_rawDescGZIP(), []int{6}
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *WorkoutDefinition) GetName() string {
@@ -839,7 +975,7 @@ type WorkoutStep struct {
 
 func (x *WorkoutStep) Reset() {
 	*x = WorkoutStep{}
-	mi := &file_models_activity_standardized_proto_msgTypes[7]
+	mi := &file_models_activity_standardized_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -851,7 +987,7 @@ func (x *WorkoutStep) String() string {
 func (*WorkoutStep) ProtoMessage() {}
 
 func (x *WorkoutStep) ProtoReflect() protoreflect.Message {
-	mi := &file_models_activity_standardized_proto_msgTypes[7]
+	mi := &file_models_activity_standardized_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -864,7 +1000,7 @@ func (x *WorkoutStep) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use WorkoutStep.ProtoReflect.Descriptor instead.
 func (*WorkoutStep) Descriptor() ([]byte, []int) {
-	return file_models_activity_standardized_proto_rawDescGZIP(), []int{7}
+	return file_models_activity_standardized_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *WorkoutStep) GetIntensity() string {
@@ -913,7 +1049,7 @@ var File_models_activity_standardized_proto protoreflect.FileDescriptor
 
 const file_models_activity_standardized_proto_rawDesc = "" +
 	"\n" +
-	"\"models/activity/standardized.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\"\xc4\x04\n" +
+	"\"models/activity/standardized.proto\x12\x17fitglue.models.activity\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x1cmodels/activity/source.proto\"\xbd\x05\n" +
 	"\x14StandardizedActivity\x12?\n" +
 	"\x06source\x18\x01 \x01(\x0e2'.fitglue.models.activity.ActivitySourceR\x06source\x12\x1f\n" +
 	"\vexternal_id\x18\x02 \x01(\tR\n" +
@@ -929,9 +1065,20 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\x05notes\x18\n" +
 	" \x01(\tR\x05notes\x12F\n" +
 	"\ftime_markers\x18\v \x03(\v2#.fitglue.models.activity.TimeMarkerR\vtimeMarkers\x12I\n" +
-	"\aworkout\x18\f \x01(\v2*.fitglue.models.activity.WorkoutDefinitionH\x00R\aworkout\x88\x01\x01B\n" +
+	"\aworkout\x18\f \x01(\v2*.fitglue.models.activity.WorkoutDefinitionH\x00R\aworkout\x88\x01\x01\x12_\n" +
+	"\x13hybrid_race_summary\x18\r \x01(\v2*.fitglue.models.activity.HybridRaceSummaryH\x01R\x11hybridRaceSummary\x88\x01\x01B\n" +
 	"\n" +
-	"\b_workout\"\xa8\x01\n" +
+	"\b_workoutB\x16\n" +
+	"\x14_hybrid_race_summary\"[\n" +
+	"\x11HybridRaceSummary\x12F\n" +
+	"\bsegments\x18\x01 \x03(\v2*.fitglue.models.activity.HybridRaceSegmentR\bsegments\"\xba\x01\n" +
+	"\x11HybridRaceSegment\x129\n" +
+	"\n" +
+	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12)\n" +
+	"\x10duration_seconds\x18\x02 \x01(\x05R\x0fdurationSeconds\x12\x14\n" +
+	"\x05label\x18\x03 \x01(\tR\x05label\x12\x12\n" +
+	"\x04icon\x18\x04 \x01(\tR\x04icon\x12\x15\n" +
+	"\x06is_run\x18\x05 \x01(\bR\x05isRun\"\xa8\x01\n" +
 	"\n" +
 	"TimeMarker\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x14\n" +
@@ -951,7 +1098,7 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\x0emax_heart_rate\x18\b \x01(\x05H\x02R\fmaxHeartRate\x88\x01\x01B\x11\n" +
 	"\x0f_total_caloriesB\x11\n" +
 	"\x0f_avg_heart_rateB\x11\n" +
-	"\x0f_max_heart_rate\"\x93\x02\n" +
+	"\x0f_max_heart_rate\"\xd2\x02\n" +
 	"\x03Lap\x129\n" +
 	"\n" +
 	"start_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x12,\n" +
@@ -959,7 +1106,8 @@ const file_models_activity_standardized_proto_rawDesc = "" +
 	"\x0etotal_distance\x18\x03 \x01(\x01R\rtotalDistance\x129\n" +
 	"\arecords\x18\x04 \x03(\v2\x1f.fitglue.models.activity.RecordR\arecords\x12#\n" +
 	"\rexercise_name\x18\x05 \x01(\tR\fexerciseName\x12\x1c\n" +
-	"\tintensity\x18\x06 \x01(\tR\tintensity\"\xba\x04\n" +
+	"\tintensity\x18\x06 \x01(\tR\tintensity\x12=\n" +
+	"\x1bis_telemetry_container_only\x18\a \x01(\bR\x18isTelemetryContainerOnly\"\xba\x04\n" +
 	"\x06Record\x128\n" +
 	"\ttimestamp\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\ttimestamp\x12\x1d\n" +
 	"\n" +
@@ -1046,44 +1194,49 @@ func file_models_activity_standardized_proto_rawDescGZIP() []byte {
 }
 
 var file_models_activity_standardized_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_models_activity_standardized_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_models_activity_standardized_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_models_activity_standardized_proto_goTypes = []any{
 	(MuscleGroup)(0),              // 0: fitglue.models.activity.MuscleGroup
 	(*StandardizedActivity)(nil),  // 1: fitglue.models.activity.StandardizedActivity
-	(*TimeMarker)(nil),            // 2: fitglue.models.activity.TimeMarker
-	(*Session)(nil),               // 3: fitglue.models.activity.Session
-	(*Lap)(nil),                   // 4: fitglue.models.activity.Lap
-	(*Record)(nil),                // 5: fitglue.models.activity.Record
-	(*StrengthSet)(nil),           // 6: fitglue.models.activity.StrengthSet
-	(*WorkoutDefinition)(nil),     // 7: fitglue.models.activity.WorkoutDefinition
-	(*WorkoutStep)(nil),           // 8: fitglue.models.activity.WorkoutStep
-	(ActivitySource)(0),           // 9: fitglue.models.activity.ActivitySource
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
-	(ActivityType)(0),             // 11: fitglue.models.activity.ActivityType
+	(*HybridRaceSummary)(nil),     // 2: fitglue.models.activity.HybridRaceSummary
+	(*HybridRaceSegment)(nil),     // 3: fitglue.models.activity.HybridRaceSegment
+	(*TimeMarker)(nil),            // 4: fitglue.models.activity.TimeMarker
+	(*Session)(nil),               // 5: fitglue.models.activity.Session
+	(*Lap)(nil),                   // 6: fitglue.models.activity.Lap
+	(*Record)(nil),                // 7: fitglue.models.activity.Record
+	(*StrengthSet)(nil),           // 8: fitglue.models.activity.StrengthSet
+	(*WorkoutDefinition)(nil),     // 9: fitglue.models.activity.WorkoutDefinition
+	(*WorkoutStep)(nil),           // 10: fitglue.models.activity.WorkoutStep
+	(ActivitySource)(0),           // 11: fitglue.models.activity.ActivitySource
+	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
+	(ActivityType)(0),             // 13: fitglue.models.activity.ActivityType
 }
 var file_models_activity_standardized_proto_depIdxs = []int32{
-	9,  // 0: fitglue.models.activity.StandardizedActivity.source:type_name -> fitglue.models.activity.ActivitySource
-	10, // 1: fitglue.models.activity.StandardizedActivity.start_time:type_name -> google.protobuf.Timestamp
-	11, // 2: fitglue.models.activity.StandardizedActivity.type:type_name -> fitglue.models.activity.ActivityType
-	3,  // 3: fitglue.models.activity.StandardizedActivity.sessions:type_name -> fitglue.models.activity.Session
-	2,  // 4: fitglue.models.activity.StandardizedActivity.time_markers:type_name -> fitglue.models.activity.TimeMarker
-	7,  // 5: fitglue.models.activity.StandardizedActivity.workout:type_name -> fitglue.models.activity.WorkoutDefinition
-	10, // 6: fitglue.models.activity.TimeMarker.timestamp:type_name -> google.protobuf.Timestamp
-	10, // 7: fitglue.models.activity.Session.start_time:type_name -> google.protobuf.Timestamp
-	4,  // 8: fitglue.models.activity.Session.laps:type_name -> fitglue.models.activity.Lap
-	6,  // 9: fitglue.models.activity.Session.strength_sets:type_name -> fitglue.models.activity.StrengthSet
-	10, // 10: fitglue.models.activity.Lap.start_time:type_name -> google.protobuf.Timestamp
-	5,  // 11: fitglue.models.activity.Lap.records:type_name -> fitglue.models.activity.Record
-	10, // 12: fitglue.models.activity.Record.timestamp:type_name -> google.protobuf.Timestamp
-	10, // 13: fitglue.models.activity.StrengthSet.start_time:type_name -> google.protobuf.Timestamp
-	0,  // 14: fitglue.models.activity.StrengthSet.primary_muscle_group:type_name -> fitglue.models.activity.MuscleGroup
-	0,  // 15: fitglue.models.activity.StrengthSet.secondary_muscle_groups:type_name -> fitglue.models.activity.MuscleGroup
-	8,  // 16: fitglue.models.activity.WorkoutDefinition.steps:type_name -> fitglue.models.activity.WorkoutStep
-	17, // [17:17] is the sub-list for method output_type
-	17, // [17:17] is the sub-list for method input_type
-	17, // [17:17] is the sub-list for extension type_name
-	17, // [17:17] is the sub-list for extension extendee
-	0,  // [0:17] is the sub-list for field type_name
+	11, // 0: fitglue.models.activity.StandardizedActivity.source:type_name -> fitglue.models.activity.ActivitySource
+	12, // 1: fitglue.models.activity.StandardizedActivity.start_time:type_name -> google.protobuf.Timestamp
+	13, // 2: fitglue.models.activity.StandardizedActivity.type:type_name -> fitglue.models.activity.ActivityType
+	5,  // 3: fitglue.models.activity.StandardizedActivity.sessions:type_name -> fitglue.models.activity.Session
+	4,  // 4: fitglue.models.activity.StandardizedActivity.time_markers:type_name -> fitglue.models.activity.TimeMarker
+	9,  // 5: fitglue.models.activity.StandardizedActivity.workout:type_name -> fitglue.models.activity.WorkoutDefinition
+	2,  // 6: fitglue.models.activity.StandardizedActivity.hybrid_race_summary:type_name -> fitglue.models.activity.HybridRaceSummary
+	3,  // 7: fitglue.models.activity.HybridRaceSummary.segments:type_name -> fitglue.models.activity.HybridRaceSegment
+	12, // 8: fitglue.models.activity.HybridRaceSegment.start_time:type_name -> google.protobuf.Timestamp
+	12, // 9: fitglue.models.activity.TimeMarker.timestamp:type_name -> google.protobuf.Timestamp
+	12, // 10: fitglue.models.activity.Session.start_time:type_name -> google.protobuf.Timestamp
+	6,  // 11: fitglue.models.activity.Session.laps:type_name -> fitglue.models.activity.Lap
+	8,  // 12: fitglue.models.activity.Session.strength_sets:type_name -> fitglue.models.activity.StrengthSet
+	12, // 13: fitglue.models.activity.Lap.start_time:type_name -> google.protobuf.Timestamp
+	7,  // 14: fitglue.models.activity.Lap.records:type_name -> fitglue.models.activity.Record
+	12, // 15: fitglue.models.activity.Record.timestamp:type_name -> google.protobuf.Timestamp
+	12, // 16: fitglue.models.activity.StrengthSet.start_time:type_name -> google.protobuf.Timestamp
+	0,  // 17: fitglue.models.activity.StrengthSet.primary_muscle_group:type_name -> fitglue.models.activity.MuscleGroup
+	0,  // 18: fitglue.models.activity.StrengthSet.secondary_muscle_groups:type_name -> fitglue.models.activity.MuscleGroup
+	10, // 19: fitglue.models.activity.WorkoutDefinition.steps:type_name -> fitglue.models.activity.WorkoutStep
+	20, // [20:20] is the sub-list for method output_type
+	20, // [20:20] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_models_activity_standardized_proto_init() }
@@ -1093,15 +1246,15 @@ func file_models_activity_standardized_proto_init() {
 	}
 	file_models_activity_source_proto_init()
 	file_models_activity_standardized_proto_msgTypes[0].OneofWrappers = []any{}
-	file_models_activity_standardized_proto_msgTypes[2].OneofWrappers = []any{}
 	file_models_activity_standardized_proto_msgTypes[4].OneofWrappers = []any{}
+	file_models_activity_standardized_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_models_activity_standardized_proto_rawDesc), len(file_models_activity_standardized_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

@@ -271,6 +271,28 @@ components:
                     description: The type of the serialized message.
             additionalProperties: true
             description: Contains an arbitrary serialized message along with a @type that describes the type of the serialized message.
+        HybridRaceSegment:
+            type: object
+            properties:
+                startTime:
+                    type: string
+                    format: date-time
+                durationSeconds:
+                    type: integer
+                    format: int32
+                label:
+                    type: string
+                icon:
+                    type: string
+                isRun:
+                    type: boolean
+        HybridRaceSummary:
+            type: object
+            properties:
+                segments:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/HybridRaceSegment'
         IntegrationAction:
             type: object
             properties:
@@ -350,6 +372,8 @@ components:
                     type: string
                 intensity:
                     type: string
+                isTelemetryContainerOnly:
+                    type: boolean
         ListCategoriesPublicResponse:
             type: object
             properties:
@@ -929,6 +953,8 @@ components:
                         $ref: '#/components/schemas/TimeMarker'
                 workout:
                     $ref: '#/components/schemas/WorkoutDefinition'
+                hybridRaceSummary:
+                    $ref: '#/components/schemas/HybridRaceSummary'
         Status:
             type: object
             properties:

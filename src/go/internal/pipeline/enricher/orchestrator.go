@@ -276,6 +276,9 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	var deferredEnrichers []deferredEnricher
 
+	// Map to track excluded downstream enrichers (type -> excluder name)
+	excludedEnrichers := make(map[pbplugin.EnricherProviderType]string)
+
 	// ---- Phase 1: Execute non-deferred enrichers, collect deferred ones ----
 	for i, cfg := range configs {
 		var provider providers.Provider
@@ -312,6 +315,17 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 				Status:       "SKIPPED",
 				Error:        "temporarily unavailable",
 				Metadata:     map[string]string{"skip_reason": "temporarily_unavailable"},
+			})
+			continue
+		}
+
+		// Skip explicitly excluded enrichers by upstream providers
+		if reason, excluded := excludedEnrichers[cfg.ProviderType]; excluded {
+			logger.Info("Skipping explicitly excluded enricher", "type", cfg.ProviderType, "name", provider.Name(), "reason", reason)
+			providerExecutions = append(providerExecutions, ProviderExecution{
+				ProviderName: provider.Name(),
+				Status:       "SKIPPED",
+				Metadata:     map[string]string{"skip_reason": fmt.Sprintf("excluded_by_upstream: %s", reason)},
 			})
 			continue
 		}
@@ -569,13 +583,23 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		if len(res.TimeMarkers) > 0 {
 			currentActivity.TimeMarkers = append(currentActivity.TimeMarkers, res.TimeMarkers...)
 		}
+		if res.HybridRaceSummary != nil {
+			currentActivity.HybridRaceSummary = res.HybridRaceSummary
+		}
 
 		// Apply description to slot (preserves pipeline ordering for deferred enrichers)
-		logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name(), "description", res.Description)
+		logger.Debug(fmt.Sprintf("Applying description from provider: %v, length: %v", provider.Name(), len(res.Description)), "name", provider.Name())
 		if res.Description != "" {
 			trimmed := strings.TrimSpace(res.Description)
 			if trimmed != "" {
 				descriptionSlots[i+1] = trimmed // +1 because slot 0 is original description
+			}
+		}
+
+		// Track downstream excluded enrichers
+		if len(res.ExcludeEnrichers) > 0 {
+			for _, pType := range res.ExcludeEnrichers {
+				excludedEnrichers[pType] = provider.Name()
 			}
 		}
 
@@ -688,6 +712,17 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 			provider := deferred.provider
 			cfg := deferred.cfg
 			i := deferred.index
+
+			// Skip explicitly excluded enrichers (even deferred ones)
+			if reason, excluded := excludedEnrichers[cfg.ProviderType]; excluded {
+				logger.Info("Skipping explicitly excluded deferred enricher", "type", cfg.ProviderType, "name", provider.Name(), "reason", reason)
+				providerExecutions = append(providerExecutions, ProviderExecution{
+					ProviderName: provider.Name(),
+					Status:       "SKIPPED",
+					Metadata:     map[string]string{"skip_reason": fmt.Sprintf("excluded_by_upstream: %s", reason)},
+				})
+				continue
+			}
 
 			startTime := time.Now()
 			execID := uuid.NewString()
