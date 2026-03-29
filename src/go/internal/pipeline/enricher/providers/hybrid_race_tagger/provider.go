@@ -195,6 +195,16 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	session.Laps = newLaps
 	session.StrengthSets = append(session.StrengthSets, strengthSets...)
 
+	// Recalculate session total distance
+	var totalDistance float64
+	for _, lap := range newLaps {
+		totalDistance += lap.TotalDistance
+	}
+	for _, set := range strengthSets {
+		totalDistance += set.DistanceMeters
+	}
+	session.TotalDistance = totalDistance
+
 	// Add time markers to activity
 	activity.TimeMarkers = timeMarkers
 
