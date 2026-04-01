@@ -63,9 +63,9 @@ resource "google_pubsub_subscription" "destination_upload_sub" {
     }
   }
 
-  ack_deadline_seconds = 600
+  ack_deadline_seconds       = 600
   message_retention_duration = "3600s"
-  
+
   retry_policy {
     minimum_backoff = "10s"
     maximum_backoff = "600s"
@@ -75,53 +75,53 @@ resource "google_pubsub_subscription" "destination_upload_sub" {
 resource "google_pubsub_subscription" "pipeline_raw_sub" {
   name  = "sub-pipeline-raw"
   topic = google_pubsub_topic.raw_activity.name
-  
+
   push_config {
     push_endpoint = "${google_cloud_run_v2_service.backend["pipeline"].uri}/pubsub/raw"
-    oidc_token { 
-      service_account_email = google_service_account.cloud_run_sa["pipeline"].email 
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["pipeline"].email
     }
   }
-  
+
   ack_deadline_seconds = 600
-  retry_policy { 
+  retry_policy {
     minimum_backoff = "10s"
-    maximum_backoff = "600s" 
+    maximum_backoff = "600s"
   }
 }
 
 resource "google_pubsub_subscription" "pipeline_enriched_sub" {
   name  = "sub-pipeline-enriched"
   topic = google_pubsub_topic.enriched_activity.name
-  
+
   push_config {
     push_endpoint = "${google_cloud_run_v2_service.backend["pipeline"].uri}/pubsub/enriched"
-    oidc_token { 
-      service_account_email = google_service_account.cloud_run_sa["pipeline"].email 
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["pipeline"].email
     }
   }
-  
+
   ack_deadline_seconds = 600
-  retry_policy { 
+  retry_policy {
     minimum_backoff = "10s"
-    maximum_backoff = "600s" 
+    maximum_backoff = "600s"
   }
 }
 
 resource "google_pubsub_subscription" "pipeline_run_sub" {
   name  = "sub-pipeline-run"
   topic = google_pubsub_topic.pipeline_activity.name
-  
+
   push_config {
     push_endpoint = "${google_cloud_run_v2_service.backend["pipeline"].uri}/pubsub/run"
-    oidc_token { 
-      service_account_email = google_service_account.cloud_run_sa["pipeline"].email 
+    oidc_token {
+      service_account_email = google_service_account.cloud_run_sa["pipeline"].email
     }
   }
-  
+
   ack_deadline_seconds = 600
-  retry_policy { 
+  retry_policy {
     minimum_backoff = "10s"
-    maximum_backoff = "600s" 
+    maximum_backoff = "600s"
   }
 }

@@ -566,11 +566,18 @@ resource "google_cloud_run_v2_service" "frontend" {
         value = google_cloud_run_v2_service.backend["registry"].uri
       }
 
-      # ── api-client: OAuth base URL ──
+      # ── api-client: OAuth base URLs ──
       dynamic "env" {
         for_each = each.key == "api-client" ? [1] : []
         content {
-          name  = "BASE_URL"
+          name  = "API_URL"
+          value = var.base_url
+        }
+      }
+      dynamic "env" {
+        for_each = each.key == "api-client" ? [1] : []
+        content {
+          name  = "WEB_URL"
           value = var.base_url
         }
       }
@@ -876,7 +883,7 @@ data "google_iam_policy" "noauth" {
 }
 
 resource "google_cloud_run_service_iam_policy" "public_access" {
-  for_each = local.frontend_services
+  for_each    = local.frontend_services
   location    = google_cloud_run_v2_service.frontend[each.key].location
   project     = google_cloud_run_v2_service.frontend[each.key].project
   service     = google_cloud_run_v2_service.frontend[each.key].name

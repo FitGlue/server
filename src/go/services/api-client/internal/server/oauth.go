@@ -18,11 +18,27 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
-// webURL returns the WEB_URL env var with any trailing slash removed.
-func webURL() string { return strings.TrimRight(os.Getenv("WEB_URL"), "/") }
+// webURL returns the WEB_URL env var, falling back to local dev and appending the /app basename.
+func webURL() string {
+	url := os.Getenv("WEB_URL")
+	if url == "" {
+		url = "http://localhost:5173"
+	}
+	return strings.TrimRight(url, "/") + "/app"
+}
 
-// apiURL returns the API_URL env var with any trailing slash removed.
-func apiURL() string { return strings.TrimRight(os.Getenv("API_URL"), "/") }
+// apiURL returns the base API URL for OAuth callbacks, falling back to the request host.
+func apiURL(r *http.Request) string {
+	url := os.Getenv("API_URL")
+	if url == "" {
+		scheme := "http"
+		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+			scheme = "https"
+		}
+		url = scheme + "://" + r.Host
+	}
+	return strings.TrimRight(url, "/")
+}
 
 func (s *APIServer) registerOAuthRoutes(r chi.Router) {
 	// OAuth endpoints require user authentication because we need to know WHICH user is connecting the integration
@@ -54,7 +70,7 @@ func (s *APIServer) handleOAuthConnect(w http.ResponseWriter, r *http.Request) {
 
 	stateArg := base64.URLEncoding.EncodeToString(stateJSON) + "." + signature
 
-	redirectURI := apiURL() + "/api/v2/oauth/" + provider + "/callback"
+	redirectURI := apiURL(r) + "/api/v2/oauth/" + provider + "/callback"
 
 	authURL, _ := url.Parse(config.AuthURL)
 	q := authURL.Query()
@@ -130,7 +146,7 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Exchange code for tokens
-	redirectURI := apiURL() + "/api/v2/oauth/" + provider + "/callback"
+	redirectURI := apiURL(r) + "/api/v2/oauth/" + provider + "/callback"
 	data := url.Values{}
 	data.Set("client_id", config.ClientID)
 	data.Set("client_secret", config.ClientSecret)

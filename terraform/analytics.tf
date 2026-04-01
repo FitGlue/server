@@ -93,9 +93,9 @@ resource "google_bigquery_table" "cloudrun_placeholder" {
     { name = "severity", type = "STRING", mode = "NULLABLE" },
     { name = "jsonPayload", type = "STRING", mode = "NULLABLE" },
     {
-      name   = "resource",
-      type   = "RECORD",
-      mode   = "NULLABLE",
+      name = "resource",
+      type = "RECORD",
+      mode = "NULLABLE",
       fields = [
         { name = "type", type = "STRING", mode = "NULLABLE" },
         {
