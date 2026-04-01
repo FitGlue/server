@@ -120,6 +120,7 @@ func (s *APIServer) registerBillingRoutes(r chi.Router) {
 func (s *APIServer) handleBillingEvent(w http.ResponseWriter, r *http.Request) {
 	signature := r.Header.Get("Stripe-Signature")
 	if signature == "" {
+		s.logger.Warn(r.Context(), "Dropping Stripe webhook request: missing signature")
 		WriteError(w, statusError(http.StatusBadRequest, "Missing Stripe signature"))
 		return
 	}
@@ -130,6 +131,7 @@ func (s *APIServer) handleBillingEvent(w http.ResponseWriter, r *http.Request) {
 		rawBody = bodyContext.([]byte)
 	} else {
 		// Fallback if middleware wasn't used or failed
+		s.logger.Error(r.Context(), "Dropping Stripe webhook request: missing raw body from middleware")
 		WriteError(w, statusError(http.StatusInternalServerError, "Missing raw body from middleware"))
 		return
 	}
@@ -146,6 +148,7 @@ func (s *APIServer) handleBillingEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.logger.Info(r.Context(), "Successfully processed Stripe webhook event")
 	w.WriteHeader(http.StatusOK)
 }
 

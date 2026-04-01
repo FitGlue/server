@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2/event"
+	"github.com/fitglue/server/src/go/internal/infra"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
@@ -88,7 +89,8 @@ func (m *mockPublisher) PublishCloudEvent(ctx context.Context, topic string, eve
 }
 
 func TestProcessor_HandleVerification(t *testing.T) {
-	processor := webhook.NewProcessor(nil, nil)
+	logger := infra.NewLogger()
+	processor := webhook.NewProcessor(logger, nil, nil)
 	mock := &mockProvider{id: "testprovider"}
 	processor.Register(mock)
 
@@ -117,7 +119,8 @@ func TestProcessor_HandleVerification(t *testing.T) {
 func TestProcessor_HandleEvent(t *testing.T) {
 	userClient := &mockUserServiceClient{}
 	publisher := &mockPublisher{}
-	processor := webhook.NewProcessor(userClient, publisher)
+	logger := infra.NewLogger()
+	processor := webhook.NewProcessor(logger, userClient, publisher)
 
 	mock := &mockProvider{
 		id: "testprovider",

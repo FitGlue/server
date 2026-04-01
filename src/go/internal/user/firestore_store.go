@@ -7,6 +7,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/fitglue/server/src/go/pkg/domain/apikey"
+
 	"cloud.google.com/go/firestore"
 	pbuser "github.com/fitglue/server/src/go/pkg/types/pb/models/user"
 	"google.golang.org/api/iterator"
@@ -260,7 +262,38 @@ func (s *FirestoreStore) DeleteIntegration(ctx context.Context, userID, provider
 	return err
 }
 
+func isApiKeyProvider(provider string) bool {
+	switch provider {
+	case "hevy":
+		return true
+	default:
+		return false
+	}
+}
+
 func (s *FirestoreStore) FindUserByIntegration(ctx context.Context, provider string, providerUID string) (*pbuser.UserProfile, error) {
+	if isApiKeyProvider(provider) {
+		hashStr := apikey.HashIngressKey(providerUID)
+
+		doc, err := s.client.Collection("ingress_api_keys").Doc(hashStr).Get(ctx)
+		if err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, status.Error(codes.NotFound, "user not found for integration (invalid ingress key)")
+			}
+			return nil, err
+		}
+		userIDVal, err := doc.DataAt("user_id")
+		if err != nil {
+			return nil, err
+		}
+		userID, ok := userIDVal.(string)
+		if !ok {
+			return nil, status.Error(codes.Internal, "invalid user_id in ingress key doc")
+		}
+
+		return s.GetProfile(ctx, userID)
+	}
+
 	var fieldPath string
 	switch provider {
 	case "strava":
@@ -268,6 +301,7 @@ func (s *FirestoreStore) FindUserByIntegration(ctx context.Context, provider str
 	case "fitbit":
 		fieldPath = "integrations.fitbit.fitbit_user_id"
 	case "hevy":
+		// Fallback for legacy data, but primary resolution goes through ingress_api_keys
 		fieldPath = "integrations.hevy.user_id"
 	case "polar":
 		fieldPath = "integrations.polar.polar_user_id"

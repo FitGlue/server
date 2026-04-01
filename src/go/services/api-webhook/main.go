@@ -119,7 +119,7 @@ func main() {
 	publisher := &infraps.PubSubAdapter{Client: pubsubClient, Logger: logger}
 
 	// Instantiate Webhook Processor & Providers
-	processor := webhook.NewProcessor(userClient, publisher)
+	processor := webhook.NewProcessor(logger, userClient, publisher)
 
 	stravaToken := os.Getenv("STRAVA_WEBHOOK_VERIFY_TOKEN")
 	processor.Register(strava.NewProvider(stravaToken))

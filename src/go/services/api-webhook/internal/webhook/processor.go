@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/cloudevents/sdk-go/v2/event"
+	"github.com/fitglue/server/src/go/internal/infra"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
@@ -45,14 +46,16 @@ type Processor struct {
 	providers map[string]SourceProvider
 	userSvc   userpb.UserServiceClient
 	publisher Publisher
+	logger    infra.Logger
 }
 
 // NewProcessor creates a new WebhookProcessor
-func NewProcessor(userSvc userpb.UserServiceClient, publisher Publisher) *Processor {
+func NewProcessor(logger infra.Logger, userSvc userpb.UserServiceClient, publisher Publisher) *Processor {
 	return &Processor{
 		providers: make(map[string]SourceProvider),
 		userSvc:   userSvc,
 		publisher: publisher,
+		logger:    logger,
 	}
 }
 
@@ -63,8 +66,10 @@ func (p *Processor) Register(provider SourceProvider) {
 
 // HandleVerification routes GET requests for webhook subscription challenges
 func (p *Processor) HandleVerification(w http.ResponseWriter, r *http.Request, providerID string) {
+	p.logger.Info(r.Context(), "Received webhook verification challenge", "provider", providerID)
 	provider, ok := p.providers[providerID]
 	if !ok {
+		p.logger.Error(r.Context(), "Unknown provider for verification", "provider", providerID)
 		http.Error(w, "Unknown provider", http.StatusNotFound)
 		return
 	}
@@ -75,6 +80,7 @@ func (p *Processor) HandleVerification(w http.ResponseWriter, r *http.Request, p
 func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, providerID string) {
 	provider, ok := p.providers[providerID]
 	if !ok {
+		p.logger.Error(r.Context(), "Unknown provider for event", "provider", providerID)
 		http.Error(w, "Unknown provider", http.StatusNotFound)
 		return
 	}
@@ -83,8 +89,13 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 	if err != nil {
 		// Log the error but return 200 to acknowledge receipt (providers will retry otherwise)
 		// unless it's a verification signature failure where we might return 401.
+		p.logger.Warn(r.Context(), "Failed to parse webhook event (returning 400)", "provider", providerID, "error", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
+	}
+
+	if len(events) == 0 {
+		p.logger.Info(r.Context(), "Parsed webhook but no events returned", "provider", providerID)
 	}
 
 	for _, evt := range events {
@@ -94,7 +105,7 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 			ProviderUid: evt.ProviderUID,
 		})
 		if err != nil {
-			// User not found or other err. We just skip this event.
+			p.logger.Warn(r.Context(), "Skipping webhook event: User not found or resolve error", "provider", evt.Provider, "provider_uid", evt.ProviderUID, "error", err)
 			continue
 		}
 
@@ -102,8 +113,12 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 
 		// 2. Fetch the full activity data using SourceProvider
 		activityPayload, err := provider.FetchActivity(r.Context(), p.userSvc, internalUserID, evt)
-		if err != nil || activityPayload == nil {
-			// Provider might return nil without error if the event shouldn't be processed (e.g. non-activity event)
+		if err != nil {
+			p.logger.Warn(r.Context(), "Skipping webhook event: Failed to fetch activity payload", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID, "error", err)
+			continue
+		}
+		if activityPayload == nil {
+			p.logger.Info(r.Context(), "Webhook event ignored by provider logic (returned nil payload)", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID)
 			continue
 		}
 
@@ -112,10 +127,17 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 		ce.SetSource(fmt.Sprintf("/integrations/%s/webhook", evt.Provider))
 		ce.SetType("com.fitglue.activity.created")
 		if err := ce.SetData(event.ApplicationJSON, activityPayload); err != nil {
+			p.logger.Error(r.Context(), "Failed to pack CloudEvent data", "provider", evt.Provider, "user_id", internalUserID, "error", err)
 			continue
 		}
 
-		_, _ = p.publisher.PublishCloudEvent(r.Context(), "topic-raw-activity", ce)
+		msgID, err := p.publisher.PublishCloudEvent(r.Context(), "topic-raw-activity", ce)
+		if err != nil {
+			p.logger.Error(r.Context(), "Failed to publish webhook event to Pub/Sub", "provider", evt.Provider, "user_id", internalUserID, "error", err)
+			continue
+		}
+
+		p.logger.Info(r.Context(), "Successfully published webhook event to Pipeline payload topic", "provider", evt.Provider, "user_id", internalUserID, "activity_id", evt.ActivityID, "msg_id", msgID)
 	}
 
 	// Always acknowledge receipt successfully if parsing succeeded
