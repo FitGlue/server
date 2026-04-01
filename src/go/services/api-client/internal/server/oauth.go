@@ -183,7 +183,37 @@ func (s *APIServer) handleOAuthCallback(w http.ResponseWriter, r *http.Request) 
 	// Enrich with standard connection metadata
 	tokenResp["enabled"] = true
 	tokenResp["consent_given"] = true
-	tokenResp["connected_at"] = time.Now().UTC().Format(time.RFC3339)
+	tokenResp["created_at"] = time.Now().UTC().Format(time.RFC3339)
+
+	// Normalize expires_at or expires_in
+	if exp, ok := tokenResp["expires_at"]; ok {
+		switch v := exp.(type) {
+		case float64:
+			tokenResp["expires_at"] = time.Unix(int64(v), 0).UTC().Format(time.RFC3339)
+		case int64:
+			tokenResp["expires_at"] = time.Unix(v, 0).UTC().Format(time.RFC3339)
+		}
+	} else if expIn, ok := tokenResp["expires_in"]; ok {
+		switch v := expIn.(type) {
+		case float64:
+			tokenResp["expires_at"] = time.Now().Add(time.Duration(v) * time.Second).UTC().Format(time.RFC3339)
+		case int64:
+			tokenResp["expires_at"] = time.Now().Add(time.Duration(v) * time.Second).UTC().Format(time.RFC3339)
+		}
+	}
+
+	// Provider specific mapping for user IDs
+	if provider == "strava" {
+		if athlete, ok := tokenResp["athlete"].(map[string]interface{}); ok {
+			if idFloat, ok := athlete["id"].(float64); ok {
+				tokenResp["athlete_id"] = int64(idFloat)
+			}
+		}
+	} else if provider == "fitbit" {
+		if uid, ok := tokenResp["user_id"].(string); ok {
+			tokenResp["fitbit_user_id"] = uid
+		}
+	}
 
 	// Create protobuf Struct containing the tokens
 	pbStruct, _ := structpb.NewStruct(tokenResp)

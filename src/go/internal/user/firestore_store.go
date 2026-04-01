@@ -228,6 +228,22 @@ func (s *FirestoreStore) GetIntegrations(ctx context.Context, userID string) (*p
 		return &pbuser.UserIntegrations{}, nil
 	}
 
+	// Normalize numeric expires_at fields into RFC-3339 strings
+	if m, ok := val.(map[string]interface{}); ok {
+		for _, intgObj := range m {
+			if intgMap, ok := intgObj.(map[string]interface{}); ok {
+				if exp, ok := intgMap["expires_at"]; ok {
+					switch v := exp.(type) {
+					case float64:
+						intgMap["expires_at"] = time.Unix(int64(v), 0).UTC().Format(time.RFC3339)
+					case int64:
+						intgMap["expires_at"] = time.Unix(v, 0).UTC().Format(time.RFC3339)
+					}
+				}
+			}
+		}
+	}
+
 	b, err := json.Marshal(val)
 	if err != nil {
 		return nil, err
