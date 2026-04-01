@@ -18,7 +18,7 @@ import (
 )
 
 func main() {
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("api-admin")
 	infra.InitSentry()
 	ctx := context.Background()
 
@@ -109,7 +109,7 @@ func main() {
 	}
 
 	logger.Info(ctx, "Admin API Gateway listening", "port", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), apiServer); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), infra.LoggingMiddleware(logger, apiServer)); err != nil {
 		logger.Error(ctx, "HTTP server failed", "error", err)
 		os.Exit(1)
 	}

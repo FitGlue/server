@@ -30,7 +30,7 @@ import (
 )
 
 func main() {
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("pipeline")
 	infra.InitSentry()
 	ctx := context.Background()
 
@@ -64,7 +64,7 @@ func main() {
 	// 1. gRPC Service (CRUD) — serves on the same port as HTTP (required for Cloud Run single-port)
 	svc := pipeline.NewService(store, pubClient, blobStore, logger)
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pb.RegisterPipelineServiceServer(grpcServer, svc)
 
 	healthcheck := health.NewServer()
@@ -83,13 +83,15 @@ func main() {
 		w.Write([]byte("ok"))
 	})
 
+	loggingMux := infra.LoggingMiddleware(logger, mux)
+
 	// 3. Unified handler: route gRPC vs HTTP based on content-type
 	// Cloud Run only exposes a single port, so both must share it.
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.ProtoMajor == 2 && strings.HasPrefix(r.Header.Get("Content-Type"), "application/grpc") {
 			grpcServer.ServeHTTP(w, r)
 		} else {
-			mux.ServeHTTP(w, r)
+			loggingMux.ServeHTTP(w, r)
 		}
 	})
 

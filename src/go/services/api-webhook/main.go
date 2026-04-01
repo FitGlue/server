@@ -31,7 +31,7 @@ import (
 )
 
 func main() {
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("api-webhook")
 	infra.InitSentry()
 	ctx := context.Background()
 	logger.Info(ctx, "Starting FitGlue Webhook API Gateway", "version", "v1")
@@ -155,7 +155,7 @@ func main() {
 	}
 
 	logger.Info(ctx, "Webhook Gateway listening", "port", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), apiServer); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), infra.LoggingMiddleware(logger, apiServer)); err != nil {
 		logger.Error(ctx, "HTTP server failed", "error", err)
 		os.Exit(1)
 	}

@@ -26,7 +26,7 @@ func main() {
 	}
 
 	ctx := context.Background()
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("activity")
 	infra.InitSentry()
 
 	projectID := os.Getenv("PROJECT_ID")
@@ -70,7 +70,7 @@ func main() {
 
 	svc := activity.NewService(store, blobStore, pub, bucketName, showcaseAssetsBucket, logger)
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pb.RegisterActivityServiceServer(server, svc)
 
 	healthcheck := health.NewServer()

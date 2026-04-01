@@ -4,6 +4,7 @@ package framework
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -222,6 +223,13 @@ func WrapCloudEvent(serviceName string, svc *bootstrap.Service, handler HandlerF
 
 			// Flush Sentry before returning
 			sentryPkg.Flush(2 * time.Second)
+
+			// Prevent infinite retries for terminal errors by pretending they succeeded for the CloudEvents SDK.
+			var termErr *TerminalError
+			if errors.As(handlerErr, &termErr) {
+				logger.Info("Intercepted TerminalError, dropping event to prevent infinite retries.", "error", handlerErr.Error())
+				return nil
+			}
 
 			return handlerErr
 		}

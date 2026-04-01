@@ -84,7 +84,7 @@ func main() {
 	}
 
 	logger.Info(ctx, "Destination Service listening", "port", port)
-	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), mux); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%s", port), infra.LoggingMiddleware(logger, mux)); err != nil {
 		logger.Error(ctx, "HTTP server failed", "error", err)
 		os.Exit(1)
 	}

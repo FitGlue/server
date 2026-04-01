@@ -7,6 +7,7 @@ import (
 
 	"github.com/cloudevents/sdk-go/v2/event"
 	"github.com/fitglue/server/src/go/internal/infra"
+	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	userpb "github.com/fitglue/server/src/go/pkg/types/pb/services/user"
 )
@@ -123,10 +124,12 @@ func (p *Processor) HandleEvent(w http.ResponseWriter, r *http.Request, provider
 		}
 
 		// 3. Construct and export the CloudEvent
-		ce := event.New()
-		ce.SetSource(fmt.Sprintf("/integrations/%s/webhook", evt.Provider))
-		ce.SetType("com.fitglue.activity.created")
-		if err := ce.SetData(event.ApplicationJSON, activityPayload); err != nil {
+		ce, err := infrapubsub.NewCloudEvent(
+			fmt.Sprintf("/integrations/%s/webhook", evt.Provider),
+			"com.fitglue.activity.created",
+			activityPayload,
+		)
+		if err != nil {
 			p.logger.Error(r.Context(), "Failed to pack CloudEvent data", "provider", evt.Provider, "user_id", internalUserID, "error", err)
 			continue
 		}

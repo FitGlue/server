@@ -297,15 +297,6 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 			}
 		}
 
-		// Check if it's a TerminalError, which should NOT be retried
-		if termErr, ok := err.(*TerminalError); ok {
-			fwCtx.Logger.Error("Terminal validation error in orchestrator (will not retry)", "error", termErr)
-			return map[string]interface{}{
-				"status": "FAILED",
-				"reason": termErr.Error(),
-			}, nil // Return nil error to ACK the message and stop retries
-		}
-
 		fwCtx.Logger.Error("Orchestrator failed", "error", err)
 		return nil, err
 	}

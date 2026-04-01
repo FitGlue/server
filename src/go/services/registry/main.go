@@ -20,7 +20,7 @@ func main() {
 		port = "8083" // Default port for registry service
 	}
 
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("registry")
 	infra.InitSentry()
 
 	// Initialize RegistryStore with static data
@@ -32,7 +32,7 @@ func main() {
 
 	svc := registry.NewService(store, logger)
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pb.RegisterRegistryServiceServer(server, svc)
 
 	healthcheck := health.NewServer()

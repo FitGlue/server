@@ -21,7 +21,7 @@ func main() {
 		port = "8081" // Different port to avoid conflict
 	}
 
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("billing")
 	infra.InitSentry()
 	ctx := context.Background()
 
@@ -51,7 +51,7 @@ func main() {
 
 	svc := billing.NewService(store, logger, stripeClient, priceID, webhookSecret)
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pbsvc.RegisterBillingServiceServer(server, svc)
 
 	healthcheck := health.NewServer()

@@ -56,7 +56,7 @@ func main() {
 		port = "8080"
 	}
 
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("user")
 	infra.InitSentry()
 	ctx := context.Background()
 
@@ -120,7 +120,7 @@ func main() {
 
 	svc := user.NewService(store, logger, sender, authWrapper, baseURL)
 
-	server := grpc.NewServer()
+	server := grpc.NewServer(grpc.UnaryInterceptor(infra.LoggingUnaryInterceptor(logger)))
 	pbsvc.RegisterUserServiceServer(server, svc)
 
 	healthcheck := health.NewServer()

@@ -28,7 +28,7 @@ func main() {
 		port = "8080"
 	}
 
-	logger := infra.NewLogger()
+	logger := infra.NewLoggerWithComponent("api-client")
 	infra.InitSentry()
 	ctx := context.Background()
 
@@ -122,7 +122,7 @@ func main() {
 
 	logger.Info(ctx, "Starting service.api.client", "port", port)
 
-	if err := http.ListenAndServe(":"+port, apiServer); err != nil {
+	if err := http.ListenAndServe(":"+port, infra.LoggingMiddleware(logger, apiServer)); err != nil {
 		log.Fatalf("failed to serve HTTP: %v", err)
 	}
 }
