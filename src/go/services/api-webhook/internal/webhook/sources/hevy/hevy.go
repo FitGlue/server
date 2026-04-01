@@ -122,7 +122,7 @@ func (p *Provider) FetchActivity(ctx context.Context, userSvc userpb.UserService
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	req.Header.Set("x-api-key", hevyInteg.ApiKey)
+	req.Header.Set("api-key", hevyInteg.ApiKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
