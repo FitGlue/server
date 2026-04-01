@@ -62,6 +62,19 @@ func NewOrchestrator(db shared.Database, storage shared.BlobStore, bucketName st
 	}
 }
 
+// TerminalError represents an error that won't succeed on retry (e.g. malformed data)
+type TerminalError struct {
+	Message string
+}
+
+func (e *TerminalError) Error() string {
+	return e.Message
+}
+
+func NewTerminalError(msg string) *TerminalError {
+	return &TerminalError{Message: msg}
+}
+
 func (o *Orchestrator) Register(p providers.Provider) {
 	o.providersByName[p.Name()] = p
 	if t := p.ProviderType(); t != pbplugin.EnricherProviderType_ENRICHER_PROVIDER_UNSPECIFIED {
@@ -153,15 +166,15 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	// 1.5. Validate Payload
 	if payload.StandardizedActivity == nil {
-		return nil, fmt.Errorf("standardized activity is nil")
+		return nil, NewTerminalError("standardized activity is nil")
 	}
 	if len(payload.StandardizedActivity.Sessions) != 1 {
 		logger.Error("Activity does not have exactly one session", "count", len(payload.StandardizedActivity.Sessions))
-		return nil, fmt.Errorf("multiple sessions not supported")
+		return nil, NewTerminalError("multiple sessions not supported")
 	}
 	if payload.StandardizedActivity.Sessions[0].TotalElapsedTime == 0 {
 		logger.Error("Activity session has 0 elapsed time")
-		return nil, fmt.Errorf("session total elapsed time is 0")
+		return nil, NewTerminalError("session total elapsed time is 0")
 	}
 
 	// 2. MANDATORY: Pipeline ID is required (Rule E25: Per-Pipeline Isolation via Splitter)
@@ -169,7 +182,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// Each invocation processes exactly one pipeline with clean memory and a dedicated trace.
 	if payload.PipelineId == nil || *payload.PipelineId == "" {
 		logger.Error("pipeline_id is required - enricher only accepts targeted messages from splitter")
-		return nil, fmt.Errorf("pipeline_id is required")
+		return nil, NewTerminalError("pipeline_id is required")
 	}
 
 	pipelineID := *payload.PipelineId

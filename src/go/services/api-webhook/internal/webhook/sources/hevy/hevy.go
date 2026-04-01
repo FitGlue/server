@@ -141,12 +141,18 @@ func (p *Provider) FetchActivity(ctx context.Context, userSvc userpb.UserService
 		return nil, fmt.Errorf("failed to read response body: %w", err)
 	}
 
+	stdActivity, err := mapToStandardizedActivity(rawBody, internalUserID, activitypb.ActivitySource_SOURCE_HEVY)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse hevy workout to standardized activity: %w", err)
+	}
+
 	// 3. Construct Payload
 	payload := &pbevents.ActivityPayload{
-		Source:              activitypb.ActivitySource_SOURCE_HEVY,
-		UserId:              internalUserID,
-		OriginalPayloadJson: string(rawBody),
-		ActivityId:          &evt.ActivityID,
+		Source:               activitypb.ActivitySource_SOURCE_HEVY,
+		UserId:               internalUserID,
+		OriginalPayloadJson:  string(rawBody),
+		ActivityId:           &evt.ActivityID,
+		StandardizedActivity: stdActivity,
 	}
 
 	return payload, nil
