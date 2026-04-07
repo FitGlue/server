@@ -18,7 +18,7 @@ locals {
     "registry",
     "user"
   ]
-  all_services = concat(local.gateway_services, local.core_services)
+  all_monitored_services = concat(local.gateway_services, local.core_services)
 }
 
 # =============================================================================
@@ -151,8 +151,8 @@ resource "google_monitoring_alert_policy" "high_error_rate" {
 
 # We split the 10 services into 2 groups to avoid the 6-condition limit per policy
 locals {
-  group_1 = slice(local.all_services, 0, 5)
-  group_2 = slice(local.all_services, 5, 10)
+  group_1 = slice(local.all_monitored_services, 0, 5)
+  group_2 = slice(local.all_monitored_services, 5, 10)
 }
 
 resource "google_monitoring_alert_policy" "critical_service_failure_1" {
