@@ -493,10 +493,8 @@ resource "google_monitoring_dashboard" "errors_traces" {
           widget = {
             title = "Root Cause Error Logs (Traces with severity >= ERROR from all Services)"
             logsPanel = {
-              filter = "resource.type=\"cloud_run_revision\" severity>=ERROR"
-              resourceNames = [
-                "projects/${var.project_id}"
-              ]
+              filter  = "resource.type=\"cloud_run_revision\" severity>=ERROR"
+              columns = ["severity", "timestamp", "resource.labels.service_name", "trace", "jsonPayload.message"]
             }
           }
         }
