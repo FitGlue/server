@@ -11,6 +11,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/internal/pipeline"
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	"github.com/fitglue/server/src/go/pkg/types/formatters"
 	pbactivity "github.com/fitglue/server/src/go/pkg/types/pb/models/activity"
@@ -36,6 +37,9 @@ func NewSplitter(store pipeline.PipelineStore, publisher pipeline.Publisher, log
 func (s *Splitter) SplitByPipeline(ctx context.Context, e cloudevents.Event) error {
 	// Parse ActivityPayload
 	rawData := e.Data()
+
+	// Sanitize payload to handle legacy objects in string fields
+	rawData = activity.SanitizeActivityPayloadJSON(rawData)
 
 	var payload pbevents.ActivityPayload
 	unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}

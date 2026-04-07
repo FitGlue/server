@@ -11,6 +11,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/infra"
 	"github.com/fitglue/server/src/go/internal/pipeline"
 	shared "github.com/fitglue/server/src/go/pkg"
+	"github.com/fitglue/server/src/go/pkg/domain/activity"
 	infrapubsub "github.com/fitglue/server/src/go/pkg/infrastructure/pubsub"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 )
@@ -36,6 +37,9 @@ func NewRouter(store pipeline.PipelineStore, publisher pipeline.Publisher, blobS
 // RouteActivity is the entry point
 func (r *Router) RouteActivity(ctx context.Context, e cloudevents.Event) error {
 	rawData := e.Data()
+
+	// Sanitize payload to handle legacy objects in string fields
+	rawData = activity.SanitizeActivityPayloadJSON(rawData)
 
 	var eventPayload pbevents.EnrichedActivityEvent
 	unmarshalOpts := protojson.UnmarshalOptions{DiscardUnknown: true}
