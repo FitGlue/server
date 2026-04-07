@@ -46,7 +46,11 @@ jobs:
       - persist_to_workspace:
           root: .
           paths:
-            - .
+            # Only ship what the deploy job needs — not node_modules, coverage, etc.
+            - Dockerfile
+            - src/go
+            - terraform
+            - Makefile
 
   deploy:
     parameters:
@@ -115,14 +119,47 @@ jobs:
             export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp_cred_config.json
             export PATH=$PATH:$(pwd)/google-cloud-sdk/bin
             gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
-            
+
             TAG="${CIRCLE_SHA1:0:12}"
+            REGISTRY="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services"
             SERVICES="api-client api-admin api-public api-webhook user billing pipeline activity registry destination"
+
             for svc in $SERVICES; do
-              IMAGE="us-central1-docker.pkg.dev/fitglue-server-<< parameters.target >>/fitglue-services/$svc:$TAG"
-              echo "Building $svc ($TAG)..."
-              docker build -t $IMAGE --build-arg SERVICE_NAME=$svc .
-              docker push $IMAGE
+              IMAGE="$REGISTRY/$svc:$TAG"
+
+              # Compute a content hash of everything that affects this service.
+              # Any change to shared code (pkg/, internal/, go.mod, go.sum, Dockerfile)
+              # or the service itself will produce a new hash and force a rebuild.
+              SVC_HASH=$(find src/go/services/$svc src/go/pkg src/go/internal \
+                src/go/go.mod src/go/go.sum Dockerfile \
+                -type f 2>/dev/null | sort | xargs sha256sum 2>/dev/null \
+                | sha256sum | cut -c1-12)
+              CACHE_IMAGE="$REGISTRY/$svc:cache-$SVC_HASH"
+
+              if docker pull "$CACHE_IMAGE" 2>/dev/null; then
+                echo "✓ $svc unchanged (cache-$SVC_HASH) — skipping build"
+                docker tag "$CACHE_IMAGE" "$IMAGE"
+                docker push "$IMAGE"
+                continue
+              fi
+
+              # Build with a minimal per-service context: only this service +
+              # the shared code it depends on. No other services are sent.
+              echo "→ Building $svc (cache-$SVC_HASH)..."
+              CTX=$(mktemp -d)
+              mkdir -p "$CTX/src/go/services"
+              cp Dockerfile "$CTX/"
+              cp src/go/go.mod src/go/go.sum "$CTX/src/go/"
+              cp -r src/go/pkg src/go/internal "$CTX/src/go/"
+              cp -r "src/go/services/$svc" "$CTX/src/go/services/"
+
+              docker build -t "$IMAGE" --build-arg SERVICE_NAME=$svc "$CTX"
+              rm -rf "$CTX"
+
+              docker push "$IMAGE"
+              # Tag with content hash so the next run can skip if nothing changed
+              docker tag "$IMAGE" "$CACHE_IMAGE"
+              docker push "$CACHE_IMAGE"
             done
       - run:
           name: Deploy Infrastructure (Terraform)

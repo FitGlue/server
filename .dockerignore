@@ -43,3 +43,27 @@ downloads/
 
 # TypeScript source (Go-only Docker builds)
 src/ts/
+
+# Proto & OpenAPI sources (not consumed by the Dockerfile — Go build uses generated code in src/go/)
+src/proto/
+src/openapi/
+
+# Go build artifacts & test outputs (never needed by Docker)
+src/go/coverage.out
+src/go/user
+src/go/services/activity/activity
+src/go/services/api-admin/api-admin
+src/go/services/api-client/api-client
+src/go/services/api-public/api-public
+src/go/services/api-webhook/api-webhook
+src/go/services/billing/billing
+src/go/services/destination/destination
+src/go/services/pipeline/pipeline
+src/go/services/registry/registry
+src/go/services/user/user
+
+# Go test fixtures/data not needed in production image
+src/go/tests/
+
+# Local dev CLI tools (fit-inspect, fit-parse-test, etc.) — not part of any service build
+src/go/cmd/

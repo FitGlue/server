@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	formatters "github.com/fitglue/server/src/go/pkg/types/formatters"
 	pbplugin "github.com/fitglue/server/src/go/pkg/types/pb/models/plugin"
 
 	shared "github.com/fitglue/server/src/go/pkg"
@@ -225,8 +226,8 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 
 	activeDestinations := pipeline.Destinations
 	if payload.IsRepost && payload.RepostMode != "full-pipeline" && payload.RepostDestination != "" {
-		if val, ok := pbplugin.DestinationType_value[payload.RepostDestination]; ok {
-			activeDestinations = []pbplugin.DestinationType{pbplugin.DestinationType(val)}
+		if dest := formatters.ParseDestination(payload.RepostDestination); dest != pbplugin.DestinationType_DESTINATION_UNSPECIFIED {
+			activeDestinations = []pbplugin.DestinationType{dest}
 			logger.Info("Targeted repost mode active, filtered destinations", "repost_mode", payload.RepostMode, "repost_destination", payload.RepostDestination)
 		} else {
 			logger.Warn("Invalid repost destination provided", "repost_destination", payload.RepostDestination)

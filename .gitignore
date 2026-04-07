@@ -29,6 +29,8 @@ fitglue-router
 fitglue-strava-uploader
 functions/*/vendor/*
 src/go/vendor
+# Root-level binary accidentally built to src/go/ instead of src/go/services/<svc>/
+src/go/user
 
 # Compiled Go Services
 src/go/services/activity/activity
