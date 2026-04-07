@@ -495,7 +495,7 @@ resource "google_monitoring_dashboard" "errors_traces" {
             logsPanel = {
               filter = "resource.type=\"cloud_run_revision\" severity>=ERROR"
               resourceNames = [
-                "projects/$${var.project_id}"
+                "projects/${var.project_id}"
               ]
             }
           }
