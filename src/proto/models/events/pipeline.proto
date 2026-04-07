@@ -67,6 +67,10 @@ message ActivityPayload {
   optional string resume_pending_input_id = 13; 
 
   optional string origin_destination = 14;      
+
+  bool is_repost = 15;
+  string repost_mode = 16;
+  string repost_destination = 17;
 }
 
 message EnrichedActivityEvent {

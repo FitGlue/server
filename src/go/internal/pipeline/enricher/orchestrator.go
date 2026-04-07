@@ -223,9 +223,19 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	}
 	logger.Debug("Activity ID for pipeline", "activity_id", activityId, "is_resume", isResumeMode)
 
+	activeDestinations := pipeline.Destinations
+	if payload.IsRepost && payload.RepostMode != "full-pipeline" && payload.RepostDestination != "" {
+		if val, ok := pbplugin.DestinationType_value[payload.RepostDestination]; ok {
+			activeDestinations = []pbplugin.DestinationType{pbplugin.DestinationType(val)}
+			logger.Info("Targeted repost mode active, filtered destinations", "repost_mode", payload.RepostMode, "repost_destination", payload.RepostDestination)
+		} else {
+			logger.Warn("Invalid repost destination provided", "repost_destination", payload.RepostDestination)
+		}
+	}
+
 	// Create initial pipeline run document for lifecycle tracking (RUNNING status)
 	// This ensures we track the pipeline execution even if it fails partway through
-	o.createInitialPipelineRun(ctx, logger, payload.UserId, pipelineExecutionID, pipeline.ID, activityId, payload, pipeline.Destinations)
+	o.createInitialPipelineRun(ctx, logger, payload.UserId, pipelineExecutionID, pipeline.ID, activityId, payload, activeDestinations)
 
 	// Upload original payload to GCS for Magic Actions (retry/repost) BEFORE any mutations
 	// This ensures the stored payload has the clean original description (Rule E22: Reset-on-Repost)
@@ -880,7 +890,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		Description:         finalDescription,
 		AppliedEnrichments:  []string{},
 		EnrichmentMetadata:  make(map[string]string),
-		Destinations:        pipeline.Destinations,
+		Destinations:        activeDestinations,
 		PipelineId:          pipeline.ID,
 		PipelineExecutionId: &pipelineExecutionID,
 		StartTime:           currentActivity.Sessions[0].StartTime,
@@ -897,7 +907,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// to do a straight overwrite of title/description instead of section-based merge.
 	// The activity already exists on the platform, so we just need to update metadata.
 	sourceDestName := strings.ToLower(strings.TrimPrefix(pipeline.Source, "SOURCE_"))
-	for _, dest := range pipeline.Destinations {
+	for _, dest := range activeDestinations {
 		destName := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
 		if sourceDestName == destName {
 			finalEvent.EnrichmentMetadata["same_source_destination_"+destName] = "true"
@@ -963,9 +973,9 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 		}
 	}
 
-	// Also check pipeline.Destinations for any destinations not in DestinationConfigs
+	// Also check activeDestinations for any destinations not in DestinationConfigs
 	// These destinations have no per-pipeline config, so fall back to plugin_defaults
-	for _, dest := range pipeline.Destinations {
+	for _, dest := range activeDestinations {
 		destId := strings.ToLower(strings.TrimPrefix(dest.String(), "DESTINATION_"))
 		if processedDests[destId] {
 			continue // Already handled above
@@ -1002,7 +1012,7 @@ func (o *Orchestrator) Process(ctx context.Context, logger *slog.Logger, payload
 	// Group destinations by their exclusion sets. Destinations with identical
 	// ExcludedEnrichers lists share a single event; different sets get separate events
 	// with filtered descriptions and appliedEnrichments.
-	groups := groupDestinationsByExclusions(pipeline.Destinations, pipeline.DestinationConfigs)
+	groups := groupDestinationsByExclusions(activeDestinations, pipeline.DestinationConfigs)
 
 	if len(groups) <= 1 {
 		// No exclusion diversity — all destinations get the same event (common case)

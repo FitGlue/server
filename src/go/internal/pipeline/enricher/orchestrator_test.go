@@ -583,6 +583,70 @@ func TestOrchestrator_Process(t *testing.T) {
 			t.Errorf("Execution ID should contain 'pipeline-A', got '%s'", *event.PipelineExecutionId)
 		}
 	})
+
+	t.Run("Filters destinations on targeted repost", func(t *testing.T) {
+		mockDB := &MockDatabase{
+			GetUserFunc: func(ctx context.Context, id string) (*user.Record, error) {
+				return &user.Record{UserProfile: &pbuser.UserProfile{UserId: id}}, nil
+			},
+			GetUserPipelinesFunc: func(ctx context.Context, userId string) ([]*pbpipeline.PipelineConfig, error) {
+				return []*pbpipeline.PipelineConfig{
+					{
+						Id:           "pipeline-repost",
+						Source:       "SOURCE_HEVY",
+						Destinations: []pbplugin.DestinationType{pbplugin.DestinationType_DESTINATION_STRAVA, pbplugin.DestinationType_DESTINATION_INTERVALS},
+						Enrichers: []*pbpipeline.EnricherConfig{
+							{
+								ProviderType: pbplugin.EnricherProviderType_ENRICHER_PROVIDER_MOCK,
+							},
+						},
+					},
+				}, nil
+			},
+		}
+
+		orchestrator := NewOrchestrator(mockDB, &MockBlobStore{}, "test-bucket", nil)
+		orchestrator.Register(&MockProvider{})
+
+		pipelineID := "pipeline-repost"
+		payload := &pbevents.ActivityPayload{
+			UserId:            "user-123",
+			Source:            pbactivity.ActivitySource_SOURCE_HEVY,
+			PipelineId:        &pipelineID,
+			IsRepost:          true,
+			RepostMode:        "missed-destination",
+			RepostDestination: "DESTINATION_INTERVALS",
+			Timestamp:         timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+			StandardizedActivity: &pbactivity.StandardizedActivity{
+				Name: "Ghost Run",
+				Sessions: []*pbactivity.Session{
+					{
+						StartTime:        timestamppb.New(time.Date(2023, 1, 1, 10, 0, 0, 0, time.UTC)),
+						TotalElapsedTime: 60,
+					},
+				},
+			},
+		}
+
+		result, err := orchestrator.Process(ctx, slog.Default(), payload, "test-parent-exec", "test-pipeline-exec", false)
+
+		if err != nil {
+			t.Fatalf("Process failed: %v", err)
+		}
+
+		if len(result.Events) != 1 {
+			t.Fatalf("Expected 1 event, got %d", len(result.Events))
+		}
+
+		event := result.Events[0]
+		if len(event.Destinations) != 1 {
+			t.Fatalf("Expected destinations to be filtered to 1, got %d", len(event.Destinations))
+		}
+
+		if event.Destinations[0] != pbplugin.DestinationType_DESTINATION_INTERVALS {
+			t.Errorf("Expected destination DESTINATION_INTERVALS, got %v", event.Destinations[0])
+		}
+	})
 }
 
 // MockDeferrableProvider implements both providers.Provider and providers.DeferrableProvider

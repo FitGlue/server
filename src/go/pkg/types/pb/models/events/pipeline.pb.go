@@ -199,6 +199,9 @@ type ActivityPayload struct {
 	UseUpdateMethod      bool                           `protobuf:"varint,12,opt,name=use_update_method,json=useUpdateMethod,proto3" json:"use_update_method,omitempty"`
 	ResumePendingInputId *string                        `protobuf:"bytes,13,opt,name=resume_pending_input_id,json=resumePendingInputId,proto3,oneof" json:"resume_pending_input_id,omitempty"`
 	OriginDestination    *string                        `protobuf:"bytes,14,opt,name=origin_destination,json=originDestination,proto3,oneof" json:"origin_destination,omitempty"`
+	IsRepost             bool                           `protobuf:"varint,15,opt,name=is_repost,json=isRepost,proto3" json:"is_repost,omitempty"`
+	RepostMode           string                         `protobuf:"bytes,16,opt,name=repost_mode,json=repostMode,proto3" json:"repost_mode,omitempty"`
+	RepostDestination    string                         `protobuf:"bytes,17,opt,name=repost_destination,json=repostDestination,proto3" json:"repost_destination,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
 }
@@ -327,6 +330,27 @@ func (x *ActivityPayload) GetResumePendingInputId() string {
 func (x *ActivityPayload) GetOriginDestination() string {
 	if x != nil && x.OriginDestination != nil {
 		return *x.OriginDestination
+	}
+	return ""
+}
+
+func (x *ActivityPayload) GetIsRepost() bool {
+	if x != nil {
+		return x.IsRepost
+	}
+	return false
+}
+
+func (x *ActivityPayload) GetRepostMode() string {
+	if x != nil {
+		return x.RepostMode
+	}
+	return ""
+}
+
+func (x *ActivityPayload) GetRepostDestination() string {
+	if x != nil {
+		return x.RepostDestination
 	}
 	return ""
 }
@@ -594,7 +618,7 @@ var File_models_events_pipeline_proto protoreflect.FileDescriptor
 
 const file_models_events_pipeline_proto_rawDesc = "" +
 	"\n" +
-	"\x1cmodels/events/pipeline.proto\x12\x15fitglue.models.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\"models/activity/standardized.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\xab\a\n" +
+	"\x1cmodels/events/pipeline.proto\x12\x15fitglue.models.events\x1a google/protobuf/descriptor.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\"models/activity/standardized.proto\x1a\x1cmodels/activity/source.proto\x1a\x1cmodels/plugin/provider.proto\"\x98\b\n" +
 	"\x0fActivityPayload\x12?\n" +
 	"\x06source\x18\x01 \x01(\x0e2'.fitglue.models.activity.ActivitySourceR\x06source\x12\x17\n" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x128\n" +
@@ -612,7 +636,11 @@ const file_models_events_pipeline_proto_rawDesc = "" +
 	"\x15resume_only_enrichers\x18\v \x03(\tR\x13resumeOnlyEnrichers\x12*\n" +
 	"\x11use_update_method\x18\f \x01(\bR\x0fuseUpdateMethod\x12:\n" +
 	"\x17resume_pending_input_id\x18\r \x01(\tH\x03R\x14resumePendingInputId\x88\x01\x01\x122\n" +
-	"\x12origin_destination\x18\x0e \x01(\tH\x04R\x11originDestination\x88\x01\x01\x1a;\n" +
+	"\x12origin_destination\x18\x0e \x01(\tH\x04R\x11originDestination\x88\x01\x01\x12\x1b\n" +
+	"\tis_repost\x18\x0f \x01(\bR\bisRepost\x12\x1f\n" +
+	"\vrepost_mode\x18\x10 \x01(\tR\n" +
+	"repostMode\x12-\n" +
+	"\x12repost_destination\x18\x11 \x01(\tR\x11repostDestination\x1a;\n" +
 	"\rMetadataEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01B\x18\n" +
