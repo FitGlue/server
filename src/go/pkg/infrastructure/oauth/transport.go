@@ -46,6 +46,20 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 	req2 := cloneRequest(req)
 	req2.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
+	// 2a. Buffer the request body so it can be replayed on a 401 retry.
+	// Go's HTTP transport reads and exhausts the body on the first RoundTrip;
+	// without buffering, the retry attempt sends ContentLength>0 with an empty
+	// body, causing "ContentLength=N with Body length 0".
+	var bodySnapshot []byte
+	if req2.Body != nil && req2.Body != http.NoBody {
+		bodySnapshot, err = io.ReadAll(req2.Body)
+		req2.Body.Close()
+		if err != nil {
+			return nil, fmt.Errorf("oauth: failed to buffer request body: %w", err)
+		}
+		req2.Body = io.NopCloser(bytes.NewReader(bodySnapshot))
+	}
+
 	// 3. Execute Request
 	resp, err := base.RoundTrip(req2)
 	if err != nil {
@@ -67,8 +81,11 @@ func (t *Transport) RoundTrip(req *http.Request) (*http.Response, error) {
 			return nil, fmt.Errorf("oauth: force refresh failed: %w", err)
 		}
 
-		// Update Header
+		// Update Header and reset body for replay
 		req2.Header.Set("Authorization", "Bearer "+token.AccessToken)
+		if bodySnapshot != nil {
+			req2.Body = io.NopCloser(bytes.NewReader(bodySnapshot))
+		}
 
 		// Retry Request
 		return base.RoundTrip(req2)
