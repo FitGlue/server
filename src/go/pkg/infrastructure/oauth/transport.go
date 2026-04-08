@@ -3,6 +3,7 @@ package oauth
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"log/slog"
@@ -204,6 +205,40 @@ func NewClientWithUsageTracking(source TokenSource, service *bootstrap.Service, 
 	oauthLogger := logger.With("component", "oauth")
 	// Stack: Client → ErrorLogging → UsageTracking → OAuth → Network
 	oauthTransport := &Transport{Source: source, Logger: oauthLogger}
+
+	usageTransport := &UsageTrackingTransport{
+		Base:     oauthTransport,
+		Service:  service,
+		UserID:   userID,
+		Provider: provider,
+		Logger:   oauthLogger,
+	}
+
+	errorLoggingTransport := &ErrorLoggingTransport{
+		Base:   usageTransport,
+		Logger: slog.Default().With("component", "http-client", "provider", provider, "user_id", userID),
+	}
+
+	return &http.Client{
+		Transport: errorLoggingTransport,
+	}
+}
+
+// NewClientWithUsageTrackingHTTP1 is identical to NewClientWithUsageTracking but forces
+// HTTP/1.1 by disabling TLS ALPN h2 negotiation. Use this for multipart file upload
+// endpoints (e.g. Strava /uploads) where HTTP/2 stream errors are observed.
+func NewClientWithUsageTrackingHTTP1(source TokenSource, service *bootstrap.Service, userID, provider string, logger infra.Logger) *http.Client {
+	oauthLogger := logger.With("component", "oauth")
+
+	// Force HTTP/1.1: empty TLSNextProto disables Go's automatic h2 upgrade.
+	http1Transport := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			MinVersion: tls.VersionTLS12,
+		},
+		TLSNextProto: make(map[string]func(authority string, c *tls.Conn) http.RoundTripper),
+	}
+
+	oauthTransport := &Transport{Source: source, Base: http1Transport, Logger: oauthLogger}
 
 	usageTransport := &UsageTrackingTransport{
 		Base:     oauthTransport,

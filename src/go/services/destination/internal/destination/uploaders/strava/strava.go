@@ -46,9 +46,10 @@ func (u *Uploader) Name() string {
 
 // Create uploads a new activity to Strava.
 func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload, userRec *user.Record) (string, error) {
-	// Initialize OAuth HTTP Client
+	// Initialize OAuth HTTP Client — force HTTP/1.1 to avoid HTTP/2 stream errors
+	// from Strava's /uploads endpoint when sending multipart file bodies.
 	tokenSource := oauth.NewFirestoreTokenSource(u.svc, payload.UserId, "strava")
-	httpClient := oauth.NewClientWithUsageTracking(tokenSource, u.svc, payload.UserId, "strava", infra.NewLogger())
+	httpClient := oauth.NewClientWithUsageTrackingHTTP1(tokenSource, u.svc, payload.UserId, "strava", infra.NewLogger())
 
 	// Get fit_file_uri from metadata, which is injected by executor
 	fitFileUri := ""
