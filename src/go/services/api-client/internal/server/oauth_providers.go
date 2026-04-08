@@ -18,7 +18,7 @@ func GetOAuthConfig(provider string) *OAuthProviderConfig {
 			TokenURL:     "https://www.strava.com/oauth/token",
 			ClientID:     os.Getenv("STRAVA_CLIENT_ID"),
 			ClientSecret: os.Getenv("STRAVA_CLIENT_SECRET"),
-			Scopes:       []string{"read_all", "activity:read_all"},
+			Scopes:       []string{"read_all", "activity:read_all", "activity:write"},
 		}
 	case "fitbit":
 		return &OAuthProviderConfig{
