@@ -2,6 +2,84 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.0.0](https://github.com/FitGlue/server/compare/v15.1.0...v16.0.0) (2026-04-08)
+
+
+### ⚠ BREAKING CHANGES
+
+* user.NewService now requires a baseURL parameter; test environment removed
+* move from function-based to service-based infrastructure - everything, and I mean EVERYTHING has changed
+
+### Features
+
+* Add `default_destination` to ShowcaseProfile, introduce a dedicated bucket for showcase assets, and refine showcase data handling. ([ef0bc09](https://github.com/FitGlue/server/commit/ef0bc092b33cdee8e926a9a9e16ac642a2f3a58c))
+* add activity payload sanitizer to handle legacy unescaped JSON fields in pipeline processing ([5dbd3d4](https://github.com/FitGlue/server/commit/5dbd3d4200d126b8a4f08b5e8ba334f702856c8b))
+* add activity:write scope to Strava OAuth provider configuration ([d374669](https://github.com/FitGlue/server/commit/d3746695becbaa2e1f26dc497352b29edbf209ee))
+* add destination service to storage_services IAM permissions ([73d557f](https://github.com/FitGlue/server/commit/73d557f28e2f5226685e20cc6eb0eadef54966f1))
+* add duration_seconds to TimeMarker and update hybrid race tagger to include duration and distance data ([70606e3](https://github.com/FitGlue/server/commit/70606e3f7cf1079398988351a1f74a18d919eb7c))
+* add repost fields to ActivityPayload and implement targeted destination filtering in orchestrator ([249cff9](https://github.com/FitGlue/server/commit/249cff99d41a158534777d7081f5e66567b2adc0))
+* add Skipped status to enrichment results and improve Parkrun date matching logic ([8fafb91](https://github.com/FitGlue/server/commit/8fafb9164d52c3a20f7ab2397bf5e4a3862612e5))
+* complete architecture overhaul ([f0e12b0](https://github.com/FitGlue/server/commit/f0e12b0424741e890c8075fda3f0c708d39f1082))
+* **enricher:** implement cycling PRs and native distance tracking ([6ad8877](https://github.com/FitGlue/server/commit/6ad887709a7d317cefae040d0d3ee0f4d163ccee))
+* implement admin handlers, billing portal, repost activity, and cost optimizations ([6290685](https://github.com/FitGlue/server/commit/6290685dbb18ae754cd981a6f9bee1f21a9ccbcd))
+* implement centralized gRPC and HTTP logging middleware across all services and refactor error handling into a shared framework. ([859bce2](https://github.com/FitGlue/server/commit/859bce2e4bb6144b483f1e3690c8ae15e594531d))
+* implement Hevy webhook parser and introduce TerminalError to prevent retries on validation failures ([1145409](https://github.com/FitGlue/server/commit/1145409b07d39adf982f4f2c9df13032847794f6))
+* Implement showcase profile management, including settings, slug, activity entries, and public profile endpoints. ([7ff069a](https://github.com/FitGlue/server/commit/7ff069a966db25f66f2e48eb0419297427786ef8))
+* introduce HybridRaceSummary model and support for telemetry-only laps in activity pipeline ([dec6dc9](https://github.com/FitGlue/server/commit/dec6dc96bcf856c4b15f4da0d5407053a1954592))
+* more fixes due to re-arch ([1c60d28](https://github.com/FitGlue/server/commit/1c60d28ab95562840603704ce487fa6403ab065c))
+* **showcase:** add owner profile metadata and remove tier gate from profile updates ([a5b58f5](https://github.com/FitGlue/server/commit/a5b58f55178f944110b45ed86298aea33f49ccf0))
+* **showcase:** implement theme persistence and fix uploader timestamp handling ([09113e3](https://github.com/FitGlue/server/commit/09113e3e788ff65570b45ec202b7534fe9684ce5))
+* skip pace summary for hybrid races and recalculate session total distance after tagging ([6158cbb](https://github.com/FitGlue/server/commit/6158cbb16cc08cbc9f25f96fac85cdd90eea0793))
+
+
+### Bug Fixes
+
+* buffer request body in oauth transport to allow replay on 401 retries ([ed77773](https://github.com/FitGlue/server/commit/ed77773a58a7680a4a7762dee3bf62bee391c0ce))
+* change memory allocation ([e4fee17](https://github.com/FitGlue/server/commit/e4fee17ef8cc431a81daf5bc9b5445fec9986fed))
+* change step order to do terraform before deploying ([eb8f55b](https://github.com/FitGlue/server/commit/eb8f55bc06276f7b069e6136deb64dcb7fa60648))
+* changes from make preflight ([c5f7aa7](https://github.com/FitGlue/server/commit/c5f7aa702c5518fb7c53f3a11b0505799fbc8648))
+* check correct source string for pipeline existence ([87842c7](https://github.com/FitGlue/server/commit/87842c7f0ea270389684d1e29ed35174fb352a72))
+* circleci ([80554fc](https://github.com/FitGlue/server/commit/80554fc890652ddf3e2b3f40ab543f1872ac4402))
+* correct terraform variable interpolation syntax in monitoring logs panel ([ef4f925](https://github.com/FitGlue/server/commit/ef4f925ba3a42d8c9f937276a20664db1adf50f4))
+* couple remaining issues ([4514c37](https://github.com/FitGlue/server/commit/4514c377596610faca508f6f2455cefca01a5db8))
+* destroy test env ([0d395e2](https://github.com/FitGlue/server/commit/0d395e238e5826a90853e04f131e257c2e82eb97))
+* do not duplicate var names in tf across files ([7f728fe](https://github.com/FitGlue/server/commit/7f728feb931bd8ba4f648f6d1e057c58efd31c3a))
+* env var cleanup ([aaf8bb3](https://github.com/FitGlue/server/commit/aaf8bb3dea0f56df97f9eb0c8dc75d87e8c55612))
+* firebase rewrites and showcase processing ([37b96ab](https://github.com/FitGlue/server/commit/37b96abe30e9357582adc236eb481cb9b1082311))
+* force HTTP/1.1 for Strava uploads to resolve multipart stream errors ([a56e5d3](https://github.com/FitGlue/server/commit/a56e5d32a70cad772cf8bd379fee223c8474f0b8))
+* gcloud fix for circle ([66cd094](https://github.com/FitGlue/server/commit/66cd094227b346d50a03978158a4480ae1e88deb))
+* generate and send back ingress API key when connecting public api key integrations ([28905f8](https://github.com/FitGlue/server/commit/28905f8d997494e6d05268ceaf0fd4b845ab9932))
+* generate enum types ([e9a902d](https://github.com/FitGlue/server/commit/e9a902d286842ccede71b14d1dc6a5b005be8a71))
+* gRPC and registry bullshit ([abfd5a1](https://github.com/FitGlue/server/commit/abfd5a1dd2f9bdd3f8a3e435d40098549df3088f))
+* gRPC infra dial TLS ([85471ec](https://github.com/FitGlue/server/commit/85471ec765dbe539e85e193caf94f3e14ec5c505))
+* let terraform do the fkin deploying ([a3aa988](https://github.com/FitGlue/server/commit/a3aa9883b8de914e9ae9b0c7177f08c869c863a5))
+* missing tf closing brace ([b753068](https://github.com/FitGlue/server/commit/b753068da2c543399827e2c522986f3f0f33f13f))
+* monitoring terraform ([bdb82bb](https://github.com/FitGlue/server/commit/bdb82bb01a65c912dc484e9854c3ddc8ec5ccd89))
+* more circleci ([a3daa4e](https://github.com/FitGlue/server/commit/a3daa4e3156c3cc57d9ab4447f6c04feff016569))
+* more converter firestore shenanigans ([b26a7d5](https://github.com/FitGlue/server/commit/b26a7d55cd50de893fb73d1059bba505c1ab061d))
+* more docker fun ([5004800](https://github.com/FitGlue/server/commit/5004800103511c11be7cb7defb4ffe73ac4a85c0))
+* more terraform shenanigans ([ce08ca5](https://github.com/FitGlue/server/commit/ce08ca5874297fe2949c52848f82da05eb911556))
+* more tf shit ([86a1e7f](https://github.com/FitGlue/server/commit/86a1e7f9475addafcadbe43ee0902f3b6696ad3d))
+* no more removing legacy from state ([2b82d03](https://github.com/FitGlue/server/commit/2b82d03fe9e7436e84089f56b89df14a2837a9a1))
+* normalize expiration timestamps and add provider-specific user ID mapping for OAuth tokens ([870e199](https://github.com/FitGlue/server/commit/870e1993c77d2464038eac61b2ad18cc27a465bb))
+* permissions and logging to sentry ([caa6386](https://github.com/FitGlue/server/commit/caa6386f95a8543cf626274989eae0d928146ad9))
+* pipeline storage/read converter for enricher providers ([0da91e8](https://github.com/FitGlue/server/commit/0da91e82a07831824b96a50b880a4c3f10978f22))
+* proto decoding problems ([c12ea7e](https://github.com/FitGlue/server/commit/c12ea7ea6bfbe1dd18f8cee10bd08bdb7e6fde0e))
+* pubsub invoker perms ([64cd9ef](https://github.com/FitGlue/server/commit/64cd9efabb5bd0451d515ba37499619233c96d54))
+* refactor and centralise showcase management ([5804e8e](https://github.com/FitGlue/server/commit/5804e8e816cba11ab37521eae139935c7f5a9ac9))
+* remove service-level go mod ([f58e9b5](https://github.com/FitGlue/server/commit/f58e9b5e6fc39da88eb506e08b3f0f47cf1a3a75))
+* server start panics ([292fb88](https://github.com/FitGlue/server/commit/292fb882c3ffdef94fd90f53b73993ea11ee16d7))
+* showcase management saving ([13178dc](https://github.com/FitGlue/server/commit/13178dcce3501577374cb22968a0c051e5e007db))
+* showcase profile ([25c440f](https://github.com/FitGlue/server/commit/25c440fd70263ab0d70327cf02518c086199f315))
+* **showcase:** add owner display name fallback and refine settings logic ([b89087a](https://github.com/FitGlue/server/commit/b89087aec764b563fa5af2c788004b9b6e3e5dc9))
+* split terraform ([6ab6377](https://github.com/FitGlue/server/commit/6ab6377f17892e51c7b5f56ac11867c3f50f3d19))
+* terraform issue ([9928828](https://github.com/FitGlue/server/commit/99288286d6f9daf0d476ca8bc767bc216bdfdabf))
+* tf error, pipeline edit/disable error ([12ba10e](https://github.com/FitGlue/server/commit/12ba10e44d1a5793ada353b23435f8f19c2960c5))
+* tire field normalisation layer ([926bd09](https://github.com/FitGlue/server/commit/926bd095c4695c72c915cb95d129ef4d44801882))
+* update Hevy API key header from x-api-key to api-key ([a02d9bf](https://github.com/FitGlue/server/commit/a02d9bfdba99ba56cb5d2cb0b06c91d9d239dae3))
+* update monitoring dashboard logs panel to include specific columns and remove redundant resource filter ([c37e004](https://github.com/FitGlue/server/commit/c37e0042c7d48a0a7db35e6f7fb0b38df7cca130))
+* various bugs with new architecture ([908bc32](https://github.com/FitGlue/server/commit/908bc32eed000caa9739ff8b757a578bb97d6d52))
+
 ## [15.1.0](https://github.com/FitGlue/server/compare/v15.0.0...v15.1.0) (2026-02-21)
 
 
