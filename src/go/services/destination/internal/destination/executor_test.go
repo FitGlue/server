@@ -219,7 +219,7 @@ func TestUploadExecutor_Process(t *testing.T) {
 	notifications := &mockNotificationService{}
 	logger := infra.NewLogger()
 
-	executor := NewUploadExecutor(registry, userClient, activityClient, db, notifications, logger)
+	executor := NewUploadExecutor(registry, userClient, activityClient, db, nil, notifications, logger)
 
 	// Create a test payload
 	payload := &pbevents.EnrichedActivityEvent{
@@ -264,7 +264,7 @@ func TestUploadExecutor_Process_GetProfileError_WritesFailure(t *testing.T) {
 	notifications := &mockNotificationService{}
 	logger := infra.NewLogger()
 
-	executor := NewUploadExecutor(registry, userClient, activityClient, db, notifications, logger)
+	executor := NewUploadExecutor(registry, userClient, activityClient, db, nil, notifications, logger)
 
 	// Override the DB to track outcomes written by writeFailureForAllDestinations
 	type outcomeTracker struct {

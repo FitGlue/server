@@ -13,7 +13,7 @@ import (
 	"github.com/fitglue/server/src/go/internal/infra"
 	shared "github.com/fitglue/server/src/go/pkg"
 	"github.com/fitglue/server/src/go/pkg/destination"
-	"github.com/fitglue/server/src/go/pkg/domain/activity"
+	activityPkg "github.com/fitglue/server/src/go/pkg/domain/activity"
 	"github.com/fitglue/server/src/go/pkg/domain/user"
 	pbevents "github.com/fitglue/server/src/go/pkg/types/pb/models/events"
 	pbpipeline "github.com/fitglue/server/src/go/pkg/types/pb/models/pipeline"
@@ -30,6 +30,7 @@ type UploadExecutor struct {
 	userClient     userpb.UserServiceClient
 	activityClient activitypb.ActivityServiceClient
 	db             shared.Database
+	store          shared.BlobStore
 	notifications  shared.NotificationService
 	logger         infra.Logger
 }
@@ -40,6 +41,7 @@ func NewUploadExecutor(
 	userClient userpb.UserServiceClient,
 	activityClient activitypb.ActivityServiceClient,
 	db shared.Database,
+	store shared.BlobStore,
 	notifications shared.NotificationService,
 	logger infra.Logger,
 ) *UploadExecutor {
@@ -48,6 +50,7 @@ func NewUploadExecutor(
 		userClient:     userClient,
 		activityClient: activityClient,
 		db:             db,
+		store:          store,
 		notifications:  notifications,
 		logger:         logger,
 	}
@@ -155,7 +158,7 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 	metadata["fit_file_uri"] = payload.FitFileUri
 	metadata["activity_name"] = payload.Name
 	metadata["description"] = payload.Description
-	metadata["strava_sport_type"] = activity.GetStravaActivityType(payload.ActivityType)
+	metadata["strava_sport_type"] = activityPkg.GetStravaActivityType(payload.ActivityType)
 	metadata["activity_type"] = payload.ActivityType.String()
 
 	// Inject activity_data_uri so destination uploaders can persist GCS references
@@ -171,12 +174,24 @@ func (e *UploadExecutor) Process(ctx context.Context, ce *event.Event) error {
 		metadata["tags"] = strings.Join(payload.Tags, ",")
 	}
 
+	// Resolve StandardizedActivity: the enricher always offloads ActivityData to GCS
+	// and clears it from the Pub/Sub message. Fetch it back now so uploaders (e.g. Hevy)
+	// can access the full session/lap/strength-set data written by enrichers like
+	// HybridRaceTagger. Without this, every activity hits the single-cardio fallback.
+	resolvedActivityData, resolveErr := activityPkg.ResolveActivityData(ctx, &payload, e.store)
+	if resolveErr != nil {
+		e.logger.Warn(ctx, "Failed to resolve activity data from GCS, proceeding with inline data",
+			"error", resolveErr,
+			"activity_data_uri", payload.ActivityDataUri)
+		resolvedActivityData = payload.ActivityData // Fallback to whatever is inline (may be nil)
+	}
+
 	// Construct generic ActivityPayload for Destination Uploaders
 	activityPayload := &pbevents.ActivityPayload{
 		Source:               payload.Source,
 		UserId:               payload.UserId,
 		ActivityId:           &payload.ActivityId,
-		StandardizedActivity: payload.ActivityData, // Map ActivityData -> StandardizedActivity
+		StandardizedActivity: resolvedActivityData, // Resolved from GCS or inline
 		OriginalPayloadJson:  "",
 		Metadata:             metadata, // Injected Metadata
 		PipelineExecutionId:  payload.PipelineExecutionId,
