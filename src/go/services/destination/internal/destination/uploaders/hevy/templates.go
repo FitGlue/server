@@ -336,14 +336,23 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 		"status", resp.StatusCode,
 		"body", string(rawBody))
 
+	rawStr := strings.TrimSpace(string(rawBody))
+
+	// Hevy may return just the UUID as a plain string (not wrapped in JSON) on successful creation.
+	// Detect this by checking if the response is non-empty and doesn't start with a JSON delimiter.
+	if len(rawStr) > 0 && !strings.HasPrefix(rawStr, "{") && !strings.HasPrefix(rawStr, "[") {
+		// Strip surrounding quotes if present (e.g. "\"some-uuid\"")
+		templateID := strings.Trim(rawStr, "\"")
+		r.logger.Info("Hevy returned plain-string template ID on creation",
+			"exerciseName", exerciseName,
+			"templateID", templateID)
+		return templateID, nil
+	}
+
 	var result struct {
 		ExerciseTemplate hevy.ExerciseTemplate `json:"exercise_template"`
 	}
 	if err := json.Unmarshal(rawBody, &result); err != nil {
-		rawStr := strings.TrimSpace(string(rawBody))
-		if len(rawStr) > 0 && !strings.HasPrefix(rawStr, "{") && !strings.HasPrefix(rawStr, "[") {
-			return "", fmt.Errorf("hevy returned non-JSON response: %s", rawStr)
-		}
 		return "", fmt.Errorf("decode response (raw: %q): %w", string(rawBody), err)
 	}
 
