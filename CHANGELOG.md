@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.2.0](https://github.com/FitGlue/server/compare/v16.1.0...v16.2.0) (2026-04-11)
+
+
+### Features
+
+* inject BlobStore into UploadExecutor to resolve activity data from GCS during destination processing ([10598c6](https://github.com/FitGlue/server/commit/10598c6a69e8693e258c266942929ac8db3d6052))
+
 ## [16.1.0](https://github.com/FitGlue/server/compare/v16.0.1...v16.1.0) (2026-04-11)
 
 
