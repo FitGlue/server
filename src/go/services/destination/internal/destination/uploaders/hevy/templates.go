@@ -9,6 +9,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -69,15 +70,12 @@ func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 		equip = "none"
 	}
 
-	// Distance + Duration exercises (Hyrox cardio stations, carries, sleds, etc.)
-	// These exercises track distance covered and time taken
+	// Distance + Duration exercises (pure cardio stations with no weight component).
+	// These exercises track distance covered and time taken.
 	distanceDurationPatterns := []string{
 		"skierg", "ski erg",
 		"rowing", "row",
-		"sled push", "sled pull", "prowler",
 		"burpee broad jump",
-		"farmers carry", "farmers walk", "farmer carry", "farmer walk",
-		"sandbag lunges", "sandbag lunge", "weighted lunges", "weighted lunge",
 		"running", "cycling", "swimming", "walking",
 	}
 
@@ -92,9 +90,16 @@ func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 		}
 	}
 
-	// Weight + Duration exercises (Wall Balls - we track weight and time, with reps in notes)
-	// Hevy doesn't have reps+time+weight, so we use weight_duration and add reps to notes
-	weightDurationPatterns := []string{"wall ball"}
+	// Weight + Duration exercises.
+	// Weighted carries and sleds: the preset distance is fixed and known (e.g. 50m Sled Push),
+	// so weight + time is the meaningful variable to record in Hevy.
+	// Wall Balls: Hevy has no weight+reps+duration type, so weight+duration is the best fit.
+	weightDurationPatterns := []string{
+		"sled push", "sled pull", "prowler",
+		"farmers carry", "farmers walk", "farmer carry", "farmer walk",
+		"sandbag lunges", "sandbag lunge", "weighted lunges", "weighted lunge",
+		"wall ball",
+	}
 	for _, pattern := range weightDurationPatterns {
 		if strings.Contains(normalized, pattern) {
 			return ExerciseTypeConfig{ExerciseType: "weight_duration", MuscleGroup: "full_body", EquipmentCategory: equip}
@@ -202,13 +207,22 @@ func (r *TemplateResolver) fetchAllTemplates(ctx context.Context) error {
 			return fmt.Errorf("API error (status %d): %s", resp.StatusCode, errorBody.String())
 		}
 
+		rawBody, readErr := io.ReadAll(resp.Body)
+		if readErr != nil {
+			return fmt.Errorf("read response body: %w", readErr)
+		}
+
 		var result struct {
 			ExerciseTemplates []hevy.ExerciseTemplate `json:"exercise_templates"`
 			Page              int                     `json:"page"`
 			PageCount         int                     `json:"page_count"`
 		}
-		if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-			return fmt.Errorf("decode response: %w", err)
+		if err := json.Unmarshal(rawBody, &result); err != nil {
+			rawStr := strings.TrimSpace(string(rawBody))
+			if len(rawStr) > 0 && !strings.HasPrefix(rawStr, "{") && !strings.HasPrefix(rawStr, "[") {
+				return fmt.Errorf("hevy returned non-JSON response: %s", rawStr)
+			}
+			return fmt.Errorf("decode response (raw: %q): %w", rawStr, err)
 		}
 
 		r.templates = append(r.templates, result.ExerciseTemplates...)
@@ -303,17 +317,34 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 400 {
-		var errorBody bytes.Buffer
-		errorBody.ReadFrom(resp.Body)
-		return "", fmt.Errorf("create template failed (status %d): %s", resp.StatusCode, errorBody.String())
+	// Read the full body upfront so we can include it in any error message for diagnosis.
+	rawBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", fmt.Errorf("read response body: %w", err)
 	}
+
+	if resp.StatusCode >= 400 {
+		r.logger.Warn("Hevy create custom template API error",
+			"exerciseName", exerciseName,
+			"status", resp.StatusCode,
+			"body", string(rawBody))
+		return "", fmt.Errorf("create template failed (status %d): %s", resp.StatusCode, string(rawBody))
+	}
+
+	r.logger.Debug("Hevy create custom template raw response",
+		"exerciseName", exerciseName,
+		"status", resp.StatusCode,
+		"body", string(rawBody))
 
 	var result struct {
 		ExerciseTemplate hevy.ExerciseTemplate `json:"exercise_template"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", fmt.Errorf("decode response: %w", err)
+	if err := json.Unmarshal(rawBody, &result); err != nil {
+		rawStr := strings.TrimSpace(string(rawBody))
+		if len(rawStr) > 0 && !strings.HasPrefix(rawStr, "{") && !strings.HasPrefix(rawStr, "[") {
+			return "", fmt.Errorf("hevy returned non-JSON response: %s", rawStr)
+		}
+		return "", fmt.Errorf("decode response (raw: %q): %w", string(rawBody), err)
 	}
 
 	// Add to local cache

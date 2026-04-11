@@ -75,6 +75,59 @@ type StationResult struct {
 	ExpectedReps int32 // Expected reps from preset (e.g., 100 for Wall Balls)
 }
 
+// hybridRaceKeywords are title/tag substrings that explicitly mark an activity as a
+// hybrid race, bypassing the structural heuristic gate entirely.
+var hybridRaceKeywords = []string{"hyrox", "athx", "hybrid"}
+
+// hyroxLapMin / hyroxLapMax define the structural lap-count window for a plausible
+// Hyrox race. A standard race has 16 laps; the wider range accommodates partial
+// recordings and devices that occasionally split a single station into two laps.
+const (
+	hyroxLapMin = 8
+	hyroxLapMax = 20
+)
+
+// hyroxDistanceMinM / hyroxDistanceMaxM define the total-distance window in metres.
+// A standard Hyrox race is ~9,700m; the lower bound accommodates doubles and relays
+// where individual legs are shorter.
+const (
+	hyroxDistanceMinM = 7_000.0
+	hyroxDistanceMaxM = 16_000.0
+)
+
+// looksLikeHybridRace returns true when the activity passes either the keyword
+// check (explicit) or the structural heuristic (lap count + total distance).
+func looksLikeHybridRace(activity *pbactivity.StandardizedActivity) bool {
+	// 1. Keyword override: title or any existing tag contains a known race name.
+	nameLower := strings.ToLower(activity.Name)
+	for _, kw := range hybridRaceKeywords {
+		if strings.Contains(nameLower, kw) {
+			return true
+		}
+	}
+	for _, tag := range activity.Tags {
+		tagLower := strings.ToLower(tag)
+		for _, kw := range hybridRaceKeywords {
+			if strings.Contains(tagLower, kw) {
+				return true
+			}
+		}
+	}
+
+	// 2. Structural heuristic: lap count AND total distance must both be in range.
+	if len(activity.Sessions) == 0 {
+		return false
+	}
+	session := activity.Sessions[0]
+	lapCount := len(session.Laps)
+	totalDistance := session.TotalDistance
+
+	return lapCount >= hyroxLapMin &&
+		lapCount <= hyroxLapMax &&
+		totalDistance >= hyroxDistanceMinM &&
+		totalDistance <= hyroxDistanceMaxM
+}
+
 // Enrich is called on first run - returns WaitForInputError with lap metadata and preset options
 func (p *HybridRaceTaggerProvider) Enrich(ctx context.Context, logger *slog.Logger, activity *pbactivity.StandardizedActivity, user *user.Record, inputs map[string]string, doNotRetry bool) (*providers.EnrichmentResult, error) {
 	logger.Info("hybrid_race_tagger: checking for laps to tag")
@@ -85,6 +138,21 @@ func (p *HybridRaceTaggerProvider) Enrich(ctx context.Context, logger *slog.Logg
 			Metadata: map[string]string{
 				"status": "skipped",
 				"reason": "no_laps",
+			},
+		}, nil
+	}
+
+	if !looksLikeHybridRace(activity) {
+		session := activity.Sessions[0]
+		logger.Info("hybrid_race_tagger: activity does not match hybrid race heuristics, skipping",
+			"name", activity.Name,
+			"lap_count", len(session.Laps),
+			"total_distance_m", session.TotalDistance,
+		)
+		return &providers.EnrichmentResult{
+			Metadata: map[string]string{
+				"status": "skipped",
+				"reason": "not_hybrid_race_candidate",
 			},
 		}, nil
 	}
@@ -195,11 +263,15 @@ func (p *HybridRaceTaggerProvider) EnrichResume(ctx context.Context, activity *p
 	session.Laps = newLaps
 	session.StrengthSets = append(session.StrengthSets, strengthSets...)
 
-	// Recalculate session total distance. Since we now preserve all laps (including strength stations),
-	// we just sum the laps themselves.
+	// Recalculate session total distance.
+	// Only lap types that represent real covered distance (runs and cardio stations) are counted.
+	// Strength station laps are marked IsTelemetryContainerOnly and must be excluded so that
+	// Sled Push, Farmers Carry, Wall Balls, etc. do not inflate the reported race distance.
 	var totalDistance float64
 	for _, lap := range newLaps {
-		totalDistance += lap.TotalDistance
+		if !lap.IsTelemetryContainerOnly {
+			totalDistance += lap.TotalDistance
+		}
 	}
 	session.TotalDistance = totalDistance
 

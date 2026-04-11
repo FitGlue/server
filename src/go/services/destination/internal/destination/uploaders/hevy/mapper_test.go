@@ -41,10 +41,10 @@ func TestGetCardioExerciseName(t *testing.T) {
 		{pbactivity.ActivityType_ACTIVITY_TYPE_WALK, "Walking"},
 		{pbactivity.ActivityType_ACTIVITY_TYPE_RIDE, "Cycling (Outdoor)"},
 		{pbactivity.ActivityType_ACTIVITY_TYPE_SWIM, "Swimming"},
-		{pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING, "Weight Training"},
-		{pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED, "Workout"},
-		{pbactivity.ActivityType_ACTIVITY_TYPE_HIKE, "Workout"},
-		{pbactivity.ActivityType_ACTIVITY_TYPE_YOGA, "Workout"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING, "Weightlifting"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_UNSPECIFIED, "Other Cardio"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_HIKE, "Other Cardio"},
+		{pbactivity.ActivityType_ACTIVITY_TYPE_YOGA, "Other Cardio"},
 	}
 
 	for _, tc := range tests {
@@ -93,28 +93,109 @@ func TestAppendExercises(t *testing.T) {
 }
 
 func TestConvertStrengthSet(t *testing.T) {
-	t.Run("AllFields", func(t *testing.T) {
+	// weight_duration exercises: Hevy accepts weight + duration only.
+	// Weighted stations (Sled Push/Pull, Farmers Carry, Sandbag Lunges, Wall Balls) use this type
+	// so the variable factor (weight) is recorded. Preset distances are fixed and recorded in descriptions.
+	t.Run("SledPush_WeightDuration_ExcludesDistanceAndReps", func(t *testing.T) {
 		set := &pbactivity.StrengthSet{
+			ExerciseName:    "Sled Push",
+			SetType:         "normal",
+			WeightKg:        152,
+			DistanceMeters:  50,
+			DurationSeconds: 90,
+			Reps:            0,
+		}
+		result := convertStrengthSet(set, set.ExerciseName)
+		require.NotNil(t, result.Type)
+		assert.Equal(t, hevy.PostWorkoutsRequestSetType("normal"), *result.Type)
+		// weight + duration must be present
+		require.NotNil(t, result.WeightKg)
+		assert.InDelta(t, 152.0, float64(*result.WeightKg), 0.01)
+		require.NotNil(t, result.DurationSeconds)
+		assert.Equal(t, 90, *result.DurationSeconds)
+		// distance and reps must be absent for weight_duration type
+		assert.Nil(t, result.DistanceMeters, "distance must not be sent for weight_duration exercises")
+		assert.Nil(t, result.Reps, "reps must not be sent for weight_duration exercises")
+	})
+
+	t.Run("FarmersCarry_WeightDuration_ExcludesDistanceAndReps", func(t *testing.T) {
+		set := &pbactivity.StrengthSet{
+			ExerciseName:    "Farmers Carry",
+			SetType:         "normal",
+			WeightKg:        48,
+			DistanceMeters:  200,
+			DurationSeconds: 120,
+		}
+		result := convertStrengthSet(set, set.ExerciseName)
+		require.NotNil(t, result.WeightKg)
+		assert.InDelta(t, 48.0, float64(*result.WeightKg), 0.01)
+		require.NotNil(t, result.DurationSeconds)
+		assert.Equal(t, 120, *result.DurationSeconds)
+		assert.Nil(t, result.DistanceMeters)
+		assert.Nil(t, result.Reps)
+	})
+
+	t.Run("SkiErg_DistanceDuration_ExcludesWeightAndReps", func(t *testing.T) {
+		set := &pbactivity.StrengthSet{
+			ExerciseName:    "SkiErg",
+			SetType:         "normal",
+			WeightKg:        0,
+			DistanceMeters:  1000,
+			DurationSeconds: 300,
+		}
+		result := convertStrengthSet(set, set.ExerciseName)
+		require.NotNil(t, result.DistanceMeters)
+		assert.Equal(t, 1000, *result.DistanceMeters)
+		require.NotNil(t, result.DurationSeconds)
+		assert.Equal(t, 300, *result.DurationSeconds)
+		assert.Nil(t, result.WeightKg)
+		assert.Nil(t, result.Reps)
+	})
+
+	// weight_duration exercises: Hevy accepts weight + duration only.
+	// Reps and distance must NOT be sent even when populated on the StrengthSet.
+	t.Run("WallBalls_WeightDuration_ExcludesRepsAndDistance", func(t *testing.T) {
+		set := &pbactivity.StrengthSet{
+			ExerciseName:    "Wall Balls",
+			SetType:         "normal",
+			WeightKg:        9,
+			Reps:            100,
+			DistanceMeters:  0,
+			DurationSeconds: 240,
+		}
+		result := convertStrengthSet(set, set.ExerciseName)
+		// weight + duration must be present
+		require.NotNil(t, result.WeightKg)
+		assert.InDelta(t, 9.0, float64(*result.WeightKg), 0.01)
+		require.NotNil(t, result.DurationSeconds)
+		assert.Equal(t, 240, *result.DurationSeconds)
+		// reps and distance must be absent for weight_duration type
+		assert.Nil(t, result.Reps, "reps must not be sent for weight_duration exercises")
+		assert.Nil(t, result.DistanceMeters, "distance must not be sent for weight_duration exercises")
+	})
+
+	// weight_reps (default): accepts weight + reps, duration carried through.
+	t.Run("GenericStrength_WeightReps", func(t *testing.T) {
+		set := &pbactivity.StrengthSet{
+			ExerciseName:    "Deadlift",
 			SetType:         "warmup",
 			WeightKg:        80.5,
 			Reps:            10,
-			DistanceMeters:  100,
-			DurationSeconds: 60,
+			DistanceMeters:  0,
+			DurationSeconds: 0,
 		}
-		result := convertStrengthSet(set)
+		result := convertStrengthSet(set, set.ExerciseName)
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("warmup"), *result.Type)
 		require.NotNil(t, result.WeightKg)
 		assert.InDelta(t, 80.5, float64(*result.WeightKg), 0.01)
 		require.NotNil(t, result.Reps)
 		assert.Equal(t, 10, *result.Reps)
-		require.NotNil(t, result.DistanceMeters)
-		assert.Equal(t, 100, *result.DistanceMeters)
-		require.NotNil(t, result.DurationSeconds)
-		assert.Equal(t, 60, *result.DurationSeconds)
+		assert.Nil(t, result.DistanceMeters)
+		assert.Nil(t, result.DurationSeconds)
 	})
 
-	t.Run("ZeroFields", func(t *testing.T) {
+	t.Run("ZeroFields_WeightReps", func(t *testing.T) {
 		set := &pbactivity.StrengthSet{
 			SetType:         "normal",
 			WeightKg:        0,
@@ -122,7 +203,7 @@ func TestConvertStrengthSet(t *testing.T) {
 			DistanceMeters:  0,
 			DurationSeconds: 0,
 		}
-		result := convertStrengthSet(set)
+		result := convertStrengthSet(set, "Deadlift")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("normal"), *result.Type)
 		// Zero values should NOT be set (only set when > 0)
@@ -134,14 +215,14 @@ func TestConvertStrengthSet(t *testing.T) {
 
 	t.Run("DropsetType", func(t *testing.T) {
 		set := &pbactivity.StrengthSet{SetType: "dropset"}
-		result := convertStrengthSet(set)
+		result := convertStrengthSet(set, "Deadlift")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("dropset"), *result.Type)
 	})
 
 	t.Run("UnknownSetType", func(t *testing.T) {
 		set := &pbactivity.StrengthSet{SetType: "custom"}
-		result := convertStrengthSet(set)
+		result := convertStrengthSet(set, "Deadlift")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("normal"), *result.Type)
 	})

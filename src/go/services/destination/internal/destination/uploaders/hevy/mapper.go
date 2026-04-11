@@ -139,7 +139,9 @@ func mapStrengthSetsToExercises(ctx context.Context, sets []*pbactivity.Strength
 			exerciseMap[name] = []hevy.PostWorkoutsRequestSet{}
 		}
 
-		hevySet := convertStrengthSet(set)
+		// Pass the exercise name so the converter can restrict fields to those
+		// accepted by Hevy for this exercise type (distance_duration, weight_duration, etc.)
+		hevySet := convertStrengthSet(set, name)
 		exerciseMap[name] = append(exerciseMap[name], hevySet)
 	}
 
@@ -162,27 +164,61 @@ func mapStrengthSetsToExercises(ctx context.Context, sets []*pbactivity.Strength
 	return exercises, nil
 }
 
-func convertStrengthSet(set *pbactivity.StrengthSet) hevy.PostWorkoutsRequestSet {
+// convertStrengthSet converts a StrengthSet to a Hevy set, restricting the populated
+// fields to those accepted by the exercise's Hevy template type:
+//
+//   - distance_duration  → distance + duration only  (Sled Push/Pull, SkiErg, Rowing, Carries, Burpee, Sandbag)
+//   - weight_duration    → weight + duration only     (Wall Balls — Hevy has no weight+reps+duration type)
+//   - weight_reps        → weight + reps only         (generic strength)
+//
+// Sending fields outside the template type causes Hevy to reject the set with a 400 error.
+func convertStrengthSet(set *pbactivity.StrengthSet, exerciseName string) hevy.PostWorkoutsRequestSet {
 	setType := hevy.PostWorkoutsRequestSetType(mapSetType(set.SetType))
 	hevySet := hevy.PostWorkoutsRequestSet{
 		Type: &setType,
 	}
 
-	if set.WeightKg > 0 {
-		weight := float32(set.WeightKg)
-		hevySet.WeightKg = &weight
-	}
-	if set.Reps > 0 {
-		reps := int(set.Reps)
-		hevySet.Reps = &reps
-	}
-	if set.DistanceMeters > 0 {
-		distance := int(set.DistanceMeters)
-		hevySet.DistanceMeters = &distance
-	}
-	if set.DurationSeconds > 0 {
-		duration := int(set.DurationSeconds)
-		hevySet.DurationSeconds = &duration
+	config := getExerciseTypeConfig(exerciseName)
+
+	switch config.ExerciseType {
+	case "distance_duration":
+		// Only distance + duration are accepted.
+		if set.DistanceMeters > 0 {
+			distance := int(set.DistanceMeters)
+			hevySet.DistanceMeters = &distance
+		}
+		if set.DurationSeconds > 0 {
+			duration := int(set.DurationSeconds)
+			hevySet.DurationSeconds = &duration
+		}
+
+	case "weight_duration":
+		// Only weight + duration are accepted. Reps are noted in the StrengthSet
+		// but Hevy has no weight+reps+duration template type, so reps are omitted here.
+		if set.WeightKg > 0 {
+			weight := float32(set.WeightKg)
+			hevySet.WeightKg = &weight
+		}
+		if set.DurationSeconds > 0 {
+			duration := int(set.DurationSeconds)
+			hevySet.DurationSeconds = &duration
+		}
+
+	default: // "weight_reps" and any unknown types
+		// Standard strength: weight + reps.
+		if set.WeightKg > 0 {
+			weight := float32(set.WeightKg)
+			hevySet.WeightKg = &weight
+		}
+		if set.Reps > 0 {
+			reps := int(set.Reps)
+			hevySet.Reps = &reps
+		}
+		// Carry duration through for timed strength sets when present.
+		if set.DurationSeconds > 0 {
+			duration := int(set.DurationSeconds)
+			hevySet.DurationSeconds = &duration
+		}
 	}
 
 	return hevySet
@@ -291,9 +327,9 @@ func getCardioExerciseName(activityType pbactivity.ActivityType) string {
 	case pbactivity.ActivityType_ACTIVITY_TYPE_SWIM:
 		return "Swimming"
 	case pbactivity.ActivityType_ACTIVITY_TYPE_WEIGHT_TRAINING:
-		return "Weight Training"
+		return "Weightlifting"
 	default:
-		return "Workout"
+		return "Other Cardio"
 	}
 }
 
