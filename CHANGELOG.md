@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.3.0](https://github.com/FitGlue/server/compare/v16.2.0...v16.3.0) (2026-04-13)
+
+
+### Features
+
+* add is_private configuration option for Hevy destination uploads ([3c6a332](https://github.com/FitGlue/server/commit/3c6a3322d94686ff875770513fed1b0f312af2e4))
+
 ## [16.2.0](https://github.com/FitGlue/server/compare/v16.1.0...v16.2.0) (2026-04-11)
 
 
