@@ -12,7 +12,7 @@ import (
 )
 
 // mapToHevyWorkout converts an ActivityPayload to Hevy's workout format
-func mapToHevyWorkout(ctx context.Context, payload *pbevents.ActivityPayload, resolver *TemplateResolver, logger *slog.Logger) (*hevy.PostWorkoutsRequestBody, error) {
+func mapToHevyWorkout(ctx context.Context, payload *pbevents.ActivityPayload, resolver *TemplateResolver, logger *slog.Logger, isPrivate bool) (*hevy.PostWorkoutsRequestBody, error) {
 	startTime := time.Now()
 	if payload.Timestamp != nil {
 		startTime = payload.Timestamp.AsTime()
@@ -33,7 +33,7 @@ func mapToHevyWorkout(ctx context.Context, payload *pbevents.ActivityPayload, re
 
 	startTimeStr := startTime.Format(time.RFC3339)
 	endTimeStr := endTime.Format(time.RFC3339)
-	isPrivate := false
+	// isPrivate is passed in from the pipeline config (hevy_is_private metadata key)
 	exercises := []hevy.PostWorkoutsRequestExercise{}
 
 	activityName := payload.Metadata["activity_name"]

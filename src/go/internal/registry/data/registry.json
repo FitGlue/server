@@ -3677,7 +3677,19 @@
       "requiredIntegrations": [
         "hevy"
       ],
-      "configSchema": [],
+      "configSchema": [
+        {
+          "key": "is_private",
+          "label": "Upload as Private",
+          "description": "Upload workouts as private so they only appear in your own Hevy feed, not followers'",
+          "fieldType": 3,
+          "required": false,
+          "defaultValue": "false",
+          "options": [],
+          "keyOptions": [],
+          "valueOptions": []
+        }
+      ],
       "destinationType": 3,
       "marketingDescription": "\n### Complete Activity Target\nUpload all your activities to Hevy - from strength training to cardio. Perfect for centralizing your complete fitness history.\n\n### How it works\nActivities pass through your Pipeline and are uploaded to Hevy via the official API. Strength sets, reps, and weights are preserved. Cardio activities (runs, rides, walks) are mapped to Hevy's distance-based exercise templates.\n\n### Smart Template Matching\nExercise names are fuzzy-matched to Hevy's library. Unknown exercises automatically create custom templates.\n  ",
       "features": [

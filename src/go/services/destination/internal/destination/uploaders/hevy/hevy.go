@@ -50,8 +50,13 @@ func (u *Uploader) Create(ctx context.Context, payload *pbevents.ActivityPayload
 	apiKey := userRec.Integrations.Hevy.ApiKey
 	logger := slog.Default()
 
+	isPrivate := false
+	if val, ok := payload.Metadata["hevy_is_private"]; ok && val == "true" {
+		isPrivate = true
+	}
+
 	resolver := NewTemplateResolver(apiKey, logger)
-	workout, err := mapToHevyWorkout(ctx, payload, resolver, logger)
+	workout, err := mapToHevyWorkout(ctx, payload, resolver, logger, isPrivate)
 	if err != nil {
 		return "", fmt.Errorf("failed to map activity to Hevy format: %w", err)
 	}
@@ -261,6 +266,9 @@ func (u *Uploader) Update(ctx context.Context, payload *pbevents.ActivityPayload
 	}
 
 	isPrivate := false
+	if val, ok := payload.Metadata["hevy_is_private"]; ok && val == "true" {
+		isPrivate = true
+	}
 	putPayload := hevyapi.PostWorkoutsRequestBody{
 		Workout: &struct {
 			Description *string                                `json:"description"`
