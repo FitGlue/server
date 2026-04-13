@@ -142,7 +142,7 @@ func mapToHevyWorkout(ctx context.Context, payload *pbevents.ActivityPayload, re
 func mapStrengthSetsToExercises(ctx context.Context, sets []*pbactivity.StrengthSet, resolver *TemplateResolver, logger *slog.Logger) ([]hevy.PostWorkoutsRequestExercise, error) {
 	type exerciseGroup struct {
 		name string
-		sets []hevy.PostWorkoutsRequestSet
+		sets []*pbactivity.StrengthSet
 	}
 	var groups []*exerciseGroup
 
@@ -152,31 +152,36 @@ func mapStrengthSetsToExercises(ctx context.Context, sets []*pbactivity.Strength
 			name = "Unknown Exercise"
 		}
 
-		// Pass the exercise name so the converter can restrict fields to those
-		// accepted by Hevy for this exercise type (distance_duration, weight_duration, etc.)
-		hevySet := convertStrengthSet(set, name)
-
 		if len(groups) > 0 && groups[len(groups)-1].name == name {
-			groups[len(groups)-1].sets = append(groups[len(groups)-1].sets, hevySet)
+			groups[len(groups)-1].sets = append(groups[len(groups)-1].sets, set)
 		} else {
 			groups = append(groups, &exerciseGroup{
 				name: name,
-				sets: []hevy.PostWorkoutsRequestSet{hevySet},
+				sets: []*pbactivity.StrengthSet{set},
 			})
 		}
 	}
 
 	exercises := []hevy.PostWorkoutsRequestExercise{}
 	for _, group := range groups {
-		templateID, err := resolver.ResolveTemplateID(ctx, group.name)
+		tmpl, err := resolver.ResolveTemplate(ctx, group.name)
 		if err != nil {
-			logger.Error("Failed to resolve template ID", "exerciseName", group.name, "error", err)
+			logger.Error("Failed to resolve template", "exerciseName", group.name, "error", err)
 			return nil, fmt.Errorf("failed to resolve template for %q: %w", group.name, err)
 		}
 
-		setsCopy := group.sets
+		templateType := "weight_reps"
+		if tmpl.Type != nil {
+			templateType = *tmpl.Type
+		}
+
+		setsCopy := make([]hevy.PostWorkoutsRequestSet, len(group.sets))
+		for i, set := range group.sets {
+			setsCopy[i] = convertStrengthSetExact(set, templateType)
+		}
+
 		exercise := hevy.PostWorkoutsRequestExercise{
-			ExerciseTemplateId: &templateID,
+			ExerciseTemplateId: tmpl.Id,
 			Sets:               &setsCopy,
 		}
 		exercises = append(exercises, exercise)
@@ -185,25 +190,17 @@ func mapStrengthSetsToExercises(ctx context.Context, sets []*pbactivity.Strength
 	return exercises, nil
 }
 
-// convertStrengthSet converts a StrengthSet to a Hevy set, restricting the populated
-// fields to those accepted by the exercise's Hevy template type:
-//
-//   - distance_duration  → distance + duration only  (Sled Push/Pull, SkiErg, Rowing, Carries, Burpee, Sandbag)
-//   - weight_duration    → weight + duration only     (Wall Balls — Hevy has no weight+reps+duration type)
-//   - weight_reps        → weight + reps only         (generic strength)
-//
-// Sending fields outside the template type causes Hevy to reject the set with a 400 error.
-func convertStrengthSet(set *pbactivity.StrengthSet, exerciseName string) hevy.PostWorkoutsRequestSet {
+// convertStrengthSetExact converts a StrengthSet to a Hevy set, populating exactly
+// the fields expected by Hevy for the given template type. This guarantees Hevy
+// processes the correct data without discarding values.
+func convertStrengthSetExact(set *pbactivity.StrengthSet, templateType string) hevy.PostWorkoutsRequestSet {
 	setType := hevy.PostWorkoutsRequestSetType(mapSetType(set.SetType))
 	hevySet := hevy.PostWorkoutsRequestSet{
 		Type: &setType,
 	}
 
-	config := getExerciseTypeConfig(exerciseName)
-
-	switch config.ExerciseType {
+	switch templateType {
 	case "distance_duration":
-		// Only distance + duration are accepted.
 		if set.DistanceMeters > 0 {
 			distance := int(set.DistanceMeters)
 			hevySet.DistanceMeters = &distance
@@ -212,10 +209,7 @@ func convertStrengthSet(set *pbactivity.StrengthSet, exerciseName string) hevy.P
 			duration := int(set.DurationSeconds)
 			hevySet.DurationSeconds = &duration
 		}
-
 	case "weight_duration":
-		// Only weight + duration are accepted. Reps are noted in the StrengthSet
-		// but Hevy has no weight+reps+duration template type, so reps are omitted here.
 		if set.WeightKg > 0 {
 			weight := float32(set.WeightKg)
 			hevySet.WeightKg = &weight
@@ -224,9 +218,16 @@ func convertStrengthSet(set *pbactivity.StrengthSet, exerciseName string) hevy.P
 			duration := int(set.DurationSeconds)
 			hevySet.DurationSeconds = &duration
 		}
-
-	default: // "weight_reps" and any unknown types
-		// Standard strength: weight + reps.
+	case "weight_distance":
+		if set.WeightKg > 0 {
+			weight := float32(set.WeightKg)
+			hevySet.WeightKg = &weight
+		}
+		if set.DistanceMeters > 0 {
+			distance := int(set.DistanceMeters)
+			hevySet.DistanceMeters = &distance
+		}
+	case "weight_reps":
 		if set.WeightKg > 0 {
 			weight := float32(set.WeightKg)
 			hevySet.WeightKg = &weight
@@ -235,10 +236,33 @@ func convertStrengthSet(set *pbactivity.StrengthSet, exerciseName string) hevy.P
 			reps := int(set.Reps)
 			hevySet.Reps = &reps
 		}
-		// Carry duration through for timed strength sets when present.
+	case "reps_only":
+		if set.Reps > 0 {
+			reps := int(set.Reps)
+			hevySet.Reps = &reps
+		}
+	case "duration":
 		if set.DurationSeconds > 0 {
 			duration := int(set.DurationSeconds)
 			hevySet.DurationSeconds = &duration
+		}
+	default:
+		// Attempt to send everything and let Hevy decide
+		if set.WeightKg > 0 {
+			weight := float32(set.WeightKg)
+			hevySet.WeightKg = &weight
+		}
+		if set.Reps > 0 {
+			reps := int(set.Reps)
+			hevySet.Reps = &reps
+		}
+		if set.DurationSeconds > 0 {
+			duration := int(set.DurationSeconds)
+			hevySet.DurationSeconds = &duration
+		}
+		if set.DistanceMeters > 0 {
+			distance := int(set.DistanceMeters)
+			hevySet.DistanceMeters = &distance
 		}
 	}
 
@@ -260,7 +284,7 @@ func mapSetType(setType string) string {
 
 func mapCardioSessionToExercise(ctx context.Context, activityType pbactivity.ActivityType, session *pbactivity.Session, resolver *TemplateResolver) (hevy.PostWorkoutsRequestExercise, error) {
 	exerciseName := getCardioExerciseName(activityType)
-	templateID, err := resolver.ResolveTemplateID(ctx, exerciseName)
+	tmpl, err := resolver.ResolveTemplate(ctx, exerciseName)
 	if err != nil {
 		return hevy.PostWorkoutsRequestExercise{}, fmt.Errorf("failed to resolve cardio template: %w", err)
 	}
@@ -276,7 +300,7 @@ func mapCardioSessionToExercise(ctx context.Context, activityType pbactivity.Act
 	}}
 
 	return hevy.PostWorkoutsRequestExercise{
-		ExerciseTemplateId: &templateID,
+		ExerciseTemplateId: tmpl.Id,
 		Sets:               &sets,
 	}, nil
 }
@@ -287,7 +311,7 @@ func mapLapToExercise(ctx context.Context, lap *pbactivity.Lap, fallbackActivity
 		exerciseName = getCardioExerciseName(fallbackActivityType)
 	}
 
-	templateID, err := resolver.ResolveTemplateID(ctx, exerciseName)
+	tmpl, err := resolver.ResolveTemplate(ctx, exerciseName)
 	if err != nil {
 		return hevy.PostWorkoutsRequestExercise{}, fmt.Errorf("failed to resolve lap template for %q: %w", exerciseName, err)
 	}
@@ -303,14 +327,14 @@ func mapLapToExercise(ctx context.Context, lap *pbactivity.Lap, fallbackActivity
 	}}
 
 	return hevy.PostWorkoutsRequestExercise{
-		ExerciseTemplateId: &templateID,
+		ExerciseTemplateId: tmpl.Id,
 		Sets:               &sets,
 	}, nil
 }
 
 func mapCardioActivityToExercise(ctx context.Context, activityName, description string, activityType pbactivity.ActivityType, durationSeconds float64, resolver *TemplateResolver) (hevy.PostWorkoutsRequestExercise, error) {
 	exerciseName := getCardioExerciseName(activityType)
-	templateID, err := resolver.ResolveTemplateID(ctx, exerciseName)
+	tmpl, err := resolver.ResolveTemplate(ctx, exerciseName)
 	if err != nil {
 		return hevy.PostWorkoutsRequestExercise{}, fmt.Errorf("failed to resolve cardio template: %w", err)
 	}
@@ -327,7 +351,7 @@ func mapCardioActivityToExercise(ctx context.Context, activityName, description 
 	}}
 
 	exercise := hevy.PostWorkoutsRequestExercise{
-		ExerciseTemplateId: &templateID,
+		ExerciseTemplateId: tmpl.Id,
 		Sets:               &sets,
 	}
 	if description != "" {

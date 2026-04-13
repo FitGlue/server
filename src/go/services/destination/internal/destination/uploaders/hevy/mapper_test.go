@@ -92,7 +92,7 @@ func TestAppendExercises(t *testing.T) {
 	})
 }
 
-func TestConvertStrengthSet(t *testing.T) {
+func TestConvertStrengthSetExact(t *testing.T) {
 	// weight_duration exercises: Hevy accepts weight + duration only.
 	// Weighted stations (Sled Push/Pull, Farmers Carry, Sandbag Lunges, Wall Balls) use this type
 	// so the variable factor (weight) is recorded. Preset distances are fixed and recorded in descriptions.
@@ -105,7 +105,7 @@ func TestConvertStrengthSet(t *testing.T) {
 			DurationSeconds: 90,
 			Reps:            0,
 		}
-		result := convertStrengthSet(set, set.ExerciseName)
+		result := convertStrengthSetExact(set, "weight_duration")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("normal"), *result.Type)
 		// weight + duration must be present
@@ -126,7 +126,7 @@ func TestConvertStrengthSet(t *testing.T) {
 			DistanceMeters:  200,
 			DurationSeconds: 120,
 		}
-		result := convertStrengthSet(set, set.ExerciseName)
+		result := convertStrengthSetExact(set, "weight_duration")
 		require.NotNil(t, result.WeightKg)
 		assert.InDelta(t, 48.0, float64(*result.WeightKg), 0.01)
 		require.NotNil(t, result.DurationSeconds)
@@ -143,7 +143,7 @@ func TestConvertStrengthSet(t *testing.T) {
 			DistanceMeters:  1000,
 			DurationSeconds: 300,
 		}
-		result := convertStrengthSet(set, set.ExerciseName)
+		result := convertStrengthSetExact(set, "distance_duration")
 		require.NotNil(t, result.DistanceMeters)
 		assert.Equal(t, 1000, *result.DistanceMeters)
 		require.NotNil(t, result.DurationSeconds)
@@ -163,7 +163,7 @@ func TestConvertStrengthSet(t *testing.T) {
 			DistanceMeters:  0,
 			DurationSeconds: 240,
 		}
-		result := convertStrengthSet(set, set.ExerciseName)
+		result := convertStrengthSetExact(set, "weight_duration")
 		// weight + duration must be present
 		require.NotNil(t, result.WeightKg)
 		assert.InDelta(t, 9.0, float64(*result.WeightKg), 0.01)
@@ -184,7 +184,7 @@ func TestConvertStrengthSet(t *testing.T) {
 			DistanceMeters:  0,
 			DurationSeconds: 0,
 		}
-		result := convertStrengthSet(set, set.ExerciseName)
+		result := convertStrengthSetExact(set, "weight_reps")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("warmup"), *result.Type)
 		require.NotNil(t, result.WeightKg)
@@ -203,7 +203,7 @@ func TestConvertStrengthSet(t *testing.T) {
 			DistanceMeters:  0,
 			DurationSeconds: 0,
 		}
-		result := convertStrengthSet(set, "Deadlift")
+		result := convertStrengthSetExact(set, "weight_reps")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("normal"), *result.Type)
 		// Zero values should NOT be set (only set when > 0)
@@ -215,14 +215,14 @@ func TestConvertStrengthSet(t *testing.T) {
 
 	t.Run("DropsetType", func(t *testing.T) {
 		set := &pbactivity.StrengthSet{SetType: "dropset"}
-		result := convertStrengthSet(set, "Deadlift")
+		result := convertStrengthSetExact(set, "weight_reps")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("dropset"), *result.Type)
 	})
 
 	t.Run("UnknownSetType", func(t *testing.T) {
 		set := &pbactivity.StrengthSet{SetType: "custom"}
-		result := convertStrengthSet(set, "Deadlift")
+		result := convertStrengthSetExact(set, "weight_reps")
 		require.NotNil(t, result.Type)
 		assert.Equal(t, hevy.PostWorkoutsRequestSetType("normal"), *result.Type)
 	})

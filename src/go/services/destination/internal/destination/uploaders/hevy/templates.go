@@ -114,7 +114,7 @@ func getExerciseTypeConfig(exerciseName string) ExerciseTypeConfig {
 type TemplateResolver struct {
 	apiKey    string
 	templates []hevy.ExerciseTemplate
-	cache     map[string]string // normalized name -> template ID
+	cache     map[string]*hevy.ExerciseTemplate // normalized name -> template
 	fetched   bool
 	logger    *slog.Logger
 }
@@ -123,26 +123,26 @@ type TemplateResolver struct {
 func NewTemplateResolver(apiKey string, logger *slog.Logger) *TemplateResolver {
 	return &TemplateResolver{
 		apiKey: apiKey,
-		cache:  make(map[string]string),
+		cache:  make(map[string]*hevy.ExerciseTemplate),
 		logger: logger,
 	}
 }
 
-// ResolveTemplateID resolves an exercise name to a valid Hevy template ID
+// ResolveTemplate resolves an exercise name to a valid Hevy template
 // It will:
 // 1. Check local cache first
 // 2. Fetch templates from API if not yet fetched
 // 3. Strict match against fetched templates (exact or known aliases only)
 // 4. Create a custom template if no match found
-func (r *TemplateResolver) ResolveTemplateID(ctx context.Context, exerciseName string) (string, error) {
+func (r *TemplateResolver) ResolveTemplate(ctx context.Context, exerciseName string) (*hevy.ExerciseTemplate, error) {
 	normalized := normalizeExerciseName(exerciseName)
 
 	// Check cache first
-	if id, ok := r.cache[normalized]; ok {
+	if tmpl, ok := r.cache[normalized]; ok {
 		r.logger.Debug("Template cache hit",
 			"exerciseName", exerciseName,
-			"templateID", id)
-		return id, nil
+			"templateID", *tmpl.Id)
+		return tmpl, nil
 	}
 
 	// Fetch templates from API if not yet done
@@ -155,28 +155,28 @@ func (r *TemplateResolver) ResolveTemplateID(ctx context.Context, exerciseName s
 	}
 
 	// Strict match against fetched templates (exact or known aliases only)
-	if templateID := r.strictMatch(normalized); templateID != "" {
-		r.cache[normalized] = templateID
+	if tmpl := r.strictMatch(normalized); tmpl != nil {
+		r.cache[normalized] = tmpl
 		r.logger.Info("Template matched",
 			"exerciseName", exerciseName,
-			"templateID", templateID)
-		return templateID, nil
+			"templateID", *tmpl.Id)
+		return tmpl, nil
 	}
 
 	// No match found - create custom template with appropriate exercise type
 	r.logger.Info("No template match, creating custom",
 		"exerciseName", exerciseName)
-	templateID, err := r.createCustomTemplate(ctx, exerciseName)
+	tmpl, err := r.createCustomTemplate(ctx, exerciseName)
 	if err != nil {
-		return "", fmt.Errorf("failed to create custom template for %q: %w", exerciseName, err)
+		return nil, fmt.Errorf("failed to create custom template for %q: %w", exerciseName, err)
 	}
 
-	r.cache[normalized] = templateID
+	r.cache[normalized] = tmpl
 	r.logger.Info("Created custom template",
 		"exerciseName", exerciseName,
-		"templateID", templateID)
+		"templateID", *tmpl.Id)
 
-	return templateID, nil
+	return tmpl, nil
 }
 
 // fetchAllTemplates retrieves all exercise templates from Hevy API (paginated)
@@ -246,12 +246,13 @@ func (r *TemplateResolver) fetchAllTemplates(ctx context.Context) error {
 
 // strictMatch finds a template ID using exact matching or known aliases only
 // This is intentionally restrictive to preserve exercise specificity for Hyrox/ATHX/GymRace
-func (r *TemplateResolver) strictMatch(normalizedName string) string {
+func (r *TemplateResolver) strictMatch(normalizedName string) *hevy.ExerciseTemplate {
 	// Exact match first
-	for _, t := range r.templates {
+	for i := range r.templates {
+		t := &r.templates[i]
 		if t.Title != nil && normalizeExerciseName(*t.Title) == normalizedName {
 			if t.Id != nil {
-				return *t.Id
+				return t
 			}
 		}
 	}
@@ -259,26 +260,27 @@ func (r *TemplateResolver) strictMatch(normalizedName string) string {
 	// Check known aliases (strict equivalents only)
 	if aliases, ok := strictExerciseAliases[normalizedName]; ok {
 		for _, alias := range aliases {
-			for _, t := range r.templates {
+			for i := range r.templates {
+				t := &r.templates[i]
 				if t.Title != nil && normalizeExerciseName(*t.Title) == alias {
 					r.logger.Debug("Matched via strict alias",
 						"source", normalizedName,
 						"alias", alias,
 						"templateTitle", *t.Title)
 					if t.Id != nil {
-						return *t.Id
+						return t
 					}
 				}
 			}
 		}
 	}
 
-	return ""
+	return nil
 }
 
 // createCustomTemplate creates a new custom exercise template in Hevy
 // Uses getExerciseTypeConfig to determine the appropriate exercise_type
-func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseName string) (string, error) {
+func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseName string) (*hevy.ExerciseTemplate, error) {
 	client := oauth.NewClientWithErrorLogging(r.logger, "hevy", 30*time.Second)
 
 	// Get the appropriate exercise type for this exercise
@@ -301,26 +303,26 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 
 	body, err := json.Marshal(payload)
 	if err != nil {
-		return "", fmt.Errorf("marshal payload: %w", err)
+		return nil, fmt.Errorf("marshal payload: %w", err)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.hevyapp.com/v1/exercise_templates", bytes.NewReader(body))
 	if err != nil {
-		return "", fmt.Errorf("create request: %w", err)
+		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("api-key", r.apiKey)
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", fmt.Errorf("API request failed: %w", err)
+		return nil, fmt.Errorf("API request failed: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Read the full body upfront so we can include it in any error message for diagnosis.
 	rawBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("read response body: %w", err)
+		return nil, fmt.Errorf("read response body: %w", err)
 	}
 
 	if resp.StatusCode >= 400 {
@@ -328,7 +330,7 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 			"exerciseName", exerciseName,
 			"status", resp.StatusCode,
 			"body", string(rawBody))
-		return "", fmt.Errorf("create template failed (status %d): %s", resp.StatusCode, string(rawBody))
+		return nil, fmt.Errorf("create template failed (status %d): %s", resp.StatusCode, string(rawBody))
 	}
 
 	r.logger.Debug("Hevy create custom template raw response",
@@ -346,23 +348,30 @@ func (r *TemplateResolver) createCustomTemplate(ctx context.Context, exerciseNam
 		r.logger.Info("Hevy returned plain-string template ID on creation",
 			"exerciseName", exerciseName,
 			"templateID", templateID)
-		return templateID, nil
+
+		exType := config.ExerciseType
+		title := exerciseName
+		return &hevy.ExerciseTemplate{
+			Id:    &templateID,
+			Title: &title,
+			Type:  &exType,
+		}, nil
 	}
 
 	var result struct {
 		ExerciseTemplate hevy.ExerciseTemplate `json:"exercise_template"`
 	}
 	if err := json.Unmarshal(rawBody, &result); err != nil {
-		return "", fmt.Errorf("decode response (raw: %q): %w", string(rawBody), err)
+		return nil, fmt.Errorf("decode response (raw: %q): %w", string(rawBody), err)
 	}
 
 	// Add to local cache
 	r.templates = append(r.templates, result.ExerciseTemplate)
 
 	if result.ExerciseTemplate.Id != nil {
-		return *result.ExerciseTemplate.Id, nil
+		return &result.ExerciseTemplate, nil
 	}
-	return "", fmt.Errorf("created template has no ID")
+	return nil, fmt.Errorf("created template has no ID")
 }
 
 // normalizeExerciseName normalizes an exercise name for comparison
