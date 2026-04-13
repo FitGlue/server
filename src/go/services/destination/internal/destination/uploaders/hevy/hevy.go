@@ -366,8 +366,18 @@ func (u *Uploader) createHevyWorkout(ctx context.Context, apiKey string, workout
 		return "", fmt.Errorf("failed to decode Hevy response: %w", err)
 	}
 
-	if workoutArr, ok := rawResp["workout"]; ok {
-		if arr, ok := workoutArr.([]interface{}); ok && len(arr) > 0 {
+	if workoutData, ok := rawResp["workout"]; ok {
+		// Handle single object (typical for POST /v1/workouts)
+		if obj, ok := workoutData.(map[string]interface{}); ok {
+			if id, ok := obj["id"]; ok {
+				if idStr, ok := id.(string); ok && idStr != "" {
+					return idStr, nil
+				}
+			}
+		}
+
+		// Handle array (just in case Hevy returns an array of workouts)
+		if arr, ok := workoutData.([]interface{}); ok && len(arr) > 0 {
 			if first, ok := arr[0].(map[string]interface{}); ok {
 				if id, ok := first["id"]; ok {
 					if idStr, ok := id.(string); ok && idStr != "" {
