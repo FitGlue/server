@@ -175,3 +175,52 @@ Log-based metrics only capture data from log entries *after* the metric was crea
 ### Alerts not triggering?
 1. Verify notification channel email is correct
 2. Check that alert policies are enabled in Cloud Monitoring → Alerting
+
+---
+
+## Quick Reference: Debugging Tools
+
+### Cloud Logging Filter Templates
+
+```bash
+# All errors across all services
+resource.type="cloud_run_revision"
+severity>=ERROR
+
+# Specific service errors (replace <service>)
+resource.type="cloud_run_revision"
+resource.labels.service_name="<service>"
+severity>=WARNING
+
+# Trace a specific pipeline execution end-to-end
+resource.type="cloud_run_revision"
+jsonPayload.pipeline_execution_id="<id>"
+
+# Trace a specific user
+resource.type="cloud_run_revision"
+jsonPayload.user_id="<userId>"
+
+# Webhook requests by provider
+resource.type="cloud_run_revision"
+resource.labels.service_name="api-webhook"
+httpRequest.requestUrl=~"/hooks/<provider>"
+```
+
+**Cloud Run service names**: `api-client`, `api-admin`, `api-public`, `api-webhook`, `user`, `billing`, `pipeline`, `activity`, `registry`, `destination`
+
+### Sentry
+
+**Console**: [fitglue.sentry.io/issues/](https://fitglue.sentry.io/issues/)
+
+All Go services use the `SentryHandler` pattern — Error-level `slog` messages are automatically captured as Sentry exceptions with user ID, execution ID, and service name as context.
+
+### Firestore Debugging Paths
+
+| Path | Purpose |
+|------|---------|
+| `users/{userId}/pipeline_runs/` | Execution results with per-booster/per-destination outcomes |
+| `users/{userId}/pending_inputs/` | Paused pipeline inputs |
+| `users/{userId}/pipelines/` | Pipeline configurations |
+| `integrations/{provider}/ids/{externalId}` | Webhook user resolution reverse-lookup |
+
+See the [Troubleshooting Guide](../guides/troubleshooting.md) for detailed per-domain debugging playbooks.

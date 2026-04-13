@@ -4,9 +4,9 @@ This document explains how to configure and use OAuth 2.0 authentication for Str
 
 ## Overview
 
-FitGlue uses OAuth 2.0 to securely connect user accounts from Strava and Fitbit. The OAuth flow:
+FitGlue uses OAuth 2.0 to securely connect user accounts from external fitness services. The OAuth flow:
 
-1. User initiates connection (via admin CLI or future web dashboard)
+1. User initiates connection via the web dashboard (**Settings → Connections**)
 2. User is redirected to provider's authorization page
 3. User grants permissions
 4. Provider redirects back to FitGlue with authorization code
@@ -42,6 +42,9 @@ FitGlue uses OAuth 2.0 to securely connect user accounts from Strava and Fitbit.
    - **OAuth 2.0 Application Type**: Server
    - **Callback URL**: `https://fitglue.tech/auth/fitbit/callback` (prod) or `https://dev.fitglue.tech/auth/fitbit/callback` (dev)
 4. Save the **Client ID** and **Client Secret**
+
+> [!NOTE]
+> The same registration pattern applies for all OAuth providers: Strava, Fitbit, Polar, Wahoo, Oura, Intervals.icu, TrainingPeaks, Google (Sheets), GitHub, and Spotify. Each provider has its own developer portal.
 
 ### 2. Store Secrets in Google Secret Manager
 
@@ -88,39 +91,31 @@ cd terraform
 terraform apply -var-file=envs/dev.tfvars
 ```
 
-This deploys all Cloud Run services including the OAuth callback endpoints:
-- `https://dev.fitglue.tech/auth/strava/callback`
-- `https://dev.fitglue.tech/auth/fitbit/callback`
+This deploys all Cloud Run services including the OAuth callback handling:
+- `https://dev.fitglue.tech/app/connections/{provider}/success` — OAuth success redirect
+- OAuth token exchange is handled by `service.api.client`
+- Tokens are stored by `service.user` via gRPC
 
 ## Usage
 
-### Via Admin CLI
+### Via Web Dashboard (Recommended)
 
-1. **Create a user** (if not already exists):
-   ```bash
-   fitglue-admin users:create
-   ```
+The web dashboard provides "Connect" buttons for each provider at **Settings → Connections**:
+1. User clicks "Connect" for the desired service
+2. `service.api.client` generates a CSRF-protected state token and redirect URL
+3. User authorizes at the provider's OAuth page
+4. Provider redirects back to FitGlue via `service.api.client`
+5. `service.api.client` exchanges the code for tokens and stores them via `service.user`
 
-2. **Generate OAuth URL**:
-   ```bash
-   fitglue-admin users:connect <userId> strava
-   # or
-   fitglue-admin users:connect <userId> fitbit
-   ```
+### Via Admin API
 
-3. **Visit the URL** in a browser and authorize the application
+For programmatic setup or testing:
 
-4. **Verify tokens stored**:
-   ```bash
-   fitglue-admin users:list
-   ```
-
-### Via Web Dashboard
-
-The web dashboard provides "Connect Strava" / "Connect Fitbit" buttons that:
-1. Call `service.api.client` to generate a state token
-2. Redirect the user to the OAuth authorization URL
-3. Handle the callback automatically via `service.api.webhook`
+```bash
+# Initiate OAuth flow for a user
+curl -X POST https://<domain>/admin/users/<userId>/connect/<provider>
+# Returns an authorization URL to visit in a browser
+```
 
 ## Token Refresh
 
@@ -128,8 +123,9 @@ OAuth tokens expire and must be refreshed periodically:
 
 - **Strava**: Tokens expire after 6 hours
 - **Fitbit**: Tokens expire after 8 hours
+- **Other providers**: Varies; typically 1-24 hours
 
-**TODO**: Implement automatic token refresh logic in a scheduled Cloud Function or during API calls when a 401 error is detected.
+Automatic token refresh is handled during webhook processing and destination uploads. When a 401 is detected from a provider API, the service automatically uses the stored `refresh_token` to obtain new credentials. If refresh fails (e.g., user revoked access), the integration is marked as needing re-authentication.
 
 ## Firestore Schema
 
@@ -196,8 +192,7 @@ integrations/fitbit/ids/{fitbitUserId}
 - `activity`: Read activity data
 - `heartrate`: Read heart rate data
 - `profile`: Read profile information
+- `location`: Location data (required for TCX/GPS access)
 
-## Future Enhancements
-
-- [ ] Rate limiting and retry logic for API calls
-- [ ] Granular scope management per integration
+### Other Providers
+Scope requirements are defined per-provider in the source provider code at `services/api-webhook/internal/webhook/sources/<provider>/provider.go`.

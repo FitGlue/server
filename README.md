@@ -41,7 +41,7 @@ See [Architecture Overview](docs/architecture/overview.md) for the full system d
 
 | Component | Technology |
 |-----------|------------|
-| Language | Go 1.22+ |
+| Language | Go 1.25+ |
 | Compute | Cloud Run (Docker containers) |
 | Messaging | Cloud Pub/Sub |
 | Database | Cloud Firestore |
@@ -55,7 +55,7 @@ See [Architecture Overview](docs/architecture/overview.md) for the full system d
 
 ### Prerequisites
 
-- Go 1.22+
+- Go 1.25+
 - Docker + Docker Compose
 - `protoc` (Protocol Buffers compiler)
 - Google Cloud SDK
@@ -123,6 +123,11 @@ fitglue-server/
 - [Testing Guide](docs/development/testing.md) — Unit, E2E, and integration tests
 - [Enricher Testing](docs/guides/enricher-testing.md) — Testing enrichment providers
 - [OAuth Integration](docs/guides/oauth-integration.md) — Strava and Fitbit OAuth setup
+
+### Troubleshooting
+- [Troubleshooting Guide](docs/guides/troubleshooting.md) — **Start here** when debugging any issue
+- [Error Codes Reference](docs/reference/errors.md) — All error codes and retryability
+- [Monitoring & Analytics](docs/infrastructure/monitoring.md) — Dashboards and alerts
 
 ### Infrastructure
 - [CI/CD Guide](docs/infrastructure/cicd.md) — Pipeline and Cloud Run deployments

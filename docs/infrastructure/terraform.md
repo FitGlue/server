@@ -51,42 +51,36 @@ terraform/
 
 ## Key Resources
 
-### Cloud Functions (`functions.tf`)
+### Cloud Run Services (`cloud_run.tf`)
 
-All serverless functions are defined with:
-- Gen 2 (Cloud Run-backed) configuration
-- Pub/Sub triggers or HTTP triggers
-- Environment variables from `envs/*.tfvars`
-- Service account bindings
+All 10 services are defined as Cloud Run v2 services using a `for_each` over two local maps:
+- `frontend_services`: `api-client`, `api-admin`, `api-public`, `api-webhook`
+- `backend_services`: `user`, `billing`, `pipeline`, `activity`, `registry`, `destination`
+
+Each service gets:
+- A dedicated service account (`cr-{name}-sa`)
+- Docker image from Artifact Registry
+- Environment-specific configuration via `var.*` variables
+- Service-specific secrets from Secret Manager
 
 ```hcl
-resource "google_cloudfunctions2_function" "enricher" {
-  name     = "enricher"
-  location = var.region
+resource "google_cloud_run_v2_service" "backend" {
+  for_each            = local.backend_services
+  name                = each.key
+  location            = var.region
+  ingress             = "INGRESS_TRAFFIC_ALL"
+  deletion_protection = false
 
-  build_config {
-    runtime     = "go125"
-    entry_point = "EnrichActivity"
-    source {
-      storage_source {
-        bucket = google_storage_bucket.source.name
-        object = google_storage_bucket_object.go_source.name
-      }
+  template {
+    service_account = google_service_account.cloud_run_sa[each.key].email
+    containers {
+      image = "${var.region}-docker.pkg.dev/${var.project_id}/...//${each.key}:${var.image_tag}"
+      # ... env vars, secrets
     }
-  }
-
-  service_config {
-    available_memory   = "512M"
-    timeout_seconds    = 300
-    environment_variables = {
-      GCS_BUCKET = google_storage_bucket.activities.name
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 3
     }
-  }
-
-  event_trigger {
-    trigger_region = var.region
-    event_type     = "google.cloud.pubsub.topic.v1.messagePublished"
-    pubsub_topic   = google_pubsub_topic.raw_activities.id
   }
 }
 ```
@@ -97,9 +91,12 @@ Event-driven messaging between functions:
 
 | Topic | Publisher | Subscriber |
 |-------|-----------|------------|
-| `raw-activities` | Webhook handlers | Enricher |
-| `enriched-activities` | Enricher | Router |
-| `strava-upload-jobs` | Router | Strava Uploader |
+| `topic-raw-activity` | Webhook sources | Pipeline (splitter) |
+| `topic-mobile-activity` | Mobile webhook source | Pipeline |
+| `topic-pipeline-activity` | Pipeline (splitter) | Pipeline (enricher) |
+| `topic-enriched-activity` | Pipeline (enricher) | Destination |
+| `topic-destination-upload` | Pipeline (router) | Destination |
+| `topic-parkrun-results-trigger` | Cloud Scheduler | Pipeline |
 
 ### Firestore (`firestore.tf`)
 
@@ -210,15 +207,20 @@ See [CI/CD Guide](cicd.md) for details.
 | `variables.tf` | Variable declarations |
 | `outputs.tf` | Output values |
 | `versions.tf` | Provider version constraints |
-| `functions.tf` | Cloud Functions |
+| `cloud_run.tf` | All 10 Cloud Run services, service accounts, IAM |
 | `pubsub.tf` | Pub/Sub topics and subscriptions |
 | `firestore.tf` | Database and indexes |
 | `storage.tf` | GCS buckets |
 | `secrets.tf` | Secret Manager |
 | `dns.tf` | Cloud DNS |
+| `cdn.tf` | CDN / load balancer |
 | `iam.tf` | Service accounts and bindings |
 | `auth.tf` | OAuth configurations |
 | `apis.tf` | API enablement |
+| `monitoring.tf` | Dashboards, alerts, log-based metrics |
+| `analytics.tf` | BigQuery dataset and views |
+| `firebase.tf` | Firebase configuration |
+| `backend.tf` | Terraform backend configuration |
 
 ## Related Documentation
 

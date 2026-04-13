@@ -2,7 +2,7 @@
 
 ## Overview
 
-FitGlue uses a standardized framework wrapper pattern for all Cloud Functions (both Go and TypeScript) that provides:
+FitGlue uses a standardized framework wrapper pattern for all Cloud Run services that provides:
 
 - **Automatic execution logging** - All function invocations logged to Firestore
 - **Consistent metadata extraction** - Automatic extraction of `user_id`, `test_run_id`, `pipeline_execution_id`
@@ -126,50 +126,9 @@ type FrameworkContext struct {
 - Sentry error capture with context
 - Panic recovery
 
-### TypeScript Framework (`shared/src/framework/`)
-
-**Pattern:**
-```typescript
-const handler: FrameworkHandler = async (req, ctx) => {
-  // Use ctx.logger (has executionId, userId)
-  ctx.logger.info("Processing request");
-  
-  // Use ctx.stores and ctx.services
-  const user = await ctx.stores.user.get(ctx.userId);
-  
-  // Return outputs for logging
-  return { success: true };
-};
-
-export const myFunction = createCloudFunction(handler, {
-  auth: { strategies: [new FirebaseAuthStrategy()] },
-  skipExecutionLogging: false,
-});
-```
-
-**FrameworkContext:**
-```typescript
-interface FrameworkContext {
-  userId?: string;
-  logger: Logger;
-  executionId: string;
-  pubsub: PubSub;
-  stores: {
-    user: UserStore;
-    activity: ActivityStore;
-    pipeline: PipelineStore;
-    // ...
-  };
-  services: {
-    authorization: AuthorizationService;
-    // ...
-  };
-}
-```
-
 ## Sentry Integration
 
-### Go (SentryHandler)
+### SentryHandler
 
 The Go logger uses a custom slog handler that captures errors:
 
@@ -187,25 +146,6 @@ func (h *SentryHandler) Handle(ctx context.Context, r slog.Record) error {
         CaptureException(err, context, h.logger)
     }
     return h.handler.Handle(ctx, r)
-}
-```
-
-### TypeScript (createCloudFunction)
-
-The framework wrapper automatically captures exceptions:
-
-```typescript
-// Errors caught in framework wrapper
-try {
-  result = await handler(req, ctx);
-} catch (err) {
-  // 5xx errors captured to Sentry
-  if (isServerError(err)) {
-    Sentry.captureException(err, {
-      extra: { executionId: ctx.executionId, userId: ctx.userId }
-    });
-  }
-  throw err;
 }
 ```
 
@@ -277,9 +217,7 @@ users/{userId}/
 - Firestore security rules per user
 - Scalable to millions of users
 
-## Migration Guide
-
-### Adding a New Go Function
+## Adding a New Go Service Handler
 
 ```go
 // 1. Create handler
@@ -294,22 +232,6 @@ func MyFunction(ctx context.Context, e event.Event) error {
     svc, _ := initService(ctx)
     return framework.WrapCloudEvent("my-function", svc, myHandler)(ctx, e)
 }
-```
-
-### Adding a New TypeScript Function
-
-```typescript
-// 1. Create handler
-const handler: FrameworkHandler = async (req, ctx) => {
-  ctx.logger.info("Processing");
-  // Business logic
-  return { success: true };
-};
-
-// 2. Export wrapped
-export const myFunction = createCloudFunction(handler, {
-  auth: { strategies: [new FirebaseAuthStrategy()] },
-});
 ```
 
 No manual execution logging required!

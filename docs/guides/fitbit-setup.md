@@ -10,7 +10,7 @@ cd server/terraform
 terraform apply -var-file=envs/dev.tfvars
 ```
 
-This must deploy the `fitbit-webhook-handler` and `fitbit-ingest` functions.
+This must deploy the `api-webhook` Cloud Run service which handles Fitbit webhook verification and ingestion.
 
 ## 2. Configure Secrets
 
@@ -45,19 +45,17 @@ We need to set the verification code that Fitbit will use to verify our webhook 
 Now that the system is listening, you need to connect a user and subscribe to their updates.
 
 ### A. Connect User (OAuth)
-If the user hasn't authenticated yet:
-
-```bash
-# Get the Auth URL
-./fitglue-admin users:connect <USER_ID> fitbit
-# (Follow the link, authorize, and ensure the callback succeeds)
-```
+If the user hasn't authenticated yet, direct them to the Fitbit connection page in the web dashboard:
+1. Navigate to **Settings → Connections** in the FitGlue web app
+2. Click **Connect** next to Fitbit
+3. Authorize the application on the Fitbit website
+4. Verify the redirect completes successfully
 
 ### B. Subscribe to Updates (Critical Step)
-Updates are **not** automatic until you explicitly subscribe to the `activities` collection for that user.
+Updates are **not** automatic until you explicitly subscribe to the `activities` collection for that user. This is managed automatically when the user connects via the web dashboard. For manual setup via the admin API:
 
 ```bash
-./fitglue-admin fitbit:subscribe <USER_ID>
+curl -X POST https://<domain>/admin/users/<USER_ID>/fitbit/subscribe
 ```
 
 **Expected Output:**
@@ -72,9 +70,10 @@ Updates are **not** automatic until you explicitly subscribe to the `activities`
 
 1.  **Trigger**: Sync your Fitbit device (or log a manual activity in the Fitbit app).
 2.  **Wait**: Fitbit usually pushes the webhook notification within 5-10 seconds.
-3.  **Verify**:
-    *   Check `fitbit-webhook-handler` logs: "Received X updates".
-    *   Check `fitbit-ingest` logs: "Fetching TCX for activity...", "Published activity...".
-    *   Check `enricher` logs: "Enriching activity...".
+3.  **Verify** (check Cloud Run service logs):
+    *   Filter Cloud Logging: `resource.labels.service_name="api-webhook"` — look for "Received X updates".
+    *   Filter Cloud Logging: `resource.labels.service_name="pipeline"` — look for "Enriching activity...".
+    *   Filter Cloud Logging: `resource.labels.service_name="destination"` — look for upload results.
+    *   See the [Troubleshooting Guide](../guides/troubleshooting.md) for detailed debugging steps.
 
 DONE! 🚀

@@ -2,8 +2,8 @@
 
 This guide provides testing procedures for enricher providers in the FitGlue pipeline.
 
-> [!NOTE]
-> The `./fitglue-admin` CLI referenced in the setup steps below no longer exists — it was a TypeScript tool that has been retired. User and pipeline setup is now done via `service.api.admin` endpoints. The test scenarios and validation steps themselves remain accurate; only the setup commands need translating to API calls.
+> [!IMPORTANT]
+> The `./fitglue-admin` CLI referenced in setup steps below has been retired. User and pipeline setup is now done via `service.api.admin` REST endpoints (e.g., `curl -X POST https://<domain>/admin/users/...`). You can also manage users and pipelines through the [Admin Console](https://fitglue.tech/app/admin) in the web dashboard. The test scenarios and validation steps themselves remain accurate.
 
 ## Overview
 
@@ -448,8 +448,8 @@ make test-integration
 ## Common Issues
 
 ### "Provider not found, skipping"
-**Cause**: Provider not registered in `enricher/function.go`
-**Solution**: Verify provider is in `providerRegistry` array
+**Cause**: Provider not registered or `init()` side-effect import missing
+**Solution**: Verify provider is imported in the service's `main.go` (blank import `_ "path/to/provider"`)
 
 ### "No GPS data generated"
 **Cause**: Activity has `TotalDistance = 0` or existing GPS

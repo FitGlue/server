@@ -95,7 +95,7 @@ func (p *StravaProvider) FetchActivity(ctx context.Context, externalID string, c
 
 ### Destinations (Self-Registration via `init()`)
 
-Destinations live in `internal/destination/uploaders/{name}/` and register via the `DestinationRegistry`.
+Destinations live in `services/destination/internal/destination/uploaders/{name}/` and register via the `DestinationRegistry`.
 
 ## Scaffolding New Plugins
 

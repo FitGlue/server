@@ -89,39 +89,30 @@ interface ConfigFieldSchema {
 
 ## Registration Patterns
 
-### TypeScript (Sources & Destinations)
+### Sources, Enrichers & Destinations (Go `init()` Self-Registration)
 
-Sources and destinations register in `shared/src/plugin/registry.ts`:
+All plugins (sources, enrichers, and destinations) self-register via Go `init()` functions. This pattern ensures the registry is always in sync with the code.
 
-```typescript
-import { registerSource, registerEnricher } from './registry';
-import { EnricherProviderType } from '../types/pb/user';
-
-registerSource({
-  id: 'hevy',
-  type: PluginType.PLUGIN_TYPE_SOURCE,
-  name: 'Hevy',
-  description: 'Import strength training workouts from Hevy',
-  icon: '🏋️',
-  enabled: true,
-  requiredIntegrations: ['hevy'],
-  configSchema: [],
-  marketingDescription: `
-    ### Strength Training Source
-    Import your weight training workouts from Hevy...
-  `,
-  features: [
-    '✅ Import strength workouts with full exercise details',
-    '✅ Capture sets, reps, weights, and rest periods',
-  ],
-  transformations: [],
-  useCases: [],
-});
+**Source example** (`services/api-webhook/internal/webhook/sources/hevy/provider.go`):
+```go
+func init() {
+    plugin.RegisterManifest(
+        pb.SourceType_SOURCE_HEVY,
+        &pb.PluginManifest{
+            Id:          "hevy",
+            Name:        "Hevy",
+            Description: "Import strength training workouts from Hevy",
+            Icon:        "🏋️",
+            Features: []string{
+                "Import strength workouts with full exercise details",
+                "Capture sets, reps, weights, and rest periods",
+            },
+        },
+    )
+}
 ```
 
-### Go (Enrichers)
-
-Enrichers self-register via `init()`:
+**Enricher example** (`internal/pipeline/providers/weather.go`):
 
 ```go
 // pkg/enricher_providers/weather.go
@@ -185,10 +176,13 @@ Current approach (registry):
 
 | File | Purpose |
 |------|---------|
-| `src/typescript/shared/src/plugin/registry.ts` | TypeScript registry with all manifests |
-| `src/go/pkg/plugin/registry.go` | Go registry interface |
-| `src/go/pkg/enricher_providers/*.go` | Individual enricher registrations |
+| `src/go/internal/registry/registry.go` | Go registry service (runtime in-memory store) |
+| `src/go/pkg/plugin/registry.go` | Go registry interface and registration functions |
+| `src/go/internal/pipeline/providers/*.go` | Enricher registrations via `init()` |
+| `services/api-webhook/internal/webhook/sources/*/provider.go` | Source registrations |
+| `services/destination/internal/destination/uploaders/*/` | Destination registrations |
 | `src/proto/plugin.proto` | Protobuf definitions for manifests |
+| `src/go/services/registry/registry.json` | Static manifest data (icons, categories, marketing) |
 
 ## Related Documentation
 

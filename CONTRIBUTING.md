@@ -87,6 +87,10 @@ server/
 └── scripts/              # Development scripts
 ```
 
+## Troubleshooting
+
+If something isn't working, start with the [Troubleshooting Guide](docs/guides/troubleshooting.md) — it maps common failure types to the exact service, code path, and log filter you need.
+
 ## Questions?
 
 Open an issue for questions, bugs, or feature requests.

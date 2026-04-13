@@ -89,19 +89,38 @@ if errors.IsRetryable(err) {
 }
 ```
 
-### TypeScript
+### Destination Errors
 
-```typescript
-import { ErrUserNotFound, isRetryable } from '@fitglue/shared';
+```
+DESTINATION_UPLOAD_FAILED     retryable=true     External upload API returned an error
+DESTINATION_AUTH_EXPIRED      retryable=false    OAuth token expired and refresh failed
+DESTINATION_RATE_LIMITED      retryable=true     External API rate limit exceeded
+DESTINATION_NOT_FOUND         retryable=false    Unknown destination type in pipeline config
+DESTINATION_PAYLOAD_MISSING   retryable=false    FIT file or payload not found in GCS
+```
 
-// Throw sentinel
-throw ErrUserNotFound;
+### Tier Errors
+
+```
+TIER_LIMIT_REACHED            retryable=false    Monthly sync limit exceeded
+TIER_BLOCKED                  retryable=false    Feature requires a higher tier (creates ghost PipelineRun)
+```
+
+## Usage
+
+### Go
+
+```go
+import "github.com/ripixel/fitglue-server/src/go/pkg/errors"
+
+// Return sentinel error
+return errors.ErrUserNotFound
 
 // Wrap with context
-throw ErrUserNotFound.withCause(err).withMetadata('userId', userId);
+return errors.ErrUserNotFound.Wrap(err).WithMetadata("userId", userId)
 
 // Check retryable
-if (isRetryable(err)) {
+if errors.IsRetryable(err) {
     // retry
 }
 ```
