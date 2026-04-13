@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [16.4.0](https://github.com/FitGlue/server/compare/v16.3.0...v16.4.0) (2026-04-13)
+
+
+### Features
+
+* generate StrengthSets for hybrid race laps and update grouping logic to prevent duplicate uploads to Hevy ([d41347a](https://github.com/FitGlue/server/commit/d41347a7d10dcff6999196a0a40926619b33e9b7))
+
 ## [16.3.0](https://github.com/FitGlue/server/compare/v16.2.0...v16.3.0) (2026-04-13)
 
 
