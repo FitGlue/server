@@ -97,6 +97,21 @@ func mapToHevyWorkout(ctx context.Context, payload *pbevents.ActivityPayload, re
 					continue
 				}
 
+				// Skip if a StrengthSet already exists for this exact time and exercise.
+				// This prevents double-uploading laps when hybrid_race_tagger
+				// or another enricher has already represented it as a StrengthSet.
+				hasMatchingSet := false
+				for _, set := range session.StrengthSets {
+					if set.StartTime != nil && lap.StartTime != nil && set.StartTime.Seconds == lap.StartTime.Seconds && set.ExerciseName == lap.ExerciseName {
+						hasMatchingSet = true
+						break
+					}
+				}
+				if hasMatchingSet {
+					logger.Debug("Skipping lap mapping because a matching StrengthSet exists", "exercise_name", lap.ExerciseName)
+					continue
+				}
+
 				lapExercise, err := mapLapToExercise(ctx, lap, activityType, resolver)
 				if err != nil {
 					logger.Warn("Failed to map lap to exercise", "error", err, "exercise_name", lap.ExerciseName)
@@ -125,8 +140,11 @@ func mapToHevyWorkout(ctx context.Context, payload *pbevents.ActivityPayload, re
 }
 
 func mapStrengthSetsToExercises(ctx context.Context, sets []*pbactivity.StrengthSet, resolver *TemplateResolver, logger *slog.Logger) ([]hevy.PostWorkoutsRequestExercise, error) {
-	exerciseMap := make(map[string][]hevy.PostWorkoutsRequestSet)
-	exerciseOrder := []string{}
+	type exerciseGroup struct {
+		name string
+		sets []hevy.PostWorkoutsRequestSet
+	}
+	var groups []*exerciseGroup
 
 	for _, set := range sets {
 		name := set.ExerciseName
@@ -134,26 +152,29 @@ func mapStrengthSetsToExercises(ctx context.Context, sets []*pbactivity.Strength
 			name = "Unknown Exercise"
 		}
 
-		if _, exists := exerciseMap[name]; !exists {
-			exerciseOrder = append(exerciseOrder, name)
-			exerciseMap[name] = []hevy.PostWorkoutsRequestSet{}
-		}
-
 		// Pass the exercise name so the converter can restrict fields to those
 		// accepted by Hevy for this exercise type (distance_duration, weight_duration, etc.)
 		hevySet := convertStrengthSet(set, name)
-		exerciseMap[name] = append(exerciseMap[name], hevySet)
+
+		if len(groups) > 0 && groups[len(groups)-1].name == name {
+			groups[len(groups)-1].sets = append(groups[len(groups)-1].sets, hevySet)
+		} else {
+			groups = append(groups, &exerciseGroup{
+				name: name,
+				sets: []hevy.PostWorkoutsRequestSet{hevySet},
+			})
+		}
 	}
 
 	exercises := []hevy.PostWorkoutsRequestExercise{}
-	for _, name := range exerciseOrder {
-		templateID, err := resolver.ResolveTemplateID(ctx, name)
+	for _, group := range groups {
+		templateID, err := resolver.ResolveTemplateID(ctx, group.name)
 		if err != nil {
-			logger.Error("Failed to resolve template ID", "exerciseName", name, "error", err)
-			return nil, fmt.Errorf("failed to resolve template for %q: %w", name, err)
+			logger.Error("Failed to resolve template ID", "exerciseName", group.name, "error", err)
+			return nil, fmt.Errorf("failed to resolve template for %q: %w", group.name, err)
 		}
 
-		setsCopy := exerciseMap[name]
+		setsCopy := group.sets
 		exercise := hevy.PostWorkoutsRequestExercise{
 			ExerciseTemplateId: &templateID,
 			Sets:               &setsCopy,

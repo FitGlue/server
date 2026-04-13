@@ -529,11 +529,29 @@ func mapLapsToPreset(laps []*pbactivity.Lap, preset RacePreset) ([]*pbactivity.L
 			lap.TotalDistance = station.DistanceMeters
 			newLaps = append(newLaps, lap)
 
+			// Additionally generate the StrengthSet so it appears in Workout Summary and is mapped correctly
+			strengthSets = append(strengthSets, &pbactivity.StrengthSet{
+				ExerciseName:    station.Name,
+				StartTime:       lap.StartTime,
+				DurationSeconds: int32(lap.TotalElapsedTime),
+				DistanceMeters:  lap.TotalDistance,
+				SetType:         "normal",
+			})
+
 		case StationTypeCardio:
 			// Keep as lap but with exercise name (SkiErg, Rowing)
 			lap.ExerciseName = station.Name
 			lap.TotalDistance = station.DistanceMeters
 			newLaps = append(newLaps, lap)
+
+			// Additionally generate the StrengthSet so it appears in Workout Summary and is mapped correctly
+			strengthSets = append(strengthSets, &pbactivity.StrengthSet{
+				ExerciseName:    station.Name,
+				StartTime:       lap.StartTime,
+				DurationSeconds: int32(lap.TotalElapsedTime),
+				DistanceMeters:  lap.TotalDistance,
+				SetType:         "normal",
+			})
 
 		case StationTypeStrength:
 			// Keep the actual lap in the session so we don't permanently discard all the

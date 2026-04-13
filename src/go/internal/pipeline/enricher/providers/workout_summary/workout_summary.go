@@ -117,7 +117,6 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, logger *slog.Logger
 	}
 
 	var blocks []*ExerciseBlock
-	exerciseMap := make(map[string]*ExerciseBlock)
 
 	for _, set := range allSets {
 		key := set.ExerciseName
@@ -125,16 +124,16 @@ func (p *WorkoutSummaryProvider) Enrich(ctx context.Context, logger *slog.Logger
 			key = "Unknown Exercise"
 		}
 
-		if _, exists := exerciseMap[key]; !exists {
+		if len(blocks) > 0 && blocks[len(blocks)-1].Name == key {
+			blocks[len(blocks)-1].Sets = append(blocks[len(blocks)-1].Sets, set)
+		} else {
 			blo := &ExerciseBlock{
 				Name:         key,
-				Sets:         []*pbactivity.StrengthSet{},
+				Sets:         []*pbactivity.StrengthSet{set},
 				MuscleGroups: []pbactivity.MuscleGroup{set.PrimaryMuscleGroup},
 			}
 			blocks = append(blocks, blo)
-			exerciseMap[key] = blo
 		}
-		exerciseMap[key].Sets = append(exerciseMap[key].Sets, set)
 	}
 
 	var sb strings.Builder
