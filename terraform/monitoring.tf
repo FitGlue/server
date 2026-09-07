@@ -501,3 +501,38 @@ resource "google_monitoring_dashboard" "errors_traces" {
     }
   })
 }
+
+# Fires when any pipeline message is dead-lettered — i.e. a retryable enrichment
+# exhausted its full lag/retry budget, or an unclassified error kept NACKing.
+# Before this alert (and the DLQ retention subscriptions in pubsub.tf), messages
+# dead-lettered into subscriber-less topics and were silently discarded.
+resource "google_monitoring_alert_policy" "pubsub_dead_letter" {
+  display_name = "Pub/Sub Dead-Lettered Messages"
+  combiner     = "OR"
+
+  conditions {
+    display_name = "Messages forwarded to a dead-letter topic"
+    condition_threshold {
+      filter          = <<-EOT
+        resource.type="pubsub_subscription" AND
+        metric.type="pubsub.googleapis.com/subscription/dead_letter_message_count" AND
+        resource.labels.subscription_id=one_of("sub-enrichment-lag", "sub-pipeline-run")
+      EOT
+      duration        = "0s"
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+
+      aggregations {
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_SUM"
+        cross_series_reducer = "REDUCE_SUM"
+        group_by_fields      = ["resource.labels.subscription_id"]
+      }
+    }
+  }
+
+  notification_channels = [google_monitoring_notification_channel.email.id]
+  alert_strategy {
+    auto_close = "604800s"
+  }
+}

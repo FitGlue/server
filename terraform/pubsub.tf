@@ -47,9 +47,10 @@ resource "google_pubsub_topic" "enrichment_lag" {
   name    = "topic-enrichment-lag"
   project = var.project_id
 
-  # Retain for 2h — well beyond the 30-min lag window. If the pipeline service
-  # is briefly down, lag messages survive and still get a chance to process.
-  message_retention_duration = "7200s"
+  # Retain for 24h — must outlive the longest retry window a provider can
+  # request (e.g. an hour-scale Retry-After from a rate-limited calendar feed)
+  # plus the lag exhaustion window and the redelivery backoff on top.
+  message_retention_duration = "86400s"
 }
 
 # Dead-letter topic for pipeline-run messages that exhaust all retries.
@@ -83,17 +84,55 @@ resource "google_pubsub_subscription" "enrichment_lag_sub" {
 
   ack_deadline_seconds = 600
 
-  # Retain for 2h, aligned to the topic retention.
-  message_retention_duration = "7200s"
+  # Retain for 24h, aligned to the topic retention.
+  message_retention_duration = "86400s"
 
+  # Max backoff (Pub/Sub caps at 600s) — a NACKed lag message that is waiting out
+  # a provider-requested retry window (Retry-After) polls at most every 10 min.
   retry_policy {
     minimum_backoff = "60s"
-    maximum_backoff = "300s"
+    maximum_backoff = "600s"
   }
 
+  # 100 attempts (the Pub/Sub maximum) at up to 600s apart gives roughly a day of
+  # retry budget. 10 attempts at ≤300s was exhausted in ~30 min — entirely inside
+  # an hour-scale rate-limit window, so rate-limited enrichments always died.
   dead_letter_policy {
     dead_letter_topic     = google_pubsub_topic.enrichment_lag_dead_letter.id
-    max_delivery_attempts = 10
+    max_delivery_attempts = 100
+  }
+}
+
+# Retention subscriptions for the dead-letter topics. Pub/Sub silently discards
+# messages published to a topic with no subscription, so without these an
+# exhausted retry vanished without a trace. These are pull subscriptions with no
+# live consumer — they exist so dead-lettered messages are retained for
+# investigation (gcloud pubsub subscriptions pull) and so the DLQ alert has a
+# metric to fire on.
+resource "google_pubsub_subscription" "pipeline_run_dead_letter_sub" {
+  name    = "sub-pipeline-run-dead-letter"
+  topic   = google_pubsub_topic.pipeline_run_dead_letter.name
+  project = var.project_id
+
+  ack_deadline_seconds       = 60
+  message_retention_duration = "604800s" # 7 days for investigation
+
+  # Never auto-delete despite having no active pull consumers.
+  expiration_policy {
+    ttl = ""
+  }
+}
+
+resource "google_pubsub_subscription" "enrichment_lag_dead_letter_sub" {
+  name    = "sub-enrichment-lag-dead-letter"
+  topic   = google_pubsub_topic.enrichment_lag_dead_letter.name
+  project = var.project_id
+
+  ack_deadline_seconds       = 60
+  message_retention_duration = "604800s" # 7 days for investigation
+
+  expiration_policy {
+    ttl = ""
   }
 }
 

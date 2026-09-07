@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"encoding/json"
+	"time"
 
 	cloudevents "github.com/cloudevents/sdk-go/v2"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -14,6 +15,9 @@ func NewCloudEvent(source, eventType string, data interface{}) (cloudevents.Even
 	e.SetSpecVersion("1.0")
 	e.SetType(eventType)
 	e.SetSource(source)
+	// Stamp creation time: the enricher's lag-exhaustion logic ages events via
+	// e.Time(), which stays zero unless explicitly set (the SDK doesn't default it).
+	e.SetTime(time.Now())
 
 	// If data is a protobuf message, use protojson to ensure correct JSON formatting (e.g. timestamps as strings)
 	if msg, ok := data.(proto.Message); ok {
