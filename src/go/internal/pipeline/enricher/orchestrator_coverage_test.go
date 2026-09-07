@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -619,11 +620,14 @@ func TestParseCloudEventFromPubSubPush_Coverage(t *testing.T) {
 	})
 }
 
-// --- isRetryable ---
+// --- asRetryable ---
 
-func TestIsRetryable_Coverage(t *testing.T) {
-	assert.True(t, isRetryable(&providers.RetryableError{Reason: "lag"}))
-	assert.False(t, isRetryable(errors.New("plain")))
+func TestAsRetryable_Coverage(t *testing.T) {
+	re := &providers.RetryableError{Reason: "lag"}
+	assert.Equal(t, re, asRetryable(re))
+	// Wrapped retryable errors still count (errors.As, not a type assertion).
+	assert.Equal(t, re, asRetryable(fmt.Errorf("wrapped: %w", re)))
+	assert.Nil(t, asRetryable(errors.New("plain")))
 }
 
 // --- EnrichActivityHTTP ---

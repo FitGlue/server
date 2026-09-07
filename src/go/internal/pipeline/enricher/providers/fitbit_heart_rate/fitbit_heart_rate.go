@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/fitglue/server/src/go/pkg/domain/user"
@@ -152,12 +153,32 @@ func (p *FitBitHeartRate) EnrichWithClient(ctx context.Context, logger *slog.Log
 		resp, err = client.GetHeartByDateTimestampIntraday(ctx, startDate, "1sec", startTimeStr, endTimeStr)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("fitbit api request failed: %w", err)
+		// Transport-level failures (DNS, TLS, OAuth refresh hiccups) are transient:
+		// retry via the lag mechanism instead of failing the pipeline permanently.
+		if doNotRetry {
+			logger.Warn("Fitbit API request failed and lag exhausted, skipping HR enrichment", "error", err)
+			return transientSkipResult(fmt.Sprintf("Fitbit API request failed (lag exhausted): %v", err)), nil
+		}
+		return nil, providers.NewRetryableError(fmt.Errorf("fitbit api request failed: %w", err), 0, "fitbit api request failed (transport)")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
 		body, _ := io.ReadAll(resp.Body)
+		// 429 (intraday limit: 150 req/hour/user) and 5xx are transient — Fitbit
+		// recovers on its own. Only client errors (400/401/403/404) are permanent.
+		if resp.StatusCode == http.StatusTooManyRequests || resp.StatusCode >= 500 {
+			if doNotRetry {
+				logger.Warn("Fitbit API transient error and lag exhausted, skipping HR enrichment", "status", resp.StatusCode)
+				return transientSkipResult(fmt.Sprintf("Fitbit API returned status %d (lag exhausted)", resp.StatusCode)), nil
+			}
+			retryAfter := parseRetryAfterHeader(resp)
+			return nil, providers.NewRetryableError(
+				fmt.Errorf("fitbit api error %d: %s", resp.StatusCode, string(body)),
+				retryAfter,
+				fmt.Sprintf("fitbit api transient error %d", resp.StatusCode),
+			)
+		}
 		return nil, fmt.Errorf("fitbit api error %d: %s", resp.StatusCode, string(body))
 	}
 
@@ -397,6 +418,33 @@ func buildStreamIndexBased(dataset []struct {
 }
 
 // hasExistingHeartRateData checks if the activity already has heart rate data in its records
+// transientSkipResult is the graceful-degradation result when a transient Fitbit
+// failure outlives the lag retry budget: complete the pipeline without HR data
+// rather than failing it.
+func transientSkipResult(detail string) *providers.EnrichmentResult {
+	return &providers.EnrichmentResult{
+		Metadata: map[string]string{
+			"hr_source":     "skipped",
+			"status_detail": detail,
+		},
+	}
+}
+
+// parseRetryAfterHeader reads a Retry-After header expressed in seconds (what
+// Fitbit sends on 429). Returns 0 if absent or unparseable, letting the lag
+// queue fall back to its default backoff.
+func parseRetryAfterHeader(resp *http.Response) time.Duration {
+	v := resp.Header.Get("Retry-After")
+	if v == "" {
+		return 0
+	}
+	secs, err := strconv.Atoi(v)
+	if err != nil || secs <= 0 {
+		return 0
+	}
+	return time.Duration(secs) * time.Second
+}
+
 func hasExistingHeartRateData(activity *pbactivity.StandardizedActivity) bool {
 	for _, session := range activity.Sessions {
 		for _, lap := range session.Laps {

@@ -4,6 +4,7 @@ package enricher
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -260,14 +261,35 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 		orchestrator.Register(provider)
 	}
 
-	// Calculate lag exhaustion (Force mode / Do Not Retry)
+	// Honour a provider-requested retry window (e.g. a Retry-After from a 429):
+	// if the lag message came back before its window elapsed, NACK without touching
+	// the rate-limited upstream so Pub/Sub redelivers later with backoff.
+	if isLagRetry {
+		if notBefore, ok := parseTimeExtension(e, extRetryNotBefore); ok && time.Now().Before(notBefore) {
+			wait := time.Until(notBefore).Round(time.Second)
+			fwCtx.Logger.Info("Retry window not yet elapsed, deferring", "not_before", notBefore, "wait", wait)
+			return map[string]interface{}{
+				"status": "WAITING_RETRY_WINDOW",
+				"reason": fmt.Sprintf("retry window elapses at %s", notBefore.Format(time.RFC3339)),
+			}, framework.NewRetryableError("retry window not yet elapsed", fmt.Errorf("waiting %s until %s", wait, notBefore.Format(time.RFC3339)))
+		}
+	}
+
+	// Calculate lag exhaustion (Force mode / Do Not Retry).
+	// Primary signal: the lagdeadline extension stamped when the message was
+	// offloaded to the lag queue (retry window + lagExhaustionWindow of attempts).
+	// Fallback: event age vs lagExhaustionWindow, for messages without the extension.
 	doNotRetry := false
-	// For Pub/Sub events, e.Time() is the publish time.
-	// We want to force if the message is older than our max backoff (20 mins + buffer)
-	// Note: For unwrapped events, e.Time() is the original event time, which is what we want.
-	if !e.Time().IsZero() {
+	if deadline, ok := parseTimeExtension(e, extLagDeadline); ok {
+		if time.Now().After(deadline) {
+			fwCtx.Logger.Warn("Activity lag deadline passed, forcing partial enrichment", "deadline", deadline)
+			doNotRetry = true
+		}
+	} else if !e.Time().IsZero() {
+		// For Pub/Sub events, e.Time() is the publish time.
+		// Note: For unwrapped events, e.Time() is the original event time, which is what we want.
 		lagDuration := time.Since(e.Time())
-		if lagDuration > 30*time.Minute {
+		if lagDuration > lagExhaustionWindow {
 			fwCtx.Logger.Warn("Activity lag exhausted, forcing partial enrichment", "age", lagDuration)
 			doNotRetry = true
 		}
@@ -278,7 +300,7 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 
 	if err != nil {
 		// Check if the error is retryable (e.g. data lag)
-		if ok := isRetryable(err); ok {
+		if retryErr := asRetryable(err); retryErr != nil {
 
 			if isLagRetry {
 				fwCtx.Logger.Warn("Lag Retry failed (will retry with backoff)", "error", err)
@@ -303,6 +325,17 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 					return nil, err
 				}
 				lagEvent.SetExtension("origin", "lag-queue")
+
+				// Honour the provider's requested backoff (e.g. Retry-After on a 429):
+				// stamp when the lag message may next be processed, and how long past
+				// that window we keep retrying before forcing partial enrichment.
+				now := time.Now()
+				notBefore := now
+				if retryErr.RetryAfter > 0 {
+					notBefore = now.Add(retryErr.RetryAfter)
+				}
+				lagEvent.SetExtension(extRetryNotBefore, notBefore.Format(time.RFC3339))
+				lagEvent.SetExtension(extLagDeadline, notBefore.Add(lagExhaustionWindow).Format(time.RFC3339))
 
 				_, pubErr := fwCtx.Service.Pub.PublishCloudEvent(ctx, shared.TopicEnrichmentLag, lagEvent)
 				if pubErr != nil {
@@ -417,9 +450,40 @@ func enrichHandler(ctx context.Context, e cloudevents.Event, fwCtx *framework.Fr
 	}, nil
 }
 
-func isRetryable(err error) bool {
-	_, ok := err.(*providers.RetryableError)
-	return ok
+// lagExhaustionWindow is how long we keep retrying past the (possibly
+// provider-requested) retry window before forcing partial enrichment.
+const lagExhaustionWindow = 30 * time.Minute
+
+// CloudEvent extension attribute names (lowercase alphanumeric per spec).
+const (
+	// extRetryNotBefore marks the earliest time a lag message may be processed
+	// (honours Retry-After from rate-limited upstreams).
+	extRetryNotBefore = "retrynotbefore"
+	// extLagDeadline marks when to stop retrying and force partial enrichment.
+	extLagDeadline = "lagdeadline"
+)
+
+// asRetryable unwraps err to a *providers.RetryableError, or nil. Uses
+// errors.As (not a type assertion) so wrapped retryable errors still count.
+func asRetryable(err error) *providers.RetryableError {
+	var re *providers.RetryableError
+	if errors.As(err, &re) {
+		return re
+	}
+	return nil
+}
+
+// parseTimeExtension reads an RFC3339 timestamp CloudEvent extension.
+func parseTimeExtension(e cloudevents.Event, name string) (time.Time, bool) {
+	raw, ok := e.Extensions()[name].(string)
+	if !ok || raw == "" {
+		return time.Time{}, false
+	}
+	t, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
 }
 
 func destinationsToStrings(dests []pbplugin.DestinationType) []string {
